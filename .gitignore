@@ -1,0 +1,13 @@
+# Output files
+build-debug/*
+build-release/*
+*.exe
+
+# Required libraries
+*.dll
+
+# Editor config
+.vscode/*
+
+# Files created by the app
+*.log
