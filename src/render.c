@@ -17,7 +17,7 @@ static void renderFrame() {
 
 static void initRenderer() {
 	glfwMakeContextCurrent(window);
-	if(!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+	if(!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) { // Not possible to get an error message?
 		logCrit("Failed to initialize GLAD");
 		cleanupRenderer();
 		exit(1);
@@ -26,7 +26,7 @@ static void initRenderer() {
 }
 
 static void cleanupRenderer() {
-	glfwMakeContextCurrent(NULL);
+	glfwMakeContextCurrent(NULL); // glfwTerminate() hangs if other threads have a current context
 }
 
 void* rendererThread(void* param) {
