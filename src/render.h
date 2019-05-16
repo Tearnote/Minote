@@ -1,8 +1,6 @@
 #ifndef RENDER_H
 #define RENDER_H
 
-#include <stdbool.h>
-
 #include "thread.h"
 
 void* rendererThread(void* param);

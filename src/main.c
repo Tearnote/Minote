@@ -5,6 +5,7 @@
 #include "input.h"
 #include "state.h"
 #include "render.h"
+#include "logic.h"
 
 void cleanup() {
 	cleanupInput();
@@ -20,7 +21,7 @@ int main() {
 	initInput();
 	
 	spawnRenderer();
-	//spawnEngine();
+	spawnLogic();
 	
 	// Main thread's loop. Handle input updates
 	while(isRunning()) {
@@ -29,7 +30,7 @@ int main() {
 	}
 	
 	// All other threads loop on isRunning(), so it's safe to wait on them here
-	//awaitEngine();
+	awaitLogic();
 	awaitRenderer();
 	
 	return 0;

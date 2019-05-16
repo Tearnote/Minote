@@ -3,6 +3,8 @@
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 
+#include <stdint.h>
+
 #include "log.h"
 #include "window.h"
 #include "thread.h"
@@ -15,6 +17,10 @@ static void renderFrame() {
 	glClear(GL_COLOR_BUFFER_BIT);
 }
 
+static void cleanupRenderer() {
+	glfwMakeContextCurrent(NULL); // glfwTerminate() hangs if other threads have a current context
+}
+
 static void initRenderer() {
 	glfwMakeContextCurrent(window);
 	if(!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) { // Not possible to get an error message?
@@ -23,10 +29,6 @@ static void initRenderer() {
 		exit(1);
 	}
 	glfwSwapInterval(1); // Enable vsync
-}
-
-static void cleanupRenderer() {
-	glfwMakeContextCurrent(NULL); // glfwTerminate() hangs if other threads have a current context
 }
 
 void* rendererThread(void* param) {
