@@ -6,10 +6,12 @@
 #include "state.h"
 #include "render.h"
 #include "logic.h"
+#include "timer.h"
 
 void cleanup() {
 	cleanupInput();
 	cleanupWindow();
+	cleanupTimer();
 	cleanupLogging();
 }
 
@@ -17,6 +19,7 @@ int main() {
 	initLogging();
 	logInfo("Starting up " APP_NAME " " APP_VERSION);
 	atexit(cleanup);
+	initTimer();
 	initWindow();
 	initInput();
 	
