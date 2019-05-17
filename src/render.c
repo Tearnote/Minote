@@ -29,6 +29,7 @@ static void initRenderer() {
 		exit(1);
 	}
 	glfwSwapInterval(1); // Enable vsync
+	logInfo("OpenGL renderer initialized");
 }
 
 void* rendererThread(void* param) {

@@ -33,6 +33,7 @@ void initWindow() {
 		exit(1);
 	}
 	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+	logInfo("Created a %dx%d window", SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
 void cleanupWindow() {

@@ -6,6 +6,7 @@
 #include "state.h"
 #include "window.h"
 #include "timer.h"
+#include "log.h"
 
 #define INPUT_FREQUENCY 1000 // in Hz
 #define TIME_PER_POLL (SEC / INPUT_FREQUENCY)
@@ -22,8 +23,10 @@ void cleanupInput() {
 void updateInput() {
 	lastPollTime = getTime();
 	glfwPollEvents();
-	if(glfwWindowShouldClose(window))
+	if(glfwWindowShouldClose(window)) {
 		setRunning(false);
+		logInfo("Exit signal received");
+	}
 }
 
 void sleepInput() {
