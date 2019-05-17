@@ -7,15 +7,12 @@
 #include "window.h"
 #include "timer.h"
 
-#define MS_PER_UPDATE 1 // Granularity of input polling and physics updates, in milliseconds. 0 disables the limit
-
-static uint64_t ticksPerUpdate = 0; // Target number of raw ticks between updates
-static double tickRatio = 0; // Defines the ratio between raw timer ticks and nanoseconds
-static uint64_t lastPollTime = 0;
+#define INPUT_FREQUENCY 1000 // in Hz
+#define TIME_PER_POLL (SEC / INPUT_FREQUENCY)
+static nsec lastPollTime = 0;
 
 void initInput() {
-	ticksPerUpdate = glfwGetTimerFrequency() / (1000 * MS_PER_UPDATE);
-	tickRatio = 1000000000.0 / glfwGetTimerFrequency();
+	// Nothing here but us comments
 }
 
 void cleanupInput() {
@@ -23,14 +20,14 @@ void cleanupInput() {
 }
 
 void updateInput() {
-	lastPollTime = glfwGetTimerValue();
+	lastPollTime = getTime();
 	glfwPollEvents();
 	if(glfwWindowShouldClose(window))
 		setRunning(false);
 }
 
 void sleepInput() {
-	uint64_t ticksPassed = glfwGetTimerValue() - lastPollTime;
-	if(ticksPassed < ticksPerUpdate) // Only bother sleeping if we're ahead of the target
-		sleep((long)((ticksPerUpdate - ticksPassed) * tickRatio));
+	nsec timePassed = getTime() - lastPollTime;
+	if(timePassed < TIME_PER_POLL) // Only bother sleeping if we're ahead of the target
+		sleep(TIME_PER_POLL - timePassed);
 }

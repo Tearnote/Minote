@@ -1,5 +1,8 @@
 #include "timer.h"
 
+#include "glad/glad.h"
+#include <GLFW/glfw3.h>
+
 #ifdef WIN32
 #include <mmsystem.h>
 #endif
@@ -18,10 +21,14 @@ void cleanupTimer() {
 #endif
 }
 
-void sleep(long ns) {
-	struct timespec duration = { .tv_sec = 0, .tv_nsec = ns };
+nsec getTime() {
+	return (nsec)(glfwGetTime() * SEC);
+}
+
+void sleep(nsec ns) {
+	struct timespec duration = { .tv_sec = ns / SEC, .tv_nsec = ns % SEC };
 #ifdef WIN32
-		if(duration.tv_nsec < 1000000) duration.tv_nsec = 1000000; // winpthreads cannot wait less than 1ms at a time, so we're clamping
+		if(duration.tv_nsec < MSEC) duration.tv_nsec = MSEC; // winpthreads cannot wait less than 1ms at a time
 #endif
 	nanosleep(&duration, NULL);
 }
