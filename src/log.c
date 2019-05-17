@@ -7,10 +7,13 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
-
 #include <errno.h>
 
+#include "thread.h"
+
 #define LOG_FILENAME "minote.log"
+
+mutex logMutex = newMutex;
 
 static FILE* logFile = NULL;
 static const char* prioStrings[] = {"NONE", "DEBUG", "INFO", "WARN", "ERROR", "CRIT"};
@@ -44,9 +47,11 @@ void cleanupLogging() {
 }
 
 static void logTo(FILE* file, int prio, const char* fmt, va_list ap) {
+	lockMutex(logMutex);
 	fprintf(file, "[%s] ", prioStrings[prio]);
 	vfprintf(file, fmt, ap);
 	putc('\n', file);
+	unlockMutex(logMutex);
 }
 
 void logPrio(int prio, const char* fmt, ...) {
