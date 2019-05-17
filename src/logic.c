@@ -1,11 +1,5 @@
 #include "logic.h"
 
-#include "glad/glad.h"
-#include <GLFW/glfw3.h>
-
-#include <stdint.h>
-#include <time.h>
-
 #include "thread.h"
 #include "state.h"
 #include "timer.h"
