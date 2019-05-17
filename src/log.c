@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
+#include <time.h>
 
 #include "thread.h"
 
@@ -48,7 +49,14 @@ void cleanupLogging() {
 
 static void logTo(FILE* file, int prio, const char* fmt, va_list ap) {
 	lockMutex(&logMutex);
-	fprintf(file, "[%s] ", prioStrings[prio]);
+	time_t epochtime;
+	struct tm* timeinfo;
+	time(&epochtime);
+	timeinfo = localtime(&epochtime);
+	fprintf(file, "%02d:%02d:%02d [%s] ", timeinfo->tm_hour,
+	                                timeinfo->tm_min,
+	                                timeinfo->tm_sec,
+	                                prioStrings[prio]);
 	vfprintf(file, fmt, ap);
 	putc('\n', file);
 	unlockMutex(&logMutex);
