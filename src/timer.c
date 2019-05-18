@@ -28,7 +28,7 @@ nsec getTime() {
 void sleep(nsec ns) {
 	struct timespec duration = { .tv_sec = ns / SEC, .tv_nsec = ns % SEC };
 #ifdef WIN32
-		if(duration.tv_nsec < MSEC) duration.tv_nsec = MSEC; // winpthreads cannot wait less than 1ms at a time
+	if(duration.tv_nsec < MSEC) duration.tv_nsec = MSEC; // winpthreads cannot wait less than 1ms at a time
 #endif
 	nanosleep(&duration, NULL);
 }

@@ -11,6 +11,7 @@
 void cleanup() {
 	cleanupInput();
 	cleanupWindow();
+	cleanupState();
 	cleanupTimer();
 	cleanupLogging();
 }
@@ -20,6 +21,7 @@ int main() {
 	logInfo("Starting up " APP_NAME " " APP_VERSION);
 	atexit(cleanup);
 	initTimer();
+	initState();
 	initWindow();
 	initInput();
 	

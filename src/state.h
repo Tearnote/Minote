@@ -5,9 +5,16 @@
 
 #include "thread.h"
 
-extern bool running;
-extern mutex runningMutex;
-#define isRunning() syncBoolRead(&running, &runningMutex)
-#define setRunning(x) syncBoolWrite(&running, (x), &runningMutex)
+typedef struct {
+	bool running;
+} state;
+
+extern state* game;
+extern mutex stateMutex;
+
+void initState();
+void cleanupState();
+#define isRunning() syncBoolRead(&game->running, &stateMutex)
+#define setRunning(x) syncBoolWrite(&game->running, (x), &stateMutex)
 
 #endif
