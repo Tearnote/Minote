@@ -12,8 +12,8 @@
 #define PRIO_CRIT  5 // Cannot reasonably continue
                         // For example: could not open window
 
-void initLogging();
-void cleanupLogging();
+void initLogging(void);
+void cleanupLogging(void);
 
 // Standard printf syntax
 void logPrio(int prio, const char* fmt, ...);

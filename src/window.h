@@ -6,7 +6,7 @@
 
 extern GLFWwindow* window;
 
-void initWindow();
-void cleanupWindow();
+void initWindow(void);
+void cleanupWindow(void);
 
 #endif

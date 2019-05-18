@@ -11,11 +11,11 @@ static nsec lastUpdateTime = 0;
 
 thread logicThreadID = 0;
 
-void updateLogic() {
+static void updateLogic(void) {
 	lastUpdateTime = getTime();
 }
 
-void sleepLogic() {
+static void sleepLogic(void) {
 	nsec timePassed = getTime() - lastUpdateTime;
 	if(timePassed < TIME_PER_UPDATE) // Only bother sleeping if we're ahead of the target
 		sleep(TIME_PER_UPDATE - timePassed);

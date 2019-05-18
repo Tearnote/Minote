@@ -12,15 +12,15 @@
 #define TIME_PER_POLL (SEC / INPUT_FREQUENCY)
 static nsec lastPollTime = 0;
 
-void initInput() {
+void initInput(void) {
 	// Nothing here but us comments
 }
 
-void cleanupInput() {
+void cleanupInput(void) {
 	// To be continued...
 }
 
-void updateInput() {
+void updateInput(void) {
 	lastPollTime = getTime();
 	glfwPollEvents();
 	if(glfwWindowShouldClose(window)) {
@@ -29,7 +29,7 @@ void updateInput() {
 	}
 }
 
-void sleepInput() {
+void sleepInput(void) {
 	nsec timePassed = getTime() - lastPollTime;
 	if(timePassed < TIME_PER_POLL) // Only bother sleeping if we're ahead of the target
 		sleep(TIME_PER_POLL - timePassed);

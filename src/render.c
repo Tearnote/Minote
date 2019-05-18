@@ -12,16 +12,16 @@
 
 thread rendererThreadID = 0;
 
-static void renderFrame() {
+static void renderFrame(void) {
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 }
 
-static void cleanupRenderer() {
+static void cleanupRenderer(void) {
 	glfwMakeContextCurrent(NULL); // glfwTerminate() hangs if other threads have a current context
 }
 
-static void initRenderer() {
+static void initRenderer(void) {
 	glfwMakeContextCurrent(window);
 	if(!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) { // Not possible to get an error message?
 		logCrit("Failed to initialize GLAD");

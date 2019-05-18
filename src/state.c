@@ -8,11 +8,11 @@
 state* game;
 mutex stateMutex = newMutex;
 
-void initState() {
+void initState(void) {
 	game = malloc(sizeof(state));
 	game->running = true;
 }
 
-void cleanupState() {
+void cleanupState(void) {
 	free(game);
 }

@@ -1,9 +1,9 @@
 #ifndef INPUT_H
 #define INPUT_H
 
-void initInput();
-void cleanupInput();
-void updateInput();
-void sleepInput();
+void initInput(void);
+void cleanupInput(void);
+void updateInput(void);
+void sleepInput(void);
 
 #endif

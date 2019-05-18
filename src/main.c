@@ -8,7 +8,7 @@
 #include "logic.h"
 #include "timer.h"
 
-void cleanup() {
+static void cleanup(void) {
 	cleanupInput();
 	cleanupWindow();
 	cleanupState();
@@ -16,7 +16,7 @@ void cleanup() {
 	cleanupLogging();
 }
 
-int main() {
+int main(void) {
 	initLogging();
 	logInfo("Starting up " APP_NAME " " APP_VERSION);
 	atexit(cleanup);

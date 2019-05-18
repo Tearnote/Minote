@@ -7,9 +7,9 @@ typedef int64_t nsec;
 #define SEC  1000000000
 #define MSEC 1000000
 
-void initTimer();
-void cleanupTimer();
-nsec getTime();
+void initTimer(void);
+void cleanupTimer(void);
+nsec getTime(void);
 void sleep(nsec ns);
 
 #endif

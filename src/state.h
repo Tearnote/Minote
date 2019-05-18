@@ -12,8 +12,8 @@ typedef struct {
 extern state* game;
 extern mutex stateMutex;
 
-void initState();
-void cleanupState();
+void initState(void);
+void cleanupState(void);
 #define isRunning() syncBoolRead(&game->running, &stateMutex)
 #define setRunning(x) syncBoolWrite(&game->running, (x), &stateMutex)
 

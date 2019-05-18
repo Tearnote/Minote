@@ -16,7 +16,7 @@ static void framebufferSizeCallback(GLFWwindow* w, int width, int height) {
 	glViewport(0, 0, width, height);
 }
 
-void initWindow() {
+void initWindow(void) {
 	if(glfwInit() == GLFW_FALSE) {
 		logCritGLFW("Failed to initialize GLFW");
 		exit(1);
@@ -36,6 +36,6 @@ void initWindow() {
 	logInfo("Created a %dx%d window", SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
-void cleanupWindow() {
+void cleanupWindow(void) {
 	glfwTerminate();
 }
