@@ -4,9 +4,14 @@
 #include <stdbool.h>
 
 #include "thread.h"
+#include "mino.h"
+
+#define PLAYFIELD_W 10
+#define PLAYFIELD_H 20
 
 typedef struct {
 	bool running;
+	mino playfield[PLAYFIELD_H][PLAYFIELD_W];
 } state;
 
 extern state* game;
