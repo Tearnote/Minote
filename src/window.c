@@ -6,9 +6,6 @@
 #include "main.h"
 #include "log.h"
 
-#define SCREEN_WIDTH 800
-#define SCREEN_HEIGHT 600
-
 GLFWwindow* window = NULL;
 
 static void framebufferSizeCallback(GLFWwindow* w, int width, int height) {
@@ -27,13 +24,13 @@ void initWindow(void) {
 #ifdef __APPLE__
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-	window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, APP_NAME, NULL, NULL);
+	window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, APP_NAME, NULL, NULL);
 	if(window == NULL) {
 		logCritGLFW("Failed to create a window");
 		exit(1);
 	}
 	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
-	logInfo("Created a %dx%d window", SCREEN_WIDTH, SCREEN_HEIGHT);
+	logInfo("Created a %dx%d window", WINDOW_WIDTH, WINDOW_HEIGHT);
 }
 
 void cleanupWindow(void) {
