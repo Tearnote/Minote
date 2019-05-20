@@ -7,45 +7,45 @@
 #include "render.h"
 #include "log.h"
 
-static GLuint minoProgram = 0;
-static GLuint minoVAO = 0;
-static GLuint minoVBO = 0;
-static GLuint minoInstanceVBO = 0;
-static GLint minoUniform = 0;
-static GLfloat minoVertices[] = {
+static GLuint program = 0;
+static GLuint vertexAttrs = 0;
+static GLuint vertexBuffer = 0;
+static GLuint instanceBuffer = 0;
+static GLint projectionAttr = 0;
+static GLfloat vertexData[] = {
 	0, 0,
 	0, 24,
 	24, 0,
 	24, 24
 };
-static GLfloat minoInstance[] = {
+static GLfloat instanceData[] = {
 	36, 24, 1, 0, 0, 1
 };
 
 void initMinoRenderer(void) {
-	const GLchar minoVertSrc[] = {
+	const GLchar vertSrc[] = {
 		#include "mino.vert"
 	, 0x00};
-	const GLchar minoFragSrc[] = {
+	const GLchar fragSrc[] = {
 		#include "mino.frag"
 	, 0x00};
-	minoProgram = createProgram(minoVertSrc, minoFragSrc);
-	if(minoProgram == 0)
+	program = createProgram(vertSrc, fragSrc);
+	if(program == 0)
 		logError("Failed to initialize mino renderer");
-	minoUniform = glGetUniformLocation(minoProgram, "projection");
-	glGenBuffers(1, &minoInstanceVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, minoInstanceVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(minoInstance), minoInstance, GL_DYNAMIC_DRAW);
+	projectionAttr = glGetUniformLocation(program, "projection");
+	glGenBuffers(1, &instanceBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(instanceData), instanceData, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glGenVertexArrays(1, &minoVAO);
-	glGenBuffers(1, &minoVBO);
-	glBindVertexArray(minoVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, minoVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(minoVertices), minoVertices, GL_STATIC_DRAW);
+	glGenVertexArrays(1, &vertexAttrs);
+	glGenBuffers(1, &vertexBuffer);
+	glBindVertexArray(vertexAttrs);
+	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertexData), vertexData, GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2*sizeof(GLfloat), 0);
 	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, minoInstanceVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 6*sizeof(GLfloat), 0);
 	glVertexAttribDivisor(1, 1);
 	glEnableVertexAttribArray(2);
@@ -55,7 +55,7 @@ void initMinoRenderer(void) {
 }
 
 void cleanupMinoRenderer(void) {
-	destroyProgram(minoProgram);
+	destroyProgram(program);
 }
 
 void queueMinoPlayfield(void) {
@@ -63,9 +63,9 @@ void queueMinoPlayfield(void) {
 }
 
 void renderMino(void) {
-	glUseProgram(minoProgram);
-	glUniformMatrix4fv(minoUniform, 1, GL_FALSE, &projection[0][0]);
-	glBindVertexArray(minoVAO);
+	glUseProgram(program);
+	glUniformMatrix4fv(projectionAttr, 1, GL_FALSE, &projection[0][0]);
+	glBindVertexArray(vertexAttrs);
 	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, 1);
 	glBindVertexArray(0);
 }
