@@ -56,7 +56,6 @@ $(BUILD)/%.o: $(SOURCE)/%.c | $(BUILD) $(glslobj)
 $(BUILD)/%.d: $(SOURCE)/%.c | $(BUILD)
 	@$(CPP) $(CFLAGS) $< -MM -MT $(@:.d=.o) >$@
 
-.SECONDARY: $(glslobj)
 $(BUILD)/glsl/%: $(SOURCE)/glsl/%.glsl
 	cat $< |xxd -i >$@
 
