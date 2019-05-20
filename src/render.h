@@ -1,11 +1,20 @@
 #ifndef RENDER_H
 #define RENDER_H
 
+#include "glad/glad.h"
+#include <GLFW/glfw3.h>
+
+#include "linmath.h"
 #include "thread.h"
 
-void* rendererThread(void* param);
 extern thread rendererThreadID;
+extern mat4x4 projection;
+
+void* rendererThread(void* param);
 #define spawnRenderer() spawnThread(&rendererThreadID, rendererThread, NULL, "rendererThread")
 #define awaitRenderer() awaitThread(rendererThreadID)
+
+GLuint createProgram(const GLchar* vertexShaderSrc, const GLchar* fragmentShaderSrc);
+#define destroyProgram glDeleteProgram
 
 #endif
