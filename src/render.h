@@ -14,6 +14,8 @@ void* rendererThread(void* param);
 #define spawnRenderer() spawnThread(&rendererThreadID, rendererThread, NULL, "rendererThread")
 #define awaitRenderer() awaitThread(rendererThreadID)
 
+void resizeRenderer(int width, int height);
+
 GLuint createProgram(const GLchar* vertexShaderSrc, const GLchar* fragmentShaderSrc);
 #define destroyProgram glDeleteProgram
 

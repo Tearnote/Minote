@@ -19,6 +19,11 @@
 thread rendererThreadID = 0;
 mat4x4 projection = {};
 
+int viewportWidth = DEFAULT_WIDTH;
+int viewportHeight = DEFAULT_HEIGHT;
+bool viewportDirty = true;
+mutex viewportMutex = newMutex;
+
 static state* gameSnap = NULL;
 
 static GLuint createShader(const GLchar* source, GLenum type) {
@@ -65,6 +70,12 @@ GLuint createProgram(const GLchar* vertexShaderSrc, const GLchar* fragmentShader
 }
 
 static void renderFrame(void) {
+	lockMutex(&viewportMutex);
+	if(viewportDirty) {
+		glViewport(0, 0, viewportWidth, viewportHeight);
+		mat4x4_ortho(projection, 0.0f, (float)viewportWidth, (float)viewportHeight, 0.0f, -1.0f, 1.0f);
+	}
+	unlockMutex(&viewportMutex);
 	lockMutex(&stateMutex);
 	memcpy(gameSnap, game, sizeof(state));
 	unlockMutex(&stateMutex);
@@ -91,7 +102,7 @@ static void initRenderer(void) {
 	}
 	glfwSwapInterval(1); // Enable vsync
 	
-	mat4x4_ortho(projection, 0.0f, (float)WINDOW_WIDTH, (float)WINDOW_HEIGHT, 0.0f, -1.0f, 1.0f);
+	//mat4x4_ortho(projection, 0.0f, (float)WINDOW_WIDTH, (float)WINDOW_HEIGHT, 0.0f, -1.0f, 1.0f);
 	initMinoRenderer();
 	
 	gameSnap = malloc(sizeof(state));
@@ -111,4 +122,12 @@ void* rendererThread(void* param) {
 	
 	cleanupRenderer();
 	return NULL;
+}
+
+void resizeRenderer(int width, int height) {
+	lockMutex(&viewportMutex);
+	viewportWidth = width;
+	viewportHeight = height;
+	viewportDirty = true;
+	unlockMutex(&viewportMutex);
 }

@@ -5,12 +5,17 @@
 
 #include "main.h"
 #include "log.h"
+#include "render.h"
 
 GLFWwindow* window = NULL;
+int windowWidth = DEFAULT_WIDTH;
+int windowHeight = DEFAULT_HEIGHT;
 
-static void framebufferSizeCallback(GLFWwindow* w, int width, int height) {
+static void windowResizeCallback(GLFWwindow* w, int width, int height) {
 	(void)w;
-	glViewport(0, 0, width, height);
+	windowWidth = width;
+	windowHeight = height;
+	resizeRenderer(width, height);
 }
 
 void initWindow(void) {
@@ -24,13 +29,13 @@ void initWindow(void) {
 #ifdef __APPLE__
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-	window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, APP_NAME, NULL, NULL);
+	window = glfwCreateWindow(windowWidth, windowHeight, APP_NAME, NULL, NULL);
 	if(window == NULL) {
 		logCritGLFW("Failed to create a window");
 		exit(1);
 	}
-	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
-	logInfo("Created a %dx%d window", WINDOW_WIDTH, WINDOW_HEIGHT);
+	glfwSetFramebufferSizeCallback(window, windowResizeCallback);
+	logInfo("Created a %dx%d window", windowWidth, windowHeight);
 }
 
 void cleanupWindow(void) {
