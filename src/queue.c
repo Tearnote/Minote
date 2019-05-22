@@ -2,8 +2,6 @@
 
 #include <stdlib.h>
 
-#include "log.h"
-
 queue* createQueue(size_t itemSize) {
 	queue* q = malloc(sizeof(queue));
 	q->itemSize = itemSize;

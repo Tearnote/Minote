@@ -10,6 +10,7 @@
 #include "log.h"
 #include "queue.h"
 #include "state.h"
+#include "window.h"
 
 #define MINO_SIZE 24
 #define INSTANCE_LIMIT 256
@@ -71,15 +72,18 @@ void cleanupMinoRenderer(void) {
 }
 
 void queueMinoPlayfield(mino playfield[][PLAYFIELD_W]) {
-	clearQueue(minoQueue);
+	// Centering the playfield
+	int xOffset = windowWidth/2 - PLAYFIELD_W*MINO_SIZE/2;
+	int yOffset = windowHeight/2 - PLAYFIELD_H*MINO_SIZE/2;
+	
 	for(int y = 0; y < PLAYFIELD_H; y++)
 	for(int x = 0; x < PLAYFIELD_W; x++) {
 		mino minoType = playfield[y][x];
-		if(minoType == MinoNone) continue;
+		//if(minoType == MinoNone) continue; // Temporary black background
 		minoInstance* newInstance = produceQueueItem(minoQueue);
-		newInstance->x = (GLfloat)(x * MINO_SIZE);
-		newInstance->y = (GLfloat)(y * MINO_SIZE);
-		memcpy(&newInstance->r, &minoColors[minoType], sizeof(vec4));
+		newInstance->x = (GLfloat)(x * MINO_SIZE + xOffset);
+		newInstance->y = (GLfloat)(y * MINO_SIZE + yOffset);
+		memcpy(&newInstance->r, &minoColors[minoType], sizeof(vec4)); // 1 line instead of 4, why not
 	}
 }
 
@@ -91,4 +95,5 @@ void renderMino(void) {
 	glBufferSubData(GL_ARRAY_BUFFER, 0, (GLsizeiptr)(minoQueue->count * sizeof(minoInstance)), minoQueue->buffer);
 	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, (GLsizei)minoQueue->count);
 	glBindVertexArray(0);
+	clearQueue(minoQueue);
 }
