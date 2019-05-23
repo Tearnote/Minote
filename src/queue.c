@@ -2,10 +2,12 @@
 
 #include <stdlib.h>
 
+#include "util.h"
+
 queue* createQueue(size_t itemSize) {
-	queue* q = malloc(sizeof(queue));
+	queue* q = allocate(1, sizeof(queue));
 	q->itemSize = itemSize;
-	q->buffer = malloc(itemSize);
+	q->buffer = allocate(1, itemSize);
 	q->allocated = 1;
 	q->count = 0;
 	return q;
@@ -18,7 +20,7 @@ void destroyQueue(queue* q) {
 
 void* produceQueueItem(queue* q) {
 	if(q->count == q->allocated) {
-		q->buffer = realloc(q->buffer, q->allocated*2 * q->itemSize);
+		q->buffer = reallocate(q->buffer, q->allocated * 2, q->itemSize);
 		q->allocated *= 2;
 	}
 	q->count += 1;

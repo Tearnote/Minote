@@ -11,7 +11,7 @@ state* game;
 mutex stateMutex = newMutex;
 
 void initState(void) {
-	game = malloc(sizeof(state));
+	game = allocate(1, sizeof(state));
 	game->running = true;
 	memcpy(game->playfield, (mino[PLAYFIELD_H][PLAYFIELD_W]){
 		{ MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
