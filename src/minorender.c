@@ -12,7 +12,7 @@
 #include "state.h"
 #include "window.h"
 
-#define MINO_SIZE 24
+#define MINO_SIZE 12
 #define INSTANCE_LIMIT 256
 
 static GLuint program = 0;
@@ -71,10 +71,10 @@ void cleanupMinoRenderer(void) {
 	program = 0;
 }
 
-void queueMinoPlayfield(mino playfield[][PLAYFIELD_W]) {
-	// Centering the playfield
-	int xOffset = windowWidth/2 - PLAYFIELD_W*MINO_SIZE/2;
-	int yOffset = windowHeight/2 - PLAYFIELD_H*MINO_SIZE/2;
+void queueMinoPlayfield(mino playfield[PLAYFIELD_H][PLAYFIELD_W]) {
+	// Center the playfield
+	int xOffset = renderWidth/2 - PLAYFIELD_W*MINO_SIZE/2;
+	int yOffset = renderHeight/2 - PLAYFIELD_H*MINO_SIZE/2;
 	
 	for(int y = 0; y < PLAYFIELD_H; y++)
 	for(int x = 0; x < PLAYFIELD_W; x++) {
@@ -92,7 +92,9 @@ void renderMino(void) {
 	glUniformMatrix4fv(projectionAttr, 1, GL_FALSE, &projection[0][0]);
 	glBindVertexArray(vertexAttrs);
 	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, (GLsizeiptr)(minoQueue->count * sizeof(minoInstance)), minoQueue->buffer);
+	glBufferSubData(GL_ARRAY_BUFFER, 0,
+	                (GLsizeiptr)((minoQueue->count > INSTANCE_LIMIT ? INSTANCE_LIMIT : minoQueue->count) * sizeof(minoInstance)),
+	                minoQueue->buffer);
 	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, (GLsizei)minoQueue->count);
 	glBindVertexArray(0);
 	clearQueue(minoQueue);

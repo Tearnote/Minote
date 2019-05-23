@@ -18,6 +18,8 @@
 
 thread rendererThreadID = 0;
 mat4x4 projection = {};
+int renderWidth = 0; // Calculated before the first frame is drawn
+int renderHeight = 360;
 
 int viewportWidth = DEFAULT_WIDTH;
 int viewportHeight = DEFAULT_HEIGHT;
@@ -71,9 +73,11 @@ GLuint createProgram(const GLchar* vertexShaderSrc, const GLchar* fragmentShader
 
 static void renderFrame(void) {
 	lockMutex(&viewportMutex);
-	if(viewportDirty) {
+	if(viewportDirty) { // This is true on the first frame, so this section also serves to initialize
+		viewportDirty = false;
 		glViewport(0, 0, viewportWidth, viewportHeight);
-		mat4x4_ortho(projection, 0.0f, (float)viewportWidth, (float)viewportHeight, 0.0f, -1.0f, 1.0f);
+		renderWidth = (int)((float)viewportWidth / (float)viewportHeight * (float)renderHeight);
+		mat4x4_ortho(projection, 0.0f, (float)renderWidth, (float)renderHeight, 0.0f, -1.0f, 1.0f);
 	}
 	unlockMutex(&viewportMutex);
 	lockMutex(&stateMutex);

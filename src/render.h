@@ -9,6 +9,8 @@
 
 extern thread rendererThreadID;
 extern mat4x4 projection;
+extern int renderWidth;
+extern int renderHeight;
 
 void* rendererThread(void* param);
 #define spawnRenderer() spawnThread(&rendererThreadID, rendererThread, NULL, "rendererThread")

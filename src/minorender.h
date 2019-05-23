@@ -6,7 +6,7 @@
 
 void initMinoRenderer(void);
 void cleanupMinoRenderer(void);
-void queueMinoPlayfield(mino playfield[][PLAYFIELD_W]);
+void queueMinoPlayfield(mino playfield[PLAYFIELD_H][PLAYFIELD_W]);
 void renderMino(void);
 
 #endif
