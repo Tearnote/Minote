@@ -13,6 +13,7 @@
 #include "thread.h"
 #include "state.h"
 #include "minorender.h"
+#include "util.h"
 
 #define destroyShader glDeleteShader
 

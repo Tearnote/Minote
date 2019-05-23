@@ -6,6 +6,7 @@
 
 #include "thread.h"
 #include "mino.h"
+#include "util.h"
 
 state* game;
 mutex stateMutex = newMutex;
