@@ -12,7 +12,11 @@
 
 #include "thread.h"
 
+#ifdef _DEBUG
+#define LOG_FILENAME "minote-debug.log"
+#else
 #define LOG_FILENAME "minote.log"
+#endif
 
 static mutex logMutex = newMutex;
 
