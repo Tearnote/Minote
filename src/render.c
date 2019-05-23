@@ -20,9 +20,11 @@ thread rendererThreadID = 0;
 mat4x4 projection = {};
 int renderWidth = 0; // Calculated from the aspect ratio before the first frame is drawn
 int renderHeight = 360;
+float renderScale = 1.0f;
 
 int viewportWidth = DEFAULT_WIDTH;
 int viewportHeight = DEFAULT_HEIGHT;
+float viewportScale = 0.0f;
 bool viewportDirty = true;
 mutex viewportMutex = newMutex;
 
@@ -78,6 +80,7 @@ static void renderFrame(void) {
 		glViewport(0, 0, viewportWidth, viewportHeight);
 		renderWidth = (int)((float)viewportWidth / (float)viewportHeight * (float)renderHeight);
 		mat4x4_ortho(projection, 0.0f, (float)renderWidth, (float)renderHeight, 0.0f, -1.0f, 1.0f);
+		renderScale = viewportScale;
 	}
 	unlockMutex(&viewportMutex);
 	lockMutex(&stateMutex);
@@ -131,6 +134,13 @@ void resizeRenderer(int width, int height) {
 	lockMutex(&viewportMutex);
 	viewportWidth = width;
 	viewportHeight = height;
+	viewportDirty = true;
+	unlockMutex(&viewportMutex);
+}
+
+void rescaleRenderer(float scale) {
+	lockMutex(&viewportMutex);
+	viewportScale = scale;
 	viewportDirty = true;
 	unlockMutex(&viewportMutex);
 }

@@ -23,6 +23,7 @@ static void framebufferResizeCallback(GLFWwindow* w, int width, int height) {
 static void windowScaleCallback(GLFWwindow* w, float xscale, float yscale) {
 	(void)w, (void)yscale;
 	windowScale = xscale;
+	rescaleRenderer(xscale);
 	logDebug("DPI scaling changed to %f", windowScale);
 }
 
