@@ -31,13 +31,14 @@ void initWindow(void) {
 		logCritGLFW("Failed to initialize GLFW");
 		exit(1);
 	}
+	// Request OpenGL 3.3 core profile context
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #ifdef __APPLE__
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-	glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
+	glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE); // Declare DPI awareness
 	window = glfwCreateWindow(windowWidth, windowHeight, APP_NAME, NULL, NULL);
 	if(window == NULL) {
 		logCritGLFW("Failed to create a window");

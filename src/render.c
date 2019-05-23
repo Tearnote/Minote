@@ -18,7 +18,7 @@
 
 thread rendererThreadID = 0;
 mat4x4 projection = {};
-int renderWidth = 0; // Calculated before the first frame is drawn
+int renderWidth = 0; // Calculated from the aspect ratio before the first frame is drawn
 int renderHeight = 360;
 
 int viewportWidth = DEFAULT_WIDTH;
@@ -73,7 +73,7 @@ GLuint createProgram(const GLchar* vertexShaderSrc, const GLchar* fragmentShader
 
 static void renderFrame(void) {
 	lockMutex(&viewportMutex);
-	if(viewportDirty) { // This is true on the first frame, so this section also serves to initialize
+	if(viewportDirty) { // This is true on the first frame, so this section also initializes
 		viewportDirty = false;
 		glViewport(0, 0, viewportWidth, viewportHeight);
 		renderWidth = (int)((float)viewportWidth / (float)viewportHeight * (float)renderHeight);
@@ -106,7 +106,6 @@ static void initRenderer(void) {
 	}
 	glfwSwapInterval(1); // Enable vsync
 	
-	//mat4x4_ortho(projection, 0.0f, (float)WINDOW_WIDTH, (float)WINDOW_HEIGHT, 0.0f, -1.0f, 1.0f);
 	initMinoRenderer();
 	
 	gameSnap = malloc(sizeof(state));
@@ -121,7 +120,7 @@ void* rendererThread(void* param) {
 	
 	while(isRunning()) {
 		renderFrame();
-		glfwSwapBuffers(window);
+		glfwSwapBuffers(window); // Blocks until next vertical refresh
 	}
 	
 	cleanupRenderer();

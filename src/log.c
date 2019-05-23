@@ -58,9 +58,9 @@ static void logTo(FILE* file, int prio, const char* fmt, va_list ap) {
 	time(&epochtime);
 	timeinfo = localtime(&epochtime);
 	fprintf(file, "%02d:%02d:%02d [%s] ", timeinfo->tm_hour,
-	                                timeinfo->tm_min,
-	                                timeinfo->tm_sec,
-	                                prioStrings[prio]);
+	                                      timeinfo->tm_min,
+	                                      timeinfo->tm_sec,
+	                                      prioStrings[prio]);
 	vfprintf(file, fmt, ap);
 	putc('\n', file);
 	unlockMutex(&logMutex);

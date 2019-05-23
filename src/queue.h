@@ -7,7 +7,7 @@ typedef struct {
 	void* buffer;
 	size_t itemSize;
 	unsigned count;
-	size_t allocated;
+	unsigned allocated;
 } queue;
 
 queue* createQueue(size_t itemSize);

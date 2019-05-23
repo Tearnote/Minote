@@ -14,7 +14,7 @@ typedef enum {
 	MinoS       = 7,
 	MinoGarbage = 8,
 	MinoPending = 9,
-	MinoSize    = 10
+	MinoSize    = 10 // Convenience value, not a real mino
 } mino;
 
 extern vec4 minoColors[MinoSize];
