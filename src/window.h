@@ -10,6 +10,7 @@
 extern GLFWwindow* window;
 extern int windowWidth;
 extern int windowHeight;
+extern float windowScale;
 
 void initWindow(void);
 void cleanupWindow(void);
