@@ -1,5 +1,7 @@
 #include "input.h"
 
+#include <stdbool.h>
+
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 
@@ -7,17 +9,25 @@
 #include "window.h"
 #include "timer.h"
 #include "log.h"
+#include "thread.h"
+#include "fifo.h"
+
+fifo* inputs = NULL;
+mutex inputMutex = newMutex;
 
 #define INPUT_FREQUENCY 1000 // in Hz
 #define TIME_PER_POLL (SEC / INPUT_FREQUENCY)
 static nsec lastPollTime = 0;
 
 void initInput(void) {
-	// Nothing here but us comments
+	inputs = createFifo();
 }
 
 void cleanupInput(void) {
-	// To be continued...
+	for(input* i = dequeueFifo(inputs); !!i; i = dequeueFifo(inputs))
+		free(i);
+	destroyFifo(inputs);
+	inputs = NULL;
 }
 
 void updateInput(void) {

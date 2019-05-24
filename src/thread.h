@@ -5,6 +5,8 @@
 
 #include <pthread.h>
 
+#include "fifo.h"
+
 typedef pthread_t thread;
 typedef pthread_mutex_t mutex;
 #define newMutex PTHREAD_MUTEX_INITIALIZER
@@ -18,5 +20,7 @@ void unlockMutex(mutex* lock);
 // Convenience methods for synchronized getters/setters
 bool syncBoolRead(bool* var, mutex* lock);
 void syncBoolWrite(bool* var, bool val, mutex* lock);
+void syncFifoEnqueue(fifo* f, void* data, mutex* lock);
+void* syncFifoDequeue(fifo* f, mutex* lock);
 
 #endif

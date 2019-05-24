@@ -30,7 +30,7 @@ void unlockMutex(mutex* lock) {
 
 bool syncBoolRead(bool* var, mutex* lock) {
 	lockMutex(lock);
-	bool result = *var; // Cannot be static to keep the function reentrant
+	bool result = *var;
 	unlockMutex(lock);
 	return result;
 }
@@ -39,4 +39,17 @@ void syncBoolWrite(bool* var, bool val, mutex* lock) {
 	lockMutex(lock);
 	*var = val;
 	unlockMutex(lock);
+}
+
+void syncFifoEnqueue(fifo* f, void* data, mutex* lock) {
+	lockMutex(lock);
+	enqueueFifo(f, data);
+	unlockMutex(lock);
+}
+
+void* syncFifoDequeue(fifo* f, mutex* lock) {
+	lockMutex(lock);
+	void* data = dequeueFifo(f);
+	unlockMutex(lock);
+	return data;
 }
