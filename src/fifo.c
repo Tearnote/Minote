@@ -33,6 +33,7 @@ void* dequeueFifo(fifo* f) {
 	fifoItem* item = f->first;
 	if(item->next) item->next->prev = NULL;
 	f->first = item->next;
+	if(!item->next) f->last = NULL;
 	void* data = item->data;
 	free(item);
 	return data;

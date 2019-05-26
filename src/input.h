@@ -5,8 +5,10 @@
 
 #include "thread.h"
 #include "fifo.h"
+#include "timer.h"
 
 typedef enum {
+	InputNone,
 	InputLeft, InputRight,
 	InputHard, InputSonic,
 	InputRotCW, InputRotCCW,
@@ -15,14 +17,16 @@ typedef enum {
 } inputType;
 
 typedef enum {
-	actionPressed,
-	actionReleased,
-	actionSize
+	ActionNone,
+	ActionPressed,
+	ActionReleased,
+	ActionSize
 } inputAction;
 
 typedef struct {
 	inputType type;
 	inputAction action;
+	nsec timestamp;
 } input;
 
 extern fifo* inputs;
