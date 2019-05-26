@@ -11,6 +11,7 @@
 #include "queue.h"
 #include "state.h"
 #include "window.h"
+#include "mino.h"
 
 #define MINO_SIZE 12
 #define INSTANCE_LIMIT 256
@@ -73,12 +74,27 @@ void cleanupMinoRenderer(void) {
 
 void queueMinoPlayfield(mino playfield[PLAYFIELD_H][PLAYFIELD_W]) {
 	// Center the playfield
-	int xOffset = renderWidth/2 - PLAYFIELD_W*MINO_SIZE/2;
-	int yOffset = renderHeight/2 - PLAYFIELD_H*MINO_SIZE/2;
+	int xOffset = renderWidth/2 - PLAYFIELD_W/2*MINO_SIZE;
+	int yOffset = renderHeight/2 - PLAYFIELD_H/2*MINO_SIZE;
 	
 	for(int y = 0; y < PLAYFIELD_H; y++)
 	for(int x = 0; x < PLAYFIELD_W; x++) {
 		mino minoType = playfield[y][x];
+		//if(minoType == MinoNone) continue; // Temporary black background
+		minoInstance* newInstance = produceQueueItem(minoQueue);
+		newInstance->x = (GLfloat)(x * MINO_SIZE + xOffset);
+		newInstance->y = (GLfloat)(y * MINO_SIZE + yOffset);
+		memcpy(&newInstance->r, &minoColors[minoType], sizeof(vec4)); // 1 line instead of 4, why not
+	}
+}
+
+void queueMinoPlayerPiece(controlledPiece* cpiece) {
+	int xOffset = renderWidth/2 - (PLAYFIELD_W/2 - cpiece->x) * MINO_SIZE;
+	int yOffset = renderHeight/2 - (PLAYFIELD_H/2 + PIECE_BOX) * MINO_SIZE;
+	
+	for(int y = 0; y < PIECE_BOX; y++)
+	for(int x = 0; x < PIECE_BOX; x++) {
+		mino minoType = rs[cpiece->type][cpiece->rotation][y][x];
 		//if(minoType == MinoNone) continue; // Temporary black background
 		minoInstance* newInstance = produceQueueItem(minoQueue);
 		newInstance->x = (GLfloat)(x * MINO_SIZE + xOffset);

@@ -10,8 +10,15 @@
 #define PLAYFIELD_H 20
 
 typedef struct {
+	int x;
+	pieceType type;
+	int rotation; // 0 to 3, 0 is spawn
+} controlledPiece;
+
+typedef struct {
 	bool running;
 	mino playfield[PLAYFIELD_H][PLAYFIELD_W];
+	controlledPiece playerPiece;
 } state;
 
 extern state* game;

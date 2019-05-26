@@ -20,8 +20,8 @@ mutex inputMutex = newMutex;
 #define TIME_PER_POLL (SEC / INPUT_FREQUENCY)
 static nsec lastPollTime = 0;
 
-static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-	(void)window, (void)scancode, (void)mods;
+static void keyCallback(GLFWwindow* w, int key, int scancode, int action, int mods) {
+	(void)w, (void)scancode, (void)mods;
 	// Avoid allocating memory if the key isn't bound to anything
 	inputType keyType = InputNone;
 	inputAction keyAction = ActionNone;

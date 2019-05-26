@@ -36,6 +36,9 @@ void initState(void) {
 		{ MinoJ,    MinoJ,    MinoO,    MinoO,    MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
 		{ MinoJ,    MinoJ,    MinoO,    MinoO,    MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone }
 	}, sizeof(game->playfield));
+	game->playerPiece.x = PLAYFIELD_W/2 - PIECE_BOX/2;
+	game->playerPiece.type = PieceT;
+	game->playerPiece.rotation = 0;
 }
 
 void cleanupState(void) {

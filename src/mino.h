@@ -3,20 +3,35 @@
 
 #include "linmath.h"
 
+#define PIECE_BOX 4
+
 typedef enum {
-	MinoNone    = 0,
-	MinoI       = 1,
-	MinoL       = 2,
-	MinoO       = 3,
-	MinoZ       = 4,
-	MinoT       = 5,
-	MinoJ       = 6,
-	MinoS       = 7,
-	MinoGarbage = 8,
-	MinoPending = 9,
-	MinoSize    = 10 // Convenience value, not a real mino
+	MinoNone,
+	MinoI,
+	MinoL,
+	MinoO,
+	MinoZ,
+	MinoT,
+	MinoJ,
+	MinoS,
+	MinoGarbage,
+	MinoPending,
+	MinoSize
 } mino;
+typedef enum {
+	PieceI,
+	PieceL,
+	PieceO,
+	PieceZ,
+	PieceT,
+	PieceJ,
+	PieceS,
+	PieceSize
+} pieceType;
+typedef mino piece[PIECE_BOX][PIECE_BOX];
+typedef piece rotationSystem[PieceSize][4];
 
 extern vec4 minoColors[MinoSize];
+extern rotationSystem rs;
 
 #endif

@@ -92,6 +92,7 @@ static void renderFrame(void) {
 	glClear(GL_COLOR_BUFFER_BIT);
 	
 	queueMinoPlayfield(gameSnap->playfield);
+	queueMinoPlayerPiece(&gameSnap->playerPiece);
 	renderMino();
 }
 
