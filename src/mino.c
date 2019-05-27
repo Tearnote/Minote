@@ -18,184 +18,129 @@ vec4 minoColors[MinoSize] = {
 rotationSystem rs = {
 	{ // PieceI
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoI,    MinoI,    MinoI,    MinoI    },
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoNone, MinoNone, MinoNone }
+			{ .x = 0, .y = 1 }, { .x = 1, .y = 1 },
+			{ .x = 2, .y = 1 }, { .x = 3, .y = 1 }
 		},
 		{
-			{ MinoNone, MinoNone, MinoI,    MinoNone },
-			{ MinoNone, MinoNone, MinoI,    MinoNone },
-			{ MinoNone, MinoNone, MinoI,    MinoNone },
-			{ MinoNone, MinoNone, MinoI,    MinoNone }
+			{ .x = 2, .y = 0 }, { .x = 2, .y = 1 },
+			{ .x = 2, .y = 2 }, { .x = 2, .y = 3 }
 		},
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoI,    MinoI,    MinoI,    MinoI    },
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoNone, MinoNone, MinoNone }
+			{ .x = 0, .y = 1 }, { .x = 1, .y = 1 },
+			{ .x = 2, .y = 1 }, { .x = 3, .y = 1 }
 		},
 		{
-			{ MinoNone, MinoI,    MinoNone, MinoNone },
-			{ MinoNone, MinoI,    MinoNone, MinoNone },
-			{ MinoNone, MinoI,    MinoNone, MinoNone },
-			{ MinoNone, MinoI,    MinoNone, MinoNone }
+			{ .x = 1, .y = 0 }, { .x = 1, .y = 1 },
+			{ .x = 1, .y = 2 }, { .x = 1, .y = 3 }
 		}
 	},
 	{ // PieceL
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoL,    MinoL,    MinoL,    MinoNone },
-			{ MinoL,    MinoNone, MinoNone, MinoNone }
+			{ .x = 0, .y = 2 }, { .x = 1, .y = 2 },
+			{ .x = 2, .y = 2 }, { .x = 0, .y = 3 }
 		},
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoL,    MinoL,    MinoNone, MinoNone },
-			{ MinoNone, MinoL,    MinoNone, MinoNone },
-			{ MinoNone, MinoL,    MinoNone, MinoNone }
+			{ .x = 0, .y = 1 }, { .x = 1, .y = 1 },
+			{ .x = 1, .y = 2 }, { .x = 1, .y = 3 }
 		},
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoNone, MinoL,    MinoNone },
-			{ MinoL,    MinoL,    MinoL,    MinoNone }
+			{ .x = 2, .y = 2 }, { .x = 0, .y = 3 },
+			{ .x = 1, .y = 3 }, { .x = 2, .y = 3 }
 		},
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoL,    MinoNone, MinoNone },
-			{ MinoNone, MinoL,    MinoNone, MinoNone },
-			{ MinoNone, MinoL,    MinoL,    MinoNone }
+			{ .x = 1, .y = 1 }, { .x = 1, .y = 2 },
+			{ .x = 1, .y = 3 }, { .x = 2, .y = 3 }
 		}
 	},
 	{ // PieceO
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoO,    MinoO,    MinoNone },
-			{ MinoNone, MinoO,    MinoO,    MinoNone }
+			{ .x = 1, .y = 2 }, { .x = 2, .y = 2 },
+			{ .x = 1, .y = 3 }, { .x = 2, .y = 3 }
 		},
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoO,    MinoO,    MinoNone },
-			{ MinoNone, MinoO,    MinoO,    MinoNone }
+			{ .x = 1, .y = 2 }, { .x = 2, .y = 2 },
+			{ .x = 1, .y = 3 }, { .x = 2, .y = 3 }
 		},
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoO,    MinoO,    MinoNone },
-			{ MinoNone, MinoO,    MinoO,    MinoNone }
+			{ .x = 1, .y = 2 }, { .x = 2, .y = 2 },
+			{ .x = 1, .y = 3 }, { .x = 2, .y = 3 }
 		},
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoO,    MinoO,    MinoNone },
-			{ MinoNone, MinoO,    MinoO,    MinoNone }
+			{ .x = 1, .y = 2 }, { .x = 2, .y = 2 },
+			{ .x = 1, .y = 3 }, { .x = 2, .y = 3 }
 		}
 	},
 	{ // PieceZ
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoZ,    MinoZ,    MinoNone, MinoNone },
-			{ MinoNone, MinoZ,    MinoZ,    MinoNone }
+			{ .x = 0, .y = 2 }, { .x = 1, .y = 2 },
+			{ .x = 1, .y = 3 }, { .x = 2, .y = 3 }
 		},
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoNone, MinoZ,    MinoNone },
-			{ MinoNone, MinoZ,    MinoZ,    MinoNone },
-			{ MinoNone, MinoZ,    MinoNone, MinoNone }
+			{ .x = 2, .y = 1 }, { .x = 1, .y = 2 },
+			{ .x = 2, .y = 2 }, { .x = 1, .y = 3 }
+			
 		},
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoZ,    MinoZ,    MinoNone, MinoNone },
-			{ MinoNone, MinoZ,    MinoZ,    MinoNone }
+			{ .x = 0, .y = 2 }, { .x = 1, .y = 2 },
+			{ .x = 1, .y = 3 }, { .x = 2, .y = 3 }
 		},
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoNone, MinoZ,    MinoNone },
-			{ MinoNone, MinoZ,    MinoZ,    MinoNone },
-			{ MinoNone, MinoZ,    MinoNone, MinoNone }
+			{ .x = 2, .y = 1 }, { .x = 1, .y = 2 },
+			{ .x = 2, .y = 2 }, { .x = 1, .y = 3 }
 		}
 	},
 	{ // PieceT
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoT,    MinoT,    MinoT,    MinoNone },
-			{ MinoNone, MinoT,    MinoNone, MinoNone }
+			{ .x = 0, .y = 2 }, { .x = 1, .y = 2 },
+			{ .x = 2, .y = 2 }, { .x = 1, .y = 3 }
 		},
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoT,    MinoNone, MinoNone },
-			{ MinoT,    MinoT,    MinoNone, MinoNone },
-			{ MinoNone, MinoT,    MinoNone, MinoNone }
+			{ .x = 1, .y = 1 }, { .x = 0, .y = 2 },
+			{ .x = 1, .y = 2 }, { .x = 1, .y = 3 }
 		},
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoT,    MinoNone, MinoNone },
-			{ MinoT,    MinoT,    MinoT,    MinoNone }
+			{ .x = 1, .y = 2 }, { .x = 0, .y = 3 },
+			{ .x = 1, .y = 3 }, { .x = 2, .y = 3 }
 		},
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoT,    MinoNone, MinoNone },
-			{ MinoNone, MinoT,    MinoT,    MinoNone },
-			{ MinoNone, MinoT,    MinoNone, MinoNone }
+			{ .x = 1, .y = 1 }, { .x = 1, .y = 2 },
+			{ .x = 2, .y = 2 }, { .x = 1, .y = 3 }
 		}
 	},
 	{ // PieceJ
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoJ,    MinoJ,    MinoJ,    MinoNone },
-			{ MinoNone, MinoNone, MinoJ,    MinoNone }
+			{ .x = 0, .y = 2 }, { .x = 1, .y = 2 },
+			{ .x = 2, .y = 2 }, { .x = 2, .y = 3 }
 		},
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoJ,    MinoNone, MinoNone },
-			{ MinoNone, MinoJ,    MinoNone, MinoNone },
-			{ MinoJ,    MinoJ,    MinoNone, MinoNone }
+			{ .x = 1, .y = 1 }, { .x = 1, .y = 2 },
+			{ .x = 0, .y = 3 }, { .x = 1, .y = 3 }
 		},
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoJ,    MinoNone, MinoNone, MinoNone },
-			{ MinoJ,    MinoJ,    MinoJ,    MinoNone }
+			{ .x = 0, .y = 2 }, { .x = 0, .y = 3 },
+			{ .x = 1, .y = 3 }, { .x = 2, .y = 3 }
 		},
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoJ,    MinoJ,    MinoNone },
-			{ MinoNone, MinoJ,    MinoNone, MinoNone },
-			{ MinoNone, MinoJ,    MinoNone, MinoNone }
+			{ .x = 1, .y = 1 }, { .x = 2, .y = 1 },
+			{ .x = 1, .y = 2 }, { .x = 1, .y = 3 }
 		}
 	},
 	{ // PieceS
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoS,    MinoS,    MinoNone },
-			{ MinoS,    MinoS,    MinoNone, MinoNone }
+			{ .x = 1, .y = 2 }, { .x = 2, .y = 2 },
+			{ .x = 0, .y = 3 }, { .x = 1, .y = 3 }
 		},
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoNone, MinoS,    MinoNone },
-			{ MinoNone, MinoS,    MinoS,    MinoNone },
-			{ MinoNone, MinoS,    MinoNone, MinoNone }
+			{ .x = 2, .y = 1 }, { .x = 1, .y = 2 },
+			{ .x = 2, .y = 2 }, { .x = 1, .y = 3 }
 		},
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoS,    MinoS,    MinoNone },
-			{ MinoS,    MinoS,    MinoNone, MinoNone }
+			{ .x = 1, .y = 2 }, { .x = 2, .y = 2 },
+			{ .x = 0, .y = 3 }, { .x = 1, .y = 3 }
 		},
 		{
-			{ MinoNone, MinoNone, MinoNone, MinoNone },
-			{ MinoNone, MinoNone, MinoS,    MinoNone },
-			{ MinoNone, MinoS,    MinoS,    MinoNone },
-			{ MinoNone, MinoS,    MinoNone, MinoNone }
+			{ .x = 2, .y = 1 }, { .x = 1, .y = 2 },
+			{ .x = 2, .y = 2 }, { .x = 1, .y = 3 }
 		}
 	}
 };

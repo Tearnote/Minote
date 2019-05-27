@@ -92,14 +92,12 @@ void queueMinoPlayerPiece(controlledPiece* cpiece) {
 	int xOffset = renderWidth/2 - (PLAYFIELD_W/2 - cpiece->x) * MINO_SIZE;
 	int yOffset = renderHeight/2 - (PLAYFIELD_H/2 + PIECE_BOX) * MINO_SIZE;
 	
-	for(int y = 0; y < PIECE_BOX; y++)
-	for(int x = 0; x < PIECE_BOX; x++) {
-		mino minoType = rs[cpiece->type][cpiece->rotation][y][x];
-		//if(minoType == MinoNone) continue; // Temporary black background
+	for(int i = 0; i < MINOS_PER_PIECE; i++) {
+		coord minoCoord = rs[cpiece->type][cpiece->rotation][i];
 		minoInstance* newInstance = produceQueueItem(minoQueue);
-		newInstance->x = (GLfloat)(x * MINO_SIZE + xOffset);
-		newInstance->y = (GLfloat)(y * MINO_SIZE + yOffset);
-		memcpy(&newInstance->r, &minoColors[minoType], sizeof(vec4)); // 1 line instead of 4, why not
+		newInstance->x = (GLfloat)(minoCoord.x * MINO_SIZE + xOffset);
+		newInstance->y = (GLfloat)(minoCoord.y * MINO_SIZE + yOffset);
+		memcpy(&newInstance->r, &minoColors[cpiece->type+1], sizeof(vec4)); // 1 line instead of 4, why not
 	}
 }
 
