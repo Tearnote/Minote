@@ -39,6 +39,7 @@ void initState(void) {
 	game->playerPiece.x = PLAYFIELD_W/2 - PIECE_BOX/2;
 	game->playerPiece.type = PieceT;
 	game->playerPiece.rotation = 0;
+	game->shifting = 0;
 }
 
 void cleanupState(void) {

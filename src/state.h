@@ -5,6 +5,7 @@
 
 #include "thread.h"
 #include "mino.h"
+#include "timer.h"
 
 #define PLAYFIELD_W 10
 #define PLAYFIELD_H 20
@@ -19,6 +20,7 @@ typedef struct {
 	bool running;
 	mino playfield[PLAYFIELD_H][PLAYFIELD_W];
 	controlledPiece playerPiece;
+	int shifting; // -1 for left, 0 for no, 1 for right
 } state;
 
 extern state* game;
