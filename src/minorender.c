@@ -97,7 +97,7 @@ void queueMinoPlayerPiece(controlledPiece* cpiece) {
 		minoInstance* newInstance = produceQueueItem(minoQueue);
 		newInstance->x = (GLfloat)(minoCoord.x * MINO_SIZE + xOffset);
 		newInstance->y = (GLfloat)(minoCoord.y * MINO_SIZE + yOffset);
-		memcpy(&newInstance->r, &minoColors[cpiece->type+1], sizeof(vec4)); // 1 line instead of 4, why not
+		memcpy(&newInstance->r, &minoColors[cpiece->type], sizeof(vec4)); // 1 line instead of 4, why not
 	}
 }
 

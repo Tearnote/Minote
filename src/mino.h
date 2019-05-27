@@ -7,7 +7,6 @@
 #define MINOS_PER_PIECE 4
 
 typedef enum {
-	MinoNone,
 	MinoI,
 	MinoL,
 	MinoO,
@@ -17,6 +16,7 @@ typedef enum {
 	MinoS,
 	MinoGarbage,
 	MinoPending,
+	MinoNone,
 	MinoSize
 } mino;
 typedef enum {
