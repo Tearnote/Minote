@@ -18,25 +18,35 @@ static void updateLogic(void) {
 	lastUpdateTime = getTime();
 	
 	lockMutex(&stateMutex);
+	controlledPiece* ppiece = &game->playerPiece; // Bad variable name I know, but less of a mouthful
+	
 	for(input* i = dequeueInput(); !!i; i = dequeueInput()) {
 		if(i->type == InputBack && i->action == ActionPressed) {
 				logInfo("User exited");
 				game->running = false; // Don't be me and lock a mutex inside a mutex...
 		} else
 		if(i->type == InputLeft && i->action == ActionPressed) {
-			game->playerPiece.x -= 1;
+			ppiece->x -= 1;
 		} else
 		if(i->type == InputRight && i->action == ActionPressed) {
-			game->playerPiece.x += 1;
+			ppiece->x += 1;
 		} else
 		if(i->type == InputRotCW && i->action == ActionPressed) {
-			game->playerPiece.rotation += 1;
-			game->playerPiece.rotation %= 4;
+			ppiece->rotation += 1;
+			ppiece->rotation %= 4;
 		} else
 		if(i->type == InputRotCCW && i->action == ActionPressed) {
-			game->playerPiece.rotation -= 1;
-			if(game->playerPiece.rotation < 0) // Shame on C for % being remainder, not modulo
-				game->playerPiece.rotation += 4;
+			ppiece->rotation -= 1;
+			if(ppiece->rotation < 0) // Shame on C for % being remainder, not modulo
+				ppiece->rotation += 4;
+		}
+		
+		// Wallstop and wallkick
+		if(ppiece->x + rightmostMino(rs[ppiece->type][ppiece->rotation]) >= PLAYFIELD_W-1) {
+			ppiece->x = PLAYFIELD_W-1 - rightmostMino(rs[ppiece->type][ppiece->rotation]);
+		} else
+		if(ppiece->x + leftmostMino(rs[ppiece->type][ppiece->rotation]) < 0) {
+			ppiece->x = -leftmostMino(rs[ppiece->type][ppiece->rotation]);
 		}
 		
 		free(i);

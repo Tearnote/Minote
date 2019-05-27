@@ -32,10 +32,13 @@ typedef enum {
 typedef struct {
 	int x, y;
 } coord;
-typedef coord tetromino[MINOS_PER_PIECE];
-typedef tetromino rotationSystem[PieceSize][4];
+typedef coord piece[MINOS_PER_PIECE];
+typedef piece rotationSystem[PieceSize][4];
 
 extern vec4 minoColors[MinoSize];
 extern rotationSystem rs;
+
+int rightmostMino(piece p);
+int leftmostMino(piece p);
 
 #endif
