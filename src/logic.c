@@ -28,6 +28,15 @@ static void updateLogic(void) {
 		} else
 		if(i->type == InputRight && i->action == ActionPressed) {
 			game->playerPiece.x += 1;
+		} else
+		if(i->type == InputRotCW && i->action == ActionPressed) {
+			game->playerPiece.rotation += 1;
+			game->playerPiece.rotation %= 4;
+		} else
+		if(i->type == InputRotCCW && i->action == ActionPressed) {
+			game->playerPiece.rotation -= 1;
+			if(game->playerPiece.rotation < 0) // Shame on C for % being remainder, not modulo
+				game->playerPiece.rotation += 4;
 		}
 		
 		free(i);
