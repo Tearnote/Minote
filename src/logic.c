@@ -21,7 +21,7 @@ static void updateLogic(void) {
 	for(input* i = dequeueInput(); !!i; i = dequeueInput()) {
 		if(i->type == InputBack && i->action == ActionPressed) {
 				logInfo("User exited");
-				setRunning(false);
+				game->running = false; // Don't be me and lock a mutex inside a mutex...
 		} else
 		if(i->type == InputLeft && i->action == ActionPressed) {
 			game->playerPiece.x -= 1;
