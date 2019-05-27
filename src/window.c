@@ -40,6 +40,9 @@ void initWindow(void) {
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 	glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE); // Declare DPI awareness
+#ifdef DEBUG
+	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+#endif
 	window = glfwCreateWindow(windowWidth, windowHeight, APP_NAME, NULL, NULL);
 	if(window == NULL) {
 		logCritGLFW("Failed to create a window");

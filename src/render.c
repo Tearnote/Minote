@@ -125,6 +125,7 @@ void* rendererThread(void* param) {
 	
 	while(isRunning()) {
 		renderFrame();
+		glFinish(); // Fix graphics not updating in windowed mode. Driver bug?...
 		glfwSwapBuffers(window); // Blocks until next vertical refresh
 	}
 	
