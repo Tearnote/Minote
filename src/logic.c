@@ -14,8 +14,8 @@ thread logicThreadID = 0;
 #define TIME_PER_UPDATE (SEC / LOGIC_FREQUENCY)
 static nsec updateTime = 0; // This update's timestamp
 
-#define QUARTER_BEAT (108*MSEC)
-#define JUDGMENT 4 // Size of the timing window as a fraction of the qbeat
+#define QUARTER_BEAT (120*MSEC)
+#define JUDGMENT 4 // Size of the timing window as a fraction of the qbeat, higher is harder
 static nsec logicTime = 0; // Clock of the game state
 static nsec qbeatTime = 0; // Time of the next quarterbeat
 
@@ -68,23 +68,39 @@ static void updateLogic(void) {
 				game->running = false; // Don't be me and lock a mutex inside a mutex...
 			} else
 			if(i->type == InputLeft && i->action == ActionPressed) {
-				if(game->shifting == 0) // Don't shift if changing directions
+				if(game->shifting == 0) { // If we're not shifting, accept the input but punish if too mistimed
 					shiftPlayerPiece(-1);
+					// Skip the next qbeat if the player hits ahead
+					if(qbeatTime-inputTime < QUARTER_BEAT/JUDGMENT*(JUDGMENT-1))
+						qbeatTime += QUARTER_BEAT;
+				} else { // If already shifting, hitting too early is punished
+					if(qbeatTime-inputTime < QUARTER_BEAT/JUDGMENT*(JUDGMENT-1) &&
+					   qbeatTime-inputTime > QUARTER_BEAT/JUDGMENT)
+						logDebug("Mistimed");
+					if(qbeatTime-inputTime < QUARTER_BEAT/JUDGMENT*(JUDGMENT-1) &&
+					   qbeatTime-inputTime > QUARTER_BEAT/JUDGMENT)
+						qbeatTime += QUARTER_BEAT;
+				}
 				game->shifting = -1;
-				// Allow the player to hit slightly ahead
-				if(qbeatTime > inputTime && (qbeatTime - inputTime) < QUARTER_BEAT/JUDGMENT)
-					qbeatTime += QUARTER_BEAT;
 			} else
 			if(i->type == InputLeft && i->action == ActionReleased) {
 				if(game->shifting == -1) game->shifting = 0; // Allow changing directions
 			} else
 			if(i->type == InputRight && i->action == ActionPressed) {
-				if(game->shifting == 0) // Don't shift if changing directions
+				if(game->shifting == 0) { // If we're not shifting, accept the input but punish if too mistimed
 					shiftPlayerPiece(1);
+					// Skip the next qbeat if the player hits ahead
+					if(qbeatTime-inputTime < QUARTER_BEAT/JUDGMENT*(JUDGMENT-1))
+						qbeatTime += QUARTER_BEAT;
+				} else { // If already shifting, hitting too early is punished
+					if(qbeatTime-inputTime < QUARTER_BEAT/JUDGMENT*(JUDGMENT-1) &&
+					   qbeatTime-inputTime > QUARTER_BEAT/JUDGMENT)
+						logDebug("Mistimed");
+					if(qbeatTime-inputTime < QUARTER_BEAT/JUDGMENT*(JUDGMENT-1) &&
+					   qbeatTime-inputTime > QUARTER_BEAT/JUDGMENT)
+						qbeatTime += QUARTER_BEAT;
+				}
 				game->shifting = 1;
-				// Allow the player to hit slightly ahead
-				if(qbeatTime > inputTime && (qbeatTime - inputTime) < QUARTER_BEAT/JUDGMENT)
-					qbeatTime += QUARTER_BEAT;
 			} else
 			if(i->type == InputRight && i->action == ActionReleased) {
 				if(game->shifting == 1) game->shifting = 0; // Allow changing directions
