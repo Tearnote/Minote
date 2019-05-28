@@ -19,7 +19,7 @@ CFLAGS = -pipe -std=c99 -pthread -Wall -Wextra -Wfloat-equal -Wundef -Wshadow \
          -Wwrite-strings -Waggregate-return -Wcast-qual -Wswitch-default -flto\
          -Wswitch-enum -Wconversion -Wunreachable-code -Wformat=2 -Winit-self \
          -Wmissing-prototypes -I$(BUILD)/glsl
-LDFLAGS = -lglfw3 -pthread
+LDFLAGS = -pthread
 OUTPUT = minote
 ifeq ($(DEBUG),1)
 	CFLAGS += -D_DEBUG -Og -g3 -D_FORTIFY_SOURCE=2 -fstack-protector-strong   \
@@ -36,7 +36,9 @@ endif
 
 ifeq ($(MINGW),1)
 	OUTPUT := $(OUTPUT).exe
-	LDFLAGS += -lgdi32 -lwinmm
+	LDFLAGS += -lglfw3 -lgdi32 -lwinmm
+else
+	LDFLAGS += -lglfw
 endif
 
 LDFLAGS += $(CFLAGS)
