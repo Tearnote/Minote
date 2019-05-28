@@ -2,7 +2,7 @@
 A repo for an upcoming rhythm puzzle action game. Not playable, currently on git as a personal backup.
 
 ## Building
-Currently only developed and tested on Windows, but should be portable to any platform with OpenGL 3.3 core profile and some implementation of POSIX.
+Currently developed and frequently tested on Windows, but sometimes verified on Linux. Should be portable to any platform with OpenGL 3.3 core profile and some implementation of POSIX.
 
 Currently being built with [mingw-w64](https://mingw-w64.org/doku.php/download/cygwin) inside a cygwin install, the Makefile requires `xxd` to preprocess shader sources and might expand to more Unix tools in the future. Requires [GLFW](https://www.glfw.org/).
 
