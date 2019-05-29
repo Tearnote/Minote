@@ -7,7 +7,8 @@ else
 endif
 
 src = $(wildcard $(SOURCE)/*.c) \
-      $(wildcard $(SOURCE)/glad/*.c)
+      $(wildcard $(SOURCE)/glad/*.c) \
+      $(wildcard $(SOURCE)/pcg/*.c)
 obj = $(src:$(SOURCE)/%.c=$(BUILD)/%.o)
 dep = $(obj:.o=.d)
 glslsrc = $(wildcard $(SOURCE)/glsl/*.glsl)

@@ -21,4 +21,6 @@ On Windows the executable requires `libwinpthread-1.dll` for pthread support, ad
 
 [MinGW runtime](http://mingw-w64.org/doku.php/start) licensed under a mix of licenses included in the repository as `LICENSE.MinGW-w64.runtime.txt`, the least permissive of which being LGPL.
 
+[PCG PRNG](http://www.pcg-random.org/) licensed under Apache license, included in the repository as `LICENSE.PCG.txt`.
+
 Please note that Minote's license is incompatible with GPL.
