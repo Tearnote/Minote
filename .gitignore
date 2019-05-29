@@ -11,3 +11,6 @@ build-release/*
 
 # Files created by the app
 *.log
+
+# Internal notes
+TODO
