@@ -45,6 +45,14 @@ static void rotatePlayerPiece(int direction) {
 	checkKicks();
 }
 
+static void sonicDropPlayerPiece(void) {
+	// Buckle up, we only got one shot at this.
+}
+
+static void lockPlayerPiece(void) {
+	// How is function formed
+}
+
 static void updateLogic(void) {
 	updateTime = getTime();
 	
@@ -76,9 +84,6 @@ static void updateLogic(void) {
 				} else { // If already shifting, hitting too early is punished
 					if(qbeatTime-inputTime < QUARTER_BEAT/JUDGMENT*(JUDGMENT-1) &&
 					   qbeatTime-inputTime > QUARTER_BEAT/JUDGMENT)
-						logDebug("Mistimed");
-					if(qbeatTime-inputTime < QUARTER_BEAT/JUDGMENT*(JUDGMENT-1) &&
-					   qbeatTime-inputTime > QUARTER_BEAT/JUDGMENT)
 						qbeatTime += QUARTER_BEAT;
 				}
 				game->shifting = -1;
@@ -95,9 +100,6 @@ static void updateLogic(void) {
 				} else { // If already shifting, hitting too early is punished
 					if(qbeatTime-inputTime < QUARTER_BEAT/JUDGMENT*(JUDGMENT-1) &&
 					   qbeatTime-inputTime > QUARTER_BEAT/JUDGMENT)
-						logDebug("Mistimed");
-					if(qbeatTime-inputTime < QUARTER_BEAT/JUDGMENT*(JUDGMENT-1) &&
-					   qbeatTime-inputTime > QUARTER_BEAT/JUDGMENT)
 						qbeatTime += QUARTER_BEAT;
 				}
 				game->shifting = 1;
@@ -110,6 +112,18 @@ static void updateLogic(void) {
 			} else
 			if(i->type == InputRotCCW && i->action == ActionPressed) {
 				rotatePlayerPiece(-1);
+			} else
+			if(i->type == InputSonic && i->action == ActionPressed) {
+				sonicDropPlayerPiece();
+			} else
+			if(i->type == InputHard && i->action == ActionPressed) {
+				if(game->shifting != 0 && // If we're just ahead of a qbeat, perform the shift ahead of time
+				   qbeatTime-inputTime < QUARTER_BEAT/JUDGMENT) {
+					shiftPlayerPiece(game->shifting);
+					qbeatTime += QUARTER_BEAT;
+				}
+				sonicDropPlayerPiece();
+				lockPlayerPiece();
 			}
 			
 			logicTime = inputTime;
