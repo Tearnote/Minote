@@ -88,7 +88,7 @@ static void renderFrame(void) {
 	memcpy(gameSnap, game, sizeof(state));
 	unlockMutex(&stateMutex);
 	
-	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+	glClearColor(0.03f, 0.07f, 0.07f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	
 	queueMinoPlayfield(gameSnap->playfield);
@@ -110,6 +110,9 @@ static void initRenderer(void) {
 		exit(1);
 	}
 	glfwSwapInterval(1); // Enable vsync
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_FRAMEBUFFER_SRGB); // Enable gamma correction
 	
 	initMinoRenderer();
 	

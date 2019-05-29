@@ -40,6 +40,7 @@ void initWindow(void) {
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 	glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE); // Declare DPI awareness
+	glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE); // Declare gamma-correct rendering
 #ifdef DEBUG
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 #endif
