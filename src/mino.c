@@ -1,6 +1,6 @@
 #include "mino.h"
 
-#include "linmath.h"
+#include "linmath/linmath.h"
 
 vec4 minoColors[MinoSize] = {
 	{   1,   0,   0, 1 }, // MinoI

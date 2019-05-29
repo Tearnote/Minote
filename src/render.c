@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "linmath.h"
+#include "linmath/linmath.h"
 #include "log.h"
 #include "window.h"
 #include "thread.h"

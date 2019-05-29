@@ -5,7 +5,7 @@
 
 #include <string.h>
 
-#include "linmath.h"
+#include "linmath/linmath.h"
 #include "render.h"
 #include "log.h"
 #include "queue.h"

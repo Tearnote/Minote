@@ -1,7 +1,7 @@
 #ifndef MINO_H
 #define MINO_H
 
-#include "linmath.h"
+#include "linmath/linmath.h"
 
 #define PIECE_BOX 4
 #define MINOS_PER_PIECE 4
