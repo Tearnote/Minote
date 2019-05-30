@@ -17,18 +17,19 @@ typedef struct {
 } controlledPiece;
 
 typedef struct {
-	bool running;
 	mino playfield[PLAYFIELD_H][PLAYFIELD_W];
 	controlledPiece playerPiece;
 	int shifting; // -1 for left, 0 for no, 1 for right
 } state;
 
+extern bool running;
+extern mutex runningMutex;
 extern state* game;
-extern mutex stateMutex;
+extern mutex gameMutex;
 
 void initState(void);
 void cleanupState(void);
-#define isRunning() syncBoolRead(&game->running, &stateMutex)
-#define setRunning(x) syncBoolWrite(&game->running, (x), &stateMutex)
+#define isRunning() syncBoolRead(&running, &runningMutex)
+#define setRunning(x) syncBoolWrite(&running, (x), &runningMutex)
 
 #endif

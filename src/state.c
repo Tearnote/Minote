@@ -9,11 +9,13 @@
 #include "util.h"
 
 state* game;
-mutex stateMutex = newMutex;
+mutex gameMutex = newMutex;
+bool running;
+mutex runningMutex = newMutex;
 
 void initState(void) {
 	game = allocate(1, sizeof(state));
-	game->running = true;
+	running = true;
 	memcpy(game->playfield, (mino[PLAYFIELD_H][PLAYFIELD_W]){
 		{ MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
 		{ MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },

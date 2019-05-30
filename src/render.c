@@ -84,9 +84,9 @@ static void renderFrame(void) {
 		renderScale = viewportScale;
 	}
 	unlockMutex(&viewportMutex);
-	lockMutex(&stateMutex);
+	lockMutex(&gameMutex);
 	memcpy(gameSnap, game, sizeof(state));
-	unlockMutex(&stateMutex);
+	unlockMutex(&gameMutex);
 	
 	glClearColor(0.03f, 0.07f, 0.07f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);

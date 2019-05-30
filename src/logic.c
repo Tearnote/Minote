@@ -56,7 +56,7 @@ static void lockPlayerPiece(void) {
 static void updateLogic(void) {
 	updateTime = getTime();
 	
-	lockMutex(&stateMutex);
+	lockMutex(&gameMutex);
 	
 	// These are static just in case we receive an input from the future and never process it
 	static input* i = NULL;
@@ -73,7 +73,7 @@ static void updateLogic(void) {
 		if(inputTime != -1 && inputTime < qbeatTime && inputTime < updateTime) {
 			if(i->type == InputBack && i->action == ActionPressed) {
 				logInfo("User exited");
-				game->running = false; // Don't be me and lock a mutex inside a mutex...
+				setRunning(false);
 			} else
 			if(i->type == InputLeft && i->action == ActionPressed) {
 				if(game->shifting == 0) { // If we're not shifting, accept the input but punish if too mistimed
@@ -147,7 +147,7 @@ static void updateLogic(void) {
 		break;
 	}
 	
-	unlockMutex(&stateMutex);
+	unlockMutex(&gameMutex);
 }
 
 static void sleepLogic(void) {
