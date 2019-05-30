@@ -21,6 +21,8 @@
  *     http://www.pcg-random.org
  */
 
+/* Modified by Hubert Maraszek to fix compiler warnings */
+
 /*
  * This code is derived from the full C implementation, which is in turn
  * derived from the canonical C++ PCG implementation. The C++ version
@@ -33,7 +35,7 @@
 
 #include <inttypes.h>
 
-#if __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -71,7 +73,7 @@ uint32_t pcg32_random_r(pcg32_random_t* rng);
 uint32_t pcg32_boundedrand(uint32_t bound);
 uint32_t pcg32_boundedrand_r(pcg32_random_t* rng, uint32_t bound);
 
-#if __cplusplus
+#ifdef __cplusplus
 }
 #endif
 

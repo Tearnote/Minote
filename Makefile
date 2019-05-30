@@ -52,6 +52,7 @@ $(OUTPUT): $(obj)
 $(BUILD):
 	mkdir -p $(BUILD)/glad
 	mkdir -p $(BUILD)/glsl
+	mkdir -p $(BUILD)/pcg
 
 $(BUILD)/%.o: $(SOURCE)/%.c | $(BUILD) $(glslobj)
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) -o $@ $<
