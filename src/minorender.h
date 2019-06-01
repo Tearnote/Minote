@@ -7,7 +7,7 @@
 void initMinoRenderer(void);
 void cleanupMinoRenderer(void);
 void queueMinoPlayfield(mino playfield[PLAYFIELD_H][PLAYFIELD_W]);
-void queueMinoPlayerPiece(controlledPiece* cpiece);
+void queueMinoPlayer(pieceState* cpiece);
 void renderMino(void);
 
 #endif

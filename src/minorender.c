@@ -72,14 +72,14 @@ void cleanupMinoRenderer(void) {
 	program = 0;
 }
 
-void queueMinoPlayfield(mino playfield[PLAYFIELD_H][PLAYFIELD_W]) {
+void queueMinoPlayfield(mino field[PLAYFIELD_H][PLAYFIELD_W]) {
 	// Center the playfield
 	int xOffset = renderWidth/2 - PLAYFIELD_W/2*MINO_SIZE;
 	int yOffset = renderHeight/2 - PLAYFIELD_H/2*MINO_SIZE;
 	
 	for(int y = 0; y < PLAYFIELD_H; y++)
 	for(int x = 0; x < PLAYFIELD_W; x++) {
-		mino minoType = playfield[y][x];
+		mino minoType = field[y][x];
 		//if(minoType == MinoNone) continue; // Temporary black background
 		minoInstance* newInstance = produceQueueItem(minoQueue);
 		newInstance->x = (GLfloat)(x * MINO_SIZE + xOffset);
@@ -88,7 +88,7 @@ void queueMinoPlayfield(mino playfield[PLAYFIELD_H][PLAYFIELD_W]) {
 	}
 }
 
-void queueMinoPlayerPiece(controlledPiece* cpiece) {
+void queueMinoPlayer(pieceState* cpiece) {
 	int xOffset = renderWidth/2 - (PLAYFIELD_W/2 - cpiece->x) * MINO_SIZE;
 	int yOffset = renderHeight/2 - (PLAYFIELD_H/2 + PIECE_BOX) * MINO_SIZE;
 	

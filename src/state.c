@@ -7,6 +7,7 @@
 #include "thread.h"
 #include "mino.h"
 #include "util.h"
+#include "gameplay.h"
 
 state* game;
 mutex gameMutex = newMutex;
@@ -16,7 +17,7 @@ mutex runningMutex = newMutex;
 void initState(void) {
 	game = allocate(1, sizeof(state));
 	running = true;
-	memcpy(game->playfield, (mino[PLAYFIELD_H][PLAYFIELD_W]){
+	memcpy(game->field, (playfield){
 		{ MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
 		{ MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
 		{ MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
@@ -37,11 +38,11 @@ void initState(void) {
 		{ MinoO,    MinoO,    MinoJ,    MinoJ,    MinoNone, MinoS,    MinoZ,    MinoJ,    MinoNone, MinoNone },
 		{ MinoJ,    MinoJ,    MinoO,    MinoO,    MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
 		{ MinoJ,    MinoJ,    MinoO,    MinoO,    MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone }
-	}, sizeof(game->playfield));
-	game->playerPiece.x = PLAYFIELD_W/2 - PIECE_BOX/2;
-	game->playerPiece.type = PieceT;
-	game->playerPiece.rotation = 0;
-	game->shifting = 0;
+	}, sizeof(playfield));
+	game->player.x = PLAYFIELD_W/2 - PIECE_BOX/2;
+	game->player.type = PieceT;
+	game->player.rotation = 0;
+	game->player.shifting = 0;
 }
 
 void cleanupState(void) {
