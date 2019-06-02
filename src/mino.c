@@ -144,19 +144,3 @@ rotationSystem rs = {
 		}
 	}
 };
-
-int rightmostMino(piece p) {
-	int result = p[0].x;
-	for(int i = 1; i < MINOS_PER_PIECE; i++)
-		if(p[i].x > result)
-			result = p[i].x;
-	return result;
-}
-
-int leftmostMino(piece p) {
-	int result = p[0].x;
-	for(int i = 1; i < MINOS_PER_PIECE; i++)
-		if(p[i].x < result)
-			result = p[i].x;
-	return result;
-}

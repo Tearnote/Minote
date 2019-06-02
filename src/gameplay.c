@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "state.h"
 #include "input.h"
@@ -17,28 +18,50 @@ static gameState* game;
 static nsec gameTime = 0; // Clock of the game state
 static nsec qbeatTime = 0; // Time of the next quarterbeat
 
-static void checkKicks(void) {
-	// Wallstop / wallkick
-	if(game->player.x + rightmostMino(rs[game->player.type][game->player.rotation]) >= PLAYFIELD_W-1) {
-		game->player.x = PLAYFIELD_W-1 - rightmostMino(rs[game->player.type][game->player.rotation]);
-	} else
-	if(game->player.x + leftmostMino(rs[game->player.type][game->player.rotation]) < 0) {
-		game->player.x = -leftmostMino(rs[game->player.type][game->player.rotation]);
-	}
+// Accepts inputs outside of bounds
+static bool isFree(int x, int y) {
+	if(x < 0 || x >= PLAYFIELD_W || y >= PLAYFIELD_H) return false;
+	if(y < 0) return true;
+	return (bool)(game->field[y][x] == MinoNone);
+}
+
+// Returns true if current position doesn't overlap the playfield
+static bool checkPosition(void) {
+	for(int i = 0; i < MINOS_PER_PIECE; i++)
+		if(!isFree(game->player.x + rs[game->player.type][game->player.rotation][i].x,
+		                       -4 + rs[game->player.type][game->player.rotation][i].y))
+			return false;
+	return true;
+}
+
+// Returns true if kick was successful, false if the move needs to be reverted
+static bool tryKicks(void) {
+	static int preference = 1;
+	if(game->player.shifting != 0) preference = game->player.shifting;
+	if(checkPosition()) return true;
+	game->player.x += preference;
+	if(checkPosition()) return true;
+	game->player.x -= 2*preference;
+	if(checkPosition()) return true;
+	game->player.x += preference;
+	return false;
 }
 
 static void shiftPlayerPiece(int direction) {
 	game->player.x += direction;
-	checkKicks();
+	if(!checkPosition())
+		game->player.x -= direction;
 }
 
 static void rotatePlayerPiece(int direction) {
+	int prevRotation = game->player.rotation;
 	game->player.rotation += direction;
 	if(game->player.rotation >= 4)
 		game->player.rotation -= 4;
 	if(game->player.rotation < 0)
 		game->player.rotation += 4;
-	checkKicks();
+	if(!tryKicks())
+		game->player.rotation = prevRotation;
 }
 
 static void sonicDropPlayerPiece(void) {

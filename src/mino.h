@@ -38,7 +38,4 @@ typedef piece rotationSystem[PieceSize][4];
 extern vec4 minoColors[MinoSize];
 extern rotationSystem rs;
 
-int rightmostMino(piece p);
-int leftmostMino(piece p);
-
 #endif
