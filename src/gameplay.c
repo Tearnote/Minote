@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <time.h>
+#include <inttypes.h>
 
 #include "state.h"
 #include "input.h"
@@ -17,6 +19,7 @@
 static gameState* game;
 static nsec gameTime = 0; // Clock of the game state
 static nsec qbeatTime = 0; // Time of the next quarterbeat
+static rng randomizer = {};
 
 // Accepts inputs outside of bounds
 static bool isFree(int x, int y) {
@@ -75,6 +78,8 @@ static void lock(void) {
 }
 
 void initGameplay(void) {
+	srandom(&randomizer, (uint64_t)time(NULL));
+	
 	game = allocate(1, sizeof(gameState));
 	app->game = game;
 	memcpy(game->field, (playfield){
@@ -101,7 +106,7 @@ void initGameplay(void) {
 	}, sizeof(playfield));
 	game->player.x = PLAYFIELD_W/2 - PIECE_BOX/2;
 	game->player.y = -4;
-	game->player.type = PieceT;
+	game->player.type = random(&randomizer, PieceSize);
 	game->player.rotation = 0;
 	game->player.shifting = 0;
 	
@@ -192,7 +197,7 @@ void updateGameplay(nsec updateTime) {
 		
 		// Handle the qbeat if it's not in the future (input is already handled if earliest)
 		if(qbeatTime < updateTime) {
-			if(game->player.shifting != 0) shiftPlayerPiece(game->player.shifting);
+			if(game->player.shifting != 0) shift(game->player.shifting);
 			
 			gameTime = qbeatTime;
 			qbeatTime += QUARTER_BEAT;
