@@ -12,7 +12,7 @@ mutex gameMutex = newMutex;
 mutex runningMutex = newMutex;
 
 void initState(void) {
-	app = allocate(1, sizeof(app));
+	app = allocate(sizeof(app));
 	app->running = true;
 	app->game = NULL;
 }

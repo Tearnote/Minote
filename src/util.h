@@ -7,8 +7,8 @@
 #include "pcg/pcg_basic.h"
 
 // Error-checking malloc wrappers. free() is fine as it is
-void* allocate(unsigned count, size_t size);
-void* reallocate(void* memory, unsigned count, size_t size);
+void* allocate(size_t size);
+void* reallocate(void* memory, size_t size);
 
 // Convenient renamings for PCG PRNG
 typedef pcg32_random_t rng;

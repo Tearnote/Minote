@@ -49,7 +49,7 @@ static void keyCallback(GLFWwindow* w, int key, int scancode, int action, int mo
 		default: return;
 	}
 	
-	input* newInput = allocate(1, sizeof(input));
+	input* newInput = allocate(sizeof(input));
 	newInput->type = keyType;
 	newInput->action = keyAction;
 	newInput->timestamp = lastPollTime;

@@ -90,7 +90,7 @@ static void lock(void) {
 void initGameplay(void) {
 	srandom(&randomizer, (uint64_t)time(NULL));
 	
-	game = allocate(1, sizeof(gameState));
+	game = allocate(sizeof(gameState));
 	app->game = game;
 	for(int y = 0; y < PLAYFIELD_H; y++)
 	for(int x = 0; x < PLAYFIELD_W; x++)

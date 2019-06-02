@@ -117,7 +117,7 @@ static void initRenderer(void) {
 	
 	initMinoRenderer();
 	
-	gameSnap = allocate(1, sizeof(gameState));
+	gameSnap = allocate(sizeof(gameState));
 	
 	logInfo("OpenGL renderer initialized");
 }

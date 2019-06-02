@@ -7,7 +7,7 @@
 #include "log.h"
 
 fifo* createFifo(void) {
-	fifo* f = allocate(1, sizeof(fifo));
+	fifo* f = allocate(sizeof(fifo));
 	f->first = NULL;
 	f->last = NULL;
 	return f;
@@ -19,7 +19,7 @@ void destroyFifo(fifo* f) {
 }
 
 void enqueueFifo(fifo* f, void* data) {
-	fifoItem* item = allocate(1, sizeof(fifoItem));
+	fifoItem* item = allocate(sizeof(fifoItem));
 	item->data = data;
 	item->prev = f->last;
 	item->next = NULL;
