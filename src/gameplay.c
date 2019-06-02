@@ -81,9 +81,11 @@ static void sonicDrop(void) {
 }
 
 static void lock(void) {
-	for(int i = 0; i < MINOS_PER_PIECE; i++)
+	for(int i = 0; i < MINOS_PER_PIECE; i++) {
+		if(game->player.y + rs[game->player.type][game->player.rotation][i].y < 0) continue;
 		game->field[game->player.y + rs[game->player.type][game->player.rotation][i].y]
 		           [game->player.x + rs[game->player.type][game->player.rotation][i].x] = game->player.type;
+	}
 	newPiece();
 }
 
