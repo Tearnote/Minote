@@ -21,6 +21,13 @@ static nsec gameTime = 0; // Clock of the game state
 static nsec qbeatTime = 0; // Time of the next quarterbeat
 static rng randomizer = {};
 
+static void newPiece(void) {
+	game->player.x = PLAYFIELD_W/2 - PIECE_BOX/2;
+	game->player.y = -4;
+	game->player.type = random(&randomizer, PieceSize);
+	game->player.rotation = 0;
+}
+
 // Accepts inputs outside of bounds
 static bool isFree(int x, int y) {
 	if(x < 0 || x >= PLAYFIELD_W || y >= PLAYFIELD_H) return false;
@@ -74,7 +81,10 @@ static void sonicDrop(void) {
 }
 
 static void lock(void) {
-	// How is function formed
+	for(int i = 0; i < MINOS_PER_PIECE; i++)
+		game->field[game->player.y + rs[game->player.type][game->player.rotation][i].y]
+		           [game->player.x + rs[game->player.type][game->player.rotation][i].x] = game->player.type;
+	newPiece();
 }
 
 void initGameplay(void) {
@@ -104,11 +114,8 @@ void initGameplay(void) {
 		{ MinoJ,    MinoJ,    MinoO,    MinoO,    MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
 		{ MinoJ,    MinoJ,    MinoO,    MinoO,    MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone }
 	}, sizeof(playfield));
-	game->player.x = PLAYFIELD_W/2 - PIECE_BOX/2;
-	game->player.y = -4;
-	game->player.type = random(&randomizer, PieceSize);
-	game->player.rotation = 0;
 	game->player.shifting = 0;
+	newPiece();
 	
 	gameTime = qbeatTime = getTime();
 }
