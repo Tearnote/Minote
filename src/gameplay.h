@@ -10,7 +10,7 @@
 typedef mino playfield[PLAYFIELD_H][PLAYFIELD_W];
 
 typedef struct {
-	int x;
+	int x, y;
 	pieceType type;
 	int rotation; // 0 to 3, 0 is spawn
 	int shifting; // -1 for left, 0 for no, 1 for right

@@ -29,7 +29,7 @@ static bool isFree(int x, int y) {
 static bool checkPosition(void) {
 	for(int i = 0; i < MINOS_PER_PIECE; i++)
 		if(!isFree(game->player.x + rs[game->player.type][game->player.rotation][i].x,
-		                       -4 + rs[game->player.type][game->player.rotation][i].y))
+		           game->player.y + rs[game->player.type][game->player.rotation][i].y))
 			return false;
 	return true;
 }
@@ -65,7 +65,9 @@ static void rotatePlayerPiece(int direction) {
 }
 
 static void sonicDropPlayerPiece(void) {
-	// Buckle up, we only got one shot at this.
+	while(checkPosition())
+		game->player.y += 1;
+	game->player.y -= 1;
 }
 
 static void lockPlayerPiece(void) {
@@ -98,6 +100,7 @@ void initGameplay(void) {
 		{ MinoJ,    MinoJ,    MinoO,    MinoO,    MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone }
 	}, sizeof(playfield));
 	game->player.x = PLAYFIELD_W/2 - PIECE_BOX/2;
+	game->player.y = -4;
 	game->player.type = PieceT;
 	game->player.rotation = 0;
 	game->player.shifting = 0;

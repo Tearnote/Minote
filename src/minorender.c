@@ -89,8 +89,8 @@ void queueMinoPlayfield(mino field[PLAYFIELD_H][PLAYFIELD_W]) {
 }
 
 void queueMinoPlayer(pieceState* cpiece) {
-	int xOffset = renderWidth/2 - (PLAYFIELD_W/2 - cpiece->x) * MINO_SIZE;
-	int yOffset = renderHeight/2 - (PLAYFIELD_H/2 + PIECE_BOX) * MINO_SIZE;
+	int xOffset =  renderWidth/2 - (PLAYFIELD_W/2 - cpiece->x) * MINO_SIZE;
+	int yOffset = renderHeight/2 - (PLAYFIELD_H/2 - cpiece->y) * MINO_SIZE;
 	
 	for(int i = 0; i < MINOS_PER_PIECE; i++) {
 		coord minoCoord = rs[cpiece->type][cpiece->rotation][i];
