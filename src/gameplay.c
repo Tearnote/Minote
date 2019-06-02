@@ -92,28 +92,9 @@ void initGameplay(void) {
 	
 	game = allocate(1, sizeof(gameState));
 	app->game = game;
-	memcpy(game->field, (playfield){
-		{ MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
-		{ MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
-		{ MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
-		{ MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
-		{ MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
-		{ MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
-		{ MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
-		{ MinoI,    MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
-		{ MinoI,    MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
-		{ MinoI,    MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
-		{ MinoI,    MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoT,    MinoNone, MinoNone, MinoNone },
-		{ MinoO,    MinoO,    MinoZ,    MinoZ,    MinoNone, MinoT,    MinoL,    MinoL,    MinoNone, MinoNone },
-		{ MinoO,    MinoO,    MinoT,    MinoT,    MinoNone, MinoNone, MinoNone, MinoL,    MinoNone, MinoNone },
-		{ MinoI,    MinoI,    MinoO,    MinoO,    MinoNone, MinoNone, MinoT,    MinoL,    MinoNone, MinoNone },
-		{ MinoI,    MinoI,    MinoO,    MinoO,    MinoS,    MinoT,    MinoT,    MinoT,    MinoNone, MinoNone },
-		{ MinoI,    MinoI,    MinoO,    MinoO,    MinoS,    MinoS,    MinoNone, MinoZ,    MinoNone, MinoNone },
-		{ MinoI,    MinoI,    MinoO,    MinoO,    MinoNone, MinoS,    MinoZ,    MinoZ,    MinoNone, MinoNone },
-		{ MinoO,    MinoO,    MinoJ,    MinoJ,    MinoNone, MinoS,    MinoZ,    MinoJ,    MinoNone, MinoNone },
-		{ MinoJ,    MinoJ,    MinoO,    MinoO,    MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
-		{ MinoJ,    MinoJ,    MinoO,    MinoO,    MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone }
-	}, sizeof(playfield));
+	for(int y = 0; y < PLAYFIELD_H; y++)
+	for(int x = 0; x < PLAYFIELD_W; x++)
+		game->field[y][x] = MinoNone;
 	game->player.shifting = 0;
 	newPiece();
 	
