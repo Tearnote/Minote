@@ -47,13 +47,13 @@ static bool tryKicks(void) {
 	return false;
 }
 
-static void shiftPlayerPiece(int direction) {
+static void shift(int direction) {
 	game->player.x += direction;
 	if(!checkPosition())
 		game->player.x -= direction;
 }
 
-static void rotatePlayerPiece(int direction) {
+static void rotate(int direction) {
 	int prevRotation = game->player.rotation;
 	game->player.rotation += direction;
 	if(game->player.rotation >= 4)
@@ -64,13 +64,13 @@ static void rotatePlayerPiece(int direction) {
 		game->player.rotation = prevRotation;
 }
 
-static void sonicDropPlayerPiece(void) {
+static void sonicDrop(void) {
 	while(checkPosition())
 		game->player.y += 1;
 	game->player.y -= 1;
 }
 
-static void lockPlayerPiece(void) {
+static void lock(void) {
 	// How is function formed
 }
 
@@ -134,7 +134,7 @@ void updateGameplay(nsec updateTime) {
 			} else
 			if(i->type == InputLeft && i->action == ActionPressed) {
 				if(game->player.shifting == 0) { // If we're not shifting, accept the input but punish if too mistimed
-					shiftPlayerPiece(-1);
+					shift(-1);
 					// Skip the next qbeat if the player hits ahead
 					if(qbeatTime-inputTime < QUARTER_BEAT/JUDGMENT*(JUDGMENT-1))
 						qbeatTime += QUARTER_BEAT;
@@ -150,7 +150,7 @@ void updateGameplay(nsec updateTime) {
 			} else
 			if(i->type == InputRight && i->action == ActionPressed) {
 				if(game->player.shifting == 0) { // If we're not shifting, accept the input but punish if too mistimed
-					shiftPlayerPiece(1);
+					shift(1);
 					// Skip the next qbeat if the player hits ahead
 					if(qbeatTime-inputTime < QUARTER_BEAT/JUDGMENT*(JUDGMENT-1))
 						qbeatTime += QUARTER_BEAT;
@@ -165,22 +165,22 @@ void updateGameplay(nsec updateTime) {
 				if(game->player.shifting == 1) game->player.shifting = 0; // Allow changing directions
 			} else
 			if(i->type == InputRotCW && i->action == ActionPressed) {
-				rotatePlayerPiece(1);
+				rotate(1);
 			} else
 			if(i->type == InputRotCCW && i->action == ActionPressed) {
-				rotatePlayerPiece(-1);
+				rotate(-1);
 			} else
 			if(i->type == InputSonic && i->action == ActionPressed) {
-				sonicDropPlayerPiece();
+				sonicDrop();
 			} else
 			if(i->type == InputHard && i->action == ActionPressed) {
 				if(game->player.shifting != 0 && // If we're just ahead of a qbeat, perform the shift ahead of time
 				   qbeatTime-inputTime < QUARTER_BEAT/JUDGMENT) {
-					shiftPlayerPiece(game->player.shifting);
+					shift(game->player.shifting);
 					qbeatTime += QUARTER_BEAT;
 				}
-				sonicDropPlayerPiece();
-				lockPlayerPiece();
+				sonicDrop();
+				lock();
 			}
 			
 			gameTime = inputTime;
