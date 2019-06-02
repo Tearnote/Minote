@@ -4,30 +4,20 @@
 #include <stdbool.h>
 
 #include "thread.h"
-#include "mino.h"
-#include "timer.h"
 #include "gameplay.h"
 
 typedef struct {
-	int x;
-	pieceType type;
-	int rotation; // 0 to 3, 0 is spawn
-	int shifting; // -1 for left, 0 for no, 1 for right
-} pieceState;
+	bool running;
+	gameState* game;
+} appState;
 
-typedef struct {
-	playfield field;
-	pieceState player;
-} state;
-
-extern bool running;
+extern appState* app;
 extern mutex runningMutex;
-extern state* game;
 extern mutex gameMutex;
 
 void initState(void);
 void cleanupState(void);
-#define isRunning() syncBoolRead(&running, &runningMutex)
-#define setRunning(x) syncBoolWrite(&running, (x), &runningMutex)
+#define isRunning() syncBoolRead(&app->running, &runningMutex)
+#define setRunning(x) syncBoolWrite(&app->running, (x), &runningMutex)
 
 #endif

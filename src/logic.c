@@ -17,7 +17,9 @@ static nsec updateTime = 0; // This update's timestamp
 static void updateLogic(void) {
 	updateTime = getTime();
 	
+	lockMutex(&gameMutex);
 	updateGameplay(updateTime);
+	unlockMutex(&gameMutex);
 }
 
 static void sleepLogic(void) {
@@ -29,12 +31,18 @@ static void sleepLogic(void) {
 void* logicThread(void* param) {
 	(void)param;
 	
+	lockMutex(&gameMutex);
 	initGameplay();
+	unlockMutex(&gameMutex);
 	
 	while(isRunning()) {
 		updateLogic();
 		sleepLogic();
 	}
+	
+	lockMutex(&gameMutex);
+	cleanupGameplay();
+	unlockMutex(&gameMutex);
 	
 	return NULL;
 }

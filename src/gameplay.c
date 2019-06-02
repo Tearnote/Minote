@@ -1,14 +1,19 @@
 #include "gameplay.h"
 
+#include <stdlib.h>
+#include <string.h>
+
 #include "state.h"
 #include "input.h"
 #include "mino.h"
 #include "timer.h"
 #include "log.h"
+#include "util.h"
 
 #define QUARTER_BEAT (120*MSEC)
 #define JUDGMENT 4 // Size of the timing window as a fraction of the qbeat, higher is harder
 
+static gameState* game;
 static nsec gameTime = 0; // Clock of the game state
 static nsec qbeatTime = 0; // Time of the next quarterbeat
 
@@ -45,12 +50,45 @@ static void lockPlayerPiece(void) {
 }
 
 void initGameplay(void) {
+	game = allocate(1, sizeof(gameState));
+	app->game = game;
+	memcpy(game->field, (playfield){
+		{ MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
+		{ MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
+		{ MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
+		{ MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
+		{ MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
+		{ MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
+		{ MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
+		{ MinoI,    MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
+		{ MinoI,    MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
+		{ MinoI,    MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
+		{ MinoI,    MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoT,    MinoNone, MinoNone, MinoNone },
+		{ MinoO,    MinoO,    MinoZ,    MinoZ,    MinoNone, MinoT,    MinoL,    MinoL,    MinoNone, MinoNone },
+		{ MinoO,    MinoO,    MinoT,    MinoT,    MinoNone, MinoNone, MinoNone, MinoL,    MinoNone, MinoNone },
+		{ MinoI,    MinoI,    MinoO,    MinoO,    MinoNone, MinoNone, MinoT,    MinoL,    MinoNone, MinoNone },
+		{ MinoI,    MinoI,    MinoO,    MinoO,    MinoS,    MinoT,    MinoT,    MinoT,    MinoNone, MinoNone },
+		{ MinoI,    MinoI,    MinoO,    MinoO,    MinoS,    MinoS,    MinoNone, MinoZ,    MinoNone, MinoNone },
+		{ MinoI,    MinoI,    MinoO,    MinoO,    MinoNone, MinoS,    MinoZ,    MinoZ,    MinoNone, MinoNone },
+		{ MinoO,    MinoO,    MinoJ,    MinoJ,    MinoNone, MinoS,    MinoZ,    MinoJ,    MinoNone, MinoNone },
+		{ MinoJ,    MinoJ,    MinoO,    MinoO,    MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone },
+		{ MinoJ,    MinoJ,    MinoO,    MinoO,    MinoNone, MinoNone, MinoNone, MinoNone, MinoNone, MinoNone }
+	}, sizeof(playfield));
+	game->player.x = PLAYFIELD_W/2 - PIECE_BOX/2;
+	game->player.type = PieceT;
+	game->player.rotation = 0;
+	game->player.shifting = 0;
+	
 	gameTime = qbeatTime = getTime();
 }
 
+void cleanupGameplay(void) {
+	free(game);
+	game = NULL;
+	app->game = NULL;
+}
+
 void updateGameplay(nsec updateTime) {
-	lockMutex(&gameMutex);
-	
 	// These are static just in case we receive an input from the future and never process it
 	static input* i = NULL;
 	static nsec inputTime = -1; // Timestamp of received input
@@ -139,6 +177,4 @@ void updateGameplay(nsec updateTime) {
 		gameTime = updateTime;
 		break;
 	}
-	
-	unlockMutex(&gameMutex);
 }

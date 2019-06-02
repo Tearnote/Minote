@@ -14,6 +14,7 @@
 #include "state.h"
 #include "minorender.h"
 #include "util.h"
+#include "gameplay.h"
 
 #define destroyShader glDeleteShader
 
@@ -29,7 +30,7 @@ float viewportScale = 0.0f;
 bool viewportDirty = true;
 mutex viewportMutex = newMutex;
 
-static state* gameSnap = NULL;
+static gameState* gameSnap = NULL;
 
 static GLuint createShader(const GLchar* source, GLenum type) {
 	GLuint shader = glCreateShader(type);
@@ -85,7 +86,7 @@ static void renderFrame(void) {
 	}
 	unlockMutex(&viewportMutex);
 	lockMutex(&gameMutex);
-	memcpy(gameSnap, game, sizeof(state));
+	memcpy(gameSnap, app->game, sizeof(gameState));
 	unlockMutex(&gameMutex);
 	
 	glClearColor(0.03f, 0.07f, 0.07f, 1.0f);
@@ -116,7 +117,7 @@ static void initRenderer(void) {
 	
 	initMinoRenderer();
 	
-	gameSnap = allocate(1, sizeof(state));
+	gameSnap = allocate(1, sizeof(gameState));
 	
 	logInfo("OpenGL renderer initialized");
 }
