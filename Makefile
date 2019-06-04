@@ -25,11 +25,11 @@ OUTPUT = minote
 ifeq ($(DEBUG),1)
 	CFLAGS += -D_DEBUG -Og -g3 -D_FORTIFY_SOURCE=2 -fstack-protector-strong   \
               -fasynchronous-unwind-tables -fexceptions -fno-omit-frame-pointer
-	LDFLAGS += -lssp
+	LDFLAGS += -lssp -lfmodL
 	OUTPUT := $(OUTPUT)-debug
 else
 	CFLAGS += -O2
-	LDFLAGS += -s
+	LDFLAGS += -s -lfmod
 	ifeq ($(MINGW),1)
 		LDFLAGS += -mwindows
 	endif

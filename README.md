@@ -6,9 +6,12 @@ Currently developed and frequently tested on Windows, but sometimes verified on 
 
 Currently being built with [mingw-w64](https://mingw-w64.org/doku.php/download/cygwin) inside a cygwin install, the Makefile requires `xxd` to preprocess shader sources and might expand to more Unix tools in the future. Requires [GLFW](https://www.glfw.org/).
 
+Requires [FMOD](https://fmod.com/) 1.10.x. On Windows install the FMOD Studio API on your system, then copy `"C:\Program Files (x86)\FMOD SoundSystem\FMOD Studio API Windows\api\lowlevel\lib\fmod64_vc.lib"` and `fmodL64_vc.lib` to your `lib` directory as `fmod.lib` and `fmodL.lib`, the "L" version including extra debugging features.
+
 Run `make MINGW=1` for a release build or `make MINGW=1 DEBUG=1` for a debug build. In addition to debugging symbols, the debug build also features higher logging verbosity and runtime memory protection.
 
 On Windows the executable requires `libwinpthread-1.dll` for pthread support, additionally the debug build requires `libssp-0.dll` for stack protection. You can find these inside your mingw-w64.
+Also requires `fmod64.dll` for the release build or `fmodL64.dll` for the debug build, found in the same location as FMOD's `.lib` files.
 
 ## External components
 [GLFW](https://www.glfw.org/), licensed under [Zlib license](https://opensource.org/licenses/zlib-license.php).
@@ -22,5 +25,7 @@ On Windows the executable requires `libwinpthread-1.dll` for pthread support, ad
 [MinGW runtime](http://mingw-w64.org/doku.php/start) licensed under a mix of licenses included in the repository as `LICENSE.MinGW-w64.runtime.txt`, the least permissive of which being LGPL.
 
 [PCG PRNG](http://www.pcg-random.org/) licensed under Apache license, included in the repository as `LICENSE.PCG.txt`.
+
+[FMOD Core](https://fmod.com/) licensed under a proprietary EULA included in the repository as `LICENSE.FMOD.txt`. The project falls under the <500k budget tier, granting it a free license. The end product will be required to include the FMOD logo on a splash screen.
 
 Please note that Minote's license is incompatible with GPL.
