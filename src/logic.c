@@ -10,22 +10,21 @@
 
 thread logicThreadID = 0;
 
-#define LOGIC_FREQUENCY 1000 // in Hz
-#define TIME_PER_UPDATE (SEC / LOGIC_FREQUENCY)
+#define LOGIC_FREQUENCY 60 // in Hz
+#define LOGIC_TICK (SEC / LOGIC_FREQUENCY)
 static nsec updateTime = 0; // This update's timestamp
 
 static void updateLogic(void) {
 	updateTime = getTime();
-	
 	lockMutex(&gameMutex);
-	updateGameplay(updateTime);
+	updateGameplay();
 	unlockMutex(&gameMutex);
 }
 
 static void sleepLogic(void) {
 	nsec timePassed = getTime() - updateTime;
-	if(timePassed < TIME_PER_UPDATE) // Only bother sleeping if we're ahead of the target
-		sleep(TIME_PER_UPDATE - timePassed);
+	if(timePassed < LOGIC_TICK) // Only bother sleeping if we're ahead of the target
+		sleep(LOGIC_TICK - timePassed);
 }
 
 void* logicThread(void* param) {

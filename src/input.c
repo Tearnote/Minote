@@ -10,10 +10,9 @@
 #include "timer.h"
 #include "log.h"
 #include "thread.h"
-#include "fifo.h"
 #include "util.h"
 
-fifo* inputs = NULL;
+bool inputs[InputSize] = {};
 mutex inputMutex = newMutex;
 
 #define INPUT_FREQUENCY 1000 // in Hz
@@ -22,9 +21,16 @@ static nsec lastPollTime = 0;
 
 static void keyCallback(GLFWwindow* w, int key, int scancode, int action, int mods) {
 	(void)w, (void)scancode, (void)mods;
-	// Avoid allocating memory if the key isn't bound to anything
+	
+	bool newState = false;
 	inputType keyType = InputNone;
-	inputAction keyAction = ActionNone;
+	
+	switch(action) {
+		case GLFW_PRESS: newState = true; break;
+		case GLFW_RELEASE: newState = false; break;
+		default: return;
+	}
+	
 	switch(key) {
 		case GLFW_KEY_LEFT:
 		case GLFW_KEY_A: keyType = InputLeft; break;
@@ -33,7 +39,7 @@ static void keyCallback(GLFWwindow* w, int key, int scancode, int action, int mo
 		case GLFW_KEY_UP:
 		case GLFW_KEY_W: keyType = InputSonic; break;
 		case GLFW_KEY_DOWN:
-		case GLFW_KEY_S: keyType = InputHard; break;
+		case GLFW_KEY_S: keyType = InputSoft; break;
 		case GLFW_KEY_Z:
 		case GLFW_KEY_J: keyType = InputRotCCW; break;
 		case GLFW_KEY_X:
@@ -43,29 +49,18 @@ static void keyCallback(GLFWwindow* w, int key, int scancode, int action, int mo
 		case GLFW_KEY_ENTER: keyType = InputAccept; break;
 		default: return;
 	}
-	switch(action) {
-		case GLFW_PRESS: keyAction = ActionPressed; break;
-		case GLFW_RELEASE: keyAction = ActionReleased; break;
-		default: return;
-	}
 	
-	input* newInput = allocate(sizeof(input));
-	newInput->type = keyType;
-	newInput->action = keyAction;
-	newInput->timestamp = lastPollTime;
-	enqueueInput(newInput);
+	lockMutex(&inputMutex);
+	inputs[keyType] = newState;
+	unlockMutex(&inputMutex);
 }
 
 void initInput(void) {
-	inputs = createFifo();
 	glfwSetKeyCallback(window, keyCallback);
 }
 
 void cleanupInput(void) {
-	for(input* i = dequeueInput(); !!i; i = dequeueInput())
-		free(i);
-	destroyFifo(inputs);
-	inputs = NULL;
+	// Dance!
 }
 
 void updateInput(void) {

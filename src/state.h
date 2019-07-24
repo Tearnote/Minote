@@ -7,8 +7,8 @@
 #include "gameplay.h"
 
 typedef struct {
-	bool running;
-	gameState* game;
+	bool running; //SYNC runningMutex isRunning setRunning
+	gameState* game; //SYNC gameMutex
 } appState;
 
 extern appState* app;

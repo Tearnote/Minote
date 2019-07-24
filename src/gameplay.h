@@ -2,7 +2,6 @@
 #define GAMEPLAY_H
 
 #include "mino.h"
-#include "timer.h"
 
 #define PLAYFIELD_W 10
 #define PLAYFIELD_H 20
@@ -23,6 +22,6 @@ typedef struct {
 
 void initGameplay(void);
 void cleanupGameplay(void);
-void updateGameplay(nsec updateTime);
+void updateGameplay(void);
 
 #endif
