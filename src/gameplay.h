@@ -1,6 +1,8 @@
 #ifndef GAMEPLAY_H
 #define GAMEPLAY_H
 
+#include <stdbool.h>
+
 #include "mino.h"
 
 #define PLAYFIELD_W 10
@@ -12,12 +14,12 @@ typedef struct {
 	int x, y;
 	pieceType type;
 	int rotation; // 0 to 3, 0 is spawn
-	int shifting; // -1 for left, 0 for no, 1 for right
 } pieceState;
 
 typedef struct {
 	playfield field;
 	pieceState player;
+	bool rotCW, rotCCW;
 } gameState;
 
 void initGameplay(void);

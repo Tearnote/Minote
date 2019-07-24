@@ -43,7 +43,6 @@ static bool checkPosition(void) {
 // Returns true if kick was successful, false if the move needs to be reverted
 static bool tryKicks(void) {
 	static int preference = 1;
-	if(game->player.shifting != 0) preference = game->player.shifting;
 	if(checkPosition()) return true;
 	game->player.x += preference;
 	if(checkPosition()) return true;
@@ -93,7 +92,8 @@ void initGameplay(void) {
 	for(int y = 0; y < PLAYFIELD_H; y++)
 	for(int x = 0; x < PLAYFIELD_W; x++)
 		game->field[y][x] = MinoNone;
-	game->player.shifting = 0;
+	game->rotCW = false;
+	game->rotCCW = false;
 	newPiece();
 }
 
@@ -108,8 +108,22 @@ void updateGameplay(void) {
 	memcpy(inputSnap, inputs, sizeof(inputs));
 	unlockMutex(&inputMutex);
 	
-	if(inputSnap[InputLeft]) shift(-1);
-	if(inputSnap[InputRight]) shift(1);
+	if( inputSnap[InputLeft] && !inputSnap[InputRight]) shift(-1);
+	if(!inputSnap[InputLeft] &&  inputSnap[InputRight]) shift(1);
+	if(inputSnap[InputRotCW] && !game->rotCW) {
+		rotate(1);
+		game->rotCW = true;
+	}
+	if(!inputSnap[InputRotCW]){
+		game->rotCW = false;
+	}
+	if(inputSnap[InputRotCCW] && !game->rotCCW) {
+		rotate(-1);
+		game->rotCCW = true;
+	}
+	if(!inputSnap[InputRotCCW]) {
+		game->rotCCW = false;
+	}
 	
 	if(inputSnap[InputBack]) {
 		logInfo("User exited");
