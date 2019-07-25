@@ -18,7 +18,7 @@ glslobj := $(basename $(glslobj))
 CFLAGS = -pipe -std=c99 -pthread -Wall -Wextra -Wfloat-equal -Wundef -Wshadow \
          -Wpointer-arith -Wcast-align -Wstrict-prototypes -Wstrict-overflow=5 \
          -Wwrite-strings -Waggregate-return -Wcast-qual -Wswitch-default -flto\
-         -Wswitch-enum -Wconversion -Wunreachable-code -Wformat=2 -Winit-self \
+         -Wconversion -Wunreachable-code -Wformat=2 -Winit-self               \
          -Wmissing-prototypes -I$(BUILD)/glsl
 LDFLAGS = -pthread
 OUTPUT = minote
