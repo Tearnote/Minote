@@ -10,6 +10,14 @@
 
 typedef mino playfield[PLAYFIELD_H][PLAYFIELD_W];
 
+typedef enum {
+	CmdNone,
+	CmdLeft, CmdRight,
+	CmdCW, CmdCCW,
+	CmdSoft, CmdSonic,
+	CmdSize
+} cmdType;
+
 typedef struct {
 	int x, y;
 	pieceType type;
@@ -19,8 +27,8 @@ typedef struct {
 typedef struct {
 	playfield field;
 	pieceState player;
+	bool cmdmap[CmdSize];
 	int dasDirection, dasCharge, dasDelay;
-	bool rotCW, rotCCW;
 } gameState;
 
 void initGameplay(void);

@@ -18,8 +18,6 @@
 static gameState* game;
 static rng randomizer = {};
 
-static bool inputSnap[InputSize] = {};
-
 static void newPiece(void) {
 	game->player.x = PLAYFIELD_W/2 - PIECE_BOX/2;
 	game->player.y = -4;
@@ -87,6 +85,54 @@ static void rotate(int direction) {
 	newPiece();
 }*/
 
+static cmdType inputToCmd(inputType i) {
+	switch(i) {
+		case InputLeft: return CmdLeft;
+		case InputRight: return CmdRight;
+		case InputUp: return CmdSonic;
+		case InputDown: return CmdSoft;
+		case InputButton1:
+		case InputButton3: return CmdCCW;
+		case InputButton2: return CmdCW;
+		default: return CmdNone;
+	}
+}
+
+static void processInput(void) {
+	input* i = NULL;
+	while((i = dequeueInput())) {
+		switch(i->action) {
+			case ActionPressed:
+				// Handle quitting outside of gameplay logic
+				if(i->type == InputQuit) {
+					logInfo("User exited");
+					setRunning(false);
+					break;
+				}
+				
+				// 4-way emulation
+				if(i->type == InputUp || i->type == InputDown ||
+				   i->type == InputLeft || i->type == InputRight) {
+					game->cmdmap[inputToCmd(InputUp)] = false;
+					game->cmdmap[inputToCmd(InputDown)] = false;
+					game->cmdmap[inputToCmd(InputLeft)] = false;
+					game->cmdmap[inputToCmd(InputRight)] = false;
+				}
+				
+				if(inputToCmd(i->type) != CmdNone)
+					game->cmdmap[inputToCmd(i->type)] = true;
+				break;
+				
+			case ActionReleased:
+				if(inputToCmd(i->type) != CmdNone)
+					game->cmdmap[inputToCmd(i->type)] = false;
+				break;
+			default: break;
+		}
+		free(i);
+	}
+}
+
 void initGameplay(void) {
 	srandom(&randomizer, (uint64_t)time(NULL));
 	
@@ -98,8 +144,8 @@ void initGameplay(void) {
 	game->dasDirection = 0;
 	game->dasCharge = 0;
 	game->dasDelay = DAS_DELAY;
-	game->rotCW = false;
-	game->rotCCW = false;
+	for(int i = 0; i < CmdSize; i++)
+		game->cmdmap[i] = false;
 	newPiece();
 }
 
@@ -110,15 +156,13 @@ void cleanupGameplay(void) {
 }
 
 void updateGameplay(void) {
-	lockMutex(&inputMutex);
-	memcpy(inputSnap, inputs, sizeof(inputs));
-	unlockMutex(&inputMutex);
+	processInput();
 	
 	int shiftDirection = 0;
 	
-	if(inputSnap[InputLeft])
+	if(game->cmdmap[CmdLeft])
 		shiftDirection = -1;
-	else if(inputSnap[InputRight])
+	else if(game->cmdmap[CmdRight])
 		shiftDirection = 1;
 	
 	if(shiftDirection == 0 || shiftDirection != game->dasDirection) {
@@ -139,23 +183,12 @@ void updateGameplay(void) {
 		}
 	}
 	
-	if(inputSnap[InputRotCW] && !game->rotCW) {
+	if(game->cmdmap[CmdCW]) {
 		rotate(1);
-		game->rotCW = true;
+		game->cmdmap[CmdCW] = false;
 	}
-	if(!inputSnap[InputRotCW]){
-		game->rotCW = false;
-	}
-	if(inputSnap[InputRotCCW] && !game->rotCCW) {
+	if(game->cmdmap[CmdCCW]) {
 		rotate(-1);
-		game->rotCCW = true;
-	}
-	if(!inputSnap[InputRotCCW]) {
-		game->rotCCW = false;
-	}
-	
-	if(inputSnap[InputBack]) {
-		logInfo("User exited");
-		setRunning(false);
+		game->cmdmap[CmdCCW] = false;
 	}
 }
