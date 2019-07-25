@@ -20,8 +20,10 @@ static rng randomizer = {};
 
 static void newPiece(void) {
 	game->player.x = PLAYFIELD_W/2 - PIECE_BOX/2;
-	game->player.y = -4;
+	game->player.y = -2;
 	game->player.type = random(&randomizer, PieceSize);
+	if(game->player.type == PieceI)
+		game->player.y += 1;
 	game->player.rotation = 0;
 }
 
@@ -76,14 +78,14 @@ static void rotate(int direction) {
 	game->player.y -= 1;
 }*/
 
-/*static void lock(void) {
+static void lock(void) {
 	for(int i = 0; i < MINOS_PER_PIECE; i++) {
 		if(game->player.y + rs[game->player.type][game->player.rotation][i].y < 0) continue;
 		game->field[game->player.y + rs[game->player.type][game->player.rotation][i].y]
 		           [game->player.x + rs[game->player.type][game->player.rotation][i].x] = game->player.type;
 	}
 	newPiece();
-}*/
+}
 
 static cmdType inputToCmd(inputType i) {
 	switch(i) {
@@ -190,5 +192,9 @@ void updateGameplay(void) {
 	if(game->cmdmap[CmdCCW]) {
 		rotate(-1);
 		game->cmdmap[CmdCCW] = false;
+	}
+	
+	if(game->cmdmap[CmdSoft]) {
+		lock();
 	}
 }
