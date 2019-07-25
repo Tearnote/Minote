@@ -100,7 +100,7 @@ static cmdType inputToCmd(inputType i) {
 	}
 }
 
-static void processInput(void) {
+static void processInputs(void) {
 	input* i = NULL;
 	while((i = dequeueInput())) {
 		switch(i->action) {
@@ -158,7 +158,7 @@ void cleanupGameplay(void) {
 }
 
 void updateGameplay(void) {
-	processInput();
+	processInputs();
 	
 	int shiftDirection = 0;
 	
