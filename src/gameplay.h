@@ -19,6 +19,7 @@ typedef struct {
 typedef struct {
 	playfield field;
 	pieceState player;
+	int dasDirection, dasCharge, dasDelay;
 	bool rotCW, rotCCW;
 } gameState;
 

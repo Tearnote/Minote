@@ -12,6 +12,9 @@
 #include "log.h"
 #include "util.h"
 
+#define DAS_CHARGE 16
+#define DAS_DELAY 1 // 0 not supported yet
+
 static gameState* game;
 static rng randomizer = {};
 
@@ -69,20 +72,20 @@ static void rotate(int direction) {
 		game->player.rotation = prevRotation;
 }
 
-static void sonicDrop(void) {
+/*static void sonicDrop(void) {
 	while(checkPosition())
 		game->player.y += 1;
 	game->player.y -= 1;
-}
+}*/
 
-static void lock(void) {
+/*static void lock(void) {
 	for(int i = 0; i < MINOS_PER_PIECE; i++) {
 		if(game->player.y + rs[game->player.type][game->player.rotation][i].y < 0) continue;
 		game->field[game->player.y + rs[game->player.type][game->player.rotation][i].y]
 		           [game->player.x + rs[game->player.type][game->player.rotation][i].x] = game->player.type;
 	}
 	newPiece();
-}
+}*/
 
 void initGameplay(void) {
 	srandom(&randomizer, (uint64_t)time(NULL));
@@ -92,6 +95,9 @@ void initGameplay(void) {
 	for(int y = 0; y < PLAYFIELD_H; y++)
 	for(int x = 0; x < PLAYFIELD_W; x++)
 		game->field[y][x] = MinoNone;
+	game->dasDirection = 0;
+	game->dasCharge = 0;
+	game->dasDelay = DAS_DELAY;
 	game->rotCW = false;
 	game->rotCCW = false;
 	newPiece();
@@ -108,8 +114,31 @@ void updateGameplay(void) {
 	memcpy(inputSnap, inputs, sizeof(inputs));
 	unlockMutex(&inputMutex);
 	
-	if( inputSnap[InputLeft] && !inputSnap[InputRight]) shift(-1);
-	if(!inputSnap[InputLeft] &&  inputSnap[InputRight]) shift(1);
+	int shiftDirection = 0;
+	
+	if(inputSnap[InputLeft])
+		shiftDirection = -1;
+	else if(inputSnap[InputRight])
+		shiftDirection = 1;
+	
+	if(shiftDirection == 0 || shiftDirection != game->dasDirection) {
+		game->dasDirection = shiftDirection;
+		game->dasCharge = 0;
+		game->dasDelay = DAS_DELAY;
+		if(shiftDirection) shift(shiftDirection);
+	}
+	
+	if(shiftDirection) {
+		if(game->dasCharge < DAS_CHARGE) game->dasCharge += 1;
+		if(game->dasCharge == DAS_CHARGE) {
+			if(game->dasDelay < DAS_DELAY) game->dasDelay += 1;
+			if(game->dasDelay == DAS_DELAY) {
+				game->dasDelay = 0;
+				shift(game->dasDirection);
+			}
+		}
+	}
+	
 	if(inputSnap[InputRotCW] && !game->rotCW) {
 		rotate(1);
 		game->rotCW = true;
