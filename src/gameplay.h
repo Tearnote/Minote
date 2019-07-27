@@ -11,6 +11,15 @@
 #define PLAYFIELD_W 10
 #define PLAYFIELD_H 20
 
+// Frames until the first autoshift
+// 2 is right after the normal shift
+#define DAS_CHARGE 16
+
+// Number of frames between autoshifts
+// 1 is every frame
+// 0 is instant (not supported yet)
+#define DAS_DELAY 1
+
 typedef mino playfield[PLAYFIELD_H][PLAYFIELD_W];
 
 // Types of commands accepted by the gameplay

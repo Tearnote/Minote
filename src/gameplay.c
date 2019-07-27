@@ -14,15 +14,6 @@
 #include "log.h"
 #include "util.h"
 
-// Frames until the first autoshift
-// 2 is right after the normal shift
-#define DAS_CHARGE 16
-
-// Number of frames between autoshifts
-// 1 is every frame
-// 0 is instant (not supported yet)
-#define DAS_DELAY 1
-
 static gameState* game; // Convenience pointer for storing app->game
 static rng randomizer = {}; // RNG specifically for next piece selection
 
