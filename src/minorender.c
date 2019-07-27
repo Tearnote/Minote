@@ -1,3 +1,5 @@
+// Minote - minorender.c
+
 #include "minorender.h"
 
 #include "glad/glad.h"
@@ -13,8 +15,8 @@
 #include "window.h"
 #include "mino.h"
 
-#define MINO_SIZE 12
-#define INSTANCE_LIMIT 256
+#define MINO_SIZE 12 // Size of the mino in pixels
+#define INSTANCE_LIMIT 256 // More minos than that will be ignored
 
 static GLuint program = 0;
 static GLuint vertexAttrs = 0;
@@ -28,12 +30,15 @@ static GLfloat vertexData[] = {
 	MINO_SIZE, MINO_SIZE
 };
 
+// Rendering-ready representation of a mino
 typedef struct {
 	GLfloat x, y;
 	GLfloat r, g, b, a;
 } minoInstance;
 queue* minoQueue = NULL;
 
+// Most of the wordy OpenGL state wrangling goes here
+// I hope I'll never have to edit this
 void initMinoRenderer(void) {
 	const GLchar vertSrc[] = {
 		#include "mino.vert"
@@ -80,11 +85,11 @@ void queueMinoPlayfield(mino field[PLAYFIELD_H][PLAYFIELD_W]) {
 	for(int y = 0; y < PLAYFIELD_H; y++)
 	for(int x = 0; x < PLAYFIELD_W; x++) {
 		mino minoType = field[y][x];
-		//if(minoType == MinoNone) continue; // Temporary black background
+		//if(minoType == MinoNone) continue; // Commenting this out gives a temporary black background
 		minoInstance* newInstance = produceQueueItem(minoQueue);
 		newInstance->x = (GLfloat)(x * MINO_SIZE + xOffset);
 		newInstance->y = (GLfloat)(y * MINO_SIZE + yOffset);
-		memcpy(&newInstance->r, &minoColors[minoType], sizeof(vec4)); // 1 line instead of 4, why not
+		memcpy(&newInstance->r, &minoColors[minoType], sizeof(vec4)); // A shortcut to 4 assignments
 	}
 }
 
@@ -97,7 +102,7 @@ void queueMinoPlayer(pieceState* cpiece) {
 		minoInstance* newInstance = produceQueueItem(minoQueue);
 		newInstance->x = (GLfloat)(minoCoord.x * MINO_SIZE + xOffset);
 		newInstance->y = (GLfloat)(minoCoord.y * MINO_SIZE + yOffset);
-		memcpy(&newInstance->r, &minoColors[cpiece->type], sizeof(vec4)); // 1 line instead of 4, why not
+		memcpy(&newInstance->r, &minoColors[cpiece->type], sizeof(vec4)); // A shortcut to 4 assignments
 	}
 }
 
@@ -109,7 +114,7 @@ void renderMino(void) {
 	glBufferSubData(GL_ARRAY_BUFFER, 0,
 	                (GLsizeiptr)((minoQueue->count > INSTANCE_LIMIT ? INSTANCE_LIMIT : minoQueue->count) * sizeof(minoInstance)),
 	                minoQueue->buffer);
-	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, (GLsizei)minoQueue->count);
+	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, (GLsizei)minoQueue->count); // Magic happens here
 	glBindVertexArray(0);
 	clearQueue(minoQueue);
 }

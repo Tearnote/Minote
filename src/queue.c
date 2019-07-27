@@ -1,3 +1,5 @@
+// Minote - queue.c
+
 #include "queue.h"
 
 #include <stdlib.h>
@@ -19,12 +21,13 @@ void destroyQueue(queue* q) {
 }
 
 void* produceQueueItem(queue* q) {
+	// Grow the buffer if there is no space left
 	if(q->count == q->allocated) {
 		q->buffer = reallocate(q->buffer, q->allocated * q->itemSize * 2);
 		q->allocated *= 2;
 	}
 	q->count += 1;
-	return getQueueItem(q, q->count - 1);
+	return getQueueItem(q, q->count - 1); // Simply return the first unused item and mark it as used
 }
 
 void* getQueueItem(queue* q, unsigned index) {

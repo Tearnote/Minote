@@ -1,3 +1,5 @@
+// Minote - log.c
+
 #include "log.h"
 
 #include "glad/glad.h"
@@ -18,9 +20,11 @@
 #define LOG_FILENAME "minote.log"
 #endif
 
-static mutex logMutex = newMutex;
+static mutex logMutex = newMutex; // Thread safety is handled internally
 
 static FILE* logFile = NULL;
+// Table for priority level to string conversion
+// Indexes match the PRIO macros' values
 static const char* prioStrings[] = {"NONE", "DEBUG", "INFO", "WARN", "ERROR", "CRIT"};
 static bool printToLogFile = true;
 #ifdef _DEBUG
@@ -31,12 +35,12 @@ static bool printToStderr = false;
 static int logLevel = 2;
 #endif
 
-static const char* GLFWerror = NULL;
+static const char* GLFWerror = NULL; // GLFW error functions require a destination pointer
 
 void initLogging() {
 	if(printToLogFile) {
 		logFile = fopen(LOG_FILENAME, "w");
-		if(logFile == NULL) { // On error force stderr logging despite _DEBUG
+		if(logFile == NULL) { // Force stderr logging if a file cannot be opened for writing
 			printToLogFile = false;
 			printToStderr = true;
 			logError("Failed to open " LOG_FILENAME " for writing: %s", strerror(errno));
@@ -53,7 +57,7 @@ void cleanupLogging() {
 
 static void logTo(FILE* file, int prio, const char* fmt, va_list ap) {
 	lockMutex(&logMutex);
-	time_t epochtime;
+	time_t epochtime; // Time for some stupid time struct wrangling
 	struct tm* timeinfo;
 	time(&epochtime);
 	timeinfo = localtime(&epochtime);

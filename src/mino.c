@@ -1,3 +1,5 @@
+// Minote - mino.c
+
 #include "mino.h"
 
 #include "linmath/linmath.h"

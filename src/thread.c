@@ -1,3 +1,5 @@
+// Minote - thread.c
+
 #include "thread.h"
 
 #include <stdlib.h>

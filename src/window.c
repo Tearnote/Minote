@@ -1,3 +1,5 @@
+// Minote - window.c
+
 #include "window.h"
 
 #include "glad/glad.h"
@@ -12,6 +14,7 @@ int windowWidth = DEFAULT_WIDTH;
 int windowHeight = DEFAULT_HEIGHT;
 float windowScale = 1.0f;
 
+// Bubble the geometry change up to the renderer thread
 static void framebufferResizeCallback(GLFWwindow* w, int width, int height) {
 	(void)w;
 	windowWidth = width;
@@ -20,6 +23,7 @@ static void framebufferResizeCallback(GLFWwindow* w, int width, int height) {
 	logDebug("Framebuffer resized to %dx%d", windowWidth, windowHeight);
 }
 
+// Bubble the scaling change up to the renderer thread
 static void windowScaleCallback(GLFWwindow* w, float xscale, float yscale) {
 	(void)w, (void)yscale;
 	windowScale = xscale;
@@ -32,7 +36,7 @@ void initWindow(void) {
 		logCritGLFW("Failed to initialize GLFW");
 		exit(1);
 	}
-	// Request OpenGL 3.3 core profile context
+	// Request OpenGL 3.3 core profile context for use by the renderer
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -52,7 +56,7 @@ void initWindow(void) {
 	glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 	glfwSetWindowContentScaleCallback(window, windowScaleCallback);
 	
-	// One run is required to get correct initial values for non-100% scaling
+	// An initial check is required to get correct values for non-100% scaling
 	glfwGetFramebufferSize(window, &windowWidth, &windowHeight);
 	framebufferResizeCallback(window, windowWidth, windowHeight);
 	glfwGetWindowContentScale(window, &windowScale, NULL);

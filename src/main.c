@@ -1,3 +1,7 @@
+// Minote - main.c
+// Entry point
+// Spawns threads, itself is the input handling thread
+
 #include "main.h"
 
 #include "log.h"

@@ -1,7 +1,11 @@
+// Minote - fifo.h
+// A generic FIFO
+// Elements need to be allocated and freed manually
+// Empty the FIFO before destroying
+
 #ifndef FIFO_H
 #define FIFO_H
 
-#include <stdlib.h>
 #include <stdbool.h>
 
 typedef struct fifoItem {

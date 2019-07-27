@@ -1,3 +1,6 @@
+// Minote - render.c
+// Beware wild unreadable OpenGL in tall grass
+
 #include "render.h"
 
 #include "glad/glad.h"
@@ -15,6 +18,7 @@
 #include "minorender.h"
 #include "util.h"
 #include "gameplay.h"
+// Damn that's a lot of includes
 
 #define destroyShader glDeleteShader
 
@@ -24,14 +28,15 @@ int renderWidth = 0; // Calculated from the aspect ratio before the first frame 
 int renderHeight = 360;
 float renderScale = 1.0f;
 
-int viewportWidth = DEFAULT_WIDTH;
-int viewportHeight = DEFAULT_HEIGHT;
-float viewportScale = 0.0f;
-bool viewportDirty = true;
+int viewportWidth = DEFAULT_WIDTH; //SYNC viewportMutex
+int viewportHeight = DEFAULT_HEIGHT; //SYNC viewportMutex
+float viewportScale = 0.0f; //SYNC viewportMutex
+bool viewportDirty = true; //SYNC viewportMutex
 mutex viewportMutex = newMutex;
 
-static gameState* gameSnap = NULL;
+static gameState* gameSnap = NULL; // Thread-local copy of the game state being rendered
 
+// Compiles a shader from source
 static GLuint createShader(const GLchar* source, GLenum type) {
 	GLuint shader = glCreateShader(type);
 	glShaderSource(shader, 1, &source, NULL);
@@ -52,7 +57,7 @@ GLuint createProgram(const GLchar* vertexShaderSrc, const GLchar* fragmentShader
 	GLuint vertexShader = createShader(vertexShaderSrc, GL_VERTEX_SHADER);
 	if(vertexShader == 0) return 0;
 	GLuint fragmentShader = createShader(fragmentShaderSrc, GL_FRAGMENT_SHADER);
-	if(fragmentShader == 0) {
+	if(fragmentShader == 0) { // Proper cleanup, how fancy
 		destroyShader(vertexShader);
 		return 0;
 	}
@@ -85,13 +90,16 @@ static void renderFrame(void) {
 		renderScale = viewportScale;
 	}
 	unlockMutex(&viewportMutex);
+	
+	// Make a local copy of the game state instead of locking it for the entire rendering process
 	lockMutex(&gameMutex);
 	memcpy(gameSnap, app->game, sizeof(gameState));
 	unlockMutex(&gameMutex);
 	
-	glClearColor(0.03f, 0.07f, 0.07f, 1.0f);
+	glClearColor(0.03f, 0.07f, 0.07f, 1.0f); // Just a random background color
 	glClear(GL_COLOR_BUFFER_BIT);
 	
+	// Render minos
 	queueMinoPlayfield(gameSnap->field);
 	queueMinoPlayer(&gameSnap->player);
 	renderMino();
@@ -104,7 +112,7 @@ static void cleanupRenderer(void) {
 }
 
 static void initRenderer(void) {
-	glfwMakeContextCurrent(window);
+	glfwMakeContextCurrent(window); // Activate the thread for rendering
 	if(!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) { // Not possible to get an error message?
 		logCrit("Failed to initialize GLAD");
 		cleanupRenderer();
@@ -113,7 +121,7 @@ static void initRenderer(void) {
 	glfwSwapInterval(1); // Enable vsync
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_FRAMEBUFFER_SRGB); // Enable gamma correction
+	glEnable(GL_FRAMEBUFFER_SRGB); // Enable gamma-correct rendering
 	
 	initMinoRenderer();
 	
@@ -129,8 +137,13 @@ void* rendererThread(void* param) {
 	
 	while(isRunning()) {
 		renderFrame();
-		glGetError(); // Fix graphics not updating in windowed mode. Fucking Intel.
-		glfwSwapBuffers(window); // Blocks until next vertical refresh
+		
+		// Fix graphics not updating in windowed mode with Intel graphics
+		// Need to test if this lowers performance
+		glGetError();
+		
+		// Blocks until next vertical refresh because of vsync, so no sleep is needed
+		glfwSwapBuffers(window);
 	}
 	
 	cleanupRenderer();

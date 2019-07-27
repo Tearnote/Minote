@@ -1,3 +1,5 @@
+// Minote - logic.c
+
 #include "logic.h"
 
 #include <stdbool.h>

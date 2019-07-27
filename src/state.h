@@ -1,3 +1,7 @@
+// Minote - state.h
+// Manages the logical state of the entire app
+// Current states are shutdown and gameplay
+
 #ifndef STATE_H
 #define STATE_H
 

@@ -1,3 +1,8 @@
+// Minote - window.h
+// Handles window creation and geometry
+// Renderers should use render.h for viewport geometry:
+// Window size can be different from viewport size, and window variables are handled by a different thread
+
 #ifndef WINDOW_H
 #define WINDOW_H
 

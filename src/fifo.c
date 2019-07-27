@@ -1,3 +1,5 @@
+// Minote - fifo.c
+
 #include "fifo.h"
 
 #include <stdlib.h>

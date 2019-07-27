@@ -1,3 +1,6 @@
+// Minote - util.h
+// Various helper functions
+
 #ifndef UTIL_H
 #define UTIL_H
 
@@ -7,6 +10,7 @@
 #include "pcg/pcg_basic.h"
 
 // Error-checking malloc wrappers. free() is fine as it is
+
 void* allocate(size_t size);
 void* reallocate(void* memory, size_t size);
 

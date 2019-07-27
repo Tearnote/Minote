@@ -1,3 +1,7 @@
+// Minote - logic.h
+// A thread that handles and advances state
+// Currently only gameplay state exists
+
 #ifndef LOGIC_H
 #define LOGIC_H
 

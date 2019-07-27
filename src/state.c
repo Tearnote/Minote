@@ -1,3 +1,5 @@
+// Minote - state.c
+
 #include "state.h"
 
 #include <stdbool.h>

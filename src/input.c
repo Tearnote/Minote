@@ -1,3 +1,5 @@
+// Minote - input.c
+
 #include "input.h"
 
 #include <stdbool.h>
@@ -20,10 +22,10 @@ mutex inputMutex = newMutex;
 #define TIME_PER_POLL (SEC / INPUT_FREQUENCY)
 static nsec lastPollTime = 0;
 
+// Function called once per every new keyboard event
 static void keyCallback(GLFWwindow* w, int key, int scancode, int action, int mods) {
 	(void)w, (void)scancode, (void)mods;
 	
-	// Avoid allocating memory if the key isn't bound to anything
 	inputType keyType = InputNone;
 	inputAction keyAction = ActionNone;
 	switch(key) {
@@ -44,7 +46,7 @@ static void keyCallback(GLFWwindow* w, int key, int scancode, int action, int mo
 		case GLFW_KEY_SPACE: keyType = InputButton4; break;
 		case GLFW_KEY_ESCAPE: keyType = InputQuit; break;
 		case GLFW_KEY_ENTER: keyType = InputStart; break;
-		default: return;
+		default: return; // If it's not a key we use, instant gtfo
 	}
 	switch(action) {
 		case GLFW_PRESS: keyAction = ActionPressed; break;
@@ -61,10 +63,11 @@ static void keyCallback(GLFWwindow* w, int key, int scancode, int action, int mo
 
 void initInput(void) {
 	inputs = createFifo();
-	glfwSetKeyCallback(window, keyCallback);
+	glfwSetKeyCallback(window, keyCallback); // Immediately starts processing keyboard events
 }
 
 void cleanupInput(void) {
+	// The FIFO might not be empty when this function is called so we clear it
 	for(input* i = dequeueInput(); !!i; i = dequeueInput())
 		free(i);
 	destroyFifo(inputs);
@@ -74,8 +77,8 @@ void cleanupInput(void) {
 void updateInput(void) {
 	lastPollTime = getTime();
 	
-	glfwPollEvents();
-	if(glfwWindowShouldClose(window)) {
+	glfwPollEvents(); // Get events from the system and execute event callbacks
+	if(glfwWindowShouldClose(window)) { // Handle direct quit events, like the [X] being clicked
 		setRunning(false);
 		logInfo("Exit signal received");
 	}

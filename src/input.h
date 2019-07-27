@@ -1,3 +1,6 @@
+// Minote - input.h
+// Polls devices for inputs, converts to generic controls and puts them in a FIFO
+
 #ifndef INPUT_H
 #define INPUT_H
 
@@ -6,6 +9,7 @@
 #include "thread.h"
 #include "fifo.h"
 
+// Generic list of inputs used by the game
 typedef enum {
 	InputNone,
 	InputLeft, InputRight, InputUp, InputDown,
