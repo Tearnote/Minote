@@ -43,7 +43,8 @@ typedef struct {
 typedef struct {
 	playfield field;
 	pieceState player;
-	bool cmdmap[CmdSize];
+	bool cmdPressed[CmdSize];
+	bool cmdHeld[CmdSize];
 	int dasDirection, dasCharge, dasDelay;
 } gameState;
 

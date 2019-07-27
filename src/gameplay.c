@@ -115,6 +115,10 @@ static cmdType inputToCmd(inputType i) {
 
 // Polls for inputs and transforms them into gameplay commands
 static void processInputs(void) {
+	// Clear previous frame's presses
+	for(int i = 0; i < CmdSize; i++)
+		game->cmdPressed[i] = false;
+	
 	input* i = NULL;
 	while((i = dequeueInput())) {
 		switch(i->action) {
@@ -129,19 +133,27 @@ static void processInputs(void) {
 				// 4-way emulation
 				if(i->type == InputUp || i->type == InputDown ||
 				   i->type == InputLeft || i->type == InputRight) {
-					game->cmdmap[inputToCmd(InputUp)] = false;
-					game->cmdmap[inputToCmd(InputDown)] = false;
-					game->cmdmap[inputToCmd(InputLeft)] = false;
-					game->cmdmap[inputToCmd(InputRight)] = false;
+					game->cmdPressed[inputToCmd(InputUp)] = false;
+					game->cmdPressed[inputToCmd(InputDown)] = false;
+					game->cmdPressed[inputToCmd(InputLeft)] = false;
+					game->cmdPressed[inputToCmd(InputRight)] = false;
+					game->cmdHeld[inputToCmd(InputUp)] = false;
+					game->cmdHeld[inputToCmd(InputDown)] = false;
+					game->cmdHeld[inputToCmd(InputLeft)] = false;
+					game->cmdHeld[inputToCmd(InputRight)] = false;
 				}
 				
-				if(inputToCmd(i->type) != CmdNone)
-					game->cmdmap[inputToCmd(i->type)] = true;
+				if(inputToCmd(i->type) != CmdNone) {
+					game->cmdPressed[inputToCmd(i->type)] = true;
+					game->cmdHeld[inputToCmd(i->type)] = true;
+				}
 				break;
 				
 			case ActionReleased:
-				if(inputToCmd(i->type) != CmdNone)
-					game->cmdmap[inputToCmd(i->type)] = false;
+				if(inputToCmd(i->type) != CmdNone) {
+					game->cmdPressed[inputToCmd(i->type)] = false;
+					game->cmdHeld[inputToCmd(i->type)] = false;
+				}
 				break;
 			default: break;
 		}
@@ -160,8 +172,10 @@ void initGameplay(void) {
 	game->dasDirection = 0;
 	game->dasCharge = 0;
 	game->dasDelay = DAS_DELAY; // Starts out pre-charged
-	for(int i = 0; i < CmdSize; i++)
-		game->cmdmap[i] = false;
+	for(int i = 0; i < CmdSize; i++) {
+		game->cmdPressed[i] = false;
+		game->cmdHeld[i] = false;
+	}
 	newPiece(); //TODO replace, this probably shouldn't be done here
 }
 
@@ -176,9 +190,9 @@ void updateGameplay(void) {
 	
 	// Check requested movement direction
 	int shiftDirection = 0;
-	if(game->cmdmap[CmdLeft])
+	if(game->cmdHeld[CmdLeft])
 		shiftDirection = -1;
-	else if(game->cmdmap[CmdRight])
+	else if(game->cmdHeld[CmdRight])
 		shiftDirection = 1;
 	
 	// If not moving or moving in the opposite direction of ongoing DAS,
@@ -203,19 +217,14 @@ void updateGameplay(void) {
 	}
 	
 	// CW rotation
-	if(game->cmdmap[CmdCW]) {
+	if(game->cmdPressed[CmdCW])
 		rotate(1);
-		game->cmdmap[CmdCW] = false;
-	}
 	
 	// CCW rotation
-	if(game->cmdmap[CmdCCW]) {
+	if(game->cmdPressed[CmdCCW])
 		rotate(-1);
-		game->cmdmap[CmdCCW] = false;
-	}
 	
 	// Piece locking (placeholder)
-	if(game->cmdmap[CmdSoft]) {
+	if(game->cmdPressed[CmdSoft])
 		lock();
-	}
 }
