@@ -102,7 +102,13 @@ static void newPiece(void) {
 	game->player.exists = true;
 	game->player.x = PLAYFIELD_W/2 - PIECE_BOX/2; // Centered
 	game->player.y = -2;
-	game->player.type = random(&randomizer, PieceSize-1) + 1; // Naive, fully random randomizer
+	
+	// Picking the next piece
+	if(game->player.preview == PieceNone)
+		game->player.preview = random(&randomizer, PieceSize-1) + 1;
+	game->player.type = game->player.preview;
+	game->player.preview = random(&randomizer, PieceSize-1) + 1;
+	
 	if(game->player.type == PieceI)
 		game->player.y += 1;
 	game->player.ysub = 0;
@@ -196,6 +202,7 @@ void initGameplay(void) {
 	game->player.y = 0;
 	game->player.ysub = 0;
 	game->player.type = PieceNone;
+	game->player.preview = PieceNone;
 	game->player.rotation = 0;
 	game->player.dasDirection = 0;
 	game->player.dasCharge = 0;

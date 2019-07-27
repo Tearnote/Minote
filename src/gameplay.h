@@ -55,6 +55,7 @@ typedef struct {
 	int x, y;
 	int ysub;
 	pieceType type;
+	pieceType preview;
 	int rotation; // 0 to 3, 0 is spawn
 	int dasDirection, dasCharge, dasDelay;
 	int lockDelay;

@@ -98,18 +98,34 @@ void queueMinoPlayfield(mino field[PLAYFIELD_H][PLAYFIELD_W]) {
 	}
 }
 
-void queueMinoPlayer(pieceState* player) {
-	if(!player->exists) return;
+void queueMinoPlayer(playerState* player) {
+	int xOffset = 0;
+	int yOffset = 0;
 	
-	int xOffset =  renderWidth/2 - (PLAYFIELD_W/2 - player->x) * MINO_SIZE;
-	int yOffset = renderHeight/2 - (PLAYFIELD_H/2 - player->y) * MINO_SIZE;
+	// Player piece
+	if(player->exists) {
+		xOffset =  renderWidth/2 - (PLAYFIELD_W/2 - player->x) * MINO_SIZE;
+		yOffset = renderHeight/2 - (PLAYFIELD_H/2 - player->y) * MINO_SIZE;
+		
+		for(int i = 0; i < MINOS_PER_PIECE; i++) {
+			coord minoCoord = rs[player->type][player->rotation][i];
+			minoInstance* newInstance = produceQueueItem(minoQueue);
+			newInstance->x = (GLfloat)(minoCoord.x * MINO_SIZE + xOffset);
+			newInstance->y = (GLfloat)(minoCoord.y * MINO_SIZE + yOffset);
+			memcpy(&newInstance->r, &minoColors[player->type], sizeof(vec4));
+		}
+	}
+	
+	// Preview piece
+	xOffset =  renderWidth/2 - (PIECE_BOX/2) * MINO_SIZE;
+	yOffset = renderHeight/2 - (PLAYFIELD_H/2 + PIECE_BOX+1) * MINO_SIZE;
 	
 	for(int i = 0; i < MINOS_PER_PIECE; i++) {
-		coord minoCoord = rs[player->type][player->rotation][i];
+		coord minoCoord = rs[player->preview][0][i];
 		minoInstance* newInstance = produceQueueItem(minoQueue);
 		newInstance->x = (GLfloat)(minoCoord.x * MINO_SIZE + xOffset);
 		newInstance->y = (GLfloat)(minoCoord.y * MINO_SIZE + yOffset);
-		memcpy(&newInstance->r, &minoColors[player->type], sizeof(vec4));
+		memcpy(&newInstance->r, &minoColors[player->preview], sizeof(vec4));
 	}
 }
 
