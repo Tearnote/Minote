@@ -14,7 +14,7 @@
 #include "log.h"
 #include "util.h"
 
-static gameState* game; // Convenience pointer for storing app->game
+static gameState* game = NULL; // Convenience pointer for storing app->game
 static rng randomizer = {}; // RNG specifically for next piece selection
 
 // Generate a new random piece for the player to control
