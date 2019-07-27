@@ -90,6 +90,11 @@ void queueMinoPlayfield(mino field[PLAYFIELD_H][PLAYFIELD_W]) {
 		newInstance->x = (GLfloat)(x * MINO_SIZE + xOffset);
 		newInstance->y = (GLfloat)(y * MINO_SIZE + yOffset);
 		memcpy(&newInstance->r, &minoColors[minoType], sizeof(vec4));
+		newInstance->r = minoColors[minoType][0] / 5;
+		newInstance->g = minoColors[minoType][1] / 5;
+		newInstance->b = minoColors[minoType][2] / 5;
+		newInstance->a = minoColors[minoType][3];
+		
 	}
 }
 
