@@ -20,7 +20,7 @@ mutex inputMutex = newMutex;
 
 #define INPUT_FREQUENCY 1000 // in Hz
 #define TIME_PER_POLL (SEC / INPUT_FREQUENCY)
-static nsec lastPollTime = 0;
+static nsec nextPollTime = 0;
 
 // Function called once per every new keyboard event
 static void keyCallback(GLFWwindow* w, int key, int scancode, int action, int mods) {
@@ -57,7 +57,7 @@ static void keyCallback(GLFWwindow* w, int key, int scancode, int action, int mo
 	input* newInput = allocate(sizeof(input));
 	newInput->type = keyType;
 	newInput->action = keyAction;
-	//newInput->timestamp = lastPollTime;
+	//newInput->timestamp = nextPollTime;
 	enqueueInput(newInput);
 }
 
@@ -75,7 +75,7 @@ void cleanupInput(void) {
 }
 
 void updateInput(void) {
-	lastPollTime = getTime();
+	if(!nextPollTime) nextPollTime = getTime();
 	
 	glfwPollEvents(); // Get events from the system and execute event callbacks
 	if(glfwWindowShouldClose(window)) { // Handle direct quit events, like the [X] being clicked
@@ -85,7 +85,8 @@ void updateInput(void) {
 }
 
 void sleepInput(void) {
-	nsec timePassed = getTime() - lastPollTime;
-	if(timePassed < TIME_PER_POLL) // Only bother sleeping if we're ahead of the target
-		sleep(TIME_PER_POLL - timePassed);
+	nextPollTime += TIME_PER_POLL;
+	nsec timeRemaining = nextPollTime - getTime();
+	if(timeRemaining > 0) // Only bother sleeping if we're ahead of the target
+		sleep(timeRemaining);
 }
