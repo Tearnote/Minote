@@ -80,12 +80,11 @@ static void rotate(int direction) {
 		game->player.rotation = prevRotation;
 }
 
-// "Unused function" warnings boo
-/*static void sonicDrop(void) {
+static void sonicDrop(void) {
 	while(checkPosition())
 		game->player.y += 1;
 	game->player.y -= 1;
-}*/
+}
 
 // Stamp player piece into the playfield
 // Does not do collision checking, so can overwrite filled cells
@@ -224,7 +223,13 @@ void updateGameplay(void) {
 	if(game->cmdPressed[CmdCCW])
 		rotate(-1);
 	
-	// Piece locking (placeholder)
-	if(game->cmdPressed[CmdSoft])
+	// Placeholder sonic drop
+	if(game->cmdPressed[CmdSonic])
+		sonicDrop();
+	
+	// Placeholder hard drop
+	if(game->cmdPressed[CmdSoft]) {
+		sonicDrop();
 		lock();
+	}
 }
