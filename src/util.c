@@ -2,6 +2,7 @@
 
 #include "util.h"
 
+#include <stdbool.h>
 #include <stdlib.h>
 
 #include "log.h"
@@ -22,4 +23,9 @@ void* reallocate(void* memory, size_t size) {
 		exit(1);
 	}
 	return result;
+}
+
+void _assertFailed(const char* cond) {
+	logCrit("Assert failed: %s", cond);
+	exit(1);
 }
