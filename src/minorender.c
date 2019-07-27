@@ -37,6 +37,14 @@ typedef struct {
 } minoInstance;
 queue* minoQueue = NULL;
 
+// Add a processed mino to the rendering queue
+static void queueMino(mino type, GLfloat x, GLfloat y) {
+	minoInstance* newInstance = produceQueueItem(minoQueue);
+	newInstance->x = x;
+	newInstance->y = y;
+	memcpy(&newInstance->r, &minoColors[type], sizeof(vec4)); // A shortcut to 4 assignments
+}
+
 // Most of the wordy OpenGL state wrangling goes here
 // I hope I'll never have to edit this
 void initMinoRenderer(void) {
@@ -86,23 +94,19 @@ void queueMinoPlayfield(mino field[PLAYFIELD_H][PLAYFIELD_W]) {
 	for(int x = 0; x < PLAYFIELD_W; x++) {
 		mino minoType = field[y][x];
 		//if(minoType == MinoNone) continue; // Commenting this out gives a temporary black background
-		minoInstance* newInstance = produceQueueItem(minoQueue);
-		newInstance->x = (GLfloat)(x * MINO_SIZE + xOffset);
-		newInstance->y = (GLfloat)(y * MINO_SIZE + yOffset);
-		memcpy(&newInstance->r, &minoColors[minoType], sizeof(vec4)); // A shortcut to 4 assignments
+		queueMino(minoType, (GLfloat)(x * MINO_SIZE + xOffset),
+		                    (GLfloat)(y * MINO_SIZE + yOffset));
 	}
 }
 
-void queueMinoPlayer(pieceState* cpiece) {
-	int xOffset =  renderWidth/2 - (PLAYFIELD_W/2 - cpiece->x) * MINO_SIZE;
-	int yOffset = renderHeight/2 - (PLAYFIELD_H/2 - cpiece->y) * MINO_SIZE;
+void queueMinoPlayer(pieceState* player) {
+	int xOffset =  renderWidth/2 - (PLAYFIELD_W/2 - player->x) * MINO_SIZE;
+	int yOffset = renderHeight/2 - (PLAYFIELD_H/2 - player->y) * MINO_SIZE;
 	
 	for(int i = 0; i < MINOS_PER_PIECE; i++) {
-		coord minoCoord = rs[cpiece->type][cpiece->rotation][i];
-		minoInstance* newInstance = produceQueueItem(minoQueue);
-		newInstance->x = (GLfloat)(minoCoord.x * MINO_SIZE + xOffset);
-		newInstance->y = (GLfloat)(minoCoord.y * MINO_SIZE + yOffset);
-		memcpy(&newInstance->r, &minoColors[cpiece->type], sizeof(vec4)); // A shortcut to 4 assignments
+		coord minoCoord = rs[player->type][player->rotation][i];
+		queueMino(player->type, (GLfloat)(minoCoord.x * MINO_SIZE + xOffset),
+		                        (GLfloat)(minoCoord.y * MINO_SIZE + yOffset));
 	}
 }
 
