@@ -5,6 +5,7 @@
 #include "linmath/linmath.h"
 
 vec4 minoColors[MinoSize] = {
+	{   0,   0,   0, 1 }, // MinoNone
 	{   1,   0,   0, 1 }, // MinoI
 	{   1,.22f,   0, 1 }, // MinoL
 	{   1,   1,   0, 1 }, // MinoO
@@ -13,11 +14,11 @@ vec4 minoColors[MinoSize] = {
 	{   0,   0,   1, 1 }, // MinoJ
 	{   1,   0,   1, 1 }, // MinoS
 	{.22f,.22f,.22f, 1 }, // MinoGarbage
-	{   1,   1,   1, 1 }, // MinoPending
-	{   0,   0,   0, 1 }  // MinoNone
+	{   1,   1,   1, 1 }  // MinoPending
 };
 
 rotationSystem rs = {
+	{}, // PieceNone 
 	{ // PieceI
 		{
 			{ .x = 0, .y = 1 }, { .x = 1, .y = 1 },

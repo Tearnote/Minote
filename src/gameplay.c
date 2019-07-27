@@ -21,7 +21,7 @@ static rng randomizer = {}; // RNG specifically for next piece selection
 static void newPiece(void) {
 	game->player.x = PLAYFIELD_W/2 - PIECE_BOX/2; // Centered
 	game->player.y = -2;
-	game->player.type = random(&randomizer, PieceSize); // Naive, fully random randomizer
+	game->player.type = random(&randomizer, PieceSize-1) + 1; // Naive, fully random randomizer
 	if(game->player.type == PieceI)
 		game->player.y += 1;
 	game->player.rotation = 0;

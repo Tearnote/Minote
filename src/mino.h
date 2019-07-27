@@ -12,6 +12,7 @@
 // All types of minos that can exist on the playfield
 // In addition to minos the player can control, some extra types are reserved for later use
 typedef enum {
+	MinoNone,
 	MinoI,
 	MinoL,
 	MinoO,
@@ -21,13 +22,13 @@ typedef enum {
 	MinoS,
 	MinoGarbage,
 	MinoPending,
-	MinoNone,
 	MinoSize
 } mino;
 
 // All pieces the player can control
 // Values match up with mino enum
 typedef enum {
+	PieceNone,
 	PieceI,
 	PieceL,
 	PieceO,
