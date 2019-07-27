@@ -105,9 +105,9 @@ static cmdType inputToCmd(inputType i) {
 		case InputRight: return CmdRight;
 		case InputUp: return CmdSonic;
 		case InputDown: return CmdSoft;
-		case InputButton1:                // This double mapping replicates the behavior of being unable
-		case InputButton3: return CmdCCW; // to 180 if you press both on the same frame. It's also wrong, TODO
+		case InputButton1: return CmdCCW;
 		case InputButton2: return CmdCW;
+		case InputButton3: return CmdCCW2;
 		default: return CmdNone;
 	}
 }
@@ -220,7 +220,7 @@ void updateGameplay(void) {
 		rotate(1);
 	
 	// CCW rotation
-	if(game->cmdPressed[CmdCCW])
+	if(game->cmdPressed[CmdCCW] || game->cmdPressed[CmdCCW2])
 		rotate(-1);
 	
 	// Placeholder sonic drop

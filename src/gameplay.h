@@ -26,7 +26,7 @@ typedef mino playfield[PLAYFIELD_H][PLAYFIELD_W];
 typedef enum {
 	CmdNone,
 	CmdLeft, CmdRight,
-	CmdCW, CmdCCW,
+	CmdCCW, CmdCW, CmdCCW2,
 	CmdSoft, CmdSonic,
 	CmdSize
 } cmdType;
