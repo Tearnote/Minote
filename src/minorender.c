@@ -99,6 +99,8 @@ void queueMinoPlayfield(mino field[PLAYFIELD_H][PLAYFIELD_W]) {
 }
 
 void queueMinoPlayer(pieceState* player) {
+	if(!player->exists) return;
+	
 	int xOffset =  renderWidth/2 - (PLAYFIELD_W/2 - player->x) * MINO_SIZE;
 	int yOffset = renderHeight/2 - (PLAYFIELD_H/2 - player->y) * MINO_SIZE;
 	

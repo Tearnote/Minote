@@ -20,6 +20,24 @@
 // 0 is instant (not supported yet)
 #define DAS_DELAY 1
 
+// Subgrid value at which the piece is dropped
+#define SUBGRID 256
+
+// Natural piece falling speed in subgrids
+#define GRAVITY 16
+
+// Piece falling speed if soft drop is held
+#define SOFTDROP 256
+
+// Piece falling speed if sonic drop is held
+#define SONICDROP 5120
+
+// How many frames a piece takes to lock if it can't drop
+#define LOCK_DELAY 30
+
+// How many frames it takes for the next piece to spawn after the previous one is locked
+#define SPAWN_DELAY 30
+
 typedef mino playfield[PLAYFIELD_H][PLAYFIELD_W];
 
 // Types of commands accepted by the gameplay
@@ -33,9 +51,14 @@ typedef enum {
 
 // Description of a tetromino on a playfield
 typedef struct {
+	bool exists;
 	int x, y;
+	int ysub;
 	pieceType type;
 	int rotation; // 0 to 3, 0 is spawn
+	int dasDirection, dasCharge, dasDelay;
+	int lockDelay;
+	int spawnDelay;
 } pieceState;
 
 // Complete description of the gameplay's current state
@@ -45,7 +68,6 @@ typedef struct {
 	pieceState player;
 	bool cmdPressed[CmdSize];
 	bool cmdHeld[CmdSize];
-	int dasDirection, dasCharge, dasDelay;
 } gameState;
 
 void initGameplay(void);

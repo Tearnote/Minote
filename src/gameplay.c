@@ -19,11 +19,15 @@ static rng randomizer = {}; // RNG specifically for next piece selection
 
 // Generate a new random piece for the player to control
 static void newPiece(void) {
+	game->player.exists = true;
 	game->player.x = PLAYFIELD_W/2 - PIECE_BOX/2; // Centered
 	game->player.y = -2;
 	game->player.type = random(&randomizer, PieceSize-1) + 1; // Naive, fully random randomizer
 	if(game->player.type == PieceI)
 		game->player.y += 1;
+	game->player.ysub = 0;
+	game->player.lockDelay = 0;
+	game->player.spawnDelay = 0;
 	game->player.rotation = 0;
 }
 
@@ -80,10 +84,19 @@ static void rotate(int direction) {
 		game->player.rotation = prevRotation;
 }
 
-static void sonicDrop(void) {
-	while(checkPosition())
-		game->player.y += 1;
+// Check whether player piece can drop one grid
+static bool canDrop(void) {
+	game->player.y += 1;
+	bool result = checkPosition();
 	game->player.y -= 1;
+	return result;
+}
+
+static void drop(void) {
+	if(canDrop()) {
+		game->player.y += 1;
+		game->player.lockDelay = 0;
+	}
 }
 
 // Stamp player piece into the playfield
@@ -95,7 +108,7 @@ static void lock(void) {
 		game->field[game->player.y + rs[game->player.type][game->player.rotation][i].y]
 		           [game->player.x + rs[game->player.type][game->player.rotation][i].x] = game->player.type;
 	}
-	newPiece();
+	game->player.exists = false;
 }
 
 // Maps generic inputs to gameplay commands
@@ -168,14 +181,21 @@ void initGameplay(void) {
 	for(int y = 0; y < PLAYFIELD_H; y++)
 	for(int x = 0; x < PLAYFIELD_W; x++)
 		game->field[y][x] = MinoNone;
-	game->dasDirection = 0;
-	game->dasCharge = 0;
-	game->dasDelay = DAS_DELAY; // Starts out pre-charged
 	for(int i = 0; i < CmdSize; i++) {
 		game->cmdPressed[i] = false;
 		game->cmdHeld[i] = false;
 	}
-	newPiece(); //TODO replace, this probably shouldn't be done here
+	game->player.exists = false;
+	game->player.x = 0;
+	game->player.y = 0;
+	game->player.ysub = 0;
+	game->player.type = PieceNone;
+	game->player.rotation = 0;
+	game->player.dasDirection = 0;
+	game->player.dasCharge = 0;
+	game->player.dasDelay = DAS_DELAY; // Starts out pre-charged
+	game->player.lockDelay = 0;
+	game->player.spawnDelay = SPAWN_DELAY-1; // Start instantly
 }
 
 void cleanupGameplay(void) {
@@ -187,13 +207,15 @@ void cleanupGameplay(void) {
 void updateGameplay(void) {
 	processInputs();
 	
-	// CW rotation
-	if(game->cmdPressed[CmdCW])
-		rotate(1);
-	
-	// CCW rotation
-	if(game->cmdPressed[CmdCCW] || game->cmdPressed[CmdCCW2])
-		rotate(-1);
+	if(game->player.exists) {
+		// CW rotation
+		if(game->cmdPressed[CmdCW])
+			rotate(1);
+		
+		// CCW rotation
+		if(game->cmdPressed[CmdCCW] || game->cmdPressed[CmdCCW2])
+			rotate(-1);
+	}
 	
 	// Check requested movement direction
 	int shiftDirection = 0;
@@ -204,28 +226,58 @@ void updateGameplay(void) {
 	
 	// If not moving or moving in the opposite direction of ongoing DAS,
 	// reset DAS and shift instantly
-	if(shiftDirection == 0 || shiftDirection != game->dasDirection) {
-		game->dasDirection = shiftDirection;
-		game->dasCharge = 0;
-		game->dasDelay = DAS_DELAY; // Starts out pre-charged
-		if(shiftDirection) shift(shiftDirection);
+	if(shiftDirection == 0 || shiftDirection != game->player.dasDirection) {
+		game->player.dasDirection = shiftDirection;
+		game->player.dasCharge = 0;
+		game->player.dasDelay = DAS_DELAY; // Starts out pre-charged
+		if(shiftDirection && game->player.exists) shift(shiftDirection);
 	}
 	
 	// If moving, advance and apply DAS
 	if(shiftDirection) {
-		if(game->dasCharge < DAS_CHARGE) game->dasCharge += 1;
-		if(game->dasCharge == DAS_CHARGE) {
-			if(game->dasDelay < DAS_DELAY) game->dasDelay += 1;
-			if(game->dasDelay == DAS_DELAY) {
-				game->dasDelay = 0;
-				shift(game->dasDirection);
+		if(game->player.dasCharge < DAS_CHARGE) game->player.dasCharge += 1;
+		if(game->player.dasCharge == DAS_CHARGE) {
+			if(game->player.dasDelay < DAS_DELAY && game->player.exists) game->player.dasDelay += 1;
+			if(game->player.dasDelay == DAS_DELAY && game->player.exists) { // If during ARE, keep the DAS charged
+				game->player.dasDelay = 0;
+				shift(game->player.dasDirection);
 			}
 		}
 	}
 	
-	//TODO Sonic drop, if not then soft drop, if not then gravity
+	// Calculate this frame's gravity speed
+	int gravity = GRAVITY;
+	if(game->player.exists) {
+		if(game->cmdHeld[CmdSoft] && gravity < SOFTDROP)
+			gravity = SOFTDROP;
+		if(game->cmdPressed[CmdSonic])
+			gravity = SONICDROP;
+	}
 	
-	//TODO Handle ARE, if spawn then spawn and gravity
+	// Manlock
+	if(game->player.exists && game->cmdHeld[CmdSoft] && !canDrop())
+		lock();
 	
-	//TODO Advance+apply lock delay
+	// Handle ARE and spawning
+	if(!game->player.exists) {
+		game->player.spawnDelay += 1;
+		if(game->player.spawnDelay == SPAWN_DELAY)
+			newPiece();
+	}
+	
+	if(game->player.exists) {
+		// Apply gravity
+		game->player.ysub += gravity;
+		while(game->player.ysub >= SUBGRID) {
+			drop();
+			game->player.ysub -= SUBGRID;
+		}
+		
+		// Advance+apply lock delay
+		if(!canDrop()) {
+			game->player.lockDelay += 1;
+			if(game->player.lockDelay == LOCK_DELAY)
+				lock();
+		}
+	}
 }
