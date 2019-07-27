@@ -8,6 +8,7 @@
 #include "main.h"
 #include "log.h"
 #include "render.h"
+#include "util.h"
 
 GLFWwindow* window = NULL;
 int windowWidth = DEFAULT_WIDTH;
@@ -24,8 +25,9 @@ static void framebufferResizeCallback(GLFWwindow* w, int width, int height) {
 }
 
 // Bubble the scaling change up to the renderer thread
+// For some reason yscale is equal to 0???
 static void windowScaleCallback(GLFWwindow* w, float xscale, float yscale) {
-	(void)w, (void)yscale;
+	(void)w;
 	windowScale = xscale;
 	rescaleRenderer(xscale);
 	logDebug("DPI scaling changed to %f", windowScale);
