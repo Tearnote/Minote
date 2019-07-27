@@ -187,6 +187,14 @@ void cleanupGameplay(void) {
 void updateGameplay(void) {
 	processInputs();
 	
+	// CW rotation
+	if(game->cmdPressed[CmdCW])
+		rotate(1);
+	
+	// CCW rotation
+	if(game->cmdPressed[CmdCCW] || game->cmdPressed[CmdCCW2])
+		rotate(-1);
+	
 	// Check requested movement direction
 	int shiftDirection = 0;
 	if(game->cmdHeld[CmdLeft])
@@ -215,21 +223,9 @@ void updateGameplay(void) {
 		}
 	}
 	
-	// CW rotation
-	if(game->cmdPressed[CmdCW])
-		rotate(1);
+	//TODO Sonic drop, if not then soft drop, if not then gravity
 	
-	// CCW rotation
-	if(game->cmdPressed[CmdCCW] || game->cmdPressed[CmdCCW2])
-		rotate(-1);
+	//TODO Handle ARE, if spawn then spawn and gravity
 	
-	// Placeholder sonic drop
-	if(game->cmdPressed[CmdSonic])
-		sonicDrop();
-	
-	// Placeholder hard drop
-	if(game->cmdPressed[CmdSoft]) {
-		sonicDrop();
-		lock();
-	}
+	//TODO Advance+apply lock delay
 }
