@@ -17,20 +17,6 @@
 static gameState* game = NULL; // Convenience pointer for storing app->game
 static rng randomizer = {}; // RNG specifically for next piece selection
 
-// Generate a new random piece for the player to control
-static void newPiece(void) {
-	game->player.exists = true;
-	game->player.x = PLAYFIELD_W/2 - PIECE_BOX/2; // Centered
-	game->player.y = -2;
-	game->player.type = random(&randomizer, PieceSize-1) + 1; // Naive, fully random randomizer
-	if(game->player.type == PieceI)
-		game->player.y += 1;
-	game->player.ysub = 0;
-	game->player.lockDelay = 0;
-	game->player.spawnDelay = 0;
-	game->player.rotation = 0;
-}
-
 // Check a single playfield cell
 // Accepts inputs outside of bounds
 static bool isFree(int x, int y) {
@@ -109,6 +95,26 @@ static void lock(void) {
 		           [game->player.x + rs[game->player.type][game->player.rotation][i].x] = game->player.type;
 	}
 	game->player.exists = false;
+}
+
+// Generate a new random piece for the player to control
+static void newPiece(void) {
+	game->player.exists = true;
+	game->player.x = PLAYFIELD_W/2 - PIECE_BOX/2; // Centered
+	game->player.y = -2;
+	game->player.type = random(&randomizer, PieceSize-1) + 1; // Naive, fully random randomizer
+	if(game->player.type == PieceI)
+		game->player.y += 1;
+	game->player.ysub = 0;
+	game->player.lockDelay = 0;
+	game->player.spawnDelay = 0;
+	game->player.rotation = 0;
+	
+	// IRS
+	if(game->cmdHeld[CmdCW])
+		rotate(1);
+	else if(game->cmdHeld[CmdCCW] || game->cmdHeld[CmdCCW2])
+		rotate(-1);
 }
 
 // Maps generic inputs to gameplay commands

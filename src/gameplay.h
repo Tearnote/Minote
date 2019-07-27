@@ -49,7 +49,7 @@ typedef enum {
 	CmdSize
 } cmdType;
 
-// Description of a tetromino on a playfield
+// Variables regarding player control
 typedef struct {
 	bool exists;
 	int x, y;
@@ -59,13 +59,13 @@ typedef struct {
 	int dasDirection, dasCharge, dasDelay;
 	int lockDelay;
 	int spawnDelay;
-} pieceState;
+} playerState;
 
 // Complete description of the gameplay's current state
 // Does not use pointers, so that it can be copied and serialized
 typedef struct {
 	playfield field;
-	pieceState player;
+	playerState player;
 	bool cmdPressed[CmdSize];
 	bool cmdHeld[CmdSize];
 } gameState;
