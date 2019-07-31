@@ -1,6 +1,6 @@
 // Minote - log.h
 // Convenient logging facility
-// Writes to the console and/or a file, adjustable with the _DEBUG macro
+// Writes to the console and/or a file, adjusted with the NDEBUG macro
 
 #ifndef LOG_H
 #define LOG_H

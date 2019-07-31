@@ -4,13 +4,11 @@ A repo for an upcoming rhythm puzzle action game. Not playable, currently on git
 ## Building
 Currently developed and frequently tested on Windows, but sometimes verified on Linux. Should be portable to any platform with OpenGL 3.3 core profile and some implementation of POSIX.
 
-Currently being built with [mingw-w64](https://mingw-w64.org/doku.php/download/cygwin) inside a cygwin install, the Makefile requires `xxd` to preprocess shader sources and might expand to more Unix tools in the future. Requires [GLFW](https://www.glfw.org/).
-
+Currently being built with CMake in an [MSYS2](http://www.msys2.org/) environment.
+Requires [GLFW](https://www.glfw.org/), which is available as an MSYS2 package.
 Requires [FMOD](https://fmod.com/) 1.10.x. On Windows install the FMOD Studio API on your system, then copy `"C:\Program Files (x86)\FMOD SoundSystem\FMOD Studio API Windows\api\lowlevel\lib\fmod64_vc.lib"` and `fmodL64_vc.lib` to your `lib` directory as `fmod.lib` and `fmodL.lib`, the "L" version including extra debugging features.
 
-Run `make MINGW=1` for a release build or `make MINGW=1 DEBUG=1` for a debug build. In addition to debugging symbols, the debug build also features higher logging verbosity and runtime memory protection.
-
-On Windows the executable requires `libwinpthread-1.dll` for pthread support, additionally the debug build requires `libssp-0.dll` for stack protection. You can find these inside your mingw-w64.
+On Windows the executable requires `libwinpthread-1.dll` for pthread support, you can find it inside your mingw files.
 Also requires `fmod64.dll` for the release build or `fmodL64.dll` for the debug build, found in the same location as FMOD's `.lib` files.
 
 ## External components

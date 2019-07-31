@@ -14,10 +14,10 @@
 
 #include "thread.h"
 
-#ifdef _DEBUG
-#define LOG_FILENAME "minote-debug.log"
-#else
+#ifdef NDEBUG
 #define LOG_FILENAME "minote.log"
+#else
+#define LOG_FILENAME "minote-debug.log"
 #endif
 
 static mutex logMutex = newMutex; // Thread safety is handled internally
@@ -27,12 +27,12 @@ static FILE* logFile = NULL;
 // Indexes match the PRIO macros' values
 static const char* prioStrings[] = {"NONE", "DEBUG", "INFO", "WARN", "ERROR", "CRIT"};
 static bool printToLogFile = true;
-#ifdef _DEBUG
-static bool printToStderr = true;
-static int logLevel = 1;
-#else
+#ifdef NDEBUG
 static bool printToStderr = false;
 static int logLevel = 2;
+#else
+static bool printToStderr = true;
+static int logLevel = 1;
 #endif
 
 static const char* GLFWerror = NULL; // GLFW error functions require a destination pointer

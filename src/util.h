@@ -21,13 +21,13 @@ typedef pcg32_random_t rng;
 #define random(rngptr, bound) pcg32_boundedrand_r((rngptr), (bound))
 
 // No C app is complete without its own assert
-#ifdef _DEBUG
+#ifdef NDEBUG
+#define assert(cond) ((void)0)
+#else
 #define assert(cond) \
 	(void) \
 	((!!(cond)) || \
 	(_assertFailed(#cond),0))
-#else
-#define assert(cond) ((void)0)
 #endif
 
 void _assertFailed(const char* cond);

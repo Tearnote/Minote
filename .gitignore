@@ -1,13 +1,13 @@
 # Output files
-build-debug/*
-build-release/*
+cmake-build-debug/*
+cmake-build-release/*
 *.exe
 
 # Required libraries
 *.dll
 
 # Editor config
-.vscode/*
+.idea/*
 
 # Files created by the app
 *.log
