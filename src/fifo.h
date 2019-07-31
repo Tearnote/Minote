@@ -10,7 +10,6 @@
 
 typedef struct fifoItem {
 	void* data;
-	struct fifoItem* prev;
 	struct fifoItem* next;
 } fifoItem;
 

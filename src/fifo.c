@@ -23,7 +23,6 @@ void destroyFifo(fifo* f) {
 void enqueueFifo(fifo* f, void* data) {
 	fifoItem* item = allocate(sizeof(fifoItem));
 	item->data = data;
-	item->prev = f->last;
 	item->next = NULL;
 	if(f->last) f->last->next = item;
 	f->last = item;
@@ -33,7 +32,6 @@ void enqueueFifo(fifo* f, void* data) {
 void* dequeueFifo(fifo* f) {
 	if(!f->first) return NULL;
 	fifoItem* item = f->first;
-	if(item->next) item->next->prev = NULL;
 	f->first = item->next;
 	if(!item->next) f->last = NULL;
 	void* data = item->data;
