@@ -16,7 +16,7 @@ fifo* createFifo(void) {
 }
 
 void destroyFifo(fifo* f) {
-	if(f->first) logWarn("Destroying a nonempty FIFO");
+	if(!isFifoEmpty(f)) logWarn("Destroying a nonempty FIFO");
 	free(f);
 }
 
@@ -26,11 +26,11 @@ void enqueueFifo(fifo* f, void* data) {
 	item->next = NULL;
 	if(f->last) f->last->next = item;
 	f->last = item;
-	if(!f->first) f->first = item;
+	if(isFifoEmpty(f)) f->first = item;
 }
 
 void* dequeueFifo(fifo* f) {
-	if(!f->first) return NULL;
+	if(isFifoEmpty(f)) return NULL;
 	fifoItem* item = f->first;
 	f->first = item->next;
 	if(!item->next) f->last = NULL;
@@ -40,5 +40,5 @@ void* dequeueFifo(fifo* f) {
 }
 
 bool isFifoEmpty(fifo* f) {
-	return !!f->first;
+	return !f->first;
 }
