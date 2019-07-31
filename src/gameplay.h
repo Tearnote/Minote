@@ -27,10 +27,10 @@
 #define GRAVITY 16
 
 // Piece falling speed if soft drop is held
-#define SOFTDROP 256
+#define SOFT_DROP 256
 
 // Piece falling speed if sonic drop is held
-#define SONICDROP 5120
+#define SONIC_DROP 5120
 
 // How many frames a piece takes to lock if it can't drop
 #define LOCK_DELAY 30
@@ -53,7 +53,7 @@ typedef enum {
 typedef struct {
 	bool exists;
 	int x, y;
-	int ysub;
+	int ySub;
 	pieceType type;
 	pieceType preview;
 	int rotation; // 0 to 3, 0 is spawn

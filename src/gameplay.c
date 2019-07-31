@@ -111,7 +111,7 @@ static void newPiece(void) {
 	
 	if(game->player.type == PieceI)
 		game->player.y += 1;
-	game->player.ysub = 0;
+	game->player.ySub = 0;
 	game->player.lockDelay = 0;
 	game->player.spawnDelay = 0;
 	game->player.rotation = 0;
@@ -200,7 +200,7 @@ void initGameplay(void) {
 	game->player.exists = false;
 	game->player.x = 0;
 	game->player.y = 0;
-	game->player.ysub = 0;
+	game->player.ySub = 0;
 	game->player.type = PieceNone;
 	game->player.preview = PieceNone;
 	game->player.rotation = 0;
@@ -261,10 +261,10 @@ void updateGameplay(void) {
 	// Calculate this frame's gravity speed
 	int gravity = GRAVITY;
 	if(game->player.exists) {
-		if(game->cmdHeld[CmdSoft] && gravity < SOFTDROP)
-			gravity = SOFTDROP;
+		if(game->cmdHeld[CmdSoft] && gravity < SOFT_DROP)
+			gravity = SOFT_DROP;
 		if(game->cmdPressed[CmdSonic])
-			gravity = SONICDROP;
+			gravity = SONIC_DROP;
 	}
 	
 	// Manlock
@@ -280,10 +280,10 @@ void updateGameplay(void) {
 	
 	if(game->player.exists) {
 		// Apply gravity
-		game->player.ysub += gravity;
-		while(game->player.ysub >= SUBGRID) {
+		game->player.ySub += gravity;
+		while(game->player.ySub >= SUBGRID) {
 			drop();
-			game->player.ysub -= SUBGRID;
+			game->player.ySub -= SUBGRID;
 		}
 		
 		// Advance+apply lock delay
