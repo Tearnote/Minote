@@ -171,6 +171,45 @@ static enum cmdType inputToCmd(enum inputType i)
 	}
 }
 
+void processInput(struct input *i)
+{
+	switch (i->action) {
+	case ActionPressed:
+		// Quitting is handled outside of gameplay logic
+		if (i->type == InputQuit) {
+			logInfo("User exited");
+			setRunning(false);
+			break;
+		}
+		// 4-way emulation
+		if (i->type == InputUp || i->type == InputDown ||
+		    i->type == InputLeft || i->type == InputRight) {
+			game->cmdPressed[inputToCmd(InputUp)] = false;
+			game->cmdPressed[inputToCmd(InputDown)] = false;
+			game->cmdPressed[inputToCmd(InputLeft)] = false;
+			game->cmdPressed[inputToCmd(InputRight)] = false;
+			game->cmdHeld[inputToCmd(InputUp)] = false;
+			game->cmdHeld[inputToCmd(InputDown)] = false;
+			game->cmdHeld[inputToCmd(InputLeft)] = false;
+			game->cmdHeld[inputToCmd(InputRight)] = false;
+		}
+
+		if (inputToCmd(i->type) != CmdNone) {
+			game->cmdPressed[inputToCmd(i->type)] = true;
+			game->cmdHeld[inputToCmd(i->type)] = true;
+		}
+		break;
+	case ActionReleased:
+		if (inputToCmd(i->type) != CmdNone) {
+			game->cmdPressed[inputToCmd(i->type)] = false;
+			game->cmdHeld[inputToCmd(i->type)] = false;
+		}
+		break;
+	default:
+		break;
+	}
+}
+
 // Polls for inputs and transforms them into gameplay commands
 static void processInputs(void)
 {
@@ -180,45 +219,7 @@ static void processInputs(void)
 
 	struct input *i = NULL;
 	while ((i = dequeueInput())) {
-		switch (i->action) {
-		case ActionPressed:
-			// Quitting is handled outside of gameplay logic
-			if (i->type == InputQuit) {
-				logInfo("User exited");
-				setRunning(false);
-				break;
-			}
-
-			// 4-way emulation
-			if (i->type == InputUp || i->type == InputDown ||
-			    i->type == InputLeft || i->type == InputRight) {
-				game->cmdPressed[inputToCmd(InputUp)] = false;
-				game->cmdPressed[inputToCmd(InputDown)] = false;
-				game->cmdPressed[inputToCmd(InputLeft)] = false;
-				game->cmdPressed[inputToCmd(InputRight)] =
-					false;
-				game->cmdHeld[inputToCmd(InputUp)] = false;
-				game->cmdHeld[inputToCmd(InputDown)] = false;
-				game->cmdHeld[inputToCmd(InputLeft)] = false;
-				game->cmdHeld[inputToCmd(InputRight)] = false;
-			}
-
-			if (inputToCmd(i->type) != CmdNone) {
-				game->cmdPressed[inputToCmd(i->type)] = true;
-				game->cmdHeld[inputToCmd(i->type)] = true;
-			}
-			break;
-
-		case ActionReleased:
-			if (inputToCmd(i->type) != CmdNone) {
-				game->cmdPressed[inputToCmd(i->type)] = false;
-				game->cmdHeld[inputToCmd(i->type)] = false;
-			}
-			break;
-		default:
-			break;
-		}
-
+		processInput(i);
 		free(i);
 	}
 }
