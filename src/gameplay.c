@@ -171,7 +171,7 @@ static enum cmdType inputToCmd(enum inputType i)
 	}
 }
 
-void processInput(struct input *i)
+static void processInput(struct input *i)
 {
 	switch (i->action) {
 	case ActionPressed:

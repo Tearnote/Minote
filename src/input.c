@@ -99,6 +99,8 @@ void initInput(void)
 
 void cleanupInput(void)
 {
+	if (!inputs)
+		return;
 	// The FIFO might not be empty so we clear it
 	struct input *i;
 	while ((i = dequeueInput()))

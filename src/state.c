@@ -22,5 +22,8 @@ void initState(void)
 
 void cleanupState(void)
 {
+	if(!app)
+		return;
 	free(app);
+	app = NULL;
 }
