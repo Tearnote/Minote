@@ -6,8 +6,9 @@
 
 #include "util.h"
 
-queue* createQueue(size_t itemSize) {
-	queue* q = allocate(sizeof(queue));
+struct queue *createQueue(size_t itemSize)
+{
+	struct queue *q = allocate(sizeof(*q));
 	q->itemSize = itemSize;
 	q->buffer = allocate(itemSize);
 	q->allocated = 1;
@@ -15,25 +16,31 @@ queue* createQueue(size_t itemSize) {
 	return q;
 }
 
-void destroyQueue(queue* q) {
+void destroyQueue(struct queue *q)
+{
 	free(q->buffer);
 	free(q);
 }
 
-void* produceQueueItem(queue* q) {
+void *produceQueueItem(struct queue *q)
+{
 	// Grow the buffer if there is no space left
-	if(q->count == q->allocated) {
-		q->buffer = reallocate(q->buffer, q->allocated * q->itemSize * 2);
+	if (q->count == q->allocated) {
+		q->buffer =
+			reallocate(q->buffer, q->allocated * q->itemSize * 2);
 		q->allocated *= 2;
 	}
 	q->count += 1;
-	return getQueueItem(q, q->count - 1); // Simply return the first unused item and mark it as used
+	// Simply return the first unused item and mark it as used
+	return getQueueItem(q, q->count - 1);
 }
 
-void* getQueueItem(queue* q, unsigned index) {
-	return (char*)q->buffer + index*q->itemSize;
+void *getQueueItem(struct queue *q, unsigned index)
+{
+	return (char *)q->buffer + index * q->itemSize;
 }
 
-void clearQueue(queue* q) {
+void clearQueue(struct queue *q)
+{
 	q->count = 0;
 }

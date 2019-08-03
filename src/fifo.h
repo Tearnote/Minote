@@ -8,20 +8,20 @@
 
 #include <stdbool.h>
 
-typedef struct fifoItem {
-	void* data;
-	struct fifoItem* next;
-} fifoItem;
+struct fifoItem {
+	void *data;
+	struct fifoItem *next;
+};
 
-typedef struct {
-	fifoItem* first;
-	fifoItem* last;
+typedef struct fifo {
+	struct fifoItem *first;
+	struct fifoItem *last;
 } fifo;
 
-fifo* createFifo(void);
-void destroyFifo(fifo* f);
-void enqueueFifo(fifo* f, void* data);
-void* dequeueFifo(fifo* f);
-bool isFifoEmpty(fifo* f);
+fifo *createFifo(void);
+void destroyFifo(fifo *f);
+void enqueueFifo(fifo *f, void *data);
+void *dequeueFifo(fifo *f);
+bool isFifoEmpty(fifo *f);
 
-#endif
+#endif // FIFO_H

@@ -10,28 +10,28 @@
 #include "fifo.h"
 
 // Generic list of inputs used by the game
-typedef enum {
+enum inputType {
 	InputNone,
 	InputLeft, InputRight, InputUp, InputDown,
 	InputButton1, InputButton2, InputButton3, InputButton4,
 	InputStart, InputQuit,
 	InputSize
-} inputType;
+};
 
-typedef enum {
+enum inputAction {
 	ActionNone,
 	ActionPressed,
 	ActionReleased,
 	ActionSize
-} inputAction;
+};
 
-typedef struct {
-	inputType type;
-	inputAction action;
+struct input {
+	enum inputType type;
+	enum inputAction action;
 	//nsec timestamp;
-} input;
+};
 
-extern fifo* inputs; //SYNC inputMutex enqueueInput dequeueInput
+extern fifo *inputs; //SYNC inputMutex enqueueInput dequeueInput
 extern mutex inputMutex;
 
 void initInput(void);
@@ -39,7 +39,9 @@ void cleanupInput(void);
 void updateInput(void);
 void sleepInput(void);
 
-#define enqueueInput(i) syncFifoEnqueue(inputs, (i), &inputMutex)
-#define dequeueInput() syncFifoDequeue(inputs, &inputMutex)
+#define enqueueInput(i) \
+        syncFifoEnqueue(inputs, (i), &inputMutex)
+#define dequeueInput() \
+        syncFifoDequeue(inputs, &inputMutex)
 
-#endif
+#endif // INPUT_H

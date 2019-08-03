@@ -8,4 +8,4 @@
 #define APP_NAME "Minote"
 #define APP_VERSION "prealpha"
 
-#endif
+#endif // MAIN_H

@@ -12,24 +12,29 @@
 
 // Error-checking malloc wrappers. free() is fine as it is
 
-void* allocate(size_t size);
-void* reallocate(void* memory, size_t size);
+void *allocate(size_t size);
+void *reallocate(void *memory, size_t size);
 
 // Convenient renamings for PCG PRNG
 typedef pcg32_random_t rng;
-#define srandom(rngptr, seed) pcg32_srandom_r((rngptr), (seed), 'M'*'i'+'n'*'o'+'t'*'e')
-#define random(rngptr, bound) pcg32_boundedrand_r((rngptr), (bound))
+#define srandom(rngptr, seed) \
+        pcg32_srandom_r((rngptr), (seed), 'M'*'i'+'n'*'o'+'t'*'e')
+#define random(rngptr, bound) \
+        pcg32_boundedrand_r((rngptr), (bound))
 
 // No C app is complete without its own assert
 #ifdef NDEBUG
-#define assert(cond) ((void)0)
-#else
 #define assert(cond) \
-	(void) \
-	((!!(cond)) || \
-	(_assertFailed(#cond),0))
-#endif
+	((void)0)
+#else // NDEBUG
+#define assert(cond) \
+        (void)((!!(cond)) || (_assertFailed(#cond), 0))
+#endif // NDEBUG
 
-void _assertFailed(const char* cond);
+void _assertFailed(const char *cond);
 
-#endif
+// Classic MIN/MAX macros, complete with double evaluation bugs
+#define MIN(a, b) \
+        ((a) < (b) ? (a) : (b))
+
+#endif // UTIL_H

@@ -7,9 +7,11 @@
 
 #include "thread.h"
 
-void* logicThread(void* param);
+void *logicThread(void *param);
 extern thread logicThreadID;
-#define spawnLogic() spawnThread(&logicThreadID, logicThread, NULL, "logicThread")
-#define awaitLogic() awaitThread(logicThreadID)
+#define spawnLogic() \
+        spawnThread(&logicThreadID, logicThread, NULL, "logicThread")
+#define awaitLogic() \
+        awaitThread(logicThreadID)
 
-#endif
+#endif // LOGIC_H

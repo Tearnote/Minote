@@ -6,7 +6,9 @@
 #define TIMER_H
 
 #include <stdint.h>
-typedef int64_t nsec; // Maximum value of 292.3 years, please do not run the game for longer than that
+
+// Maximum value of 292.3 years, please do not run the game for longer than that
+typedef int64_t nsec;
 
 #define SEC  1000000000 // Nanoseconds in a second
 #define MSEC 1000000 // Nanoseconds in a millisecond
@@ -14,6 +16,7 @@ typedef int64_t nsec; // Maximum value of 292.3 years, please do not run the gam
 void initTimer(void);
 void cleanupTimer(void);
 nsec getTime(void);
-void sleep(nsec ns); // Resolution is OS-dependent, ~1.5ms at worst (on Windows, obviously)
+// Resolution is OS-dependent, ~1.5ms at worst (on Windows, obviously)
+void sleep(nsec ns);
 
-#endif
+#endif // TIMER_H

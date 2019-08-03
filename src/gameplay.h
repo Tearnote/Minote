@@ -35,41 +35,40 @@
 // How many frames a piece takes to lock if it can't drop
 #define LOCK_DELAY 30
 
-// How many frames it takes for the next piece to spawn after the previous one is locked
+// How many frames it takes for the next piece to spawn
+// after the previous one is locked
 #define SPAWN_DELAY 30
 
-typedef mino playfield[PLAYFIELD_H][PLAYFIELD_W];
-
 // Types of commands accepted by the gameplay
-typedef enum {
+enum cmdType {
 	CmdNone,
 	CmdLeft, CmdRight,
 	CmdCCW, CmdCW, CmdCCW2,
 	CmdSoft, CmdSonic,
 	CmdSize
-} cmdType;
+};
 
 // Variables regarding player control
-typedef struct {
+struct playerState {
 	bool exists;
 	int x, y;
 	int ySub;
-	pieceType type;
-	pieceType preview;
+	enum pieceType type;
+	enum pieceType preview;
 	int rotation; // 0 to 3, 0 is spawn
 	int dasDirection, dasCharge, dasDelay;
 	int lockDelay;
 	int spawnDelay;
-} playerState;
+};
 
 // Complete description of the gameplay's current state
 // Does not use pointers, so that it can be copied and serialized
-typedef struct {
-	playfield field;
-	playerState player;
+struct gameState {
+	enum mino playfield[PLAYFIELD_H][PLAYFIELD_W];
+	struct playerState player;
 	bool cmdPressed[CmdSize];
 	bool cmdHeld[CmdSize];
-} gameState;
+};
 
 void initGameplay(void);
 void cleanupGameplay(void);
@@ -77,4 +76,4 @@ void cleanupGameplay(void);
 // Consume inputs and advance a single frame
 void updateGameplay(void);
 
-#endif
+#endif // GAMEPLAY_H

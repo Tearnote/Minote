@@ -11,10 +11,11 @@ void initMinoRenderer(void);
 void cleanupMinoRenderer(void);
 
 // Add various parts of the gameplay to the queue of minos to render
-void queueMinoPlayfield(mino playfield[PLAYFIELD_H][PLAYFIELD_W]);
-void queueMinoPlayer(playerState* player);
+void queueMinoPlayfield(enum mino playfield[PLAYFIELD_H][PLAYFIELD_W]);
+void queueMinoPlayer(struct playerState *player);
+void queueMinoPreview(struct playerState *player);
 
 // Render everything in the queue with a single draw call, clear the queue
 void renderMino(void);
 
-#endif
+#endif // MINORENDER_H

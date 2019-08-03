@@ -12,7 +12,8 @@
 #include "logic.h"
 #include "timer.h"
 
-static void cleanup(void) {
+static void cleanup(void)
+{
 	cleanupInput();
 	cleanupWindow();
 	cleanupState();
@@ -20,27 +21,28 @@ static void cleanup(void) {
 	cleanupLogging();
 }
 
-int main(void) {
+int main(void)
+{
 	initLogging();
-	logInfo("Starting up " APP_NAME " " APP_VERSION);
+	logInfo("Starting up %s %s", APP_NAME, APP_VERSION);
 	atexit(cleanup);
 	initTimer();
 	initState();
 	initWindow();
 	initInput();
-	
+
 	spawnRenderer();
 	spawnLogic();
-	
-	// Main thread's loop. Handle input updates
-	while(isRunning()) {
+
+	// Main thread's loop, handles input updates and window events
+	while (isRunning()) {
 		updateInput();
-		sleepInput(); // Sleep the thread between updates to avoid wasting CPU
+		sleepInput();
 	}
-	
-	// All other threads loop on isRunning(), so it's safe to wait on them here
+
+	// Other threads loop on isRunning(), so it's safe to wait on them here
 	awaitLogic();
 	awaitRenderer();
-	
+
 	return 0;
 }

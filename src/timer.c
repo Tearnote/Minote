@@ -7,31 +7,41 @@
 
 #ifdef WIN32
 #include <mmsystem.h>
-#endif
+#endif // WIN32
 
 #include <time.h>
 
-void initTimer(void) {
+void initTimer(void)
+{
 #ifdef WIN32
-	timeBeginPeriod(1); // Increase resolution of sleep from ~15ms to ~1.5ms
-#endif
+	// Increase resolution of sleep from ~15ms to ~1.5ms
+	timeBeginPeriod(1);
+#endif // WIN32
 }
 
-void cleanupTimer(void) {
+void cleanupTimer(void)
+{
 #ifdef WIN32
-	timeEndPeriod(1); // Restore normal sleep resolution
-#endif
+	// Restore normal sleep resolution
+	timeEndPeriod(1);
+#endif // WIN32
 }
 
-nsec getTime(void) {
+nsec getTime(void)
+{
 	// glfwGetTime returns a double, which is ms-accurate for even longer than the maximum value of nsec
 	return (nsec)(glfwGetTime() * SEC);
 }
 
-void sleep(nsec ns) {
-	struct timespec duration = { .tv_sec = (long)(ns / SEC), .tv_nsec = (long)(ns % SEC) };
+void sleep(nsec ns)
+{
+	struct timespec duration = {};
+	duration.tv_sec = (long)(ns / SEC);
+	duration.tv_nsec = (long)(ns % SEC);
 #ifdef WIN32
-	if(duration.tv_nsec < MSEC) duration.tv_nsec = MSEC; // winpthreads cannot sleep for less than 1ms at a time
-#endif
+	// winpthreads cannot sleep for less than 1ms at a time
+	if (duration.tv_nsec < MSEC)
+		duration.tv_nsec = MSEC;
+#endif // WIN32
 	nanosleep(&duration, NULL);
 }

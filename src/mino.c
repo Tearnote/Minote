@@ -5,20 +5,20 @@
 #include "linmath/linmath.h"
 
 vec4 minoColors[MinoSize] = {
-	{   0,   0,   0, 1 }, // MinoNone
-	{   1,   0,   0, 1 }, // MinoI
-	{   1,.22f,   0, 1 }, // MinoL
-	{   1,   1,   0, 1 }, // MinoO
-	{   0,   1,   0, 1 }, // MinoZ
-	{   0,   1,   1, 1 }, // MinoT
-	{   0,   0,   1, 1 }, // MinoJ
-	{   1,   0,   1, 1 }, // MinoS
-	{.22f,.22f,.22f, 1 }, // MinoGarbage
-	{   1,   1,   1, 1 }  // MinoPending
+	{ 0,    0,    0,    1 }, // MinoNone
+	{ 1,    0,    0,    1 }, // MinoI
+	{ 1,    .22f, 0,    1 }, // MinoL
+	{ 1,    1,    0,    1 }, // MinoO
+	{ 0,    1,    0,    1 }, // MinoZ
+	{ 0,    1,    1,    1 }, // MinoT
+	{ 0,    0,    1,    1 }, // MinoJ
+	{ 1,    0,    1,    1 }, // MinoS
+	{ .22f, .22f, .22f, 1 }, // MinoGarbage
+	{ 1,    1,    1,    1 }  // MinoPending
 };
 
 rotationSystem rs = {
-	{}, // PieceNone 
+	{}, // PieceNone
 	{ // PieceI
 		{
 			{ .x = 0, .y = 1 }, { .x = 1, .y = 1 },
@@ -81,7 +81,6 @@ rotationSystem rs = {
 		{
 			{ .x = 2, .y = 1 }, { .x = 1, .y = 2 },
 			{ .x = 2, .y = 2 }, { .x = 1, .y = 3 }
-			
 		},
 		{
 			{ .x = 0, .y = 2 }, { .x = 1, .y = 2 },

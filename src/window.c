@@ -10,14 +10,16 @@
 #include "render.h"
 #include "util.h"
 
-GLFWwindow* window = NULL;
+GLFWwindow *window = NULL;
 int windowWidth = DEFAULT_WIDTH;
 int windowHeight = DEFAULT_HEIGHT;
 float windowScale = 1.0f;
 
 // Bubble the geometry change up to the renderer thread
-static void framebufferResizeCallback(GLFWwindow* w, int width, int height) {
+static void framebufferResizeCallback(GLFWwindow *w, int width, int height)
+{
 	(void)w;
+
 	windowWidth = width;
 	windowHeight = height;
 	resizeRenderer(width, height);
@@ -25,16 +27,19 @@ static void framebufferResizeCallback(GLFWwindow* w, int width, int height) {
 }
 
 // Bubble the scaling change up to the renderer thread
-// For some reason yscale is equal to 0???
-static void windowScaleCallback(GLFWwindow* w, float xscale, float yscale) {
-	(void)w, (void)yscale;
-	windowScale = xscale;
-	rescaleRenderer(xscale);
+// For some reason yScale is equal to 0???
+static void windowScaleCallback(GLFWwindow *w, float xScale, float yScale)
+{
+	(void)w, (void)yScale;
+
+	windowScale = xScale;
+	rescaleRenderer(xScale);
 	logDebug("DPI scaling changed to %f", windowScale);
 }
 
-void initWindow(void) {
-	if(glfwInit() == GLFW_FALSE) {
+void initWindow(void)
+{
+	if (glfwInit() == GLFW_FALSE) {
 		logCritGLFW("Failed to initialize GLFW");
 		exit(1);
 	}
@@ -44,29 +49,34 @@ void initWindow(void) {
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #ifdef __APPLE__
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-	glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE); // Declare DPI awareness
-	glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE); // Declare gamma-correct rendering
+#endif // __APPLE__
+	glfwWindowHint(GLFW_SCALE_TO_MONITOR,
+	               GLFW_TRUE); // Declare DPI awareness
+	glfwWindowHint(GLFW_SRGB_CAPABLE,
+	               GLFW_TRUE); // Declare gamma-correct rendering
 #ifndef NDEBUG
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
-#endif
-	window = glfwCreateWindow(windowWidth, windowHeight, APP_NAME, NULL, NULL);
-	if(window == NULL) {
+#endif // NDEBUG
+	window = glfwCreateWindow(windowWidth, windowHeight, APP_NAME, NULL,
+	                          NULL);
+	if (window == NULL) {
 		logCritGLFW("Failed to create a window");
 		exit(1);
 	}
 	glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 	glfwSetWindowContentScaleCallback(window, windowScaleCallback);
-	
+
 	// An initial check is required to get correct values for non-100% scaling
 	glfwGetFramebufferSize(window, &windowWidth, &windowHeight);
 	framebufferResizeCallback(window, windowWidth, windowHeight);
 	glfwGetWindowContentScale(window, &windowScale, NULL);
 	windowScaleCallback(window, windowScale, 0);
-	
-	logInfo("Created a %dx%d *%f window", windowWidth, windowHeight, windowScale);
+
+	logInfo("Created a %dx%d *%f window",
+	        windowWidth, windowHeight, windowScale);
 }
 
-void cleanupWindow(void) {
+void cleanupWindow(void)
+{
 	glfwTerminate();
 }

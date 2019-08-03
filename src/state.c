@@ -9,16 +9,18 @@
 #include "util.h"
 #include "gameplay.h"
 
-appState* app;
+struct appState *app;
 mutex gameMutex = newMutex;
 mutex runningMutex = newMutex;
 
-void initState(void) {
-	app = allocate(sizeof(app));
+void initState(void)
+{
+	app = allocate(sizeof(*app));
 	app->running = true;
 	app->game = NULL;
 }
 
-void cleanupState(void) {
+void cleanupState(void)
+{
 	free(app);
 }
