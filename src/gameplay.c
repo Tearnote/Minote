@@ -259,19 +259,18 @@ void cleanupGameplay(void)
 	app->game = NULL;
 }
 
-void updateGameplay(void)
+static void updateRotations(void)
 {
-	processInputs();
+	if (!player->exists)
+		return;
+	if (game->cmdPressed[CmdCW])
+		rotate(1);
+	if (game->cmdPressed[CmdCCW] || game->cmdPressed[CmdCCW2])
+		rotate(-1);
+}
 
-	// Rotate
-	if (player->exists) {
-		if (game->cmdPressed[CmdCW])
-			rotate(1);
-
-		if (game->cmdPressed[CmdCCW] || game->cmdPressed[CmdCCW2])
-			rotate(-1);
-	}
-
+static void updateShifts(void)
+{
 	// Check requested movement direction
 	int shiftDirection = 0;
 	if (game->cmdHeld[CmdLeft])
@@ -290,22 +289,24 @@ void updateGameplay(void)
 	}
 
 	// If moving, advance and apply DAS
-	if (shiftDirection) {
-		if (player->dasCharge < DAS_CHARGE)
-			player->dasCharge += 1;
-		if (player->dasCharge == DAS_CHARGE) {
-			if (player->dasDelay < DAS_DELAY && player->exists)
-				player->dasDelay += 1;
+	if (!shiftDirection)
+		return;
+	if (player->dasCharge < DAS_CHARGE)
+		player->dasCharge += 1;
+	if (player->dasCharge == DAS_CHARGE) {
+		if (player->dasDelay < DAS_DELAY && player->exists)
+			player->dasDelay += 1;
 
-			// If during ARE, keep the DAS charged
-			if (player->dasDelay == DAS_DELAY && player->exists) {
-				player->dasDelay = 0;
-				shift(player->dasDirection);
-			}
+		// If during ARE, keep the DAS charged
+		if (player->dasDelay == DAS_DELAY && player->exists) {
+			player->dasDelay = 0;
+			shift(player->dasDirection);
 		}
 	}
+}
 
-	// Calculate this frame's gravity speed
+static int calculateGravity(void)
+{
 	int gravity = GRAVITY;
 	if (player->exists) {
 		if (game->cmdHeld[CmdSoft] && gravity < SOFT_DROP)
@@ -313,31 +314,49 @@ void updateGameplay(void)
 		if (game->cmdPressed[CmdSonic])
 			gravity = SONIC_DROP;
 	}
+	return gravity;
+}
 
-	// Manlock
-	if (player->exists && game->cmdHeld[CmdSoft] && !canDrop())
+static void updateSpawn(void)
+{
+	if (player->exists)
+		return;
+	player->spawnDelay += 1;
+	if (player->spawnDelay == SPAWN_DELAY)
+		newPiece();
+}
+
+static void updateGravity(int gravity)
+{
+	if (!player->exists)
+		return;
+	player->ySub += gravity;
+	while (player->ySub >= SUBGRID) {
+		drop();
+		player->ySub -= SUBGRID;
+	}
+}
+
+void updateLocking(void)
+{
+	if (!player->exists || canDrop())
+		return;
+	player->lockDelay += 1;
+	// Two sources of locking: lock delay expired, and manlock
+	if (player->lockDelay == LOCK_DELAY || game->cmdHeld[CmdSoft])
 		lock();
+}
 
-	// Handle ARE and spawning
-	if (!player->exists) {
-		player->spawnDelay += 1;
-		if (player->spawnDelay == SPAWN_DELAY)
-			newPiece();
-	}
+void updateGameplay(void)
+{
+	processInputs();
 
-	if (player->exists) {
-		// Apply gravity
-		player->ySub += gravity;
-		while (player->ySub >= SUBGRID) {
-			drop();
-			player->ySub -= SUBGRID;
-		}
-
-		// Advance+apply lock delay
-		if (!canDrop()) {
-			player->lockDelay += 1;
-			if (player->lockDelay == LOCK_DELAY)
-				lock();
-		}
-	}
+	updateRotations();
+	updateShifts();
+	// We need to calculate gravity before spawn,
+	// so that we can't soft/sonic drop on the first frame of a new piece
+	int gravity = calculateGravity();
+	updateSpawn();
+	updateGravity(gravity);
+	updateLocking();
 }
