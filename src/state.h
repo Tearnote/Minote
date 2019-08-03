@@ -12,7 +12,7 @@
 
 struct appState {
 	bool running; //SYNC runningMutex isRunning setRunning
-	struct gameState *game; //SYNC gameMutex
+	struct game *game; //SYNC gameMutex
 };
 
 extern struct appState *app;

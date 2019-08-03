@@ -48,9 +48,17 @@ enum cmdType {
 	CmdSize
 };
 
+enum playerState {
+	PlayerNone,
+	PlayerActive,
+	PlayerClear,
+	PlayerARE,
+	PlayerSize
+};
+
 // Variables regarding player control
-struct playerState {
-	bool exists;
+struct player {
+	enum playerState state;
 	int x, y;
 	int ySub;
 	enum pieceType type;
@@ -63,9 +71,9 @@ struct playerState {
 
 // Complete description of the gameplay's current state
 // Does not use pointers, so that it can be copied and serialized
-struct gameState {
+struct game {
 	enum mino playfield[PLAYFIELD_H][PLAYFIELD_W];
-	struct playerState player;
+	struct player player;
 	bool cmdPressed[CmdSize];
 	bool cmdHeld[CmdSize];
 };

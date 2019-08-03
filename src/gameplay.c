@@ -14,10 +14,10 @@
 #include "util.h"
 
 // Convenience pointer for storing app->game
-static struct gameState *game = NULL;
+static struct game *game = NULL;
 
 // Convenience pointer for scoring app->game.player
-static struct playerState *player = NULL;
+static struct player *player = NULL;
 
 // RNG specifically for next piece selection
 static rng randomizer = {};
@@ -116,13 +116,13 @@ static void lock(void)
 			continue;
 		game->playfield[y][x] = (enum mino)player->type;
 	}
-	player->exists = false;
+	player->state = PlayerARE;
 }
 
 // Generate a new random piece for the player to control
 static void newPiece(void)
 {
-	player->exists = true;
+	player->state = PlayerActive;
 	player->x = PLAYFIELD_W / 2 - PIECE_BOX / 2; // Centered
 	player->y = -2;
 
@@ -238,7 +238,7 @@ void initGameplay(void)
 		game->cmdHeld[i] = false;
 	}
 	player = &game->player;
-	player->exists = false;
+	player->state = PlayerNone;
 	player->x = 0;
 	player->y = 0;
 	player->ySub = 0;
@@ -262,7 +262,7 @@ void cleanupGameplay(void)
 
 static void updateRotations(void)
 {
-	if (!player->exists)
+	if (player->state != PlayerActive)
 		return;
 	if (game->cmdPressed[CmdCW])
 		rotate(1);
@@ -281,11 +281,11 @@ static void updateShifts(void)
 
 	// If not moving or moving in the opposite direction of ongoing DAS,
 	// reset DAS and shift instantly
-	if (shiftDirection == 0 || shiftDirection != player->dasDirection) {
+	if (!shiftDirection || shiftDirection != player->dasDirection) {
 		player->dasDirection = shiftDirection;
 		player->dasCharge = 0;
 		player->dasDelay = DAS_DELAY; // Starts out pre-charged
-		if (shiftDirection && player->exists)
+		if (shiftDirection && player->state == PlayerActive)
 			shift(shiftDirection);
 	}
 
@@ -295,11 +295,12 @@ static void updateShifts(void)
 	if (player->dasCharge < DAS_CHARGE)
 		player->dasCharge += 1;
 	if (player->dasCharge == DAS_CHARGE) {
-		if (player->dasDelay < DAS_DELAY && player->exists)
+		if (player->dasDelay < DAS_DELAY)
 			player->dasDelay += 1;
 
 		// If during ARE, keep the DAS charged
-		if (player->dasDelay == DAS_DELAY && player->exists) {
+		if (player->dasDelay >= DAS_DELAY
+		    && player->state == PlayerActive) {
 			player->dasDelay = 0;
 			shift(player->dasDirection);
 		}
@@ -309,7 +310,7 @@ static void updateShifts(void)
 static int calculateGravity(void)
 {
 	int gravity = GRAVITY;
-	if (player->exists) {
+	if (player->state == PlayerActive) {
 		if (game->cmdHeld[CmdSoft] && gravity < SOFT_DROP)
 			gravity = SOFT_DROP;
 		if (game->cmdPressed[CmdSonic])
@@ -320,16 +321,18 @@ static int calculateGravity(void)
 
 static void updateSpawn(void)
 {
-	if (player->exists)
-		return;
-	player->spawnDelay += 1;
-	if (player->spawnDelay == SPAWN_DELAY)
-		newPiece();
+	if (player->state == PlayerClear) {
+		//TODO Line clear delay
+	} else if (player->state == PlayerARE || player->state == PlayerNone) {
+		player->spawnDelay += 1;
+		if (player->spawnDelay >= SPAWN_DELAY)
+			newPiece();
+	}
 }
 
 static void updateGravity(int gravity)
 {
-	if (!player->exists)
+	if (player->state != PlayerActive)
 		return;
 	player->ySub += gravity;
 	while (player->ySub >= SUBGRID) {
@@ -340,11 +343,11 @@ static void updateGravity(int gravity)
 
 void updateLocking(void)
 {
-	if (!player->exists || canDrop())
+	if (player->state != PlayerActive || canDrop())
 		return;
 	player->lockDelay += 1;
 	// Two sources of locking: lock delay expired, and manlock
-	if (player->lockDelay == LOCK_DELAY || game->cmdHeld[CmdSoft])
+	if (player->lockDelay >= LOCK_DELAY || game->cmdHeld[CmdSoft])
 		lock();
 }
 

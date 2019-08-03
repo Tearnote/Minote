@@ -107,9 +107,9 @@ void queueMinoPlayfield(enum mino field[PLAYFIELD_H][PLAYFIELD_W])
 	}
 }
 
-void queueMinoPlayer(struct playerState *player)
+void queueMinoPlayer(struct player *player)
 {
-	if (!player->exists)
+	if (player->state != PlayerActive)
 		return;
 
 	int xOffset =
@@ -129,7 +129,7 @@ void queueMinoPlayer(struct playerState *player)
 	}
 }
 
-void queueMinoPreview(struct playerState *player)
+void queueMinoPreview(struct player *player)
 {
 	int xOffset =
 		renderWidth / 2 - PIECE_BOX / 2 * MINO_SIZE;

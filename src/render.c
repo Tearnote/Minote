@@ -37,7 +37,7 @@ bool viewportDirty = true; //SYNC viewportMutex
 mutex viewportMutex = newMutex;
 
 // Thread-local copy of the game state being rendered
-static struct gameState *gameSnap = NULL;
+static struct game *gameSnap = NULL;
 
 // Compiles a shader from source
 static GLuint createShader(const GLchar *source, GLenum type)
