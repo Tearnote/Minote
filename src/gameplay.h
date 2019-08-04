@@ -35,6 +35,9 @@
 // How many frames a piece takes to lock if it can't drop
 #define LOCK_DELAY 30
 
+// How many frames it takes for full lines to clear
+#define CLEAR_DELAY 41
+
 // How many frames it takes for the next piece to spawn
 // after the previous one is locked
 #define SPAWN_DELAY 30
@@ -52,7 +55,7 @@ enum playerState {
 	PlayerNone,
 	PlayerActive,
 	PlayerClear,
-	PlayerARE,
+	PlayerSpawn,
 	PlayerSize
 };
 
@@ -66,6 +69,7 @@ struct player {
 	int rotation; // 0 to 3, 0 is spawn
 	int dasDirection, dasCharge, dasDelay;
 	int lockDelay;
+	int clearDelay;
 	int spawnDelay;
 };
 
@@ -73,6 +77,7 @@ struct player {
 // Does not use pointers, so that it can be copied and serialized
 struct game {
 	enum mino playfield[PLAYFIELD_H][PLAYFIELD_W];
+	bool clearedLines[PLAYFIELD_H];
 	struct player player;
 	bool cmdPressed[CmdSize];
 	bool cmdHeld[CmdSize];

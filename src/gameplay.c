@@ -116,7 +116,7 @@ static void lock(void)
 			continue;
 		game->playfield[y][x] = (enum mino)player->type;
 	}
-	player->state = PlayerARE;
+	player->state = PlayerSpawn;
 }
 
 // Generate a new random piece for the player to control
@@ -230,9 +230,11 @@ void initGameplay(void)
 
 	game = allocate(sizeof(*game));
 	app->game = game;
-	for (int y = 0; y < PLAYFIELD_H; y++)
+	for (int y = 0; y < PLAYFIELD_H; y++) {
 		for (int x = 0; x < PLAYFIELD_W; x++)
 			game->playfield[y][x] = MinoNone;
+		game->clearedLines[y] = false;
+	}
 	for (int i = 0; i < CmdSize; i++) {
 		game->cmdPressed[i] = false;
 		game->cmdHeld[i] = false;
@@ -249,7 +251,8 @@ void initGameplay(void)
 	player->dasCharge = 0;
 	player->dasDelay = DAS_DELAY; // Starts out pre-charged
 	player->lockDelay = 0;
-	player->spawnDelay = SPAWN_DELAY - 1; // Start instantly
+	player->clearDelay = 0;
+	player->spawnDelay = SPAWN_DELAY; // Start instantly
 }
 
 void cleanupGameplay(void)
@@ -319,11 +322,63 @@ static int calculateGravity(void)
 	return gravity;
 }
 
+static int checkClears(void)
+{
+	int count = 0;
+	for (int y = 0; y < PLAYFIELD_H; y++) {
+		bool isCleared = true;
+		for (int x = 0; x < PLAYFIELD_W; x++) {
+			if (game->playfield[y][x] == MinoNone) {
+				isCleared = false;
+				break;
+			}
+		}
+		if (!isCleared)
+			continue;
+		count += 1;
+		game->clearedLines[y] = true;
+		for (int x = 0; x < PLAYFIELD_W; x++)
+			game->playfield[y][x] = MinoNone;
+	}
+	return count;
+}
+
+static void thump(void)
+{
+	for (int y = 0; y < PLAYFIELD_H; y++) {
+		if (!game->clearedLines[y])
+			continue;
+		for (int yy = y; yy > 0; yy--) {
+			for (int xx = 0; xx < PLAYFIELD_W; xx++)
+				game->playfield[yy][xx] =
+					game->playfield[yy - 1][xx];
+		}
+		game->clearedLines[y] = false;
+	}
+}
+
+static void updateClear(void)
+{
+	if (player->state == PlayerSpawn && player->spawnDelay == 0) {
+		int clearedCount = checkClears();
+		if (clearedCount) {
+			player->state = PlayerClear;
+			player->clearDelay = 0;
+		}
+	}
+
+	if (player->state == PlayerClear) {
+		player->clearDelay += 1;
+		if (player->clearDelay >= CLEAR_DELAY) {
+			thump();
+			player->state = PlayerSpawn;
+		}
+	}
+}
+
 static void updateSpawn(void)
 {
-	if (player->state == PlayerClear) {
-		//TODO Line clear delay
-	} else if (player->state == PlayerARE || player->state == PlayerNone) {
+	if (player->state == PlayerSpawn || player->state == PlayerNone) {
 		player->spawnDelay += 1;
 		if (player->spawnDelay >= SPAWN_DELAY)
 			newPiece();
@@ -360,6 +415,7 @@ void updateGameplay(void)
 	// We need to calculate gravity before spawn,
 	// so that we can't soft/sonic drop on the first frame of a new piece
 	int gravity = calculateGravity();
+	updateClear();
 	updateSpawn();
 	updateGravity(gravity);
 	updateLocking();
