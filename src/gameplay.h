@@ -9,7 +9,9 @@
 #include "mino.h"
 
 #define PLAYFIELD_W 10
-#define PLAYFIELD_H 20
+#define PLAYFIELD_H 21
+#define PLAYFIELD_H_HIDDEN 1
+#define PLAYFIELD_H_VISIBLE (PLAYFIELD_H - PLAYFIELD_H_HIDDEN)
 
 // Types of commands accepted by the gameplay
 enum cmdType {
@@ -22,9 +24,10 @@ enum cmdType {
 
 enum playerState {
 	PlayerNone,
-	PlayerActive,
-	PlayerClear,
-	PlayerSpawn,
+	PlayerSpawned, // The exact frame of piece spawn
+	PlayerActive, // Piece can be freely manipulated
+	PlayerClear, // Clear delay is running
+	PlayerSpawn, // Spawn delay is running
 	PlayerSize
 };
 

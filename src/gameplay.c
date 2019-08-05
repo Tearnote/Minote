@@ -90,6 +90,8 @@ static bool tryKicks(void)
 	static int preference = 1;
 	if (checkPosition())
 		return true; // Original position
+	if (player->state == PlayerSpawned)
+		return false; // If this is IRS, don't attempt kicks
 	player->x += preference;
 	if (checkPosition())
 		return true; // 1 to the right
@@ -160,9 +162,9 @@ static void lock(void)
 // Generate a new random piece for the player to control
 static void newPiece(void)
 {
-	player->state = PlayerActive;
+	player->state = PlayerSpawned;
 	player->x = PLAYFIELD_W / 2 - PIECE_BOX / 2; // Centered
-	player->y = -2;
+	player->y = -2 + PLAYFIELD_H_HIDDEN;
 
 	// Picking the next piece
 	if (player->preview == PieceNone)
@@ -353,18 +355,6 @@ static void updateShifts(void)
 	}
 }
 
-static int calculateGravity(void)
-{
-	int gravity = GRAVITY;
-	if (player->state == PlayerActive) {
-		if (game->cmdHeld[CmdSoft] && gravity < SOFT_DROP)
-			gravity = SOFT_DROP;
-		if (game->cmdHeld[CmdSonic])
-			gravity = SONIC_DROP;
-	}
-	return gravity;
-}
-
 static int checkClears(void)
 {
 	int count = 0;
@@ -427,10 +417,17 @@ static void updateSpawn(void)
 	}
 }
 
-static void updateGravity(int gravity)
+static void updateGravity()
 {
-	if (player->state != PlayerActive)
+	if (player->state != PlayerSpawned && player->state != PlayerActive)
 		return;
+	int gravity = GRAVITY;
+	if (player->state == PlayerActive) {
+		if (game->cmdHeld[CmdSoft] && gravity < SOFT_DROP)
+			gravity = SOFT_DROP;
+		if (game->cmdHeld[CmdSonic])
+			gravity = SONIC_DROP;
+	}
 	player->ySub += gravity;
 	while (player->ySub >= SUBGRID) {
 		drop();
@@ -454,11 +451,11 @@ void updateGameplay(void)
 
 	updateRotations();
 	updateShifts();
-	// We need to calculate gravity before spawn,
-	// so that we can't soft/sonic drop on the first frame of a new piece
-	int gravity = calculateGravity();
 	updateClear();
 	updateSpawn();
-	updateGravity(gravity);
+	updateGravity();
 	updateLocking();
+
+	if (player->state == PlayerSpawned)
+		player->state = PlayerActive;
 }

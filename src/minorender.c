@@ -88,9 +88,9 @@ void queueMinoPlayfield(enum mino field[PLAYFIELD_H][PLAYFIELD_W])
 {
 	// Center the playfield
 	int xOffset = renderWidth / 2 - PLAYFIELD_W / 2 * MINO_SIZE;
-	int yOffset = renderHeight / 2 - PLAYFIELD_H / 2 * MINO_SIZE;
+	int yOffset = renderHeight / 2 - PLAYFIELD_H_VISIBLE / 2 * MINO_SIZE;
 
-	for (int y = 0; y < PLAYFIELD_H; y++) {
+	for (int y = PLAYFIELD_H_HIDDEN; y < PLAYFIELD_H; y++) {
 		for (int x = 0; x < PLAYFIELD_W; x++) {
 			enum mino minoType = field[y][x];
 			// Commenting this gives a temporary black background
@@ -115,7 +115,8 @@ void queueMinoPlayer(struct player *player)
 	int xOffset =
 		renderWidth / 2 - (PLAYFIELD_W / 2 - player->x) * MINO_SIZE;
 	int yOffset =
-		renderHeight / 2 - (PLAYFIELD_H / 2 - player->y) * MINO_SIZE;
+		renderHeight / 2
+		- (PLAYFIELD_H_VISIBLE / 2 - player->y) * MINO_SIZE;
 
 	for (int i = 0; i < MINOS_PER_PIECE; i++) {
 		struct coord minoCoord = rs[player->type][player->rotation][i];
@@ -135,7 +136,7 @@ void queueMinoPreview(struct player *player)
 		renderWidth / 2 - PIECE_BOX / 2 * MINO_SIZE;
 	int yOffset =
 		renderHeight / 2
-		- (PLAYFIELD_H / 2 + PIECE_BOX + 1) * MINO_SIZE;
+		- (PLAYFIELD_H_VISIBLE / 2 + PIECE_BOX) * MINO_SIZE;
 
 	for (int i = 0; i < MINOS_PER_PIECE; i++) {
 		struct coord minoCoord = rs[player->preview][0][i];
