@@ -359,7 +359,7 @@ static int calculateGravity(void)
 	if (player->state == PlayerActive) {
 		if (game->cmdHeld[CmdSoft] && gravity < SOFT_DROP)
 			gravity = SOFT_DROP;
-		if (game->cmdPressed[CmdSonic])
+		if (game->cmdHeld[CmdSonic])
 			gravity = SONIC_DROP;
 	}
 	return gravity;
