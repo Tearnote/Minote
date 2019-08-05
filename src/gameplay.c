@@ -90,8 +90,34 @@ static bool tryKicks(void)
 	static int preference = 1;
 	if (checkPosition())
 		return true; // Original position
+
 	if (player->state == PlayerSpawned)
 		return false; // If this is IRS, don't attempt kicks
+	if (player->type == PieceI)
+		return false; // I doesn't kick
+
+	// The annoying special treatment of LTJ middle column
+	if (player->rotation % 2 == 1 && // Vertical orientation
+	    (player->type == PieceL ||
+	     player->type == PieceT ||
+	     player->type == PieceJ)) {
+		bool success = true;
+		for (int i = 0; i < MINOS_PER_PIECE; i++) {
+			int x = player->x
+			        + rs[player->type][player->rotation][i].x;
+			int y = player->y
+			        + rs[player->type][player->rotation][i].y;
+			if (x != CENTER_COLUMN && getGrid(x, y)) {
+				success = true;
+				break;
+			}
+			if (getGrid(x, y))
+				success = false;
+		}
+		if (!success)
+			return false;
+	}
+
 	player->x += preference;
 	if (checkPosition())
 		return true; // 1 to the right

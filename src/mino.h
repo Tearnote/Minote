@@ -8,6 +8,7 @@
 
 #define PIECE_BOX 4 // Size of the bounding box all pieces fit into
 #define MINOS_PER_PIECE 4
+#define CENTER_COLUMN 1 // For purpose of kick exceptions
 
 // All types of minos that can exist on the playfield
 // In addition to minos the player can control,
