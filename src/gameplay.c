@@ -13,6 +13,37 @@
 #include "log.h"
 #include "util.h"
 
+// Frames until the first autoshift
+// 2 is right after the normal shift
+#define DAS_CHARGE 16
+
+// Number of frames between autoshifts
+// 1 is every frame
+// 0 is instant (not supported yet)
+#define DAS_DELAY 1
+
+// Subgrid value at which the piece is dropped
+#define SUBGRID 256
+
+// Natural piece falling speed in subgrids
+int GRAVITY = 16;
+
+// Piece falling speed if soft drop is held
+#define SOFT_DROP 256
+
+// Piece falling speed if sonic drop is held
+#define SONIC_DROP 5120
+
+// How many frames a piece takes to lock if it can't drop
+#define LOCK_DELAY 30
+
+// How many frames it takes for full lines to clear
+#define CLEAR_DELAY 41
+
+// How many frames it takes for the next piece to spawn
+// after the previous one is locked
+#define SPAWN_DELAY 30
+
 // Convenience pointer for storing app->game
 static struct game *game = NULL;
 
@@ -22,15 +53,22 @@ static struct player *player = NULL;
 // RNG specifically for next piece selection
 static rng randomizer = {};
 
-// Check a single playfield cell
 // Accepts inputs outside of bounds
-static bool isFree(int x, int y)
+static enum mino getGrid(int x, int y)
 {
 	if (x < 0 || x >= PLAYFIELD_W || y >= PLAYFIELD_H)
-		return false;
+		return MinoGarbage;
 	if (y < 0)
-		return true;
-	return (bool)(game->playfield[y][x] == MinoNone);
+		return MinoNone;
+	return game->playfield[y][x];
+}
+
+static void setGrid(int x, int y, enum mino val)
+{
+	if (x < 0 || x >= PLAYFIELD_W ||
+	    y < 0 || y >= PLAYFIELD_H)
+		return;
+	game->playfield[y][x] = val;
 }
 
 // Check that player's position doesn't overlap the playfield
@@ -39,7 +77,7 @@ static bool checkPosition(void)
 	for (int i = 0; i < MINOS_PER_PIECE; i++) {
 		int x = player->x + rs[player->type][player->rotation][i].x;
 		int y = player->y + rs[player->type][player->rotation][i].y;
-		if (!isFree(x, y))
+		if (getGrid(x, y))
 			return false;
 	}
 	return true;
@@ -114,7 +152,7 @@ static void lock(void)
 		int y = player->y + rs[player->type][player->rotation][i].y;
 		if (player->y + rs[player->type][player->rotation][i].y < 0)
 			continue;
-		game->playfield[y][x] = (enum mino)player->type;
+		setGrid(x, y, (enum mino)player->type);
 	}
 	player->state = PlayerSpawn;
 }
@@ -198,7 +236,12 @@ static void processInput(struct input *i)
 			game->cmdPressed[inputToCmd(i->type)] = true;
 			game->cmdHeld[inputToCmd(i->type)] = true;
 		}
+		//TODO Debugging, remove
+		if (i->type == InputStart)
+			GRAVITY = SUBGRID * 20;
+
 		break;
+
 	case ActionReleased:
 		if (inputToCmd(i->type) != CmdNone) {
 			game->cmdPressed[inputToCmd(i->type)] = false;
@@ -232,7 +275,7 @@ void initGameplay(void)
 	app->game = game;
 	for (int y = 0; y < PLAYFIELD_H; y++) {
 		for (int x = 0; x < PLAYFIELD_W; x++)
-			game->playfield[y][x] = MinoNone;
+			setGrid(x, y, MinoNone);
 		game->clearedLines[y] = false;
 	}
 	for (int i = 0; i < CmdSize; i++) {
@@ -328,7 +371,7 @@ static int checkClears(void)
 	for (int y = 0; y < PLAYFIELD_H; y++) {
 		bool isCleared = true;
 		for (int x = 0; x < PLAYFIELD_W; x++) {
-			if (game->playfield[y][x] == MinoNone) {
+			if (!getGrid(x, y)) {
 				isCleared = false;
 				break;
 			}
@@ -338,7 +381,7 @@ static int checkClears(void)
 		count += 1;
 		game->clearedLines[y] = true;
 		for (int x = 0; x < PLAYFIELD_W; x++)
-			game->playfield[y][x] = MinoNone;
+			setGrid(x, y, MinoNone);
 	}
 	return count;
 }
@@ -348,10 +391,9 @@ static void thump(void)
 	for (int y = 0; y < PLAYFIELD_H; y++) {
 		if (!game->clearedLines[y])
 			continue;
-		for (int yy = y; yy > 0; yy--) {
+		for (int yy = y; yy >= 0; yy--) {
 			for (int xx = 0; xx < PLAYFIELD_W; xx++)
-				game->playfield[yy][xx] =
-					game->playfield[yy - 1][xx];
+				setGrid(xx, yy, getGrid(xx, yy - 1));
 		}
 		game->clearedLines[y] = false;
 	}
