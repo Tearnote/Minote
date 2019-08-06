@@ -4,6 +4,8 @@
 
 #include "main.h"
 
+#include <stdlib.h>
+
 #include "log.h"
 #include "window.h"
 #include "input.h"
