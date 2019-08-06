@@ -57,4 +57,6 @@ add_dependencies(Preprocess_shaders Preshade)
 # Link the game
 find_package(glfw3 3.3 REQUIRED)
 target_link_libraries(Minote glfw)
-target_link_libraries(Minote winmm)
+if(WIN32)
+    target_link_libraries(Minote winmm)
+endif(WIN32)
