@@ -44,6 +44,9 @@ int GRAVITY = 16;
 // after the previous one is locked
 #define SPAWN_DELAY 30
 
+// The number of times the randomizes attempts to pick a piece not in history
+#define MAX_REROLLS 4
+
 // Convenience pointer for storing app->game
 static struct game *game = NULL;
 
@@ -185,6 +188,40 @@ static void lock(void)
 	player->state = PlayerSpawn;
 }
 
+static enum pieceType randomPiece(void)
+{
+	bool first = false;
+	if (player->history[0] == PieceNone) { // History empty, initialize
+		first = true;
+		for (int i = 0; i < HISTORY_SIZE; i++)
+			player->history[i] = PieceZ;
+	}
+
+	enum pieceType result = PieceNone;
+	for (int i = 0; i < MAX_REROLLS; i++) {
+		result = random(&randomizer, PieceSize - 1) + 1;
+		while (first && // Unfair first piece prevention
+		       (result == PieceS ||
+		        result == PieceZ ||
+		        result == PieceO))
+			result = random(&randomizer, PieceSize - 1) + 1;
+
+		bool valid = true;
+		for (int j = 0; j < HISTORY_SIZE; j++) {
+			if (result == player->history[j])
+				valid = false;
+		}
+		if (valid)
+			break;
+	}
+
+	for (int i = HISTORY_SIZE - 2; i >= 0; i--) {
+		player->history[i + 1] = player->history[i];
+	}
+	player->history[0] = result;
+	return result;
+}
+
 // Generate a new random piece for the player to control
 static void newPiece(void)
 {
@@ -194,9 +231,9 @@ static void newPiece(void)
 
 	// Picking the next piece
 	if (player->preview == PieceNone)
-		player->preview = random(&randomizer, PieceSize - 1) + 1;
+		player->preview = randomPiece();
 	player->type = player->preview;
-	player->preview = random(&randomizer, PieceSize - 1) + 1;
+	player->preview = randomPiece();
 
 	if (player->type == PieceI)
 		player->y += 1;
@@ -317,6 +354,8 @@ void initGameplay(void)
 	player->ySub = 0;
 	player->type = PieceNone;
 	player->preview = PieceNone;
+	for (int i = 0; i < HISTORY_SIZE; i++)
+		player->history[i] = PieceNone;
 	player->rotation = 0;
 	player->dasDirection = 0;
 	player->dasCharge = 0;

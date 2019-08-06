@@ -13,6 +13,8 @@
 #define PLAYFIELD_H_HIDDEN 1
 #define PLAYFIELD_H_VISIBLE (PLAYFIELD_H - PLAYFIELD_H_HIDDEN)
 
+#define HISTORY_SIZE 4
+
 // Types of commands accepted by the gameplay
 enum cmdType {
 	CmdNone,
@@ -38,6 +40,7 @@ struct player {
 	int ySub;
 	enum pieceType type;
 	enum pieceType preview;
+	enum pieceType history[HISTORY_SIZE];
 	int rotation; // 0 to 3, 0 is spawn
 	int dasDirection, dasCharge, dasDelay;
 	int lockDelay;
