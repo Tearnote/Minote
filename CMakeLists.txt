@@ -5,6 +5,10 @@ project(Minote VERSION 0.0
                LANGUAGES C)
 set(CMAKE_C_STANDARD 11)
 
+# Module dependencies
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+find_package(Threads REQUIRED)
+
 # Build the shader preprocessor
 add_executable(Preshade tools/preshade.c)
 
@@ -61,3 +65,4 @@ if(WIN32)
     target_link_libraries(Minote winmm)
 endif(WIN32)
 target_link_libraries(Minote ${CMAKE_DL_LIBS})
+target_link_libraries(Minote Threads::Threads)
