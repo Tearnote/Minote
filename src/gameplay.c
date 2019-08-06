@@ -106,11 +106,12 @@ static bool tryKicks(void)
 	     player->type == PieceJ)) {
 		bool success = true;
 		for (int i = 0; i < MINOS_PER_PIECE; i++) {
+			int xLocal = rs[player->type][player->rotation][i].x;
 			int x = player->x
 			        + rs[player->type][player->rotation][i].x;
 			int y = player->y
 			        + rs[player->type][player->rotation][i].y;
-			if (x != CENTER_COLUMN && getGrid(x, y)) {
+			if (xLocal != CENTER_COLUMN && getGrid(x, y)) {
 				success = true;
 				break;
 			}
