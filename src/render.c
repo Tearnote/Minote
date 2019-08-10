@@ -16,6 +16,7 @@
 #include "thread.h"
 #include "state.h"
 #include "minorender.h"
+#include "textrender.h"
 #include "util.h"
 #include "gameplay.h"
 // Damn that's a lot of includes
@@ -122,10 +123,13 @@ static void renderFrame(void)
 	queueMinoPlayer(&gameSnap->player);
 	queueMinoPreview(&gameSnap->player);
 	renderMino();
+
+	//renderText();
 }
 
 static void cleanupRenderer(void)
 {
+	//cleanupTextRenderer();
 	cleanupMinoRenderer();
 	free(gameSnap);
 	// glfwTerminate() hangs if other threads have a current context
@@ -148,6 +152,7 @@ static void initRenderer(void)
 	glEnable(GL_FRAMEBUFFER_SRGB); // Enable gamma-correct rendering
 
 	initMinoRenderer();
+	//initTextRenderer();
 
 	gameSnap = allocate(sizeof(*gameSnap));
 

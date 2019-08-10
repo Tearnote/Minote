@@ -9,6 +9,8 @@ set(CMAKE_C_STANDARD 11)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 
+add_subdirectory(lib/msdfgen)
+
 # Build the shader preprocessor
 add_executable(Preshade tools/preshade.c)
 
@@ -32,6 +34,25 @@ endforeach(GLSL_PATH)
 add_custom_target(Preprocess_shaders
         DEPENDS ${GLSL_OUTPUTS})
 
+# Preprocess fonts
+set(TTF_SOURCES assets/ttf/B612_Mono/B612Mono-Regular.ttf)
+foreach(TTF_PATH ${TTF_SOURCES})
+    get_filename_component(TTF_FILENAME ${TTF_PATH} NAME_WLE)
+    foreach(ITERATOR RANGE 32 126)
+        set(TTF_OUTPUT ${PROJECT_BINARY_DIR}/ttf/${TTF_FILENAME}-${ITERATOR}.png)
+        add_custom_command(
+                OUTPUT ${TTF_OUTPUT}
+                COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/ttf/"
+                COMMAND msdfgen -font ${PROJECT_SOURCE_DIR}/${TTF_PATH} ${ITERATOR} -size 64 64 -pxrange 12 -scale 1 -translate 4 20 -o ${TTF_OUTPUT}
+                DEPENDS ${TTF_PATH}
+                VERBATIM)
+        list(APPEND TTF_OUTPUTS ${TTF_OUTPUT})
+    endforeach(ITERATOR)
+endforeach(TTF_PATH)
+
+add_custom_target(Preprocess_fonts
+        DEPENDS ${TTF_OUTPUTS})
+
 # Build the game
 include_directories(src)
 set(C_SOURCES
@@ -45,6 +66,7 @@ set(C_SOURCES
         src/main.c
         src/mino.c
         src/minorender.c
+        src/textrender.c
         src/queue.c
         src/render.c
         src/state.c
@@ -57,6 +79,8 @@ add_executable(Minote ${C_SOURCES})
 
 add_dependencies(Minote Preprocess_shaders)
 add_dependencies(Preprocess_shaders Preshade)
+add_dependencies(Minote Preprocess_fonts)
+add_dependencies(Preprocess_fonts msdfgen)
 
 # Link the game
 find_package(glfw3 3.3 REQUIRED)
