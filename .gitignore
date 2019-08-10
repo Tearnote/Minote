@@ -3,6 +3,10 @@ cmake-build-debug/*
 cmake-build-release/*
 *.exe
 
+# Intermediate files
+assets/blend/*.obj
+assets/blend/*.mtl
+
 # Required libraries
 *.dll
 
@@ -14,3 +18,4 @@ cmake-build-release/*
 
 # Internal notes
 TODO
+reference/*
