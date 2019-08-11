@@ -20,15 +20,49 @@
 #define INSTANCE_LIMIT 256 // More minos than that will be ignored
 
 static GLuint program = 0;
-static GLuint vertexAttrs = 0;
+static GLuint vao = 0;
 static GLuint vertexBuffer = 0;
+static GLuint elementBuffer = 0;
 static GLuint instanceBuffer = 0;
-static GLint projectionAttr = 0;
+static GLint modelAttr = -1;
+static GLint cameraAttr = -1;
+static GLint projectionAttr = -1;
+
+static mat4x4 model = {};
+
 static GLfloat vertexData[] = {
-	0, 0,
-	0, MINO_SIZE,
-	MINO_SIZE, 0,
-	MINO_SIZE, MINO_SIZE
+	1.0f, -1.0f, -1.0f,
+	1.0f, -1.0f, 1.0f,
+	-1.0f, -1.0f, -1.0f,
+	-1.0f, -1.0f, 1.0f,
+	1.0f, 0.75f, -1.0f,
+	-1.0f, 0.75f, -1.0f,
+	-1.0f, 0.75f, 1.0f,
+	1.0f, 0.75f, 1.0f,
+	0.75f, 1.0f, 0.75f,
+	0.75f, 1.0f, -0.75f,
+	-0.75f, 1.0f, -0.75f,
+	-0.75f, 1.0f, 0.75f
+};
+static GLuint elementData[] = {
+	7, 0, 1,
+	6, 2, 3,
+	6, 1, 7,
+	0, 5, 2,
+	8, 10, 9,
+	4, 10, 5,
+	7, 9, 4,
+	7, 11, 6,
+	11, 5, 6,
+	7, 4, 0,
+	6, 5, 2,
+	6, 3, 1,
+	0, 4, 5,
+	8, 11, 10,
+	4, 9, 10,
+	7, 8, 9,
+	7, 8, 11,
+	11, 10, 5
 };
 
 // Rendering-ready representation of a mino
@@ -38,10 +72,10 @@ struct minoInstance {
 };
 queue *minoQueue = NULL;
 
-// Most of the wordy OpenGL state wrangling goes here
-// I hope I'll never have to edit this
 void initMinoRenderer(void)
 {
+	minoQueue = createQueue(sizeof(struct minoInstance));
+
 	const GLchar vertSrc[] = {
 #include "mino.vert"
 		, 0x00 };
@@ -51,39 +85,51 @@ void initMinoRenderer(void)
 	program = createProgram(vertSrc, fragSrc);
 	if (program == 0)
 		logError("Failed to initialize mino renderer");
+	modelAttr = glGetUniformLocation(program, "model");
+	cameraAttr = glGetUniformLocation(program, "camera");
 	projectionAttr = glGetUniformLocation(program, "projection");
-	glGenVertexArrays(1, &vertexAttrs);
+
 	glGenBuffers(1, &vertexBuffer);
-	glGenBuffers(1, &instanceBuffer);
-	glBindVertexArray(vertexAttrs);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertexData),
-	             vertexData, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), 0);
-	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
-	glBufferData(GL_ARRAY_BUFFER,
-	             INSTANCE_LIMIT * sizeof(struct minoInstance),
-	             NULL, GL_DYNAMIC_DRAW);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), 0);
-	glVertexAttribDivisor(1, 1);
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat),
-	                      (void *)(2 * sizeof(GLfloat)));
-	glVertexAttribDivisor(2, 1);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertexData), vertexData,
+	             GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	minoQueue = createQueue(sizeof(struct minoInstance));
+
+	glGenBuffers(1, &elementBuffer);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elementData), elementData,
+	             GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid *)0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
+	glBindVertexArray(0);
+
+	mat4x4_identity(model);
+	mat4x4_scale_aniso(model, model, 0.5f, 0.5f, 0.5f);
+	mat4x4_rotate_X(model, model, radf(90.0f));
 }
 
 void cleanupMinoRenderer(void)
 {
-	destroyQueue(minoQueue);
-	minoQueue = NULL;
+	glDeleteVertexArrays(1, &vao);
+	vao = 0;
+	glDeleteBuffers(1, &elementBuffer);
+	elementBuffer = 0;
+	glDeleteBuffers(1, &vertexBuffer);
+	vertexBuffer = 0;
 	destroyProgram(program);
 	program = 0;
+	destroyQueue(minoQueue);
+	minoQueue = NULL;
 }
 
+/*
 void queueMinoPlayfield(enum mino field[PLAYFIELD_H][PLAYFIELD_W])
 {
 	// Center the playfield
@@ -149,20 +195,15 @@ void queueMinoPreview(struct player *player)
 		newInstance->a = minoColors[player->preview][3];
 	}
 }
-
+*/
 void renderMino(void)
 {
 	glUseProgram(program);
-	glUniformMatrix4fv(projectionAttr, 1, GL_FALSE, &projection[0][0]);
-	glBindVertexArray(vertexAttrs);
-	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
-	glBufferSubData(GL_ARRAY_BUFFER, 0,
-	                (GLsizeiptr)(MIN(minoQueue->count, INSTANCE_LIMIT)
-	                             * sizeof(struct minoInstance)),
-	                minoQueue->buffer);
-	// The magic happens here
-	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4,
-	                      (GLsizei)minoQueue->count);
+	glBindVertexArray(vao);
+	glUniformMatrix4fv(modelAttr, 1, GL_FALSE, model[0]);
+	glUniformMatrix4fv(projectionAttr, 1, GL_FALSE, projection[0]);
+	glUniformMatrix4fv(cameraAttr, 1, GL_FALSE, camera[0]);
+	glDrawElements(GL_TRIANGLES, COUNT_OF(elementData), GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
-	clearQueue(minoQueue);
+	glUseProgram(0);
 }

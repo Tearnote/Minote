@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "linmath/linmath.h"
 #include "log.h"
@@ -24,11 +25,8 @@
         glDeleteShader
 
 thread rendererThreadID = 0;
+mat4x4 camera = {};
 mat4x4 projection = {};
-// Calculated from the aspect ratio before the first frame is drawn
-int renderWidth = 0;
-int renderHeight = 360;
-float renderScale = 1.0f;
 
 int viewportWidth = DEFAULT_WIDTH; //SYNC viewportMutex
 int viewportHeight = DEFAULT_HEIGHT; //SYNC viewportMutex
@@ -92,18 +90,12 @@ GLuint createProgram(const GLchar *vertexShaderSrc,
 static void renderFrame(void)
 {
 	lockMutex(&viewportMutex);
-	// This is true on the first frame, so this section is also used
-	// to initialize some values
 	if (viewportDirty) {
-		viewportDirty = false;
 		glViewport(0, 0, viewportWidth, viewportHeight);
-		renderWidth = (int)((float)viewportWidth /
-		                    (float)viewportHeight *
-		                    (float)renderHeight);
-		mat4x4_ortho(projection, 0.0f,
-		             (float)renderWidth, (float)renderHeight,
-		             0.0f, -1.0f, 1.0f);
-		renderScale = viewportScale;
+		mat4x4_perspective(projection, radf(45.0f),
+		                   (float)viewportWidth / (float)viewportHeight,
+		                   PROJECTION_NEAR, PROJECTION_FAR);
+		viewportDirty = false;
 	}
 	unlockMutex(&viewportMutex);
 
@@ -113,21 +105,19 @@ static void renderFrame(void)
 	memcpy(gameSnap, app->game, sizeof(*gameSnap));
 	unlockMutex(&gameMutex);
 
-	// Just a random background color
-	glClearColor(0.03f, 0.07f, 0.07f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	// Render minos
-	queueMinoPlayfield(gameSnap->playfield);
-	queueMinoPlayer(&gameSnap->player);
-	queueMinoPreview(&gameSnap->player);
 	renderMino();
 }
 
 static void cleanupRenderer(void)
 {
 	cleanupMinoRenderer();
-	free(gameSnap);
+	if (gameSnap) {
+		free(gameSnap);
+		gameSnap = NULL;
+	}
 	// glfwTerminate() hangs if other threads have a current context
 	glfwMakeContextCurrent(NULL);
 }
@@ -136,20 +126,22 @@ static void initRenderer(void)
 {
 	// Activate the thread for rendering
 	glfwMakeContextCurrent(window);
-	// Not possible to get an error message out of glad?
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-		logCrit("Failed to initialize GLAD");
+		logCrit("Failed to initialize OpenGL");
 		cleanupRenderer();
 		exit(1);
 	}
 	glfwSwapInterval(1); // Enable vsync
+	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_FRAMEBUFFER_SRGB); // Enable gamma-correct rendering
-
-	initMinoRenderer();
+	glEnable(GL_FRAMEBUFFER_SRGB);
+	glEnable(GL_MULTISAMPLE);
 
 	gameSnap = allocate(sizeof(*gameSnap));
+	mat4x4_translate(camera, 0.0f, 0.0f, -20.0f);
+
+	initMinoRenderer();
 
 	logInfo("OpenGL renderer initialized");
 }
@@ -163,8 +155,7 @@ void *rendererThread(void *param)
 	while (isRunning()) {
 		renderFrame();
 		// Fix graphics not updating in windowed mode with Intel graphics
-		// Need to test if this lowers performance
-		glGetError();
+		glFinish();
 		// Blocks until next vertical refresh because of vsync, so no sleep is needed
 		glfwSwapBuffers(window);
 	}
@@ -176,16 +167,16 @@ void *rendererThread(void *param)
 void resizeRenderer(int width, int height)
 {
 	lockMutex(&viewportMutex);
+	viewportDirty = true;
 	viewportWidth = width;
 	viewportHeight = height;
-	viewportDirty = true;
 	unlockMutex(&viewportMutex);
 }
 
 void rescaleRenderer(float scale)
 {
 	lockMutex(&viewportMutex);
-	viewportScale = scale;
 	viewportDirty = true;
+	viewportScale = scale;
 	unlockMutex(&viewportMutex);
 }
