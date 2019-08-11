@@ -1,15 +1,15 @@
 #version 330 core
 
-layout (location = 0) in vec2 vPosition;
-layout (location = 1) in vec2 vOffset;
-layout (location = 2) in vec4 vColor;
+layout(location = 0) in vec3 vPosition;
 
 out vec4 fColor;
 
+uniform mat4 model;
+uniform mat4 camera;
 uniform mat4 projection;
 
 void main()
 {
-	gl_Position = projection * vec4(vPosition.xy + vOffset.xy, 0.0, 1.0);
-	fColor = vColor;
+	gl_Position = projection * camera * model * vec4(vPosition, 1.0f);
+	fColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);
 }
