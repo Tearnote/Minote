@@ -82,8 +82,12 @@ void logPrio(int prio, const char *fmt, ...)
 		return;
 	va_list ap;
 	va_start(ap, fmt);
-	if (printToLogFile)
-		logTo(logFile, prio, fmt, ap);
+	if (printToLogFile) {
+		va_list apcopy;
+		va_copy(apcopy, ap);
+		logTo(logFile, prio, fmt, apcopy);
+		va_end(apcopy);
+	}
 	if (printToStderr)
 		logTo(stderr, prio, fmt, ap);
 	va_end(ap);
