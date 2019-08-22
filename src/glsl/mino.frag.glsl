@@ -9,11 +9,11 @@ out vec4 outColor;
 void main()
 {
 	vec3 normal = normalize(fNormal);
-	vec3 lightPosition = vec3(2.0, 5.0, 0.0);
+	vec3 lightPosition = vec3(2.5, 6.0, 0.0);
 	vec3 lightColor = vec3(1.0, 1.0, 1.0);
 	vec3 lightDirection = normalize(fPosition - lightPosition);
 
-	float ambientStrength = pow(0.1, 2.2);
+	float ambientStrength = pow(0.25, 2.2);
 	vec3 ambient = ambientStrength * lightColor;
 
 	float diffuseStrength = max(dot(normal, -lightDirection), 0.0);

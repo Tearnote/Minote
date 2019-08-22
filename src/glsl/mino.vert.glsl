@@ -2,6 +2,8 @@
 
 layout(location = 0) in vec3 vPosition;
 layout(location = 1) in vec3 vNormal;
+layout(location = 2) in vec2 vOffset;
+layout(location = 3) in vec4 vColor;
 
 out vec4 fColor;
 out vec3 fPosition;
@@ -13,8 +15,10 @@ uniform mat4 projection;
 
 void main()
 {
-	gl_Position = projection * camera * model * vec4(vPosition, 1.0);
-	fColor = vec4(1.0, 0.22, 0.03, 1.0);
+	vec4 worldPosition = model * vec4(vPosition, 1.0);
+	worldPosition.xy += vOffset;
+	gl_Position = projection * camera * worldPosition;
+	fColor = vColor;
 	fNormal = mat3(transpose(inverse(camera * model))) * vNormal;
-	fPosition = vec3(camera * model * vec4(vPosition, 1.0));
+	fPosition = vec3(camera * worldPosition);
 }

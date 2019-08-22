@@ -16,7 +16,6 @@
 #include "mino.h"
 #include "util.h"
 
-#define MINO_SIZE 12 // Size of the mino in pixels
 #define INSTANCE_LIMIT 256 // More minos than that will be ignored
 
 static GLuint program = 0;
@@ -61,29 +60,44 @@ void initMinoRenderer(void)
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertexData), vertexData,
 	             GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glGenBuffers(1, &instanceBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
+	glBufferData(GL_ARRAY_BUFFER,
+	             INSTANCE_LIMIT * sizeof(struct minoInstance),
+	             NULL, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
+	glEnableVertexAttribArray(3);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6,
 	                      (GLvoid *)0);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6,
 	                      (GLvoid *)(sizeof(GLfloat) * 3));
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6,
+	                      (GLvoid *)0);
+	glVertexAttribDivisor(2, 1);
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6,
+	                      (GLvoid *)(sizeof(GLfloat) * 2));
+	glVertexAttribDivisor(3, 1);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
 	mat4x4_identity(model);
-	//mat4x4_scale_aniso(model, model, 0.5f, 0.5f, 0.5f);
-	mat4x4_rotate_X(model, model, radf(70.0f));
-	mat4x4_rotate_Y(model, model, radf(20.0f));
 }
 
 void cleanupMinoRenderer(void)
 {
 	glDeleteVertexArrays(1, &vao);
 	vao = 0;
+	glDeleteBuffers(1, &instanceBuffer);
+	instanceBuffer = 0;
 	glDeleteBuffers(1, &vertexBuffer);
 	vertexBuffer = 0;
 	destroyProgram(program);
@@ -92,22 +106,17 @@ void cleanupMinoRenderer(void)
 	minoQueue = NULL;
 }
 
-/*
 void queueMinoPlayfield(enum mino field[PLAYFIELD_H][PLAYFIELD_W])
 {
-	// Center the playfield
-	int xOffset = renderWidth / 2 - PLAYFIELD_W / 2 * MINO_SIZE;
-	int yOffset = renderHeight / 2 - PLAYFIELD_H_VISIBLE / 2 * MINO_SIZE;
-
 	for (int y = PLAYFIELD_H_HIDDEN; y < PLAYFIELD_H; y++) {
 		for (int x = 0; x < PLAYFIELD_W; x++) {
 			enum mino minoType = field[y][x];
-			// Commenting this gives a temporary black background
-			//if(minoType == MinoNone) continue;
+			if (minoType == MinoNone)
+				continue;
 			struct minoInstance
 				*newInstance = produceQueueItem(minoQueue);
-			newInstance->x = (GLfloat)(x * MINO_SIZE + xOffset);
-			newInstance->y = (GLfloat)(y * MINO_SIZE + yOffset);
+			newInstance->x = (GLfloat)(x - PLAYFIELD_W / 2);
+			newInstance->y = (GLfloat)(PLAYFIELD_H - 1 - y);
 			newInstance->r = minoColors[minoType][0] / 5;
 			newInstance->g = minoColors[minoType][1] / 5;
 			newInstance->b = minoColors[minoType][2] / 5;
@@ -121,17 +130,13 @@ void queueMinoPlayer(struct player *player)
 	if (player->state != PlayerActive)
 		return;
 
-	int xOffset =
-		renderWidth / 2 - (PLAYFIELD_W / 2 - player->x) * MINO_SIZE;
-	int yOffset =
-		renderHeight / 2
-		- (PLAYFIELD_H_VISIBLE / 2 - player->y) * MINO_SIZE;
-
 	for (int i = 0; i < MINOS_PER_PIECE; i++) {
 		struct coord minoCoord = rs[player->type][player->rotation][i];
 		struct minoInstance *newInstance = produceQueueItem(minoQueue);
-		newInstance->x = (GLfloat)(minoCoord.x * MINO_SIZE + xOffset);
-		newInstance->y = (GLfloat)(minoCoord.y * MINO_SIZE + yOffset);
+		newInstance->x =
+			(GLfloat)(minoCoord.x + player->x - PLAYFIELD_W / 2);
+		newInstance->y =
+			(GLfloat)(PLAYFIELD_H - 1 - minoCoord.y - player->y);
 		newInstance->r = minoColors[player->type][0];
 		newInstance->g = minoColors[player->type][1];
 		newInstance->b = minoColors[player->type][2];
@@ -141,37 +146,37 @@ void queueMinoPlayer(struct player *player)
 
 void queueMinoPreview(struct player *player)
 {
-	int xOffset =
-		renderWidth / 2 - PIECE_BOX / 2 * MINO_SIZE;
-	int yOffset =
-		renderHeight / 2
-		- (PLAYFIELD_H_VISIBLE / 2 + PIECE_BOX) * MINO_SIZE;
-
 	for (int i = 0; i < MINOS_PER_PIECE; i++) {
 		struct coord minoCoord = rs[player->preview][0][i];
 		struct minoInstance *newInstance = produceQueueItem(minoQueue);
-		newInstance->x = (GLfloat)(minoCoord.x * MINO_SIZE + xOffset);
-		newInstance->y = (GLfloat)(minoCoord.y * MINO_SIZE + yOffset);
+		newInstance->x = (GLfloat)(minoCoord.x - PIECE_BOX / 2);
+		newInstance->y = (GLfloat)(PLAYFIELD_H + 3 - minoCoord.y);
 		newInstance->r = minoColors[player->preview][0];
 		newInstance->g = minoColors[player->preview][1];
 		newInstance->b = minoColors[player->preview][2];
 		newInstance->a = minoColors[player->preview][3];
 	}
 }
-*/
+
 void renderMino(void)
 {
+	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
+	glBufferSubData(GL_ARRAY_BUFFER, 0,
+	                (GLsizeiptr)MIN(minoQueue->count, INSTANCE_LIMIT)
+	                * sizeof(struct minoInstance), minoQueue->buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
 	glUseProgram(program);
 	glBindVertexArray(vao);
 
-	mat4x4_identity(model);
-	//mat4x4_scale_aniso(model, model, 0.5f, 0.5f, 0.5f);
-	mat4x4_rotate_X(model, model, radf(30.0f) + sin(glfwGetTime()) / 4);
-	mat4x4_rotate_Y(model, model, glfwGetTime());
 	glUniformMatrix4fv(modelAttr, 1, GL_FALSE, model[0]);
 	glUniformMatrix4fv(projectionAttr, 1, GL_FALSE, projection[0]);
 	glUniformMatrix4fv(cameraAttr, 1, GL_FALSE, camera[0]);
-	glDrawArrays(GL_TRIANGLES, 0, COUNT_OF(vertexData) / 6);
+	glDrawArraysInstanced(GL_TRIANGLES, 0, COUNT_OF(vertexData) / 6,
+	                      (GLsizei)minoQueue->count);
+
 	glBindVertexArray(0);
 	glUseProgram(0);
+
+	clearQueue(minoQueue);
 }

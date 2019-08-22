@@ -108,6 +108,9 @@ static void renderFrame(void)
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	queueMinoPlayfield(gameSnap->playfield);
+	queueMinoPlayer(&gameSnap->player);
+	queueMinoPreview(&gameSnap->player);
 	renderMino();
 }
 
@@ -142,7 +145,7 @@ static void initRenderer(void)
 	glEnable(GL_MULTISAMPLE);
 
 	gameSnap = allocate(sizeof(*gameSnap));
-	mat4x4_translate(camera, 0.0f, 0.0f, -10.0f);
+	mat4x4_translate(camera, 0.0f, -12.0f, -32.0f);
 
 	initMinoRenderer();
 
