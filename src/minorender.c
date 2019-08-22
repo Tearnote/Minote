@@ -166,7 +166,7 @@ void renderMino(void)
 
 	mat4x4_identity(model);
 	//mat4x4_scale_aniso(model, model, 0.5f, 0.5f, 0.5f);
-	mat4x4_rotate_X(model, model, radf(30.0f) + glfwGetTime()/2.2);
+	mat4x4_rotate_X(model, model, radf(30.0f) + sin(glfwGetTime()) / 4);
 	mat4x4_rotate_Y(model, model, glfwGetTime());
 	glUniformMatrix4fv(modelAttr, 1, GL_FALSE, model[0]);
 	glUniformMatrix4fv(projectionAttr, 1, GL_FALSE, projection[0]);

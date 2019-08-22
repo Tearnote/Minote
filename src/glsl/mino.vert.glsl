@@ -15,6 +15,6 @@ void main()
 {
 	gl_Position = projection * camera * model * vec4(vPosition, 1.0);
 	fColor = vec4(1.0, 0.22, 0.03, 1.0);
-	fNormal = vec3(model * vec4(vNormal, 1.0));
-	fPosition = vec3(model * vec4(vPosition, 1.0));
+	fNormal = mat3(transpose(inverse(camera * model))) * vNormal;
+	fPosition = vec3(camera * model * vec4(vPosition, 1.0));
 }
