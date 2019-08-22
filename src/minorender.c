@@ -29,40 +29,8 @@ static GLint cameraAttr = -1;
 static GLint projectionAttr = -1;
 
 static mat4x4 model = {};
-
 static GLfloat vertexData[] = {
-	1.0f, -1.0f, -1.0f,
-	1.0f, -1.0f, 1.0f,
-	-1.0f, -1.0f, -1.0f,
-	-1.0f, -1.0f, 1.0f,
-	1.0f, 0.75f, -1.0f,
-	-1.0f, 0.75f, -1.0f,
-	-1.0f, 0.75f, 1.0f,
-	1.0f, 0.75f, 1.0f,
-	0.75f, 1.0f, 0.75f,
-	0.75f, 1.0f, -0.75f,
-	-0.75f, 1.0f, -0.75f,
-	-0.75f, 1.0f, 0.75f
-};
-static GLuint elementData[] = {
-	7, 0, 1,
-	6, 2, 3,
-	6, 1, 7,
-	0, 5, 2,
-	8, 10, 9,
-	4, 10, 5,
-	7, 9, 4,
-	7, 11, 6,
-	11, 5, 6,
-	7, 4, 0,
-	6, 5, 2,
-	6, 3, 1,
-	0, 4, 5,
-	8, 11, 10,
-	4, 9, 10,
-	7, 8, 9,
-	7, 8, 11,
-	11, 10, 5
+#include "mino.vtx"
 };
 
 // Rendering-ready representation of a mino
@@ -95,12 +63,6 @@ void initMinoRenderer(void)
 	             GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	glGenBuffers(1, &elementBuffer);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elementData), elementData,
-	             GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 	glEnableVertexAttribArray(0);
@@ -111,7 +73,7 @@ void initMinoRenderer(void)
 	glBindVertexArray(0);
 
 	mat4x4_identity(model);
-	mat4x4_scale_aniso(model, model, 0.5f, 0.5f, 0.5f);
+	//mat4x4_scale_aniso(model, model, 0.5f, 0.5f, 0.5f);
 	mat4x4_rotate_X(model, model, radf(90.0f));
 }
 
@@ -203,7 +165,7 @@ void renderMino(void)
 	glUniformMatrix4fv(modelAttr, 1, GL_FALSE, model[0]);
 	glUniformMatrix4fv(projectionAttr, 1, GL_FALSE, projection[0]);
 	glUniformMatrix4fv(cameraAttr, 1, GL_FALSE, camera[0]);
-	glDrawElements(GL_TRIANGLES, COUNT_OF(elementData), GL_UNSIGNED_INT, 0);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 	glBindVertexArray(0);
 	glUseProgram(0);
 }

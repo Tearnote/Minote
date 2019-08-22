@@ -9,8 +9,9 @@ set(CMAKE_C_STANDARD 11)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 
-# Build the shader preprocessor
+# Build the preprocessors
 add_executable(Preshade tools/preshade.c)
+add_executable(Premodel tools/premodel.c)
 
 # Preprocess shaders
 include_directories(${PROJECT_BINARY_DIR}/glsl)
@@ -32,8 +33,28 @@ endforeach(GLSL_PATH)
 add_custom_target(Preprocess_shaders
         DEPENDS ${GLSL_OUTPUTS})
 
+# Preprocess models
+include_directories(${PROJECT_BINARY_DIR}/obj)
+set(OBJ_SOURCES src/obj/mino.obj)
+
+foreach(OBJ_PATH ${OBJ_SOURCES})
+    get_filename_component(OBJ_FILENAME ${OBJ_PATH} NAME_WLE)
+    set(OBJ_OUTPUT ${PROJECT_BINARY_DIR}/obj/${OBJ_FILENAME}.vtx)
+    add_custom_command(
+            OUTPUT ${OBJ_OUTPUT}
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/obj/"
+            COMMAND Premodel ${PROJECT_SOURCE_DIR}/${OBJ_PATH} ${OBJ_OUTPUT}
+            DEPENDS ${OBJ_PATH}
+            VERBATIM)
+    list(APPEND OBJ_OUTPUTS ${OBJ_OUTPUT})
+endforeach(OBJ_PATH)
+
+add_custom_target(Preprocess_models
+        DEPENDS ${OBJ_OUTPUTS})
+
 # Build the game
 include_directories(src)
+include_directories(lib)
 set(C_SOURCES
         src/glad/glad.c
         src/pcg/pcg_basic.c
@@ -56,7 +77,9 @@ set(C_SOURCES
 add_executable(Minote ${C_SOURCES})
 
 add_dependencies(Minote Preprocess_shaders)
+add_dependencies(Minote Preprocess_models)
 add_dependencies(Preprocess_shaders Preshade)
+add_dependencies(Preprocess_models Premodel)
 
 # Link the game
 find_package(glfw3 3.3 REQUIRED)
@@ -66,3 +89,4 @@ if(WIN32)
 endif(WIN32)
 target_link_libraries(Minote ${CMAKE_DL_LIBS})
 target_link_libraries(Minote Threads::Threads)
+target_link_libraries(Minote m)
