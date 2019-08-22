@@ -139,7 +139,7 @@ static void initRenderer(void)
 	glEnable(GL_MULTISAMPLE);
 
 	gameSnap = allocate(sizeof(*gameSnap));
-	mat4x4_translate(camera, 0.0f, 0.0f, -20.0f);
+	mat4x4_translate(camera, 0.0f, 0.0f, -10.0f);
 
 	initMinoRenderer();
 
