@@ -22,7 +22,6 @@
 static GLuint program = 0;
 static GLuint vao = 0;
 static GLuint vertexBuffer = 0;
-static GLuint elementBuffer = 0;
 static GLuint instanceBuffer = 0;
 static GLint modelAttr = -1;
 static GLint cameraAttr = -1;
@@ -66,10 +65,13 @@ void initMinoRenderer(void)
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid *)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6,
+	                      (GLvoid *)0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6,
+	                      (GLvoid *)(sizeof(GLfloat) * 3));
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
 	glBindVertexArray(0);
 
 	mat4x4_identity(model);
@@ -81,8 +83,6 @@ void cleanupMinoRenderer(void)
 {
 	glDeleteVertexArrays(1, &vao);
 	vao = 0;
-	glDeleteBuffers(1, &elementBuffer);
-	elementBuffer = 0;
 	glDeleteBuffers(1, &vertexBuffer);
 	vertexBuffer = 0;
 	destroyProgram(program);
@@ -165,7 +165,7 @@ void renderMino(void)
 	glUniformMatrix4fv(modelAttr, 1, GL_FALSE, model[0]);
 	glUniformMatrix4fv(projectionAttr, 1, GL_FALSE, projection[0]);
 	glUniformMatrix4fv(cameraAttr, 1, GL_FALSE, camera[0]);
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+	glDrawArrays(GL_TRIANGLES, 0, COUNT_OF(vertexData) / 6);
 	glBindVertexArray(0);
 	glUseProgram(0);
 }
