@@ -6,7 +6,6 @@
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -19,7 +18,10 @@
 #include "minorender.h"
 #include "util.h"
 #include "gameplay.h"
+#include "timer.h"
 // Damn that's a lot of includes
+
+#define FENCE_COUNT 3
 
 #define destroyShader \
         glDeleteShader
@@ -33,6 +35,9 @@ int viewportHeight = DEFAULT_HEIGHT; //SYNC viewportMutex
 float viewportScale = 0.0f; //SYNC viewportMutex
 bool viewportDirty = true; //SYNC viewportMutex
 mutex viewportMutex = newMutex;
+
+static GLsync fenceBuffer[FENCE_COUNT];
+static int fenceBufferHead = 0;
 
 // Thread-local copy of the game state being rendered
 static struct game *gameSnap = NULL;
@@ -145,11 +150,26 @@ static void initRenderer(void)
 	glEnable(GL_MULTISAMPLE);
 
 	gameSnap = allocate(sizeof(*gameSnap));
-	mat4x4_translate(camera, 0.0f, -12.0f, -32.0f);
+	for (int i = 0; i < FENCE_COUNT; i++)
+		fenceBuffer[i] = NULL;
 
+	mat4x4_translate(camera, 0.0f, -12.0f, -32.0f);
 	initMinoRenderer();
 
 	logInfo("OpenGL renderer initialized");
+}
+
+static void syncRenderer(void)
+{
+	int fenceBufferHeadNext = fenceBufferHead + 1;
+	fenceBufferHeadNext %= FENCE_COUNT;
+	fenceBuffer[fenceBufferHead] =
+		glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+	if (fenceBuffer[fenceBufferHeadNext]) {
+		glClientWaitSync(fenceBuffer[fenceBufferHeadNext],
+		                 GL_SYNC_FLUSH_COMMANDS_BIT, MSEC * 100);
+	}
+	fenceBufferHead = fenceBufferHeadNext;
 }
 
 void *rendererThread(void *param)
@@ -160,8 +180,8 @@ void *rendererThread(void *param)
 
 	while (isRunning()) {
 		renderFrame();
-		// Fix graphics not updating in windowed mode with Intel graphics
-		glFinish();
+		// Control GPU buffering with fences
+		syncRenderer();
 		// Blocks until next vertical refresh because of vsync, so no sleep is needed
 		glfwSwapBuffers(window);
 	}
