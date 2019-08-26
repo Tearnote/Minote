@@ -151,6 +151,6 @@ int main(int argc, char *argv[])
 	if (materials)
 		tinyobj_materials_free(materials, num_materials);
 	if (shapes)
-		tinyobj_materials_free(shapes, num_shapes);
+		tinyobj_shapes_free(shapes, num_shapes);
 	fclose(output);
 }
