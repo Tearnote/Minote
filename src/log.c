@@ -30,10 +30,10 @@ static mutex logMutex = newMutex;
 static FILE *logFile = NULL;
 static bool printToLogFile = true;
 #ifdef NDEBUG
-static bool printToStderr = false;
+static bool printToStdout = false;
 static int logLevel = 2;
 #else // NDEBUG
-static bool printToStderr = true;
+static bool printToStdout = true;
 static int logLevel = 1;
 #endif // NDEBUG
 
@@ -47,7 +47,7 @@ void initLogging()
 	logFile = fopen(LOG_FILENAME, "w");
 	if (!logFile) { // Force stderr logging on failure
 		printToLogFile = false;
-		printToStderr = true;
+		printToStdout = true;
 		logError("Failed to open %s for writing: %s",
 		         LOG_FILENAME, strerror(errno));
 	}
@@ -88,8 +88,8 @@ void logPrio(int prio, const char *fmt, ...)
 		logTo(logFile, prio, fmt, apcopy);
 		va_end(apcopy);
 	}
-	if (printToStderr)
-		logTo(stderr, prio, fmt, ap);
+	if (printToStdout)
+		logTo(prio >= 3 ? stderr : stdout, prio, fmt, ap);
 	va_end(ap);
 }
 
