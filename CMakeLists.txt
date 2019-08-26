@@ -10,8 +10,8 @@ set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 
 # Build the preprocessors
-add_executable(Preshade tools/preshade.c)
-add_executable(Premodel tools/premodel.c)
+add_executable(Preshade src/tools/preshade.c)
+add_executable(Premodel src/tools/premodel.c)
 
 # Preprocess shaders
 include_directories(${PROJECT_BINARY_DIR}/glsl)
@@ -55,9 +55,10 @@ add_custom_target(Preprocess_models
 # Build the game
 include_directories(src)
 include_directories(lib)
+set(C_LIBS
+        lib/glad/glad.c
+        lib/pcg/pcg_basic.c)
 set(C_SOURCES
-        src/glad/glad.c
-        src/pcg/pcg_basic.c
         src/fifo.c
         src/gameplay.c
         src/input.c
@@ -74,7 +75,7 @@ set(C_SOURCES
         src/util.c
         src/window.c)
 
-add_executable(Minote ${C_SOURCES})
+add_executable(Minote ${C_SOURCES} ${C_LIBS})
 
 add_dependencies(Minote Preprocess_shaders)
 add_dependencies(Minote Preprocess_models)
