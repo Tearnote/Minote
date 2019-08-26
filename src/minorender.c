@@ -6,6 +6,7 @@
 #include <GLFW/glfw3.h>
 
 #include <string.h>
+#include <math.h>
 
 #include "linmath/linmath.h"
 #include "render.h"
@@ -22,11 +23,19 @@ static GLuint program = 0;
 static GLuint vao = 0;
 static GLuint vertexBuffer = 0;
 static GLuint instanceBuffer = 0;
-static GLint modelAttr = -1;
-static GLint cameraAttr = -1;
-static GLint projectionAttr = -1;
 
-static mat4x4 model = {};
+static GLint cameraAttr = -1;
+static GLint normalCameraAttr = -1;
+static GLint projectionAttr = -1;
+static GLint lightPositionAttr = -1;
+static GLint lightColorAttr = -1;
+static GLint ambientStrengthAttr = -1;
+static GLint diffuseStrengthAttr = -1;
+static GLint specularStrengthAttr = -1;
+static GLint shininessAttr = -1;
+
+static mat4x4 normalCamera = {};
+
 static GLfloat vertexData[] = {
 #include "mino.vtx"
 };
@@ -51,9 +60,15 @@ void initMinoRenderer(void)
 	program = createProgram(vertSrc, fragSrc);
 	if (program == 0)
 		logError("Failed to initialize mino renderer");
-	modelAttr = glGetUniformLocation(program, "model");
 	cameraAttr = glGetUniformLocation(program, "camera");
+	normalCameraAttr = glGetUniformLocation(program, "normalCamera");
 	projectionAttr = glGetUniformLocation(program, "projection");
+	lightPositionAttr = glGetUniformLocation(program, "lightPosition");
+	lightColorAttr = glGetUniformLocation(program, "lightColor");
+	ambientStrengthAttr = glGetUniformLocation(program, "ambientStrength");
+	diffuseStrengthAttr = glGetUniformLocation(program, "diffuseStrength");
+	specularStrengthAttr = glGetUniformLocation(program, "specularStrength");
+	shininessAttr = glGetUniformLocation(program, "shininess");
 
 	glGenBuffers(1, &vertexBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
@@ -88,8 +103,6 @@ void initMinoRenderer(void)
 	glVertexAttribDivisor(3, 1);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
-
-	mat4x4_identity(model);
 }
 
 void cleanupMinoRenderer(void)
@@ -166,12 +179,25 @@ void renderMino(void)
 	                * sizeof(struct minoInstance), minoQueue->buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+	mat4x4 temp = {};
+	mat4x4_invert(temp, camera);
+	mat4x4_transpose(normalCamera, temp);
+
 	glUseProgram(program);
 	glBindVertexArray(vao);
 
-	glUniformMatrix4fv(modelAttr, 1, GL_FALSE, model[0]);
-	glUniformMatrix4fv(projectionAttr, 1, GL_FALSE, projection[0]);
 	glUniformMatrix4fv(cameraAttr, 1, GL_FALSE, camera[0]);
+	glUniformMatrix4fv(normalCameraAttr, 1, GL_FALSE, normalCamera[0]);
+	glUniformMatrix4fv(projectionAttr, 1, GL_FALSE, projection[0]);
+	glUniform3f(lightPositionAttr, 2.5f, 6.0f, 0.0f);
+	glUniform3f(lightColorAttr,
+	            powf(1.0f, 2.2f),
+	            powf(1.0f, 2.2f),
+	            powf(1.0f, 2.2f));
+	glUniform1f(ambientStrengthAttr, powf(0.25f, 2.2f));
+	glUniform1f(diffuseStrengthAttr, powf(1.0f, 2.2f));
+	glUniform1f(specularStrengthAttr, powf(0.5f, 2.2f));
+	glUniform1f(shininessAttr, 32.0f);
 	glDrawArraysInstanced(GL_TRIANGLES, 0, COUNT_OF(vertexData) / 6,
 	                      (GLsizei)minoQueue->count);
 
