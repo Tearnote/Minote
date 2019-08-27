@@ -26,5 +26,6 @@ void main()
 	vec3 specular = specularStrength * shine * lightColor;
 
 	float colorMod = mix(0.75, 1.25, fVertical);
-	outColor = vec4(ambient + diffuse + specular, 1.0) * (fColor * colorMod);
+	vec4 newColor = vec4(vec3(fColor) * colorMod, fColor.a);
+	outColor = vec4(ambient + diffuse + specular, 1.0) * newColor;
 }
