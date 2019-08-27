@@ -110,6 +110,10 @@ static void renderFrame(void)
 	memcpy(gameSnap, app->game, sizeof(*gameSnap));
 	unlockMutex(&gameMutex);
 
+	/*glClearColor(powf(0.48f, 2.2f),
+	             powf(0.75f, 2.2f),
+	             powf(0.83f, 2.2f),
+	             1.0f);*/
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
