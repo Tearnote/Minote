@@ -8,6 +8,7 @@ layout(location = 3) in vec4 vColor;
 out vec4 fColor;
 out vec3 fPosition;
 out vec3 fNormal;
+out float fVertical;
 
 uniform mat4 camera;
 uniform mat4 normalCamera;
@@ -21,4 +22,5 @@ void main()
 	fColor = vColor;
 	fNormal = normalize(mat3(normalCamera) * vNormal);
 	fPosition = vec3(camera * worldPosition);
+	fVertical = vPosition.y;
 }
