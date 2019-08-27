@@ -162,6 +162,8 @@ void queueMinoPreview(struct player *player)
 	for (int i = 0; i < MINOS_PER_PIECE; i++) {
 		struct coord minoCoord = rs[player->preview][0][i];
 		struct minoInstance *newInstance = produceQueueItem(minoQueue);
+		if (player->preview == PieceI)
+			minoCoord.y += 1;
 		newInstance->x = (GLfloat)(minoCoord.x - PIECE_BOX / 2);
 		newInstance->y = (GLfloat)(PLAYFIELD_H + 3 - minoCoord.y);
 		newInstance->r = minoColors[player->preview][0];
