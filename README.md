@@ -1,5 +1,5 @@
 # Minote
-A repo for an upcoming rhythm puzzle action game. Not playable, currently on git as a personal backup.
+A repo for an upcoming puzzle action game. Not playable, currently on git as a personal backup.
 
 ## Building
 Currently developed and frequently tested on Windows, but sometimes verified on Linux. Should be portable to any platform with OpenGL 3.3 core profile and some implementation of POSIX.
