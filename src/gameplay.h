@@ -54,6 +54,7 @@ struct game {
 	enum mino playfield[PLAYFIELD_H][PLAYFIELD_W];
 	bool clearedLines[PLAYFIELD_H];
 	struct player player;
+	bool cmdUnfiltered[CmdSize];
 	bool cmdPressed[CmdSize];
 	bool cmdHeld[CmdSize];
 };

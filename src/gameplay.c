@@ -275,6 +275,7 @@ static enum cmdType inputToCmd(enum inputType i)
 	}
 }
 
+// Receive unfiltered inputs
 static void processInput(struct input *i)
 {
 	switch (i->action) {
@@ -285,23 +286,10 @@ static void processInput(struct input *i)
 			setRunning(false);
 			break;
 		}
-		// 4-way emulation
-		if (i->type == InputUp || i->type == InputDown ||
-		    i->type == InputLeft || i->type == InputRight) {
-			game->cmdPressed[inputToCmd(InputUp)] = false;
-			game->cmdPressed[inputToCmd(InputDown)] = false;
-			game->cmdPressed[inputToCmd(InputLeft)] = false;
-			game->cmdPressed[inputToCmd(InputRight)] = false;
-			game->cmdHeld[inputToCmd(InputUp)] = false;
-			game->cmdHeld[inputToCmd(InputDown)] = false;
-			game->cmdHeld[inputToCmd(InputLeft)] = false;
-			game->cmdHeld[inputToCmd(InputRight)] = false;
-		}
 
-		if (inputToCmd(i->type) != CmdNone) {
-			game->cmdPressed[inputToCmd(i->type)] = true;
-			game->cmdHeld[inputToCmd(i->type)] = true;
-		}
+		if (inputToCmd(i->type) != CmdNone)
+			game->cmdUnfiltered[inputToCmd(i->type)] = true;
+
 		//TODO Debugging, remove
 		if (i->type == InputStart)
 			GRAVITY = SUBGRID * 20;
@@ -309,10 +297,8 @@ static void processInput(struct input *i)
 		break;
 
 	case ActionReleased:
-		if (inputToCmd(i->type) != CmdNone) {
-			game->cmdPressed[inputToCmd(i->type)] = false;
-			game->cmdHeld[inputToCmd(i->type)] = false;
-		}
+		if (inputToCmd(i->type) != CmdNone)
+			game->cmdUnfiltered[inputToCmd(i->type)] = false;
 		break;
 	default:
 		break;
@@ -326,10 +312,30 @@ static void processInputs(void)
 	for (int i = 0; i < CmdSize; i++)
 		game->cmdPressed[i] = false;
 
-	struct input *i = NULL;
-	while ((i = dequeueInput())) {
-		processInput(i);
-		free(i);
+	// Receive all pending inputs
+	struct input *in = NULL;
+	while ((in = dequeueInput())) {
+		processInput(in);
+		free(in);
+	}
+
+	// Passthrough the inputs
+	for (int i = CmdNone + 1; i < CmdSize; i++) {
+		if (game->cmdUnfiltered[i] && !game->cmdHeld[i]) {
+			game->cmdPressed[i] = true;
+			game->cmdHeld[i] = true;
+		} else if (!game->cmdUnfiltered[i] && game->cmdHeld[i]) {
+			game->cmdHeld[i] = false;
+		}
+	}
+
+	// Filter the conflicting ones
+	if ((game->cmdHeld[CmdLeft] && game->cmdHeld[CmdRight]) ||
+	    game->cmdHeld[CmdSoft] || game->cmdHeld[CmdSonic]) {
+		game->cmdPressed[CmdLeft] = false;
+		game->cmdHeld[CmdLeft] = false;
+		game->cmdPressed[CmdRight] = false;
+		game->cmdHeld[CmdRight] = false;
 	}
 }
 
@@ -345,6 +351,7 @@ void initGameplay(void)
 		game->clearedLines[y] = false;
 	}
 	for (int i = 0; i < CmdSize; i++) {
+		game->cmdUnfiltered[i] = false;
 		game->cmdPressed[i] = false;
 		game->cmdHeld[i] = false;
 	}
