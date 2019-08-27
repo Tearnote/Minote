@@ -31,6 +31,9 @@
 thread rendererThreadID = 0;
 mat4x4 camera = {};
 mat4x4 projection = {};
+vec3 lightPosition = {};
+
+vec4 lightPositionWorld = {};
 
 int viewportWidth = DEFAULT_WIDTH; //SYNC viewportMutex
 int viewportHeight = DEFAULT_HEIGHT; //SYNC viewportMutex
@@ -112,6 +115,12 @@ static void renderFrame(void)
 	memcpy(gameSnap, app->game, sizeof(*gameSnap));
 	unlockMutex(&gameMutex);
 
+	vec4 lightPositionTemp;
+	mat4x4_mul_vec4(lightPositionTemp, camera, lightPositionWorld);
+	lightPosition[0] = lightPositionTemp[0];
+	lightPosition[1] = lightPositionTemp[1];
+	lightPosition[2] = lightPositionTemp[2];
+
 	glClearColor(powf(0.48f, 2.2f),
 	             powf(0.75f, 2.2f),
 	             powf(0.83f, 2.2f),
@@ -164,6 +173,11 @@ static void initRenderer(void)
 		fenceBuffer[i] = NULL;
 
 	mat4x4_translate(camera, 0.0f, -12.0f, -32.0f);
+	lightPositionWorld[0] = 2.0f;
+	lightPositionWorld[1] = 15.0f;
+	lightPositionWorld[2] = 10.0f;
+	lightPositionWorld[3] = 1.0f;
+
 	initSceneRenderer();
 	initMinoRenderer();
 	initBorderRenderer();
