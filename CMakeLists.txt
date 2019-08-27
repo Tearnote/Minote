@@ -16,7 +16,9 @@ add_executable(Premodel src/tools/premodel.c)
 # Preprocess shaders
 include_directories(${PROJECT_BINARY_DIR}/glsl)
 set(GLSL_SOURCES src/glsl/mino.vert.glsl
-        src/glsl/mino.frag.glsl)
+        src/glsl/mino.frag.glsl
+        src/glsl/scene.vert.glsl
+        src/glsl/scene.frag.glsl)
 
 foreach(GLSL_PATH ${GLSL_SOURCES})
     get_filename_component(GLSL_FILENAME ${GLSL_PATH} NAME_WLE)
@@ -66,6 +68,7 @@ set(C_SOURCES
         src/logic.c
         src/main.c
         src/mino.c
+        src/scenerender.c
         src/minorender.c
         src/queue.c
         src/render.c

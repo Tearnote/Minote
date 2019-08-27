@@ -15,6 +15,7 @@
 #include "window.h"
 #include "thread.h"
 #include "state.h"
+#include "scenerender.h"
 #include "minorender.h"
 #include "util.h"
 #include "gameplay.h"
@@ -110,12 +111,13 @@ static void renderFrame(void)
 	memcpy(gameSnap, app->game, sizeof(*gameSnap));
 	unlockMutex(&gameMutex);
 
-	/*glClearColor(powf(0.48f, 2.2f),
+	glClearColor(powf(0.48f, 2.2f),
 	             powf(0.75f, 2.2f),
 	             powf(0.83f, 2.2f),
-	             1.0f);*/
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	             1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	renderScene();
 
 	queueMinoPlayfield(gameSnap->playfield);
 	queueMinoPlayer(&gameSnap->player);
@@ -126,6 +128,7 @@ static void renderFrame(void)
 static void cleanupRenderer(void)
 {
 	cleanupMinoRenderer();
+	cleanupSceneRenderer();
 	if (gameSnap) {
 		free(gameSnap);
 		gameSnap = NULL;
@@ -158,6 +161,7 @@ static void initRenderer(void)
 		fenceBuffer[i] = NULL;
 
 	mat4x4_translate(camera, 0.0f, -12.0f, -32.0f);
+	initSceneRenderer();
 	initMinoRenderer();
 
 	logInfo("OpenGL renderer initialized");
