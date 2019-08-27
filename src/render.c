@@ -17,6 +17,7 @@
 #include "state.h"
 #include "scenerender.h"
 #include "minorender.h"
+#include "borderrender.h"
 #include "util.h"
 #include "gameplay.h"
 #include "timer.h"
@@ -118,15 +119,17 @@ static void renderFrame(void)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	renderScene();
-
 	queueMinoPlayfield(gameSnap->playfield);
 	queueMinoPlayer(&gameSnap->player);
 	queueMinoPreview(&gameSnap->player);
 	renderMino();
+	queueBorder(gameSnap->playfield);
+	renderBorder();
 }
 
 static void cleanupRenderer(void)
 {
+	cleanupBorderRenderer();
 	cleanupMinoRenderer();
 	cleanupSceneRenderer();
 	if (gameSnap) {
@@ -163,6 +166,7 @@ static void initRenderer(void)
 	mat4x4_translate(camera, 0.0f, -12.0f, -32.0f);
 	initSceneRenderer();
 	initMinoRenderer();
+	initBorderRenderer();
 
 	logInfo("OpenGL renderer initialized");
 }

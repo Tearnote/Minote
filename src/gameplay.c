@@ -57,7 +57,7 @@ static struct player *player = NULL;
 static rng randomizer = {};
 
 // Accepts inputs outside of bounds
-static enum mino getGrid(int x, int y)
+enum mino getGrid(int x, int y)
 {
 	if (x < 0 || x >= PLAYFIELD_W || y >= PLAYFIELD_H)
 		return MinoGarbage;

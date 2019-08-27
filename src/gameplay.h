@@ -64,4 +64,8 @@ void cleanupGameplay(void);
 // Consume inputs and advance a single frame
 void updateGameplay(void);
 
+// Return the mino at the specific cell
+// Accepts inputs outside of bounds
+enum mino getGrid(int x, int y);
+
 #endif // GAMEPLAY_H

@@ -18,7 +18,9 @@ include_directories(${PROJECT_BINARY_DIR}/glsl)
 set(GLSL_SOURCES src/glsl/mino.vert.glsl
         src/glsl/mino.frag.glsl
         src/glsl/scene.vert.glsl
-        src/glsl/scene.frag.glsl)
+        src/glsl/scene.frag.glsl
+        src/glsl/border.vert.glsl
+        src/glsl/border.frag.glsl)
 
 foreach(GLSL_PATH ${GLSL_SOURCES})
     get_filename_component(GLSL_FILENAME ${GLSL_PATH} NAME_WLE)
@@ -70,6 +72,7 @@ set(C_SOURCES
         src/mino.c
         src/scenerender.c
         src/minorender.c
+        src/borderrender.c
         src/queue.c
         src/render.c
         src/state.c
