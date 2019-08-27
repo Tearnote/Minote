@@ -173,9 +173,9 @@ static void initRenderer(void)
 		fenceBuffer[i] = NULL;
 
 	mat4x4_translate(camera, 0.0f, -12.0f, -32.0f);
-	lightPositionWorld[0] = 2.0f;
-	lightPositionWorld[1] = 15.0f;
-	lightPositionWorld[2] = 10.0f;
+	lightPositionWorld[0] = -8.0f;
+	lightPositionWorld[1] = 32.0f;
+	lightPositionWorld[2] = 16.0f;
 	lightPositionWorld[3] = 1.0f;
 
 	initSceneRenderer();

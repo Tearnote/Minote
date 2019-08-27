@@ -9,7 +9,7 @@ uniform mat4 projection;
 
 void main()
 {
-	vec4 worldPosition = vec4(vPosition, 0.2, 1.0);
+	vec4 worldPosition = vec4(vPosition, 0.0, 1.0);
 	worldPosition.x *= vOffset2.x - vOffset1.x;
 	worldPosition.y *= vOffset2.y - vOffset1.y;
 	worldPosition.xy += vOffset1;

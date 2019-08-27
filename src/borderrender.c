@@ -204,7 +204,7 @@ void renderBorder(void)
 
 	glUniformMatrix4fv(cameraAttr, 1, GL_FALSE, camera[0]);
 	glUniformMatrix4fv(projectionAttr, 1, GL_FALSE, projection[0]);
-	glUniform4f(colorAttr, 1.0f, 1.0f, 1.0f, 0.75f);
+	glUniform4f(colorAttr, 1.0f, 1.0f, 1.0f, 0.5f);
 	glDrawArraysInstanced(GL_TRIANGLES, 0, COUNT_OF(vertexData) / 2,
 	                      (GLsizei)segmentQueue->count);
 
