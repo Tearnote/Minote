@@ -1,20 +1,12 @@
 # Output files
 cmake-build-debug/*
 cmake-build-release/*
-*.exe
-
-# Intermediate files
-assets/blend/*.obj
-assets/blend/*.mtl
 
 # Required libraries
 *.dll
 
 # Editor config
 .idea/*
-
-# Files created by the app
-*.log
 
 # Internal notes
 TODO
