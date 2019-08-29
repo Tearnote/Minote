@@ -17,6 +17,4 @@ Built on Linux with CMake. Requires [GLFW](https://www.glfw.org/) 3.3, which is 
 
 [tinyobjloader-c](https://github.com/syoyo/tinyobjloader-c) retrieved on 2019-08-22, used under MIT license.
 
-`src/textrender.c` contains code adapted from [msdfgl](https://github.com/nyyManni/msdfgl) 0.2, used under MIT license.
-
 Please note that Minote's license is incompatible with GPL.

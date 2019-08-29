@@ -91,9 +91,6 @@ add_dependencies(Preprocess_shaders Preshade)
 add_dependencies(Preprocess_models Premodel)
 
 # Link the game
-find_package(Freetype REQUIRED)
-include_directories(${FREETYPE_INCLUDE_DIRS})
-target_link_libraries(Minote ${FREETYPE_LIBRARIES})
 find_package(glfw3 3.3 REQUIRED)
 target_link_libraries(Minote glfw)
 if(WIN32)
