@@ -18,6 +18,7 @@
 #include "scenerender.h"
 #include "minorender.h"
 #include "borderrender.h"
+#include "textrender.h"
 #include "util.h"
 #include "gameplay.h"
 #include "timer.h"
@@ -134,10 +135,12 @@ static void renderFrame(void)
 	renderMino();
 	queueBorder(gameSnap->playfield);
 	renderBorder();
+	renderText();
 }
 
 static void cleanupRenderer(void)
 {
+	cleanupTextRenderer();
 	cleanupBorderRenderer();
 	cleanupMinoRenderer();
 	cleanupSceneRenderer();
@@ -181,6 +184,7 @@ static void initRenderer(void)
 	initSceneRenderer();
 	initMinoRenderer();
 	initBorderRenderer();
+	initTextRenderer();
 
 	logInfo("OpenGL renderer initialized");
 }

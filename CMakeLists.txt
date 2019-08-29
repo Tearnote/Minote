@@ -15,12 +15,20 @@ add_executable(Premodel src/tools/premodel.c)
 
 # Preprocess shaders
 include_directories(${PROJECT_BINARY_DIR}/glsl)
-set(GLSL_SOURCES src/glsl/mino.vert.glsl
+set(GLSL_SOURCES
+        src/glsl/mino.vert.glsl
         src/glsl/mino.frag.glsl
         src/glsl/scene.vert.glsl
         src/glsl/scene.frag.glsl
         src/glsl/border.vert.glsl
         src/glsl/border.frag.glsl)
+set(GLSL_INTERNALLIBS
+        lib/msdfgl/msdfgl_msdf.vert.glsl
+        lib/msdfgl/msdfgl_msdf.frag.glsl
+        lib/msdfgl/msdfgl_font.geom.glsl
+        lib/msdfgl/msdfgl_font.vert.glsl
+        lib/msdfgl/msdfgl_font.frag.glsl)
+list(APPEND GLSL_SOURCES ${GLSL_INTERNALLIBS})
 
 foreach(GLSL_PATH ${GLSL_SOURCES})
     get_filename_component(GLSL_FILENAME ${GLSL_PATH} NAME_WLE)
@@ -59,9 +67,12 @@ add_custom_target(Preprocess_models
 # Build the game
 include_directories(src)
 include_directories(lib)
-set(C_LIBS
+set(C_INTERNALLIBS
         lib/glad/glad.c
-        lib/pcg/pcg_basic.c)
+        lib/pcg/pcg_basic.c
+        lib/msdfgl/msdfgl.c
+        lib/msdfgl/msdfgl_map.c
+        lib/msdfgl/msdfgl_serializer.c)
 set(C_SOURCES
         src/fifo.c
         src/gameplay.c
@@ -79,14 +90,19 @@ set(C_SOURCES
         src/thread.c
         src/timer.c
         src/util.c
-        src/window.c)
+        src/window.c src/textrender.h src/textrender.c)
 
-add_executable(Minote ${C_SOURCES} ${C_LIBS})
+add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 
 add_dependencies(Minote Preprocess_shaders)
 add_dependencies(Minote Preprocess_models)
 add_dependencies(Preprocess_shaders Preshade)
 add_dependencies(Preprocess_models Premodel)
+
+# Link internal libraries
+find_package(Freetype)
+include_directories(${FREETYPE_INCLUDE_DIRS})
+target_link_libraries(Minote ${FREETYPE_LIBRARIES})
 
 # Link the game
 find_package(glfw3 3.3 REQUIRED)
