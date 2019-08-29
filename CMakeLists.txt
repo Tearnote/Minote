@@ -72,7 +72,7 @@ foreach(TTF_PATH ${TTF_SOURCES})
             OUTPUT ${TTF_OUTPUT}_img.png
             OUTPUT ${TTF_OUTPUT}_desc.c
             COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/ttf/"
-            COMMAND msdf-atlasgen -T 512x512 --auto-height 1 -F ${PROJECT_SOURCE_DIR}/${TTF_PATH} -O ${TTF_OUTPUT}
+            COMMAND msdf-atlasgen -C 0-1024 -T 512x512 --auto-height 1 -F ${PROJECT_SOURCE_DIR}/${TTF_PATH} -O ${TTF_OUTPUT}
             DEPENDS ${TTF_PATH}
             VERBATIM)
     list(APPEND TTF_OUTPUTS ${TTF_OUTPUT}_img.png ${TTF_OUTPUT}_desc.c)

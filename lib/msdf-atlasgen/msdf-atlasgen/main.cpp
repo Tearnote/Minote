@@ -24,6 +24,9 @@
 // (Github Repo: https://github.com/Chlumsky/msdfgen)
 // to create a texture atlas with accompanying description files.
 
+// Modified by Hubert Maraszek to attach the input filename to the generated
+// variable names
+
 #include <algorithm>
 #include <cassert>
 #include <iostream>
@@ -119,6 +122,8 @@ void write_description( std::vector< char_info >& charinfos, settings& cfg, doub
 {
     std::fstream desc(cfg.output_file_name+"_desc.c", std::ios::out | std::ios::trunc );
     size_t last_written = 0;
+    int lastSlash = std::min(cfg.font_file_name.find_last_of('/'), cfg.font_file_name.find_last_of('\\'));
+    std::string salt = cfg.font_file_name.substr(lastSlash + 1, cfg.font_file_name.find_first_of('.') - lastSlash - 1);
 
     // sort chars for codepoint
     std::sort( charinfos.begin(), charinfos.end(), []( auto& a, auto& b ) {return a.codepoint < b.codepoint; } );
@@ -136,7 +141,7 @@ void write_description( std::vector< char_info >& charinfos, settings& cfg, doub
          << "    unsigned int smooth_pixels;\n"
          << "    float min_y;\n"
          << "    float max_y;\n"
-         << "} font_information = {\n"
+         << "} font_" << salt << "_information = {\n"
          << "    " << cfg.smoothpixels << ",\n"
          << "    " << std::setprecision( 4 ) << min_y->bbox.y() << "f,\n"
          << "    " << std::setprecision( 4 ) << max_y->bbox.top() << "f\n"
@@ -152,7 +157,7 @@ void write_description( std::vector< char_info >& charinfos, settings& cfg, doub
              << "    unsigned int start;\n"
              << "    unsigned int end;\n"
              << "    unsigned int cumulative;\n"
-             << "} font_codepoint_spans[] = {\n";
+             << "} font_" << salt << "_codepoint_spans[] = {\n";
 
         for( unsigned int span_begin=0; span_begin<charinfos.size(); ) {
             unsigned int span_end = span_begin +1;
@@ -182,7 +187,7 @@ void write_description( std::vector< char_info >& charinfos, settings& cfg, doub
     desc << "    float minx, maxx;\n";
     desc << "    float miny, maxy;\n";
     desc << "    float advance;\n";
-    desc << "} font_codepoint_infos[] = {\n";
+    desc << "} font_" << salt << "_codepoint_infos[] = {\n";
 
     for( const auto& info : charinfos ) {
         if( !cfg.use_spans ) {
@@ -209,13 +214,15 @@ void write_description( std::vector< char_info >& charinfos, settings& cfg, doub
     }
 
     desc << "};\n";
-    desc << "static const int bitmap_chars_count = " << last_written+1 << ";\n";
+    desc << "static const int font_" << salt << "_bitmap_chars_count = " << last_written+1 << ";\n";
 }
 
 void write_image( const std::vector< char_info >& charinfos, const settings& cfg )
 {
     const size_t width  = cfg.tex_dims.width;
     const size_t height = cfg.tex_dims.height;
+    int lastSlash = std::min(cfg.font_file_name.find_last_of('/'), cfg.font_file_name.find_last_of('\\'));
+    std::string salt = cfg.font_file_name.substr(lastSlash + 1, cfg.font_file_name.find_first_of('.') - lastSlash - 1);
 
     bitmap_variant bitmap;
     switch( cfg.mode ) {
@@ -251,7 +258,7 @@ void write_image( const std::vector< char_info >& charinfos, const settings& cfg
         desc << "*3";
     }
     desc << "];\n";
-    desc << "} font_image = {\n";
+    desc << "} font_" << salt << "_image = {\n";
 
     desc << "    " << width << ", " << height << ", " << cfg.smoothpixels
          << ", "   << cfg.spacing << ", {\n";

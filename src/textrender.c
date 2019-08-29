@@ -8,6 +8,8 @@
 #include "render.h"
 #include "log.h"
 
+#include "Bitter-Regular_desc.c"
+
 void initTextRenderer(void)
 {
 	;
