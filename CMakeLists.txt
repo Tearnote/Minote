@@ -12,6 +12,7 @@ find_package(Threads REQUIRED)
 # Build the preprocessors
 add_executable(Preshade src/tools/preshade.c)
 add_executable(Premodel src/tools/premodel.c)
+add_subdirectory(lib/msdf-atlasgen)
 
 # Preprocess shaders
 include_directories(${PROJECT_BINARY_DIR}/glsl)
@@ -57,6 +58,29 @@ endforeach(OBJ_PATH)
 add_custom_target(Preprocess_models
         DEPENDS ${OBJ_OUTPUTS})
 
+# Preprocess fonts
+include_directories(${PROJECT_BINARY_DIR}/ttf)
+set(TTF_SOURCES
+        assets/ttf/Bitter-Regular.ttf
+        assets/ttf/Bitter-RegularItalic.ttf
+        assets/ttf/Bitter-Bold.ttf)
+
+foreach(TTF_PATH ${TTF_SOURCES})
+    get_filename_component(TTF_FILENAME ${TTF_PATH} NAME_WLE)
+    set(TTF_OUTPUT ${PROJECT_BINARY_DIR}/ttf/${TTF_FILENAME})
+    add_custom_command(
+            OUTPUT ${TTF_OUTPUT}_img.png
+            OUTPUT ${TTF_OUTPUT}_desc.c
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/ttf/"
+            COMMAND msdf-atlasgen -T 512x512 --auto-height 1 -F ${PROJECT_SOURCE_DIR}/${TTF_PATH} -O ${TTF_OUTPUT}
+            DEPENDS ${TTF_PATH}
+            VERBATIM)
+    list(APPEND TTF_OUTPUTS ${TTF_OUTPUT}_img.png ${TTF_OUTPUT}_desc.c)
+endforeach(TTF_PATH)
+
+add_custom_target(Preprocess_fonts
+        DEPENDS ${TTF_OUTPUTS})
+
 # Build the game
 include_directories(src)
 include_directories(lib)
@@ -87,8 +111,10 @@ add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 
 add_dependencies(Minote Preprocess_shaders)
 add_dependencies(Minote Preprocess_models)
+add_dependencies(Minote Preprocess_fonts)
 add_dependencies(Preprocess_shaders Preshade)
 add_dependencies(Preprocess_models Premodel)
+add_dependencies(Preprocess_fonts msdf-atlasgen)
 
 # Link the game
 find_package(glfw3 3.3 REQUIRED)

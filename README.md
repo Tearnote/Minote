@@ -1,20 +1,30 @@
 # Minote
-A repo for an upcoming puzzle action game. Not playable, currently on git as a personal backup.
+A repo for an upcoming puzzle action game. Not playable, currently on
+git as a personal backup.
 
 ## Building
-Currently developed and frequently tested on Windows, but sometimes verified on Linux. Should be portable to any platform with OpenGL 3.3 core profile and some implementation of POSIX.
+Tested working on Linux and Windows (MSYS2). Should be portable to any
+platform with OpenGL 3.3 core profile and GCC/MinGW.
 
-Built on Linux with CMake. Requires [GLFW](https://www.glfw.org/) 3.3, which is available as a package in any good distro. Also compiles for Windows via MinGW.
+### External libraries
+Requires [`GLFW`](https://www.glfw.org/) 3.3.
 
-## External components
-[GLFW](https://www.glfw.org/) 3.3, used under Zlib license.
+`msdf-atlasgen` requires
+[`FreeType`](https://www.freetype.org/index.html) and
+[`Boost`](https://www.boost.org/).
 
-[glad](https://glad.dav1d.de/) loader generated on 2019-05-06, in Public Domain.
+### Included libraries
+[`glad`](https://glad.dav1d.de/) loader generated on 2019-05-06, in
+Public Domain.
 
-[linmath.h](https://github.com/datenwolf/linmath.h) retrieved on 2019-05-18, used under WTFPL.
+[`linmath.h`](https://github.com/datenwolf/linmath.h) retrieved on
+2019-05-18, used under WTFPL.
 
-[PCG PRNG](http://www.pcg-random.org/) retrieved on 2019-05-29, used under Apache license.
+[`PCG PRNG`](http://www.pcg-random.org/) retrieved on 2019-05-29, used
+under Apache license.
 
-[tinyobjloader-c](https://github.com/syoyo/tinyobjloader-c) retrieved on 2019-08-22, used under MIT license.
+[`tinyobjloader-c`](https://github.com/syoyo/tinyobjloader-c) retrieved
+on 2019-08-22, used under MIT license.
 
-Please note that Minote's license is incompatible with GPL.
+[`msdf-atlasgen`](https://github.com/decimad/msdf-atlasgen) retrieved on
+2019-08-29, used under MIT license.
