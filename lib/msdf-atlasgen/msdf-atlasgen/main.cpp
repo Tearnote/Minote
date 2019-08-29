@@ -124,6 +124,7 @@ void write_description( std::vector< char_info >& charinfos, settings& cfg, doub
     size_t last_written = 0;
     int lastSlash = std::min(cfg.font_file_name.find_last_of('/'), cfg.font_file_name.find_last_of('\\'));
     std::string salt = cfg.font_file_name.substr(lastSlash + 1, cfg.font_file_name.find_first_of('.') - lastSlash - 1);
+    std::replace(salt.begin(), salt.end(), '-', '_');
 
     // sort chars for codepoint
     std::sort( charinfos.begin(), charinfos.end(), []( auto& a, auto& b ) {return a.codepoint < b.codepoint; } );
@@ -223,6 +224,7 @@ void write_image( const std::vector< char_info >& charinfos, const settings& cfg
     const size_t height = cfg.tex_dims.height;
     int lastSlash = std::min(cfg.font_file_name.find_last_of('/'), cfg.font_file_name.find_last_of('\\'));
     std::string salt = cfg.font_file_name.substr(lastSlash + 1, cfg.font_file_name.find_first_of('.') - lastSlash - 1);
+    std::replace(salt.begin(), salt.end(), '-', '_');
 
     bitmap_variant bitmap;
     switch( cfg.mode ) {
