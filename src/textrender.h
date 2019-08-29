@@ -7,6 +7,7 @@
 void initTextRenderer(void);
 void cleanupTextRenderer(void);
 
+void queuePlayfieldText(void);
 void renderText(void);
 
 #endif //TEXTRENDER_H

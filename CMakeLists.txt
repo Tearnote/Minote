@@ -22,7 +22,9 @@ set(GLSL_SOURCES
         src/glsl/scene.vert.glsl
         src/glsl/scene.frag.glsl
         src/glsl/border.vert.glsl
-        src/glsl/border.frag.glsl)
+        src/glsl/border.frag.glsl
+        src/glsl/text.vert.glsl
+        src/glsl/text.frag.glsl)
 
 foreach(GLSL_PATH ${GLSL_SOURCES})
     get_filename_component(GLSL_FILENAME ${GLSL_PATH} NAME_WLE)

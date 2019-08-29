@@ -45,7 +45,7 @@ struct minoInstance {
 	GLfloat x, y;
 	GLfloat r, g, b, a;
 };
-queue *minoQueue = NULL;
+static queue *minoQueue = NULL;
 
 void initMinoRenderer(void)
 {
@@ -130,9 +130,9 @@ void queueMinoPlayfield(enum mino field[PLAYFIELD_H][PLAYFIELD_W])
 				*newInstance = produceQueueItem(minoQueue);
 			newInstance->x = (GLfloat)(x - PLAYFIELD_W / 2);
 			newInstance->y = (GLfloat)(PLAYFIELD_H - 1 - y);
-			newInstance->r = minoColors[minoType][0] / 5;
-			newInstance->g = minoColors[minoType][1] / 5;
-			newInstance->b = minoColors[minoType][2] / 5;
+			newInstance->r = minoColors[minoType][0] / 4;
+			newInstance->g = minoColors[minoType][1] / 4;
+			newInstance->b = minoColors[minoType][2] / 4;
 			newInstance->a = minoColors[minoType][3];
 		}
 	}

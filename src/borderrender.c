@@ -38,7 +38,7 @@ static GLfloat vertexData[] = {
 struct segmentInstance {
 	GLfloat x1, y1, x2, y2;
 };
-queue *segmentQueue = NULL;
+static queue *segmentQueue = NULL;
 
 void initBorderRenderer(void)
 {
