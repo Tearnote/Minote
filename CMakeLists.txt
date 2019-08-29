@@ -22,13 +22,6 @@ set(GLSL_SOURCES
         src/glsl/scene.frag.glsl
         src/glsl/border.vert.glsl
         src/glsl/border.frag.glsl)
-#set(GLSL_INTERNALLIBS
-#        lib/msdfgl/msdfgl_msdf.vert.glsl
-#        lib/msdfgl/msdfgl_msdf.frag.glsl
-#        lib/msdfgl/msdfgl_font.geom.glsl
-#        lib/msdfgl/msdfgl_font.vert.glsl
-#        lib/msdfgl/msdfgl_font.frag.glsl)
-#list(APPEND GLSL_SOURCES ${GLSL_INTERNALLIBS})
 
 foreach(GLSL_PATH ${GLSL_SOURCES})
     get_filename_component(GLSL_FILENAME ${GLSL_PATH} NAME_WLE)
@@ -97,12 +90,10 @@ add_dependencies(Minote Preprocess_models)
 add_dependencies(Preprocess_shaders Preshade)
 add_dependencies(Preprocess_models Premodel)
 
-# Link internal libraries
-#find_package(Freetype)
-#include_directories(${FREETYPE_INCLUDE_DIRS})
-#target_link_libraries(Minote ${FREETYPE_LIBRARIES})
-
 # Link the game
+find_package(Freetype REQUIRED)
+include_directories(${FREETYPE_INCLUDE_DIRS})
+target_link_libraries(Minote ${FREETYPE_LIBRARIES})
 find_package(glfw3 3.3 REQUIRED)
 target_link_libraries(Minote glfw)
 if(WIN32)
