@@ -28,3 +28,6 @@ on 2019-08-22, used under MIT license.
 
 [`msdf-atlasgen`](https://github.com/decimad/msdf-atlasgen) retrieved on
 2019-08-29, used under MIT license.
+
+[`stb_image.h`](https://github.com/nothings/stb) retrieved on
+2019-08-29, in Public Domain.
