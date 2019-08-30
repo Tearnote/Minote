@@ -92,11 +92,6 @@ void initTextRenderer(void)
 	             GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glGenBuffers(1, &instanceBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
-	glBufferData(GL_ARRAY_BUFFER,
-	             INSTANCE_LIMIT * sizeof(struct textInstance),
-	             NULL, GL_STREAM_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
@@ -144,17 +139,32 @@ void queuePlayfieldText(void)
 	struct textInstance *newInstance = produceQueueItem(textQueue);
 	newInstance->x = -4.0f;
 	newInstance->y = 1.0f;
-	newInstance->w = (GLfloat)font_Bitter_Regular_codepoint_infos[letter].atlas_w / 4.0f;
-	newInstance->h = (GLfloat)font_Bitter_Regular_codepoint_infos[letter].atlas_h / 4.0f;
-	newInstance->tx = (GLfloat)font_Bitter_Regular_codepoint_infos[letter].atlas_x / 512.0f;
-	newInstance->ty = (GLfloat)font_Bitter_Regular_codepoint_infos[letter].atlas_y / 512.0f;
-	newInstance->tw = (GLfloat)font_Bitter_Regular_codepoint_infos[letter].atlas_w / 512.0f;
-	newInstance->th = (GLfloat)font_Bitter_Regular_codepoint_infos[letter].atlas_h / 512.0f;
+	newInstance->w =
+		(GLfloat)font_Bitter_Regular_codepoint_infos[letter].atlas_w
+		/ 4.0f;
+	newInstance->h =
+		(GLfloat)font_Bitter_Regular_codepoint_infos[letter].atlas_h
+		/ 4.0f;
+	newInstance->tx =
+		(GLfloat)font_Bitter_Regular_codepoint_infos[letter].atlas_x
+		/ 512.0f;
+	newInstance->ty =
+		(GLfloat)font_Bitter_Regular_codepoint_infos[letter].atlas_y
+		/ 512.0f;
+	newInstance->tw =
+		(GLfloat)font_Bitter_Regular_codepoint_infos[letter].atlas_w
+		/ 512.0f;
+	newInstance->th =
+		(GLfloat)font_Bitter_Regular_codepoint_infos[letter].atlas_h
+		/ 512.0f;
 }
 
 void renderText(void)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
+	glBufferData(GL_ARRAY_BUFFER,
+	             INSTANCE_LIMIT * sizeof(struct textInstance),
+	             NULL, GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0,
 	                (GLsizeiptr)MIN(textQueue->count, INSTANCE_LIMIT)
 	                * sizeof(struct textInstance), textQueue->buffer);

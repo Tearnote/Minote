@@ -76,11 +76,6 @@ void initMinoRenderer(void)
 	             GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glGenBuffers(1, &instanceBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
-	glBufferData(GL_ARRAY_BUFFER,
-	             INSTANCE_LIMIT * sizeof(struct minoInstance),
-	             NULL, GL_STREAM_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
@@ -176,6 +171,9 @@ void queueMinoPreview(struct player *player)
 void renderMino(void)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
+	glBufferData(GL_ARRAY_BUFFER,
+	             INSTANCE_LIMIT * sizeof(struct minoInstance),
+	             NULL, GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0,
 	                (GLsizeiptr)MIN(minoQueue->count, INSTANCE_LIMIT)
 	                * sizeof(struct minoInstance), minoQueue->buffer);

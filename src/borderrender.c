@@ -63,11 +63,6 @@ void initBorderRenderer(void)
 	             GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glGenBuffers(1, &instanceBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
-	glBufferData(GL_ARRAY_BUFFER,
-	             INSTANCE_LIMIT * sizeof(struct segmentInstance),
-	             NULL, GL_STREAM_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
@@ -194,6 +189,9 @@ void queueBorder(enum mino field[PLAYFIELD_H][PLAYFIELD_W])
 void renderBorder(void)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
+	glBufferData(GL_ARRAY_BUFFER,
+	             INSTANCE_LIMIT * sizeof(struct segmentInstance),
+	             NULL, GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0,
 	                (GLsizeiptr)MIN(segmentQueue->count, INSTANCE_LIMIT)
 	                * sizeof(struct segmentInstance), segmentQueue->buffer);
