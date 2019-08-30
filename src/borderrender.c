@@ -66,7 +66,7 @@ void initBorderRenderer(void)
 	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
 	glBufferData(GL_ARRAY_BUFFER,
 	             INSTANCE_LIMIT * sizeof(struct segmentInstance),
-	             NULL, GL_DYNAMIC_DRAW);
+	             NULL, GL_STREAM_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glGenVertexArrays(1, &vao);
