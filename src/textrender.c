@@ -18,38 +18,25 @@
 #define FONT_PATH "ttf/Bitter-Regular_img.png"
 #include "Bitter-Regular_desc.c"
 
-#define INSTANCE_LIMIT 256
+#define VERTEX_LIMIT 8192
 
 static GLuint program = 0;
 static GLuint vao = 0;
 static GLuint vertexBuffer = 0;
-static GLuint instanceBuffer = 0;
 static GLuint atlas = 0;
 
 static GLint cameraAttr = -1;
 static GLint projectionAttr = -1;
 
-static GLfloat vertexData[] = { // vec3 position
-	0.0f, 0.0f, 0.0f,
-	1.0f, 0.0f, 0.0f,
-	1.0f, 1.0f, 0.0f,
-
-	0.0f, 0.0f, 0.0f,
-	1.0f, 1.0f, 0.0f,
-	0.0f, 1.0, 0.0f
-};
-
-struct textInstance {
-	GLfloat x, y;
-	GLfloat w, h;
+struct textVertex {
+	GLfloat x, y, z;
 	GLfloat tx, ty;
-	GLfloat tw, th;
 };
 static queue *textQueue = NULL;
 
 void initTextRenderer(void)
 {
-	textQueue = createQueue(sizeof(struct textInstance));
+	textQueue = createQueue(sizeof(struct textVertex));
 
 	unsigned char *atlasData = NULL;
 	int width;
@@ -87,36 +74,16 @@ void initTextRenderer(void)
 	projectionAttr = glGetUniformLocation(program, "projection");
 
 	glGenBuffers(1, &vertexBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertexData), vertexData,
-	             GL_STATIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glGenBuffers(1, &instanceBuffer);
 
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
-	glEnableVertexAttribArray(2);
-	glEnableVertexAttribArray(3);
-	glEnableVertexAttribArray(4);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3,
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5,
 	                      (GLvoid *)0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 8,
-	                      (GLvoid *)0);
-	glVertexAttribDivisor(1, 1);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 8,
-	                      (GLvoid *)(sizeof(GLfloat) * 2));
-	glVertexAttribDivisor(2, 1);
-	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 8,
-	                      (GLvoid *)(sizeof(GLfloat) * 4));
-	glVertexAttribDivisor(3, 1);
-	glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 8,
-	                      (GLvoid *)(sizeof(GLfloat) * 6));
-	glVertexAttribDivisor(4, 1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5,
+	                      (GLvoid *)(sizeof(GLfloat) * 3));
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 }
@@ -136,38 +103,72 @@ void cleanupTextRenderer(void)
 void queuePlayfieldText(void)
 {
 	char letter = 'h';
-	struct textInstance *newInstance = produceQueueItem(textQueue);
-	newInstance->x = -4.0f;
-	newInstance->y = 1.0f;
-	newInstance->w =
-		(GLfloat)font_Bitter_Regular_codepoint_infos[letter].atlas_w
-		/ 4.0f;
-	newInstance->h =
-		(GLfloat)font_Bitter_Regular_codepoint_infos[letter].atlas_h
-		/ 4.0f;
-	newInstance->tx =
-		(GLfloat)font_Bitter_Regular_codepoint_infos[letter].atlas_x
-		/ 512.0f;
-	newInstance->ty =
-		(GLfloat)font_Bitter_Regular_codepoint_infos[letter].atlas_y
-		/ 512.0f;
-	newInstance->tw =
-		(GLfloat)font_Bitter_Regular_codepoint_infos[letter].atlas_w
-		/ 512.0f;
-	newInstance->th =
-		(GLfloat)font_Bitter_Regular_codepoint_infos[letter].atlas_h
-		/ 512.0f;
+	struct textVertex *newVertex;
+
+	GLfloat tx1 = font_Bitter_Regular_codepoint_infos[letter].atlas_x;
+	GLfloat ty1 = font_Bitter_Regular_codepoint_infos[letter].atlas_y;
+	GLfloat tx2 = tx1 + font_Bitter_Regular_codepoint_infos[letter].atlas_w;
+	GLfloat ty2 = ty1 + font_Bitter_Regular_codepoint_infos[letter].atlas_h;
+	tx1 /= 512.0f;
+	ty1 /= 512.0f;
+	tx2 /= 512.0f;
+	ty2 /= 512.0f;
+
+	GLfloat x1 = -4.0f;
+	GLfloat y1 = 2.0f;
+	GLfloat x2 = x1 + (tx2 - tx1) * 64;
+	GLfloat y2 = y1 + (ty2 - ty1) * 64;
+
+	ty1 = 1.0f - ty1;
+	ty2 = 1.0f - ty2;
+
+	newVertex = produceQueueItem(textQueue);
+	newVertex->x = x1;
+	newVertex->y = y1;
+	newVertex->z = 1.0f;
+	newVertex->tx = tx1;
+	newVertex->ty = ty1;
+	newVertex = produceQueueItem(textQueue);
+	newVertex->x = x2;
+	newVertex->y = y1;
+	newVertex->z = 1.0f;
+	newVertex->tx = tx2;
+	newVertex->ty = ty1;
+	newVertex = produceQueueItem(textQueue);
+	newVertex->x = x2;
+	newVertex->y = y2;
+	newVertex->z = 1.0f;
+	newVertex->tx = tx2;
+	newVertex->ty = ty2;
+
+	newVertex = produceQueueItem(textQueue);
+	newVertex->x = x1;
+	newVertex->y = y1;
+	newVertex->z = 1.0f;
+	newVertex->tx = tx1;
+	newVertex->ty = ty1;
+	newVertex = produceQueueItem(textQueue);
+	newVertex->x = x2;
+	newVertex->y = y2;
+	newVertex->z = 1.0f;
+	newVertex->tx = tx2;
+	newVertex->ty = ty2;
+	newVertex = produceQueueItem(textQueue);
+	newVertex->x = x1;
+	newVertex->y = y2;
+	newVertex->z = 1.0f;
+	newVertex->tx = tx1;
+	newVertex->ty = ty2;
 }
 
 void renderText(void)
 {
-	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
-	glBufferData(GL_ARRAY_BUFFER,
-	             INSTANCE_LIMIT * sizeof(struct textInstance),
+	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(struct textVertex) * VERTEX_LIMIT,
 	             NULL, GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0,
-	                (GLsizeiptr)MIN(textQueue->count, INSTANCE_LIMIT)
-	                * sizeof(struct textInstance), textQueue->buffer);
+	                (GLsizeiptr)MIN(textQueue->count, VERTEX_LIMIT)
+	                * sizeof(struct textVertex), textQueue->buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glUseProgram(program);
@@ -176,8 +177,7 @@ void renderText(void)
 
 	glUniformMatrix4fv(cameraAttr, 1, GL_FALSE, camera[0]);
 	glUniformMatrix4fv(projectionAttr, 1, GL_FALSE, projection[0]);
-	glDrawArraysInstanced(GL_TRIANGLES, 0, COUNT_OF(vertexData) / 3,
-	                      (GLsizei)textQueue->count);
+	glDrawArrays(GL_TRIANGLES, 0, (GLsizei)textQueue->count);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glBindVertexArray(0);

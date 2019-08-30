@@ -1,6 +1,6 @@
 #version 330 core
 
-in vec2 fTexCoord;
+in vec2 fTexCoords;
 
 out vec4 outColor;
 
@@ -12,7 +12,7 @@ float median(float r, float g, float b) {
 
 void main()
 {
-	vec3 fragment = texture(atlas, fTexCoord).rgb;
+	vec3 fragment = texture(atlas, fTexCoords).rgb;
 	float sigDist = median(fragment.r, fragment.g, fragment.b);
 	float w = fwidth(sigDist);
 	float opacity = smoothstep(0.5 - w, 0.5 + w, sigDist);
