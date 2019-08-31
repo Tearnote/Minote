@@ -5,15 +5,17 @@
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_ONLY_PNG
+#include "util.h"
+#define STBI_ASSERT(x) assert(x)
+#include "stb_image/stb_image.h"
+#include "linmath/linmath.h"
+
 #include "render.h"
 #include "util.h"
 #include "log.h"
 #include "queue.h"
-
-#define STB_IMAGE_IMPLEMENTATION
-#define STBI_ONLY_PNG
-#define STBI_ASSERT(x) assert(x)
-#include "stb_image/stb_image.h"
 
 #define FONT_PATH "ttf/Bitter-Regular_img.png"
 #include "Bitter-Regular_desc.c"
@@ -24,6 +26,7 @@ static GLuint program = 0;
 static GLuint vao = 0;
 static GLuint vertexBuffer = 0;
 static GLuint atlas = 0;
+static int atlasSize = 0;
 
 static GLint cameraAttr = -1;
 static GLint projectionAttr = -1;
@@ -48,7 +51,8 @@ void initTextRenderer(void)
 		         stbi_failure_reason());
 		return;
 	}
-	assert(width == 512 && height == 512);
+	assert(width == height);
+	atlasSize = width;
 
 	glGenTextures(1, &atlas);
 	glBindTexture(GL_TEXTURE_2D, atlas);
@@ -100,65 +104,112 @@ void cleanupTextRenderer(void)
 	atlas = 0;
 }
 
-void queuePlayfieldText(void)
+static void
+queueGlyph(unsigned char glyph, vec3 position, quat orientation, GLfloat size)
 {
-	char letter = 'h';
-	struct textVertex *newVertex;
+	vec3 bottomLeft = {};
+	vec3 bottomRight = {};
+	vec3 topLeft = {};
+	vec3 topRight = {};
 
-	GLfloat tx1 = font_Bitter_Regular_codepoint_infos[letter].atlas_x;
-	GLfloat ty1 = font_Bitter_Regular_codepoint_infos[letter].atlas_y;
-	GLfloat tx2 = tx1 + font_Bitter_Regular_codepoint_infos[letter].atlas_w;
-	GLfloat ty2 = ty1 + font_Bitter_Regular_codepoint_infos[letter].atlas_h;
-	tx1 /= 512.0f;
-	ty1 /= 512.0f;
-	tx2 /= 512.0f;
-	ty2 /= 512.0f;
-
-	GLfloat x1 = -4.0f;
-	GLfloat y1 = 2.0f;
-	GLfloat x2 = x1 + (tx2 - tx1) * 64;
-	GLfloat y2 = y1 + (ty2 - ty1) * 64;
-
+	GLfloat tx1 =
+		(GLfloat)font_Bitter_Regular_codepoint_infos[glyph].atlas_x;
+	GLfloat ty1 =
+		(GLfloat)font_Bitter_Regular_codepoint_infos[glyph].atlas_y;
+	GLfloat tx2 = tx1 + (GLfloat)font_Bitter_Regular_codepoint_infos[glyph]
+		.atlas_w;
+	GLfloat ty2 = ty1 + (GLfloat)font_Bitter_Regular_codepoint_infos[glyph]
+		.atlas_h;
+	GLfloat w = (tx2 - tx1)
+	            / (GLfloat)font_Bitter_Regular_information.max_height
+	            * size;
+	GLfloat h = (ty2 - ty1)
+	            / (GLfloat)font_Bitter_Regular_information.max_height
+	            * size;
+	tx1 /= (GLfloat)atlasSize;
+	ty1 /= (GLfloat)atlasSize;
+	tx2 /= (GLfloat)atlasSize;
+	ty2 /= (GLfloat)atlasSize;
 	ty1 = 1.0f - ty1;
 	ty2 = 1.0f - ty2;
 
+	bottomLeft[0] = position[0];
+	bottomLeft[1] = position[1];
+	bottomLeft[2] = position[2];
+
+	bottomRight[0] = position[0] + w;
+	bottomRight[1] = position[1];
+	bottomRight[2] = position[2];
+
+	topLeft[0] = position[0];
+	topLeft[1] = position[1] + h;
+	topLeft[2] = position[2];
+
+	topRight[0] = position[0] + w;
+	topRight[1] = position[1] + h;
+	topRight[2] = position[2];
+
+	vec3_sub(bottomLeft, bottomLeft, position);
+	vec3_sub(bottomRight, bottomRight, position);
+	vec3_sub(topLeft, topLeft, position);
+	vec3_sub(topRight, topRight, position);
+	quat_mul_vec3(bottomLeft, orientation, bottomLeft);
+	quat_mul_vec3(bottomRight, orientation, bottomRight);
+	quat_mul_vec3(topLeft, orientation, topLeft);
+	quat_mul_vec3(topRight, orientation, topRight);
+	vec3_add(bottomLeft, bottomLeft, position);
+	vec3_add(bottomRight, bottomRight, position);
+	vec3_add(topLeft, topLeft, position);
+	vec3_add(topRight, topRight, position);
+
+	struct textVertex *newVertex;
 	newVertex = produceQueueItem(textQueue);
-	newVertex->x = x1;
-	newVertex->y = y1;
-	newVertex->z = 1.0f;
+	newVertex->x = bottomLeft[0];
+	newVertex->y = bottomLeft[1];
+	newVertex->z = bottomLeft[2];
 	newVertex->tx = tx1;
 	newVertex->ty = ty1;
 	newVertex = produceQueueItem(textQueue);
-	newVertex->x = x2;
-	newVertex->y = y1;
-	newVertex->z = 1.0f;
+	newVertex->x = bottomRight[0];
+	newVertex->y = bottomRight[1];
+	newVertex->z = bottomRight[2];
 	newVertex->tx = tx2;
 	newVertex->ty = ty1;
 	newVertex = produceQueueItem(textQueue);
-	newVertex->x = x2;
-	newVertex->y = y2;
-	newVertex->z = 1.0f;
+	newVertex->x = topRight[0];
+	newVertex->y = topRight[1];
+	newVertex->z = topRight[2];
 	newVertex->tx = tx2;
 	newVertex->ty = ty2;
 
 	newVertex = produceQueueItem(textQueue);
-	newVertex->x = x1;
-	newVertex->y = y1;
-	newVertex->z = 1.0f;
+	newVertex->x = bottomLeft[0];
+	newVertex->y = bottomLeft[1];
+	newVertex->z = bottomLeft[2];
 	newVertex->tx = tx1;
 	newVertex->ty = ty1;
 	newVertex = produceQueueItem(textQueue);
-	newVertex->x = x2;
-	newVertex->y = y2;
-	newVertex->z = 1.0f;
+	newVertex->x = topRight[0];
+	newVertex->y = topRight[1];
+	newVertex->z = topRight[2];
 	newVertex->tx = tx2;
 	newVertex->ty = ty2;
 	newVertex = produceQueueItem(textQueue);
-	newVertex->x = x1;
-	newVertex->y = y2;
-	newVertex->z = 1.0f;
+	newVertex->x = topLeft[0];
+	newVertex->y = topLeft[1];
+	newVertex->z = topLeft[2];
 	newVertex->tx = tx1;
 	newVertex->ty = ty2;
+}
+
+void queuePlayfieldText(void)
+{
+	vec3 position = { 4.6f, 0.0f, 2.0f };
+	quat orientation;
+	vec3 axis = { 1.0f, 0.0f, 0.0f };
+	vec3_norm(axis, axis);
+	quat_rotate(orientation, radf(-90.0f), axis);
+	queueGlyph('h', position, orientation, 5.0f);
 }
 
 void renderText(void)

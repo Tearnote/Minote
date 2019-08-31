@@ -142,10 +142,12 @@ void write_description( std::vector< char_info >& charinfos, settings& cfg, doub
          << "    unsigned int smooth_pixels;\n"
          << "    float min_y;\n"
          << "    float max_y;\n"
+	 << "    unsigned int max_height;\n"
          << "} font_" << salt << "_information = {\n"
          << "    " << cfg.smoothpixels << ",\n"
          << "    " << std::setprecision( 4 ) << min_y->bbox.y() << "f,\n"
-         << "    " << std::setprecision( 4 ) << max_y->bbox.top() << "f\n"
+         << "    " << std::setprecision( 4 ) << max_y->bbox.top() << "f,\n"
+	    << "    " << std::setprecision( 4 ) << cfg.max_char_height << "\n"
          << "};\n\n";
 
     //
