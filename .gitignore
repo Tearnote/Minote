@@ -9,5 +9,4 @@ cmake-build-release/*
 .idea/*
 
 # Internal notes
-TODO
 reference/*
