@@ -8,6 +8,12 @@ set(CMAKE_C_STANDARD 11)
 # Module dependencies
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
+find_package(ICU REQUIRED uc)
+include_directories(${ICU_INCLUDE_DIRS})
+find_package(Freetype REQUIRED)
+include_directories(${FREETYPE_INCLUDE_DIRS})
+find_package(HarfBuzz REQUIRED)
+include_directories(${HARFBUZZ_INCLUDE_DIRS})
 
 # Build the preprocessors
 add_executable(Preshade src/tools/preshade.c)
@@ -63,9 +69,8 @@ add_custom_target(Preprocess_models
 # Preprocess fonts
 include_directories(${PROJECT_BINARY_DIR}/ttf)
 set(TTF_SOURCES
-        assets/ttf/Bitter-Regular.ttf
-        assets/ttf/Bitter-RegularItalic.ttf
-        assets/ttf/Bitter-Bold.ttf)
+        assets/ttf/Merriweather-Regular.ttf
+        assets/ttf/MerriweatherSans-Regular.ttf)
 
 foreach(TTF_PATH ${TTF_SOURCES})
     get_filename_component(TTF_FILENAME ${TTF_PATH} NAME_WLE)
@@ -73,8 +78,9 @@ foreach(TTF_PATH ${TTF_SOURCES})
     add_custom_command(
             OUTPUT ${TTF_OUTPUT}_img.png
             OUTPUT ${TTF_OUTPUT}_desc.c
-            COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/ttf/"
-            COMMAND msdf-atlasgen -C 0-1024 -T 512x512 --auto-height 1 -F ${PROJECT_SOURCE_DIR}/${TTF_PATH} -O ${TTF_OUTPUT}
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/ttf/
+            COMMAND msdf-atlasgen --range 4 --smooth-pixels 4 -T 1024x1024 --char-height 36 -F ${PROJECT_SOURCE_DIR}/${TTF_PATH} -O ${TTF_OUTPUT}
+            COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/${TTF_PATH} ${TTF_OUTPUT}.ttf
             DEPENDS ${TTF_PATH}
             VERBATIM)
     list(APPEND TTF_OUTPUTS ${TTF_OUTPUT}_img.png ${TTF_OUTPUT}_desc.c)
@@ -121,6 +127,9 @@ add_dependencies(Preprocess_fonts msdf-atlasgen)
 # Link the game
 find_package(glfw3 3.3 REQUIRED)
 target_link_libraries(Minote glfw)
+target_link_libraries(Minote ICU::uc)
+target_link_libraries(Minote Freetype::Freetype)
+target_link_libraries(Minote harfbuzz)
 if(WIN32)
     target_link_libraries(Minote winmm)
 endif(WIN32)

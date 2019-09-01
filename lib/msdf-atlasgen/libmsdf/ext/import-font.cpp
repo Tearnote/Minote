@@ -63,7 +63,7 @@ bool getFontWhitespaceWidth(double &spaceAdvance, double &tabAdvance, FontHandle
     return true;
 }
 
-bool loadGlyph(Shape &output, FontHandle *font, int unicode, double *advance) {
+bool loadGlyph(Shape &output, FontHandle *font, FT_UInt glyph, double *advance) {
     enum PointType {
         NONE = 0,
         PATH_POINT,
@@ -74,7 +74,7 @@ bool loadGlyph(Shape &output, FontHandle *font, int unicode, double *advance) {
 
     if (!font)
         return false;
-    FT_Error error = FT_Load_Char(font->face, unicode, FT_LOAD_NO_SCALE);
+    FT_Error error = FT_Load_Glyph(font->face, glyph, FT_LOAD_NO_SCALE);
     if (error)
         return false;
     output.contours.clear();

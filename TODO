@@ -1,1 +1,2 @@
 Switch all text handling to ICU
+Enable some sanitizers in gcc

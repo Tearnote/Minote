@@ -2,8 +2,17 @@
 
 #include "textrender.h"
 
+#include <stdlib.h>
+#include <string.h>
+
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
+#include <unicode/ptypes.h>
+#include <unicode/ustring.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
+#include <harfbuzz/hb.h>
+#include <harfbuzz/hb-ft.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_PNG
@@ -13,12 +22,17 @@
 #include "linmath/linmath.h"
 
 #include "render.h"
-#include "util.h"
 #include "log.h"
 #include "queue.h"
 
-#define FONT_PATH "ttf/Bitter-Regular_img.png"
-#include "Bitter-Regular_desc.c"
+#define FONT_NAME "Merriweather-Regular"
+#include "Merriweather-Regular_desc.c"
+#define FONT_PATH "ttf/"FONT_NAME".ttf"
+#define FONT_IMG_PATH "ttf/"FONT_NAME"_img.png"
+
+FT_Library freetype = NULL;
+FT_Face face = NULL;
+hb_font_t *fontShape = NULL;
 
 #define VERTEX_LIMIT 8192
 
@@ -39,17 +53,30 @@ static queue *textQueue = NULL;
 
 void initTextRenderer(void)
 {
+	FT_Error freetypeError = FT_Init_FreeType(&freetype);
+	if (freetypeError) {
+		logCrit("Failed to initialize text renderer: %s", FT_Error_String(freetypeError));
+		exit(1);
+	}
+	freetypeError = FT_New_Face(freetype, FONT_PATH, 0, &face);
+	if (freetypeError) {
+		logCrit("Failed to load font %s: %s", FONT_PATH, FT_Error_String(freetypeError));
+		exit(1);
+	}
+	FT_Set_Char_Size(face, 0, 0, 0, 0);
+	fontShape = hb_ft_font_create(face, NULL);
+
 	textQueue = createQueue(sizeof(struct textVertex));
 
 	unsigned char *atlasData = NULL;
 	int width;
 	int height;
 	int channels;
-	atlasData = stbi_load(FONT_PATH, &width, &height, &channels, 4);
+	atlasData = stbi_load(FONT_IMG_PATH, &width, &height, &channels, 4);
 	if (!atlasData) {
-		logError("Failed to load %s: %s", FONT_PATH,
+		logCrit("Failed to load %s: %s", FONT_IMG_PATH,
 		         stbi_failure_reason());
-		return;
+		exit(1);
 	}
 	assert(width == height);
 	atlasSize = width;
@@ -102,29 +129,40 @@ void cleanupTextRenderer(void)
 	program = 0;
 	glDeleteTextures(1, &atlas);
 	atlas = 0;
+
+	hb_font_destroy(fontShape);
+	FT_Done_Face(face);
+	FT_Done_FreeType(freetype);
 }
 
-static void
-queueGlyph(unsigned char glyph, vec3 position, quat orientation, GLfloat size)
+static void queueGlyph(hb_codepoint_t glyph, vec3 position, GLfloat size)
 {
+	if (glyph >= font_Merriweather_Regular_bitmap_chars_count)
+		return;
+
+	vec3 adjusted = {};
+	adjusted[0] = position[0] + (GLfloat)font_Merriweather_Regular_codepoint_infos[glyph].minx / font_Merriweather_Regular_information.max_height * size;
+	adjusted[1] = position[1] + (GLfloat)font_Merriweather_Regular_codepoint_infos[glyph].miny / font_Merriweather_Regular_information.max_height * size;
+	adjusted[2] = position[2];
+	
 	vec3 bottomLeft = {};
 	vec3 bottomRight = {};
 	vec3 topLeft = {};
 	vec3 topRight = {};
 
 	GLfloat tx1 =
-		(GLfloat)font_Bitter_Regular_codepoint_infos[glyph].atlas_x;
+		(GLfloat)font_Merriweather_Regular_codepoint_infos[glyph].atlas_x;
 	GLfloat ty1 =
-		(GLfloat)font_Bitter_Regular_codepoint_infos[glyph].atlas_y;
-	GLfloat tx2 = tx1 + (GLfloat)font_Bitter_Regular_codepoint_infos[glyph]
+		(GLfloat)font_Merriweather_Regular_codepoint_infos[glyph].atlas_y;
+	GLfloat tx2 = tx1 + (GLfloat)font_Merriweather_Regular_codepoint_infos[glyph]
 		.atlas_w;
-	GLfloat ty2 = ty1 + (GLfloat)font_Bitter_Regular_codepoint_infos[glyph]
+	GLfloat ty2 = ty1 + (GLfloat)font_Merriweather_Regular_codepoint_infos[glyph]
 		.atlas_h;
 	GLfloat w = (tx2 - tx1)
-	            / (GLfloat)font_Bitter_Regular_information.max_height
+	            / (GLfloat)font_Merriweather_Regular_information.max_height
 	            * size;
 	GLfloat h = (ty2 - ty1)
-	            / (GLfloat)font_Bitter_Regular_information.max_height
+	            / (GLfloat)font_Merriweather_Regular_information.max_height
 	            * size;
 	tx1 /= (GLfloat)atlasSize;
 	ty1 /= (GLfloat)atlasSize;
@@ -133,34 +171,21 @@ queueGlyph(unsigned char glyph, vec3 position, quat orientation, GLfloat size)
 	ty1 = 1.0f - ty1;
 	ty2 = 1.0f - ty2;
 
-	bottomLeft[0] = position[0];
-	bottomLeft[1] = position[1];
-	bottomLeft[2] = position[2];
+	bottomLeft[0] = adjusted[0];
+	bottomLeft[1] = adjusted[1];
+	bottomLeft[2] = adjusted[2];
 
-	bottomRight[0] = position[0] + w;
-	bottomRight[1] = position[1];
-	bottomRight[2] = position[2];
+	bottomRight[0] = adjusted[0] + w;
+	bottomRight[1] = adjusted[1];
+	bottomRight[2] = adjusted[2];
 
-	topLeft[0] = position[0];
-	topLeft[1] = position[1] + h;
-	topLeft[2] = position[2];
+	topLeft[0] = adjusted[0];
+	topLeft[1] = adjusted[1] + h;
+	topLeft[2] = adjusted[2];
 
-	topRight[0] = position[0] + w;
-	topRight[1] = position[1] + h;
-	topRight[2] = position[2];
-
-	vec3_sub(bottomLeft, bottomLeft, position);
-	vec3_sub(bottomRight, bottomRight, position);
-	vec3_sub(topLeft, topLeft, position);
-	vec3_sub(topRight, topRight, position);
-	quat_mul_vec3(bottomLeft, orientation, bottomLeft);
-	quat_mul_vec3(bottomRight, orientation, bottomRight);
-	quat_mul_vec3(topLeft, orientation, topLeft);
-	quat_mul_vec3(topRight, orientation, topRight);
-	vec3_add(bottomLeft, bottomLeft, position);
-	vec3_add(bottomRight, bottomRight, position);
-	vec3_add(topLeft, topLeft, position);
-	vec3_add(topRight, topRight, position);
+	topRight[0] = adjusted[0] + w;
+	topRight[1] = adjusted[1] + h;
+	topRight[2] = adjusted[2];
 
 	struct textVertex *newVertex;
 	newVertex = produceQueueItem(textQueue);
@@ -202,18 +227,61 @@ queueGlyph(unsigned char glyph, vec3 position, quat orientation, GLfloat size)
 	newVertex->ty = ty2;
 }
 
+void queueString(const char *string, vec3 position, float size)
+{
+	UErrorCode icuError = U_ZERO_ERROR;
+	UChar ustring[256];
+	u_strFromUTF8(ustring, 256, NULL, string, -1, &icuError);
+	if (U_FAILURE(icuError)) {
+		logError("Text encoding failure: %s", u_errorName(icuError));
+	}
+
+	hb_buffer_t *buf;
+	buf = hb_buffer_create();
+	hb_buffer_add_utf16(buf, ustring, u_strlen(ustring), 0, -1);
+	hb_buffer_set_direction(buf, HB_DIRECTION_LTR);
+	hb_buffer_set_script(buf, HB_SCRIPT_LATIN);
+	hb_buffer_set_language(buf, hb_language_from_string("en", -1));
+	hb_shape(fontShape, buf, NULL, 0);
+	unsigned int glyphCount = 0;
+	hb_glyph_info_t *glyphInfo = hb_buffer_get_glyph_infos(buf, &glyphCount);
+	hb_glyph_position_t *glyphPos = hb_buffer_get_glyph_positions(buf, &glyphCount);
+
+	float xOffset = 0;
+	float yOffset = 0;
+	float xAdvance = 0;
+	float yAdvance = 0;
+	logDebug("Start");
+	for (unsigned int i = 0; i < glyphCount; ++i) {
+		hb_codepoint_t codepoint = glyphInfo[i].codepoint;
+		logDebug("Index: %u", codepoint);
+		xOffset = glyphPos[i].x_offset / 85.0f * size;
+		yOffset = glyphPos[i].y_offset / 85.0f * size;
+		xAdvance = glyphPos[i].x_advance / 85.0f * size;
+		yAdvance = glyphPos[i].y_advance / 85.0f * size;
+		vec3 adjusted = {};
+		adjusted[0] = position[0] + xOffset;
+		adjusted[1] = position[1] + yOffset;
+		adjusted[2] = position[2];
+		queueGlyph(codepoint, position, size);
+		position[0] += xAdvance;
+		position[1] += yAdvance;
+	}
+
+	hb_buffer_destroy(buf);
+}
+
 void queuePlayfieldText(void)
 {
-	vec3 position = { 4.6f, 0.0f, 2.0f };
-	quat orientation;
-	vec3 axis = { 1.0f, 0.0f, 0.0f };
-	vec3_norm(axis, axis);
-	quat_rotate(orientation, radf(-90.0f), axis);
-	queueGlyph('h', position, orientation, 5.0f);
+	vec3 position = { -17.0f, 0.0f, 1.0f };
+	queueString("affinity 100% VAVAKV Żółćąłńśź", position, 8.0f);
 }
 
 void renderText(void)
 {
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
+
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(struct textVertex) * VERTEX_LIMIT,
 	             NULL, GL_STREAM_DRAW);
@@ -233,6 +301,9 @@ void renderText(void)
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glBindVertexArray(0);
 	glUseProgram(0);
+
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
 
 	clearQueue(textQueue);
 }
