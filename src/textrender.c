@@ -251,21 +251,21 @@ void queueString(const char *string, vec3 position, float size)
 	float yOffset = 0;
 	float xAdvance = 0;
 	float yAdvance = 0;
-	logDebug("Start");
+	vec3 cursor = {};
+	memcpy(cursor, position, sizeof(cursor));
 	for (unsigned int i = 0; i < glyphCount; ++i) {
 		hb_codepoint_t codepoint = glyphInfo[i].codepoint;
-		logDebug("Index: %u", codepoint);
 		xOffset = glyphPos[i].x_offset / 85.0f * size;
 		yOffset = glyphPos[i].y_offset / 85.0f * size;
 		xAdvance = glyphPos[i].x_advance / 85.0f * size;
 		yAdvance = glyphPos[i].y_advance / 85.0f * size;
 		vec3 adjusted = {};
-		adjusted[0] = position[0] + xOffset;
-		adjusted[1] = position[1] + yOffset;
-		adjusted[2] = position[2];
-		queueGlyph(codepoint, position, size);
-		position[0] += xAdvance;
-		position[1] += yAdvance;
+		adjusted[0] = cursor[0] + xOffset;
+		adjusted[1] = cursor[1] + yOffset;
+		adjusted[2] = cursor[2];
+		queueGlyph(codepoint, cursor, size);
+		cursor[0] += xAdvance;
+		cursor[1] += yAdvance;
 	}
 
 	hb_buffer_destroy(buf);
@@ -273,8 +273,12 @@ void queueString(const char *string, vec3 position, float size)
 
 void queuePlayfieldText(void)
 {
+	float size = 4.0f;
 	vec3 position = { -17.0f, 0.0f, 1.0f };
-	queueString("affinity 100% VAVAKV Żółćąłńśź", position, 8.0f);
+	position[1] = size;
+	queueString("affinity 100%", position, 4.0f);
+	position[1] -= size;
+	queueString("VAVAKV Żółćąłńśź", position, 4.0f);
 }
 
 void renderText(void)

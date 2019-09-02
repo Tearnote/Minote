@@ -129,12 +129,12 @@ static void renderFrame(void)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	//renderScene();
-	queueMinoPlayfield(gameSnap->playfield);
-	queueMinoPlayer(&gameSnap->player);
-	queueMinoPreview(&gameSnap->player);
-	renderMino();
-	queueBorder(gameSnap->playfield);
-	renderBorder();
+	//queueMinoPlayfield(gameSnap->playfield);
+	//queueMinoPlayer(&gameSnap->player);
+	//queueMinoPreview(&gameSnap->player);
+	//renderMino();
+	//queueBorder(gameSnap->playfield);
+	//renderBorder();
 	queuePlayfieldText();
 	renderText();
 }
