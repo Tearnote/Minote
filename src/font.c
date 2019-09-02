@@ -72,7 +72,8 @@ static void initFont(struct font *font, const char *name, const char *path,
 		        FT_Error_String(freetypeError));
 		exit(1);
 	}
-	FT_Set_Char_Size(font->face, 0, 0, 0, 0);
+	FT_Set_Char_Size(font->face, 0, VIRTUAL_FONT_SIZE * 64,
+	                 VIRTUAL_DPI, VIRTUAL_DPI);
 	font->shape = hb_ft_font_create(font->face, NULL);
 
 	unsigned char *atlasData = NULL;

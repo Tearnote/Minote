@@ -202,14 +202,15 @@ queueString(enum fontType font, const char *string, vec3 position, float size)
 	float yOffset = 0;
 	float xAdvance = 0;
 	float yAdvance = 0;
+	float scale = VIRTUAL_FONT_SIZE * VIRTUAL_DPI;
 	vec3 cursor = {};
 	memcpy(cursor, position, sizeof(cursor));
 	for (unsigned int i = 0; i < glyphCount; ++i) {
 		hb_codepoint_t codepoint = glyphInfo[i].codepoint;
-		xOffset = glyphPos[i].x_offset / 85.0f * size;
-		yOffset = glyphPos[i].y_offset / 85.0f * size;
-		xAdvance = glyphPos[i].x_advance / 85.0f * size;
-		yAdvance = glyphPos[i].y_advance / 85.0f * size;
+		xOffset = glyphPos[i].x_offset / scale * size;
+		yOffset = glyphPos[i].y_offset / scale * size;
+		xAdvance = glyphPos[i].x_advance / scale * size;
+		yAdvance = glyphPos[i].y_advance / scale * size;
 		vec3 adjusted = {};
 		adjusted[0] = cursor[0] + xOffset;
 		adjusted[1] = cursor[1] + yOffset;
@@ -227,13 +228,13 @@ void queuePlayfieldText(void)
 	float size = 4.0f;
 	vec3 position = { -17.0f, 0.0f, 1.0f };
 	position[1] = size * 3;
-	queueString(FontSans, "affinity 100%", position, 4.0f);
+	queueString(FontSans, "affinity 100%", position, size);
 	position[1] -= size;
-	queueString(FontSans, "VAVAKV Żółćąłńśź", position, 4.0f);
+	queueString(FontSans, "VAVAKV Żółćąłńśź", position, size);
 	position[1] -= size;
-	queueString(FontSerif, "affinity 100%", position, 4.0f);
+	queueString(FontSerif, "affinity 100%", position, size);
 	position[1] -= size;
-	queueString(FontSerif, "VAVAKV Żółćąłńśź", position, 4.0f);
+	queueString(FontSerif, "VAVAKV Żółćąłńśź", position, size);
 }
 
 void renderText(void)
