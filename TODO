@@ -1,2 +1,3 @@
-Switch all text handling to ICU
 Enable some sanitizers in gcc
+Flush out the race condition that's making the game crash on startup sometimes
+Refactor repetitive parts of rendering

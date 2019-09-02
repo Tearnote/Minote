@@ -9,38 +9,22 @@
 #include <GLFW/glfw3.h>
 #include <unicode/ptypes.h>
 #include <unicode/ustring.h>
-#include <ft2build.h>
-#include FT_FREETYPE_H
 #include <harfbuzz/hb.h>
 #include <harfbuzz/hb-ft.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#define STBI_ONLY_PNG
-#include "util.h"
-#define STBI_ASSERT(x) assert(x)
-#include "stb_image/stb_image.h"
 #include "linmath/linmath.h"
 
+#include "font.h"
 #include "render.h"
 #include "log.h"
 #include "queue.h"
-
-#define FONT_NAME "Merriweather-Regular"
-#include "Merriweather-Regular_desc.c"
-#define FONT_PATH "ttf/"FONT_NAME".ttf"
-#define FONT_IMG_PATH "ttf/"FONT_NAME"_img.png"
-
-FT_Library freetype = NULL;
-FT_Face face = NULL;
-hb_font_t *fontShape = NULL;
+#include "util.h"
 
 #define VERTEX_LIMIT 8192
 
 static GLuint program = 0;
 static GLuint vao = 0;
 static GLuint vertexBuffer = 0;
-static GLuint atlas = 0;
-static int atlasSize = 0;
 
 static GLint cameraAttr = -1;
 static GLint projectionAttr = -1;
@@ -49,48 +33,16 @@ struct textVertex {
 	GLfloat x, y, z;
 	GLfloat tx, ty;
 };
-static queue *textQueue = NULL;
+
+// Each font has a separate queue
+static queue *textQueue[FontSize] = {};
 
 void initTextRenderer(void)
 {
-	FT_Error freetypeError = FT_Init_FreeType(&freetype);
-	if (freetypeError) {
-		logCrit("Failed to initialize text renderer: %s", FT_Error_String(freetypeError));
-		exit(1);
-	}
-	freetypeError = FT_New_Face(freetype, FONT_PATH, 0, &face);
-	if (freetypeError) {
-		logCrit("Failed to load font %s: %s", FONT_PATH, FT_Error_String(freetypeError));
-		exit(1);
-	}
-	FT_Set_Char_Size(face, 0, 0, 0, 0);
-	fontShape = hb_ft_font_create(face, NULL);
+	for (int i = 0; i < FontSize; i++)
+		textQueue[i] = createQueue(sizeof(struct textVertex));
 
-	textQueue = createQueue(sizeof(struct textVertex));
-
-	unsigned char *atlasData = NULL;
-	int width;
-	int height;
-	int channels;
-	atlasData = stbi_load(FONT_IMG_PATH, &width, &height, &channels, 4);
-	if (!atlasData) {
-		logCrit("Failed to load %s: %s", FONT_IMG_PATH,
-		         stbi_failure_reason());
-		exit(1);
-	}
-	assert(width == height);
-	atlasSize = width;
-
-	glGenTextures(1, &atlas);
-	glBindTexture(GL_TEXTURE_2D, atlas);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
-	             GL_UNSIGNED_BYTE, atlasData);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	stbi_image_free(atlasData);
+	initFonts();
 
 	const GLchar vertSrc[] = {
 #include "text.vert"
@@ -127,47 +79,43 @@ void cleanupTextRenderer(void)
 	vertexBuffer = 0;
 	destroyProgram(program);
 	program = 0;
-	glDeleteTextures(1, &atlas);
-	atlas = 0;
 
-	hb_font_destroy(fontShape);
-	FT_Done_Face(face);
-	FT_Done_FreeType(freetype);
+	cleanupFonts();
+
+	for (int i = 0; i < FontSize; i++) {
+		destroyQueue(textQueue[i]);
+		textQueue[i] = NULL;
+	}
 }
 
-static void queueGlyph(hb_codepoint_t glyph, vec3 position, GLfloat size)
+static void queueGlyph(enum fontType font, hb_codepoint_t glyph, vec3 position,
+                       GLfloat size)
 {
-	if (glyph >= font_Merriweather_Regular_bitmap_chars_count)
+	if (glyph >= fonts[font].glyphCount)
 		return;
 
 	vec3 adjusted = {};
-	adjusted[0] = position[0] + (GLfloat)font_Merriweather_Regular_codepoint_infos[glyph].minx / font_Merriweather_Regular_information.max_height * size;
-	adjusted[1] = position[1] + (GLfloat)font_Merriweather_Regular_codepoint_infos[glyph].miny / font_Merriweather_Regular_information.max_height * size;
+	adjusted[0] = position[0] + (GLfloat)fonts[font].glyphs[glyph].minx
+	                            / fonts[font].info->max_height * size;
+	adjusted[1] = position[1] + (GLfloat)fonts[font].glyphs[glyph].miny
+	                            / fonts[font].info->max_height * size;
 	adjusted[2] = position[2];
-	
+
 	vec3 bottomLeft = {};
 	vec3 bottomRight = {};
 	vec3 topLeft = {};
 	vec3 topRight = {};
 
-	GLfloat tx1 =
-		(GLfloat)font_Merriweather_Regular_codepoint_infos[glyph].atlas_x;
-	GLfloat ty1 =
-		(GLfloat)font_Merriweather_Regular_codepoint_infos[glyph].atlas_y;
-	GLfloat tx2 = tx1 + (GLfloat)font_Merriweather_Regular_codepoint_infos[glyph]
-		.atlas_w;
-	GLfloat ty2 = ty1 + (GLfloat)font_Merriweather_Regular_codepoint_infos[glyph]
-		.atlas_h;
-	GLfloat w = (tx2 - tx1)
-	            / (GLfloat)font_Merriweather_Regular_information.max_height
-	            * size;
-	GLfloat h = (ty2 - ty1)
-	            / (GLfloat)font_Merriweather_Regular_information.max_height
-	            * size;
-	tx1 /= (GLfloat)atlasSize;
-	ty1 /= (GLfloat)atlasSize;
-	tx2 /= (GLfloat)atlasSize;
-	ty2 /= (GLfloat)atlasSize;
+	GLfloat tx1 = (GLfloat)fonts[font].glyphs[glyph].atlas_x;
+	GLfloat ty1 = (GLfloat)fonts[font].glyphs[glyph].atlas_y;
+	GLfloat tx2 = tx1 + (GLfloat)fonts[font].glyphs[glyph].atlas_w;
+	GLfloat ty2 = ty1 + (GLfloat)fonts[font].glyphs[glyph].atlas_h;
+	GLfloat w = (tx2 - tx1) / (GLfloat)fonts[font].info->max_height * size;
+	GLfloat h = (ty2 - ty1) / (GLfloat)fonts[font].info->max_height * size;
+	tx1 /= (GLfloat)fonts[font].atlasSize;
+	ty1 /= (GLfloat)fonts[font].atlasSize;
+	tx2 /= (GLfloat)fonts[font].atlasSize;
+	ty2 /= (GLfloat)fonts[font].atlasSize;
 	ty1 = 1.0f - ty1;
 	ty2 = 1.0f - ty2;
 
@@ -188,38 +136,38 @@ static void queueGlyph(hb_codepoint_t glyph, vec3 position, GLfloat size)
 	topRight[2] = adjusted[2];
 
 	struct textVertex *newVertex;
-	newVertex = produceQueueItem(textQueue);
+	newVertex = produceQueueItem(textQueue[font]);
 	newVertex->x = bottomLeft[0];
 	newVertex->y = bottomLeft[1];
 	newVertex->z = bottomLeft[2];
 	newVertex->tx = tx1;
 	newVertex->ty = ty1;
-	newVertex = produceQueueItem(textQueue);
+	newVertex = produceQueueItem(textQueue[font]);
 	newVertex->x = bottomRight[0];
 	newVertex->y = bottomRight[1];
 	newVertex->z = bottomRight[2];
 	newVertex->tx = tx2;
 	newVertex->ty = ty1;
-	newVertex = produceQueueItem(textQueue);
+	newVertex = produceQueueItem(textQueue[font]);
 	newVertex->x = topRight[0];
 	newVertex->y = topRight[1];
 	newVertex->z = topRight[2];
 	newVertex->tx = tx2;
 	newVertex->ty = ty2;
 
-	newVertex = produceQueueItem(textQueue);
+	newVertex = produceQueueItem(textQueue[font]);
 	newVertex->x = bottomLeft[0];
 	newVertex->y = bottomLeft[1];
 	newVertex->z = bottomLeft[2];
 	newVertex->tx = tx1;
 	newVertex->ty = ty1;
-	newVertex = produceQueueItem(textQueue);
+	newVertex = produceQueueItem(textQueue[font]);
 	newVertex->x = topRight[0];
 	newVertex->y = topRight[1];
 	newVertex->z = topRight[2];
 	newVertex->tx = tx2;
 	newVertex->ty = ty2;
-	newVertex = produceQueueItem(textQueue);
+	newVertex = produceQueueItem(textQueue[font]);
 	newVertex->x = topLeft[0];
 	newVertex->y = topLeft[1];
 	newVertex->z = topLeft[2];
@@ -227,7 +175,8 @@ static void queueGlyph(hb_codepoint_t glyph, vec3 position, GLfloat size)
 	newVertex->ty = ty2;
 }
 
-void queueString(const char *string, vec3 position, float size)
+void
+queueString(enum fontType font, const char *string, vec3 position, float size)
 {
 	UErrorCode icuError = U_ZERO_ERROR;
 	UChar ustring[256];
@@ -242,10 +191,12 @@ void queueString(const char *string, vec3 position, float size)
 	hb_buffer_set_direction(buf, HB_DIRECTION_LTR);
 	hb_buffer_set_script(buf, HB_SCRIPT_LATIN);
 	hb_buffer_set_language(buf, hb_language_from_string("en", -1));
-	hb_shape(fontShape, buf, NULL, 0);
+	hb_shape(fonts[font].shape, buf, NULL, 0);
 	unsigned int glyphCount = 0;
-	hb_glyph_info_t *glyphInfo = hb_buffer_get_glyph_infos(buf, &glyphCount);
-	hb_glyph_position_t *glyphPos = hb_buffer_get_glyph_positions(buf, &glyphCount);
+	hb_glyph_info_t
+		*glyphInfo = hb_buffer_get_glyph_infos(buf, &glyphCount);
+	hb_glyph_position_t
+		*glyphPos = hb_buffer_get_glyph_positions(buf, &glyphCount);
 
 	float xOffset = 0;
 	float yOffset = 0;
@@ -263,7 +214,7 @@ void queueString(const char *string, vec3 position, float size)
 		adjusted[0] = cursor[0] + xOffset;
 		adjusted[1] = cursor[1] + yOffset;
 		adjusted[2] = cursor[2];
-		queueGlyph(codepoint, cursor, size);
+		queueGlyph(font, codepoint, cursor, size);
 		cursor[0] += xAdvance;
 		cursor[1] += yAdvance;
 	}
@@ -275,10 +226,14 @@ void queuePlayfieldText(void)
 {
 	float size = 4.0f;
 	vec3 position = { -17.0f, 0.0f, 1.0f };
-	position[1] = size;
-	queueString("affinity 100%", position, 4.0f);
+	position[1] = size * 3;
+	queueString(FontSans, "affinity 100%", position, 4.0f);
 	position[1] -= size;
-	queueString("VAVAKV Żółćąłńśź", position, 4.0f);
+	queueString(FontSans, "VAVAKV Żółćąłńśź", position, 4.0f);
+	position[1] -= size;
+	queueString(FontSerif, "affinity 100%", position, 4.0f);
+	position[1] -= size;
+	queueString(FontSerif, "VAVAKV Żółćąłńśź", position, 4.0f);
 }
 
 void renderText(void)
@@ -286,28 +241,37 @@ void renderText(void)
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
 
-	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(struct textVertex) * VERTEX_LIMIT,
-	             NULL, GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0,
-	                (GLsizeiptr)MIN(textQueue->count, VERTEX_LIMIT)
-	                * sizeof(struct textVertex), textQueue->buffer);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
 	glUseProgram(program);
 	glBindVertexArray(vao);
-	glBindTexture(GL_TEXTURE_2D, atlas);
 
-	glUniformMatrix4fv(cameraAttr, 1, GL_FALSE, camera[0]);
-	glUniformMatrix4fv(projectionAttr, 1, GL_FALSE, projection[0]);
-	glDrawArrays(GL_TRIANGLES, 0, (GLsizei)textQueue->count);
+	for (int i = 0; i < FontSize; i++) {
+		glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+		glBufferData(GL_ARRAY_BUFFER,
+		             sizeof(struct textVertex) * VERTEX_LIMIT, NULL,
+		             GL_STREAM_DRAW);
+		glBufferSubData(GL_ARRAY_BUFFER, 0,
+		                (GLsizeiptr)MIN(textQueue[i]->count,
+		                                VERTEX_LIMIT)
+		                * sizeof(struct textVertex),
+		                textQueue[i]->buffer);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	glBindTexture(GL_TEXTURE_2D, 0);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, fonts[i].atlas);
+
+		glUniformMatrix4fv(cameraAttr, 1, GL_FALSE, camera[0]);
+		glUniformMatrix4fv(projectionAttr, 1, GL_FALSE, projection[0]);
+		glDrawArrays(GL_TRIANGLES, 0, (GLsizei)textQueue[i]->count);
+
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+
 	glBindVertexArray(0);
 	glUseProgram(0);
 
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 
-	clearQueue(textQueue);
+	for (int i = 0; i < FontSize; i++)
+		clearQueue(textQueue[i]);
 }

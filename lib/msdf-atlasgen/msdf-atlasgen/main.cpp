@@ -145,7 +145,7 @@ void write_description( std::vector< char_info >& charinfos, settings& cfg, doub
     // Write glyph informations
     //
     // Might want to write rounding-adjust for top justification (atlas_h - (y_max - y_min))
-    desc << "static const struct bitmap_glyph {\n";
+    desc << "static const struct {\n";
     desc << "    unsigned int atlas_x, atlas_y;\n";
     desc << "    unsigned int atlas_w, atlas_h;\n";
     desc << "    float minx, maxx;\n";

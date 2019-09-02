@@ -113,7 +113,7 @@ set(C_SOURCES
         src/thread.c
         src/timer.c
         src/util.c
-        src/window.c)
+        src/window.c src/font.c src/font.h)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 
