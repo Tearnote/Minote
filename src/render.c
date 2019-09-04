@@ -122,19 +122,20 @@ static void renderFrame(void)
 	lightPosition[1] = lightPositionTemp[1];
 	lightPosition[2] = lightPositionTemp[2];
 
+	//glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glClearColor(powf(0.48f, 2.2f),
 	             powf(0.75f, 2.2f),
 	             powf(0.83f, 2.2f),
 	             1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	//renderScene();
-	//queueMinoPlayfield(gameSnap->playfield);
-	//queueMinoPlayer(&gameSnap->player);
-	//queueMinoPreview(&gameSnap->player);
-	//renderMino();
-	//queueBorder(gameSnap->playfield);
-	//renderBorder();
+	renderScene();
+	queueMinoPlayfield(gameSnap->playfield);
+	queueMinoPlayer(&gameSnap->player);
+	queueMinoPreview(&gameSnap->player);
+	renderMino();
+	queueBorder(gameSnap->playfield);
+	renderBorder();
 	queuePlayfieldText();
 	renderText();
 }

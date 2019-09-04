@@ -79,7 +79,7 @@ foreach(TTF_PATH ${TTF_SOURCES})
             OUTPUT ${TTF_OUTPUT}_img.png
             OUTPUT ${TTF_OUTPUT}_desc.c
             COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/ttf/
-            COMMAND msdf-atlasgen --range 4 --smooth-pixels 4 -T 1024x1024 --char-height 36 -F ${PROJECT_SOURCE_DIR}/${TTF_PATH} -O ${TTF_OUTPUT}
+            COMMAND msdf-atlasgen --range 4 -T 1024x1024 --char-height 36 -F ${PROJECT_SOURCE_DIR}/${TTF_PATH} -O ${TTF_OUTPUT}
             COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/${TTF_PATH} ${TTF_OUTPUT}.ttf
             DEPENDS ${TTF_PATH}
             VERBATIM)
