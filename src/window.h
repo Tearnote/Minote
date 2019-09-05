@@ -10,8 +10,8 @@
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 
-#define DEFAULT_WIDTH 800
-#define DEFAULT_HEIGHT 600
+#define DEFAULT_WIDTH 1024
+#define DEFAULT_HEIGHT 576
 
 extern GLFWwindow *window;
 extern int windowWidth;
