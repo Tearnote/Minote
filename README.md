@@ -31,3 +31,6 @@ on 2019-08-22, used under MIT license.
 
 [`stb_image.h`](https://github.com/nothings/stb) retrieved on
 2019-08-29, in Public Domain.
+
+[`SDL_GameControllerDB`](https://github.com/gabomdq/SDL_GameControllerDB)
+retrieved on 2019-09-05, used under zlib license.

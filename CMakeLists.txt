@@ -118,9 +118,13 @@ set(C_SOURCES
         src/thread.c
         src/timer.c
         src/util.c
-        src/window.c src/font.c src/font.h)
+        src/window.c
+        src/font.c)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
+add_custom_command(TARGET Minote POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/conf ${PROJECT_BINARY_DIR}/conf)
 
 add_dependencies(Minote Preprocess_shaders)
 add_dependencies(Minote Preprocess_models)
@@ -149,5 +153,6 @@ install(DIRECTORY ${PROJECT_BINARY_DIR}/ttf DESTINATION .
         FILES_MATCHING PATTERN "*.png")
 install(DIRECTORY ${PROJECT_BINARY_DIR}/ttf DESTINATION .
         FILES_MATCHING PATTERN "*.ttf")
+install(DIRECTORY ${PROJECT_BINARY_DIR}/conf DESTINATION .)
 set(CPACK_GENERATOR "ZIP")
 include(CPack)

@@ -3,10 +3,14 @@
 #include "input.h"
 
 #include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
 
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 
+#include "readall/readall.h"
 #include "state.h"
 #include "window.h"
 #include "timer.h"
@@ -14,6 +18,8 @@
 #include "thread.h"
 #include "fifo.h"
 #include "util.h"
+
+#define MAPPINGS_PATH "conf/gamepad/gamecontrollerdb.txt"
 
 fifo *inputs = NULL;
 mutex inputMutex = newMutex;
@@ -93,7 +99,21 @@ void keyCallback(GLFWwindow *w, int key, int scancode, int action, int mods)
 void initInput(void)
 {
 	inputs = createFifo();
-
+	FILE *mappingsFile = fopen(MAPPINGS_PATH, "r");
+	if (mappingsFile == NULL) {
+		fprintf(stderr, "Could not open %s for reading: %s\n",
+		        MAPPINGS_PATH, strerror(errno));
+		exit(1);
+	}
+	char *mappings = NULL;
+	size_t mappingsChars = 0;
+	if (readall(mappingsFile, &mappings, &mappingsChars) != READALL_OK) {
+		fprintf(stderr, "Could not read contents of %s\n",
+		        MAPPINGS_PATH);
+		exit(1);
+	}
+	glfwUpdateGamepadMappings(mappings);
+	fclose(mappingsFile);
 
 	// Immediately start processing keyboard events
 	glfwSetKeyCallback(window, keyCallback);
