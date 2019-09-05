@@ -93,6 +93,8 @@ void keyCallback(GLFWwindow *w, int key, int scancode, int action, int mods)
 void initInput(void)
 {
 	inputs = createFifo();
+
+
 	// Immediately start processing keyboard events
 	glfwSetKeyCallback(window, keyCallback);
 }

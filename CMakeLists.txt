@@ -1,8 +1,8 @@
 # Project information
 cmake_minimum_required(VERSION 3.14)
 project(Minote VERSION 0.0
-               DESCRIPTION "Modern action puzzle game"
-               LANGUAGES C)
+        DESCRIPTION "Modern action puzzle game"
+        LANGUAGES C)
 set(CMAKE_C_STANDARD 11)
 
 # Module dependencies
@@ -17,7 +17,8 @@ include_directories(${HARFBUZZ_INCLUDE_DIRS})
 
 # Build the preprocessors
 add_executable(Preshade src/tools/preshade.c)
-add_executable(Premodel src/tools/premodel.c)
+add_executable(Premodel src/tools/premodel.c
+        lib/readall/readall.c)
 add_subdirectory(lib/msdf-atlasgen)
 
 # Preprocess shaders
@@ -32,7 +33,7 @@ set(GLSL_SOURCES
         src/glsl/text.vert.glsl
         src/glsl/text.frag.glsl)
 
-foreach(GLSL_PATH ${GLSL_SOURCES})
+foreach (GLSL_PATH ${GLSL_SOURCES})
     get_filename_component(GLSL_FILENAME ${GLSL_PATH} NAME_WLE)
     set(GLSL_OUTPUT ${PROJECT_BINARY_DIR}/glsl/${GLSL_FILENAME})
     add_custom_command(
@@ -42,7 +43,7 @@ foreach(GLSL_PATH ${GLSL_SOURCES})
             DEPENDS ${GLSL_PATH}
             VERBATIM)
     list(APPEND GLSL_OUTPUTS ${GLSL_OUTPUT})
-endforeach(GLSL_PATH)
+endforeach (GLSL_PATH)
 
 add_custom_target(Preprocess_shaders
         DEPENDS ${GLSL_OUTPUTS})
@@ -51,7 +52,7 @@ add_custom_target(Preprocess_shaders
 include_directories(${PROJECT_BINARY_DIR}/obj)
 set(OBJ_SOURCES src/obj/mino.obj)
 
-foreach(OBJ_PATH ${OBJ_SOURCES})
+foreach (OBJ_PATH ${OBJ_SOURCES})
     get_filename_component(OBJ_FILENAME ${OBJ_PATH} NAME_WLE)
     set(OBJ_OUTPUT ${PROJECT_BINARY_DIR}/obj/${OBJ_FILENAME}.vtx)
     add_custom_command(
@@ -61,7 +62,7 @@ foreach(OBJ_PATH ${OBJ_SOURCES})
             DEPENDS ${OBJ_PATH}
             VERBATIM)
     list(APPEND OBJ_OUTPUTS ${OBJ_OUTPUT})
-endforeach(OBJ_PATH)
+endforeach (OBJ_PATH)
 
 add_custom_target(Preprocess_models
         DEPENDS ${OBJ_OUTPUTS})
@@ -72,7 +73,7 @@ set(TTF_SOURCES
         assets/ttf/Merriweather-Regular.ttf
         assets/ttf/MerriweatherSans-Regular.ttf)
 
-foreach(TTF_PATH ${TTF_SOURCES})
+foreach (TTF_PATH ${TTF_SOURCES})
     get_filename_component(TTF_FILENAME ${TTF_PATH} NAME_WLE)
     set(TTF_OUTPUT ${PROJECT_BINARY_DIR}/ttf/${TTF_FILENAME})
     add_custom_command(
@@ -87,7 +88,7 @@ foreach(TTF_PATH ${TTF_SOURCES})
             DEPENDS ${TTF_PATH}
             VERBATIM)
     list(APPEND TTF_OUTPUTS ${TTF_OUTPUT}_img.png ${TTF_OUTPUT}_desc.c)
-endforeach(TTF_PATH)
+endforeach (TTF_PATH)
 
 add_custom_target(Preprocess_fonts
         DEPENDS ${TTF_OUTPUTS})
@@ -97,7 +98,8 @@ include_directories(src)
 include_directories(lib)
 set(C_INTERNALLIBS
         lib/glad/glad.c
-        lib/pcg/pcg_basic.c)
+        lib/pcg/pcg_basic.c
+        lib/readall/readall.c)
 set(C_SOURCES
         src/fifo.c
         src/gameplay.c
@@ -133,9 +135,9 @@ target_link_libraries(Minote glfw)
 target_link_libraries(Minote ICU::uc)
 target_link_libraries(Minote Freetype::Freetype)
 target_link_libraries(Minote harfbuzz)
-if(WIN32)
+if (WIN32)
     target_link_libraries(Minote winmm)
-endif(WIN32)
+endif (WIN32)
 target_link_libraries(Minote ${CMAKE_DL_LIBS})
 target_link_libraries(Minote Threads::Threads)
 target_link_libraries(Minote m)
