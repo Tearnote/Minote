@@ -30,6 +30,7 @@ mutex inputMutex = newMutex;
 static nsec nextPollTime = 0;
 
 static bool gamepads[GLFW_JOYSTICK_LAST + 1] = {};
+static GLFWgamepadstate gamepadStates[GLFW_JOYSTICK_LAST + 1] = {};
 
 // Function called once per every new keyboard event
 static
@@ -109,6 +110,7 @@ static void enumerateGamepads(void)
 		}
 		if (detected && !gamepads[i]) {
 			gamepads[i] = detected;
+			memset(&gamepadStates[i], 0, sizeof(gamepadStates[i]));
 			logInfo("Gamepad #%d connected: %s", i,
 			        glfwGetGamepadName(i));
 			continue;
@@ -123,6 +125,70 @@ static void joystickCallback(int jid, int event)
 {
 	(void)jid, (void)event;
 	enumerateGamepads();
+}
+
+static void pollGamepadEvents(void)
+{
+	for (int i = 0; i <= GLFW_JOYSTICK_LAST; i++) {
+		if (!gamepads[i])
+			continue;
+		GLFWgamepadstate newState;
+		glfwGetGamepadState(i, &newState);
+		for (int j = 0; j < COUNT_OF(newState.buttons); j++) {
+			if (gamepadStates[i].buttons[j] == newState.buttons[j])
+				continue;
+			gamepadStates[i].buttons[j] = newState.buttons[j];
+
+			enum inputType keyType;
+			enum inputAction keyAction;
+
+			switch (j) {
+			case GLFW_GAMEPAD_BUTTON_DPAD_LEFT:
+				keyType = InputLeft;
+				break;
+			case GLFW_GAMEPAD_BUTTON_DPAD_RIGHT:
+				keyType = InputRight;
+				break;
+			case GLFW_GAMEPAD_BUTTON_DPAD_UP:
+				keyType = InputUp;
+				break;
+			case GLFW_GAMEPAD_BUTTON_DPAD_DOWN:
+				keyType = InputDown;
+				break;
+			case GLFW_GAMEPAD_BUTTON_A:
+				keyType = InputButton1;
+				break;
+			case GLFW_GAMEPAD_BUTTON_B:
+				keyType = InputButton2;
+				break;
+			case GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER:
+				keyType = InputButton3;
+				break;
+			case GLFW_GAMEPAD_BUTTON_LEFT_BUMPER:
+				keyType = InputButton4;
+				break;
+			case GLFW_GAMEPAD_BUTTON_START:
+				keyType = InputStart;
+				break;
+			case GLFW_GAMEPAD_BUTTON_BACK:
+				keyType = InputQuit;
+				break;
+			default:
+				keyType = InputNone;
+			}
+
+			if (newState.buttons[j] == GLFW_PRESS)
+				keyAction = ActionPressed;
+			else
+				keyAction = ActionReleased;
+
+			struct input *newInput = allocate(sizeof(*newInput));
+			newInput->type = keyType;
+			newInput->action = keyAction;
+			//newInput->timestamp = nextPollTime;
+			enqueueInput(newInput);
+		}
+	}
 }
 
 void initInput(void)
@@ -172,6 +238,8 @@ void updateInput(void)
 
 	// Get events from the system and immediately execute event callbacks
 	glfwPollEvents();
+	// Polling for gamepad events needs to be done manually
+	pollGamepadEvents();
 
 	// Handle direct quit events, like the [X] being clicked
 	if (glfwWindowShouldClose(window)) {
