@@ -206,7 +206,7 @@ queueString(enum fontType font, const char *string, vec3 position, float size)
 	vec3 cursor = {};
 	memcpy(cursor, position, sizeof(cursor));
 	for (unsigned int i = 0; i < glyphCount; ++i) {
-		hb_codepoint_t codepoint = glyphInfo[i].codepoint;
+		hb_codepoint_t glyph = glyphInfo[i].codepoint;
 		xOffset = glyphPos[i].x_offset / scale * size;
 		yOffset = glyphPos[i].y_offset / scale * size;
 		xAdvance = glyphPos[i].x_advance / scale * size;
@@ -215,7 +215,7 @@ queueString(enum fontType font, const char *string, vec3 position, float size)
 		adjusted[0] = cursor[0] + xOffset;
 		adjusted[1] = cursor[1] + yOffset;
 		adjusted[2] = cursor[2];
-		queueGlyph(font, codepoint, cursor, size);
+		queueGlyph(font, glyph, adjusted, size);
 		cursor[0] += xAdvance;
 		cursor[1] += yAdvance;
 	}
@@ -225,7 +225,7 @@ queueString(enum fontType font, const char *string, vec3 position, float size)
 
 void queuePlayfieldText(void)
 {
-	float size = 4.0f;
+	float size = 1.0f;
 	vec3 position = { -17.0f, 0.0f, 1.0f };
 	position[1] = size * 3;
 	queueString(FontSans, "affinity 100%", position, size);
