@@ -29,6 +29,8 @@ mutex inputMutex = newMutex;
 
 static nsec nextPollTime = 0;
 
+static bool gamepads[GLFW_JOYSTICK_LAST + 1] = {};
+
 // Function called once per every new keyboard event
 static
 void keyCallback(GLFWwindow *w, int key, int scancode, int action, int mods)
@@ -96,6 +98,33 @@ void keyCallback(GLFWwindow *w, int key, int scancode, int action, int mods)
 	enqueueInput(newInput);
 }
 
+static void enumerateGamepads(void)
+{
+	for (int i = 0; i <= GLFW_JOYSTICK_LAST; i++) {
+		bool detected = glfwJoystickIsGamepad(i);
+		if (gamepads[i] && !detected) {
+			gamepads[i] = detected;
+			logInfo("Gamepad #%d disconnected", i);
+			continue;
+		}
+		if (detected && !gamepads[i]) {
+			gamepads[i] = detected;
+			logInfo("Gamepad #%d connected: %s", i,
+			        glfwGetGamepadName(i));
+			continue;
+		}
+		if (!detected && !gamepads[i] && glfwJoystickPresent(i))
+			logWarn("Unsupported joystick #%d connected: %s", i,
+			        glfwGetJoystickName(i));
+	}
+}
+
+static void joystickCallback(int jid, int event)
+{
+	(void)jid, (void)event;
+	enumerateGamepads();
+}
+
 void initInput(void)
 {
 	inputs = createFifo();
@@ -113,7 +142,12 @@ void initInput(void)
 		exit(1);
 	}
 	glfwUpdateGamepadMappings(mappings);
+	free(mappings);
+	mappings = NULL;
 	fclose(mappingsFile);
+	mappingsFile = NULL;
+	glfwSetJoystickCallback(joystickCallback);
+	enumerateGamepads();
 
 	// Immediately start processing keyboard events
 	glfwSetKeyCallback(window, keyCallback);
