@@ -225,51 +225,15 @@ queueString(enum fontType font, const char *string, vec3 position, float size)
 
 void queuePlayfieldText(void)
 {
-	float size = 0.75f;
+	float size = 1.5f;
 	vec3 position = { -17.0f, 24.0f, 1.0f };
-	queueString(FontSans, "affinity 100%", position, size);
-	position[1] -= size;
-	queueString(FontSans, "VAVAKV Żółćąłńśź", position, size);
-	position[1] -= size;
-	queueString(FontSerif, "affinity 100%", position, size);
-	position[1] -= size;
-	queueString(FontSerif, "VAVAKV Żółćąłńśź", position, size);
-	size = 1.0f;
-	position[1] -= size;
-	queueString(FontSans, "affinity 100%", position, size);
-	position[1] -= size;
-	queueString(FontSans, "VAVAKV Żółćąłńśź", position, size);
-	position[1] -= size;
-	queueString(FontSerif, "affinity 100%", position, size);
-	position[1] -= size;
-	queueString(FontSerif, "VAVAKV Żółćąłńśź", position, size);
-	size = 1.25f;
-	position[1] -= size;
-	queueString(FontSans, "affinity 100%", position, size);
-	position[1] -= size;
-	queueString(FontSans, "VAVAKV Żółćąłńśź", position, size);
-	position[1] -= size;
-	queueString(FontSerif, "affinity 100%", position, size);
-	position[1] -= size;
-	queueString(FontSerif, "VAVAKV Żółćąłńśź", position, size);
-	size = 1.5f;
-	position[1] -= size;
-	queueString(FontSans, "affinity 100%", position, size);
-	position[1] -= size;
-	queueString(FontSans, "VAVAKV Żółćąłńśź", position, size);
-	position[1] -= size;
-	queueString(FontSerif, "affinity 100%", position, size);
-	position[1] -= size;
-	queueString(FontSerif, "VAVAKV Żółćąłńśź", position, size);
-	size = 1.75f;
-	position[1] -= size;
-	queueString(FontSans, "affinity 100%", position, size);
-	position[1] -= size;
-	queueString(FontSans, "VAVAKV Żółćąłńśź", position, size);
-	position[1] -= size;
-	queueString(FontSerif, "affinity 100%", position, size);
-	position[1] -= size;
-	queueString(FontSerif, "VAVAKV Żółćąłńśź", position, size);
+	//queueString(FontSans, "affinity 100%", position, size);
+	//position[1] -= size;
+	//queueString(FontSans, "VAVAKV Żółćąłńśź", position, size);
+	//position[1] -= size;
+	//queueString(FontSerif, "affinity 100%", position, size);
+	//position[1] -= size;
+	//queueString(FontSerif, "VAVAKV Żółćąłńśź", position, size);
 }
 
 void renderText(void)
