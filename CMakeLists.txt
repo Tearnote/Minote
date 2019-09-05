@@ -139,3 +139,13 @@ endif(WIN32)
 target_link_libraries(Minote ${CMAKE_DL_LIBS})
 target_link_libraries(Minote Threads::Threads)
 target_link_libraries(Minote m)
+
+# Package the game
+install(TARGETS Minote
+        RUNTIME DESTINATION .)
+install(DIRECTORY ${PROJECT_BINARY_DIR}/ttf DESTINATION .
+        FILES_MATCHING PATTERN "*.png")
+install(DIRECTORY ${PROJECT_BINARY_DIR}/ttf DESTINATION .
+        FILES_MATCHING PATTERN "*.ttf")
+set(CPACK_GENERATOR "ZIP")
+include(CPack)
