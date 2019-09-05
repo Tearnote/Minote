@@ -171,7 +171,7 @@ static void initRenderer(void)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_FRAMEBUFFER_SRGB);
-	//glEnable(GL_MULTISAMPLE);
+	glEnable(GL_MULTISAMPLE);
 
 	gameSnap = allocate(sizeof(*gameSnap));
 	for (int i = 0; i < FENCE_COUNT; i++)

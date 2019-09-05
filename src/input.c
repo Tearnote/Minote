@@ -32,6 +32,17 @@ static nsec nextPollTime = 0;
 static bool gamepads[GLFW_JOYSTICK_LAST + 1] = {};
 static GLFWgamepadstate gamepadStates[GLFW_JOYSTICK_LAST + 1] = {};
 
+#define ANALOG_DEADZONE 0.4
+
+static void generateInput(enum inputType type, enum inputAction action)
+{
+	struct input *newInput = allocate(sizeof(*newInput));
+	newInput->type = type;
+	newInput->action = action;
+	//newInput->timestamp = nextPollTime;
+	enqueueInput(newInput);
+}
+
 // Function called once per every new keyboard event
 static
 void keyCallback(GLFWwindow *w, int key, int scancode, int action, int mods)
@@ -92,11 +103,7 @@ void keyCallback(GLFWwindow *w, int key, int scancode, int action, int mods)
 		return;
 	}
 
-	struct input *newInput = allocate(sizeof(*newInput));
-	newInput->type = keyType;
-	newInput->action = keyAction;
-	//newInput->timestamp = nextPollTime;
-	enqueueInput(newInput);
+	generateInput(keyType, keyAction);
 }
 
 static void enumerateGamepads(void)
@@ -182,11 +189,40 @@ static void pollGamepadEvents(void)
 			else
 				keyAction = ActionReleased;
 
-			struct input *newInput = allocate(sizeof(*newInput));
-			newInput->type = keyType;
-			newInput->action = keyAction;
-			//newInput->timestamp = nextPollTime;
-			enqueueInput(newInput);
+			generateInput(keyType, keyAction);
+		}
+
+		float oldX = gamepadStates[i].axes[GLFW_GAMEPAD_AXIS_LEFT_X];
+		float oldY = gamepadStates[i].axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
+		float newX = newState.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
+		float newY = newState.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
+		gamepadStates[i].axes[GLFW_GAMEPAD_AXIS_LEFT_X] =
+			newState.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
+		gamepadStates[i].axes[GLFW_GAMEPAD_AXIS_LEFT_Y] =
+			newState.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
+		if (newX < -ANALOG_DEADZONE && oldX >= -ANALOG_DEADZONE) {
+			generateInput(InputLeft, ActionPressed);
+		}
+		if (oldX < -ANALOG_DEADZONE && newX >= -ANALOG_DEADZONE) {
+			generateInput(InputLeft, ActionReleased);
+		}
+		if (newX > ANALOG_DEADZONE && oldX <= ANALOG_DEADZONE) {
+			generateInput(InputRight, ActionPressed);
+		}
+		if (oldX > ANALOG_DEADZONE && newX <= ANALOG_DEADZONE) {
+			generateInput(InputRight, ActionReleased);
+		}
+		if (newY < -ANALOG_DEADZONE && oldY >= -ANALOG_DEADZONE) {
+			generateInput(InputUp, ActionPressed);
+		}
+		if (oldY < -ANALOG_DEADZONE && newY >= -ANALOG_DEADZONE) {
+			generateInput(InputUp, ActionReleased);
+		}
+		if (newY > ANALOG_DEADZONE && oldY <= ANALOG_DEADZONE) {
+			generateInput(InputDown, ActionPressed);
+		}
+		if (oldY > ANALOG_DEADZONE && newY <= ANALOG_DEADZONE) {
+			generateInput(InputDown, ActionReleased);
 		}
 	}
 }
