@@ -9,8 +9,6 @@
 #include <GLFW/glfw3.h>
 #include <unicode/ptypes.h>
 #include <unicode/ustring.h>
-#include <harfbuzz/hb.h>
-#include <harfbuzz/hb-ft.h>
 
 #include "linmath/linmath.h"
 
@@ -88,16 +86,16 @@ void cleanupTextRenderer(void)
 	}
 }
 
-static void queueGlyph(enum fontType font, hb_codepoint_t glyph, vec3 position,
+static void queueGlyph(enum fontType font, int codepoint, vec3 position,
                        GLfloat size)
 {
-	if (glyph >= fonts[font].glyphCount)
+	if (codepoint >= fonts[font].glyphCount)
 		return;
 
 	vec3 adjusted = {};
-	adjusted[0] = position[0] + (GLfloat)fonts[font].glyphs[glyph].minx
+	adjusted[0] = position[0] + (GLfloat)fonts[font].glyphs[codepoint].minx
 	                            / fonts[font].info->max_height * size;
-	adjusted[1] = position[1] + (GLfloat)fonts[font].glyphs[glyph].miny
+	adjusted[1] = position[1] + (GLfloat)fonts[font].glyphs[codepoint].miny
 	                            / fonts[font].info->max_height * size;
 	adjusted[2] = position[2];
 
@@ -106,10 +104,10 @@ static void queueGlyph(enum fontType font, hb_codepoint_t glyph, vec3 position,
 	vec3 topLeft = {};
 	vec3 topRight = {};
 
-	GLfloat tx1 = (GLfloat)fonts[font].glyphs[glyph].atlas_x;
-	GLfloat ty1 = (GLfloat)fonts[font].glyphs[glyph].atlas_y;
-	GLfloat tx2 = tx1 + (GLfloat)fonts[font].glyphs[glyph].atlas_w;
-	GLfloat ty2 = ty1 + (GLfloat)fonts[font].glyphs[glyph].atlas_h;
+	GLfloat tx1 = (GLfloat)fonts[font].glyphs[codepoint].atlas_x;
+	GLfloat ty1 = (GLfloat)fonts[font].glyphs[codepoint].atlas_y;
+	GLfloat tx2 = tx1 + (GLfloat)fonts[font].glyphs[codepoint].atlas_w;
+	GLfloat ty2 = ty1 + (GLfloat)fonts[font].glyphs[codepoint].atlas_h;
 	GLfloat w = (tx2 - tx1) / (GLfloat)fonts[font].info->max_height * size;
 	GLfloat h = (ty2 - ty1) / (GLfloat)fonts[font].info->max_height * size;
 	tx1 /= (GLfloat)fonts[font].atlasSize;
@@ -185,55 +183,48 @@ queueString(enum fontType font, const char *string, vec3 position, float size)
 		logError("Text encoding failure: %s", u_errorName(icuError));
 	}
 
-	hb_buffer_t *buf;
-	buf = hb_buffer_create();
-	hb_buffer_add_utf16(buf, ustring, u_strlen(ustring), 0, -1);
-	hb_buffer_set_direction(buf, HB_DIRECTION_LTR);
-	hb_buffer_set_script(buf, HB_SCRIPT_LATIN);
-	hb_buffer_set_language(buf, hb_language_from_string("en", -1));
-	hb_shape(fonts[font].shape, buf, NULL, 0);
-	unsigned int glyphCount = 0;
-	hb_glyph_info_t
-		*glyphInfo = hb_buffer_get_glyph_infos(buf, &glyphCount);
-	hb_glyph_position_t
-		*glyphPos = hb_buffer_get_glyph_positions(buf, &glyphCount);
-
-	float xOffset = 0;
-	float yOffset = 0;
-	float xAdvance = 0;
-	float yAdvance = 0;
-	float scale = VIRTUAL_FONT_SIZE * VIRTUAL_DPI;
-	vec3 cursor = {};
-	memcpy(cursor, position, sizeof(cursor));
-	for (unsigned int i = 0; i < glyphCount; ++i) {
-		hb_codepoint_t glyph = glyphInfo[i].codepoint;
-		xOffset = glyphPos[i].x_offset / scale * size;
-		yOffset = glyphPos[i].y_offset / scale * size;
-		xAdvance = glyphPos[i].x_advance / scale * size;
-		yAdvance = glyphPos[i].y_advance / scale * size;
-		vec3 adjusted = {};
-		adjusted[0] = cursor[0] + xOffset;
-		adjusted[1] = cursor[1] + yOffset;
-		adjusted[2] = cursor[2];
-		queueGlyph(font, glyph, adjusted, size);
-		cursor[0] += xAdvance;
-		cursor[1] += yAdvance;
-	}
-
-	hb_buffer_destroy(buf);
+	// Que?
 }
 
 void queuePlayfieldText(void)
 {
-	float size = 1.5f;
-	vec3 position = { -17.0f, 24.0f, 1.0f };
-	//queueString(FontSans, "affinity 100%", position, size);
-	//position[1] -= size;
-	//queueString(FontSans, "VAVAKV Żółćąłńśź", position, size);
-	//position[1] -= size;
-	//queueString(FontSerif, "affinity 100%", position, size);
-	//position[1] -= size;
-	//queueString(FontSerif, "VAVAKV Żółćąłńśź", position, size);
+	float size = 0.5f;
+	vec3 position = { -22.0f, 24.0f, 0.0f };
+	position[1] -= size;
+	queueString(FontSans, "affinity 100%", position, size);
+	position[1] -= size;
+	queueString(FontSans, "VAVAKV Żółćąłńśź", position, size);
+	position[1] -= size;
+	queueString(FontSerif, "affinity 100%", position, size);
+	position[1] -= size;
+	queueString(FontSerif, "VAVAKV Żółćąłńśź", position, size);
+	size *= 2;
+	position[1] -= size;
+	queueString(FontSans, "affinity 100%", position, size);
+	position[1] -= size;
+	queueString(FontSans, "VAVAKV Żółćąłńśź", position, size);
+	position[1] -= size;
+	queueString(FontSerif, "affinity 100%", position, size);
+	position[1] -= size;
+	queueString(FontSerif, "VAVAKV Żółćąłńśź", position, size);
+	size *= 2;
+	position[1] -= size;
+	queueString(FontSans, "affinity 100%", position, size);
+	position[1] -= size;
+	queueString(FontSans, "VAVAKV Żółćąłńśź", position, size);
+	position[1] -= size;
+	queueString(FontSerif, "affinity 100%", position, size);
+	position[1] -= size;
+	queueString(FontSerif, "VAVAKV Żółćąłńśź", position, size);
+	size *= 2;
+	position[1] -= size;
+	queueString(FontSans, "affinity 100%", position, size);
+	position[1] -= size;
+	queueString(FontSans, "VAVAKV Żółćąłńśź", position, size);
+	position[1] -= size;
+	queueString(FontSerif, "affinity 100%", position, size);
+	position[1] -= size;
+	queueString(FontSerif, "VAVAKV Żółćąłńśź", position, size);
 }
 
 void renderText(void)

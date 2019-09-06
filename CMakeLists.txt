@@ -94,6 +94,9 @@ set(C_SOURCES
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/assets/ttf ${PROJECT_BINARY_DIR}/ttf)
+add_custom_command(TARGET Minote POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/conf ${PROJECT_BINARY_DIR}/conf)
 
 add_dependencies(Minote Preprocess_shaders)
