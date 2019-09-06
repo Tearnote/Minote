@@ -86,17 +86,15 @@ void cleanupTextRenderer(void)
 	}
 }
 
-static void queueGlyph(enum fontType font, int codepoint, vec3 position,
+static void queueGlyph(enum fontType font, int codepoint, const vec3 position,
                        GLfloat size)
 {
-	/*if (codepoint >= fonts[font].glyphCount)
+	if (codepoint >= fonts[font].glyphCount)
 		return;
 
 	vec3 adjusted = {};
-	adjusted[0] = position[0] + (GLfloat)fonts[font].glyphs[codepoint].minx
-	                            / fonts[font].info->max_height * size;
-	adjusted[1] = position[1] + (GLfloat)fonts[font].glyphs[codepoint].miny
-	                            / fonts[font].info->max_height * size;
+	adjusted[0] = position[0];// - (GLfloat)fonts[font].glyphs[codepoint].xOffset / (float)fonts[font].size * size;
+	adjusted[1] = position[1];// - (GLfloat)fonts[font].glyphs[codepoint].yOffset / (float)fonts[font].size * size;
 	adjusted[2] = position[2];
 
 	vec3 bottomLeft = {};
@@ -104,18 +102,16 @@ static void queueGlyph(enum fontType font, int codepoint, vec3 position,
 	vec3 topLeft = {};
 	vec3 topRight = {};
 
-	GLfloat tx1 = (GLfloat)fonts[font].glyphs[codepoint].atlas_x;
-	GLfloat ty1 = (GLfloat)fonts[font].glyphs[codepoint].atlas_y;
-	GLfloat tx2 = tx1 + (GLfloat)fonts[font].glyphs[codepoint].atlas_w;
-	GLfloat ty2 = ty1 + (GLfloat)fonts[font].glyphs[codepoint].atlas_h;
-	GLfloat w = (tx2 - tx1) / (GLfloat)fonts[font].info->max_height * size;
-	GLfloat h = (ty2 - ty1) / (GLfloat)fonts[font].info->max_height * size;
+	GLfloat tx1 = (GLfloat)fonts[font].glyphs[codepoint].x;
+	GLfloat ty1 = (GLfloat)fonts[font].glyphs[codepoint].y;
+	GLfloat tx2 = tx1 + (GLfloat)fonts[font].glyphs[codepoint].width;
+	GLfloat ty2 = ty1 + (GLfloat)fonts[font].glyphs[codepoint].height;
+	GLfloat w = (tx2 - tx1) / (GLfloat)fonts[font].size * size;
+	GLfloat h = (ty2 - ty1) / (GLfloat)fonts[font].size * size;
 	tx1 /= (GLfloat)fonts[font].atlasSize;
 	ty1 /= (GLfloat)fonts[font].atlasSize;
 	tx2 /= (GLfloat)fonts[font].atlasSize;
 	ty2 /= (GLfloat)fonts[font].atlasSize;
-	ty1 = 1.0f - ty1;
-	ty2 = 1.0f - ty2;
 
 	bottomLeft[0] = adjusted[0];
 	bottomLeft[1] = adjusted[1];
@@ -139,38 +135,38 @@ static void queueGlyph(enum fontType font, int codepoint, vec3 position,
 	newVertex->y = bottomLeft[1];
 	newVertex->z = bottomLeft[2];
 	newVertex->tx = tx1;
-	newVertex->ty = ty1;
+	newVertex->ty = ty2;
 	newVertex = produceQueueItem(textQueue[font]);
 	newVertex->x = bottomRight[0];
 	newVertex->y = bottomRight[1];
 	newVertex->z = bottomRight[2];
 	newVertex->tx = tx2;
-	newVertex->ty = ty1;
+	newVertex->ty = ty2;
 	newVertex = produceQueueItem(textQueue[font]);
 	newVertex->x = topRight[0];
 	newVertex->y = topRight[1];
 	newVertex->z = topRight[2];
 	newVertex->tx = tx2;
-	newVertex->ty = ty2;
+	newVertex->ty = ty1;
 
 	newVertex = produceQueueItem(textQueue[font]);
 	newVertex->x = bottomLeft[0];
 	newVertex->y = bottomLeft[1];
 	newVertex->z = bottomLeft[2];
 	newVertex->tx = tx1;
-	newVertex->ty = ty1;
+	newVertex->ty = ty2;
 	newVertex = produceQueueItem(textQueue[font]);
 	newVertex->x = topRight[0];
 	newVertex->y = topRight[1];
 	newVertex->z = topRight[2];
 	newVertex->tx = tx2;
-	newVertex->ty = ty2;
+	newVertex->ty = ty1;
 	newVertex = produceQueueItem(textQueue[font]);
 	newVertex->x = topLeft[0];
 	newVertex->y = topLeft[1];
 	newVertex->z = topLeft[2];
 	newVertex->tx = tx1;
-	newVertex->ty = ty2;*/
+	newVertex->ty = ty1;
 }
 
 void
@@ -183,13 +179,22 @@ queueString(enum fontType font, const char *string, vec3 position, float size)
 		logError("Text encoding failure: %s", u_errorName(icuError));
 	}
 
-	// Que?
+	float advance = 0;
+	vec3 cursor = {};
+	memcpy(cursor, position, sizeof(cursor));
+	for (unsigned int i = 0; i < u_strlen(ustring); ++i) {
+		int codepoint = ustring[i];
+		queueGlyph(font, ustring[i], cursor, size);
+		if (codepoint >= fonts[font].glyphCount)
+			continue;
+		cursor[0] += (float)fonts[font].glyphs[codepoint].advance / (float)fonts[font].size * size;
+	}
 }
 
 void queuePlayfieldText(void)
 {
-	float size = 0.5f;
-	vec3 position = { -22.0f, 24.0f, 0.0f };
+	float size = 0.75f;
+	vec3 position = { -23.0f, 25.0f, 0.0f };
 	position[1] -= size;
 	queueString(FontSans, "affinity 100%", position, size);
 	position[1] -= size;
@@ -198,7 +203,7 @@ void queuePlayfieldText(void)
 	queueString(FontSerif, "affinity 100%", position, size);
 	position[1] -= size;
 	queueString(FontSerif, "VAVAKV Żółćąłńśź", position, size);
-	size *= 2;
+	size += 0.25f;
 	position[1] -= size;
 	queueString(FontSans, "affinity 100%", position, size);
 	position[1] -= size;
@@ -207,7 +212,7 @@ void queuePlayfieldText(void)
 	queueString(FontSerif, "affinity 100%", position, size);
 	position[1] -= size;
 	queueString(FontSerif, "VAVAKV Żółćąłńśź", position, size);
-	size *= 2;
+	size += 0.25f;
 	position[1] -= size;
 	queueString(FontSans, "affinity 100%", position, size);
 	position[1] -= size;
@@ -216,7 +221,16 @@ void queuePlayfieldText(void)
 	queueString(FontSerif, "affinity 100%", position, size);
 	position[1] -= size;
 	queueString(FontSerif, "VAVAKV Żółćąłńśź", position, size);
-	size *= 2;
+	size += 0.25f;
+	position[1] -= size;
+	queueString(FontSans, "affinity 100%", position, size);
+	position[1] -= size;
+	queueString(FontSans, "VAVAKV Żółćąłńśź", position, size);
+	position[1] -= size;
+	queueString(FontSerif, "affinity 100%", position, size);
+	position[1] -= size;
+	queueString(FontSerif, "VAVAKV Żółćąłńśź", position, size);
+	size += 0.25f;
 	position[1] -= size;
 	queueString(FontSans, "affinity 100%", position, size);
 	position[1] -= size;
