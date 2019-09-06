@@ -68,7 +68,8 @@ include_directories(lib)
 set(C_INTERNALLIBS
         lib/glad/glad.c
         lib/pcg/pcg_basic.c
-        lib/readall/readall.c)
+        lib/readall/readall.c
+        lib/parson/parson.c)
 set(C_SOURCES
         src/fifo.c
         src/gameplay.c
