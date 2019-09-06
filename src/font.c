@@ -9,14 +9,13 @@
 #include "util.h"
 #define STBI_ASSERT(x) assert(x)
 #include "stb_image/stb_image.h"
+#include "parson/parson.h"
 
 #include "util.h"
 #include "log.h"
 
 #define STR2(x) #x
 #define STR(x) STR2(x)
-#define CONCAT2(a, b) a ## b
-#define CONCAT(a, b) CONCAT2(a, b)
 
 #define FONT_NAME(font) STR(font)
 #define FONT_JSON(font) "ttf/"STR(font)".json"
@@ -41,14 +40,61 @@ static void initFont(struct font *font, const char *name, const char *json,
 {
 	strcpy(font->name, name);
 
+	JSON_Value *root = json_parse_file(json);
+	if (!root) {
+		logError("Failed to parse %s", json);
+		return;
+	}
+	JSON_Object *rootObject = json_value_get_object(root);
+	font->size = (int)json_object_dotget_number(rootObject, "info.size");
+	font->atlasRange = (int)json_object_dotget_number(rootObject,
+	                                                  "distanceField.distanceRange");
+
+	JSON_Array *glyphs = json_object_get_array(rootObject, "chars");
+	int glyphsCount = json_array_get_count(glyphs);
+
+	// First pass: determining the highest codepoint
+	int highestCodepoint = 0;
+	for (int i = 0; i < glyphsCount; i++) {
+		JSON_Object *glyph = json_array_get_object(glyphs, i);
+		int codepoint = (int)json_object_get_number(glyph, "id");
+		if (codepoint > highestCodepoint)
+			highestCodepoint = codepoint;
+	}
+
+	// Second pass: fill in glyph data
+	font->glyphCount = highestCodepoint + 1;
+	font->glyphs = allocate(sizeof(struct glyphInfo) * font->glyphCount);
+	memset(font->glyphs, 0, font->glyphCount);
+	for (int i = 0; i < glyphsCount; i++) {
+		JSON_Object *glyph = json_array_get_object(glyphs, i);
+		int codepoint = (int)json_object_get_number(glyph, "id");
+		font->glyphs[codepoint].x =
+			(int)json_object_get_number(glyph, "x");
+		font->glyphs[codepoint].y =
+			(int)json_object_get_number(glyph, "y");
+		font->glyphs[codepoint].width =
+			(int)json_object_get_number(glyph, "width");
+		font->glyphs[codepoint].height =
+			(int)json_object_get_number(glyph, "height");
+		font->glyphs[codepoint].xOffset =
+			(int)json_object_get_number(glyph, "xoffset");
+		font->glyphs[codepoint].yOffset =
+			(int)json_object_get_number(glyph, "yoffset");
+		font->glyphs[codepoint].advance =
+			(int)json_object_get_number(glyph, "xadvance");
+	}
+
+	json_value_free(root);
+
 	unsigned char *atlasData = NULL;
 	int width;
 	int height;
 	int channels;
 	atlasData = stbi_load(atlas, &width, &height, &channels, 4);
 	if (!atlasData) {
-		logCrit("Failed to load %s: %s", atlas, stbi_failure_reason());
-		exit(1);
+		logError("Failed to load %s: %s", atlas, stbi_failure_reason());
+		return;
 	}
 	assert(width == height);
 	font->atlasSize = width;
@@ -80,5 +126,7 @@ void cleanupFonts(void)
 	for (int i = 0; i < FontSize; i++) {
 		glDeleteTextures(1, &fonts[i].atlas);
 		fonts[i].atlas = 0;
+		free(fonts[i].glyphs);
+		fonts[i].glyphs = NULL;
 	}
 }

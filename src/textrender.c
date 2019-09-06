@@ -89,7 +89,7 @@ void cleanupTextRenderer(void)
 static void queueGlyph(enum fontType font, int codepoint, vec3 position,
                        GLfloat size)
 {
-	if (codepoint >= fonts[font].glyphCount)
+	/*if (codepoint >= fonts[font].glyphCount)
 		return;
 
 	vec3 adjusted = {};
@@ -170,7 +170,7 @@ static void queueGlyph(enum fontType font, int codepoint, vec3 position,
 	newVertex->y = topLeft[1];
 	newVertex->z = topLeft[2];
 	newVertex->tx = tx1;
-	newVertex->ty = ty2;
+	newVertex->ty = ty2;*/
 }
 
 void

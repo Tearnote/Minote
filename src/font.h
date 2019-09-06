@@ -13,30 +13,21 @@ enum fontType {
 	FontSize
 };
 
-// Copied from msdf_atlasgen definition
 struct glyphInfo {
-	unsigned int atlas_x, atlas_y;
-	unsigned int atlas_w, atlas_h;
-	float minx, maxx;
-	float miny, maxy;
-	float advance;
-};
-
-// Copied from msdf_atlasgen definition
-struct fontInfo {
-	unsigned int smooth_pixels;
-	float min_y;
-	float max_y;
-	unsigned int max_height;
+	int x, y;
+	int width, height;
+	int xOffset, yOffset;
+	int advance;
 };
 
 struct font {
 	char name[64]; // Unimportant, only used for reference and errors
-	struct fontInfo *info;
-	struct glyphInfo *glyphs;
+	int size;
 	int glyphCount;
 	GLuint atlas;
 	int atlasSize;
+	int atlasRange;
+	struct glyphInfo *glyphs;
 };
 
 extern struct font fonts[FontSize];
