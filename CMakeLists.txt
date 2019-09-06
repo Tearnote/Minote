@@ -1,4 +1,4 @@
-# Project information
+# Project informationz
 cmake_minimum_required(VERSION 3.14)
 project(Minote VERSION 0.0
         DESCRIPTION "Modern action puzzle game"
@@ -10,16 +10,11 @@ set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 find_package(ICU REQUIRED uc)
 include_directories(${ICU_INCLUDE_DIRS})
-find_package(Freetype REQUIRED)
-include_directories(${FREETYPE_INCLUDE_DIRS})
-find_package(HarfBuzz REQUIRED)
-include_directories(${HARFBUZZ_INCLUDE_DIRS})
 
 # Build the preprocessors
 add_executable(Preshade src/tools/preshade.c)
 add_executable(Premodel src/tools/premodel.c
         lib/readall/readall.c)
-add_subdirectory(lib/msdf-atlasgen)
 
 # Preprocess shaders
 include_directories(${PROJECT_BINARY_DIR}/glsl)
@@ -67,32 +62,6 @@ endforeach (OBJ_PATH)
 add_custom_target(Preprocess_models
         DEPENDS ${OBJ_OUTPUTS})
 
-# Preprocess fonts
-include_directories(${PROJECT_BINARY_DIR}/ttf)
-set(TTF_SOURCES
-        assets/ttf/Merriweather-Regular.ttf
-        assets/ttf/MerriweatherSans-Regular.ttf)
-
-foreach (TTF_PATH ${TTF_SOURCES})
-    get_filename_component(TTF_FILENAME ${TTF_PATH} NAME_WLE)
-    set(TTF_OUTPUT ${PROJECT_BINARY_DIR}/ttf/${TTF_FILENAME})
-    add_custom_command(
-            OUTPUT ${TTF_OUTPUT}_img.png
-            OUTPUT ${TTF_OUTPUT}_desc.c
-            COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/ttf/
-            # range: blur strength
-            # smooth-pixels: glyph padding
-            # spacing: glyph margin
-            COMMAND msdf-atlasgen --range 4 --smooth-pixels 4 -T 2048x2048 --char-height 80 -F ${PROJECT_SOURCE_DIR}/${TTF_PATH} -O ${TTF_OUTPUT}
-            COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/${TTF_PATH} ${TTF_OUTPUT}.ttf
-            DEPENDS ${TTF_PATH}
-            VERBATIM)
-    list(APPEND TTF_OUTPUTS ${TTF_OUTPUT}_img.png ${TTF_OUTPUT}_desc.c)
-endforeach (TTF_PATH)
-
-add_custom_target(Preprocess_fonts
-        DEPENDS ${TTF_OUTPUTS})
-
 # Build the game
 include_directories(src)
 include_directories(lib)
@@ -128,17 +97,13 @@ add_custom_command(TARGET Minote POST_BUILD
 
 add_dependencies(Minote Preprocess_shaders)
 add_dependencies(Minote Preprocess_models)
-add_dependencies(Minote Preprocess_fonts)
 add_dependencies(Preprocess_shaders Preshade)
 add_dependencies(Preprocess_models Premodel)
-add_dependencies(Preprocess_fonts msdf-atlasgen)
 
 # Link the game
 find_package(glfw3 3.3 REQUIRED)
 target_link_libraries(Minote glfw)
 target_link_libraries(Minote ICU::uc)
-target_link_libraries(Minote Freetype::Freetype)
-target_link_libraries(Minote harfbuzz)
 if (WIN32)
     target_link_libraries(Minote winmm)
 endif (WIN32)
@@ -152,7 +117,7 @@ install(TARGETS Minote
 install(DIRECTORY ${PROJECT_BINARY_DIR}/ttf DESTINATION .
         FILES_MATCHING PATTERN "*.png")
 install(DIRECTORY ${PROJECT_BINARY_DIR}/ttf DESTINATION .
-        FILES_MATCHING PATTERN "*.ttf")
+        FILES_MATCHING PATTERN "*.json")
 install(DIRECTORY ${PROJECT_BINARY_DIR}/conf DESTINATION .)
 set(CPACK_GENERATOR "ZIP")
 include(CPack)
