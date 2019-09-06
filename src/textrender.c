@@ -26,11 +26,15 @@ static GLuint vertexBuffer = 0;
 
 static GLint cameraAttr = -1;
 static GLint projectionAttr = -1;
+static GLint colorAttr = -1;
+static GLint pxRangeAttr = -1;
 
 struct textVertex {
 	GLfloat x, y, z;
 	GLfloat tx, ty;
 };
+
+static vec4 color = { 0.0f, 0.0f, 0.0f, 1.0f };
 
 // Each font has a separate queue
 static queue *textQueue[FontSize] = {};
@@ -53,6 +57,8 @@ void initTextRenderer(void)
 		logError("Failed to initialize text renderer");
 	cameraAttr = glGetUniformLocation(program, "camera");
 	projectionAttr = glGetUniformLocation(program, "projection");
+	colorAttr = glGetUniformLocation(program, "color");
+	pxRangeAttr = glGetUniformLocation(program, "pxRange");
 
 	glGenBuffers(1, &vertexBuffer);
 
@@ -93,8 +99,10 @@ static void queueGlyph(enum fontType font, int codepoint, const vec3 position,
 		return;
 
 	vec3 adjusted = {};
-	adjusted[0] = position[0];// - (GLfloat)fonts[font].glyphs[codepoint].xOffset / (float)fonts[font].size * size;
-	adjusted[1] = position[1];// - (GLfloat)fonts[font].glyphs[codepoint].yOffset / (float)fonts[font].size * size;
+	int xOffset = fonts[font].glyphs[codepoint].xOffset;
+	int yOffset = fonts[font].size - fonts[font].glyphs[codepoint].height - fonts[font].glyphs[codepoint].yOffset;
+	adjusted[0] = position[0] + (GLfloat)xOffset / (float)fonts[font].size * size;
+	adjusted[1] = position[1] + (GLfloat)yOffset / (float)fonts[font].size * size;
 	adjusted[2] = position[2];
 
 	vec3 bottomLeft = {};
@@ -266,6 +274,8 @@ void renderText(void)
 
 		glUniformMatrix4fv(cameraAttr, 1, GL_FALSE, camera[0]);
 		glUniformMatrix4fv(projectionAttr, 1, GL_FALSE, projection[0]);
+		glUniform4fv(colorAttr, 1, color);
+		glUniform1f(pxRangeAttr, fonts[i].atlasRange);
 		glDrawArrays(GL_TRIANGLES, 0, (GLsizei)textQueue[i]->count);
 
 		glBindTexture(GL_TEXTURE_2D, 0);
