@@ -68,6 +68,7 @@ struct game {
 	bool cmdHeld[CmdSize];
 	int frame;
 	nsec time;
+	bool finished;
 };
 
 void initGameplay(void);

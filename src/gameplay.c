@@ -408,6 +408,9 @@ static void newPiece(void)
 
 	if (!first)
 		addLevels(1, false);
+
+	if (!checkPosition())
+		game->finished = true;
 }
 
 // Maps generic inputs to gameplay commands
@@ -517,6 +520,7 @@ void initGameplay(void)
 	game->eligible = true;
 	game->frame = 0;
 	game->time = 0;
+	game->finished = false;
 	player = &game->player;
 	player->state = PlayerNone;
 	player->x = 0;
@@ -730,6 +734,9 @@ void updateGameplay(void)
 {
 	processInputs();
 
+	if (game->finished)
+		return;
+
 	updateRotations();
 	updateShifts();
 	updateClear();
@@ -742,4 +749,7 @@ void updateGameplay(void)
 
 	game->frame += 1;
 	game->time += FRAME_LENGTH;
+
+	if (game->level == 999)
+		game->finished = true;
 }
