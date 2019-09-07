@@ -4,3 +4,4 @@ Refactor repetitive parts of rendering
 Package dlls on Windows
 Refactor file operations
 Package licenses and readme
+Remove viewportScale, game already scales itself

@@ -4,11 +4,13 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 #include <unicode/ptypes.h>
 #include <unicode/ustring.h>
+#include <unicode/ustdio.h>
 
 #include "linmath/linmath.h"
 
@@ -100,9 +102,12 @@ static void queueGlyph(enum fontType font, int codepoint, const vec3 position,
 
 	vec3 adjusted = {};
 	int xOffset = fonts[font].glyphs[codepoint].xOffset;
-	int yOffset = fonts[font].size - fonts[font].glyphs[codepoint].height - fonts[font].glyphs[codepoint].yOffset;
-	adjusted[0] = position[0] + (GLfloat)xOffset / (float)fonts[font].size * size;
-	adjusted[1] = position[1] + (GLfloat)yOffset / (float)fonts[font].size * size;
+	int yOffset = fonts[font].size - fonts[font].glyphs[codepoint].height
+	              - fonts[font].glyphs[codepoint].yOffset;
+	adjusted[0] =
+		position[0] + (GLfloat)xOffset / (float)fonts[font].size * size;
+	adjusted[1] =
+		position[1] + (GLfloat)yOffset / (float)fonts[font].size * size;
 	adjusted[2] = position[2];
 
 	vec3 bottomLeft = {};
@@ -177,17 +182,21 @@ static void queueGlyph(enum fontType font, int codepoint, const vec3 position,
 	newVertex->ty = ty1;
 }
 
-void
-queueString(enum fontType font, const char *string, vec3 position, float size)
+static void queueString(enum fontType font, vec3 position, float size, const char *fmt, ...)
 {
 	UErrorCode icuError = U_ZERO_ERROR;
-	UChar ustring[256];
-	u_strFromUTF8(ustring, 256, NULL, string, -1, &icuError);
+	UChar ufmt[256] = {};
+	u_strFromUTF8(ufmt, 255, NULL, fmt, -1, &icuError);
 	if (U_FAILURE(icuError)) {
 		logError("Text encoding failure: %s", u_errorName(icuError));
 	}
 
-	float advance = 0;
+	UChar ustring[256] = {};
+	va_list ap;
+	va_start(ap, fmt);
+	u_vsnprintf_u(ustring, 255, ufmt, ap);
+	va_end(ap);
+
 	vec3 cursor = {};
 	memcpy(cursor, position, sizeof(cursor));
 	for (unsigned int i = 0; i < u_strlen(ustring); ++i) {
@@ -195,58 +204,15 @@ queueString(enum fontType font, const char *string, vec3 position, float size)
 		queueGlyph(font, ustring[i], cursor, size);
 		if (codepoint >= fonts[font].glyphCount)
 			continue;
-		cursor[0] += (float)fonts[font].glyphs[codepoint].advance / (float)fonts[font].size * size;
+		cursor[0] += (float)fonts[font].glyphs[codepoint].advance
+		             / (float)fonts[font].size * size;
 	}
 }
 
-void queuePlayfieldText(void)
+void queueGameplayText(struct game *game)
 {
-	float size = 0.75f;
-	vec3 position = { -23.0f, 25.0f, 0.0f };
-	position[1] -= size;
-	queueString(FontSans, "affinity 100%", position, size);
-	position[1] -= size;
-	queueString(FontSans, "VAVAKV Żółćąłńśź", position, size);
-	position[1] -= size;
-	queueString(FontSerif, "affinity 100%", position, size);
-	position[1] -= size;
-	queueString(FontSerif, "VAVAKV Żółćąłńśź", position, size);
-	size += 0.25f;
-	position[1] -= size;
-	queueString(FontSans, "affinity 100%", position, size);
-	position[1] -= size;
-	queueString(FontSans, "VAVAKV Żółćąłńśź", position, size);
-	position[1] -= size;
-	queueString(FontSerif, "affinity 100%", position, size);
-	position[1] -= size;
-	queueString(FontSerif, "VAVAKV Żółćąłńśź", position, size);
-	size += 0.25f;
-	position[1] -= size;
-	queueString(FontSans, "affinity 100%", position, size);
-	position[1] -= size;
-	queueString(FontSans, "VAVAKV Żółćąłńśź", position, size);
-	position[1] -= size;
-	queueString(FontSerif, "affinity 100%", position, size);
-	position[1] -= size;
-	queueString(FontSerif, "VAVAKV Żółćąłńśź", position, size);
-	size += 0.25f;
-	position[1] -= size;
-	queueString(FontSans, "affinity 100%", position, size);
-	position[1] -= size;
-	queueString(FontSans, "VAVAKV Żółćąłńśź", position, size);
-	position[1] -= size;
-	queueString(FontSerif, "affinity 100%", position, size);
-	position[1] -= size;
-	queueString(FontSerif, "VAVAKV Żółćąłńśź", position, size);
-	size += 0.25f;
-	position[1] -= size;
-	queueString(FontSans, "affinity 100%", position, size);
-	position[1] -= size;
-	queueString(FontSans, "VAVAKV Żółćąłńśź", position, size);
-	position[1] -= size;
-	queueString(FontSerif, "affinity 100%", position, size);
-	position[1] -= size;
-	queueString(FontSerif, "VAVAKV Żółćąłńśź", position, size);
+	vec3 position = { 6.5f, 5.0f, 0.0f };
+	queueString(FontSerif, position, 1.5f, "%d", game->level);
 }
 
 void renderText(void)

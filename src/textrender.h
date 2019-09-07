@@ -4,10 +4,12 @@
 #ifndef TEXTRENDER_H
 #define TEXTRENDER_H
 
+#include "gameplay.h"
+
 void initTextRenderer(void);
 void cleanupTextRenderer(void);
 
-void queuePlayfieldText(void);
+void queueGameplayText(struct game *game);
 void renderText(void);
 
 #endif //TEXTRENDER_H

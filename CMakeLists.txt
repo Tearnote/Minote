@@ -8,7 +8,7 @@ set(CMAKE_C_STANDARD 11)
 # Module dependencies
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
-find_package(ICU REQUIRED uc)
+find_package(ICU REQUIRED uc io)
 include_directories(${ICU_INCLUDE_DIRS})
 
 # Build the preprocessors
@@ -108,6 +108,7 @@ add_dependencies(Preprocess_models Premodel)
 find_package(glfw3 3.3 REQUIRED)
 target_link_libraries(Minote glfw)
 target_link_libraries(Minote ICU::uc)
+target_link_libraries(Minote ICU::io)
 if (WIN32)
     target_link_libraries(Minote winmm)
 endif (WIN32)

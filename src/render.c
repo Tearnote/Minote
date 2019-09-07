@@ -136,7 +136,7 @@ static void renderFrame(void)
 	renderMino();
 	queueBorder(gameSnap->playfield);
 	renderBorder();
-	queuePlayfieldText();
+	queueGameplayText(gameSnap);
 	renderText();
 }
 
