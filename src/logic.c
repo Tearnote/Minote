@@ -9,7 +9,7 @@
 
 thread logicThreadID = 0;
 
-#define LOGIC_FREQUENCY 60 // in Hz
+#define LOGIC_FREQUENCY 59.84 // in Hz
 #define LOGIC_TICK (SEC / LOGIC_FREQUENCY)
 static nsec nextUpdateTime = 0;
 
