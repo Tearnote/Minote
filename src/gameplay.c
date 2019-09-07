@@ -26,7 +26,7 @@
 #define SUBGRID 256
 
 // Natural piece falling speed in subgrids
-int GRAVITY = 16;
+int GRAVITY = 0;
 
 // Piece falling speed if soft drop is held
 #define SOFT_DROP 256
@@ -223,17 +223,81 @@ static enum pieceType randomPiece(void)
 	return result;
 }
 
+static void adjustGravity(void)
+{
+	if (game->level < 30)
+		GRAVITY = 4;
+	else if (game->level < 35)
+		GRAVITY = 6;
+	else if (game->level < 40)
+		GRAVITY = 8;
+	else if (game->level < 50)
+		GRAVITY = 10;
+	else if (game->level < 60)
+		GRAVITY = 12;
+	else if (game->level < 70)
+		GRAVITY = 16;
+	else if (game->level < 80)
+		GRAVITY = 32;
+	else if (game->level < 90)
+		GRAVITY = 48;
+	else if (game->level < 100)
+		GRAVITY = 64;
+	else if (game->level < 120)
+		GRAVITY = 80;
+	else if (game->level < 140)
+		GRAVITY = 96;
+	else if (game->level < 160)
+		GRAVITY = 112;
+	else if (game->level < 170)
+		GRAVITY = 128;
+	else if (game->level < 200)
+		GRAVITY = 144;
+	else if (game->level < 220)
+		GRAVITY = 4;
+	else if (game->level < 230)
+		GRAVITY = 32;
+	else if (game->level < 233)
+		GRAVITY = 64;
+	else if (game->level < 236)
+		GRAVITY = 96;
+	else if (game->level < 239)
+		GRAVITY = 128;
+	else if (game->level < 243)
+		GRAVITY = 160;
+	else if (game->level < 247)
+		GRAVITY = 192;
+	else if (game->level < 251)
+		GRAVITY = 224;
+	else if (game->level < 300)
+		GRAVITY = 256;
+	else if (game->level < 330)
+		GRAVITY = 512;
+	else if (game->level < 360)
+		GRAVITY = 768;
+	else if (game->level < 400)
+		GRAVITY = 1024;
+	else if (game->level < 420)
+		GRAVITY = 1280;
+	else if (game->level < 450)
+		GRAVITY = 1024;
+	else if (game->level < 500)
+		GRAVITY = 768;
+	else
+		GRAVITY = 5120;
+}
+
 static void addLevels(int count, bool strong)
 {
 	game->level += count;
-	if (!strong && game->level >= game->nextLevelstop) {
+	if (!strong && game->level >= game->nextLevelstop)
 		game->level = game->nextLevelstop - 1;
-		return;
-	}
-	if (game->level >= game->nextLevelstop)
+	else if (game->level >= game->nextLevelstop)
 		game->nextLevelstop += 100;
 	if (game->nextLevelstop > 900)
 		game->nextLevelstop = 999;
+
+	adjustGravity();
 }
 
 // Generate a new random piece for the player to control
@@ -279,8 +343,8 @@ static enum cmdType inputToCmd(enum inputType i)
 		return CmdLeft;
 	case InputRight:
 		return CmdRight;
-	case InputUp:
-		return CmdSonic;
+//	case InputUp:
+//		return CmdSonic;
 	case InputDown:
 		return CmdSoft;
 	case InputButton1:
@@ -308,11 +372,6 @@ static void processInput(struct input *i)
 
 		if (inputToCmd(i->type) != CmdNone)
 			game->cmdUnfiltered[inputToCmd(i->type)] = true;
-
-		//TODO Debugging, remove
-		if (i->type == InputStart)
-			GRAVITY = SUBGRID * 20;
-
 		break;
 
 	case ActionReleased:
@@ -392,6 +451,7 @@ void initGameplay(void)
 	player->lockDelay = 0;
 	player->clearDelay = 0;
 	player->spawnDelay = SPAWN_DELAY; // Start instantly
+	adjustGravity();
 }
 
 void cleanupGameplay(void)
