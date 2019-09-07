@@ -21,17 +21,23 @@
 #define FONT_JSON(font) "ttf/"STR(font)".json"
 #define FONT_IMG(font) "ttf/"STR(font)".png"
 
-#define FONT_SANS MerriweatherSans-Regular
+#define FONT_SANS PTSans-Regular
 
 #define FONT_SANS_NAME FONT_NAME(FONT_SANS)
 #define FONT_SANS_JSON FONT_JSON(FONT_SANS)
 #define FONT_SANS_IMG FONT_IMG(FONT_SANS)
 
-#define FONT_SERIF Merriweather-Regular
+#define FONT_SERIF PTSerif-Regular
 
 #define FONT_SERIF_NAME FONT_NAME(FONT_SERIF)
 #define FONT_SERIF_JSON FONT_JSON(FONT_SERIF)
 #define FONT_SERIF_IMG FONT_IMG(FONT_SERIF)
+
+#define FONT_MONO PTMono-Regular
+
+#define FONT_MONO_NAME FONT_NAME(FONT_MONO)
+#define FONT_MONO_JSON FONT_JSON(FONT_MONO)
+#define FONT_MONO_IMG FONT_IMG(FONT_MONO)
 
 struct font fonts[FontSize] = {};
 
@@ -117,6 +123,8 @@ void initFonts(void)
 	         FONT_SANS_IMG);
 	initFont(&fonts[FontSerif], FONT_SERIF_NAME, FONT_SERIF_JSON,
 	         FONT_SERIF_IMG);
+	initFont(&fonts[FontMono], FONT_MONO_NAME, FONT_MONO_JSON,
+	         FONT_MONO_IMG);
 }
 
 void cleanupFonts(void)

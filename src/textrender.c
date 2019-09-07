@@ -182,7 +182,8 @@ static void queueGlyph(enum fontType font, int codepoint, const vec3 position,
 	newVertex->ty = ty1;
 }
 
-static void queueString(enum fontType font, vec3 position, float size, const char *fmt, ...)
+static void
+queueString(enum fontType font, vec3 position, float size, const char *fmt, ...)
 {
 	UErrorCode icuError = U_ZERO_ERROR;
 	UChar ufmt[256] = {};
@@ -212,39 +213,38 @@ static void queueString(enum fontType font, vec3 position, float size, const cha
 void queueGameplayText(struct game *game)
 {
 	vec3 position = { 6.5f, 5.0f, 1.0f };
-	float size = 1.5f;
-	queueString(FontSerif, position, size, "%d", game->level);
-	position[1] -= size;
-	position[1] -= 0.25f;
-	queueString(FontSerif, position, size, "%d", game->nextLevelstop);
+	float size = 1.25f;
+	queueString(FontMono, position, size, "%3d", game->level);
+	position[1] -= 2.0f;
+	queueString(FontMono, position, size, "%d", game->nextLevelstop);
 	position[0] = 6.0f;
 	position[1] = 13.0f;
 	size = 1.0f;
-	queueString(FontSerif, position, size, "%d", game->score);
-	position[1] = 15.5f;
+	queueString(FontMono, position, size, "%d", game->score);
 	size = 4.0f;
 	char grade[2];
 	grade[0] = game->gradeString[0];
 	grade[1] = '\0';
 	if (strlen(game->gradeString) == 1)
-		position[0] = 6.75f;
+		position[0] = 6.85f;
 	else
 		position[0] = 6.25f;
-	queueString(FontSerif, position, size, "%s", grade);
+	position[1] = 15.2f;
+	queueString(FontMono, position, size, "%s", grade);
 	if (game->gradeString[1]) {
 		grade[0] = game->gradeString[1];
 		size = 2.0f;
 		position[0] += 2.18f;
 		position[1] -= 0.3f;
-		queueString(FontSerif, position, size, "%s", grade);
+		queueString(FontMono, position, size, "%s", grade);
 	}
-	position[0] = -10.0f;
+	position[0] = -10.5f;
 	position[1] = 5.0f;
 	size = 1.0f;
-	queueString(FontSerif, position, size, "%2d:%02d:%02d",
-		game->time / SEC / 60,
-		game->time / SEC % 60,
-		game->time / (SEC / 100) % 100);
+	queueString(FontMono, position, size, "%2d:%02d:%02d",
+	            game->time / SEC / 60,
+	            game->time / SEC % 60,
+	            game->time / (SEC / 100) % 100);
 }
 
 void renderText(void)

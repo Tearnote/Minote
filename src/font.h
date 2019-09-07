@@ -10,6 +10,7 @@
 enum fontType {
 	FontSans,
 	FontSerif,
+	FontMono,
 	FontSize
 };
 

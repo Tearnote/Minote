@@ -19,6 +19,24 @@ static GLint cameraAttr = -1;
 static GLint projectionAttr = -1;
 
 static GLfloat vertexData[] = { // vec3 position, vec4 color
+	// Level count separator
+	5.1f, 4.05f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
+	11.1f, 4.05f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
+	11.1f, 4.15f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
+
+	11.1f, 4.15f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
+	5.1f, 4.15f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
+	5.1f, 4.05f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
+
+	// Clock line
+	-5.1f, 4.05f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
+	-11.1f, 4.15f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
+	-11.1f, 4.05f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
+
+	-11.1f, 4.15f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
+	-5.1f, 4.05f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
+	-5.1f, 4.15f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
+
 	// Backplane
 	-5.1f, -0.1f, -1.0f, 0.0f, 0.0f, 0.0f, 0.9f,
 	5.1f, -0.1f, -1.0f, 0.0f, 0.0f, 0.0f, 0.9f,
@@ -90,15 +108,6 @@ static GLfloat vertexData[] = { // vec3 position, vec4 color
 	3.0f, 23.5f, -1.0f, 0.0f, 0.0f, 0.0f, 0.9f,
 	-3.0f, 23.5f, -1.0f, 0.0f, 0.0f, 0.0f, 0.9f,
 	-3.0f, 20.5f, -1.0f, 0.0f, 0.0f, 0.0f, 0.9f,
-
-	// Level count separator
-	5.1f, 4.05f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
-	10.0f, 4.05f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
-	10.0f, 4.15f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
-
-	10.0f, 4.15f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
-	5.1f, 4.15f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
-	5.1f, 4.05f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
 
 	// Grade box
 	6.0f, 14.5f, -0.5f, 0.0f, 0.0f, 0.0f, 0.5f,

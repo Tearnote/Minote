@@ -62,6 +62,7 @@ struct game {
 	int combo;
 	int grade;
 	char gradeString[3];
+	bool eligible;
 	bool cmdUnfiltered[CmdSize];
 	bool cmdPressed[CmdSize];
 	bool cmdHeld[CmdSize];

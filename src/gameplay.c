@@ -13,6 +13,7 @@
 #include "mino.h"
 #include "log.h"
 #include "util.h"
+#include "timer.h"
 
 // Define the length of a frame for the purpose of calculating the timer
 // This is not equal to real time
@@ -88,6 +89,20 @@ static struct grade grades[] = {
 	{ .name = "S9", .score = 120000 },
 	{ .name = "GM", .score = 126000 }
 };
+
+struct requirement {
+	int level;
+	int score;
+	nsec time;
+};
+
+static struct requirement requirements[] = {
+	{ .level = 300, .score = 12000,  (nsec)(4 * 60 + 15) * SEC },
+	{ .level = 500, .score = 40000,  (nsec)(7 * 60) * SEC },
+	{ .level = 999, .score = 126000, (nsec)(13 * 60 + 30) * SEC }
+};
+
+static bool requirementChecked[COUNT_OF(requirements)] = {};
 
 // Accepts inputs outside of bounds
 enum mino getGrid(int x, int y)
@@ -324,6 +339,27 @@ static void adjustGravity(void)
 		GRAVITY = 5120;
 }
 
+static void checkRequirements(void)
+{
+	if (!game->eligible)
+		return;
+	for (int i = 0; i < COUNT_OF(requirementChecked); i++) {
+		if (requirementChecked[i])
+			continue;
+		if (game->level < requirements[i].level)
+			continue;
+		requirementChecked[i] = true;
+		logDebug("Checking GM requirement #%d", i);
+		if (game->score < requirements[i].score ||
+		    game->time > requirements[i].time) {
+			game->eligible = false;
+			logDebug("Requirement failed");
+		} else {
+			logDebug("Requirement passed");
+		}
+	}
+}
+
 static void addLevels(int count, bool strong)
 {
 	game->level += count;
@@ -335,6 +371,7 @@ static void addLevels(int count, bool strong)
 		game->nextLevelstop = 999;
 
 	adjustGravity();
+	checkRequirements();
 }
 
 // Generate a new random piece for the player to control
@@ -477,6 +514,7 @@ void initGameplay(void)
 	game->combo = 1;
 	game->grade = 0;
 	strcpy(game->gradeString, grades[0].name);
+	game->eligible = true;
 	game->frame = 0;
 	game->time = 0;
 	player = &game->player;
@@ -486,8 +524,7 @@ void initGameplay(void)
 	player->ySub = 0;
 	player->type = PieceNone;
 	player->preview = PieceNone;
-	for (int i = 0; i < HISTORY_SIZE; i++)
-		player->history[i] = PieceNone;
+	memset(player->history, PieceNone, sizeof(player->history));
 	player->rotation = 0;
 	player->dasDirection = 0;
 	player->dasCharge = 0;
@@ -496,6 +533,7 @@ void initGameplay(void)
 	player->clearDelay = 0;
 	player->spawnDelay = SPAWN_DELAY; // Start instantly
 	player->dropBonus = 0;
+	memset(requirementChecked, false, sizeof(requirementChecked));
 	adjustGravity();
 }
 
@@ -594,6 +632,8 @@ static void updateGrade(void)
 {
 	for (int i = 0; i < COUNT_OF(grades); i++) {
 		if (game->score < grades[i].score)
+			return;
+		if (i == COUNT_OF(grades) - 1 && !game->eligible)
 			return;
 		game->grade = i;
 		strcpy(game->gradeString, grades[i].name);
