@@ -441,6 +441,7 @@ void initGameplay(void)
 	game->level = 0;
 	game->nextLevelstop = 100;
 	game->score = 0;
+	game->combo = 1;
 	player = &game->player;
 	player->state = PlayerNone;
 	player->x = 0;
@@ -534,6 +535,8 @@ static int checkClears(void)
 		for (int x = 0; x < PLAYFIELD_W; x++)
 			setGrid(x, y, MinoNone);
 	}
+	if (count == 0)
+		game->combo = 1;
 	return count;
 }
 
@@ -559,7 +562,9 @@ static void addScore(int lines)
 	if (remainder) score += 1;
 	score += player->dropBonus;
 	score *= lines;
-	//score *= game->combo;
+	game->combo += 2 * lines - 2;
+	logDebug("Combo is %d", game->combo);
+	score *= game->combo;
 	int bravo = 4;
 	for (int y = 0; y < PLAYFIELD_H; y++) {
 		for (int x = 0; x < PLAYFIELD_W; x++) {
