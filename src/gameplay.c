@@ -546,7 +546,17 @@ static void thump(void)
 
 static void addScore(int lines)
 {
-	game->score += lines;
+	int score;
+	score = game->level + lines;
+	int remainder = score % 4;
+	score /= 4;
+	if (remainder) score += 1;
+	//score += game->softBonus;
+	score *= lines;
+	//score *= game->combo;
+	//score *= bravoBonus;
+
+	game->score += score;
 }
 
 static void updateClear(void)
@@ -556,8 +566,8 @@ static void updateClear(void)
 		if (clearedCount) {
 			player->state = PlayerClear;
 			player->clearDelay = 0;
-			addLevels(clearedCount, true);
 			addScore(clearedCount);
+			addLevels(clearedCount, true);
 		}
 	}
 
