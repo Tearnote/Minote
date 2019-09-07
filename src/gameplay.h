@@ -59,6 +59,8 @@ struct game {
 	int nextLevelstop;
 	int score;
 	int combo;
+	int grade;
+	char gradeString[3];
 	bool cmdUnfiltered[CmdSize];
 	bool cmdPressed[CmdSize];
 	bool cmdHeld[CmdSize];

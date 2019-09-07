@@ -6,3 +6,4 @@ Refactor file operations
 Package licenses and readme
 Remove viewportScale, game already scales itself
 Make logging Unicode aware
+Make gravity calculation into iterating a struct array

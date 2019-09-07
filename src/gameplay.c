@@ -3,6 +3,7 @@
 #include "gameplay.h"
 
 #include <stdlib.h>
+#include <string.h>
 #include <stdbool.h>
 #include <time.h>
 #include <inttypes.h>
@@ -55,6 +56,33 @@ static struct player *player = NULL;
 
 // RNG specifically for next piece selection
 static rng randomizer = {};
+
+struct grade {
+	int score;
+	char name[3];
+};
+
+static struct grade grades[] = {
+	{ .name = "9", .score = 0 },
+	{ .name = "8", .score = 400 },
+	{ .name = "7", .score = 800 },
+	{ .name = "6", .score = 1400 },
+	{ .name = "5", .score = 2000 },
+	{ .name = "4", .score = 3500 },
+	{ .name = "3", .score = 5500 },
+	{ .name = "2", .score = 8000 },
+	{ .name = "1", .score = 12000 },
+	{ .name = "S1", .score = 16000 },
+	{ .name = "S2", .score = 22000 },
+	{ .name = "S3", .score = 30000 },
+	{ .name = "S4", .score = 40000 },
+	{ .name = "S5", .score = 52000 },
+	{ .name = "S6", .score = 66000 },
+	{ .name = "S7", .score = 82000 },
+	{ .name = "S8", .score = 100000 },
+	{ .name = "S9", .score = 120000 },
+	{ .name = "GM", .score = 126000 }
+};
 
 // Accepts inputs outside of bounds
 enum mino getGrid(int x, int y)
@@ -442,6 +470,8 @@ void initGameplay(void)
 	game->nextLevelstop = 100;
 	game->score = 0;
 	game->combo = 1;
+	game->grade = 0;
+	strcpy(game->gradeString, grades[0].name);
 	player = &game->player;
 	player->state = PlayerNone;
 	player->x = 0;
@@ -553,17 +583,27 @@ static void thump(void)
 	}
 }
 
+static void updateGrade(void)
+{
+	for (int i = 0; i < COUNT_OF(grades); i++) {
+		if (game->score < grades[i].score)
+			return;
+		game->grade = i;
+		strcpy(game->gradeString, grades[i].name);
+	}
+}
+
 static void addScore(int lines)
 {
 	int score;
 	score = game->level + lines;
 	int remainder = score % 4;
 	score /= 4;
-	if (remainder) score += 1;
+	if (remainder)
+		score += 1;
 	score += player->dropBonus;
 	score *= lines;
 	game->combo += 2 * lines - 2;
-	logDebug("Combo is %d", game->combo);
 	score *= game->combo;
 	int bravo = 4;
 	for (int y = 0; y < PLAYFIELD_H; y++) {
@@ -578,6 +618,7 @@ bravoOut:
 	score *= bravo;
 
 	game->score += score;
+	updateGrade();
 }
 
 static void updateClear(void)

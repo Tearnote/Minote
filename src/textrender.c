@@ -217,8 +217,11 @@ void queueGameplayText(struct game *game)
 	position[1] -= size;
 	position[1] -= 0.25f;
 	queueString(FontSerif, position, size, "%d", game->nextLevelstop);
-	position[1] = 15.0f;
+	position[1] = 12.0f;
 	queueString(FontSerif, position, size, "%d", game->score);
+	position[1] = 16.0f;
+	size = 4.0f;
+	queueString(FontSerif, position, size, "%s", game->gradeString);
 }
 
 void renderText(void)
