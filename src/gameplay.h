@@ -55,6 +55,7 @@ struct game {
 	bool clearedLines[PLAYFIELD_H];
 	struct player player;
 	int level;
+	int nextLevelstop;
 	bool cmdUnfiltered[CmdSize];
 	bool cmdPressed[CmdSize];
 	bool cmdHeld[CmdSize];

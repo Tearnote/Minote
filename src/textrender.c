@@ -211,8 +211,12 @@ static void queueString(enum fontType font, vec3 position, float size, const cha
 
 void queueGameplayText(struct game *game)
 {
-	vec3 position = { 6.5f, 5.0f, 0.0f };
-	queueString(FontSerif, position, 1.5f, "%d", game->level);
+	vec3 position = { 6.5f, 5.0f, 1.0f };
+	float size = 1.5f;
+	queueString(FontSerif, position, size, "%d", game->level);
+	position[1] -= size;
+	position[1] -= 0.25f;
+	queueString(FontSerif, position, size, "%d", game->nextLevelstop);
 }
 
 void renderText(void)
