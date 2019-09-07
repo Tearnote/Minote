@@ -435,6 +435,7 @@ void initGameplay(void)
 	}
 	game->level = 0;
 	game->nextLevelstop = 100;
+	game->score = 0;
 	player = &game->player;
 	player->state = PlayerNone;
 	player->x = 0;
@@ -543,14 +544,20 @@ static void thump(void)
 	}
 }
 
+static void addScore(int lines)
+{
+	game->score += lines;
+}
+
 static void updateClear(void)
 {
 	if (player->state == PlayerSpawn && player->spawnDelay == 0) {
 		int clearedCount = checkClears();
 		if (clearedCount) {
-			addLevels(clearedCount, true);
 			player->state = PlayerClear;
 			player->clearDelay = 0;
+			addLevels(clearedCount, true);
+			addScore(clearedCount);
 		}
 	}
 
