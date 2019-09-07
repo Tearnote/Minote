@@ -46,6 +46,7 @@ struct player {
 	int lockDelay;
 	int clearDelay;
 	int spawnDelay;
+	int dropBonus;
 };
 
 // Complete description of the gameplay's current state

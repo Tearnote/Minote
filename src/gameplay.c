@@ -172,6 +172,8 @@ static void drop(void)
 	if (canDrop()) {
 		player->y += 1;
 		player->lockDelay = 0;
+		if (game->cmdHeld[CmdSoft])
+			player->dropBonus += 1;
 	}
 }
 
@@ -179,6 +181,8 @@ static void drop(void)
 // Does not do collision checking, so can overwrite filled grids
 static void lock(void)
 {
+	if (game->cmdHeld[CmdSoft])
+		player->dropBonus += 1;
 	for (int i = 0; i < MINOS_PER_PIECE; i++) {
 		int x = player->x + rs[player->type][player->rotation][i].x;
 		int y = player->y + rs[player->type][player->rotation][i].y;
@@ -322,6 +326,7 @@ static void newPiece(void)
 	player->lockDelay = 0;
 	player->spawnDelay = 0;
 	player->rotation = 0;
+	player->dropBonus = 0;
 
 	// IRS
 	if (game->cmdHeld[CmdCW]) {
@@ -452,6 +457,7 @@ void initGameplay(void)
 	player->lockDelay = 0;
 	player->clearDelay = 0;
 	player->spawnDelay = SPAWN_DELAY; // Start instantly
+	player->dropBonus = 0;
 	adjustGravity();
 }
 
@@ -551,7 +557,7 @@ static void addScore(int lines)
 	int remainder = score % 4;
 	score /= 4;
 	if (remainder) score += 1;
-	//score += game->softBonus;
+	score += player->dropBonus;
 	score *= lines;
 	//score *= game->combo;
 	int bravo = 4;
@@ -565,7 +571,6 @@ static void addScore(int lines)
 	}
 bravoOut:
 	score *= bravo;
-	logDebug("bravo: %d", bravo);
 
 	game->score += score;
 }
