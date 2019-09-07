@@ -7,6 +7,7 @@
 #include <stdbool.h>
 
 #include "mino.h"
+#include "timer.h"
 
 #define PLAYFIELD_W 10
 #define PLAYFIELD_H 21
@@ -64,6 +65,8 @@ struct game {
 	bool cmdUnfiltered[CmdSize];
 	bool cmdPressed[CmdSize];
 	bool cmdHeld[CmdSize];
+	int frame;
+	nsec time;
 };
 
 void initGameplay(void);

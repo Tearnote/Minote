@@ -14,6 +14,11 @@
 #include "log.h"
 #include "util.h"
 
+// Define the length of a frame for the purpose of calculating the timer
+// This is not equal to real time
+#define FRAMERATE 60 // in Hz
+#define FRAME_LENGTH (SEC / FRAMERATE)
+
 // Frames until the first autoshift
 // 2 is right after the normal shift
 #define DAS_CHARGE 16
@@ -472,6 +477,8 @@ void initGameplay(void)
 	game->combo = 1;
 	game->grade = 0;
 	strcpy(game->gradeString, grades[0].name);
+	game->frame = 0;
+	game->time = 0;
 	player = &game->player;
 	player->state = PlayerNone;
 	player->x = 0;
@@ -692,4 +699,7 @@ void updateGameplay(void)
 
 	if (player->state == PlayerSpawned)
 		player->state = PlayerActive;
+
+	game->frame += 1;
+	game->time += FRAME_LENGTH;
 }

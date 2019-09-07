@@ -238,6 +238,13 @@ void queueGameplayText(struct game *game)
 		position[1] -= 0.3f;
 		queueString(FontSerif, position, size, "%s", grade);
 	}
+	position[0] = -10.0f;
+	position[1] = 5.0f;
+	size = 1.0f;
+	queueString(FontSerif, position, size, "%2d:%02d:%02d",
+		game->time / SEC / 60,
+		game->time / SEC % 60,
+		game->time / (SEC / 100) % 100);
 }
 
 void renderText(void)
