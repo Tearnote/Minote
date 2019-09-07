@@ -5,3 +5,4 @@ Package dlls on Windows
 Refactor file operations
 Package licenses and readme
 Remove viewportScale, game already scales itself
+Make logging Unicode aware

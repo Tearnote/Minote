@@ -554,7 +554,18 @@ static void addScore(int lines)
 	//score += game->softBonus;
 	score *= lines;
 	//score *= game->combo;
-	//score *= bravoBonus;
+	int bravo = 4;
+	for (int y = 0; y < PLAYFIELD_H; y++) {
+		for (int x = 0; x < PLAYFIELD_W; x++) {
+			if (game->playfield[y][x] != MinoNone) {
+				bravo = 1;
+				goto bravoOut;
+			}
+		}
+	}
+bravoOut:
+	score *= bravo;
+	logDebug("bravo: %d", bravo);
 
 	game->score += score;
 }
