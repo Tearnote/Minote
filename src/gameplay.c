@@ -223,6 +223,15 @@ static enum pieceType randomPiece(void)
 	return result;
 }
 
+static bool atLevelBarrier(void)
+{
+	if (game->level < 900 && game->level % 100 == 99)
+		return true;
+	if (game->level == 998)
+		return true;
+	return false;
+}
+
 // Generate a new random piece for the player to control
 static void newPiece(void)
 {
@@ -231,8 +240,11 @@ static void newPiece(void)
 	player->y = -2 + PLAYFIELD_H_HIDDEN;
 
 	// Picking the next piece
-	if (player->preview == PieceNone)
+	bool first = false;
+	if (player->preview == PieceNone) {
 		player->preview = randomPiece();
+		first = true;
+	}
 	player->type = player->preview;
 	player->preview = randomPiece();
 
@@ -250,6 +262,9 @@ static void newPiece(void)
 		if (game->cmdHeld[CmdCCW] || game->cmdHeld[CmdCCW2])
 			rotate(-1);
 	}
+
+	if (!first && !atLevelBarrier())
+		game->level += 1;
 }
 
 // Maps generic inputs to gameplay commands
@@ -355,6 +370,7 @@ void initGameplay(void)
 		game->cmdPressed[i] = false;
 		game->cmdHeld[i] = false;
 	}
+	game->level = 0;
 	player = &game->player;
 	player->state = PlayerNone;
 	player->x = 0;
@@ -467,6 +483,7 @@ static void updateClear(void)
 	if (player->state == PlayerSpawn && player->spawnDelay == 0) {
 		int clearedCount = checkClears();
 		if (clearedCount) {
+			game->level += clearedCount;
 			player->state = PlayerClear;
 			player->clearDelay = 0;
 		}
