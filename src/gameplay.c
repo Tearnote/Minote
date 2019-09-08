@@ -751,6 +751,6 @@ void updateGameplay(void)
 	game->frame += 1;
 	game->time += FRAME_LENGTH;
 
-	if (game->level == 999)
+	if (game->level >= 999)
 		game->finished = true;
 }
