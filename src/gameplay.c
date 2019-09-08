@@ -511,9 +511,9 @@ void initGameplay(void)
 		game->cmdPressed[i] = false;
 		game->cmdHeld[i] = false;
 	}
-	game->level = 0;
-	game->nextLevelstop = 100;
-	game->score = 0;
+	game->level = 980;
+	game->nextLevelstop = 999;
+	game->score = 128000;
 	game->combo = 1;
 	game->grade = 0;
 	strcpy(game->gradeString, grades[0].name);
@@ -640,7 +640,6 @@ static void updateGrade(void)
 		if (i == COUNT_OF(grades) - 1 &&
 		    (!game->eligible || game->level < 999))
 			return;
-		game->grade = i;
 		strcpy(game->gradeString, grades[i].name);
 	}
 }
@@ -751,6 +750,8 @@ void updateGameplay(void)
 	game->frame += 1;
 	game->time += FRAME_LENGTH;
 
-	if (game->level >= 999)
+	if (game->level >= 999) {
+		updateGrade();
 		game->finished = true;
+	}
 }
