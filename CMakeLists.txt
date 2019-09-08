@@ -10,6 +10,8 @@ set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 find_package(ICU REQUIRED uc io)
 include_directories(${ICU_INCLUDE_DIRS})
+find_package(LibLZMA REQUIRED)
+include_directories(${LIBLZMA_INCLUDE_DIRS})
 
 # Build the preprocessors
 add_executable(Preshade src/tools/preshade.c)
@@ -89,7 +91,8 @@ set(C_SOURCES
         src/timer.c
         src/util.c
         src/window.c
-        src/font.c)
+        src/font.c
+        src/replay.c)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD
@@ -109,6 +112,7 @@ find_package(glfw3 3.3 REQUIRED)
 target_link_libraries(Minote glfw)
 target_link_libraries(Minote ICU::uc)
 target_link_libraries(Minote ICU::io)
+target_link_libraries(Minote LibLZMA::LibLZMA)
 if (WIN32)
     target_link_libraries(Minote winmm)
 endif (WIN32)

@@ -14,6 +14,7 @@
 #include "log.h"
 #include "util.h"
 #include "timer.h"
+#include "replay.h"
 
 // Define the length of a frame for the purpose of calculating the timer
 // This is not equal to real time
@@ -494,6 +495,8 @@ static void processInputs(void)
 
 void initGameplay(void)
 {
+	initReplay();
+
 	game = allocate(sizeof(*game));
 	app->game = game;
 	srandom(&game->rngState, (uint64_t)time(NULL));
@@ -535,7 +538,6 @@ void initGameplay(void)
 	player->dropBonus = 0;
 	memset(requirementChecked, false, sizeof(requirementChecked));
 	adjustGravity();
-	logDebug("Size of gameplay state: %zd", sizeof(*game));
 }
 
 void cleanupGameplay(void)
@@ -544,6 +546,8 @@ void cleanupGameplay(void)
 	free(game);
 	game = NULL;
 	app->game = NULL;
+
+	cleanupReplay();
 }
 
 static void updateRotations(void)
@@ -751,4 +755,6 @@ void updateGameplay(void)
 		updateGrade();
 		game->finished = true;
 	}
+
+	pushState(game);
 }

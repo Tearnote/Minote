@@ -2,10 +2,11 @@ Enable some sanitizers in gcc
 Flush out the race conditions making the game crash on startup and shutdown sometimes
 Refactor repetitive parts of rendering
 Package dlls on Windows
-Refactor file operations
+Refactor file operations (fclose can return a write error!)
 Package licenses and readme
 Remove viewportScale, game already scales itself
 Make logging Unicode aware
 Make gravity calculation into iterating a struct array, like requirements and grades
 Make left+right more responsive
 Cleanup camera code
+Look into using https://github.com/mattiasgustavsson/libs/blob/master/docs/thread.md instead of winpthreads
