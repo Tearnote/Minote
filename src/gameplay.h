@@ -8,6 +8,7 @@
 
 #include "mino.h"
 #include "timer.h"
+#include "util.h"
 
 #define PLAYFIELD_W 10
 #define PLAYFIELD_H 21
@@ -53,6 +54,7 @@ struct player {
 // Complete description of the gameplay's current state
 // Does not use pointers, so that it can be copied and serialized
 struct game {
+	rng rngState;
 	enum mino playfield[PLAYFIELD_H][PLAYFIELD_W];
 	bool clearedLines[PLAYFIELD_H];
 	struct player player;

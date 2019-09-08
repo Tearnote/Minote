@@ -60,9 +60,6 @@ static struct game *game = NULL;
 // Convenience pointer for scoring app->game.player
 static struct player *player = NULL;
 
-// RNG specifically for next piece selection
-static rng randomizer = {};
-
 struct grade {
 	int score;
 	char name[3];
@@ -252,12 +249,12 @@ static enum pieceType randomPiece(void)
 
 	enum pieceType result = PieceNone;
 	for (int i = 0; i < MAX_REROLLS; i++) {
-		result = random(&randomizer, PieceSize - 1) + 1;
+		result = random(&game->rngState, PieceSize - 1) + 1;
 		while (first && // Unfair first piece prevention
 		       (result == PieceS ||
 		        result == PieceZ ||
 		        result == PieceO))
-			result = random(&randomizer, PieceSize - 1) + 1;
+			result = random(&game->rngState, PieceSize - 1) + 1;
 
 		bool valid = true;
 		for (int j = 0; j < HISTORY_SIZE; j++) {
@@ -497,10 +494,9 @@ static void processInputs(void)
 
 void initGameplay(void)
 {
-	srandom(&randomizer, (uint64_t)time(NULL));
-
 	game = allocate(sizeof(*game));
 	app->game = game;
+	srandom(&game->rngState, (uint64_t)time(NULL));
 	for (int y = 0; y < PLAYFIELD_H; y++) {
 		for (int x = 0; x < PLAYFIELD_W; x++)
 			setGrid(x, y, MinoNone);
@@ -539,6 +535,7 @@ void initGameplay(void)
 	player->dropBonus = 0;
 	memset(requirementChecked, false, sizeof(requirementChecked));
 	adjustGravity();
+	logDebug("Size of gameplay state: %zd", sizeof(*game));
 }
 
 void cleanupGameplay(void)
