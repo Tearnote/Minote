@@ -48,6 +48,9 @@ static int fenceBufferHead = 0;
 // Thread-local copy of the game state being rendered
 static struct game *gameSnap = NULL;
 
+static nsec lastRenderTime = 0;
+static nsec timeElapsed = 0;
+
 // Compiles a shader from source
 static GLuint createShader(const GLchar *source, GLenum type)
 {
@@ -115,6 +118,18 @@ static void renderFrame(void)
 	lockMutex(&gameMutex);
 	memcpy(gameSnap, app->game, sizeof(*gameSnap));
 	unlockMutex(&gameMutex);
+
+	static vec3 tracked = { 0.0f, 12.0f, 0.0f };
+	vec3 eye = { 0.0f, 12.0f, 32.0f };
+	vec3 center = { 0.0f, 12.0f, 0.0f };
+	vec3 up = { 0.0f, 1.0f, 0.0f };
+	center[0] -= (float)(gameSnap->player.x + PIECE_BOX / 2 - PLAYFIELD_W / 2) / (PLAYFIELD_W);
+	center[1] -= (float)(gameSnap->player.y + PIECE_BOX / 2 - PLAYFIELD_H / 2) / (PLAYFIELD_H_VISIBLE * 2);
+	tracked[0] += (center[0] - tracked[0]) * ((double)timeElapsed / (double)SEC / 2.0);
+	tracked[1] += (center[1] - tracked[1]) * ((double)timeElapsed / (double)SEC / 2.0);
+	eye[0] = -tracked[0];
+	eye[1] = 12.0f - tracked[1] + 12.0f;
+	mat4x4_look_at(camera, eye, tracked, up);
 
 	vec4 lightPositionTemp;
 	mat4x4_mul_vec4(lightPositionTemp, camera, lightPositionWorld);
@@ -188,6 +203,8 @@ static void initRenderer(void)
 	initBorderRenderer();
 	initTextRenderer();
 
+	lastRenderTime = getTime();
+
 	logInfo("OpenGL renderer initialized");
 }
 
@@ -211,6 +228,9 @@ void *rendererThread(void *param)
 	initRenderer();
 
 	while (isRunning()) {
+		nsec currentTime = getTime();
+		timeElapsed = currentTime - lastRenderTime;
+		lastRenderTime = currentTime;
 		renderFrame();
 		// Control GPU buffering with fences
 		syncRenderer();

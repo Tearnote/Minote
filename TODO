@@ -8,3 +8,4 @@ Remove viewportScale, game already scales itself
 Make logging Unicode aware
 Make gravity calculation into iterating a struct array, like requirements and grades
 Make left+right more responsive
+Cleanup camera code
