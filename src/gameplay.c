@@ -511,9 +511,9 @@ void initGameplay(void)
 		game->cmdPressed[i] = false;
 		game->cmdHeld[i] = false;
 	}
-	game->level = 980;
-	game->nextLevelstop = 999;
-	game->score = 128000;
+	game->level = 0;
+	game->nextLevelstop = 100;
+	game->score = 0;
 	game->combo = 1;
 	game->grade = 0;
 	strcpy(game->gradeString, grades[0].name);
