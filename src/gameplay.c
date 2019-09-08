@@ -637,7 +637,8 @@ static void updateGrade(void)
 	for (int i = 0; i < COUNT_OF(grades); i++) {
 		if (game->score < grades[i].score)
 			return;
-		if (i == COUNT_OF(grades) - 1 && !game->eligible)
+		if (i == COUNT_OF(grades) - 1 &&
+		    (!game->eligible || game->level < 999))
 			return;
 		game->grade = i;
 		strcpy(game->gradeString, grades[i].name);
