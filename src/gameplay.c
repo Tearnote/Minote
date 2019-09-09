@@ -437,6 +437,7 @@ static enum cmdType inputToCmd(enum inputType i)
 // Receive unfiltered inputs
 static void processInput(struct input *i)
 {
+	enum cmdType cmd = inputToCmd(i->type);
 	switch (i->action) {
 	case ActionPressed:
 		// Quitting is handled outside of gameplay logic
@@ -446,13 +447,15 @@ static void processInput(struct input *i)
 			break;
 		}
 
-		if (inputToCmd(i->type) != CmdNone)
-			game->cmdUnfiltered[inputToCmd(i->type)] = true;
+		if (cmd != CmdNone)
+			game->cmdRaw[cmd] = true;
+		if (cmd == CmdLeft || cmd == CmdRight)
+			game->lastDirection = cmd;
 		break;
 
 	case ActionReleased:
-		if (inputToCmd(i->type) != CmdNone)
-			game->cmdUnfiltered[inputToCmd(i->type)] = false;
+		if (cmd != CmdNone)
+			game->cmdRaw[inputToCmd(i->type)] = false;
 		break;
 	default:
 		break;
@@ -462,10 +465,6 @@ static void processInput(struct input *i)
 // Polls for inputs and transforms them into gameplay commands
 static void processInputs(void)
 {
-	// Clear previous frame's presses
-	for (int i = 0; i < CmdSize; i++)
-		game->cmdPressed[i] = false;
-
 	// Receive all pending inputs
 	struct input *in = NULL;
 	while ((in = dequeueInput())) {
@@ -473,23 +472,20 @@ static void processInputs(void)
 		free(in);
 	}
 
-	// Passthrough the inputs
-	for (int i = CmdNone + 1; i < CmdSize; i++) {
-		if (game->cmdUnfiltered[i] && !game->cmdHeld[i]) {
-			game->cmdPressed[i] = true;
-			game->cmdHeld[i] = true;
-		} else if (!game->cmdUnfiltered[i] && game->cmdHeld[i]) {
-			game->cmdHeld[i] = false;
-		}
-	}
+	// Rotate the input arrays
+	memcpy(game->cmdPrev, game->cmdHeld, sizeof(game->cmdPrev));
+	memcpy(game->cmdHeld, game->cmdRaw, sizeof(game->cmdHeld));
 
-	// Filter the conflicting ones
-	if ((game->cmdHeld[CmdLeft] && game->cmdHeld[CmdRight]) ||
-	    game->cmdHeld[CmdSoft] || game->cmdHeld[CmdSonic]) {
-		game->cmdPressed[CmdLeft] = false;
+	// Filter the conflicting inputs
+	if (game->cmdHeld[CmdSoft] || game->cmdHeld[CmdSonic]) {
 		game->cmdHeld[CmdLeft] = false;
-		game->cmdPressed[CmdRight] = false;
 		game->cmdHeld[CmdRight] = false;
+	}
+	if (game->cmdHeld[CmdLeft] && game->cmdHeld[CmdRight]) {
+		if (game->lastDirection == CmdLeft)
+			game->cmdHeld[CmdRight] = false;
+		if (game->lastDirection == CmdRight)
+			game->cmdHeld[CmdLeft] = false;
 	}
 }
 
@@ -500,16 +496,12 @@ void initGameplay(void)
 	game = allocate(sizeof(*game));
 	app->game = game;
 	srandom(&game->rngState, (uint64_t)time(NULL));
-	for (int y = 0; y < PLAYFIELD_H; y++) {
-		for (int x = 0; x < PLAYFIELD_W; x++)
-			setGrid(x, y, MinoNone);
-		game->clearedLines[y] = false;
-	}
-	for (int i = 0; i < CmdSize; i++) {
-		game->cmdUnfiltered[i] = false;
-		game->cmdPressed[i] = false;
-		game->cmdHeld[i] = false;
-	}
+	memset(game->playfield, MinoNone, sizeof(game->playfield));
+	memset(game->clearedLines, false, sizeof(game->clearedLines));
+	memset(game->cmdRaw, false, sizeof(game->cmdRaw));
+	memset(game->cmdHeld, false, sizeof(game->cmdHeld));
+	memset(game->cmdPrev, false, sizeof(game->cmdPrev));
+	game->lastDirection = CmdNone;
 	game->level = 0;
 	game->nextLevelstop = 100;
 	game->score = 0;
@@ -554,9 +546,10 @@ static void updateRotations(void)
 {
 	if (player->state != PlayerActive)
 		return;
-	if (game->cmdPressed[CmdCW])
+	if (game->cmdHeld[CmdCW] && !game->cmdPrev[CmdCW])
 		rotate(1);
-	if (game->cmdPressed[CmdCCW] || game->cmdPressed[CmdCCW2])
+	if ((game->cmdHeld[CmdCCW] && !game->cmdPrev[CmdCCW]) ||
+	    (game->cmdHeld[CmdCCW2] && !game->cmdPrev[CmdCCW2]))
 		rotate(-1);
 }
 

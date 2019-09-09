@@ -65,9 +65,10 @@ struct game {
 	int grade;
 	char gradeString[3];
 	bool eligible;
-	bool cmdUnfiltered[CmdSize];
-	bool cmdPressed[CmdSize];
+	bool cmdRaw[CmdSize];
 	bool cmdHeld[CmdSize];
+	bool cmdPrev[CmdSize];
+	enum cmdType lastDirection; // CmdLeft or CmdRight
 	int frame;
 	nsec time;
 	bool finished;
