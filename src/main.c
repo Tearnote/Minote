@@ -26,7 +26,7 @@ static void cleanup(void)
 int main(void)
 {
 	initLogging();
-	logInfo("Starting up %s %s", APP_NAME, APP_VERSION);
+	logInfo("Starting up %U %U", APP_NAME, APP_VERSION);
 	atexit(cleanup);
 	initTimer();
 	initState();

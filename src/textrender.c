@@ -186,16 +186,10 @@ static void queueGlyph(enum fontType font, ucs4_t codepoint, const vec3 position
 static void
 queueString(enum fontType font, vec3 position, float size, char *fmt, ...)
 {
-	uint8_t *ufmt = (uint8_t *)fmt;
-	if (u8_check(ufmt, u8_strlen(ufmt))) {
-		logWarn("Invalid UTF-8 string passed");
-		return;
-	}
-
 	uint8_t *ustring;
 	va_list ap;
 	va_start(ap, fmt);
-	if (u8_u8_vasprintf(&ustring, ufmt, ap) == -1) {
+	if (u8_u8_vasprintf(&ustring, (uint8_t *)fmt, ap) == -1) {
 		logWarn("Failed to allocate memory for string");
 		va_end(ap);
 		return;

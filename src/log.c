@@ -4,6 +4,14 @@
 
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
+#include <unitypes.h>
+#include <unistdio.h>
+#include <unistr.h>
+#ifdef WIN32
+#ifndef NDEBUG
+#include <windows.h>
+#endif // NDEBUG
+#endif // WIN32
 
 #include <stdbool.h>
 #include <stdarg.h>
@@ -50,6 +58,12 @@ void initLogging()
 		logError("Failed to open %s for writing: %s",
 		         LOG_FILENAME, strerror(errno));
 	}
+#ifdef WIN32
+#ifndef NDEBUG
+	if (!SetConsoleOutputCP(65001))
+		logWarn("Failed to set console output to UTF-8");
+#endif // NDEBUG
+#endif // WIN32
 }
 
 void cleanupLogging()
@@ -70,8 +84,15 @@ static void logTo(FILE *file, int prio, const char *fmt, va_list ap)
 	fprintf(file, "%02d:%02d:%02d [%s] ",
 	        timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec,
 	        prioStrings[prio]);
-	vfprintf(file, fmt, ap);
+
+	uint8_t *ustring;
+	if (u8_u8_vasprintf(&ustring, (uint8_t *)fmt, ap) == -1) {
+		fputs("Failed to allocate memory for string\n", stderr);
+		return;
+	}
+	fwrite(ustring, u8_strlen(ustring), 1, file);
 	putc('\n', file);
+	free(ustring);
 	unlockMutex(&logMutex);
 }
 

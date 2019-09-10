@@ -8,3 +8,6 @@ Look into using https://github.com/mattiasgustavsson/libs/blob/master/docs/threa
 Replace for loops for initialization and replace them with memset
 Wrap memset and memcpy with macros
 Make libraries use our own malloc when possible
+Simplify vertex quads with macros
+Add some more de/initialization logging
+Fix remaining %s to %U in log format strings

@@ -6,6 +6,6 @@
 #define MAIN_H
 
 #define APP_NAME "Minote"
-#define APP_VERSION "prealpha"
+#define APP_VERSION "alpha1"
 
 #endif // MAIN_H

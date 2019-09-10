@@ -1,6 +1,6 @@
 # Minote
-A repo for an upcoming puzzle action game. Not playable, currently on
-git as a personal backup.
+A repo for an upcoming puzzle action game. Rather barebones right now,
+but fully playable.
 
 ## Building
 Tested working on Linux and Windows (MSYS2). Should be portable to any
