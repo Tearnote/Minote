@@ -7,7 +7,9 @@ Tested working on Linux and Windows (MSYS2). Should be portable to any
 platform with OpenGL 3.3 core profile and GCC/MinGW.
 
 ### External libraries
-Requires [`GLFW`](https://www.glfw.org/) 3.3.
+Requires [`GLFW`](https://www.glfw.org/) 3.3,
+[`libunistring`](https://www.gnu.org/software/libunistring/) and
+[`LibLZMA`](https://tukaani.org/xz/).
 
 ### Included libraries
 [`glad`](https://glad.dav1d.de/) loader generated on 2019-05-06, in

@@ -9,6 +9,5 @@ Make logging Unicode aware
 Make gravity calculation into iterating a struct array, like requirements and grades
 Make left+right more responsive
 Look into using https://github.com/mattiasgustavsson/libs/blob/master/docs/thread.md instead of winpthreads
-Use libunistring instead of ICU
 Replace for loops for initialization and replace them with memset
-Wrap memset and memcpy
+Wrap memset and memcpy with macros

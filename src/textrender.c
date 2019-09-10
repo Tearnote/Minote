@@ -6,11 +6,12 @@
 #include <string.h>
 #include <stdarg.h>
 
+#include <unitypes.h>
+#include <unistr.h>
+#include <unistdio.h>
+
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
-#include <unicode/ptypes.h>
-#include <unicode/ustring.h>
-#include <unicode/ustdio.h>
 
 #include "linmath/linmath.h"
 
@@ -94,7 +95,7 @@ void cleanupTextRenderer(void)
 	}
 }
 
-static void queueGlyph(enum fontType font, int codepoint, const vec3 position,
+static void queueGlyph(enum fontType font, ucs4_t codepoint, const vec3 position,
                        GLfloat size)
 {
 	if (codepoint >= fonts[font].glyphCount)
@@ -183,31 +184,40 @@ static void queueGlyph(enum fontType font, int codepoint, const vec3 position,
 }
 
 static void
-queueString(enum fontType font, vec3 position, float size, const char *fmt, ...)
+queueString(enum fontType font, vec3 position, float size, char *fmt, ...)
 {
-	UErrorCode icuError = U_ZERO_ERROR;
-	UChar ufmt[256] = {};
-	u_strFromUTF8(ufmt, 255, NULL, fmt, -1, &icuError);
-	if (U_FAILURE(icuError)) {
-		logError("Text encoding failure: %s", u_errorName(icuError));
+	uint8_t *ufmt = (uint8_t *)fmt;
+	if (u8_check(ufmt, u8_strlen(ufmt))) {
+		logWarn("Invalid UTF-8 string passed");
+		return;
 	}
 
-	UChar ustring[256] = {};
+	uint8_t *ustring;
 	va_list ap;
 	va_start(ap, fmt);
-	u_vsnprintf_u(ustring, 255, ufmt, ap);
+	if (u8_u8_vasprintf(&ustring, ufmt, ap) == -1) {
+		logWarn("Failed to allocate memory for string");
+		va_end(ap);
+		return;
+	}
 	va_end(ap);
 
-	vec3 cursor = {};
+	vec3 cursor;
 	memcpy(cursor, position, sizeof(cursor));
-	for (unsigned int i = 0; i < u_strlen(ustring); ++i) {
-		int codepoint = ustring[i];
-		queueGlyph(font, ustring[i], cursor, size);
+	const uint8_t *iterator = ustring;
+	ucs4_t codepoint;
+	while(true) {
+		iterator = u8_next(&codepoint, iterator);
+		if (!iterator)
+			break;
+		queueGlyph(font, codepoint, cursor, size);
 		if (codepoint >= fonts[font].glyphCount)
 			continue;
 		cursor[0] += (float)fonts[font].glyphs[codepoint].advance
 		             / (float)fonts[font].size * size;
 	}
+
+	free(ustring);
 }
 
 void queueGameplayText(struct game *game)
