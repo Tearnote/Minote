@@ -13,6 +13,9 @@ if(CMAKE_BUILD_TYPE MATCHES DEBUG)
     set(CMAKE_VERBOSE_MAKEFILE ON)
 else()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -s -ffunction-sections -Wl,--gc-sections")
+    if(WIN32)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mwindows")
+    endif()
 endif()
 
 # External library settings

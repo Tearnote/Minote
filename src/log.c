@@ -29,11 +29,10 @@ static const char *prioStrings[] = {"NONE", "DEBUG", "INFO",
 static mutex logMutex = newMutex;
 static FILE *logFile = NULL;
 static bool printToLogFile = true;
+static bool printToStdout = true;
 #ifdef NDEBUG
-static bool printToStdout = false;
 static int logLevel = 2;
 #else // NDEBUG
-static bool printToStdout = true;
 static int logLevel = 1;
 #endif // NDEBUG
 
