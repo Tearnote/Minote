@@ -7,7 +7,7 @@ project(Minote VERSION 0.0
 # Build settings
 set(CMAKE_C_STANDARD 11)
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Debug")
+    set(CMAKE_BUILD_TYPE "Release")
 endif()
 if(CMAKE_BUILD_TYPE MATCHES DEBUG)
     set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -24,7 +24,7 @@ set(BUILD_SHARED_LIBS OFF)
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
 
 # External library dependencies
-find_library(GLFW glfw3)
+find_library(GLFW NAMES glfw3 glfw)
 if(NOT GLFW)
     message(FATAL_ERROR "Library GLFW not found")
 else()
