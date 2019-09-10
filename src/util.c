@@ -28,6 +28,6 @@ void *reallocate(void *memory, size_t size)
 
 void _assertFailed(const char *cond)
 {
-	logCrit("Assert failed: %s", cond);
+	logCrit("Assert failed: %U", cond);
 	exit(1);
 }

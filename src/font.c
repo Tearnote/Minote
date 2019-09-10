@@ -48,7 +48,7 @@ static void initFont(struct font *font, const char *name, const char *json,
 
 	JSON_Value *root = json_parse_file(json);
 	if (!root) {
-		logError("Failed to parse %s", json);
+		logError("Failed to parse %U", json);
 		return;
 	}
 	JSON_Object *rootObject = json_value_get_object(root);
@@ -99,7 +99,7 @@ static void initFont(struct font *font, const char *name, const char *json,
 	int channels;
 	atlasData = stbi_load(atlas, &width, &height, &channels, 4);
 	if (!atlasData) {
-		logError("Failed to load %s: %s", atlas, stbi_failure_reason());
+		logError("Failed to load %U: %s", atlas, stbi_failure_reason());
 		return;
 	}
 	assert(width == height);

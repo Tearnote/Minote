@@ -232,14 +232,14 @@ void initInput(void)
 	inputs = createFifo();
 	FILE *mappingsFile = fopen(MAPPINGS_PATH, "r");
 	if (mappingsFile == NULL) {
-		fprintf(stderr, "Could not open %s for reading: %s\n",
+		fprintf(stderr, "Could not open %U for reading: %s\n",
 		        MAPPINGS_PATH, strerror(errno));
 		exit(1);
 	}
 	char *mappings = NULL;
 	size_t mappingsChars = 0;
 	if (readall(mappingsFile, &mappings, &mappingsChars) != READALL_OK) {
-		fprintf(stderr, "Could not read contents of %s\n",
+		fprintf(stderr, "Could not read contents of %U\n",
 		        MAPPINGS_PATH);
 		exit(1);
 	}

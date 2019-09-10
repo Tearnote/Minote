@@ -234,13 +234,13 @@ void queueGameplayText(struct game *game)
 	else
 		position[0] = 6.25f;
 	position[1] = 15.2f;
-	queueString(FontMono, position, size, "%s", grade);
+	queueString(FontMono, position, size, "%U", grade);
 	if (game->gradeString[1]) {
 		grade[0] = game->gradeString[1];
 		size = 2.0f;
 		position[0] += 2.18f;
 		position[1] -= 0.3f;
-		queueString(FontMono, position, size, "%s", grade);
+		queueString(FontMono, position, size, "%U", grade);
 	}
 	position[0] = -10.5f;
 	position[1] = 5.0f;

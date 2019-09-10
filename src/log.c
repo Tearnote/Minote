@@ -55,7 +55,7 @@ void initLogging()
 	if (!logFile) { // Force stderr logging on failure
 		printToLogFile = false;
 		printToStdout = true;
-		logError("Failed to open %s for writing: %s",
+		logError("Failed to open %U for writing: %s",
 		         LOG_FILENAME, strerror(errno));
 	}
 #ifdef WIN32
@@ -116,6 +116,6 @@ void logPrio(int prio, const char *fmt, ...)
 void logPrioGLFW(int prio, const char *msg)
 {
 	glfwGetError(&GLFWerror);
-	logPrio(prio, "%s: %s", msg,
+	logPrio(prio, "%U: %s", msg,
 	        GLFWerror != NULL ? GLFWerror : "Unknown error");
 }

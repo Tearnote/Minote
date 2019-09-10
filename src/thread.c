@@ -15,7 +15,7 @@ void spawnThread(pthread_t *id, void *(*func)(void *),
                  void *arg, const char *name)
 {
 	if (pthread_create(id, NULL, func, arg) != 0) {
-		logCrit("Could not spawn thread %s: %s", name, strerror(errno));
+		logCrit("Could not spawn thread %U: %s", name, strerror(errno));
 		exit(1);
 	}
 }
