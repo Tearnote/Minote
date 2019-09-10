@@ -591,8 +591,8 @@ static int checkClears(void)
 			continue;
 		count += 1;
 		game->clearedLines[y] = true;
-		for (int x = 0; x < PLAYFIELD_W; x++)
-			setGrid(x, y, MinoNone);
+		memset(game->playfield[y], MinoNone,
+		       sizeof(game->playfield[y]));
 	}
 	if (count == 0)
 		game->combo = 1;

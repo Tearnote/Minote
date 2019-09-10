@@ -183,8 +183,7 @@ static void initRenderer(void)
 	glEnable(GL_MULTISAMPLE);
 
 	gameSnap = allocate(sizeof(*gameSnap));
-	for (int i = 0; i < FENCE_COUNT; i++)
-		fenceBuffer[i] = NULL;
+	memset(fenceBuffer, NULL, sizeof(fenceBuffer));
 
 	mat4x4_translate(camera, 0.0f, -12.0f, -32.0f);
 	lightPositionWorld[0] = -8.0f;
