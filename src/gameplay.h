@@ -71,6 +71,7 @@ struct game {
 	enum cmdType lastDirection; // CmdLeft or CmdRight
 	int frame;
 	nsec time;
+	bool started;
 	bool finished;
 };
 

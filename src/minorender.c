@@ -154,6 +154,8 @@ void queueMinoPlayer(struct player *player)
 
 void queueMinoPreview(struct player *player)
 {
+	if (player->preview == MinoNone)
+		return;
 	for (int i = 0; i < MINOS_PER_PIECE; i++) {
 		struct coord minoCoord = rs[player->preview][0][i];
 		struct minoInstance *newInstance = produceQueueItem(minoQueue);

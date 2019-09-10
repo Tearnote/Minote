@@ -440,7 +440,9 @@ static void processInput(struct input *i)
 	enum cmdType cmd = inputToCmd(i->type);
 	switch (i->action) {
 	case ActionPressed:
-		// Quitting is handled outside of gameplay logic
+		// Starting and quitting is handled outside of gameplay logic
+		if (i->type == InputStart && !game->started)
+			game->started = true;
 		if (i->type == InputQuit) {
 			logInfo("User exited");
 			setRunning(false);
@@ -511,6 +513,7 @@ void initGameplay(void)
 	game->eligible = true;
 	game->frame = 0;
 	game->time = 0;
+	game->started = false;
 	game->finished = false;
 	player = &game->player;
 	player->state = PlayerNone;
@@ -728,7 +731,7 @@ void updateGameplay(void)
 {
 	processInputs();
 
-	if (game->finished)
+	if (game->finished || !game->started)
 		return;
 
 	updateRotations();
