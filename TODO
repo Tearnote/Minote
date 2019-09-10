@@ -4,8 +4,6 @@ Refactor repetitive parts of rendering
 Refactor file operations (fclose can return a write error!)
 Package licenses and readme
 Make logging Unicode-aware
-Make gravity calculation into iterating a struct array, like requirements and grades
-Make left+right more responsive
 Look into using https://github.com/mattiasgustavsson/libs/blob/master/docs/thread.md instead of winpthreads
 Replace for loops for initialization and replace them with memset
 Wrap memset and memcpy with macros

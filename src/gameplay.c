@@ -61,6 +61,44 @@ static struct game *game = NULL;
 // Convenience pointer for scoring app->game.player
 static struct player *player = NULL;
 
+struct threshold {
+	int level;
+	int gravity;
+};
+
+static struct threshold thresholds[] = {
+	{ .level = 0, .gravity = 4 },
+	{ .level = 30, .gravity = 6 },
+	{ .level = 35, .gravity = 8 },
+	{ .level = 40, .gravity = 10 },
+	{ .level = 50, .gravity = 12 },
+	{ .level = 60, .gravity = 16 },
+	{ .level = 70, .gravity = 32 },
+	{ .level = 80, .gravity = 48 },
+	{ .level = 90, .gravity = 64 },
+	{ .level = 100, .gravity = 80 },
+	{ .level = 120, .gravity = 96 },
+	{ .level = 140, .gravity = 112 },
+	{ .level = 160, .gravity = 128 },
+	{ .level = 170, .gravity = 144 },
+	{ .level = 200, .gravity = 4 },
+	{ .level = 220, .gravity = 32 },
+	{ .level = 230, .gravity = 64 },
+	{ .level = 233, .gravity = 96 },
+	{ .level = 236, .gravity = 128 },
+	{ .level = 239, .gravity = 160 },
+	{ .level = 243, .gravity = 192 },
+	{ .level = 247, .gravity = 224 },
+	{ .level = 251, .gravity = 256 },
+	{ .level = 300, .gravity = 512 },
+	{ .level = 330, .gravity = 768 },
+	{ .level = 360, .gravity = 1024 },
+	{ .level = 400, .gravity = 1280 },
+	{ .level = 420, .gravity = 1024 },
+	{ .level = 450, .gravity = 768 },
+	{ .level = 500, .gravity = 5120 }
+};
+
 struct grade {
 	int score;
 	char name[3];
@@ -275,66 +313,11 @@ static enum pieceType randomPiece(void)
 
 static void adjustGravity(void)
 {
-	if (game->level < 30)
-		GRAVITY = 4;
-	else if (game->level < 35)
-		GRAVITY = 6;
-	else if (game->level < 40)
-		GRAVITY = 8;
-	else if (game->level < 50)
-		GRAVITY = 10;
-	else if (game->level < 60)
-		GRAVITY = 12;
-	else if (game->level < 70)
-		GRAVITY = 16;
-	else if (game->level < 80)
-		GRAVITY = 32;
-	else if (game->level < 90)
-		GRAVITY = 48;
-	else if (game->level < 100)
-		GRAVITY = 64;
-	else if (game->level < 120)
-		GRAVITY = 80;
-	else if (game->level < 140)
-		GRAVITY = 96;
-	else if (game->level < 160)
-		GRAVITY = 112;
-	else if (game->level < 170)
-		GRAVITY = 128;
-	else if (game->level < 200)
-		GRAVITY = 144;
-	else if (game->level < 220)
-		GRAVITY = 4;
-	else if (game->level < 230)
-		GRAVITY = 32;
-	else if (game->level < 233)
-		GRAVITY = 64;
-	else if (game->level < 236)
-		GRAVITY = 96;
-	else if (game->level < 239)
-		GRAVITY = 128;
-	else if (game->level < 243)
-		GRAVITY = 160;
-	else if (game->level < 247)
-		GRAVITY = 192;
-	else if (game->level < 251)
-		GRAVITY = 224;
-	else if (game->level < 300)
-		GRAVITY = 256;
-	else if (game->level < 330)
-		GRAVITY = 512;
-	else if (game->level < 360)
-		GRAVITY = 768;
-	else if (game->level < 400)
-		GRAVITY = 1024;
-	else if (game->level < 420)
-		GRAVITY = 1280;
-	else if (game->level < 450)
-		GRAVITY = 1024;
-	else if (game->level < 500)
-		GRAVITY = 768;
-	else
-		GRAVITY = 5120;
+	for (int i = 0; i < COUNT_OF(thresholds); i++) {
+		if (game->level < thresholds[i].level)
+			return;
+		GRAVITY = thresholds[i].gravity;
+	}
 }
 
 static void checkRequirements(void)
@@ -345,7 +328,7 @@ static void checkRequirements(void)
 		if (requirementChecked[i])
 			continue;
 		if (game->level < requirements[i].level)
-			continue;
+			return;
 		requirementChecked[i] = true;
 		logDebug("Checking GM requirement #%d", i);
 		if (game->score < requirements[i].score ||
