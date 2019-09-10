@@ -1,20 +1,48 @@
-# Project informationz
+# Project information
 cmake_minimum_required(VERSION 3.14)
 project(Minote VERSION 0.0
         DESCRIPTION "Modern action puzzle game"
         LANGUAGES C)
-set(CMAKE_C_STANDARD 11)
 
-# Module dependencies
+# Build settings
+set(CMAKE_C_STANDARD 11)
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Debug")
+endif()
+if(CMAKE_BUILD_TYPE MATCHES DEBUG)
+    set(CMAKE_VERBOSE_MAKEFILE ON)
+else()
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -s -ffunction-sections -Wl,--gc-sections")
+endif()
+
+# External library settings
+set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+set(BUILD_SHARED_LIBS OFF)
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
+
+# External library dependencies
+find_library(GLFW glfw3)
+if(NOT GLFW)
+    message(FATAL_ERROR "Library GLFW not found")
+else()
+    message(STATUS "Found GLFW at ${GLFW}")
+endif()
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
-find_library(LIBUNISTRING libunistring)
+find_library(LIBUNISTRING NAMES libunistring)
 if(NOT LIBUNISTRING)
     message(FATAL_ERROR "Library libunistring not found")
 else()
-    message(STATUS "Found library libunistring")
+    message(STATUS "Found libunistring at ${LIBUNISTRING}")
 endif()
-find_package(LibLZMA REQUIRED)
+find_package(Iconv REQUIRED)
+find_library(LIBLZMA NAMES liblzma)
+if(NOT LIBLZMA)
+    message(FATAL_ERROR "Library liblzma not found")
+else()
+    message(STATUS "Found liblzma at ${LIBLZMA}")
+endif()
+include_directories(${Iconv_INCLUDE_DIRS})
 include_directories(${LIBLZMA_INCLUDE_DIRS})
 
 # Build the preprocessors
@@ -111,11 +139,20 @@ add_dependencies(Minote Preprocess_models)
 add_dependencies(Preprocess_shaders Preshade)
 add_dependencies(Preprocess_models Premodel)
 
+# Linker settings
+include(CheckIPOSupported)
+check_ipo_supported(RESULT result OUTPUT output)
+if(result)
+    set_property(TARGET Minote PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+else()
+    message(WARNING "IPO is not supported: ${output}")
+endif()
+
 # Link the game
-find_package(glfw3 3.3 REQUIRED)
-target_link_libraries(Minote glfw)
+target_link_libraries(Minote ${GLFW})
 target_link_libraries(Minote ${LIBUNISTRING})
-target_link_libraries(Minote LibLZMA::LibLZMA)
+target_link_libraries(Minote ${Iconv_LIBRARIES})
+target_link_libraries(Minote ${LIBLZMA})
 if (WIN32)
     target_link_libraries(Minote winmm)
 endif (WIN32)
