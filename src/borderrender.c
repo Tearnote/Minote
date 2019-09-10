@@ -193,7 +193,7 @@ void renderBorder(void)
 	             INSTANCE_LIMIT * sizeof(struct segmentInstance),
 	             NULL, GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0,
-	                (GLsizeiptr)MIN(segmentQueue->count, INSTANCE_LIMIT)
+	                (GLsizeiptr)min(segmentQueue->count, INSTANCE_LIMIT)
 	                * sizeof(struct segmentInstance), segmentQueue->buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -203,7 +203,7 @@ void renderBorder(void)
 	glUniformMatrix4fv(cameraAttr, 1, GL_FALSE, camera[0]);
 	glUniformMatrix4fv(projectionAttr, 1, GL_FALSE, projection[0]);
 	glUniform4f(colorAttr, 1.0f, 1.0f, 1.0f, 0.5f);
-	glDrawArraysInstanced(GL_TRIANGLES, 0, COUNT_OF(vertexData) / 2,
+	glDrawArraysInstanced(GL_TRIANGLES, 0, countof(vertexData) / 2,
 	                      (GLsizei)segmentQueue->count);
 
 	glBindVertexArray(0);

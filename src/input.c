@@ -141,7 +141,7 @@ static void pollGamepadEvents(void)
 			continue;
 		GLFWgamepadstate newState;
 		glfwGetGamepadState(i, &newState);
-		for (int j = 0; j < COUNT_OF(newState.buttons); j++) {
+		for (int j = 0; j < countof(newState.buttons); j++) {
 			if (gamepadStates[i].buttons[j] == newState.buttons[j])
 				continue;
 			gamepadStates[i].buttons[j] = newState.buttons[j];

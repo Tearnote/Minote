@@ -5,6 +5,7 @@
 #define UTIL_H
 
 #include <stdbool.h>
+#include <string.h>
 #include <stdlib.h>
 #include <time.h>
 
@@ -34,11 +35,17 @@ typedef pcg32_random_t rng;
 void _assertFailed(const char *cond);
 
 // Classic MIN/MAX macros, complete with double evaluation bugs
-#define MIN(a, b) \
+#define min(a, b) \
         ((a) < (b) ? (a) : (b))
 
 // Length of an array
-#define COUNT_OF(x) \
+#define countof(x) \
         ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
+
+#define clearArray(x) \
+	memset((x), 0, sizeof(x))
+
+#define copyArray(dst, src) \
+	memcpy((dst), (src), sizeof(dst))
 
 #endif // UTIL_H

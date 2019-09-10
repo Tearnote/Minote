@@ -138,7 +138,7 @@ static struct requirement requirements[] = {
 	{ .level = 999, .score = 126000, (nsec)(13 * 60 + 30) * SEC }
 };
 
-static bool requirementChecked[COUNT_OF(requirements)] = {};
+static bool requirementChecked[countof(requirements)] = {};
 
 // Accepts inputs outside of bounds
 enum mino getGrid(int x, int y)
@@ -313,7 +313,7 @@ static enum pieceType randomPiece(void)
 
 static void adjustGravity(void)
 {
-	for (int i = 0; i < COUNT_OF(thresholds); i++) {
+	for (int i = 0; i < countof(thresholds); i++) {
 		if (game->level < thresholds[i].level)
 			return;
 		GRAVITY = thresholds[i].gravity;
@@ -324,7 +324,7 @@ static void checkRequirements(void)
 {
 	if (!game->eligible)
 		return;
-	for (int i = 0; i < COUNT_OF(requirementChecked); i++) {
+	for (int i = 0; i < countof(requirementChecked); i++) {
 		if (requirementChecked[i])
 			continue;
 		if (game->level < requirements[i].level)
@@ -458,8 +458,8 @@ static void processInputs(void)
 	}
 
 	// Rotate the input arrays
-	memcpy(game->cmdPrev, game->cmdHeld, sizeof(game->cmdPrev));
-	memcpy(game->cmdHeld, game->cmdRaw, sizeof(game->cmdHeld));
+	copyArray(game->cmdPrev, game->cmdHeld);
+	copyArray(game->cmdHeld, game->cmdRaw);
 
 	// Filter the conflicting inputs
 	if (game->cmdHeld[CmdSoft] || game->cmdHeld[CmdSonic]) {
@@ -481,11 +481,11 @@ void initGameplay(void)
 	game = allocate(sizeof(*game));
 	app->game = game;
 	srandom(&game->rngState, (uint64_t)time(NULL));
-	memset(game->playfield, MinoNone, sizeof(game->playfield));
-	memset(game->clearedLines, false, sizeof(game->clearedLines));
-	memset(game->cmdRaw, false, sizeof(game->cmdRaw));
-	memset(game->cmdHeld, false, sizeof(game->cmdHeld));
-	memset(game->cmdPrev, false, sizeof(game->cmdPrev));
+	clearArray(game->playfield);
+	clearArray(game->clearedLines);
+	clearArray(game->cmdRaw);
+	clearArray(game->cmdHeld);
+	clearArray(game->cmdPrev);
 	game->lastDirection = CmdNone;
 	game->level = 0;
 	game->nextLevelstop = 100;
@@ -505,7 +505,7 @@ void initGameplay(void)
 	player->ySub = 0;
 	player->type = PieceNone;
 	player->preview = PieceNone;
-	memset(player->history, PieceNone, sizeof(player->history));
+	clearArray(player->history);
 	player->rotation = 0;
 	player->dasDirection = 0;
 	player->dasCharge = 0;
@@ -514,7 +514,7 @@ void initGameplay(void)
 	player->clearDelay = 0;
 	player->spawnDelay = SPAWN_DELAY; // Start instantly
 	player->dropBonus = 0;
-	memset(requirementChecked, false, sizeof(requirementChecked));
+	clearArray(requirementChecked);
 	adjustGravity();
 }
 
@@ -591,8 +591,7 @@ static int checkClears(void)
 			continue;
 		count += 1;
 		game->clearedLines[y] = true;
-		memset(game->playfield[y], MinoNone,
-		       sizeof(game->playfield[y]));
+		clearArray(game->playfield[y]);
 	}
 	if (count == 0)
 		game->combo = 1;
@@ -614,10 +613,10 @@ static void thump(void)
 
 static void updateGrade(void)
 {
-	for (int i = 0; i < COUNT_OF(grades); i++) {
+	for (int i = 0; i < countof(grades); i++) {
 		if (game->score < grades[i].score)
 			return;
-		if (i == COUNT_OF(grades) - 1 &&
+		if (i == countof(grades) - 1 &&
 		    (!game->eligible || game->level < 999))
 			return;
 		strcpy(game->gradeString, grades[i].name);

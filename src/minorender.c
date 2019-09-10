@@ -177,7 +177,7 @@ void renderMino(void)
 	             INSTANCE_LIMIT * sizeof(struct minoInstance),
 	             NULL, GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0,
-	                (GLsizeiptr)MIN(minoQueue->count, INSTANCE_LIMIT)
+	                (GLsizeiptr)min(minoQueue->count, INSTANCE_LIMIT)
 	                * sizeof(struct minoInstance), minoQueue->buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -200,7 +200,7 @@ void renderMino(void)
 	glUniform1f(diffuseStrengthAttr, powf(1.0f, 2.2f));
 	glUniform1f(specularStrengthAttr, powf(0.5f, 2.2f));
 	glUniform1f(shininessAttr, 32.0f);
-	glDrawArraysInstanced(GL_TRIANGLES, 0, COUNT_OF(vertexData) / 6,
+	glDrawArraysInstanced(GL_TRIANGLES, 0, countof(vertexData) / 6,
 	                      (GLsizei)minoQueue->count);
 
 	glBindVertexArray(0);

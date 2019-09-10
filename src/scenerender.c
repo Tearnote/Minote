@@ -169,7 +169,7 @@ void renderScene(void)
 
 	glUniformMatrix4fv(cameraAttr, 1, GL_FALSE, camera[0]);
 	glUniformMatrix4fv(projectionAttr, 1, GL_FALSE, projection[0]);
-	glDrawArrays(GL_TRIANGLES, 0, COUNT_OF(vertexData) / 7);
+	glDrawArrays(GL_TRIANGLES, 0, countof(vertexData) / 7);
 
 	glBindVertexArray(0);
 	glUseProgram(0);

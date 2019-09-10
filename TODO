@@ -3,7 +3,6 @@ Flush out the race conditions making the game crash on startup and shutdown some
 Refactor repetitive parts of rendering
 Refactor file operations (fclose can return a write error!)
 Package licenses and readme
-Wrap memset and memcpy with macros
 Make libraries use our own malloc when possible
 Simplify vertex quads with macros
 Add some more de/initialization logging

@@ -197,7 +197,7 @@ queueString(enum fontType font, vec3 position, float size, char *fmt, ...)
 	va_end(ap);
 
 	vec3 cursor;
-	memcpy(cursor, position, sizeof(cursor));
+	copyArray(cursor, position);
 	const uint8_t *iterator = ustring;
 	ucs4_t codepoint;
 	while(true) {
@@ -271,7 +271,7 @@ void renderText(void)
 		             sizeof(struct textVertex) * VERTEX_LIMIT, NULL,
 		             GL_STREAM_DRAW);
 		glBufferSubData(GL_ARRAY_BUFFER, 0,
-		                (GLsizeiptr)MIN(textQueue[i]->count,
+		                (GLsizeiptr)min(textQueue[i]->count,
 		                                VERTEX_LIMIT)
 		                * sizeof(struct textVertex),
 		                textQueue[i]->buffer);
