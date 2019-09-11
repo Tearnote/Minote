@@ -1,5 +1,4 @@
 Try some gcc sanitizers
-Flush out the race conditions making the game crash on startup and shutdown sometimes
 Refactor repetitive parts of rendering
 Refactor file operations (fclose can return a write error!)
 Package licenses and readme

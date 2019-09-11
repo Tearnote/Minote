@@ -10,20 +10,30 @@
 #include "thread.h"
 #include "gameplay.h"
 
-struct appState {
-	bool running; //SYNC runningMutex isRunning setRunning
+enum appState {
+	AppNone,
+	AppGameplay,
+	AppReplay,
+	AppShutdown,
+	AppSize
+};
+
+struct app {
+	enum appState state; //SYNC stateMutex getState setState
 	struct game *game; //SYNC gameMutex
 };
 
-extern struct appState *app;
-extern mutex runningMutex;
+extern struct app *app;
+extern mutex stateMutex;
 extern mutex gameMutex;
 
-void initState(void);
+void initState(enum appState initial);
 void cleanupState(void);
+
 #define isRunning() \
-        syncBoolRead(&app->running, &runningMutex)
-#define setRunning(x) \
-        syncBoolWrite(&app->running, (x), &runningMutex)
+	(getState() != AppShutdown)
+
+enum appState getState(void);
+void setState(enum appState state);
 
 #endif // STATE_H

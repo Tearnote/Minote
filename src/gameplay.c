@@ -428,7 +428,7 @@ static void processInput(struct input *i)
 			game->started = true;
 		if (i->type == InputQuit) {
 			logInfo("User exited");
-			setRunning(false);
+			setState(AppShutdown);
 			break;
 		}
 

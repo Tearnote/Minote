@@ -279,7 +279,7 @@ void updateInput(void)
 
 	// Handle direct quit events, like the [X] being clicked
 	if (glfwWindowShouldClose(window)) {
-		setRunning(false);
+		setState(AppShutdown);
 		logInfo("Exit signal received");
 	}
 }

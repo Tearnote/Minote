@@ -9,21 +9,37 @@
 #include "util.h"
 #include "gameplay.h"
 
-struct appState *app;
+struct app *app;
 mutex gameMutex = newMutex;
-mutex runningMutex = newMutex;
+mutex stateMutex = newMutex;
 
-void initState(void)
+void initState(enum appState initial)
 {
 	app = allocate(sizeof(*app));
-	app->running = true;
+	app->state = initial;
 	app->game = NULL;
 }
 
 void cleanupState(void)
 {
-	if(!app)
+	if (!app)
 		return;
 	free(app);
 	app = NULL;
+}
+
+enum appState getState(void)
+{
+	enum appState result;
+	lockMutex(&stateMutex);
+	result = app->state;
+	unlockMutex(&stateMutex);
+	return result;
+}
+
+void setState(enum appState state)
+{
+	lockMutex(&stateMutex);
+	app->state = state;
+	unlockMutex(&stateMutex);
 }
