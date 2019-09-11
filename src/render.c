@@ -116,8 +116,13 @@ static void renderFrame(void)
 	// Make a local copy of the game state instead
 	// of locking it for the entire duration of rendering
 	lockMutex(&gameMutex);
-	memcpy(gameSnap, app->game, sizeof(*gameSnap));
-	unlockMutex(&gameMutex);
+	if (app->game) {
+		memcpy(gameSnap, app->game, sizeof(*gameSnap));
+		unlockMutex(&gameMutex);
+	} else { // Gameplay might not be done initializing
+		unlockMutex(&gameMutex);
+		return;
+	}
 
 	vec3 eye = { 0.0f, 12.0f, 32.0f };
 	vec3 center = { 0.0f, 12.0f, 0.0f };
