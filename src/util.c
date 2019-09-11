@@ -31,3 +31,6 @@ void _assertFailed(const char *cond)
 	logCrit("Assert failed: %U", cond);
 	exit(1);
 }
+
+void noop(void)
+{ }

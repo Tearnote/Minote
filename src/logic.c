@@ -12,14 +12,36 @@ thread logicThreadID = 0;
 #define LOGIC_TICK (SEC / LOGIC_FREQUENCY)
 static nsec nextUpdateTime = 0;
 
+struct stateFunctions {
+	void (*init)(void);
+	void (*cleanup)(void);
+	void (*update)(void);
+};
+
+struct stateFunctions funcs[AppSize] = {
+	{ .init = noop, .cleanup = noop, .update = noop }, // AppNone
+	{ .init = initGameplay, .cleanup = cleanupGameplay, .update = updateGameplay }, // AppGameplay
+	{ .init = noop, .cleanup = noop, .update = noop } // AppReplay
+};
+
 static enum appState loadedState = AppNone;
 
 static void updateLogic(void)
 {
 	if (!nextUpdateTime)
 		nextUpdateTime = getTime();
+
+	enum appState currentState = getState();
+	if (loadedState != currentState) {
+		lockMutex(&gameMutex);
+		funcs[loadedState].cleanup();
+		funcs[currentState].init();
+		unlockMutex(&gameMutex);
+		loadedState = currentState;
+	}
+
 	lockMutex(&gameMutex);
-	updateGameplay();
+	funcs[loadedState].update();
 	unlockMutex(&gameMutex);
 }
 
@@ -35,18 +57,15 @@ void *logicThread(void *param)
 {
 	(void)param;
 
-	lockMutex(&gameMutex);
-	initGameplay();
-	unlockMutex(&gameMutex);
-
 	while (isRunning()) {
 		updateLogic();
 		sleepLogic();
 	}
 
 	lockMutex(&gameMutex);
-	cleanupGameplay();
+	funcs[loadedState].cleanup();
 	unlockMutex(&gameMutex);
+	loadedState = AppNone;
 
 	return NULL;
 }

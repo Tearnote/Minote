@@ -48,4 +48,7 @@ void _assertFailed(const char *cond);
 #define copyArray(dst, src) \
 	memcpy((dst), (src), sizeof(dst))
 
+// This function does nothing.
+void noop(void);
+
 #endif // UTIL_H
