@@ -5,13 +5,14 @@
 #include "thread.h"
 #include "state.h"
 #include "timer.h"
-#include "input.h"
 
 thread logicThreadID = 0;
 
 #define LOGIC_FREQUENCY 59.84 // in Hz
 #define LOGIC_TICK (SEC / LOGIC_FREQUENCY)
 static nsec nextUpdateTime = 0;
+
+static enum appState loadedState = AppNone;
 
 static void updateLogic(void)
 {

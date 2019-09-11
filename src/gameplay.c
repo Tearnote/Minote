@@ -330,14 +330,9 @@ static void checkRequirements(void)
 		if (game->level < requirements[i].level)
 			return;
 		requirementChecked[i] = true;
-		logDebug("Checking GM requirement #%d", i);
 		if (game->score < requirements[i].score ||
-		    game->time > requirements[i].time) {
+		    game->time > requirements[i].time)
 			game->eligible = false;
-			logDebug("Requirement failed");
-		} else {
-			logDebug("Requirement passed");
-		}
 	}
 }
 
