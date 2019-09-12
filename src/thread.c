@@ -27,11 +27,15 @@ void awaitThread(thread id)
 
 void lockMutex(mutex *lock)
 {
+	if (!lock)
+		return;
 	pthread_mutex_lock(lock);
 }
 
 void unlockMutex(mutex *lock)
 {
+	if (!lock)
+		return;
 	pthread_mutex_unlock(lock);
 }
 

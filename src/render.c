@@ -151,6 +151,8 @@ static void renderFrame(void)
 	queueBorder(gameSnap->playfield);
 	renderBorder();
 	queueGameplayText(gameSnap);
+	if (getState() == AppReplay)
+		;//queueReplayText()
 	renderText();
 }
 

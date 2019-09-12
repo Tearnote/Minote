@@ -12,6 +12,11 @@ enum replayCmd {
 	ReplCmdSize
 };
 
+struct replay {
+	bool playback;
+	int frame;
+};
+
 void initReplayQueue(void);
 void cleanupReplayQueue(void);
 void pushReplayState(struct game *state);

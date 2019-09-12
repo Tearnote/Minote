@@ -1,6 +1,5 @@
 // Minote - state.h
 // Manages the logical state of the entire app
-// Current states are shutdown and gameplay, so for now it's a bool
 
 #ifndef STATE_H
 #define STATE_H
@@ -9,6 +8,7 @@
 
 #include "thread.h"
 #include "gameplay.h"
+#include "replay.h"
 
 enum appState {
 	AppNone,
@@ -21,11 +21,13 @@ enum appState {
 struct app {
 	enum appState state; //SYNC stateMutex getState setState
 	struct game *game; //SYNC gameMutex
+	struct replay *replay; //SYNC replayMutex
 };
 
 extern struct app *app;
 extern mutex stateMutex;
 extern mutex gameMutex;
+extern mutex replayMutex;
 
 void initState(enum appState initial);
 void cleanupState(void);

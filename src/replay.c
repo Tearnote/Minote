@@ -19,20 +19,19 @@
 
 #define BUFFER_SIZE (256 * 1024)
 
-queue *replay = NULL;
+static queue *replayBuffer = NULL;
 
-static bool playback = false;
-static long frame = 0;
+static struct replay *replay = NULL;
 
 void initReplayQueue(void)
 {
-	replay = createQueue(sizeof(struct game));
+	replayBuffer = createQueue(sizeof(struct game));
 }
 
 void cleanupReplayQueue(void)
 {
-	destroyQueue(replay);
-	replay = NULL;
+	destroyQueue(replayBuffer);
+	replayBuffer = NULL;
 }
 
 void saveReplay(void)
@@ -67,8 +66,8 @@ void saveReplay(void)
 		return;
 	}
 
-	lzma.next_in = replay->buffer;
-	lzma.avail_in = replay->itemSize * replay->count;
+	lzma.next_in = replayBuffer->buffer;
+	lzma.avail_in = replayBuffer->itemSize * replayBuffer->count;
 	uint8_t outBuffer[BUFFER_SIZE];
 	lzma.next_out = outBuffer;
 	lzma.avail_out = sizeof(outBuffer);
@@ -115,7 +114,7 @@ void saveReplay(void)
 
 void pushReplayState(struct game *state)
 {
-	struct game *nextState = produceQueueItem(replay);
+	struct game *nextState = produceQueueItem(replayBuffer);
 	memcpy(nextState, state, sizeof(*nextState));
 }
 
@@ -196,16 +195,18 @@ static void loadReplay(void)
 	lzma_end(&lzma);
 	free(compressed);
 
-	free(replay->buffer);
-	replay->buffer = outBuffer;
-	replay->count = outBufferSize / replay->itemSize;
-	replay->allocated = (outBufferSize + BUFFER_SIZE) / replay->itemSize;
+	free(replayBuffer->buffer);
+	replayBuffer->buffer = outBuffer;
+	replayBuffer->count = outBufferSize / replayBuffer->itemSize;
+	replayBuffer->allocated = (outBufferSize + BUFFER_SIZE) / replayBuffer->itemSize;
 }
 
 void initReplay(void)
 {
-	playback = false;
-	frame = 0;
+	replay = allocate(sizeof(*replay));
+	app->replay = replay;
+	replay->playback = false;
+	replay->frame = 0;
 
 	initReplayQueue();
 	loadReplay();
@@ -238,7 +239,7 @@ static void processInput(struct input *i)
 		}
 
 		if (cmd == ReplCmdPlay)
-			playback = !playback;
+			replay->playback = !replay->playback;
 	default:
 		break;
 	}
@@ -258,7 +259,7 @@ void updateReplay(void)
 {
 	processInputs();
 
-	if(playback && frame < replay->count)
-		frame += 1;
-	app->game = getQueueItem(replay, frame);
+	if(replay->playback && replay->frame < replayBuffer->count)
+		replay->frame += 1;
+	app->game = getQueueItem(replayBuffer, replay->frame);
 }

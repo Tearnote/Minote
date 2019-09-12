@@ -18,6 +18,7 @@ struct stateFunctions {
 	void (*init)(void);
 	void (*cleanup)(void);
 	void (*update)(void);
+	mutex *lock;
 };
 
 struct stateFunctions funcs[AppSize] = {
@@ -35,16 +36,18 @@ static void updateLogic(void)
 
 	enum appState currentState = getState();
 	if (loadedState != currentState) {
-		lockMutex(&gameMutex);
+		lockMutex(funcs[loadedState].lock);
 		funcs[loadedState].cleanup();
+		unlockMutex(funcs[loadedState].lock);
+		lockMutex(funcs[currentState].lock);
 		funcs[currentState].init();
-		unlockMutex(&gameMutex);
+		unlockMutex(funcs[currentState].lock);
 		loadedState = currentState;
 	}
 
-	lockMutex(&gameMutex);
+	lockMutex(funcs[loadedState].lock);
 	funcs[loadedState].update();
-	unlockMutex(&gameMutex);
+	unlockMutex(funcs[loadedState].lock);
 }
 
 static void sleepLogic(void)
@@ -59,14 +62,18 @@ void *logicThread(void *param)
 {
 	(void)param;
 
+	funcs[AppNone].lock = NULL;
+	funcs[AppGameplay].lock = &gameMutex;
+	funcs[AppReplay].lock = &replayMutex;
+
 	while (isRunning()) {
 		updateLogic();
 		sleepLogic();
 	}
 
-	lockMutex(&gameMutex);
+	lockMutex(funcs[loadedState].lock);
 	funcs[loadedState].cleanup();
-	unlockMutex(&gameMutex);
+	unlockMutex(funcs[loadedState].lock);
 	loadedState = AppNone;
 
 	return NULL;

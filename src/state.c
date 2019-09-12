@@ -10,14 +10,16 @@
 #include "gameplay.h"
 
 struct app *app;
-mutex gameMutex = newMutex;
 mutex stateMutex = newMutex;
+mutex gameMutex = newMutex;
+mutex replayMutex = newMutex;
 
 void initState(enum appState initial)
 {
 	app = allocate(sizeof(*app));
 	app->state = initial;
 	app->game = NULL;
+	app->replay = NULL;
 }
 
 void cleanupState(void)
