@@ -206,8 +206,9 @@ void initReplay(void)
 	replay = allocate(sizeof(*replay));
 	app->replay = replay;
 	replay->playback = false;
-	replay->frame = 0;
+	replay->frame = 0.0;
 	replay->totalFrames = 0;
+	replay->speed = 1.0f;
 
 	initReplayQueue();
 	loadReplay();
@@ -219,11 +220,31 @@ void cleanupReplay(void)
 	cleanupReplayQueue();
 }
 
+static void clampFrame(void)
+{
+	if (replay->frame < 0)
+		replay->frame = 0;
+	if (replay->frame >= replay->totalFrames)
+		replay->frame = replay->totalFrames - 1;
+}
+
 static enum replayCmd inputToCmd(enum inputType i)
 {
 	switch (i) {
 	case InputButton1:
 		return ReplCmdPlay;
+	case InputLeft:
+		return ReplCmdBack;
+	case InputRight:
+		return ReplCmdFwd;
+	case InputDown:
+		return ReplCmdSkipBack;
+	case InputUp:
+		return ReplCmdSkipFwd;
+	case InputButton2:
+		return ReplCmdSlower;
+	case InputButton3:
+		return ReplCmdFaster;
 	default:
 		return ReplCmdNone;
 	}
@@ -240,8 +261,32 @@ static void processInput(struct input *i)
 			break;
 		}
 
-		if (cmd == ReplCmdPlay)
+		switch (cmd) {
+		case ReplCmdPlay:
 			replay->playback = !replay->playback;
+			break;
+		case ReplCmdFwd:
+			replay->frame += 1;
+			break;
+		case ReplCmdBack:
+			replay->frame -= 1;
+			break;
+		case ReplCmdSkipFwd:
+			replay->frame += 60 * 5;
+			break;
+		case ReplCmdSkipBack:
+			replay->frame -= 60 * 5;
+			break;
+		case ReplCmdSlower:
+			replay->speed /= 2.0f;
+			break;
+		case ReplCmdFaster:
+			replay->speed *= 2.0f;
+			break;
+		default:
+			break;
+		}
+		clampFrame();
 	default:
 		break;
 	}
@@ -261,11 +306,11 @@ void updateReplay(void)
 {
 	processInputs();
 
-	app->game = getQueueItem(replayBuffer, replay->frame);
+	app->game = getQueueItem(replayBuffer, (int)replay->frame);
 	if(replay->playback) {
-		if (replay->frame + 1 < replay->totalFrames)
-			replay->frame += 1;
-		else
+		replay->frame += replay->speed;
+		clampFrame();
+		if ((int)replay->frame + 1 >= replay->totalFrames)
 			replay->playback = false;
 	}
 }

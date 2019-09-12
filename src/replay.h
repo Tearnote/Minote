@@ -9,13 +9,17 @@
 enum replayCmd {
 	ReplCmdNone,
 	ReplCmdPlay,
+	ReplCmdFwd, ReplCmdBack,
+	ReplCmdSkipFwd, ReplCmdSkipBack,
+	ReplCmdFaster, ReplCmdSlower,
 	ReplCmdSize
 };
 
 struct replay {
 	bool playback;
-	int frame;
+	double frame;
 	int totalFrames;
+	float speed;
 };
 
 void initReplayQueue(void);
