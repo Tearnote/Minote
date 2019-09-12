@@ -35,7 +35,8 @@ void *produceQueueItem(struct queue *q)
 	return getQueueItem(q, q->count - 1);
 }
 
-void *getQueueItem(struct queue *q, unsigned index)
+#include "log.h"
+void *getQueueItem(struct queue *q, int index)
 {
 	return (char *)q->buffer + index * q->itemSize;
 }

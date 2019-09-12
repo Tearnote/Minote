@@ -120,64 +120,64 @@ void queueBorder(enum mino field[PLAYFIELD_H][PLAYFIELD_W])
 			int ty = PLAYFIELD_H - 1 - y;
 
 			// Left
-			if (getGrid(x - 1, y) == MinoNone)
+			if (getPlayfieldGrid(field, x - 1, y) == MinoNone)
 				queueBorderSegment((GLfloat)tx,
 				                   (GLfloat)ty + 0.125f,
 				                   (GLfloat)tx + 0.125f,
 				                   (GLfloat)ty + 0.875f);
 
 			// Right
-			if (getGrid(x + 1, y) == MinoNone)
+			if (getPlayfieldGrid(field, x + 1, y) == MinoNone)
 				queueBorderSegment((GLfloat)tx + 0.875f,
 				                   (GLfloat)ty + 0.125f,
 				                   (GLfloat)tx + 1.0f,
 				                   (GLfloat)ty + 0.875f);
 
 			// Top
-			if (getGrid(x, y - 1) == MinoNone)
+			if (getPlayfieldGrid(field, x, y - 1) == MinoNone)
 				queueBorderSegment((GLfloat)tx + 0.125f,
 				                   (GLfloat)ty + 0.875f,
 				                   (GLfloat)tx + 0.875f,
 				                   (GLfloat)ty + 1.0f);
 
 			// Bottom
-			if (getGrid(x, y + 1) == MinoNone)
+			if (getPlayfieldGrid(field, x, y + 1) == MinoNone)
 				queueBorderSegment((GLfloat)tx + 0.125f,
 				                   (GLfloat)ty,
 				                   (GLfloat)tx + 0.875f,
 				                   (GLfloat)ty + 0.125f);
 
 			// Top left
-			if (getGrid(x - 1, y) == MinoNone ||
-			    getGrid(x - 1, y - 1) == MinoNone ||
-			    getGrid(x, y - 1) == MinoNone)
+			if (getPlayfieldGrid(field, x - 1, y) == MinoNone ||
+			    getPlayfieldGrid(field, x - 1, y - 1) == MinoNone ||
+			    getPlayfieldGrid(field, x, y - 1) == MinoNone)
 				queueBorderSegment((GLfloat)tx,
 				                   (GLfloat)ty + 0.875f,
 				                   (GLfloat)tx + 0.125f,
 				                   (GLfloat)ty + 1.0f);
 
 			// Top right
-			if (getGrid(x + 1, y) == MinoNone ||
-			    getGrid(x + 1, y - 1) == MinoNone ||
-			    getGrid(x, y - 1) == MinoNone)
+			if (getPlayfieldGrid(field, x + 1, y) == MinoNone ||
+			    getPlayfieldGrid(field, x + 1, y - 1) == MinoNone ||
+			    getPlayfieldGrid(field, x, y - 1) == MinoNone)
 				queueBorderSegment((GLfloat)tx + 0.875f,
 				                   (GLfloat)ty + 0.875f,
 				                   (GLfloat)tx + 1.0f,
 				                   (GLfloat)ty + 1.0f);
 
 			// Bottom left
-			if (getGrid(x - 1, y) == MinoNone ||
-			    getGrid(x - 1, y + 1) == MinoNone ||
-			    getGrid(x, y + 1) == MinoNone)
+			if (getPlayfieldGrid(field, x - 1, y) == MinoNone ||
+			    getPlayfieldGrid(field, x - 1, y + 1) == MinoNone ||
+			    getPlayfieldGrid(field, x, y + 1) == MinoNone)
 				queueBorderSegment((GLfloat)tx,
 				                   (GLfloat)ty,
 				                   (GLfloat)tx + 0.125f,
 				                   (GLfloat)ty + 0.125f);
 
 			// Bottom right
-			if (getGrid(x + 1, y) == MinoNone ||
-			    getGrid(x + 1, y + 1) == MinoNone ||
-			    getGrid(x, y + 1) == MinoNone)
+			if (getPlayfieldGrid(field, x + 1, y) == MinoNone ||
+			    getPlayfieldGrid(field, x + 1, y + 1) == MinoNone ||
+			    getPlayfieldGrid(field, x, y + 1) == MinoNone)
 				queueBorderSegment((GLfloat)tx + 0.875f,
 				                   (GLfloat)ty,
 				                   (GLfloat)tx + 1.0f,

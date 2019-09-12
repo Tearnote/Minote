@@ -141,21 +141,33 @@ static struct requirement requirements[] = {
 static bool requirementChecked[countof(requirements)] = {};
 
 // Accepts inputs outside of bounds
-enum mino getGrid(int x, int y)
+enum mino
+getPlayfieldGrid(enum mino field[PLAYFIELD_H][PLAYFIELD_W], int x, int y)
 {
 	if (x < 0 || x >= PLAYFIELD_W || y >= PLAYFIELD_H)
 		return MinoGarbage;
 	if (y < 0)
 		return MinoNone;
-	return game->playfield[y][x];
+	return field[y][x];
 }
 
-static void setGrid(int x, int y, enum mino val)
+void setPlayfieldGrid(enum mino field[PLAYFIELD_H][PLAYFIELD_W],
+                      int x, int y, enum mino val)
 {
 	if (x < 0 || x >= PLAYFIELD_W ||
 	    y < 0 || y >= PLAYFIELD_H)
 		return;
-	game->playfield[y][x] = val;
+	field[y][x] = val;
+}
+
+static enum mino getGrid(int x, int y)
+{
+	return getPlayfieldGrid(game->playfield, x, y);
+}
+
+static enum mino setGrid(int x, int y, enum mino val)
+{
+	setPlayfieldGrid(game->playfield, x, y, val);
 }
 
 // Check that player's position doesn't overlap the playfield
@@ -256,7 +268,7 @@ static void drop(void)
 	if (canDrop()) {
 		player->y += 1;
 		player->lockDelay = 0;
-		if (game->cmdHeld[CmdSoft])
+		if (game->cmdHeld[GameCmdSoft])
 			player->dropBonus += 1;
 	}
 }
@@ -265,7 +277,7 @@ static void drop(void)
 // Does not do collision checking, so can overwrite filled grids
 static void lock(void)
 {
-	if (game->cmdHeld[CmdSoft])
+	if (game->cmdHeld[GameCmdSoft])
 		player->dropBonus += 1;
 	for (int i = 0; i < MINOS_PER_PIECE; i++) {
 		int x = player->x + rs[player->type][player->rotation][i].x;
@@ -375,10 +387,10 @@ static void newPiece(void)
 	player->dropBonus = 0;
 
 	// IRS
-	if (game->cmdHeld[CmdCW]) {
+	if (game->cmdHeld[GameCmdCW]) {
 		rotate(1);
 	} else {
-		if (game->cmdHeld[CmdCCW] || game->cmdHeld[CmdCCW2])
+		if (game->cmdHeld[GameCmdCCW] || game->cmdHeld[GameCmdCCW2])
 			rotate(-1);
 	}
 
@@ -390,32 +402,32 @@ static void newPiece(void)
 }
 
 // Maps generic inputs to gameplay commands
-static enum cmdType inputToCmd(enum inputType i)
+static enum gameplayCmd inputToCmd(enum inputType i)
 {
 	switch (i) {
 	case InputLeft:
-		return CmdLeft;
+		return GameCmdLeft;
 	case InputRight:
-		return CmdRight;
+		return GameCmdRight;
 //	case InputUp:
-//		return CmdSonic;
+//		return GameCmdSonic;
 	case InputDown:
-		return CmdSoft;
+		return GameCmdSoft;
 	case InputButton1:
-		return CmdCCW;
+		return GameCmdCCW;
 	case InputButton2:
-		return CmdCW;
+		return GameCmdCW;
 	case InputButton3:
-		return CmdCCW2;
+		return GameCmdCCW2;
 	default:
-		return CmdNone;
+		return GameCmdNone;
 	}
 }
 
 // Receive unfiltered inputs
 static void processInput(struct input *i)
 {
-	enum cmdType cmd = inputToCmd(i->type);
+	enum gameplayCmd cmd = inputToCmd(i->type);
 	switch (i->action) {
 	case ActionPressed:
 		// Starting and quitting is handled outside of gameplay logic
@@ -427,14 +439,14 @@ static void processInput(struct input *i)
 			break;
 		}
 
-		if (cmd != CmdNone)
+		if (cmd != GameCmdNone)
 			game->cmdRaw[cmd] = true;
-		if (cmd == CmdLeft || cmd == CmdRight)
+		if (cmd == GameCmdLeft || cmd == GameCmdRight)
 			game->lastDirection = cmd;
 		break;
 
 	case ActionReleased:
-		if (cmd != CmdNone)
+		if (cmd != GameCmdNone)
 			game->cmdRaw[inputToCmd(i->type)] = false;
 		break;
 	default:
@@ -457,21 +469,21 @@ static void processInputs(void)
 	copyArray(game->cmdHeld, game->cmdRaw);
 
 	// Filter the conflicting inputs
-	if (game->cmdHeld[CmdSoft] || game->cmdHeld[CmdSonic]) {
-		game->cmdHeld[CmdLeft] = false;
-		game->cmdHeld[CmdRight] = false;
+	if (game->cmdHeld[GameCmdSoft] || game->cmdHeld[GameCmdSonic]) {
+		game->cmdHeld[GameCmdLeft] = false;
+		game->cmdHeld[GameCmdRight] = false;
 	}
-	if (game->cmdHeld[CmdLeft] && game->cmdHeld[CmdRight]) {
-		if (game->lastDirection == CmdLeft)
-			game->cmdHeld[CmdRight] = false;
-		if (game->lastDirection == CmdRight)
-			game->cmdHeld[CmdLeft] = false;
+	if (game->cmdHeld[GameCmdLeft] && game->cmdHeld[GameCmdRight]) {
+		if (game->lastDirection == GameCmdLeft)
+			game->cmdHeld[GameCmdRight] = false;
+		if (game->lastDirection == GameCmdRight)
+			game->cmdHeld[GameCmdLeft] = false;
 	}
 }
 
 void initGameplay(void)
 {
-	initReplay();
+	initReplayQueue();
 
 	game = allocate(sizeof(*game));
 	app->game = game;
@@ -481,7 +493,7 @@ void initGameplay(void)
 	clearArray(game->cmdRaw);
 	clearArray(game->cmdHeld);
 	clearArray(game->cmdPrev);
-	game->lastDirection = CmdNone;
+	game->lastDirection = GameCmdNone;
 	game->level = 0;
 	game->nextLevelstop = 100;
 	game->score = 0;
@@ -520,17 +532,18 @@ void cleanupGameplay(void)
 	game = NULL;
 	app->game = NULL;
 
-	cleanupReplay();
+	saveReplay();
+	cleanupReplayQueue();
 }
 
 static void updateRotations(void)
 {
 	if (player->state != PlayerActive)
 		return;
-	if (game->cmdHeld[CmdCW] && !game->cmdPrev[CmdCW])
+	if (game->cmdHeld[GameCmdCW] && !game->cmdPrev[GameCmdCW])
 		rotate(1);
-	if ((game->cmdHeld[CmdCCW] && !game->cmdPrev[CmdCCW]) ||
-	    (game->cmdHeld[CmdCCW2] && !game->cmdPrev[CmdCCW2]))
+	if ((game->cmdHeld[GameCmdCCW] && !game->cmdPrev[GameCmdCCW]) ||
+	    (game->cmdHeld[GameCmdCCW2] && !game->cmdPrev[GameCmdCCW2]))
 		rotate(-1);
 }
 
@@ -538,9 +551,9 @@ static void updateShifts(void)
 {
 	// Check requested movement direction
 	int shiftDirection = 0;
-	if (game->cmdHeld[CmdLeft])
+	if (game->cmdHeld[GameCmdLeft])
 		shiftDirection = -1;
-	else if (game->cmdHeld[CmdRight])
+	else if (game->cmdHeld[GameCmdRight])
 		shiftDirection = 1;
 
 	// If not moving or moving in the opposite direction of ongoing DAS,
@@ -682,9 +695,9 @@ static void updateGravity()
 		return;
 	int gravity = GRAVITY;
 	if (player->state == PlayerActive) {
-		if (game->cmdHeld[CmdSoft] && gravity < SOFT_DROP)
+		if (game->cmdHeld[GameCmdSoft] && gravity < SOFT_DROP)
 			gravity = SOFT_DROP;
-		if (game->cmdHeld[CmdSonic])
+		if (game->cmdHeld[GameCmdSonic])
 			gravity = SONIC_DROP;
 	}
 	player->ySub += gravity;
@@ -700,7 +713,7 @@ void updateLocking(void)
 		return;
 	player->lockDelay += 1;
 	// Two sources of locking: lock delay expired, and manlock
-	if (player->lockDelay >= LOCK_DELAY || game->cmdHeld[CmdSoft])
+	if (player->lockDelay >= LOCK_DELAY || game->cmdHeld[GameCmdSoft])
 		lock();
 }
 
@@ -729,5 +742,5 @@ void updateGameplay(void)
 		game->finished = true;
 	}
 
-	pushState(game);
+	pushReplayState(game);
 }

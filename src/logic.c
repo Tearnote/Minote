@@ -2,6 +2,8 @@
 
 #include "logic.h"
 
+#include "gameplay.h"
+#include "replay.h"
 #include "thread.h"
 #include "state.h"
 #include "timer.h"
@@ -21,7 +23,7 @@ struct stateFunctions {
 struct stateFunctions funcs[AppSize] = {
 	{ .init = noop, .cleanup = noop, .update = noop }, // AppNone
 	{ .init = initGameplay, .cleanup = cleanupGameplay, .update = updateGameplay }, // AppGameplay
-	{ .init = noop, .cleanup = noop, .update = noop } // AppReplay
+	{ .init = initReplay, .cleanup = cleanupReplay, .update = updateReplay } // AppReplay
 };
 
 static enum appState loadedState = AppNone;

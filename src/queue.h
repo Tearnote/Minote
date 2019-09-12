@@ -29,7 +29,7 @@ void destroyQueue(queue *q);
 // The memory is uninitialized
 void *produceQueueItem(queue *q);
 
-void *getQueueItem(queue *q, unsigned index);
+void *getQueueItem(queue *q, int index);
 void clearQueue(queue *q);
 
 #endif // QUEUE_H

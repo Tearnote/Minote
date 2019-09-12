@@ -6,9 +6,20 @@
 
 #include "gameplay.h"
 
+enum replayCmd {
+	ReplCmdNone,
+	ReplCmdPlay,
+	ReplCmdSize
+};
+
+void initReplayQueue(void);
+void cleanupReplayQueue(void);
+void pushReplayState(struct game *state);
+void saveReplay(void);
+void clearReplay(void);
+
 void initReplay(void);
 void cleanupReplay(void);
-
-void pushState(struct game *state);
+void updateReplay(void);
 
 #endif //REPLAY_H

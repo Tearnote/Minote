@@ -18,12 +18,12 @@
 #define HISTORY_SIZE 4
 
 // Types of commands accepted by the gameplay
-enum cmdType {
-	CmdNone,
-	CmdLeft, CmdRight,
-	CmdCCW, CmdCW, CmdCCW2,
-	CmdSoft, CmdSonic,
-	CmdSize
+enum gameplayCmd {
+	GameCmdNone,
+	GameCmdLeft, GameCmdRight,
+	GameCmdCCW, GameCmdCW, GameCmdCCW2,
+	GameCmdSoft, GameCmdSonic,
+	GameCmdSize
 };
 
 enum playerState {
@@ -65,10 +65,10 @@ struct game {
 	int grade;
 	char gradeString[3];
 	bool eligible;
-	bool cmdRaw[CmdSize];
-	bool cmdHeld[CmdSize];
-	bool cmdPrev[CmdSize];
-	enum cmdType lastDirection; // CmdLeft or CmdRight
+	bool cmdRaw[GameCmdSize];
+	bool cmdHeld[GameCmdSize];
+	bool cmdPrev[GameCmdSize];
+	enum gameplayCmd lastDirection; // GameCmdLeft or GameCmdRight
 	int frame;
 	nsec time;
 	bool started;
@@ -83,6 +83,9 @@ void updateGameplay(void);
 
 // Return the mino at the specific cell
 // Accepts inputs outside of bounds
-enum mino getGrid(int x, int y);
+enum mino
+getPlayfieldGrid(enum mino field[PLAYFIELD_H][PLAYFIELD_W], int x, int y);
+void setPlayfieldGrid(enum mino field[PLAYFIELD_H][PLAYFIELD_W],
+                      int x, int y, enum mino val);
 
 #endif // GAMEPLAY_H

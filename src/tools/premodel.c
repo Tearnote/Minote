@@ -51,6 +51,7 @@ int main(int argc, char *argv[])
 	                      &num_materials, inputBuffer, inputBufferChars,
 	                      TINYOBJ_FLAG_TRIANGULATE) != TINYOBJ_SUCCESS) {
 		fprintf(stderr, "Could not convert the input file\n");
+		free(inputBuffer);
 		exit(1);
 	}
 
@@ -78,4 +79,5 @@ int main(int argc, char *argv[])
 	if (shapes)
 		tinyobj_shapes_free(shapes, num_shapes);
 	fclose(output);
+	free(inputBuffer);
 }

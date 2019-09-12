@@ -135,12 +135,14 @@ add_dependencies(Preprocess_shaders Preshade)
 add_dependencies(Preprocess_models Premodel)
 
 # Linker settings
-include(CheckIPOSupported)
-check_ipo_supported(RESULT result OUTPUT output)
-if(result)
-    set_property(TARGET Minote PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-else()
-    message(WARNING "IPO is not supported: ${output}")
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT result OUTPUT output)
+    if(result)
+        set_property(TARGET Minote PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+    else()
+        message(WARNING "IPO is not supported: ${output}")
+    endif()
 endif()
 
 # Link the game
