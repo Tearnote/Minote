@@ -257,6 +257,18 @@ void queueGameplayText(struct game *game)
 	}
 }
 
+void queueReplayText(struct replay *replay)
+{
+	vec3 position = { -9.5f, 11.5f, 1.0f };
+	float size = 1.0f;
+	if (replay->playback)
+		queueString(FontSans, position, size, "Playing...");
+	else
+		queueString(FontSans, position, size, "Paused.");
+	position[1] -= 1.5f;
+	queueString(FontMono, position, size, "%d", replay->frame);
+}
+
 void renderText(void)
 {
 	glDisable(GL_DEPTH_TEST);

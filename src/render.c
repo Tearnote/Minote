@@ -21,6 +21,7 @@
 #include "textrender.h"
 #include "util.h"
 #include "gameplay.h"
+#include "replay.h"
 #include "timer.h"
 // Damn that's a lot of includes
 
@@ -47,6 +48,9 @@ static int fenceBufferHead = 0;
 
 // Thread-local copy of the game state being rendered
 static struct game *gameSnap = NULL;
+static struct replay *replaySnap = NULL;
+
+static enum appState loadedState = AppNone;
 
 static nsec lastRenderTime = 0;
 static nsec timeElapsed = 0;
@@ -123,6 +127,16 @@ static void renderFrame(void)
 		unlockMutex(&gameMutex);
 		return;
 	}
+	if (loadedState == AppReplay) {
+		lockMutex(&replayMutex);
+		if (app->replay) {
+			memcpy(replaySnap, app->replay, sizeof(*replaySnap));
+			unlockMutex(&replayMutex);
+		} else {
+			unlockMutex(&replayMutex);
+			return;
+		}
+	}
 
 	vec3 eye = { 0.0f, 12.0f, 32.0f };
 	vec3 center = { 0.0f, 12.0f, 0.0f };
@@ -151,8 +165,8 @@ static void renderFrame(void)
 	queueBorder(gameSnap->playfield);
 	renderBorder();
 	queueGameplayText(gameSnap);
-	if (getState() == AppReplay)
-		;//queueReplayText()
+	if (loadedState == AppReplay)
+		queueReplayText(replaySnap);
 	renderText();
 }
 
@@ -162,6 +176,10 @@ static void cleanupRenderer(void)
 	cleanupBorderRenderer();
 	cleanupMinoRenderer();
 	cleanupSceneRenderer();
+	if (replaySnap) {
+		free(replaySnap);
+		replaySnap = NULL;
+	}
 	if (gameSnap) {
 		free(gameSnap);
 		gameSnap = NULL;
@@ -190,6 +208,7 @@ static void initRenderer(void)
 	glEnable(GL_MULTISAMPLE);
 
 	gameSnap = allocate(sizeof(*gameSnap));
+	replaySnap = allocate(sizeof(*replaySnap));
 	clearArray(fenceBuffer);
 
 	mat4x4_translate(camera, 0.0f, -12.0f, -32.0f);
@@ -231,6 +250,7 @@ void *rendererThread(void *param)
 		nsec currentTime = getTime();
 		timeElapsed = currentTime - lastRenderTime;
 		lastRenderTime = currentTime;
+		loadedState = getState();
 		renderFrame();
 		// Control GPU buffering with fences
 		syncRenderer();
