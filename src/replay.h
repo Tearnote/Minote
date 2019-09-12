@@ -15,6 +15,7 @@ enum replayCmd {
 struct replay {
 	bool playback;
 	int frame;
+	int totalFrames;
 };
 
 void initReplayQueue(void);

@@ -13,8 +13,8 @@
 typedef struct queue {
 	void *buffer;
 	size_t itemSize;
-	unsigned count; // Number of items present
-	unsigned allocated; // Number of items that can fit in the buffer
+	int count; // Number of items present
+	int allocated; // Number of items that can fit in the buffer
 } queue;
 
 // Initialize an empty queue

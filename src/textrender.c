@@ -95,8 +95,9 @@ void cleanupTextRenderer(void)
 	}
 }
 
-static void queueGlyph(enum fontType font, ucs4_t codepoint, const vec3 position,
-                       GLfloat size)
+static void
+queueGlyph(enum fontType font, ucs4_t codepoint, const vec3 position,
+           GLfloat size)
 {
 	if (codepoint >= fonts[font].glyphCount)
 		return;
@@ -200,7 +201,7 @@ queueString(enum fontType font, vec3 position, float size, char *fmt, ...)
 	copyArray(cursor, position);
 	const uint8_t *iterator = ustring;
 	ucs4_t codepoint;
-	while(true) {
+	while (true) {
 		iterator = u8_next(&codepoint, iterator);
 		if (!iterator)
 			break;
@@ -253,7 +254,8 @@ void queueGameplayText(struct game *game)
 		position[0] = 6.0f;
 		position[1] = 11.5f;
 		size = 1.0f;
-		queueString(FontSans, position, size, "Press Start/Enter to begin.");
+		queueString(FontSans, position, size,
+		            "Press Start/Enter to begin.");
 	}
 }
 
@@ -266,7 +268,10 @@ void queueReplayText(struct replay *replay)
 	else
 		queueString(FontSans, position, size, "Paused.");
 	position[1] -= 1.5f;
-	queueString(FontMono, position, size, "%d", replay->frame);
+	// frame is a zero-based index, we show it one-based
+	queueString(FontMono, position, size, "%d", replay->frame + 1);
+	position[1] -= 1.2f;
+	queueString(FontMono, position, size, "%d", replay->totalFrames);
 }
 
 void renderText(void)

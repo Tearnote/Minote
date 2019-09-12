@@ -207,9 +207,11 @@ void initReplay(void)
 	app->replay = replay;
 	replay->playback = false;
 	replay->frame = 0;
+	replay->totalFrames = 0;
 
 	initReplayQueue();
 	loadReplay();
+	replay->totalFrames = replayBuffer->count;
 }
 
 void cleanupReplay(void)
@@ -259,7 +261,11 @@ void updateReplay(void)
 {
 	processInputs();
 
-	if(replay->playback && replay->frame < replayBuffer->count)
-		replay->frame += 1;
 	app->game = getQueueItem(replayBuffer, replay->frame);
+	if(replay->playback) {
+		if (replay->frame + 1 < replay->totalFrames)
+			replay->frame += 1;
+		else
+			replay->playback = false;
+	}
 }
