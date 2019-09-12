@@ -1,10 +1,25 @@
 # Minote
-A repo for an upcoming puzzle action game. Rather barebones right now,
-but fully playable.
+An upcoming puzzle action game. Rather barebones right now, but fully
+playable.
+
+## Usage
+`Minote` - Start new game, overwrite `replay.mre` on close
+
+`Minote --help` - Print usage help
+
+`Minote --replay` - Open `replay.mre` in replay viewer
 
 ## Building
 Tested working on Linux and Windows (MSYS2). Should be portable to any
 platform with OpenGL 3.3 core profile and GCC/MinGW.
+
+Standard CMake build process:
+```
+mkdir build
+cd build
+cmake ..
+make
+```
 
 ### External libraries
 Requires [`GLFW`](https://www.glfw.org/) 3.3,

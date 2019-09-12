@@ -24,7 +24,7 @@ static void printUsage(const char *invalid)
 	puts("");
 	puts("Available options:");
 	puts("    --help: Print this message");
-	puts("    --replay: Open replay.mre in replay playback mode");
+	puts("    --replay: Open replay.mre in replay viewer");
 }
 
 static void cleanup(void)
