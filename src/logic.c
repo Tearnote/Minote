@@ -23,7 +23,7 @@ struct stateFunctions {
 struct stateFunctions funcs[AppSize] = {
 	{ .init = noop, .cleanup = noop, .update = noop }, // AppNone
 	{ .init = initGameplay, .cleanup = cleanupGameplay, .update = updateGameplay }, // AppGameplay
-	{ .init = initReplay, .cleanup = cleanupReplay, .update = updateReplay } // AppReplay
+	{ .init = initReplayPlayback, .cleanup = cleanupReplay, .update = updateReplay } // AppReplay
 };
 
 static enum appState loadedState = AppNone;

@@ -40,18 +40,16 @@ struct replay {
 	queue *frames;
 	bool playback;
 	int frame;
-	int totalFrames;
 	float speed;
 };
-
-void initReplayQueue(void);
-void cleanupReplayQueue(void);
 void pushReplayHeader(rng *initialRng);
 void pushReplayFrame(struct game *frame);
 void saveReplay(void);
 void clearReplay(void);
 
-void initReplay(void);
+// Call one of these two
+void initReplayRecord(void);
+void initReplayPlayback(void);
 void cleanupReplay(void);
 void updateReplay(void);
 

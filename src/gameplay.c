@@ -516,7 +516,7 @@ void initGameplay(void)
 	clearArray(requirementChecked);
 	adjustGravity();
 
-	initReplayQueue();
+	initReplayRecord();
 	pushReplayHeader(&game->rngState);
 }
 
@@ -526,7 +526,7 @@ void cleanupGameplay(void)
 	game = NULL;
 
 	saveReplay();
-	cleanupReplayQueue();
+	cleanupReplay();
 }
 
 static void updateRotations(void)

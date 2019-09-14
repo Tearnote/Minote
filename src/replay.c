@@ -34,14 +34,12 @@ enum replayCmd {
 
 static struct replay *replay = NULL;
 
-void initReplayQueue(void)
+static void initReplayQueue(void)
 {
-	if (!replay)
-		replay = app->replay;
 	replay->frames = createQueue(sizeof(struct replayFrame));
 }
 
-void cleanupReplayQueue(void)
+static void cleanupReplayQueue(void)
 {
 	destroyQueue(replay->frames);
 	replay->frames = NULL;
@@ -283,17 +281,20 @@ static void loadReplay(void)
 	free(outBuffer);
 }
 
-void initReplay(void)
+void initReplayRecord(void)
+{
+	initReplayQueue();
+}
+
+void initReplayPlayback(void)
 {
 	replay = app->replay;
 	replay->playback = false;
 	replay->frame = 0;
-	replay->totalFrames = 0;
 	replay->speed = 1.0f;
 
 	initReplayQueue();
 	loadReplay();
-	replay->totalFrames = replay->frames->count;
 }
 
 void cleanupReplay(void)
@@ -306,8 +307,8 @@ static void clampFrame(void)
 {
 	if (replay->frame < 0)
 		replay->frame = 0;
-	if (replay->frame >= replay->totalFrames)
-		replay->frame = replay->totalFrames - 1;
+	if (replay->frame >= replay->frames->count)
+		replay->frame = replay->frames->count - 1;
 }
 
 static enum replayCmd inputToCmd(enum inputType i)
@@ -411,7 +412,7 @@ void updateReplay(void)
 	if (replay->playback) {
 		replay->frame += 1;
 		clampFrame();
-		if ((int)replay->frame + 1 >= replay->totalFrames)
+		if ((int)replay->frame + 1 >= replay->frames->count)
 			replay->playback = false;
 	}
 }
