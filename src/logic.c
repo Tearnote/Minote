@@ -10,8 +10,8 @@
 
 thread logicThreadID = 0;
 
-#define LOGIC_FREQUENCY 59.84 // in Hz
-#define LOGIC_TICK (SEC / LOGIC_FREQUENCY)
+double logicFrequency = DEFAULT_FREQUENCY;
+#define LOGIC_TICK (SEC / logicFrequency)
 static nsec nextUpdateTime = 0;
 
 struct stateFunctions {

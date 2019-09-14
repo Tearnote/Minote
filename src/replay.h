@@ -39,7 +39,7 @@ struct replay {
 	struct replayHeader header;
 	queue *frames;
 	bool playback;
-	double frame;
+	int frame;
 	int totalFrames;
 	float speed;
 };

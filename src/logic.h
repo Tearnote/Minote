@@ -7,6 +7,10 @@
 
 #include "thread.h"
 
+#define DEFAULT_FREQUENCY 59.84
+
+extern double logicFrequency; // in Hz
+
 void *logicThread(void *param);
 extern thread logicThreadID;
 #define spawnLogic() \

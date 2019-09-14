@@ -17,6 +17,7 @@
 #include "input.h"
 #include "state.h"
 #include "util.h"
+#include "logic.h"
 
 #define BUFFER_SIZE (256 * 1024)
 #define HEADER_MAGIC "Minotereplay"
@@ -286,7 +287,7 @@ void initReplay(void)
 {
 	replay = app->replay;
 	replay->playback = false;
-	replay->frame = 0.0;
+	replay->frame = 0;
 	replay->totalFrames = 0;
 	replay->speed = 1.0f;
 
@@ -368,6 +369,7 @@ static void processInput(struct input *i)
 			break;
 		}
 		clampFrame();
+		logicFrequency = DEFAULT_FREQUENCY * replay->speed;
 	default:
 		break;
 	}
@@ -387,7 +389,7 @@ void updateReplay(void)
 {
 	processInputs();
 
-	struct replayFrame *frame = getQueueItem(replay->frames, (int)replay->frame);
+	struct replayFrame *frame = getQueueItem(replay->frames, replay->frame);
 	for (int y = 0; y < PLAYFIELD_H; y++)
 		for (int x = 0; x < PLAYFIELD_W; x++)
 			app->game->playfield[y][x] = frame->playfield[y][x];
@@ -407,7 +409,7 @@ void updateReplay(void)
 	app->game->time = (nsec)replay->frame * TIMER_FRAME;
 
 	if (replay->playback) {
-		replay->frame += replay->speed;
+		replay->frame += 1;
 		clampFrame();
 		if ((int)replay->frame + 1 >= replay->totalFrames)
 			replay->playback = false;
