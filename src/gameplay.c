@@ -16,11 +16,6 @@
 #include "timer.h"
 #include "replay.h"
 
-// Define the length of a frame for the purpose of calculating the timer
-// This is not equal to real time
-#define FRAMERATE 60 // in Hz
-#define FRAME_LENGTH (SEC / FRAMERATE)
-
 // Frames until the first autoshift
 // 2 is right after the normal shift
 #define DAS_CHARGE 16
@@ -735,7 +730,7 @@ void updateGameplay(void)
 		player->state = PlayerActive;
 
 	game->frame += 1;
-	game->time += FRAME_LENGTH;
+	game->time += GAMEPLAY_FRAME_LENGTH;
 
 	if (game->level >= 999) {
 		updateGrade();

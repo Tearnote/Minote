@@ -20,6 +20,7 @@
 #include "log.h"
 #include "queue.h"
 #include "util.h"
+#include "state.h"
 
 #define VERTEX_LIMIT 8192
 
@@ -250,7 +251,7 @@ void queueGameplayText(struct game *game)
 	            game->time / SEC / 60,
 	            game->time / SEC % 60,
 	            game->time / (SEC / 100) % 100);
-	if (!game->started) {
+	if (getState() == AppGameplay && !game->started) {
 		position[0] = 6.0f;
 		position[1] = 11.5f;
 		size = 1.0f;
