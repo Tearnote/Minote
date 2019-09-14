@@ -12,22 +12,25 @@
 struct app *app;
 mutex stateMutex = newMutex;
 mutex gameMutex = newMutex;
-mutex replayMutex = newMutex;
 
 void initState(enum appState initial)
 {
 	app = allocate(sizeof(*app));
 	app->state = initial;
-	app->game = NULL;
-	app->replay = NULL;
+	app->game = allocate(sizeof(*app->game));
+	app->replay = allocate(sizeof(*app->replay));
 }
 
 void cleanupState(void)
 {
-	if (!app)
-		return;
-	free(app);
-	app = NULL;
+	if (app->game)
+		free(app->game);
+	if (app->replay)
+		free(app->replay);
+	if (app) {
+		free(app);
+		app = NULL;
+	}
 }
 
 enum appState getState(void)

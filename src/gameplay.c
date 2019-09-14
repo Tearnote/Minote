@@ -478,10 +478,7 @@ static void processInputs(void)
 
 void initGameplay(void)
 {
-	initReplayQueue();
-
-	game = allocate(sizeof(*game));
-	app->game = game;
+	game = app->game;
 	srandom(&game->rngState, (uint64_t)time(NULL));
 	clearArray(game->playfield);
 	clearArray(game->clearedLines);
@@ -518,14 +515,15 @@ void initGameplay(void)
 	player->dropBonus = 0;
 	clearArray(requirementChecked);
 	adjustGravity();
+
+	initReplayQueue();
+	pushReplayHeader(&game->rngState);
 }
 
 void cleanupGameplay(void)
 {
 	player = NULL;
-	free(game);
 	game = NULL;
-	app->game = NULL;
 
 	saveReplay();
 	cleanupReplayQueue();
@@ -730,7 +728,7 @@ void updateGameplay(void)
 		player->state = PlayerActive;
 
 	game->frame += 1;
-	game->time += GAMEPLAY_FRAME_LENGTH;
+	game->time += TIMER_FRAME;
 
 	if (game->level >= 999) {
 		updateGrade();

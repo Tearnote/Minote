@@ -38,7 +38,7 @@ static void cleanup(void)
 
 int main(int argc, char *argv[])
 {
-	enum appState initial = AppNone;
+	enum appState initial = AppGameplay;
 	if (argc > 1) {
 		if (strcmp(argv[1], "--replay") == 0) {
 			initial = AppReplay;
@@ -49,8 +49,6 @@ int main(int argc, char *argv[])
 			printUsage(argv[1]);
 			exit(1);
 		}
-	} else {
-		initial = AppGameplay;
 	}
 
 	initLogging();

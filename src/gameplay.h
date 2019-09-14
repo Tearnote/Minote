@@ -12,8 +12,8 @@
 
 // Define the length of a frame for the purpose of calculating the timer
 // This is not equal to real time
-#define GAMEPLAY_FRAMERATE 60 // in Hz
-#define GAMEPLAY_FRAME_LENGTH (SEC / GAMEPLAY_FRAMERATE)
+#define TIMER_FRAMERATE 60 // in Hz
+#define TIMER_FRAME (SEC / TIMER_FRAMERATE)
 
 #define PLAYFIELD_W 10
 #define PLAYFIELD_H 21

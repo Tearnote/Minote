@@ -128,12 +128,9 @@ static void renderFrame(void)
 		return;
 	}
 	if (loadedState == AppReplay) {
-		lockMutex(&replayMutex);
 		if (app->replay) {
 			memcpy(replaySnap, app->replay, sizeof(*replaySnap));
-			unlockMutex(&replayMutex);
 		} else {
-			unlockMutex(&replayMutex);
 			return;
 		}
 	}

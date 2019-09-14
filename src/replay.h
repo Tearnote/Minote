@@ -9,7 +9,8 @@
 #include "gameplay.h"
 
 struct replayHeader {
-	uint8_t *version;
+	uint8_t magic[12]; // Not zero-terminated
+	uint8_t version[4]; // Not zero-terminated
 	rng initialRng;
 };
 
@@ -43,6 +44,7 @@ struct replay {
 
 void initReplayQueue(void);
 void cleanupReplayQueue(void);
+void pushReplayHeader(rng *initialRng);
 void pushReplayFrame(struct game *frame);
 void saveReplay(void);
 void clearReplay(void);

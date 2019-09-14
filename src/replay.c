@@ -19,6 +19,8 @@
 #include "util.h"
 
 #define BUFFER_SIZE (256 * 1024)
+#define HEADER_MAGIC "Minotereplay"
+#define HEADER_VERSION "0000"
 
 enum replayCmd {
 	ReplCmdNone,
@@ -36,12 +38,22 @@ static struct replay *replay = NULL;
 void initReplayQueue(void)
 {
 	replayBuffer = createQueue(sizeof(struct replayFrame));
+	if (!replay)
+		replay = app->replay;
 }
 
 void cleanupReplayQueue(void)
 {
 	destroyQueue(replayBuffer);
 	replayBuffer = NULL;
+}
+
+void pushReplayHeader(rng *initialRng)
+{
+	memcpy(&replay->header.initialRng, initialRng,
+	       sizeof(replay->header.initialRng));
+	copyArray(replay->header.magic, HEADER_MAGIC);
+	copyArray(replay->header.version, HEADER_VERSION);
 }
 
 void saveReplay(void)
@@ -76,8 +88,20 @@ void saveReplay(void)
 		return;
 	}
 
-	lzma.next_in = replayBuffer->buffer;
-	lzma.avail_in = replayBuffer->itemSize * replayBuffer->count;
+	lzma.avail_in = sizeof(app->replay->header)
+	                + replayBuffer->itemSize * replayBuffer->count;
+	uint8_t *inBuffer = allocate(lzma.avail_in);
+	lzma.next_in = inBuffer;
+	size_t offset = 0;
+	memcpy(inBuffer, &app->replay->header.magic + offset, sizeof(app->replay->header.magic));
+	offset += sizeof(app->replay->header.magic);
+	memcpy(inBuffer + offset, &app->replay->header.version, sizeof(app->replay->header.version));
+	offset += sizeof(app->replay->header.version);
+	memcpy(inBuffer + offset, &app->replay->header.initialRng, sizeof(app->replay->header.initialRng));
+	offset += sizeof(app->replay->header.initialRng);
+	memcpy(inBuffer + offset, replayBuffer->buffer,
+	       replayBuffer->itemSize * replayBuffer->count);
+
 	uint8_t outBuffer[BUFFER_SIZE];
 	lzma.next_out = outBuffer;
 	lzma.avail_out = sizeof(outBuffer);
@@ -223,21 +247,35 @@ static void loadReplay(void)
 	lzma_end(&lzma);
 	free(compressed);
 
-	free(replayBuffer->buffer);
-	// We ignore the remainders in this buffer handoff because they
-	// don't matter, it won't go out of bounds and will be corrected
-	// by the next realloc anyway
-	replayBuffer->buffer = outBuffer;
-	replayBuffer->count = outBufferSize / replayBuffer->itemSize;
-	replayBuffer->allocated =
-		(outBufferSize + BUFFER_SIZE) / replayBuffer->itemSize;
-	replay->frames = (struct replayFrame *)outBuffer;
+	size_t offset = 0;
+	memcpy(replay->header.magic, outBuffer + offset, sizeof(replay->header.magic));
+	if (memcmp(replay->header.magic, HEADER_MAGIC, sizeof(replay->header.magic)) != 0) {
+		logError("Invalid replay file");
+		free(outBuffer);
+		return;
+	}
+	offset += sizeof(replay->header.magic);
+	memcpy(replay->header.version, outBuffer + offset, sizeof(replay->header.version));
+	if (memcmp(replay->header.version, HEADER_VERSION, sizeof(replay->header.version)) != 0) {
+		logError("Invalid replay version");
+		free(outBuffer);
+		return;
+	}
+	offset += sizeof(replay->header.version);
+	memcpy(&replay->header.initialRng, outBuffer + offset, sizeof(replay->header.initialRng));
+	offset += sizeof(replay->header.initialRng);
+
+	replayBuffer->count = (outBufferSize - offset) / replayBuffer->itemSize;
+	replayBuffer->allocated = replayBuffer->count;
+	replayBuffer->buffer = reallocate(replayBuffer->buffer, replayBuffer->allocated * replayBuffer->itemSize);
+	memcpy(replayBuffer->buffer, outBuffer + offset, replayBuffer->allocated * replayBuffer->itemSize);
+	replay->frames = (struct replayFrame *)replayBuffer->buffer;
+	free(outBuffer);
 }
 
 void initReplay(void)
 {
-	replay = allocate(sizeof(*replay));
-	app->replay = replay;
+	replay = app->replay;
 	replay->playback = false;
 	replay->frame = 0.0;
 	replay->totalFrames = 0;
@@ -246,21 +284,12 @@ void initReplay(void)
 	initReplayQueue();
 	loadReplay();
 	replay->totalFrames = replayBuffer->count;
-
-	lockMutex(&gameMutex);
-	app->game = allocate(sizeof(*app->game));
-	memset(app->game, 0, sizeof(*app->game));
-	unlockMutex(&gameMutex);
 }
 
 void cleanupReplay(void)
 {
-	lockMutex(&gameMutex);
-	free(app->game);
-	app->game = NULL;
-	unlockMutex(&gameMutex);
-
 	cleanupReplayQueue();
+	replay = NULL;
 }
 
 static void clampFrame(void)
@@ -350,7 +379,6 @@ void updateReplay(void)
 	processInputs();
 
 	struct replayFrame *frame = &replay->frames[(int)replay->frame];
-	lockMutex(&gameMutex);
 	for (int y = 0; y < PLAYFIELD_H; y++)
 		for (int x = 0; x < PLAYFIELD_W; x++)
 			app->game->playfield[y][x] = frame->playfield[y][x];
@@ -367,8 +395,7 @@ void updateReplay(void)
 	app->game->eligible = frame->eligible;
 	for (int i = 0; i < GameCmdSize; i++)
 		app->game->cmdRaw[i] = frame->cmdRaw[i];
-	app->game->time = (nsec)replay->frame * GAMEPLAY_FRAME_LENGTH;
-	unlockMutex(&gameMutex);
+	app->game->time = (nsec)replay->frame * TIMER_FRAME;
 
 	if (replay->playback) {
 		replay->frame += replay->speed;

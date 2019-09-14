@@ -8,7 +8,7 @@
 
 void *allocate(size_t size)
 {
-	void *result = malloc(size);
+	void *result = calloc(1, size);
 	if (result == NULL) {
 		logCrit("Failed to allocate %d bytes", size);
 		exit(1);

@@ -21,13 +21,12 @@ enum appState {
 struct app {
 	enum appState state; //SYNC stateMutex getState setState
 	struct game *game; //SYNC gameMutex
-	struct replay *replay; //SYNC replayMutex
+	struct replay *replay; //SYNC gameMutex
 };
 
 extern struct app *app;
 extern mutex stateMutex;
 extern mutex gameMutex;
-extern mutex replayMutex;
 
 void initState(enum appState initial);
 void cleanupState(void);
