@@ -16,8 +16,18 @@
 #include "log.h"
 #include "input.h"
 #include "state.h"
+#include "util.h"
 
 #define BUFFER_SIZE (256 * 1024)
+
+enum replayCmd {
+	ReplCmdNone,
+	ReplCmdPlay,
+	ReplCmdFwd, ReplCmdBack,
+	ReplCmdSkipFwd, ReplCmdSkipBack,
+	ReplCmdFaster, ReplCmdSlower,
+	ReplCmdSize
+};
 
 static queue *replayBuffer = NULL;
 
@@ -25,7 +35,7 @@ static struct replay *replay = NULL;
 
 void initReplayQueue(void)
 {
-	replayBuffer = createQueue(sizeof(struct game));
+	replayBuffer = createQueue(sizeof(struct replayFrame));
 }
 
 void cleanupReplayQueue(void)
@@ -112,10 +122,22 @@ void saveReplay(void)
 	lzma_end(&lzma);
 }
 
-void pushReplayState(struct game *state)
+void pushReplayFrame(struct game *frame)
 {
-	struct game *nextState = produceQueueItem(replayBuffer);
-	memcpy(nextState, state, sizeof(*nextState));
+	struct replayFrame *replayFrame = produceQueueItem(replayBuffer);
+	copyArray(replayFrame->playfield, frame->playfield);
+	replayFrame->player.state = frame->player.state;
+	replayFrame->player.x = frame->player.x;
+	replayFrame->player.y = frame->player.y;
+	replayFrame->player.type = frame->player.type;
+	replayFrame->player.preview = frame->player.preview;
+	replayFrame->player.rotation = frame->player.rotation;
+	replayFrame->level = frame->level;
+	replayFrame->nextLevelstop = frame->nextLevelstop;
+	replayFrame->score = frame->score;
+	copyArray(replayFrame->gradeString, frame->gradeString);
+	replayFrame->eligible = frame->eligible;
+	copyArray(replayFrame->cmdRaw, frame->cmdRaw);
 }
 
 static void loadReplay(void)
@@ -199,6 +221,7 @@ static void loadReplay(void)
 	replayBuffer->buffer = outBuffer;
 	replayBuffer->count = outBufferSize / replayBuffer->itemSize;
 	replayBuffer->allocated = (outBufferSize + BUFFER_SIZE) / replayBuffer->itemSize;
+	replay->frames = (struct replayFrame *)outBuffer;
 }
 
 void initReplay(void)
@@ -213,10 +236,20 @@ void initReplay(void)
 	initReplayQueue();
 	loadReplay();
 	replay->totalFrames = replayBuffer->count;
+
+	lockMutex(&gameMutex);
+	app->game = allocate(sizeof(*app->game));
+	memset(app->game, 0, sizeof(*app->game));
+	unlockMutex(&gameMutex);
 }
 
 void cleanupReplay(void)
 {
+	lockMutex(&gameMutex);
+	free(app->game);
+	app->game = NULL;
+	unlockMutex(&gameMutex);
+
 	cleanupReplayQueue();
 }
 
@@ -306,7 +339,23 @@ void updateReplay(void)
 {
 	processInputs();
 
-	app->game = getQueueItem(replayBuffer, (int)replay->frame);
+	struct replayFrame *frame = &replay->frames[(int)replay->frame];
+	lockMutex(&gameMutex);
+	copyArray(app->game->playfield, frame->playfield);
+	app->game->player.state = frame->player.state;
+	app->game->player.x = frame->player.x;
+	app->game->player.y = frame->player.y;
+	app->game->player.type = frame->player.type;
+	app->game->player.preview = frame->player.preview;
+	app->game->player.rotation = frame->player.rotation;
+	app->game->level = frame->level;
+	app->game->nextLevelstop = frame->nextLevelstop;
+	app->game->score = frame->score;
+	copyArray(app->game->gradeString, frame->gradeString);
+	app->game->eligible = frame->eligible;
+	copyArray(app->game->cmdRaw, frame->cmdRaw);
+	unlockMutex(&gameMutex);
+	
 	if(replay->playback) {
 		replay->frame += replay->speed;
 		clampFrame();

@@ -742,5 +742,5 @@ void updateGameplay(void)
 		game->finished = true;
 	}
 
-	pushReplayState(game);
+	pushReplayFrame(game);
 }

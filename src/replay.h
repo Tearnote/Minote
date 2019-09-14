@@ -6,16 +6,33 @@
 
 #include "gameplay.h"
 
-enum replayCmd {
-	ReplCmdNone,
-	ReplCmdPlay,
-	ReplCmdFwd, ReplCmdBack,
-	ReplCmdSkipFwd, ReplCmdSkipBack,
-	ReplCmdFaster, ReplCmdSlower,
-	ReplCmdSize
+struct replayHeader {
+	char *version;
+	rng initialRng;
+};
+
+struct replayFramePlayer {
+	enum playerState state;
+	int x, y;
+	enum pieceType type;
+	enum pieceType preview;
+	int rotation;
+};
+
+struct replayFrame {
+	enum mino playfield[PLAYFIELD_H][PLAYFIELD_W];
+	struct replayFramePlayer player;
+	int level;
+	int nextLevelstop;
+	int score;
+	char gradeString[3];
+	bool eligible;
+	bool cmdRaw[GameCmdSize];
 };
 
 struct replay {
+	struct replayHeader header;
+	struct replayFrame *frames;
 	bool playback;
 	double frame;
 	int totalFrames;
@@ -24,7 +41,7 @@ struct replay {
 
 void initReplayQueue(void);
 void cleanupReplayQueue(void);
-void pushReplayState(struct game *state);
+void pushReplayFrame(struct game *frame);
 void saveReplay(void);
 void clearReplay(void);
 
