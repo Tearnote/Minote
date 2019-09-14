@@ -354,6 +354,7 @@ void updateReplay(void)
 	copyArray(app->game->gradeString, frame->gradeString);
 	app->game->eligible = frame->eligible;
 	copyArray(app->game->cmdRaw, frame->cmdRaw);
+	app->game->time = (nsec)replay->frame * GAMEPLAY_FRAME_LENGTH;
 	unlockMutex(&gameMutex);
 	
 	if(replay->playback) {
