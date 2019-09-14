@@ -4,30 +4,32 @@
 #ifndef REPLAY_H
 #define REPLAY_H
 
+#include <stdint.h>
+
 #include "gameplay.h"
 
 struct replayHeader {
-	char *version;
+	uint8_t *version;
 	rng initialRng;
 };
 
 struct replayFramePlayer {
-	enum playerState state;
-	int x, y;
-	enum pieceType type;
-	enum pieceType preview;
-	int rotation;
+	int8_t state; // enum playerState
+	int8_t x, y; // int
+	int8_t type; // enum pieceType
+	int8_t preview; // enum pieceType
+	int8_t rotation; // int
 };
 
 struct replayFrame {
-	enum mino playfield[PLAYFIELD_H][PLAYFIELD_W];
+	int8_t playfield[PLAYFIELD_H][PLAYFIELD_W]; // enum mino
 	struct replayFramePlayer player;
-	int level;
-	int nextLevelstop;
-	int score;
-	char gradeString[3];
-	bool eligible;
-	bool cmdRaw[GameCmdSize];
+	int16_t level; // int
+	int16_t nextLevelstop; // int
+	int32_t score; // int
+	int8_t gradeString[3]; // char
+	int8_t eligible; // bool
+	int8_t cmdRaw[GameCmdSize]; // bool
 };
 
 struct replay {

@@ -125,7 +125,10 @@ void saveReplay(void)
 void pushReplayFrame(struct game *frame)
 {
 	struct replayFrame *replayFrame = produceQueueItem(replayBuffer);
-	copyArray(replayFrame->playfield, frame->playfield);
+	// Can't use copyArray, different element size
+	for (int y = 0; y < PLAYFIELD_H; y++)
+		for (int x = 0; x < PLAYFIELD_W; x++)
+			replayFrame->playfield[y][x] = frame->playfield[y][x];
 	replayFrame->player.state = frame->player.state;
 	replayFrame->player.x = frame->player.x;
 	replayFrame->player.y = frame->player.y;
@@ -135,6 +138,7 @@ void pushReplayFrame(struct game *frame)
 	replayFrame->level = frame->level;
 	replayFrame->nextLevelstop = frame->nextLevelstop;
 	replayFrame->score = frame->score;
+	// This is fine because char is guaranteed to by one byte
 	copyArray(replayFrame->gradeString, frame->gradeString);
 	replayFrame->eligible = frame->eligible;
 	copyArray(replayFrame->cmdRaw, frame->cmdRaw);
@@ -189,7 +193,8 @@ static void loadReplay(void)
 		if (lzma.avail_out == 0 || lzmaRet == LZMA_STREAM_END) {
 			size_t outBytes = BUFFER_SIZE - lzma.avail_out;
 			outBufferSize += outBytes;
-			outBuffer = reallocate(outBuffer, outBufferSize + BUFFER_SIZE);
+			outBuffer = reallocate(outBuffer,
+			                       outBufferSize + BUFFER_SIZE);
 			lzma.next_out = (uint8_t *)(outBuffer + outBufferSize);
 			lzma.avail_out = BUFFER_SIZE;
 		}
@@ -218,9 +223,13 @@ static void loadReplay(void)
 	free(compressed);
 
 	free(replayBuffer->buffer);
+	// We ignore the remainders in this buffer handoff because they
+	// don't matter, it won't go out of bounds and will be corrected
+	// by the next realloc anyway
 	replayBuffer->buffer = outBuffer;
 	replayBuffer->count = outBufferSize / replayBuffer->itemSize;
-	replayBuffer->allocated = (outBufferSize + BUFFER_SIZE) / replayBuffer->itemSize;
+	replayBuffer->allocated =
+		(outBufferSize + BUFFER_SIZE) / replayBuffer->itemSize;
 	replay->frames = (struct replayFrame *)outBuffer;
 }
 
@@ -341,7 +350,9 @@ void updateReplay(void)
 
 	struct replayFrame *frame = &replay->frames[(int)replay->frame];
 	lockMutex(&gameMutex);
-	copyArray(app->game->playfield, frame->playfield);
+	for (int y = 0; y < PLAYFIELD_H; y++)
+		for (int x = 0; x < PLAYFIELD_W; x++)
+			app->game->playfield[y][x] = frame->playfield[y][x];
 	app->game->player.state = frame->player.state;
 	app->game->player.x = frame->player.x;
 	app->game->player.y = frame->player.y;
@@ -356,8 +367,8 @@ void updateReplay(void)
 	copyArray(app->game->cmdRaw, frame->cmdRaw);
 	app->game->time = (nsec)replay->frame * GAMEPLAY_FRAME_LENGTH;
 	unlockMutex(&gameMutex);
-	
-	if(replay->playback) {
+
+	if (replay->playback) {
 		replay->frame += replay->speed;
 		clampFrame();
 		if ((int)replay->frame + 1 >= replay->totalFrames)
