@@ -1,5 +1,6 @@
 // Minote - replay.h
 // Keeps replays, loads and saves them, helps play them back
+// Also handles the replay viewer
 
 #ifndef REPLAY_H
 #define REPLAY_H
@@ -7,6 +8,7 @@
 #include <stdint.h>
 
 #include "gameplay.h"
+#include "queue.h"
 
 struct replayHeader {
 	uint8_t magic[12]; // Not zero-terminated
@@ -35,7 +37,7 @@ struct replayFrame {
 
 struct replay {
 	struct replayHeader header;
-	struct replayFrame *frames;
+	queue *frames;
 	bool playback;
 	double frame;
 	int totalFrames;
