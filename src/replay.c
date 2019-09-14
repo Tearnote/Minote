@@ -141,7 +141,8 @@ void pushReplayFrame(struct game *frame)
 	// This is fine because char is guaranteed to by one byte
 	copyArray(replayFrame->gradeString, frame->gradeString);
 	replayFrame->eligible = frame->eligible;
-	copyArray(replayFrame->cmdRaw, frame->cmdRaw);
+	for (int i = 0; i < GameCmdSize; i++)
+		replayFrame->cmdRaw[i] = frame->cmdRaw[i];
 }
 
 static void loadReplay(void)
@@ -364,7 +365,8 @@ void updateReplay(void)
 	app->game->score = frame->score;
 	copyArray(app->game->gradeString, frame->gradeString);
 	app->game->eligible = frame->eligible;
-	copyArray(app->game->cmdRaw, frame->cmdRaw);
+	for (int i = 0; i < GameCmdSize; i++)
+		app->game->cmdRaw[i] = frame->cmdRaw[i];
 	app->game->time = (nsec)replay->frame * GAMEPLAY_FRAME_LENGTH;
 	unlockMutex(&gameMutex);
 
