@@ -119,7 +119,8 @@ set(C_SOURCES
         src/util.c
         src/window.c
         src/font.c
-        src/replay.c)
+        src/replay.c
+        src/settings.c)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD

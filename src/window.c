@@ -9,6 +9,7 @@
 #include "log.h"
 #include "render.h"
 #include "util.h"
+#include "settings.h"
 
 GLFWwindow *window = NULL;
 int windowWidth = DEFAULT_WIDTH;
@@ -58,8 +59,15 @@ void initWindow(void)
 #ifndef NDEBUG
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 #endif // NDEBUG
-	window = glfwCreateWindow(windowWidth, windowHeight, APP_NAME, NULL,
-	                          NULL);
+	if (getSettingBool(SettingFullscreen)) {
+		const GLFWvidmode
+			*mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+		window = glfwCreateWindow(mode->width, mode->height, APP_NAME,
+		                          glfwGetPrimaryMonitor(), NULL);
+	} else {
+		window = glfwCreateWindow(windowWidth, windowHeight, APP_NAME,
+		                          NULL, NULL);
+	}
 	if (window == NULL) {
 		logCritGLFW("Failed to create a window");
 		exit(1);

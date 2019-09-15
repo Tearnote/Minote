@@ -28,7 +28,7 @@ extern struct app *app;
 extern mutex stateMutex;
 extern mutex gameMutex;
 
-void initState(enum appState initial);
+void initState(void);
 void cleanupState(void);
 
 #define isRunning() \

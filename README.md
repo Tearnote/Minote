@@ -9,6 +9,8 @@ playable.
 
 `Minote --replay` - Open `replay.mre` in replay viewer
 
+`Minote --fullscreen` - Use exclusive fullscreen mode
+
 ## Building
 Tested working on Linux and Windows (MSYS2). Should be portable to any
 platform with OpenGL 3.3 core profile and GCC/MinGW.

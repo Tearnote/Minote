@@ -15,8 +15,9 @@
 #include "render.h"
 #include "logic.h"
 #include "timer.h"
+#include "settings.h"
 
-static void printUsage(const char *invalid)
+void printUsage(const char *invalid)
 {
 	if (invalid)
 		printf("ERROR: Invalid argument: %s\n\n", invalid);
@@ -25,6 +26,7 @@ static void printUsage(const char *invalid)
 	puts("Available options:");
 	puts("    --help: Print this message");
 	puts("    --replay: Open replay.mre in replay viewer");
+	puts("    --fullscreen: Use exclusive fullscreen mode");
 }
 
 static void cleanup(void)
@@ -34,28 +36,18 @@ static void cleanup(void)
 	cleanupState();
 	cleanupTimer();
 	cleanupLogging();
+	cleanupSettings();
 }
 
 int main(int argc, char *argv[])
 {
-	enum appState initial = AppGameplay;
-	if (argc > 1) {
-		if (strcmp(argv[1], "--replay") == 0) {
-			initial = AppReplay;
-		} else if (strcmp(argv[1], "--help") == 0) {
-			printUsage(NULL);
-			exit(0);
-		} else {
-			printUsage(argv[1]);
-			exit(1);
-		}
-	}
-
+	atexit(cleanup);
 	initLogging();
 	logInfo("Starting up %U %U", APP_NAME, APP_VERSION);
-	atexit(cleanup);
+	initSettings();
+	loadSwitchSettings(argc, argv);
 	initTimer();
-	initState(initial);
+	initState();
 	initWindow();
 	initInput();
 

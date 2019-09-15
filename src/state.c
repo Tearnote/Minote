@@ -2,21 +2,20 @@
 
 #include "state.h"
 
-#include <stdbool.h>
 #include <stdlib.h>
 
 #include "thread.h"
 #include "util.h"
-#include "gameplay.h"
+#include "settings.h"
 
 struct app *app;
 mutex stateMutex = newMutex;
 mutex gameMutex = newMutex;
 
-void initState(enum appState initial)
+void initState(void)
 {
 	app = allocate(sizeof(*app));
-	app->state = initial;
+	app->state = getSettingInt(SettingInitialState);
 	app->game = allocate(sizeof(*app->game));
 	app->replay = allocate(sizeof(*app->replay));
 }
