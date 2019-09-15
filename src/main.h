@@ -6,7 +6,7 @@
 #define MAIN_H
 
 #define APP_NAME "Minote"
-#define APP_VERSION "alpha2"
+#define APP_VERSION "alpha3"
 
 // Prints command-line switch help to stdout
 // "invalid" argument can be NULL, if not NULL the user will be warned about
