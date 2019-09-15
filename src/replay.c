@@ -283,6 +283,7 @@ static void loadReplay(void)
 
 void initReplayRecord(void)
 {
+	replay = app->replay;
 	initReplayQueue();
 }
 

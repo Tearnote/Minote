@@ -43,9 +43,6 @@ float viewportScale = 0.0f; //SYNC viewportMutex
 bool viewportDirty = true; //SYNC viewportMutex
 mutex viewportMutex = newMutex;
 
-static GLsync fenceBuffer[FENCE_COUNT];
-static int fenceBufferHead = 0;
-
 // Thread-local copy of the game state being rendered
 static struct game *gameSnap = NULL;
 static struct replay *replaySnap = NULL;
@@ -206,7 +203,6 @@ static void initRenderer(void)
 
 	gameSnap = allocate(sizeof(*gameSnap));
 	replaySnap = allocate(sizeof(*replaySnap));
-	clearArray(fenceBuffer);
 
 	mat4x4_translate(camera, 0.0f, -12.0f, -32.0f);
 	lightPositionWorld[0] = -8.0f;
@@ -224,17 +220,13 @@ static void initRenderer(void)
 	logInfo("OpenGL renderer initialized");
 }
 
+// https://danluu.com/latency-mitigation/
 static void syncRenderer(void)
 {
-	int fenceBufferHeadNext = fenceBufferHead + 1;
-	fenceBufferHeadNext %= FENCE_COUNT;
-	fenceBuffer[fenceBufferHead] =
-		glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-	if (fenceBuffer[fenceBufferHeadNext]) {
-		glClientWaitSync(fenceBuffer[fenceBufferHeadNext],
-		                 GL_SYNC_FLUSH_COMMANDS_BIT, MSEC * 100);
-	}
-	fenceBufferHead = fenceBufferHeadNext;
+	queueMinoSync();
+	renderMino();
+	GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+	glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, MSEC * 100);
 }
 
 void *rendererThread(void *param)
@@ -249,10 +241,10 @@ void *rendererThread(void *param)
 		lastRenderTime = currentTime;
 		loadedState = getState();
 		renderFrame();
-		// Control GPU buffering with fences
-		syncRenderer();
-		// Blocks until next vertical refresh because of vsync, so no sleep is needed
+		// Blocks until next vertical refresh
 		glfwSwapBuffers(window);
+		// Mitigate GPU buffering
+		syncRenderer();
 	}
 
 	cleanupRenderer();

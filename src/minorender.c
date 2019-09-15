@@ -170,6 +170,11 @@ void queueMinoPreview(struct player *player)
 	}
 }
 
+void queueMinoSync(void)
+{
+	struct minoInstance *newInstance = produceQueueItem(minoQueue);
+}
+
 void renderMino(void)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);

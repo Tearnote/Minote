@@ -5,7 +5,7 @@
 #include "linmath/linmath.h"
 
 vec4 minoColors[MinoSize] = {
-	{ 0,    0,    0,    1 }, // MinoNone
+	{ 0,    0,    0,    0 }, // MinoNone
 	{ 1,    0,    0,    1 }, // MinoI
 	{ 1,    .22f, 0,    1 }, // MinoL
 	{ 1,    1,    0,    1 }, // MinoO
