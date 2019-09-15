@@ -55,6 +55,8 @@ void pushReplayHeader(rng *initialRng)
 
 void saveReplay(void)
 {
+	if (replay->frames->count == 0)
+		return;
 	lzma_stream lzma = LZMA_STREAM_INIT;
 	lzma_ret lzmaRet =
 		lzma_easy_encoder(&lzma, LZMA_PRESET_DEFAULT, LZMA_CHECK_CRC64);
