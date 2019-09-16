@@ -17,6 +17,8 @@
 
 #define INSTANCE_LIMIT 256 // More minos than that will be ignored
 
+#define LOCKDIM_STRENGTH 0.5
+
 static GLuint program = 0;
 static GLuint vao = 0;
 static GLuint vertexBuffer = 0;
@@ -136,16 +138,20 @@ void queueMinoPlayer(struct player *player)
 	if (player->state != PlayerActive)
 		return;
 
+	logDebug("%d", player->lockDelay);
 	for (int i = 0; i < MINOS_PER_PIECE; i++) {
 		struct coord minoCoord = rs[player->type][player->rotation][i];
 		struct minoInstance *newInstance = produceQueueItem(minoQueue);
+		float lockDim = (float)player->lockDelay / LOCK_DELAY;
+		lockDim *= LOCKDIM_STRENGTH;
+		lockDim = 1.0f - lockDim;
 		newInstance->x =
 			(GLfloat)(minoCoord.x + player->x - PLAYFIELD_W / 2.0);
 		newInstance->y =
 			(GLfloat)(PLAYFIELD_H - 1 - minoCoord.y - player->y);
-		newInstance->r = minoColors[player->type][0];
-		newInstance->g = minoColors[player->type][1];
-		newInstance->b = minoColors[player->type][2];
+		newInstance->r = minoColors[player->type][0] * lockDim;
+		newInstance->g = minoColors[player->type][1] * lockDim;
+		newInstance->b = minoColors[player->type][2] * lockDim;
 		newInstance->a = minoColors[player->type][3];
 	}
 }
