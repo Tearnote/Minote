@@ -658,7 +658,7 @@ bravoOut:
 static void updateClear(void)
 {
 	if (player->state == PlayerSpawn &&
-	    player->spawnDelay == CLEAR_OFFSET - 1) {
+	    player->spawnDelay + 1 == CLEAR_OFFSET) {
 		int clearedCount = checkClears();
 		if (clearedCount) {
 			player->state = PlayerClear;

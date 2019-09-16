@@ -5,7 +5,6 @@
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 
-#include <string.h>
 #include <math.h>
 
 #include "linmath/linmath.h"
@@ -13,7 +12,6 @@
 #include "log.h"
 #include "queue.h"
 #include "state.h"
-#include "window.h"
 #include "mino.h"
 #include "util.h"
 
@@ -123,7 +121,7 @@ void queueMinoPlayfield(enum mino field[PLAYFIELD_H][PLAYFIELD_W])
 				continue;
 			struct minoInstance
 				*newInstance = produceQueueItem(minoQueue);
-			newInstance->x = (GLfloat)(x - PLAYFIELD_W / 2);
+			newInstance->x = (GLfloat)(x - PLAYFIELD_W / 2.0);
 			newInstance->y = (GLfloat)(PLAYFIELD_H - 1 - y);
 			newInstance->r = minoColors[minoType][0] / 4;
 			newInstance->g = minoColors[minoType][1] / 4;
@@ -142,7 +140,7 @@ void queueMinoPlayer(struct player *player)
 		struct coord minoCoord = rs[player->type][player->rotation][i];
 		struct minoInstance *newInstance = produceQueueItem(minoQueue);
 		newInstance->x =
-			(GLfloat)(minoCoord.x + player->x - PLAYFIELD_W / 2);
+			(GLfloat)(minoCoord.x + player->x - PLAYFIELD_W / 2.0);
 		newInstance->y =
 			(GLfloat)(PLAYFIELD_H - 1 - minoCoord.y - player->y);
 		newInstance->r = minoColors[player->type][0];
@@ -161,7 +159,7 @@ void queueMinoPreview(struct player *player)
 		struct minoInstance *newInstance = produceQueueItem(minoQueue);
 		if (player->preview == PieceI)
 			minoCoord.y += 1;
-		newInstance->x = (GLfloat)(minoCoord.x - PIECE_BOX / 2);
+		newInstance->x = (GLfloat)(minoCoord.x - PIECE_BOX / 2.0);
 		newInstance->y = (GLfloat)(PLAYFIELD_H + 3 - minoCoord.y);
 		newInstance->r = minoColors[player->preview][0];
 		newInstance->g = minoColors[player->preview][1];
@@ -172,7 +170,7 @@ void queueMinoPreview(struct player *player)
 
 void queueMinoSync(void)
 {
-	struct minoInstance *newInstance = produceQueueItem(minoQueue);
+	produceQueueItem(minoQueue);
 }
 
 void renderMino(void)
