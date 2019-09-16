@@ -40,6 +40,9 @@ int GRAVITY = 0;
 // How many frames a piece takes to lock if it can't drop
 #define LOCK_DELAY 30
 
+// How many frames it takes since locking for the line clear check
+#define CLEAR_OFFSET 4
+
 // How many frames it takes for full lines to clear
 #define CLEAR_DELAY 41
 
@@ -654,7 +657,8 @@ bravoOut:
 
 static void updateClear(void)
 {
-	if (player->state == PlayerSpawn && player->spawnDelay == 0) {
+	if (player->state == PlayerSpawn &&
+	    player->spawnDelay == CLEAR_OFFSET - 1) {
 		int clearedCount = checkClears();
 		if (clearedCount) {
 			player->state = PlayerClear;
