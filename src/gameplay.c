@@ -666,7 +666,7 @@ static void updateClear(void)
 
 	if (player->state == PlayerClear) {
 		player->clearDelay += 1;
-		if (player->clearDelay >= CLEAR_DELAY) {
+		if (player->clearDelay > CLEAR_DELAY) {
 			thump();
 			player->state = PlayerSpawn;
 		}
@@ -706,7 +706,7 @@ void updateLocking(void)
 		return;
 	player->lockDelay += 1;
 	// Two sources of locking: lock delay expired, and manlock
-	if (player->lockDelay >= LOCK_DELAY || game->cmdHeld[GameCmdSoft])
+	if (player->lockDelay > LOCK_DELAY || game->cmdHeld[GameCmdSoft])
 		lock();
 }
 
