@@ -291,6 +291,8 @@ void initReplayRecord(void)
 
 void initReplayPlayback(void)
 {
+	initGameplay();
+
 	replay = app->replay;
 	replay->playback = false;
 	replay->frame = 0;
@@ -300,10 +302,18 @@ void initReplayPlayback(void)
 	loadReplay();
 }
 
-void cleanupReplay(void)
+void cleanupReplayRecord(void)
 {
 	cleanupReplayQueue();
 	replay = NULL;
+}
+
+void cleanupReplayPlayback(void)
+{
+	cleanupReplayQueue();
+	replay = NULL;
+
+	cleanupGameplay();
 }
 
 static void clampFrame(void)
@@ -389,10 +399,8 @@ static void processInputs(void)
 	}
 }
 
-void updateReplay(void)
+static void updateFrame(void)
 {
-	processInputs();
-
 	struct replayFrame *frame = getQueueItem(replay->frames, replay->frame);
 	for (int y = 0; y < PLAYFIELD_H; y++)
 		for (int x = 0; x < PLAYFIELD_W; x++)
@@ -411,11 +419,32 @@ void updateReplay(void)
 	for (int i = 0; i < GameCmdSize; i++)
 		app->game->cmdRaw[i] = frame->cmdRaw[i];
 	app->game->time = (nsec)replay->frame * TIMER_FRAME;
+}
+
+static void advanceCounters(void)
+{
+	if (!replay->playback)
+		return;
+	if (app->game->player.state == PlayerActive && !canDrop()) {
+		app->game->player.lockDelay += 1;
+		if (app->game->player.lockDelay >= LOCK_DELAY)
+			app->game->player.lockDelay = LOCK_DELAY;
+	} else {
+		app->game->player.lockDelay = 0;
+	}
+}
+
+void updateReplay(void)
+{
+	processInputs();
+
+	updateFrame();
+	advanceCounters();
 
 	if (replay->playback) {
 		replay->frame += 1;
 		clampFrame();
-		if ((int)replay->frame + 1 >= replay->frames->count)
+		if (replay->frame + 1 >= replay->frames->count)
 			replay->playback = false;
 	}
 }

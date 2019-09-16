@@ -216,8 +216,7 @@ static void rotate(int direction)
 		player->rotation = prevRotation;
 }
 
-// Check whether player piece can drop one grid
-static bool canDrop(void)
+bool canDrop(void)
 {
 	player->y += 1;
 	bool result = checkPosition();
@@ -484,8 +483,10 @@ void initGameplay(void)
 	clearArray(requirementChecked);
 	adjustGravity();
 
-	initReplayRecord();
-	pushReplayHeader(&game->rngState);
+	if (getState() == AppGameplay) {
+		initReplayRecord();
+		pushReplayHeader(&game->rngState);
+	}
 }
 
 void cleanupGameplay(void)
@@ -493,8 +494,10 @@ void cleanupGameplay(void)
 	player = NULL;
 	game = NULL;
 
-	saveReplay();
-	cleanupReplay();
+	if (getState() == AppGameplay) {
+		saveReplay();
+		cleanupReplayRecord();
+	}
 }
 
 static void updateRotations(void)

@@ -17,7 +17,7 @@
 
 #define INSTANCE_LIMIT 256 // More minos than that will be ignored
 
-#define LOCKDIM_STRENGTH 0.5
+#define LOCKDIM_STRENGTH 0.75
 
 static GLuint program = 0;
 static GLuint vao = 0;
@@ -138,7 +138,6 @@ void queueMinoPlayer(struct player *player)
 	if (player->state != PlayerActive)
 		return;
 
-	logDebug("%d", player->lockDelay);
 	for (int i = 0; i < MINOS_PER_PIECE; i++) {
 		struct coord minoCoord = rs[player->type][player->rotation][i];
 		struct minoInstance *newInstance = produceQueueItem(minoQueue);

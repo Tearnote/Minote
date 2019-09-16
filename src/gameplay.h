@@ -131,4 +131,7 @@ getPlayfieldGrid(enum mino field[PLAYFIELD_H][PLAYFIELD_W], int x, int y);
 void setPlayfieldGrid(enum mino field[PLAYFIELD_H][PLAYFIELD_W],
                       int x, int y, enum mino val);
 
+// Check whether player piece can drop one grid
+bool canDrop(void);
+
 #endif // GAMEPLAY_H

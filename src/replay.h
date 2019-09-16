@@ -50,7 +50,8 @@ void clearReplay(void);
 // Call one of these two
 void initReplayRecord(void);
 void initReplayPlayback(void);
-void cleanupReplay(void);
+void cleanupReplayRecord(void);
+void cleanupReplayPlayback(void);
 void updateReplay(void);
 
 #endif //REPLAY_H
