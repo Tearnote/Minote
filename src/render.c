@@ -47,8 +47,6 @@ mutex viewportMutex = newMutex;
 static struct game *gameSnap = NULL;
 static struct replay *replaySnap = NULL;
 
-static enum appState loadedState = AppNone;
-
 static nsec lastRenderTime = 0;
 static nsec timeElapsed = 0;
 
@@ -116,15 +114,15 @@ static void renderFrame(void)
 
 	// Make a local copy of the game state instead
 	// of locking it for the entire duration of rendering
-	lockMutex(&gameMutex);
+	lockMutex(&appMutex);
 	if (app->game) {
 		memcpy(gameSnap, app->game, sizeof(*gameSnap));
-		unlockMutex(&gameMutex);
+		unlockMutex(&appMutex);
 	} else { // Gameplay might not be done initializing
-		unlockMutex(&gameMutex);
+		unlockMutex(&appMutex);
 		return;
 	}
-	if (loadedState == AppReplay) {
+	if (false) {
 		if (app->replay) {
 			memcpy(replaySnap, app->replay, sizeof(*replaySnap));
 		} else {
@@ -159,7 +157,7 @@ static void renderFrame(void)
 	queueBorder(gameSnap->playfield);
 	renderBorder();
 	queueGameplayText(gameSnap);
-	if (loadedState == AppReplay)
+	if (false)
 		queueReplayText(replaySnap);
 	renderText();
 }
@@ -239,7 +237,6 @@ void *rendererThread(void *param)
 		nsec currentTime = getTime();
 		timeElapsed = currentTime - lastRenderTime;
 		lastRenderTime = currentTime;
-		loadedState = getState();
 		renderFrame();
 		// Blocks until next vertical refresh
 		glfwSwapBuffers(window);

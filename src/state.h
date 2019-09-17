@@ -10,31 +10,37 @@
 #include "gameplay.h"
 #include "replay.h"
 
-enum appState {
-	AppNone,
-	AppGameplay,
-	AppReplay,
-	AppShutdown,
-	AppSize
+enum state {
+	StateNone,
+	StateStaged,
+	StateIntro,
+	StateRunning,
+	StatePaused,
+	StateOutro,
+	StateUnstaged,
+	StateSize
+};
+
+enum phase {
+	PhaseMain,
+	PhaseGameplay,
+	PhaseSize
 };
 
 struct app {
-	enum appState state; //SYNC stateMutex getState setState
-	struct game *game; //SYNC gameMutex
-	struct replay *replay; //SYNC gameMutex
+	struct game *game;
+	struct replay *replay;
 };
 
-extern struct app *app;
-extern mutex stateMutex;
-extern mutex gameMutex;
+extern struct app *app; //SYNC appMutex
+extern mutex appMutex;
 
 void initState(void);
 void cleanupState(void);
 
+enum state getPhase(enum phase phase);
+void setPhase(enum phase phase, enum state state);
 #define isRunning() \
-	(getState() != AppShutdown)
-
-enum appState getState(void);
-void setState(enum appState state);
+	(getPhase(PhaseMain) != StateNone)
 
 #endif // STATE_H

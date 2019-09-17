@@ -114,8 +114,6 @@ struct game {
 	enum gameplayCmd lastDirection; // GameCmdLeft or GameCmdRight
 	int frame;
 	nsec time;
-	bool started;
-	bool finished;
 };
 
 void initGameplay(void);

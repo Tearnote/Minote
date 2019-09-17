@@ -14,37 +14,39 @@ double logicFrequency = DEFAULT_FREQUENCY;
 #define LOGIC_TICK (SEC / logicFrequency)
 static nsec nextUpdateTime = 0;
 
-struct stateFunctions {
-	void (*init)(void);
-	void (*cleanup)(void);
-	void (*update)(void);
-};
-
-struct stateFunctions funcs[AppSize] = {
-	{ .init = noop, .cleanup = noop, .update = noop }, // AppNone
-	{ .init = initGameplay, .cleanup = cleanupGameplay, .update = updateGameplay }, // AppGameplay
-	{ .init = initReplayPlayback, .cleanup = cleanupReplayPlayback, .update = updateReplay } // AppReplay
-};
-
-static enum appState loadedState = AppNone;
-
 static void updateLogic(void)
 {
 	if (!nextUpdateTime)
 		nextUpdateTime = getTime();
 
-	enum appState currentState = getState();
-	if (loadedState != currentState) {
-		lockMutex(&gameMutex);
-		funcs[loadedState].cleanup();
-		funcs[currentState].init();
-		unlockMutex(&gameMutex);
-		loadedState = currentState;
+	switch (getPhase(PhaseMain)) {
+	case StateStaged:
+		setPhase(PhaseMain, StateRunning);
+		setPhase(PhaseGameplay, StateStaged);
+		break;
+	case StateUnstaged:
+		if (getPhase(PhaseGameplay) != StateNone) {
+			setPhase(PhaseGameplay, StateUnstaged);
+		}
+		setPhase(PhaseMain, StateNone);
+	default:
+		break;
 	}
 
-	lockMutex(&gameMutex);
-	funcs[loadedState].update();
-	unlockMutex(&gameMutex);
+	switch (getPhase(PhaseGameplay)) {
+	case StateStaged:
+		initGameplay();
+	case StateIntro:
+	case StateRunning:
+	case StateOutro:
+		updateGameplay();
+		break;
+	case StateUnstaged:
+		cleanupGameplay();
+		break;
+	default:
+		break;
+	}
 }
 
 static void sleepLogic(void)
@@ -63,11 +65,5 @@ void *logicThread(void *param)
 		updateLogic();
 		sleepLogic();
 	}
-
-	lockMutex(&gameMutex);
-	funcs[loadedState].cleanup();
-	unlockMutex(&gameMutex);
-	loadedState = AppNone;
-
 	return NULL;
 }

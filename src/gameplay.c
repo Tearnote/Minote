@@ -18,11 +18,8 @@
 
 int GRAVITY = 0;
 
-// Convenience pointer for storing app->game
-static struct game *game = NULL;
-
-// Convenience pointer for scoring app->game.player
-static struct player *player = NULL;
+#define game app->game
+#define player (&game->player)
 
 struct threshold {
 	int level;
@@ -360,7 +357,7 @@ static void newPiece(void)
 		addLevels(1, false);
 
 	if (!checkPosition())
-		game->finished = true;
+		setPhase(PhaseGameplay, StateOutro);
 }
 
 // Maps generic inputs to gameplay commands
@@ -393,11 +390,10 @@ static void processInput(struct input *i)
 	switch (i->action) {
 	case ActionPressed:
 		// Starting and quitting is handled outside of gameplay logic
-		if (i->type == InputStart && !game->started)
-			game->started = true;
+		if (i->type == InputStart && getPhase(PhaseGameplay) == StateIntro)
+			setPhase(PhaseGameplay, StateRunning);
 		if (i->type == InputQuit) {
-			logInfo("User exited");
-			setState(AppShutdown);
+			setPhase(PhaseGameplay, StateUnstaged);
 			break;
 		}
 
@@ -445,7 +441,6 @@ static void processInputs(void)
 
 void initGameplay(void)
 {
-	game = app->game;
 	srandom(&game->rngState, (uint64_t)time(NULL));
 	clearArray(game->playfield);
 	clearArray(game->clearedLines);
@@ -462,9 +457,6 @@ void initGameplay(void)
 	game->eligible = true;
 	game->frame = 0;
 	game->time = 0;
-	game->started = false;
-	game->finished = false;
-	player = &game->player;
 	player->state = PlayerNone;
 	player->x = 0;
 	player->y = 0;
@@ -483,21 +475,18 @@ void initGameplay(void)
 	clearArray(requirementChecked);
 	adjustGravity();
 
-	if (getState() == AppGameplay) {
-		initReplayRecord();
-		pushReplayHeader(&game->rngState);
-	}
+	initReplayRecord();
+	pushReplayHeader(&game->rngState);
+
+	setPhase(PhaseGameplay, StateIntro);
 }
 
 void cleanupGameplay(void)
 {
-	player = NULL;
-	game = NULL;
-
-	if (getState() == AppGameplay) {
-		saveReplay();
-		cleanupReplayRecord();
-	}
+	saveReplay();
+	cleanupReplayRecord();
+	setPhase(PhaseGameplay, StateNone);
+	setPhase(PhaseMain, StateUnstaged);
 }
 
 static void updateRotations(void)
@@ -686,7 +675,7 @@ void updateGameplay(void)
 {
 	processInputs();
 
-	if (game->finished || !game->started)
+	if (getPhase(PhaseGameplay) != StateRunning)
 		return;
 
 	updateRotations();
@@ -704,7 +693,7 @@ void updateGameplay(void)
 
 	if (game->level >= 999) {
 		updateGrade();
-		game->finished = true;
+		setPhase(PhaseGameplay, StateOutro);
 	}
 
 	pushReplayFrame(game);

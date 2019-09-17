@@ -346,7 +346,7 @@ static enum replayCmd inputToCmd(enum inputType i)
 	}
 }
 
-static void processInput(struct input *i)
+/*static void processInput(struct input *i)
 {
 	enum replayCmd cmd = inputToCmd(i->type);
 	switch (i->action) {
@@ -397,7 +397,7 @@ static void processInputs(void)
 		processInput(in);
 		free(in);
 	}
-}
+}*/
 
 static void updateFrame(void)
 {
@@ -436,7 +436,7 @@ static void advanceCounters(void)
 
 void updateReplay(void)
 {
-	processInputs();
+	//processInputs();
 
 	updateFrame();
 	advanceCounters();

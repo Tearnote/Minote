@@ -31,7 +31,7 @@ struct setting {
 static struct setting settings[SettingSize] = {
 	{ .type = SettingTypeNone }, // SettingNone
 	{ .type = SettingTypeBool, .boolDefaultValue = false }, // SettingFullscreen
-	{ .type = SettingTypeInt, .intDefaultValue = AppGameplay } // SettingInitialState
+	{ .type = SettingTypeInt, .intDefaultValue = 0 } // SettingInitialState
 };
 
 int getSettingInt(enum settingLabel label)
@@ -103,7 +103,7 @@ void loadSwitchSettings(int argc, char *argv[])
 		return;
 	for (int i = 1; i < argc; i++) {
 		if (strcmp(argv[i], "--replay") == 0) {
-			setSettingInt(SettingInitialState, AppReplay);
+			setSettingInt(SettingInitialState, 1);
 		} else if (strcmp(argv[i], "--fullscreen") == 0) {
 			setSettingBool(SettingFullscreen, true);
 		} else if (strcmp(argv[i], "--help") == 0) {

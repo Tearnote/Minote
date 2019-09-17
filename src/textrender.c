@@ -251,7 +251,7 @@ void queueGameplayText(struct game *game)
 	            game->time / SEC / 60,
 	            game->time / SEC % 60,
 	            game->time / (SEC / 100) % 100);
-	if (getState() == AppGameplay && !game->started) {
+	if (getPhase(PhaseGameplay) == StateIntro) {
 		position[0] = 6.0f;
 		position[1] = 11.5f;
 		size = 1.0f;

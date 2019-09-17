@@ -8,14 +8,16 @@
 #include "util.h"
 #include "settings.h"
 
+enum state phases[PhaseSize];
+mutex phaseMutex = newMutex;
 struct app *app;
-mutex stateMutex = newMutex;
-mutex gameMutex = newMutex;
+mutex appMutex = newMutex;
 
 void initState(void)
 {
+	clearArray(phases);
+	setPhase(PhaseMain, StateStaged);
 	app = allocate(sizeof(*app));
-	app->state = getSettingInt(SettingInitialState);
 	app->game = allocate(sizeof(*app->game));
 	app->replay = allocate(sizeof(*app->replay));
 }
@@ -32,18 +34,17 @@ void cleanupState(void)
 	}
 }
 
-enum appState getState(void)
+enum state getPhase(enum phase phase)
 {
-	enum appState result;
-	lockMutex(&stateMutex);
-	result = app->state;
-	unlockMutex(&stateMutex);
+	lockMutex(&phaseMutex);
+	enum state result = phases[phase];
+	unlockMutex(&phaseMutex);
 	return result;
 }
 
-void setState(enum appState state)
+void setPhase(enum phase phase, enum state state)
 {
-	lockMutex(&stateMutex);
-	app->state = state;
-	unlockMutex(&stateMutex);
+	lockMutex(&phaseMutex);
+	phases[phase] = state;
+	unlockMutex(&phaseMutex);
 }

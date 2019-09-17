@@ -26,8 +26,9 @@ void *produceQueueItem(struct queue *q)
 {
 	// Grow the buffer if there is no space left
 	if (q->count == q->allocated) {
-		q->buffer =
-			reallocate(q->buffer, q->allocated * q->itemSize * 2);
+		size_t oldSize = q->allocated * q->itemSize;
+		q->buffer = reallocate(q->buffer, oldSize * 2);
+		memset((char *)q->buffer + oldSize, 0, oldSize);
 		q->allocated *= 2;
 	}
 	q->count += 1;
@@ -36,6 +37,7 @@ void *produceQueueItem(struct queue *q)
 }
 
 #include "log.h"
+
 void *getQueueItem(struct queue *q, int index)
 {
 	return (char *)q->buffer + index * q->itemSize;
