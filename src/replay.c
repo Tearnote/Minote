@@ -19,8 +19,6 @@
 #include "util.h"
 #include "logic.h"
 
-
-#define replay app->replay
 #define BUFFER_SIZE (256 * 1024)
 #define HEADER_MAGIC "Minotereplay"
 #define HEADER_VERSION "0000"
@@ -34,7 +32,7 @@ enum replayCmd {
 	ReplCmdSize
 };
 
-void pushReplayHeader(rng *initialRng)
+void pushReplayHeader(struct replay *replay, rng *initialRng)
 {
 	if (!replay->frames)
 		replay->frames = createQueue(sizeof(struct replayFrame));
@@ -44,7 +42,7 @@ void pushReplayHeader(rng *initialRng)
 	copyArray(replay->header.version, HEADER_VERSION);
 }
 
-void saveReplay(void)
+void saveReplay(struct replay *replay)
 {
 	if (replay->frames->count == 0)
 		return;
@@ -139,7 +137,7 @@ void saveReplay(void)
 	lzma_end(&lzma);
 }
 
-void pushReplayFrame(struct game *frame)
+void pushReplayFrame(struct replay *replay, struct game *frame)
 {
 	struct replayFrame *replayFrame = produceQueueItem(replay->frames);
 	// Can't use copyArray, different element size
@@ -162,7 +160,7 @@ void pushReplayFrame(struct game *frame)
 		replayFrame->cmdRaw[i] = frame->cmdRaw[i];
 }
 
-void loadReplay(void)
+void loadReplay(struct replay *replay)
 {
 	if (!replay->frames)
 		replay->frames = createQueue(sizeof(struct replayFrame));

@@ -25,8 +25,6 @@
 #include "timer.h"
 // Damn that's a lot of includes
 
-#define FENCE_COUNT 3
-
 #define destroyShader \
         glDeleteShader
 
@@ -44,8 +42,7 @@ bool viewportDirty = true; //SYNC viewportMutex
 mutex viewportMutex = newMutex;
 
 // Thread-local copy of the game state being rendered
-static struct game *gameSnap = NULL;
-static struct replay *replaySnap = NULL;
+static struct app *snap = NULL;
 
 static nsec lastRenderTime = 0;
 static nsec timeElapsed = 0;
@@ -112,23 +109,21 @@ static void renderFrame(void)
 	}
 	unlockMutex(&viewportMutex);
 
-	// Make a local copy of the game state instead
-	// of locking it for the entire duration of rendering
+	// Make a local copy of the game state
 	lockMutex(&appMutex);
 	if (app->game) {
-		memcpy(gameSnap, app->game, sizeof(*gameSnap));
-		unlockMutex(&appMutex);
+		memcpy(snap->game, app->game, sizeof(*snap->game));
 	} else { // Gameplay might not be done initializing
 		unlockMutex(&appMutex);
 		return;
 	}
-	if (false) {
-		if (app->replay) {
-			memcpy(replaySnap, app->replay, sizeof(*replaySnap));
-		} else {
-			return;
-		}
+	if (app->replay) {
+		memcpy(snap->replay, app->replay, sizeof(*snap->replay));
+	} else {
+		unlockMutex(&appMutex);
+		return;
 	}
+	unlockMutex(&appMutex);
 
 	vec3 eye = { 0.0f, 12.0f, 32.0f };
 	vec3 center = { 0.0f, 12.0f, 0.0f };
@@ -150,15 +145,15 @@ static void renderFrame(void)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	renderScene();
-	queueMinoPlayfield(gameSnap->playfield);
-	queueMinoPlayer(&gameSnap->player);
-	queueMinoPreview(&gameSnap->player);
+	queueMinoPlayfield(snap->game->playfield);
+	queueMinoPlayer(&snap->game->player);
+	queueMinoPreview(&snap->game->player);
 	renderMino();
-	queueBorder(gameSnap->playfield);
+	queueBorder(snap->game->playfield);
 	renderBorder();
-	queueGameplayText(gameSnap);
-	if (false)
-		queueReplayText(replaySnap);
+	queueGameplayText(snap->game);
+	if (snap->replay->state == ReplayViewing)
+		queueReplayText(snap->replay);
 	renderText();
 }
 
@@ -168,14 +163,13 @@ static void cleanupRenderer(void)
 	cleanupBorderRenderer();
 	cleanupMinoRenderer();
 	cleanupSceneRenderer();
-	if (replaySnap) {
-		free(replaySnap);
-		replaySnap = NULL;
-	}
-	if (gameSnap) {
-		free(gameSnap);
-		gameSnap = NULL;
-	}
+	if (snap->replay)
+		free(snap->replay);
+	if (snap->game)
+		free(snap->game);
+	if (snap)
+		free(snap);
+	snap = NULL;
 	// glfwTerminate() hangs if other threads have a current context
 	glfwMakeContextCurrent(NULL);
 }
@@ -199,8 +193,9 @@ static void initRenderer(void)
 	glEnable(GL_FRAMEBUFFER_SRGB);
 	glEnable(GL_MULTISAMPLE);
 
-	gameSnap = allocate(sizeof(*gameSnap));
-	replaySnap = allocate(sizeof(*replaySnap));
+	snap = allocate(sizeof(*snap));
+	snap->game = allocate(sizeof(*snap->game));
+	snap->replay = allocate(sizeof(*snap->replay));
 
 	mat4x4_translate(camera, 0.0f, -12.0f, -32.0f);
 	lightPositionWorld[0] = -8.0f;

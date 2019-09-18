@@ -48,15 +48,15 @@ struct replay {
 	enum replayState state;
 	bool playing; // If viewer mode, are we playing or paused
 	struct replayHeader header;
-	queue *frames;
+	queue *frames; //THREAD-LOCAL gameplay
 	int frame;
 	float speed;
 };
 
-void loadReplay(void);
+void loadReplay(struct replay *replay);
 
-void pushReplayHeader(rng *initialRng);
-void pushReplayFrame(struct game *frame);
-void saveReplay(void);
+void pushReplayHeader(struct replay *replay, rng *initialRng);
+void pushReplayFrame(struct replay *replay, struct game *frame);
+void saveReplay(struct replay *replay);
 
 #endif //REPLAY_H

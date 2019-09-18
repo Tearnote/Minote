@@ -9,7 +9,7 @@
 
 enum state phases[PhaseSize];
 mutex phaseMutex = newMutex;
-struct app *app;
+struct app *app = NULL;
 mutex appMutex = newMutex;
 
 void initState(void)

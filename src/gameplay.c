@@ -11,17 +11,20 @@
 #include "state.h"
 #include "input.h"
 #include "mino.h"
-#include "log.h"
 #include "util.h"
 #include "timer.h"
 #include "replay.h"
 #include "settings.h"
 
+// Thread-local copy of the game state being rendered
+static struct app *snap = NULL;
+// Convenience pointers
+struct game *game  = NULL;
+struct player *player = NULL;
+struct replay *replay = NULL;
+
 int GRAVITY = 0;
 
-#define game app->game
-#define player (&game->player)
-#define replay app->replay
 
 struct threshold {
 	int level;
@@ -127,7 +130,7 @@ static enum mino getGrid(int x, int y)
 	return getPlayfieldGrid(game->playfield, x, y);
 }
 
-static enum mino setGrid(int x, int y, enum mino val)
+static void setGrid(int x, int y, enum mino val)
 {
 	setPlayfieldGrid(game->playfield, x, y, val);
 }
@@ -449,7 +452,13 @@ static void processInputs(void)
 
 void initGameplay(void)
 {
-	memset(game, 0, sizeof(*game));
+	snap = allocate(sizeof(*snap));
+	snap->game = allocate(sizeof(*snap->game));
+	game = snap->game;
+	player = &game->player;
+	snap->replay = allocate(sizeof(*replay));
+	replay = snap->replay;
+
 	// Non-zero initial values
 	game->nextLevelstop = 100;
 	game->combo = 1;
@@ -458,23 +467,32 @@ void initGameplay(void)
 	player->dasDelay = DAS_DELAY; // Starts out pre-charged
 	player->spawnDelay = SPAWN_DELAY; // Start instantly
 
-	memset(replay, 0, sizeof(*replay));
 	replay->speed = 1.0f;
 	if(getSettingBool(SettingReplay)) {
 		replay->state = ReplayViewing;
-		loadReplay();
+		loadReplay(replay);
 		setState(PhaseGameplay, StateRunning);
 	} else {
 		replay->state = ReplayRecording;
 		srandom(&game->rngState, (uint64_t)time(NULL));
 		adjustGravity();
-		pushReplayHeader(&game->rngState);
+		pushReplayHeader(snap->replay, &game->rngState);
 		setState(PhaseGameplay, StateIntro);
 	}
 }
 
 void cleanupGameplay(void)
 {
+	if (replay)
+		free(replay);
+	if (game)
+		free(game);
+	if (snap)
+		free(snap);
+	game = NULL;
+	player = NULL;
+	replay = NULL;
+	snap = NULL;
 	setState(PhaseGameplay, StateNone);
 	setState(PhaseMain, StateUnstaged);
 }
@@ -686,10 +704,15 @@ void updateGameplay(void)
 		gameOver();
 	}
 
-	pushReplayFrame(game);
+	pushReplayFrame(replay, game);
 
 	if (replay->state == ReplayFinished) {
-		saveReplay();
+		saveReplay(replay);
 		replay->state = ReplayNone;
 	}
+
+	lockMutex(&appMutex);
+	memcpy(app->game, game, sizeof(*app->game));
+	memcpy(app->replay, replay, sizeof(*app->replay));
+	unlockMutex(&appMutex);
 }
