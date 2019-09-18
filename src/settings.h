@@ -9,7 +9,7 @@
 enum settingLabel {
 	SettingNone,
 	SettingFullscreen,
-	SettingInitialState,
+	SettingReplay,
 	SettingSize
 };
 
@@ -17,7 +17,7 @@ void initSettings(void);
 void cleanupSettings(void);
 void loadSwitchSettings(int argc, char *argv[]);
 
-int getSettingInt(enum settingLabel label);
+//int getSettingInt(enum settingLabel label);
 bool getSettingBool(enum settingLabel label);
 
 #endif // SETTINGS_H

@@ -19,11 +19,11 @@ enum settingType {
 struct setting {
 	enum settingType type;
 	union {
-		int intValue;
+		//int intValue;
 		bool boolValue;
 	};
 	union {
-		int intDefaultValue;
+		//int intDefaultValue;
 		bool boolDefaultValue;
 	};
 };
@@ -31,10 +31,10 @@ struct setting {
 static struct setting settings[SettingSize] = {
 	{ .type = SettingTypeNone }, // SettingNone
 	{ .type = SettingTypeBool, .boolDefaultValue = false }, // SettingFullscreen
-	{ .type = SettingTypeInt, .intDefaultValue = 0 } // SettingInitialState
+	{ .type = SettingTypeBool, .boolDefaultValue = false } // SettingReplay
 };
 
-int getSettingInt(enum settingLabel label)
+/*int getSettingInt(enum settingLabel label)
 {
 	lockMutex(&settingsMutex);
 	if (settings[label].type != SettingTypeInt) {
@@ -44,7 +44,7 @@ int getSettingInt(enum settingLabel label)
 	int value = settings[label].intValue;
 	unlockMutex(&settingsMutex);
 	return value;
-}
+}*/
 
 bool getSettingBool(enum settingLabel label)
 {
@@ -58,14 +58,14 @@ bool getSettingBool(enum settingLabel label)
 	return value;
 }
 
-static void setSettingInt(enum settingLabel label, int value)
+/*static void setSettingInt(enum settingLabel label, int value)
 {
 	if (settings[label].type != SettingTypeInt) {
 		logError("Wrong type queried for setting #%d", label);
 		return;
 	}
 	settings[label].intValue = value;
-}
+}*/
 
 static void setSettingBool(enum settingLabel label, bool value)
 {
@@ -80,9 +80,9 @@ void initSettings(void)
 {
 	for (int i = 0; i < SettingSize; i++) {
 		switch (settings[i].type) {
-		case SettingTypeInt:
+/*		case SettingTypeInt:
 			settings[i].intValue = settings[i].intDefaultValue;
-			break;
+			break;*/
 		case SettingTypeBool:
 			settings[i].boolValue = settings[i].boolDefaultValue;
 			break;
@@ -94,7 +94,7 @@ void initSettings(void)
 
 void cleanupSettings(void)
 {
-	;
+	// Settings so clean you could eat off them
 }
 
 void loadSwitchSettings(int argc, char *argv[])
@@ -103,15 +103,15 @@ void loadSwitchSettings(int argc, char *argv[])
 		return;
 	for (int i = 1; i < argc; i++) {
 		if (strcmp(argv[i], "--replay") == 0) {
-			setSettingInt(SettingInitialState, 1);
+			setSettingBool(SettingReplay, true);
 		} else if (strcmp(argv[i], "--fullscreen") == 0) {
 			setSettingBool(SettingFullscreen, true);
 		} else if (strcmp(argv[i], "--help") == 0) {
 			printUsage(NULL);
-			exit(0);
+			exit(EXIT_SUCCESS);
 		} else {
 			printUsage(argv[i]);
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 	}
 }

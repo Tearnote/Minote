@@ -42,7 +42,7 @@ void initWindow(void)
 {
 	if (glfwInit() == GLFW_FALSE) {
 		logCritGLFW("Failed to initialize GLFW");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	// Request OpenGL 3.3 core profile context for use by the renderer
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -70,7 +70,7 @@ void initWindow(void)
 	}
 	if (window == NULL) {
 		logCritGLFW("Failed to create a window");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 	glfwSetWindowContentScaleCallback(window, windowScaleCallback);

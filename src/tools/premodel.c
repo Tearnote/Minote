@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
 	if (argc != 3) {
 		puts("premodel - converts Wavefront .obj files to a C-style list of floats");
 		puts("Usage: premodel inputFile outputFile");
-		exit(0);
+		exit(EXIT_SUCCESS);
 	}
 
 	FILE *input = NULL;
@@ -25,20 +25,20 @@ int main(int argc, char *argv[])
 	if (input == NULL) {
 		fprintf(stderr, "Could not open %s for reading: %s\n",
 		        argv[1], strerror(errno));
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	output = fopen(argv[2], "w");
 	if (output == NULL) {
 		fprintf(stderr, "Could not open %s for writing: %s\n",
 		        argv[2], strerror(errno));
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	char *inputBuffer = NULL;
 	size_t inputBufferChars = 0;
 	if (readall(input, &inputBuffer, &inputBufferChars) != READALL_OK) {
 		fprintf(stderr, "Could not read contents of %s\n", argv[1]);
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	fclose(input);
 
@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 	                      TINYOBJ_FLAG_TRIANGULATE) != TINYOBJ_SUCCESS) {
 		fprintf(stderr, "Could not convert the input file\n");
 		free(inputBuffer);
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	for (int i = 0; i < attrib.num_faces; i += 3) {

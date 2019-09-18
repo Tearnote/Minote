@@ -6,7 +6,6 @@
 
 #include "thread.h"
 #include "util.h"
-#include "settings.h"
 
 enum state phases[PhaseSize];
 mutex phaseMutex = newMutex;

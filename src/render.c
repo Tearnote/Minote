@@ -187,7 +187,7 @@ static void initRenderer(void)
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		logCrit("Failed to initialize OpenGL");
 		cleanupRenderer();
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	glfwSwapInterval(1); // Enable vsync
 	glEnable(GL_DEPTH_TEST);

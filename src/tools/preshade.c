@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
 	if (argc != 3) {
 		puts("preshade - preprocesses shaders so that they can be included in the source");
 		puts("Usage: preshade inputFile outputFile");
-		exit(0);
+		exit(EXIT_SUCCESS);
 	}
 
 	FILE *input = NULL;
@@ -23,13 +23,13 @@ int main(int argc, char *argv[])
 	if (input == NULL) {
 		fprintf(stderr, "Could not open %s for reading: %s\n",
 		        argv[1], strerror(errno));
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	output = fopen(argv[2], "w");
 	if (output == NULL) {
 		fprintf(stderr, "Could not open %s for writing: %s\n",
 		        argv[2], strerror(errno));
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	int ch = 0;

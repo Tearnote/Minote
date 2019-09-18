@@ -35,14 +35,21 @@ static void updateLogic(void)
 
 	switch (getPhase(PhaseGameplay)) {
 	case StateStaged:
+		lockMutex(&appMutex);
 		initGameplay();
+		unlockMutex(&appMutex);
+		// break; missing on purpose, no point in wasting a frame
 	case StateIntro:
 	case StateRunning:
 	case StateOutro:
+		lockMutex(&appMutex);
 		updateGameplay();
+		unlockMutex(&appMutex);
 		break;
 	case StateUnstaged:
+		lockMutex(&appMutex);
 		cleanupGameplay();
+		unlockMutex(&appMutex);
 		break;
 	default:
 		break;

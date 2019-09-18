@@ -234,14 +234,14 @@ void initInput(void)
 	if (mappingsFile == NULL) {
 		fprintf(stderr, "Could not open %U for reading: %s\n",
 		        MAPPINGS_PATH, strerror(errno));
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	char *mappings = NULL;
 	size_t mappingsChars = 0;
 	if (readall(mappingsFile, &mappings, &mappingsChars) != READALL_OK) {
 		fprintf(stderr, "Could not read contents of %U\n",
 		        MAPPINGS_PATH);
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	glfwUpdateGamepadMappings(mappings);
 	free(mappings);
