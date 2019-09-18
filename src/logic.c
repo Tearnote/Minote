@@ -19,21 +19,21 @@ static void updateLogic(void)
 	if (!nextUpdateTime)
 		nextUpdateTime = getTime();
 
-	switch (getPhase(PhaseMain)) {
+	switch (getState(PhaseMain)) {
 	case StateStaged:
-		setPhase(PhaseMain, StateRunning);
-		setPhase(PhaseGameplay, StateStaged);
+		setState(PhaseMain, StateRunning);
+		setState(PhaseGameplay, StateStaged);
 		break;
 	case StateUnstaged:
-		if (getPhase(PhaseGameplay) != StateNone) {
-			setPhase(PhaseGameplay, StateUnstaged);
+		if (getState(PhaseGameplay) != StateNone) {
+			setState(PhaseGameplay, StateUnstaged);
 		}
-		setPhase(PhaseMain, StateNone);
+		setState(PhaseMain, StateNone);
 	default:
 		break;
 	}
 
-	switch (getPhase(PhaseGameplay)) {
+	switch (getState(PhaseGameplay)) {
 	case StateStaged:
 		lockMutex(&appMutex);
 		initGameplay();

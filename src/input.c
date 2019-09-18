@@ -278,8 +278,9 @@ void updateInput(void)
 	pollGamepadEvents();
 
 	// Handle direct quit events, like the [X] being clicked
-	if (glfwWindowShouldClose(window)) {
-		setPhase(PhaseMain, StateUnstaged);
+	if (getState(PhaseMain) == StateRunning &&
+	    glfwWindowShouldClose(window)) {
+		setState(PhaseMain, StateUnstaged);
 		logInfo("Exit signal received");
 	}
 }

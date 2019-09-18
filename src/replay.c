@@ -19,6 +19,8 @@
 #include "util.h"
 #include "logic.h"
 
+
+#define replay app->replay
 #define BUFFER_SIZE (256 * 1024)
 #define HEADER_MAGIC "Minotereplay"
 #define HEADER_VERSION "0000"
@@ -32,21 +34,10 @@ enum replayCmd {
 	ReplCmdSize
 };
 
-static struct replay *replay = NULL;
-
-static void initReplayQueue(void)
-{
-	replay->frames = createQueue(sizeof(struct replayFrame));
-}
-
-static void cleanupReplayQueue(void)
-{
-	destroyQueue(replay->frames);
-	replay->frames = NULL;
-}
-
 void pushReplayHeader(rng *initialRng)
 {
+	if (!replay->frames)
+		replay->frames = createQueue(sizeof(struct replayFrame));
 	memcpy(&replay->header.initialRng, initialRng,
 	       sizeof(replay->header.initialRng));
 	copyArray(replay->header.magic, HEADER_MAGIC);
@@ -87,20 +78,20 @@ void saveReplay(void)
 		return;
 	}
 
-	lzma.avail_in = sizeof(app->replay->header)
+	lzma.avail_in = sizeof(replay->header)
 	                + replay->frames->itemSize * replay->frames->count;
 	uint8_t *inBuffer = allocate(lzma.avail_in);
 	lzma.next_in = inBuffer;
 	size_t offset = 0;
-	memcpy(inBuffer, &app->replay->header.magic + offset,
-	       sizeof(app->replay->header.magic));
-	offset += sizeof(app->replay->header.magic);
-	memcpy(inBuffer + offset, &app->replay->header.version,
-	       sizeof(app->replay->header.version));
-	offset += sizeof(app->replay->header.version);
-	memcpy(inBuffer + offset, &app->replay->header.initialRng,
-	       sizeof(app->replay->header.initialRng));
-	offset += sizeof(app->replay->header.initialRng);
+	memcpy(inBuffer, &replay->header.magic + offset,
+	       sizeof(replay->header.magic));
+	offset += sizeof(replay->header.magic);
+	memcpy(inBuffer + offset, &replay->header.version,
+	       sizeof(replay->header.version));
+	offset += sizeof(replay->header.version);
+	memcpy(inBuffer + offset, &replay->header.initialRng,
+	       sizeof(replay->header.initialRng));
+	offset += sizeof(replay->header.initialRng);
 	memcpy(inBuffer + offset, replay->frames->buffer,
 	       replay->frames->itemSize * replay->frames->count);
 
@@ -164,15 +155,18 @@ void pushReplayFrame(struct game *frame)
 	replayFrame->level = frame->level;
 	replayFrame->nextLevelstop = frame->nextLevelstop;
 	replayFrame->score = frame->score;
-	// This is fine because char is guaranteed to by one byte
+	// This is fine because char is guaranteed to be one byte
 	copyArray(replayFrame->gradeString, frame->gradeString);
 	replayFrame->eligible = frame->eligible;
 	for (int i = 0; i < GameCmdSize; i++)
 		replayFrame->cmdRaw[i] = frame->cmdRaw[i];
 }
 
-static void loadReplay(void)
+void loadReplay(void)
 {
+	if (!replay->frames)
+		replay->frames = createQueue(sizeof(struct replayFrame));
+
 	lzma_stream lzma = LZMA_STREAM_INIT;
 	lzma_ret lzmaRet =
 		lzma_stream_decoder(&lzma, UINT64_MAX, LZMA_CONCATENATED);
@@ -283,40 +277,7 @@ static void loadReplay(void)
 	free(outBuffer);
 }
 
-void initReplayRecord(void)
-{
-	replay = app->replay;
-	initReplayQueue();
-}
-
-void initReplayPlayback(void)
-{
-	initGameplay();
-
-	replay = app->replay;
-	replay->playback = false;
-	replay->frame = 0;
-	replay->speed = 1.0f;
-
-	initReplayQueue();
-	loadReplay();
-}
-
-void cleanupReplayRecord(void)
-{
-	cleanupReplayQueue();
-	replay = NULL;
-}
-
-void cleanupReplayPlayback(void)
-{
-	cleanupReplayQueue();
-	replay = NULL;
-
-	cleanupGameplay();
-}
-
-static void clampFrame(void)
+/*static void clampFrame(void)
 {
 	if (replay->frame < 0)
 		replay->frame = 0;
@@ -346,7 +307,7 @@ static enum replayCmd inputToCmd(enum inputType i)
 	}
 }
 
-/*static void processInput(struct input *i)
+static void processInput(struct input *i)
 {
 	enum replayCmd cmd = inputToCmd(i->type);
 	switch (i->action) {
@@ -359,7 +320,7 @@ static enum replayCmd inputToCmd(enum inputType i)
 
 		switch (cmd) {
 		case ReplCmdPlay:
-			replay->playback = !replay->playback;
+			replay->playing = !replay->playing;
 			break;
 		case ReplCmdFwd:
 			replay->frame += 1;
@@ -397,7 +358,7 @@ static void processInputs(void)
 		processInput(in);
 		free(in);
 	}
-}*/
+}
 
 static void updateFrame(void)
 {
@@ -423,7 +384,7 @@ static void updateFrame(void)
 
 static void advanceCounters(void)
 {
-	if (!replay->playback)
+	if (!replay->playing)
 		return;
 	if (app->game->player.state == PlayerActive && !canDrop()) {
 		app->game->player.lockDelay += 1;
@@ -441,10 +402,10 @@ void updateReplay(void)
 	updateFrame();
 	advanceCounters();
 
-	if (replay->playback) {
+	if (replay->playing) {
 		replay->frame += 1;
 		clampFrame();
 		if (replay->frame + 1 >= replay->frames->count)
-			replay->playback = false;
+			replay->playing = false;
 	}
-}
+}*/

@@ -15,7 +15,7 @@ mutex appMutex = newMutex;
 void initState(void)
 {
 	clearArray(phases);
-	setPhase(PhaseMain, StateStaged);
+	setState(PhaseMain, StateStaged);
 	app = allocate(sizeof(*app));
 	app->game = allocate(sizeof(*app->game));
 	app->replay = allocate(sizeof(*app->replay));
@@ -33,7 +33,7 @@ void cleanupState(void)
 	}
 }
 
-enum state getPhase(enum phase phase)
+enum state getState(enum phase phase)
 {
 	lockMutex(&phaseMutex);
 	enum state result = phases[phase];
@@ -41,7 +41,7 @@ enum state getPhase(enum phase phase)
 	return result;
 }
 
-void setPhase(enum phase phase, enum state state)
+void setState(enum phase phase, enum state state)
 {
 	lockMutex(&phaseMutex);
 	phases[phase] = state;

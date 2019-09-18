@@ -22,8 +22,8 @@ enum state {
 };
 
 enum phase {
-	PhaseMain,
-	PhaseGameplay,
+	PhaseMain, // Meta, performs batch operations on other phases
+	PhaseGameplay, // Primary
 	PhaseSize
 };
 
@@ -38,9 +38,9 @@ extern mutex appMutex;
 void initState(void);
 void cleanupState(void);
 
-enum state getPhase(enum phase phase);
-void setPhase(enum phase phase, enum state state);
+enum state getState(enum phase phase);
+void setState(enum phase phase, enum state state);
 #define isRunning() \
-	(getPhase(PhaseMain) != StateNone)
+	(getState(PhaseMain) != StateNone)
 
 #endif // STATE_H

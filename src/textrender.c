@@ -251,7 +251,7 @@ void queueGameplayText(struct game *game)
 	            game->time / SEC / 60,
 	            game->time / SEC % 60,
 	            game->time / (SEC / 100) % 100);
-	if (getPhase(PhaseGameplay) == StateIntro) {
+	if (getState(PhaseGameplay) == StateIntro) {
 		position[0] = 6.0f;
 		position[1] = 11.5f;
 		size = 1.0f;
@@ -264,7 +264,7 @@ void queueReplayText(struct replay *replay)
 {
 	vec3 position = { -9.5f, 13.0f, 1.0f };
 	float size = 1.0f;
-	if (replay->playback)
+	if (replay->playing)
 		queueString(FontSans, position, size, "Playing...");
 	else
 		queueString(FontSans, position, size, "Paused.");

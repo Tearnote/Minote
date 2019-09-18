@@ -10,6 +10,15 @@
 #include "gameplay.h"
 #include "queue.h"
 
+enum replayState {
+	ReplayNone,
+	ReplayViewing,
+	ReplayRecording,
+	ReplayFinished,
+	ReplayWriting,
+	ReplaySize
+};
+
 struct replayHeader {
 	uint8_t magic[12]; // Not zero-terminated
 	uint8_t version[4]; // Not zero-terminated
@@ -36,22 +45,18 @@ struct replayFrame {
 };
 
 struct replay {
+	enum replayState state;
+	bool playing; // If viewer mode, are we playing or paused
 	struct replayHeader header;
 	queue *frames;
-	bool playback;
 	int frame;
 	float speed;
 };
+
+void loadReplay(void);
+
 void pushReplayHeader(rng *initialRng);
 void pushReplayFrame(struct game *frame);
 void saveReplay(void);
-void clearReplay(void);
-
-// Call one of these two
-void initReplayRecord(void);
-void initReplayPlayback(void);
-void cleanupReplayRecord(void);
-void cleanupReplayPlayback(void);
-void updateReplay(void);
 
 #endif //REPLAY_H

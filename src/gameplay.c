@@ -15,11 +15,13 @@
 #include "util.h"
 #include "timer.h"
 #include "replay.h"
+#include "settings.h"
 
 int GRAVITY = 0;
 
 #define game app->game
 #define player (&game->player)
+#define replay app->replay
 
 struct threshold {
 	int level;
@@ -321,8 +323,14 @@ static void addLevels(int count, bool strong)
 	checkRequirements();
 }
 
+static void gameOver(void) {
+	if (replay->state == ReplayRecording)
+		replay->state = ReplayFinished;
+	setState(PhaseGameplay, StateOutro);
+}
+
 // Generate a new random piece for the player to control
-static void newPiece(void)
+static void spawnPiece(void)
 {
 	player->state = PlayerSpawned;
 	player->x = PLAYFIELD_W / 2 - PIECE_BOX / 2; // Centered
@@ -357,7 +365,7 @@ static void newPiece(void)
 		addLevels(1, false);
 
 	if (!checkPosition())
-		setPhase(PhaseGameplay, StateOutro);
+		gameOver();
 }
 
 // Maps generic inputs to gameplay commands
@@ -390,10 +398,10 @@ static void processInput(struct input *i)
 	switch (i->action) {
 	case ActionPressed:
 		// Starting and quitting is handled outside of gameplay logic
-		if (i->type == InputStart && getPhase(PhaseGameplay) == StateIntro)
-			setPhase(PhaseGameplay, StateRunning);
+		if (i->type == InputStart && getState(PhaseGameplay) == StateIntro)
+			setState(PhaseGameplay, StateRunning);
 		if (i->type == InputQuit) {
-			setPhase(PhaseGameplay, StateUnstaged);
+			setState(PhaseGameplay, StateUnstaged);
 			break;
 		}
 
@@ -441,52 +449,34 @@ static void processInputs(void)
 
 void initGameplay(void)
 {
-	srandom(&game->rngState, (uint64_t)time(NULL));
-	clearArray(game->playfield);
-	clearArray(game->clearedLines);
-	clearArray(game->cmdRaw);
-	clearArray(game->cmdHeld);
-	clearArray(game->cmdPrev);
-	game->lastDirection = GameCmdNone;
-	game->level = 0;
+	memset(game, 0, sizeof(*game));
+	// Non-zero initial values
 	game->nextLevelstop = 100;
-	game->score = 0;
 	game->combo = 1;
-	game->grade = 0;
 	strcpy(game->gradeString, grades[0].name);
 	game->eligible = true;
-	game->frame = 0;
-	game->time = 0;
-	player->state = PlayerNone;
-	player->x = 0;
-	player->y = 0;
-	player->ySub = 0;
-	player->type = PieceNone;
-	player->preview = PieceNone;
-	clearArray(player->history);
-	player->rotation = 0;
-	player->dasDirection = 0;
-	player->dasCharge = 0;
 	player->dasDelay = DAS_DELAY; // Starts out pre-charged
-	player->lockDelay = 0;
-	player->clearDelay = 0;
 	player->spawnDelay = SPAWN_DELAY; // Start instantly
-	player->dropBonus = 0;
-	clearArray(requirementChecked);
-	adjustGravity();
 
-	initReplayRecord();
-	pushReplayHeader(&game->rngState);
-
-	setPhase(PhaseGameplay, StateIntro);
+	memset(replay, 0, sizeof(*replay));
+	replay->speed = 1.0f;
+	if(getSettingBool(SettingReplay)) {
+		replay->state = ReplayViewing;
+		loadReplay();
+		setState(PhaseGameplay, StateRunning);
+	} else {
+		replay->state = ReplayRecording;
+		srandom(&game->rngState, (uint64_t)time(NULL));
+		adjustGravity();
+		pushReplayHeader(&game->rngState);
+		setState(PhaseGameplay, StateIntro);
+	}
 }
 
 void cleanupGameplay(void)
 {
-	saveReplay();
-	cleanupReplayRecord();
-	setPhase(PhaseGameplay, StateNone);
-	setPhase(PhaseMain, StateUnstaged);
+	setState(PhaseGameplay, StateNone);
+	setState(PhaseMain, StateUnstaged);
 }
 
 static void updateRotations(void)
@@ -639,7 +629,7 @@ static void updateSpawn(void)
 	if (player->state == PlayerSpawn || player->state == PlayerNone) {
 		player->spawnDelay += 1;
 		if (player->spawnDelay >= SPAWN_DELAY)
-			newPiece();
+			spawnPiece();
 	}
 }
 
@@ -675,7 +665,7 @@ void updateGameplay(void)
 {
 	processInputs();
 
-	if (getPhase(PhaseGameplay) != StateRunning)
+	if (getState(PhaseGameplay) != StateRunning)
 		return;
 
 	updateRotations();
@@ -693,8 +683,13 @@ void updateGameplay(void)
 
 	if (game->level >= 999) {
 		updateGrade();
-		setPhase(PhaseGameplay, StateOutro);
+		gameOver();
 	}
 
 	pushReplayFrame(game);
+
+	if (replay->state == ReplayFinished) {
+		saveReplay();
+		replay->state = ReplayNone;
+	}
 }
