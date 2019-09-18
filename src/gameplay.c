@@ -15,6 +15,8 @@
 #include "timer.h"
 #include "replay.h"
 #include "settings.h"
+#include "log.h"
+#include "logic.h"
 
 // Thread-local copy of the game state being rendered
 static struct app *snap = NULL;
@@ -372,7 +374,7 @@ static void spawnPiece(void)
 }
 
 // Maps generic inputs to gameplay commands
-static enum gameplayCmd inputToCmd(enum inputType i)
+static enum gameplayCmd inputToGameCmd(enum inputType i)
 {
 	switch (i) {
 	case InputLeft:
@@ -394,10 +396,82 @@ static enum gameplayCmd inputToCmd(enum inputType i)
 	}
 }
 
-// Receive unfiltered inputs
-static void processInput(struct input *i)
+static enum replayCmd inputToReplayCmd(enum inputType i)
 {
-	enum gameplayCmd cmd = inputToCmd(i->type);
+	switch (i) {
+	case InputButton1:
+		return ReplCmdPlay;
+	case InputLeft:
+		return ReplCmdBack;
+	case InputRight:
+		return ReplCmdFwd;
+	case InputDown:
+		return ReplCmdSkipBack;
+	case InputUp:
+		return ReplCmdSkipFwd;
+	case InputButton2:
+		return ReplCmdSlower;
+	case InputButton3:
+		return ReplCmdFaster;
+	default:
+		return ReplCmdNone;
+	}
+}
+
+static void clampReplayFrame(void)
+{
+	if (replay->frame < 0)
+		replay->frame = 0;
+	if (replay->frame >= replay->frames->count)
+		replay->frame = replay->frames->count - 1;
+}
+
+static void processReplayInput(struct input *i)
+{
+	enum replayCmd cmd = inputToReplayCmd(i->type);
+	switch (i->action) {
+	case ActionPressed:
+		if (i->type == InputQuit) {
+			setState(PhaseGameplay, StateUnstaged);
+			break;
+		}
+
+		switch (cmd) {
+		case ReplCmdPlay:
+			replay->playing = !replay->playing;
+			break;
+		case ReplCmdFwd:
+			replay->frame += 1;
+			break;
+		case ReplCmdBack:
+			replay->frame -= 1;
+			break;
+		case ReplCmdSkipFwd:
+			replay->frame += 60 * 5;
+			break;
+		case ReplCmdSkipBack:
+			replay->frame -= 60 * 5;
+			break;
+		case ReplCmdSlower:
+			replay->speed /= 2.0f;
+			break;
+		case ReplCmdFaster:
+			replay->speed *= 2.0f;
+			break;
+		default:
+			break;
+		}
+		clampReplayFrame();
+		logicFrequency = DEFAULT_FREQUENCY * replay->speed;
+	default:
+		break;
+	}
+}
+
+// Receive unfiltered inputs
+static void processGameInput(struct input *i)
+{
+	enum gameplayCmd cmd = inputToGameCmd(i->type);
 	switch (i->action) {
 	case ActionPressed:
 		// Starting and quitting is handled outside of gameplay logic
@@ -416,20 +490,29 @@ static void processInput(struct input *i)
 
 	case ActionReleased:
 		if (cmd != GameCmdNone)
-			game->cmdRaw[inputToCmd(i->type)] = false;
+			game->cmdRaw[inputToGameCmd(i->type)] = false;
 		break;
 	default:
 		break;
 	}
 }
 
+static void processReplayInputs(void)
+{
+	struct input *in = NULL;
+	while ((in = dequeueInput())) {
+		processReplayInput(in);
+		free(in);
+	}
+}
+
 // Polls for inputs and transforms them into gameplay commands
-static void processInputs(void)
+static void processGameInputs(void)
 {
 	// Receive all pending inputs
 	struct input *in = NULL;
 	while ((in = dequeueInput())) {
-		processInput(in);
+		processGameInput(in);
 		free(in);
 	}
 
@@ -448,6 +531,14 @@ static void processInputs(void)
 		if (game->lastDirection == GameCmdRight)
 			game->cmdHeld[GameCmdLeft] = false;
 	}
+}
+
+static void processInputs(void)
+{
+	if (replay->state == ReplayViewing)
+		processReplayInputs();
+	else
+		processGameInputs();
 }
 
 void initGameplay(void)
@@ -686,29 +777,57 @@ void updateGameplay(void)
 	if (getState(PhaseGameplay) != StateRunning)
 		return;
 
-	updateRotations();
-	updateShifts();
-	updateClear();
-	updateSpawn();
-	updateGravity();
-	updateLocking();
+	if (replay->state != ReplayViewing) {
+		updateRotations();
+		updateShifts();
+		updateClear();
+		updateSpawn();
+		updateGravity();
+		updateLocking();
 
-	if (player->state == PlayerSpawned)
-		player->state = PlayerActive;
+		if (player->state == PlayerSpawned)
+			player->state = PlayerActive;
 
-	game->frame += 1;
-	game->time += TIMER_FRAME;
+		game->frame += 1;
+		game->time += TIMER_FRAME;
 
-	if (game->level >= 999) {
-		updateGrade();
-		gameOver();
-	}
+		if (game->level >= 999) {
+			updateGrade();
+			gameOver();
+		}
 
-	pushReplayFrame(replay, game);
+		pushReplayFrame(replay, game);
 
-	if (replay->state == ReplayFinished) {
-		saveReplay(replay);
-		replay->state = ReplayNone;
+		if (replay->state == ReplayFinished) {
+			saveReplay(replay);
+			replay->state = ReplayNone;
+		}
+	} else {
+		struct replayFrame *frame = getQueueItem(replay->frames, replay->frame);
+		for (int y = 0; y < PLAYFIELD_H; y++)
+			for (int x = 0; x < PLAYFIELD_W; x++)
+				game->playfield[y][x] = frame->playfield[y][x];
+		game->player.state = frame->player.state;
+		game->player.x = frame->player.x;
+		game->player.y = frame->player.y;
+		game->player.type = frame->player.type;
+		game->player.preview = frame->player.preview;
+		game->player.rotation = frame->player.rotation;
+		game->level = frame->level;
+		game->nextLevelstop = frame->nextLevelstop;
+		game->score = frame->score;
+		copyArray(game->gradeString, frame->gradeString);
+		game->eligible = frame->eligible;
+		for (int i = 0; i < GameCmdSize; i++)
+			game->cmdRaw[i] = frame->cmdRaw[i];
+		game->time = (nsec)replay->frame * TIMER_FRAME;
+
+		if (replay->playing) {
+			replay->frame += 1;
+			clampReplayFrame();
+			if (replay->frame + 1 >= replay->frames->count)
+				replay->playing = false;
+		}
 	}
 
 	lockMutex(&appMutex);

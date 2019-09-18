@@ -69,6 +69,15 @@ enum gameplayCmd {
 	GameCmdSize
 };
 
+enum replayCmd {
+	ReplCmdNone,
+	ReplCmdPlay,
+	ReplCmdFwd, ReplCmdBack,
+	ReplCmdSkipFwd, ReplCmdSkipBack,
+	ReplCmdFaster, ReplCmdSlower,
+	ReplCmdSize
+};
+
 enum playerState {
 	PlayerNone,
 	PlayerSpawned, // The exact frame of piece spawn
