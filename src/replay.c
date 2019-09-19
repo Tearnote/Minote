@@ -302,6 +302,7 @@ void applyReplayInitial(struct game *game, struct replay *replay)
 {
 	memcpy(&game->rngState, &replay->header.initialRng,
 	       sizeof(game->rngState));
+	replay->frame = -1;
 }
 
 void applyReplayKeyframe(struct game *game, struct replay *replay, int frame)

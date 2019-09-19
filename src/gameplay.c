@@ -331,9 +331,10 @@ static void addLevels(int count, bool strong)
 
 static void gameOver(void)
 {
-	if (replay->state == ReplayRecording)
+	if (replay->state == ReplayRecording) {
 		replay->state = ReplayFinished;
-	setState(PhaseGameplay, StateOutro);
+		setState(PhaseGameplay, StateOutro);
+	}
 }
 
 // Generate a new random piece for the player to control
@@ -814,20 +815,21 @@ void updateGameplay(void)
 {
 	processInputs();
 
-	if (getState(PhaseGameplay) != StateRunning)
-		return;
-	if (replay->state == ReplayViewing && !replay->playing)
-		return;
-
-	calculateNextFrame();
 	if (replay->state == ReplayViewing) {
-		replay->frame += 1;
+		if (replay->playing || replay->frame == -1) {
+			if (replay->frame + 1 < replay->header.totalFrames) {
+				calculateNextFrame();
+				replay->frame += 1;
+			} else {
+				replay->playing = false;
+			}
+		}
 	}
 
 	if (replay->state == ReplayRecording) {
+		calculateNextFrame();
 		pushReplayFrame(replay, game);
 	}
-
 	if (replay->state == ReplayFinished) {
 		saveReplay(replay);
 		replay->state = ReplayNone;
