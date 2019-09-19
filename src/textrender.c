@@ -274,7 +274,7 @@ void queueReplayText(struct replay *replay)
 	position[1] -= 2.0f;
 	queueString(FontMono, position, size, "%d", (int)replay->frame + 1);
 	position[1] -= 1.2f;
-	queueString(FontMono, position, size, "%d", replay->frames->count);
+	queueString(FontMono, position, size, "%d", replay->header.totalFrames);
 }
 
 void renderText(void)

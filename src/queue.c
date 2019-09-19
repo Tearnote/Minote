@@ -12,7 +12,6 @@ struct queue *createQueue(size_t itemSize)
 	q->itemSize = itemSize;
 	q->buffer = allocate(itemSize);
 	q->allocated = 1;
-	q->count = 0;
 	return q;
 }
 
@@ -28,7 +27,7 @@ void *produceQueueItem(struct queue *q)
 	if (q->count == q->allocated) {
 		size_t oldSize = q->allocated * q->itemSize;
 		q->buffer = reallocate(q->buffer, oldSize * 2);
-		memset((char *)q->buffer + oldSize, 0, oldSize);
+		memset(q->buffer + oldSize, 0, oldSize);
 		q->allocated *= 2;
 	}
 	q->count += 1;
@@ -36,14 +35,49 @@ void *produceQueueItem(struct queue *q)
 	return getQueueItem(q, q->count - 1);
 }
 
-#include "log.h"
-
 void *getQueueItem(struct queue *q, int index)
 {
-	return (char *)q->buffer + index * q->itemSize;
+	return q->buffer + index * q->itemSize;
 }
 
 void clearQueue(struct queue *q)
 {
 	q->count = 0;
+}
+
+struct vqueue *createVqueue(void)
+{
+	struct vqueue *vq = allocate(sizeof(*vq));
+	vq->buffer = allocate(1);
+	vq->allocated = 1;
+	return vq;
+}
+
+void destroyVqueue(struct vqueue *vq)
+{
+	free(vq->buffer);
+	free(vq);
+}
+
+void *produceVqueueItem(struct vqueue *vq, size_t itemSize)
+{
+	while (vq->size + itemSize > vq->allocated) {
+		vq->buffer = reallocate(vq->buffer, vq->allocated * 2);
+		memset(vq->buffer + vq->allocated, 0, vq->allocated);
+		vq->allocated *= 2;
+	}
+
+	void *result = vq->buffer + vq->size;
+	vq->size += itemSize;
+	return result;
+}
+
+void *getVqueueItem(struct vqueue *vq, size_t offset)
+{
+	return vq->buffer + offset;
+}
+
+void clearVqueue(vqueue *vq)
+{
+	vq->size = 0;
 }

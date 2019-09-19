@@ -21,22 +21,78 @@
 
 #define BUFFER_SIZE (256 * 1024)
 #define HEADER_MAGIC "Minotereplay"
-#define HEADER_VERSION "0000"
+#define HEADER_VERSION "0001"
 
-void pushReplayHeader(struct replay *replay, rng *initialRng)
+void
+pushReplayHeader(struct replay *replay, struct game *game, int keyframeFreq)
 {
 	if (!replay->frames)
-		replay->frames = createQueue(sizeof(struct replayFrame));
-	memcpy(&replay->header.initialRng, initialRng,
-	       sizeof(replay->header.initialRng));
+		replay->frames = createVqueue();
 	copyArray(replay->header.magic, HEADER_MAGIC);
 	copyArray(replay->header.version, HEADER_VERSION);
+	memcpy(&replay->header.initialRng, &game->rngState,
+	       sizeof(replay->header.initialRng));
+	replay->header.keyframeFreq = keyframeFreq;
+}
+
+void pushReplayFrame(struct replay *replay, struct game *frame)
+{
+	if (replay->header.totalFrames % replay->header.keyframeFreq == 0) {
+		struct replayKeyframe *keyframe =
+			produceVqueueItem(replay->frames,
+			                  sizeof(struct replayKeyframe));
+		memcpy(&keyframe->rngState, &frame->rngState,
+		       sizeof(keyframe->rngState));
+		// Can't use copyArray, different element size
+		for (int y = 0; y < PLAYFIELD_H; y++)
+			for (int x = 0; x < PLAYFIELD_W; x++)
+				keyframe->playfield[y][x] =
+					frame->playfield[y][x];
+		for (int y = 0; y < PLAYFIELD_H; y++)
+			keyframe->clearedLines[y] = frame->clearedLines[y];
+		keyframe->player.state = frame->player.state;
+		keyframe->player.x = frame->player.x;
+		keyframe->player.y = frame->player.y;
+		keyframe->player.ySub = frame->player.ySub;
+		keyframe->player.type = frame->player.type;
+		keyframe->player.preview = frame->player.preview;
+		for (int i = 0; i < HISTORY_SIZE; i++)
+			keyframe->player.history[i] = frame->player.history[i];
+		keyframe->player.rotation = frame->player.rotation;
+		keyframe->player.dasDirection = frame->player.dasDirection;
+		keyframe->player.dasCharge = frame->player.dasCharge;
+		keyframe->player.dasDelay = frame->player.dasDelay;
+		keyframe->player.lockDelay = frame->player.lockDelay;
+		keyframe->player.clearDelay = frame->player.clearDelay;
+		keyframe->player.spawnDelay = frame->player.spawnDelay;
+		keyframe->player.dropBonus = frame->player.dropBonus;
+		keyframe->level = frame->level;
+		keyframe->nextLevelstop = frame->nextLevelstop;
+		keyframe->score = frame->score;
+		keyframe->combo = frame->combo;
+		keyframe->grade = frame->grade;
+		// This is fine because char is guaranteed to be one byte
+		copyArray(keyframe->gradeString, frame->gradeString);
+		keyframe->eligible = frame->eligible;
+		for (int i = 0; i < GameCmdSize; i++)
+			keyframe->cmdHeld[i] = frame->cmdHeld[i];
+		for (int i = 0; i < GameCmdSize; i++)
+			keyframe->cmdPrev[i] = frame->cmdPrev[i];
+		keyframe->frame = frame->frame;
+		keyframe->time = frame->time;
+	}
+
+	struct replayInputframe *inputframe = produceVqueueItem(replay->frames,
+	                                                        sizeof(struct replayInputframe));
+	for (int i = 0; i < GameCmdSize; i++)
+		inputframe->inputs[i] = frame->cmdRaw[i];
+	inputframe->lastDirection = frame->lastDirection;
+
+	replay->header.totalFrames += 1;
 }
 
 void saveReplay(struct replay *replay)
 {
-	if (replay->frames->count == 0)
-		return;
 	lzma_stream lzma = LZMA_STREAM_INIT;
 	lzma_ret lzmaRet =
 		lzma_easy_encoder(&lzma, LZMA_PRESET_DEFAULT, LZMA_CHECK_CRC64);
@@ -67,22 +123,13 @@ void saveReplay(struct replay *replay)
 		return;
 	}
 
-	lzma.avail_in = sizeof(replay->header)
-	                + replay->frames->itemSize * replay->frames->count;
+	lzma.avail_in = sizeof(replay->header) + replay->frames->size;
 	uint8_t *inBuffer = allocate(lzma.avail_in);
 	lzma.next_in = inBuffer;
 	size_t offset = 0;
-	memcpy(inBuffer, &replay->header.magic + offset,
-	       sizeof(replay->header.magic));
-	offset += sizeof(replay->header.magic);
-	memcpy(inBuffer + offset, &replay->header.version,
-	       sizeof(replay->header.version));
-	offset += sizeof(replay->header.version);
-	memcpy(inBuffer + offset, &replay->header.initialRng,
-	       sizeof(replay->header.initialRng));
-	offset += sizeof(replay->header.initialRng);
-	memcpy(inBuffer + offset, replay->frames->buffer,
-	       replay->frames->itemSize * replay->frames->count);
+	memcpy(inBuffer, &replay->header, sizeof(replay->header));
+	offset += sizeof(replay->header);
+	memcpy(inBuffer + offset, replay->frames->buffer, replay->frames->size);
 
 	uint8_t outBuffer[BUFFER_SIZE];
 	lzma.next_out = outBuffer;
@@ -128,33 +175,10 @@ void saveReplay(struct replay *replay)
 	lzma_end(&lzma);
 }
 
-void pushReplayFrame(struct replay *replay, struct game *frame)
-{
-	struct replayFrame *replayFrame = produceQueueItem(replay->frames);
-	// Can't use copyArray, different element size
-	for (int y = 0; y < PLAYFIELD_H; y++)
-		for (int x = 0; x < PLAYFIELD_W; x++)
-			replayFrame->playfield[y][x] = frame->playfield[y][x];
-	replayFrame->player.state = frame->player.state;
-	replayFrame->player.x = frame->player.x;
-	replayFrame->player.y = frame->player.y;
-	replayFrame->player.type = frame->player.type;
-	replayFrame->player.preview = frame->player.preview;
-	replayFrame->player.rotation = frame->player.rotation;
-	replayFrame->level = frame->level;
-	replayFrame->nextLevelstop = frame->nextLevelstop;
-	replayFrame->score = frame->score;
-	// This is fine because char is guaranteed to be one byte
-	copyArray(replayFrame->gradeString, frame->gradeString);
-	replayFrame->eligible = frame->eligible;
-	for (int i = 0; i < GameCmdSize; i++)
-		replayFrame->cmdRaw[i] = frame->cmdRaw[i];
-}
-
 void loadReplay(struct replay *replay)
 {
 	if (!replay->frames)
-		replay->frames = createQueue(sizeof(struct replayFrame));
+		replay->frames = createVqueue();
 
 	lzma_stream lzma = LZMA_STREAM_INIT;
 	lzma_ret lzmaRet =
@@ -233,35 +257,107 @@ void loadReplay(struct replay *replay)
 	free(compressed);
 
 	size_t offset = 0;
-	memcpy(replay->header.magic, outBuffer + offset,
-	       sizeof(replay->header.magic));
+	memcpy(&replay->header, outBuffer, sizeof(replay->header));
+	offset += sizeof(replay->header);
 	if (memcmp(replay->header.magic, HEADER_MAGIC,
 	           sizeof(replay->header.magic)) != 0) {
 		logError("Invalid replay file");
 		free(outBuffer);
 		return;
 	}
-	offset += sizeof(replay->header.magic);
-	memcpy(replay->header.version, outBuffer + offset,
-	       sizeof(replay->header.version));
 	if (memcmp(replay->header.version, HEADER_VERSION,
 	           sizeof(replay->header.version)) != 0) {
 		logError("Invalid replay version");
 		free(outBuffer);
 		return;
 	}
-	offset += sizeof(replay->header.version);
-	memcpy(&replay->header.initialRng, outBuffer + offset,
-	       sizeof(replay->header.initialRng));
-	offset += sizeof(replay->header.initialRng);
 
-	replay->frames->count =
-		(outBufferSize - offset) / replay->frames->itemSize;
-	replay->frames->allocated = replay->frames->count;
+	replay->frames->size = outBufferSize - offset;
+	replay->frames->allocated = replay->frames->size;
 	replay->frames->buffer = reallocate(replay->frames->buffer,
-	                                    replay->frames->allocated
-	                                    * replay->frames->itemSize);
+	                                    replay->frames->allocated);
 	memcpy(replay->frames->buffer, outBuffer + offset,
-	       replay->frames->allocated * replay->frames->itemSize);
+	       replay->frames->allocated);
 	free(outBuffer);
+}
+
+static struct replayKeyframe *getKeyframe(struct replay *replay, int frame)
+{
+	int keyframe = frame / replay->header.keyframeFreq;
+	size_t offset = keyframe * (sizeof(struct replayKeyframe) +
+	                            replay->header.keyframeFreq
+	                            * sizeof(struct replayInputframe));
+	return (struct replayKeyframe *)(replay->frames->buffer + offset);
+}
+
+static struct replayInputframe *getInputs(struct replay *replay, int frame)
+{
+	size_t offset = frame * sizeof(struct replayInputframe);
+	offset += sizeof(struct replayKeyframe)
+	          * (frame / replay->header.keyframeFreq + 1);
+	return (struct replayInputframe *)(replay->frames->buffer + offset);
+}
+
+void applyReplayInitial(struct game *game, struct replay *replay)
+{
+	memcpy(&game->rngState, &replay->header.initialRng,
+	       sizeof(game->rngState));
+}
+
+void applyReplayKeyframe(struct game *game, struct replay *replay, int frame)
+{
+	if (frame % replay->header.keyframeFreq != 0) {
+		logDebug("Failed to apply keyframe: %d is not a keyframe",
+		         frame);
+		return;
+	}
+
+	struct replayKeyframe *keyframe = getKeyframe(replay, frame);
+	memcpy(&game->rngState, &keyframe->rngState,
+	       sizeof(game->rngState));
+	// Can't use copyArray, different element size
+	for (int y = 0; y < PLAYFIELD_H; y++)
+		for (int x = 0; x < PLAYFIELD_W; x++)
+			game->playfield[y][x] =
+				keyframe->playfield[y][x];
+	for (int y = 0; y < PLAYFIELD_H; y++)
+		game->clearedLines[y] = keyframe->clearedLines[y];
+	game->player.state = keyframe->player.state;
+	game->player.x = keyframe->player.x;
+	game->player.y = keyframe->player.y;
+	game->player.ySub = keyframe->player.ySub;
+	game->player.type = keyframe->player.type;
+	game->player.preview = keyframe->player.preview;
+	for (int i = 0; i < HISTORY_SIZE; i++)
+		game->player.history[i] = keyframe->player.history[i];
+	game->player.rotation = keyframe->player.rotation;
+	game->player.dasDirection = keyframe->player.dasDirection;
+	game->player.dasCharge = keyframe->player.dasCharge;
+	game->player.dasDelay = keyframe->player.dasDelay;
+	game->player.lockDelay = keyframe->player.lockDelay;
+	game->player.clearDelay = keyframe->player.clearDelay;
+	game->player.spawnDelay = keyframe->player.spawnDelay;
+	game->player.dropBonus = keyframe->player.dropBonus;
+	game->level = keyframe->level;
+	game->nextLevelstop = keyframe->nextLevelstop;
+	game->score = keyframe->score;
+	game->combo = keyframe->combo;
+	game->grade = keyframe->grade;
+	// This is fine because char is guaranteed to be one byte
+	copyArray(game->gradeString, keyframe->gradeString);
+	game->eligible = keyframe->eligible;
+	for (int i = 0; i < GameCmdSize; i++)
+		game->cmdHeld[i] = keyframe->cmdHeld[i];
+	for (int i = 0; i < GameCmdSize; i++)
+		game->cmdPrev[i] = keyframe->cmdPrev[i];
+	game->frame = keyframe->frame;
+	game->time = keyframe->time;
+}
+
+void applyReplayInputs(struct game *game, struct replay *replay, int frame)
+{
+	struct replayInputframe *inputframe = getInputs(replay, frame);
+	for (int i = 0; i < GameCmdSize; i++)
+		game->cmdRaw[i] = inputframe->inputs[i];
+	game->lastDirection = inputframe->lastDirection;
 }

@@ -15,18 +15,19 @@
 #include "timer.h"
 #include "replay.h"
 #include "settings.h"
-#include "log.h"
 #include "logic.h"
+#include "log.h"
+
+#define KEYFRAME_FREQ 60
 
 // Thread-local copy of the game state being rendered
 static struct app *snap = NULL;
 // Convenience pointers
-struct game *game  = NULL;
+struct game *game = NULL;
 struct player *player = NULL;
 struct replay *replay = NULL;
 
 int GRAVITY = 0;
-
 
 struct threshold {
 	int level;
@@ -328,7 +329,8 @@ static void addLevels(int count, bool strong)
 	checkRequirements();
 }
 
-static void gameOver(void) {
+static void gameOver(void)
+{
 	if (replay->state == ReplayRecording)
 		replay->state = ReplayFinished;
 	setState(PhaseGameplay, StateOutro);
@@ -420,10 +422,10 @@ static enum replayCmd inputToReplayCmd(enum inputType i)
 
 static void clampReplayFrame(void)
 {
-	if (replay->frame < 0)
-		replay->frame = 0;
-	if (replay->frame >= replay->frames->count)
-		replay->frame = replay->frames->count - 1;
+	if (game->frame < 0)
+		game->frame = 0;
+	if (game->frame >= replay->header.totalFrames)
+		game->frame = replay->header.totalFrames - 1;
 }
 
 static void processReplayInput(struct input *i)
@@ -440,18 +442,18 @@ static void processReplayInput(struct input *i)
 		case ReplCmdPlay:
 			replay->playing = !replay->playing;
 			break;
-		case ReplCmdFwd:
+/*		case ReplCmdFwd:
 			replay->frame += 1;
 			break;
 		case ReplCmdBack:
 			replay->frame -= 1;
 			break;
 		case ReplCmdSkipFwd:
-			replay->frame += 60 * 5;
+			replay->frame += (int)(60.0f * replay->speed);
 			break;
 		case ReplCmdSkipBack:
-			replay->frame -= 60 * 5;
-			break;
+			replay->frame -= (int)(60.0f * replay->speed);
+			break;*/
 		case ReplCmdSlower:
 			replay->speed /= 2.0f;
 			break;
@@ -475,7 +477,8 @@ static void processGameInput(struct input *i)
 	switch (i->action) {
 	case ActionPressed:
 		// Starting and quitting is handled outside of gameplay logic
-		if (i->type == InputStart && getState(PhaseGameplay) == StateIntro)
+		if (i->type == InputStart
+		    && getState(PhaseGameplay) == StateIntro)
 			setState(PhaseGameplay, StateRunning);
 		if (i->type == InputQuit) {
 			setState(PhaseGameplay, StateUnstaged);
@@ -504,6 +507,9 @@ static void processReplayInputs(void)
 		processReplayInput(in);
 		free(in);
 	}
+
+	if (replay->playing)
+		applyReplayInputs(game, replay, replay->frame);
 }
 
 // Polls for inputs and transforms them into gameplay commands
@@ -515,7 +521,10 @@ static void processGameInputs(void)
 		processGameInput(in);
 		free(in);
 	}
+}
 
+static void filterInputs(void)
+{
 	// Rotate the input arrays
 	copyArray(game->cmdPrev, game->cmdHeld);
 	copyArray(game->cmdHeld, game->cmdRaw);
@@ -535,10 +544,12 @@ static void processGameInputs(void)
 
 static void processInputs(void)
 {
+	// Both get all inputs in the queue, interpret them and fill in cmdRaw
 	if (replay->state == ReplayViewing)
 		processReplayInputs();
 	else
 		processGameInputs();
+	filterInputs();
 }
 
 void initGameplay(void)
@@ -557,19 +568,21 @@ void initGameplay(void)
 	game->eligible = true;
 	player->dasDelay = DAS_DELAY; // Starts out pre-charged
 	player->spawnDelay = SPAWN_DELAY; // Start instantly
+	game->frame = -1; // So that the first calculated frame ends up at 0
 
 	replay->speed = 1.0f;
-	if(getSettingBool(SettingReplay)) {
+	if (getSettingBool(SettingReplay)) {
 		replay->state = ReplayViewing;
 		loadReplay(replay);
+		applyReplayInitial(game, replay);
 		setState(PhaseGameplay, StateRunning);
 	} else {
 		replay->state = ReplayRecording;
 		srandom(&game->rngState, (uint64_t)time(NULL));
-		adjustGravity();
-		pushReplayHeader(snap->replay, &game->rngState);
+		pushReplayHeader(replay, game, KEYFRAME_FREQ);
 		setState(PhaseGameplay, StateIntro);
 	}
+	adjustGravity();
 }
 
 void cleanupGameplay(void)
@@ -770,64 +783,54 @@ void updateLocking(void)
 		lock();
 }
 
+void updateWin(void)
+{
+	if (game->level >= 999) {
+		updateGrade();
+		gameOver();
+	}
+}
+
+void calculateNextFrame(void)
+{
+	updateRotations();
+	updateShifts();
+	updateClear();
+	updateSpawn();
+	updateGravity();
+	updateLocking();
+
+	if (player->state == PlayerSpawned)
+		player->state = PlayerActive;
+
+	game->frame += 1;
+	if (game->frame > 0)
+		game->time += TIMER_FRAME;
+
+	updateWin();
+}
+
 void updateGameplay(void)
 {
 	processInputs();
 
 	if (getState(PhaseGameplay) != StateRunning)
 		return;
+	if (replay->state == ReplayViewing && !replay->playing)
+		return;
 
-	if (replay->state != ReplayViewing) {
-		updateRotations();
-		updateShifts();
-		updateClear();
-		updateSpawn();
-		updateGravity();
-		updateLocking();
+	calculateNextFrame();
+	if (replay->state == ReplayViewing) {
+		replay->frame += 1;
+	}
 
-		if (player->state == PlayerSpawned)
-			player->state = PlayerActive;
-
-		game->frame += 1;
-		game->time += TIMER_FRAME;
-
-		if (game->level >= 999) {
-			updateGrade();
-			gameOver();
-		}
-
+	if (replay->state == ReplayRecording) {
 		pushReplayFrame(replay, game);
+	}
 
-		if (replay->state == ReplayFinished) {
-			saveReplay(replay);
-			replay->state = ReplayNone;
-		}
-	} else {
-		struct replayFrame *frame = getQueueItem(replay->frames, replay->frame);
-		for (int y = 0; y < PLAYFIELD_H; y++)
-			for (int x = 0; x < PLAYFIELD_W; x++)
-				game->playfield[y][x] = frame->playfield[y][x];
-		game->player.state = frame->player.state;
-		game->player.x = frame->player.x;
-		game->player.y = frame->player.y;
-		game->player.type = frame->player.type;
-		game->player.preview = frame->player.preview;
-		game->player.rotation = frame->player.rotation;
-		game->level = frame->level;
-		game->nextLevelstop = frame->nextLevelstop;
-		game->score = frame->score;
-		copyArray(game->gradeString, frame->gradeString);
-		game->eligible = frame->eligible;
-		for (int i = 0; i < GameCmdSize; i++)
-			game->cmdRaw[i] = frame->cmdRaw[i];
-		game->time = (nsec)replay->frame * TIMER_FRAME;
-
-		if (replay->playing) {
-			replay->frame += 1;
-			clampReplayFrame();
-			if (replay->frame + 1 >= replay->frames->count)
-				replay->playing = false;
-		}
+	if (replay->state == ReplayFinished) {
+		saveReplay(replay);
+		replay->state = ReplayNone;
 	}
 
 	lockMutex(&appMutex);

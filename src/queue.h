@@ -4,14 +4,17 @@
 // the buffer 2x. Repeatedly filling it up and clearing with similar amounts
 // of items are very fast operations. However, a spike in size will cause a lot
 // of wasted memory for the rest of its existence
+// vqueue has no set item size, but retrieval offset
+// needs to be computed manually
 
 #ifndef QUEUE_H
 #define QUEUE_H
 
 #include <stdlib.h>
+#include <stdint.h>
 
 typedef struct queue {
-	void *buffer;
+	uint8_t *buffer;
 	size_t itemSize;
 	int count; // Number of items present
 	int allocated; // Number of items that can fit in the buffer
@@ -31,5 +34,17 @@ void *produceQueueItem(queue *q);
 
 void *getQueueItem(queue *q, int index);
 void clearQueue(queue *q);
+
+typedef struct vqueue {
+	uint8_t *buffer;
+	int size;
+	int allocated;
+} vqueue;
+
+vqueue *createVqueue(void);
+void destroyVqueue(vqueue *vq);
+void *produceVqueueItem(vqueue *vq, size_t itemSize);
+void *getVqueueItem(vqueue *vq, size_t offset);
+void clearVqueue(vqueue *vq);
 
 #endif // QUEUE_H
