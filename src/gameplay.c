@@ -376,183 +376,6 @@ static void spawnPiece(void)
 		gameOver();
 }
 
-// Maps generic inputs to gameplay commands
-static enum gameplayCmd inputToGameCmd(enum inputType i)
-{
-	switch (i) {
-	case InputLeft:
-		return GameCmdLeft;
-	case InputRight:
-		return GameCmdRight;
-//	case InputUp:
-//		return GameCmdSonic;
-	case InputDown:
-		return GameCmdSoft;
-	case InputButton1:
-		return GameCmdCCW;
-	case InputButton2:
-		return GameCmdCW;
-	case InputButton3:
-		return GameCmdCCW2;
-	default:
-		return GameCmdNone;
-	}
-}
-
-static enum replayCmd inputToReplayCmd(enum inputType i)
-{
-	switch (i) {
-	case InputButton1:
-		return ReplCmdPlay;
-	case InputLeft:
-		return ReplCmdBack;
-	case InputRight:
-		return ReplCmdFwd;
-	case InputDown:
-		return ReplCmdSkipBack;
-	case InputUp:
-		return ReplCmdSkipFwd;
-	case InputButton2:
-		return ReplCmdSlower;
-	case InputButton3:
-		return ReplCmdFaster;
-	default:
-		return ReplCmdNone;
-	}
-}
-
-static void clampReplayFrame(void)
-{
-	if (game->frame < 0)
-		game->frame = 0;
-	if (game->frame >= replay->header.totalFrames)
-		game->frame = replay->header.totalFrames - 1;
-}
-
-static void processReplayInput(struct input *i)
-{
-	enum replayCmd cmd = inputToReplayCmd(i->type);
-	switch (i->action) {
-	case ActionPressed:
-		if (i->type == InputQuit) {
-			setState(PhaseGameplay, StateUnstaged);
-			break;
-		}
-
-		switch (cmd) {
-		case ReplCmdPlay:
-			replay->playing = !replay->playing;
-			break;
-/*		case ReplCmdFwd:
-			replay->frame += 1;
-			break;
-		case ReplCmdBack:
-			replay->frame -= 1;
-			break;
-		case ReplCmdSkipFwd:
-			replay->frame += (int)(60.0f * replay->speed);
-			break;
-		case ReplCmdSkipBack:
-			replay->frame -= (int)(60.0f * replay->speed);
-			break;*/
-		case ReplCmdSlower:
-			replay->speed /= 2.0f;
-			break;
-		case ReplCmdFaster:
-			replay->speed *= 2.0f;
-			break;
-		default:
-			break;
-		}
-		clampReplayFrame();
-		logicFrequency = DEFAULT_FREQUENCY * replay->speed;
-	default:
-		break;
-	}
-}
-
-// Receive unfiltered inputs
-static void processGameInput(struct input *i)
-{
-	enum gameplayCmd cmd = inputToGameCmd(i->type);
-	switch (i->action) {
-	case ActionPressed:
-		// Starting and quitting is handled outside of gameplay logic
-		if (i->type == InputStart
-		    && getState(PhaseGameplay) == StateIntro)
-			setState(PhaseGameplay, StateRunning);
-		if (i->type == InputQuit) {
-			setState(PhaseGameplay, StateUnstaged);
-			break;
-		}
-
-		if (cmd != GameCmdNone)
-			game->cmdRaw[cmd] = true;
-		if (cmd == GameCmdLeft || cmd == GameCmdRight)
-			game->lastDirection = cmd;
-		break;
-
-	case ActionReleased:
-		if (cmd != GameCmdNone)
-			game->cmdRaw[inputToGameCmd(i->type)] = false;
-		break;
-	default:
-		break;
-	}
-}
-
-static void processReplayInputs(void)
-{
-	struct input *in = NULL;
-	while ((in = dequeueInput())) {
-		processReplayInput(in);
-		free(in);
-	}
-
-	if (replay->playing)
-		applyReplayInputs(game, replay, replay->frame);
-}
-
-// Polls for inputs and transforms them into gameplay commands
-static void processGameInputs(void)
-{
-	// Receive all pending inputs
-	struct input *in = NULL;
-	while ((in = dequeueInput())) {
-		processGameInput(in);
-		free(in);
-	}
-}
-
-static void filterInputs(void)
-{
-	// Rotate the input arrays
-	copyArray(game->cmdPrev, game->cmdHeld);
-	copyArray(game->cmdHeld, game->cmdRaw);
-
-	// Filter the conflicting inputs
-	if (game->cmdHeld[GameCmdSoft] || game->cmdHeld[GameCmdSonic]) {
-		game->cmdHeld[GameCmdLeft] = false;
-		game->cmdHeld[GameCmdRight] = false;
-	}
-	if (game->cmdHeld[GameCmdLeft] && game->cmdHeld[GameCmdRight]) {
-		if (game->lastDirection == GameCmdLeft)
-			game->cmdHeld[GameCmdRight] = false;
-		if (game->lastDirection == GameCmdRight)
-			game->cmdHeld[GameCmdLeft] = false;
-	}
-}
-
-static void processInputs(void)
-{
-	// Both get all inputs in the queue, interpret them and fill in cmdRaw
-	if (replay->state == ReplayViewing)
-		processReplayInputs();
-	else
-		processGameInputs();
-	filterInputs();
-}
-
 void initGameplay(void)
 {
 	snap = allocate(sizeof(*snap));
@@ -811,8 +634,203 @@ void calculateNextFrame(void)
 	updateWin();
 }
 
+// Maps generic inputs to gameplay commands
+static enum gameplayCmd inputToGameCmd(enum inputType i)
+{
+	switch (i) {
+	case InputLeft:
+		return GameCmdLeft;
+	case InputRight:
+		return GameCmdRight;
+//	case InputUp:
+//		return GameCmdSonic;
+	case InputDown:
+		return GameCmdSoft;
+	case InputButton1:
+		return GameCmdCCW;
+	case InputButton2:
+		return GameCmdCW;
+	case InputButton3:
+		return GameCmdCCW2;
+	default:
+		return GameCmdNone;
+	}
+}
+
+static enum replayCmd inputToReplayCmd(enum inputType i)
+{
+	switch (i) {
+	case InputButton1:
+		return ReplCmdPlay;
+	case InputLeft:
+		return ReplCmdBack;
+	case InputRight:
+		return ReplCmdFwd;
+	case InputDown:
+		return ReplCmdSkipBack;
+	case InputUp:
+		return ReplCmdSkipFwd;
+	case InputButton2:
+		return ReplCmdSlower;
+	case InputButton3:
+		return ReplCmdFaster;
+	default:
+		return ReplCmdNone;
+	}
+}
+
+static void clampReplayFrame(void)
+{
+	if (game->frame < 0)
+		game->frame = 0;
+	if (game->frame >= replay->header.totalFrames)
+		game->frame = replay->header.totalFrames - 1;
+}
+
+// Receive unfiltered inputs
+static void processGameInput(struct input *i)
+{
+	enum gameplayCmd cmd = inputToGameCmd(i->type);
+	switch (i->action) {
+	case ActionPressed:
+		// Starting and quitting is handled outside of gameplay logic
+		if (i->type == InputStart
+		    && getState(PhaseGameplay) == StateIntro)
+			setState(PhaseGameplay, StateRunning);
+		if (i->type == InputQuit) {
+			setState(PhaseGameplay, StateUnstaged);
+			break;
+		}
+
+		if (cmd != GameCmdNone)
+			game->cmdRaw[cmd] = true;
+		if (cmd == GameCmdLeft || cmd == GameCmdRight)
+			game->lastDirection = cmd;
+		break;
+
+	case ActionReleased:
+		if (cmd != GameCmdNone)
+			game->cmdRaw[inputToGameCmd(i->type)] = false;
+		break;
+	default:
+		break;
+	}
+}
+
+static void filterInputs(void)
+{
+	// Rotate the input arrays
+	copyArray(game->cmdPrev, game->cmdHeld);
+	copyArray(game->cmdHeld, game->cmdRaw);
+
+	// Filter the conflicting inputs
+	if (game->cmdHeld[GameCmdSoft] || game->cmdHeld[GameCmdSonic]) {
+		game->cmdHeld[GameCmdLeft] = false;
+		game->cmdHeld[GameCmdRight] = false;
+	}
+	if (game->cmdHeld[GameCmdLeft] && game->cmdHeld[GameCmdRight]) {
+		if (game->lastDirection == GameCmdLeft)
+			game->cmdHeld[GameCmdRight] = false;
+		if (game->lastDirection == GameCmdRight)
+			game->cmdHeld[GameCmdLeft] = false;
+	}
+}
+
+// Fills in cmdRaw with pending inputs
+static void processInputs(void)
+{
+	if (replay->state == ReplayViewing) {
+		applyReplayInputs(game, replay, game->frame);
+	} else {
+		// Receive all pending inputs
+		struct input *in = NULL;
+		while ((in = dequeueInput())) {
+			processGameInput(in);
+			free(in);
+		}
+	}
+
+	filterInputs();
+}
+
+void jumpToFrame(int frame)
+{
+	if (frame < 0)
+		frame = 0;
+	if (frame >= replay->header.totalFrames)
+		frame = replay->header.totalFrames - 1;
+
+	int keyframeOffset = frame % replay->header.keyframeFreq;
+	applyReplayKeyframe(game, replay, frame - keyframeOffset);
+	replay->frame = game->frame;
+
+	for (int i = 0; i < keyframeOffset; i++) {
+		processInputs();
+		calculateNextFrame();
+		replay->frame += 1;
+	}
+}
+
+static void processReplayInput(struct input *i)
+{
+	enum replayCmd cmd = inputToReplayCmd(i->type);
+	switch (i->action) {
+	case ActionPressed:
+		if (i->type == InputQuit) {
+			setState(PhaseGameplay, StateUnstaged);
+			break;
+		}
+
+		switch (cmd) {
+		case ReplCmdPlay:
+			replay->playing = !replay->playing;
+			break;
+		case ReplCmdFwd:
+			replay->frame += 1;
+			processInputs();
+			calculateNextFrame();
+			break;
+		case ReplCmdBack:
+			jumpToFrame(replay->frame - 1);
+			break;
+		case ReplCmdSkipFwd:
+			jumpToFrame(
+				replay->frame + (int)(60.0f * replay->speed));
+			break;
+		case ReplCmdSkipBack:
+			jumpToFrame(
+				replay->frame - (int)(60.0f * replay->speed));
+			break;
+		case ReplCmdSlower:
+			replay->speed /= 2.0f;
+			break;
+		case ReplCmdFaster:
+			replay->speed *= 2.0f;
+			break;
+		default:
+			break;
+		}
+		clampReplayFrame();
+		logicFrequency = DEFAULT_FREQUENCY * replay->speed;
+	default:
+		break;
+	}
+}
+
+static void processReplayInputs(void)
+{
+	struct input *in = NULL;
+	while ((in = dequeueInput())) {
+		processReplayInput(in);
+		free(in);
+	}
+}
+
 void updateGameplay(void)
 {
+	if (replay->state == ReplayViewing)
+		processReplayInputs();
+
 	processInputs();
 
 	if (replay->state == ReplayViewing) {
@@ -826,7 +844,8 @@ void updateGameplay(void)
 		}
 	}
 
-	if (replay->state == ReplayRecording) {
+	if (replay->state == ReplayRecording &&
+	    getState(PhaseGameplay) == StateRunning) {
 		calculateNextFrame();
 		pushReplayFrame(replay, game);
 	}
