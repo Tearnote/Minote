@@ -44,6 +44,7 @@ static GLfloat vertexData[] = {
 struct minoInstance {
 	GLfloat x, y;
 	GLfloat r, g, b, a;
+	GLfloat highlight;
 };
 static queue *minoQueue = NULL;
 
@@ -86,6 +87,7 @@ void initMinoRenderer(void)
 	glEnableVertexAttribArray(1);
 	glEnableVertexAttribArray(2);
 	glEnableVertexAttribArray(3);
+	glEnableVertexAttribArray(4);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6,
 	                      (GLvoid *)0);
@@ -93,12 +95,15 @@ void initMinoRenderer(void)
 	                      (GLvoid *)(sizeof(GLfloat) * 3));
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6,
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7,
 	                      (GLvoid *)0);
 	glVertexAttribDivisor(2, 1);
-	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6,
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7,
 	                      (GLvoid *)(sizeof(GLfloat) * 2));
 	glVertexAttribDivisor(3, 1);
+	glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 7,
+	                      (GLvoid *)(sizeof(GLfloat) * 6));
+	glVertexAttribDivisor(4, 1);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 }
@@ -122,13 +127,15 @@ void calculateHighlights(struct game *game)
 	clearArray(highlights);
 
 	// Calculate lock flash
-	if (game->player.state == PlayerSpawn && game->player.spawnDelay < CLEAR_OFFSET)
+	int flashDuration = CLEAR_OFFSET * 2;
+	int framesSinceLock = game->player.spawnDelay + game->player.clearDelay;
+	if (game->player.state == PlayerSpawn && framesSinceLock < flashDuration)
 	for (int i = 0; i < MINOS_PER_PIECE; i++) {
 		int x = rs[game->player.type][game->player.rotation][i].x;
 		x += game->player.x;
 		int y = rs[game->player.type][game->player.rotation][i].y;
 		y += game->player.y;
-		highlights[y][x] = 1.0f / (float)CLEAR_OFFSET * (float)(CLEAR_OFFSET - game->player.spawnDelay);
+		highlights[y][x] = 1.0f / (float)flashDuration * (float)(flashDuration - framesSinceLock);
 	}
 }
 
@@ -144,12 +151,10 @@ void queueMinoPlayfield(enum mino field[PLAYFIELD_H][PLAYFIELD_W])
 			newInstance->x = (GLfloat)(x - PLAYFIELD_W / 2.0);
 			newInstance->y = (GLfloat)(PLAYFIELD_H - 1 - y);
 			newInstance->r = minoColors[minoType][0] / 4;
-			newInstance->r += (1.0f - newInstance->r) * highlights[y][x];
 			newInstance->g = minoColors[minoType][1] / 4;
-			newInstance->g += (1.0f - newInstance->g) * highlights[y][x];
 			newInstance->b = minoColors[minoType][2] / 4;
-			newInstance->b += (1.0f - newInstance->b) * highlights[y][x];
 			newInstance->a = minoColors[minoType][3];
+			newInstance->highlight = highlights[y][x];
 		}
 	}
 }
@@ -173,6 +178,7 @@ void queueMinoPlayer(struct player *player)
 		newInstance->g = minoColors[player->type][1] * lockDim;
 		newInstance->b = minoColors[player->type][2] * lockDim;
 		newInstance->a = minoColors[player->type][3];
+		newInstance->highlight = 0.0f;
 	}
 }
 
@@ -191,6 +197,7 @@ void queueMinoPreview(struct player *player)
 		newInstance->g = minoColors[player->preview][1];
 		newInstance->b = minoColors[player->preview][2];
 		newInstance->a = minoColors[player->preview][3];
+		newInstance->highlight = 0.0f;
 	}
 }
 

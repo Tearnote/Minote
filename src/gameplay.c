@@ -358,6 +358,7 @@ static void spawnPiece(void)
 	player->ySub = 0;
 	player->lockDelay = 0;
 	player->spawnDelay = 0;
+	player->clearDelay = 0;
 	player->rotation = 0;
 	player->dropBonus = 0;
 
