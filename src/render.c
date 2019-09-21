@@ -145,6 +145,7 @@ static void renderFrame(void)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	renderScene();
+	calculateHighlights(snap->game);
 	queueMinoPlayfield(snap->game->playfield);
 	queueMinoPlayer(&snap->game->player);
 	queueMinoPreview(&snap->game->player);

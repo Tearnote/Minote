@@ -10,6 +10,10 @@
 void initMinoRenderer(void);
 void cleanupMinoRenderer(void);
 
+// Update the state of the effects that highlight certain playfield blocks,
+// such as lock flash
+void calculateHighlights(struct game *game);
+
 // Add various parts of the gameplay to the queue of minos to render
 void queueMinoPlayfield(enum mino playfield[PLAYFIELD_H][PLAYFIELD_W]);
 void queueMinoPlayer(struct player *player);

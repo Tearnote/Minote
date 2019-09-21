@@ -17,7 +17,7 @@
 
 #define INSTANCE_LIMIT 256 // More minos than that will be ignored
 
-#define LOCKDIM_STRENGTH 0.75
+#define LOCKDIM_STRENGTH 0.75f
 
 static GLuint program = 0;
 static GLuint vao = 0;
@@ -46,6 +46,9 @@ struct minoInstance {
 	GLfloat r, g, b, a;
 };
 static queue *minoQueue = NULL;
+
+// Strength of the highlight effect on each block
+float highlights[PLAYFIELD_H][PLAYFIELD_W] = {};
 
 void initMinoRenderer(void)
 {
@@ -114,6 +117,21 @@ void cleanupMinoRenderer(void)
 	minoQueue = NULL;
 }
 
+void calculateHighlights(struct game *game)
+{
+	clearArray(highlights);
+
+	// Calculate lock flash
+	if (game->player.state == PlayerSpawn && game->player.spawnDelay < CLEAR_OFFSET)
+	for (int i = 0; i < MINOS_PER_PIECE; i++) {
+		int x = rs[game->player.type][game->player.rotation][i].x;
+		x += game->player.x;
+		int y = rs[game->player.type][game->player.rotation][i].y;
+		y += game->player.y;
+		highlights[y][x] = 1.0f / (float)CLEAR_OFFSET * (float)(CLEAR_OFFSET - game->player.spawnDelay);
+	}
+}
+
 void queueMinoPlayfield(enum mino field[PLAYFIELD_H][PLAYFIELD_W])
 {
 	for (int y = PLAYFIELD_H_HIDDEN; y < PLAYFIELD_H; y++) {
@@ -126,8 +144,11 @@ void queueMinoPlayfield(enum mino field[PLAYFIELD_H][PLAYFIELD_W])
 			newInstance->x = (GLfloat)(x - PLAYFIELD_W / 2.0);
 			newInstance->y = (GLfloat)(PLAYFIELD_H - 1 - y);
 			newInstance->r = minoColors[minoType][0] / 4;
+			newInstance->r += (1.0f - newInstance->r) * highlights[y][x];
 			newInstance->g = minoColors[minoType][1] / 4;
+			newInstance->g += (1.0f - newInstance->g) * highlights[y][x];
 			newInstance->b = minoColors[minoType][2] / 4;
+			newInstance->b += (1.0f - newInstance->b) * highlights[y][x];
 			newInstance->a = minoColors[minoType][3];
 		}
 	}
