@@ -2,8 +2,6 @@
 
 #include "scenerender.h"
 
-#include <math.h>
-
 #include "glad/glad.h"
 
 #include "render.h"

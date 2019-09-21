@@ -19,8 +19,8 @@
 #include "minorender.h"
 #include "borderrender.h"
 #include "textrender.h"
+#include "postrender.h"
 #include "util.h"
-#include "gameplay.h"
 #include "replay.h"
 #include "timer.h"
 // Damn that's a lot of includes
@@ -105,6 +105,7 @@ static void renderFrame(void)
 		mat4x4_perspective(projection, radf(45.0f),
 		                   (float)viewportWidth / (float)viewportHeight,
 		                   PROJECTION_NEAR, PROJECTION_FAR);
+		resizePostRender(viewportWidth, viewportHeight);
 		viewportDirty = false;
 	}
 	unlockMutex(&viewportMutex);
@@ -137,6 +138,8 @@ static void renderFrame(void)
 	lightPosition[1] = lightPositionTemp[1];
 	lightPosition[2] = lightPositionTemp[2];
 
+	renderPostStart();
+
 	//glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glClearColor(powf(0.48f, 2.2f),
 	             powf(0.75f, 2.2f),
@@ -156,10 +159,13 @@ static void renderFrame(void)
 	if (snap->replay->state == ReplayViewing)
 		queueReplayText(snap->replay);
 	renderText();
+
+	renderPostEnd();
 }
 
 static void cleanupRenderer(void)
 {
+	cleanupPostRenderer();
 	cleanupTextRenderer();
 	cleanupBorderRenderer();
 	cleanupMinoRenderer();
@@ -208,6 +214,7 @@ static void initRenderer(void)
 	initMinoRenderer();
 	initBorderRenderer();
 	initTextRenderer();
+	initPostRenderer();
 
 	lastRenderTime = getTime();
 

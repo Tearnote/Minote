@@ -55,7 +55,9 @@ set(GLSL_SOURCES
         src/glsl/border.vert.glsl
         src/glsl/border.frag.glsl
         src/glsl/text.vert.glsl
-        src/glsl/text.frag.glsl)
+        src/glsl/text.frag.glsl
+        src/glsl/post.vert.glsl
+        src/glsl/post.frag.glsl)
 
 foreach (GLSL_PATH ${GLSL_SOURCES})
     get_filename_component(GLSL_FILENAME ${GLSL_PATH} NAME_WLE)
@@ -100,18 +102,17 @@ set(C_INTERNALLIBS
         lib/readall/readall.c
         lib/parson/parson.c)
 set(C_SOURCES
-        src/fifo.c
+        src/main.c
         src/gameplay.c
         src/input.c
         src/log.c
         src/logic.c
-        src/main.c
         src/mino.c
         src/textrender.c
         src/scenerender.c
         src/minorender.c
         src/borderrender.c
-        src/queue.c
+        src/postrender.c
         src/render.c
         src/state.c
         src/thread.c
@@ -120,7 +121,9 @@ set(C_SOURCES
         src/window.c
         src/font.c
         src/replay.c
-        src/settings.c)
+        src/settings.c
+        src/fifo.c
+        src/queue.c)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD
