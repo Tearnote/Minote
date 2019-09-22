@@ -32,7 +32,6 @@ thread rendererThreadID = 0;
 mat4x4 camera = {};
 mat4x4 projection = {};
 vec3 lightPosition = {};
-
 vec4 lightPositionWorld = {};
 
 int viewportWidth = DEFAULT_WIDTH; //SYNC viewportMutex
@@ -46,6 +45,25 @@ static struct app *snap = NULL;
 
 static nsec lastRenderTime = 0;
 static nsec timeElapsed = 0;
+
+struct background {
+	int level;
+	float color[3];
+};
+
+static struct background backgrounds[] = {
+	{ .level = -1, .color = { 0.262f, 0.533f, 0.849f }}, // Default
+	{ .level = 0, .color = { 0.010f, 0.276f, 0.685f }},
+	{ .level = 100, .color = { 0.070f, 0.280f, 0.201f }},
+	{ .level = 200, .color = { 0.502f, 0.260f, 0.394f }},
+	{ .level = 300, .color = { 0.405f, 0.468f, 0.509f }},
+	{ .level = 400, .color = { 0.394f, 0.318f, 0.207f }},
+	{ .level = 500, .color = { 0.368f, 0.290f, 0.084f }},
+	{ .level = 600, .color = { 0.030f, 0.238f, 0.151f }},
+	{ .level = 700, .color = { 0.093f, 0.137f, 0.057f }},
+	{ .level = 800, .color = { 0.104f, 0.022f, 0.002f }},
+	{ .level = 900, .color = { 0.366f, 0.265f, 0.590f }}
+};
 
 // Compiles a shader from source
 static GLuint createShader(const GLchar *source, GLenum type)
@@ -63,6 +81,24 @@ static GLuint createShader(const GLchar *source, GLenum type)
 		return 0;
 	}
 	return shader;
+}
+
+static void setBackground(void)
+{
+	int bg = 0;
+
+	if (getState(PhaseGameplay) != StateIntro) {
+		for (int i = 1; i < countof(backgrounds); i++) {
+			if (backgrounds[i].level > snap->game->level)
+				break;
+			bg = i;
+		}
+	}
+
+	glClearColor(backgrounds[bg].color[0],
+	             backgrounds[bg].color[1],
+	             backgrounds[bg].color[2], 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 GLuint createProgram(const GLchar *vertexShaderSrc,
@@ -140,8 +176,7 @@ static void renderFrame(void)
 
 	renderPostStart();
 
-	glClearColor(0.262f, 0.533f, 0.849f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	setBackground();
 
 	renderScene();
 	calculateHighlights(snap->game);

@@ -8,3 +8,4 @@ Add some more logging
 Verify replay values to prevent crashes
 Verify that the replay isn't truncated
 Test for desyncs by comparing current state with keyframes
+Add GM requirements into game state and replay
