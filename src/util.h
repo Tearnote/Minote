@@ -37,6 +37,8 @@ void _assertFailed(const char *cond);
 // Classic MIN/MAX macros, complete with double evaluation bugs
 #define min(a, b) \
         ((a) < (b) ? (a) : (b))
+#define max(a, b) \
+        ((a) > (b) ? (a) : (b))
 
 // Length of an array
 #define countof(x) \

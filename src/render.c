@@ -140,11 +140,7 @@ static void renderFrame(void)
 
 	renderPostStart();
 
-	//glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-	glClearColor(powf(0.48f, 2.2f),
-	             powf(0.75f, 2.2f),
-	             powf(0.83f, 2.2f),
-	             1.0f);
+	glClearColor(0.262f, 0.533f, 0.849f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	renderScene();

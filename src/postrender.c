@@ -18,7 +18,19 @@ static GLuint renderFboDepth = 0;
 static GLuint resolveFbo = 0;
 static GLuint resolveFboColor = 0;
 
-static GLuint program = 0;
+static GLuint bloomFbo = 0;
+static GLuint bloomFboColor = 0;
+static GLuint bloom2Fbo = 0;
+static GLuint bloom2FboColor = 0;
+
+static GLuint thresholdProgram = 0;
+static GLuint blurProgram = 0;
+static GLint stepAttr = -1;
+static GLuint composeProgram = 0;
+static GLint screenAttr = -1;
+static GLint bloomAttr = -1;
+static GLint bloomStrengthAttr = -1;
+
 static GLuint vao = 0;
 static GLuint vertexBuffer = 0;
 
@@ -33,20 +45,51 @@ float vertexData[] = { // vec2 position, vec2 texcoords
 };
 
 static int fboWidth = DEFAULT_WIDTH;
-static int fboHeight = DEFAULT_WIDTH;
+static int fboHeight = DEFAULT_HEIGHT;
+static int bloomWidth = DEFAULT_WIDTH;
+static int bloomHeight = DEFAULT_HEIGHT;
+
+static int blurKernel[] = { 0, 1, 2, 3, 4, 5, 7, 8, 9, 10 };
 
 void initPostRenderer(void)
 {
-	const GLchar vertSrc[] = {
-#include "post.vert"
+	// Create the shader programs
+	const GLchar thresholdVertSrc[] = {
+#include "threshold.vert"
 		, 0x00 };
-	const GLchar fragSrc[] = {
-#include "post.frag"
+	const GLchar thresholdFragSrc[] = {
+#include "threshold.frag"
 		, 0x00 };
-	program = createProgram(vertSrc, fragSrc);
-	if (program == 0)
+	thresholdProgram = createProgram(thresholdVertSrc, thresholdFragSrc);
+	if (thresholdProgram == 0)
 		logError("Failed to initialize post renderer");
 
+	const GLchar blurVertSrc[] = {
+#include "blur.vert"
+		, 0x00 };
+	const GLchar blurFragSrc[] = {
+#include "blur.frag"
+		, 0x00 };
+	blurProgram = createProgram(blurVertSrc, blurFragSrc);
+	if (blurProgram == 0)
+		logError("Failed to initialize post renderer");
+	stepAttr = glGetUniformLocation(blurProgram, "step");
+
+	const GLchar composeVertSrc[] = {
+#include "compose.vert"
+		, 0x00 };
+	const GLchar composeFragSrc[] = {
+#include "compose.frag"
+		, 0x00 };
+	composeProgram = createProgram(composeVertSrc, composeFragSrc);
+	if (composeProgram == 0)
+		logError("Failed to initialize post renderer");
+	screenAttr = glGetUniformLocation(composeProgram, "screen");
+	bloomAttr = glGetUniformLocation(composeProgram, "bloom");
+	bloomStrengthAttr =
+		glGetUniformLocation(composeProgram, "bloomStrength");
+
+	// Create VAO
 	glGenBuffers(1, &vertexBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertexData), vertexData,
@@ -65,6 +108,7 @@ void initPostRenderer(void)
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
+	// Create the initial framebuffer
 	glGenFramebuffers(1, &renderFbo);
 
 	glGenTextures(1, &renderFboColor);
@@ -76,6 +120,7 @@ void initPostRenderer(void)
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 	glGenRenderbuffers(1, &renderFboDepth);
 
+	// Create the resolve framebuffer
 	glGenFramebuffers(1, &resolveFbo);
 
 	glGenTextures(1, &resolveFboColor);
@@ -84,8 +129,27 @@ void initPostRenderer(void)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
+	// Create the bloom framebuffers
+	glGenFramebuffers(1, &bloomFbo);
+
+	glGenTextures(1, &bloomFboColor);
+	glBindTexture(GL_TEXTURE_2D, bloomFboColor);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	glGenFramebuffers(1, &bloom2Fbo);
+
+	glGenTextures(1, &bloom2FboColor);
+	glBindTexture(GL_TEXTURE_2D, bloom2FboColor);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	// Initialize the framebuffer attachments
 	resizePostRender(DEFAULT_WIDTH, DEFAULT_HEIGHT);
 
+	// Bind the framebuffers
 	glBindFramebuffer(GL_FRAMEBUFFER, renderFbo);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
 	                       GL_TEXTURE_2D_MULTISAMPLE, renderFboColor, 0);
@@ -107,12 +171,35 @@ void initPostRenderer(void)
 		exit(EXIT_FAILURE);
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, bloomFbo);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+	                       GL_TEXTURE_2D, bloomFboColor, 0);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER)
+	    != GL_FRAMEBUFFER_COMPLETE) {
+		logCrit("Failed to initialize bloom framebuffer");
+		exit(EXIT_FAILURE);
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, bloom2Fbo);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+	                       GL_TEXTURE_2D, bloom2FboColor, 0);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER)
+	    != GL_FRAMEBUFFER_COMPLETE) {
+		logCrit("Failed to initialize bloom2 framebuffer");
+		exit(EXIT_FAILURE);
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void resizePostRender(int width, int height)
 {
+	bloomHeight = min(720, height);
+	bloomWidth = (float)bloomHeight * ((float)width / (float)height);
+
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderFboColor);
-	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA,
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA8,
 	                        width, height, GL_TRUE);
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 
@@ -122,8 +209,18 @@ void resizePostRender(int width, int height)
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
 	glBindTexture(GL_TEXTURE_2D, resolveFboColor);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_BGRA,
 	             GL_UNSIGNED_BYTE, NULL);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	glBindTexture(GL_TEXTURE_2D, bloomFboColor);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16, bloomWidth, bloomHeight, 0,
+	             GL_BGRA, GL_UNSIGNED_BYTE, NULL);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	glBindTexture(GL_TEXTURE_2D, bloom2FboColor);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16, bloomWidth, bloomHeight, 0,
+	             GL_BGRA, GL_UNSIGNED_BYTE, NULL);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	fboWidth = width;
@@ -132,6 +229,14 @@ void resizePostRender(int width, int height)
 
 void cleanupPostRenderer(void)
 {
+	glDeleteTextures(1, &bloom2FboColor);
+	bloom2FboColor = 0;
+	glDeleteFramebuffers(1, &bloom2Fbo);
+	bloom2Fbo = 0;
+	glDeleteTextures(1, &bloomFboColor);
+	bloomFboColor = 0;
+	glDeleteFramebuffers(1, &bloomFbo);
+	bloomFbo = 0;
 	glDeleteTextures(1, &resolveFboColor);
 	resolveFboColor = 0;
 	glDeleteFramebuffers(1, &resolveFbo);
@@ -155,20 +260,54 @@ void renderPostStart(void)
 
 void renderPostEnd(void)
 {
+	// Resolve the MSAA image
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, renderFbo);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, resolveFbo);
 	glBlitFramebuffer(0, 0, fboWidth, fboHeight, 0, 0, fboWidth, fboHeight,
 	                  GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	// Draw the threshold
+	glBindFramebuffer(GL_FRAMEBUFFER, bloomFbo);
+	glViewport(0, 0, bloomWidth, bloomHeight);
 
-	glUseProgram(program);
+	glUseProgram(thresholdProgram);
 	glBindVertexArray(vao);
 	glDisable(GL_DEPTH_TEST);
 
 	glBindTexture(GL_TEXTURE_2D, resolveFboColor);
 	glDrawArrays(GL_TRIANGLES, 0, countof(vertexData) / 4);
 
+	// Draw blur
+	glUseProgram(blurProgram);
+
+	for (int i = 0; i < countof(blurKernel); i++) {
+		GLuint fb = (i % 2 == 0) ? (bloom2Fbo) : (bloomFbo);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fb);
+
+		GLuint tx = (i % 2 == 0) ? (bloomFboColor) : (bloom2FboColor);
+		glBindTexture(GL_TEXTURE_2D, tx);
+		glUniform1i(stepAttr, blurKernel[i]);
+		glDrawArrays(GL_TRIANGLES, 0, countof(vertexData) / 4);
+	}
+
+	// Draw everything on screen
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	glViewport(0, 0, fboWidth, fboHeight);
+
+	glUseProgram(composeProgram);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, resolveFboColor);
+	glUniform1i(screenAttr, 0);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D,
+	              (countof(blurKernel) % 2 == 0) ? (bloomFboColor)
+	                                             : (bloom2FboColor));
+	glUniform1i(bloomAttr, 1);
+	glUniform1f(bloomStrengthAttr, 0.5f);
+	glDrawArrays(GL_TRIANGLES, 0, countof(vertexData) / 4);
+
+	glActiveTexture(GL_TEXTURE0);
 	glEnable(GL_DEPTH_TEST);
 	glBindVertexArray(0);
 	glUseProgram(0);

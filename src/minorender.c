@@ -228,10 +228,7 @@ void renderMino(void)
 	glUniformMatrix4fv(normalCameraAttr, 1, GL_FALSE, normalCamera[0]);
 	glUniformMatrix4fv(projectionAttr, 1, GL_FALSE, projection[0]);
 	glUniform3fv(lightPositionAttr, 1, lightPosition);
-	glUniform3f(lightColorAttr,
-	            powf(1.0f, 2.2f),
-	            powf(1.0f, 2.2f),
-	            powf(1.0f, 2.2f));
+	glUniform3f(lightColorAttr, 0.7f, 0.839f, 1.0f);
 	glUniform1f(ambientStrengthAttr, powf(0.25f, 2.2f));
 	glUniform1f(diffuseStrengthAttr, powf(1.0f, 2.2f));
 	glUniform1f(specularStrengthAttr, powf(0.5f, 2.2f));

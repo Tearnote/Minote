@@ -4,4 +4,7 @@ Refactor repetitive parts of rendering
 Refactor file operations (fclose can return a write error!)
 Package licenses and readme
 Make libraries use our own malloc when possible
-Add some more de/initialization logging
+Add some more logging
+Verify replay values to prevent crashes
+Verify that the replay isn't truncated
+Test for desyncs by comparing current state with keyframes
