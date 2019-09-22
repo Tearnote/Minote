@@ -104,7 +104,8 @@ set(C_INTERNALLIBS
         lib/glad/glad.c
         lib/pcg/pcg_basic.c
         lib/readall/readall.c
-        lib/parson/parson.c)
+        lib/parson/parson.c
+        lib/AHEasing/easing.c)
 set(C_SOURCES
         src/main.c
         src/gameplay.c
@@ -127,7 +128,8 @@ set(C_SOURCES
         src/replay.c
         src/settings.c
         src/fifo.c
-        src/queue.c)
+        src/queue.c
+        src/ease.c)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD

@@ -23,10 +23,13 @@
 #include "util.h"
 #include "replay.h"
 #include "timer.h"
+#include "ease.h"
 // Damn that's a lot of includes
 
 #define destroyShader \
         glDeleteShader
+
+#define BGFADE_LENGTH (1 * SEC)
 
 thread rendererThreadID = 0;
 mat4x4 camera = {};
@@ -65,6 +68,9 @@ static struct background backgrounds[] = {
 	{ .level = 900, .color = { 0.366f, 0.265f, 0.590f }}
 };
 
+static int currentBackground = 0;
+static float backgroundColor[3] = {};
+
 // Compiles a shader from source
 static GLuint createShader(const GLchar *source, GLenum type)
 {
@@ -83,21 +89,36 @@ static GLuint createShader(const GLchar *source, GLenum type)
 	return shader;
 }
 
-static void setBackground(void)
+static void updateBackground(void)
 {
-	int bg = 0;
+	int newBackground = 0;
 
 	if (getState(PhaseGameplay) != StateIntro) {
 		for (int i = 1; i < countof(backgrounds); i++) {
 			if (backgrounds[i].level > snap->game->level)
 				break;
-			bg = i;
+			newBackground = i;
 		}
 	}
 
-	glClearColor(backgrounds[bg].color[0],
-	             backgrounds[bg].color[1],
-	             backgrounds[bg].color[2], 1.0f);
+	if (currentBackground != newBackground) {
+		addEase(&backgroundColor[0],
+		        backgroundColor[0],
+		        backgrounds[newBackground].color[0],
+		        BGFADE_LENGTH / snap->replay->speed, EaseInOutCubic);
+		addEase(&backgroundColor[1],
+		        backgroundColor[1],
+		        backgrounds[newBackground].color[1],
+		        BGFADE_LENGTH / snap->replay->speed, EaseInOutCubic);
+		addEase(&backgroundColor[2],
+		        backgroundColor[2],
+		        backgrounds[newBackground].color[2],
+		        BGFADE_LENGTH / snap->replay->speed, EaseInOutCubic);
+		currentBackground = newBackground;
+	}
+
+	glClearColor(backgroundColor[0], backgroundColor[1], backgroundColor[2],
+	             1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
@@ -170,13 +191,12 @@ static void renderFrame(void)
 
 	vec4 lightPositionTemp;
 	mat4x4_mul_vec4(lightPositionTemp, camera, lightPositionWorld);
-	lightPosition[0] = lightPositionTemp[0];
-	lightPosition[1] = lightPositionTemp[1];
-	lightPosition[2] = lightPositionTemp[2];
+	copyArray(lightPosition, lightPositionTemp);
 
 	renderPostStart();
 
-	setBackground();
+	updateBackground();
+	updateEase();
 
 	renderScene();
 	calculateHighlights(snap->game);
@@ -201,6 +221,7 @@ static void cleanupRenderer(void)
 	cleanupBorderRenderer();
 	cleanupMinoRenderer();
 	cleanupSceneRenderer();
+	cleanupEase();
 	if (snap->replay)
 		free(snap->replay);
 	if (snap->game)
@@ -241,6 +262,10 @@ static void initRenderer(void)
 	lightPositionWorld[2] = 16.0f;
 	lightPositionWorld[3] = 1.0f;
 
+	currentBackground = 0;
+	copyArray(backgroundColor, backgrounds[currentBackground].color);
+
+	initEase();
 	initSceneRenderer();
 	initMinoRenderer();
 	initBorderRenderer();
