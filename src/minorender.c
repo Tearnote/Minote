@@ -18,6 +18,7 @@
 #define INSTANCE_LIMIT 256 // More minos than that will be ignored
 
 #define LOCKDIM_STRENGTH 0.75f
+#define FLASH_STRENGTH 0.75f
 
 static GLuint program = 0;
 static GLuint vao = 0;
@@ -131,8 +132,8 @@ void calculateHighlights(struct game *game)
 	int flashDuration = CLEAR_OFFSET * 2;
 	int framesSinceLock = game->player.spawnDelay + game->player.clearDelay;
 	if ((game->player.state == PlayerSpawn
-	     || game->player.state == PlayerClear) {
-	    && framesSinceLock < flashDuration)
+	     || game->player.state == PlayerClear)
+	    && framesSinceLock < flashDuration) {
 		for (int i = 0; i < MINOS_PER_PIECE; i++) {
 			int x = rs[game->player.type][game->player.rotation][i]
 				.x;
@@ -140,7 +141,7 @@ void calculateHighlights(struct game *game)
 			int y = rs[game->player.type][game->player.rotation][i]
 				.y;
 			y += game->player.y;
-			highlights[y][x] = 1.0f / (float)flashDuration
+			highlights[y][x] = FLASH_STRENGTH / (float)flashDuration
 			                   * (float)(flashDuration
 			                             - framesSinceLock);
 		}

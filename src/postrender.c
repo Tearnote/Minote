@@ -24,6 +24,7 @@ static GLuint bloom2Fbo = 0;
 static GLuint bloom2FboColor = 0;
 
 static GLuint thresholdProgram = 0;
+static GLint thresholdAttr = -1;
 static GLuint blurProgram = 0;
 static GLint stepAttr = -1;
 static GLuint composeProgram = 0;
@@ -63,6 +64,7 @@ void initPostRenderer(void)
 	thresholdProgram = createProgram(thresholdVertSrc, thresholdFragSrc);
 	if (thresholdProgram == 0)
 		logError("Failed to initialize post renderer");
+	thresholdAttr = glGetUniformLocation(thresholdProgram, "threshold");
 
 	const GLchar blurVertSrc[] = {
 #include "blur.vert"
@@ -275,6 +277,7 @@ void renderPostEnd(void)
 	glDisable(GL_DEPTH_TEST);
 
 	glBindTexture(GL_TEXTURE_2D, resolveFboColor);
+	glUniform1f(thresholdAttr, 0.7f);
 	glDrawArrays(GL_TRIANGLES, 0, countof(vertexData) / 4);
 
 	// Draw blur
@@ -304,7 +307,7 @@ void renderPostEnd(void)
 	              (countof(blurKernel) % 2 == 0) ? (bloomFboColor)
 	                                             : (bloom2FboColor));
 	glUniform1i(bloomAttr, 1);
-	glUniform1f(bloomStrengthAttr, 0.25f);
+	glUniform1f(bloomStrengthAttr, 0.4f);
 	glDrawArrays(GL_TRIANGLES, 0, countof(vertexData) / 4);
 
 	glActiveTexture(GL_TEXTURE0);
