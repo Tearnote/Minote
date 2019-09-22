@@ -28,6 +28,6 @@ void main()
 
 	float colorMod = mix(0.5, 1.5, fVertical);
 	vec4 newColor = vec4(vec3(fColor) * colorMod, fColor.a);
-	newColor = mix(newColor, vec4(1.0, 1.0, 1.0, 1.0), fHighlight);
 	outColor = vec4(ambient + diffuse + specular, 1.0) * newColor;
+	outColor = mix(outColor, vec4(1.0, 1.0, 1.0, 1.0), fHighlight);
 }

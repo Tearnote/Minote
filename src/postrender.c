@@ -304,7 +304,7 @@ void renderPostEnd(void)
 	              (countof(blurKernel) % 2 == 0) ? (bloomFboColor)
 	                                             : (bloom2FboColor));
 	glUniform1i(bloomAttr, 1);
-	glUniform1f(bloomStrengthAttr, 0.5f);
+	glUniform1f(bloomStrengthAttr, 0.25f);
 	glDrawArrays(GL_TRIANGLES, 0, countof(vertexData) / 4);
 
 	glActiveTexture(GL_TEXTURE0);

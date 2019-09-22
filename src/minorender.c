@@ -71,7 +71,8 @@ void initMinoRenderer(void)
 	lightColorAttr = glGetUniformLocation(program, "lightColor");
 	ambientStrengthAttr = glGetUniformLocation(program, "ambientStrength");
 	diffuseStrengthAttr = glGetUniformLocation(program, "diffuseStrength");
-	specularStrengthAttr = glGetUniformLocation(program, "specularStrength");
+	specularStrengthAttr =
+		glGetUniformLocation(program, "specularStrength");
 	shininessAttr = glGetUniformLocation(program, "shininess");
 
 	glGenBuffers(1, &vertexBuffer);
@@ -129,13 +130,20 @@ void calculateHighlights(struct game *game)
 	// Calculate lock flash
 	int flashDuration = CLEAR_OFFSET * 2;
 	int framesSinceLock = game->player.spawnDelay + game->player.clearDelay;
-	if (game->player.state == PlayerSpawn && framesSinceLock < flashDuration)
-	for (int i = 0; i < MINOS_PER_PIECE; i++) {
-		int x = rs[game->player.type][game->player.rotation][i].x;
-		x += game->player.x;
-		int y = rs[game->player.type][game->player.rotation][i].y;
-		y += game->player.y;
-		highlights[y][x] = 1.0f / (float)flashDuration * (float)(flashDuration - framesSinceLock);
+	if ((game->player.state == PlayerSpawn
+	     || game->player.state == PlayerClear) {
+	    && framesSinceLock < flashDuration)
+		for (int i = 0; i < MINOS_PER_PIECE; i++) {
+			int x = rs[game->player.type][game->player.rotation][i]
+				.x;
+			x += game->player.x;
+			int y = rs[game->player.type][game->player.rotation][i]
+				.y;
+			y += game->player.y;
+			highlights[y][x] = 1.0f / (float)flashDuration
+			                   * (float)(flashDuration
+			                             - framesSinceLock);
+		}
 	}
 }
 
@@ -228,10 +236,11 @@ void renderMino(void)
 	glUniformMatrix4fv(normalCameraAttr, 1, GL_FALSE, normalCamera[0]);
 	glUniformMatrix4fv(projectionAttr, 1, GL_FALSE, projection[0]);
 	glUniform3fv(lightPositionAttr, 1, lightPosition);
-	glUniform3f(lightColorAttr, 0.7f, 0.839f, 1.0f);
-	glUniform1f(ambientStrengthAttr, powf(0.25f, 2.2f));
-	glUniform1f(diffuseStrengthAttr, powf(1.0f, 2.2f));
-	glUniform1f(specularStrengthAttr, powf(0.5f, 2.2f));
+	//glUniform3f(lightColorAttr, 0.7f, 0.839f, 1.0f);
+	glUniform3f(lightColorAttr, 1.0f, 1.0f, 1.0f);
+	glUniform1f(ambientStrengthAttr, 0.05f);
+	glUniform1f(diffuseStrengthAttr, 1.0f);
+	glUniform1f(specularStrengthAttr, 0.25f);
 	glUniform1f(shininessAttr, 32.0f);
 	glDrawArraysInstanced(GL_TRIANGLES, 0, countof(vertexData) / 6,
 	                      (GLsizei)minoQueue->count);
