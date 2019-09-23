@@ -31,6 +31,7 @@ struct setting {
 static struct setting settings[SettingSize] = {
 	{ .type = SettingTypeNone }, // SettingNone
 	{ .type = SettingTypeBool, .boolDefaultValue = false }, // SettingFullscreen
+	{ .type = SettingTypeBool, .boolDefaultValue = false }, // SettingNoSync
 	{ .type = SettingTypeBool, .boolDefaultValue = false } // SettingReplay
 };
 
@@ -104,6 +105,8 @@ void loadSwitchSettings(int argc, char *argv[])
 	for (int i = 1; i < argc; i++) {
 		if (strcmp(argv[i], "--replay") == 0) {
 			setSettingBool(SettingReplay, true);
+		} else if (strcmp(argv[i], "--no-sync") == 0) {
+			setSettingBool(SettingNoSync, true);
 		} else if (strcmp(argv[i], "--fullscreen") == 0) {
 			setSettingBool(SettingFullscreen, true);
 		} else if (strcmp(argv[i], "--help") == 0) {

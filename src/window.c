@@ -56,9 +56,6 @@ void initWindow(void)
 	glfwWindowHint(GLFW_SRGB_CAPABLE,
 	               GLFW_TRUE);
 	glfwWindowHint(GLFW_SAMPLES, 4);
-#ifndef NDEBUG
-	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
-#endif // NDEBUG
 	if (getSettingBool(SettingFullscreen)) {
 		const GLFWvidmode
 			*mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
