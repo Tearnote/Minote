@@ -10,7 +10,7 @@
 
 thread logicThreadID = 0;
 
-double logicFrequency = DEFAULT_FREQUENCY;
+_Atomic double logicFrequency = DEFAULT_FREQUENCY;
 #define LOGIC_TICK (SEC / logicFrequency)
 static nsec nextUpdateTime = 0;
 
