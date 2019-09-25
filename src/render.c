@@ -47,7 +47,7 @@ mutex viewportMutex = newMutex;
 // Thread-local copy of the game state being rendered
 static struct app *snap = NULL;
 
-static int lastFrame = -1;
+int lastFrame = -1;
 static nsec lastRenderTime = 0;
 static nsec timeElapsed = 0;
 
@@ -196,6 +196,7 @@ static void updateFrame(void)
 	copyArray(lightPosition, lightPositionTemp);
 
 	updateBackground();
+	calculateHighlights(snap->game);
 	updateEase();
 
 	lastFrame = snap->game->frame;
@@ -209,7 +210,6 @@ static void renderFrame(void)
 	             1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	renderScene();
-	calculateHighlights(snap->game);
 	queueMinoPlayfield(snap->game->playfield);
 	queueMinoPlayer(&snap->game->player);
 	queueMinoPreview(&snap->game->player);

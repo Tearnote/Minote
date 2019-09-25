@@ -14,6 +14,8 @@
 #include "state.h"
 #include "mino.h"
 #include "util.h"
+#include "ease.h"
+#include "logic.h"
 
 #define INSTANCE_LIMIT 256 // More minos than that will be ignored
 
@@ -129,11 +131,10 @@ void calculateHighlights(struct game *game)
 	clearArray(highlights);
 
 	// Calculate lock flash
-	int flashDuration = CLEAR_OFFSET * 2;
-	int framesSinceLock = game->player.spawnDelay + game->player.clearDelay;
-	if ((game->player.state == PlayerSpawn
-	     || game->player.state == PlayerClear)
-	    && framesSinceLock < flashDuration) {
+	if (game->frame == lastFrame)
+		return;
+	int flashDuration = CLEAR_OFFSET * 2 * (SEC / logicFrequency);
+	if (game->player.state == PlayerSpawn && game->player.spawnDelay == 0) {
 		for (int i = 0; i < MINOS_PER_PIECE; i++) {
 			int x = rs[game->player.type][game->player.rotation][i]
 				.x;
@@ -141,9 +142,7 @@ void calculateHighlights(struct game *game)
 			int y = rs[game->player.type][game->player.rotation][i]
 				.y;
 			y += game->player.y;
-			highlights[y][x] = FLASH_STRENGTH / (float)flashDuration
-			                   * (float)(flashDuration
-			                             - framesSinceLock);
+			addEase(&highlights[y][x], FLASH_STRENGTH, 0.0f, flashDuration, EaseLinear);
 		}
 	}
 }
