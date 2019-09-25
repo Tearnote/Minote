@@ -24,6 +24,7 @@
 #include "replay.h"
 #include "timer.h"
 #include "ease.h"
+#include "settings.h"
 // Damn that's a lot of includes
 
 #define destroyShader \
@@ -300,7 +301,8 @@ void *rendererThread(void *param)
 		// Blocks until next vertical refresh
 		glfwSwapBuffers(window);
 		// Mitigate GPU buffering
-		syncRenderer();
+		if (!getSettingBool(SettingNoSync))
+			syncRenderer();
 	}
 
 	cleanupRenderer();
