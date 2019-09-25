@@ -21,6 +21,21 @@ struct ease {
 
 queue *eases;
 
+static AHEasingFunction easeFunc[EaseSize] = {
+	NULL,
+	LinearInterpolation,
+	QuadraticEaseIn, QuadraticEaseOut, QuadraticEaseInOut,
+	CubicEaseIn, CubicEaseOut, CubicEaseInOut,
+	QuarticEaseIn, QuadraticEaseOut, QuadraticEaseInOut,
+	QuinticEaseIn, QuinticEaseOut, QuinticEaseInOut,
+	SineEaseIn, SineEaseOut, SineEaseInOut,
+	CircularEaseIn, CircularEaseOut, CircularEaseInOut,
+	ExponentialEaseIn, ExponentialEaseOut, ExponentialEaseInOut,
+	ElasticEaseIn, ElasticEaseOut, ElasticEaseInOut,
+	BackEaseIn, BackEaseOut, BackEaseInOut,
+	BounceEaseIn, BounceEaseOut, BounceEaseInOut
+};
+
 static struct ease *getNewEase(void)
 {
 	struct ease *result = NULL;
@@ -30,74 +45,6 @@ static struct ease *getNewEase(void)
 			return result;
 	}
 	return produceQueueItem(eases);
-}
-
-static float applyEase(float val, enum easeType type)
-{
-	switch (type) {
-	case EaseInQuadratic:
-		return QuadraticEaseIn(val);
-	case EaseOutQuadratic:
-		return QuadraticEaseOut(val);
-	case EaseInOutQuadratic:
-		return QuadraticEaseInOut(val);
-	case EaseInCubic:
-		return CubicEaseIn(val);
-	case EaseOutCubic:
-		return CubicEaseOut(val);
-	case EaseInOutCubic:
-		return CubicEaseInOut(val);
-	case EaseInQuartic:
-		return QuarticEaseIn(val);
-	case EaseOutQuartic:
-		return QuarticEaseOut(val);
-	case EaseInOutQuartic:
-		return QuarticEaseInOut(val);
-	case EaseInQuintic:
-		return QuinticEaseIn(val);
-	case EaseOutQuintic:
-		return QuinticEaseOut(val);
-	case EaseInOutQuintic:
-		return QuinticEaseInOut(val);
-	case EaseInSine:
-		return SineEaseIn(val);
-	case EaseOutSine:
-		return SineEaseOut(val);
-	case EaseInOutSine:
-		return SineEaseInOut(val);
-	case EaseInCircular:
-		return CircularEaseIn(val);
-	case EaseOutCircular:
-		return CircularEaseOut(val);
-	case EaseInOutCircular:
-		return CircularEaseInOut(val);
-	case EaseInExponential:
-		return ExponentialEaseIn(val);
-	case EaseOutExponential:
-		return ExponentialEaseOut(val);
-	case EaseInOutExponential:
-		return ExponentialEaseInOut(val);
-	case EaseInElastic:
-		return ElasticEaseIn(val);
-	case EaseOutElastic:
-		return ElasticEaseOut(val);
-	case EaseInOutElastic:
-		return ElasticEaseInOut(val);
-	case EaseInBack:
-		return BackEaseIn(val);
-	case EaseOutBack:
-		return BackEaseOut(val);
-	case EaseInOutBack:
-		return BackEaseInOut(val);
-	case EaseInBounce:
-		return BounceEaseIn(val);
-	case EaseOutBounce:
-		return BounceEaseOut(val);
-	case EaseInOutBounce:
-		return BounceEaseInOut(val);
-	default:
-		return val;
-	}
 }
 
 void initEase(void)
@@ -134,7 +81,7 @@ void updateEase(void)
 		// Ease is in progress
 		nsec elapsed = time - ease->start;
 		float progress = (double)elapsed / (double)ease->length;
-		progress = applyEase(progress, ease->type);
+		progress = easeFunc[ease->type](progress);
 
 		float span = ease->to - ease->from;
 		*ease->target = ease->from + span * progress;

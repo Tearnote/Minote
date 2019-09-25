@@ -40,13 +40,14 @@ vec4 lightPositionWorld = {};
 
 int viewportWidth = DEFAULT_WIDTH; //SYNC viewportMutex
 int viewportHeight = DEFAULT_HEIGHT; //SYNC viewportMutex
-float viewportScale = 0.0f; //SYNC viewportMutex
+float viewportScale = 1.0f; //SYNC viewportMutex
 bool viewportDirty = true; //SYNC viewportMutex
 mutex viewportMutex = newMutex;
 
 // Thread-local copy of the game state being rendered
 static struct app *snap = NULL;
 
+int lastFrame = -1;
 static nsec lastRenderTime = 0;
 static nsec timeElapsed = 0;
 
@@ -117,10 +118,6 @@ static void updateBackground(void)
 		        BGFADE_LENGTH / snap->replay->speed, EaseInOutCubic);
 		currentBackground = newBackground;
 	}
-
-	glClearColor(backgroundColor[0], backgroundColor[1], backgroundColor[2],
-	             1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 GLuint createProgram(const GLchar *vertexShaderSrc,
@@ -155,8 +152,12 @@ GLuint createProgram(const GLchar *vertexShaderSrc,
 	return program;
 }
 
-static void renderFrame(void)
+static void updateFrame(void)
 {
+	nsec currentTime = getTime();
+	timeElapsed = currentTime - lastRenderTime;
+	lastRenderTime = currentTime;
+
 	lockMutex(&viewportMutex);
 	if (viewportDirty) {
 		glViewport(0, 0, viewportWidth, viewportHeight);
@@ -194,13 +195,21 @@ static void renderFrame(void)
 	mat4x4_mul_vec4(lightPositionTemp, camera, lightPositionWorld);
 	copyArray(lightPosition, lightPositionTemp);
 
-	renderPostStart();
-
 	updateBackground();
+	calculateHighlights(snap->game);
 	updateEase();
 
+	lastFrame = snap->game->frame;
+}
+
+static void renderFrame(void)
+{
+	renderPostStart();
+
+	glClearColor(backgroundColor[0], backgroundColor[1], backgroundColor[2],
+	             1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	renderScene();
-	calculateHighlights(snap->game);
 	queueMinoPlayfield(snap->game->playfield);
 	queueMinoPlayer(&snap->game->player);
 	queueMinoPreview(&snap->game->player);
@@ -294,9 +303,7 @@ void *rendererThread(void *param)
 	initRenderer();
 
 	while (isRunning()) {
-		nsec currentTime = getTime();
-		timeElapsed = currentTime - lastRenderTime;
-		lastRenderTime = currentTime;
+		updateFrame();
 		renderFrame();
 		// Blocks until next vertical refresh
 		glfwSwapBuffers(window);

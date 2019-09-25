@@ -11,8 +11,8 @@ playable.
 
 `Minote --fullscreen` - Use exclusive fullscreen mode
 
-`Minote --no-sync` - Disable GPU synchronization for higher framerate at
-the cost of latency
+`Minote --nosync` - Disable hard GPU sync for higher performance at the
+cost of latency
 
 ## Building
 Tested working on Linux and Windows (MSYS2). Should be portable to any
