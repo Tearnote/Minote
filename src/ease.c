@@ -21,6 +21,21 @@ struct ease {
 
 queue *eases;
 
+static AHEasingFunction easeFunc[EaseSize] = {
+	NULL,
+	LinearInterpolation,
+	QuadraticEaseIn, QuadraticEaseOut, QuadraticEaseInOut,
+	CubicEaseIn, CubicEaseOut, CubicEaseInOut,
+	QuarticEaseIn, QuadraticEaseOut, QuadraticEaseInOut,
+	QuinticEaseIn, QuinticEaseOut, QuinticEaseInOut,
+	SineEaseIn, SineEaseOut, SineEaseInOut,
+	CircularEaseIn, CircularEaseOut, CircularEaseInOut,
+	ExponentialEaseIn, ExponentialEaseOut, ExponentialEaseInOut,
+	ElasticEaseIn, ElasticEaseOut, ElasticEaseInOut,
+	BackEaseIn, BackEaseOut, BackEaseInOut,
+	BounceEaseIn, BounceEaseOut, BounceEaseInOut
+};
+
 static struct ease *getNewEase(void)
 {
 	struct ease *result = NULL;
@@ -66,7 +81,7 @@ void updateEase(void)
 		// Ease is in progress
 		nsec elapsed = time - ease->start;
 		float progress = (double)elapsed / (double)ease->length;
-		progress = CubicEaseInOut(progress);
+		progress = easeFunc[ease->type](progress);
 
 		float span = ease->to - ease->from;
 		*ease->target = ease->from + span * progress;
