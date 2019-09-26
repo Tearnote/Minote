@@ -16,6 +16,7 @@
 #include "logic.h"
 #include "timer.h"
 #include "settings.h"
+#include "effects.h"
 
 void printUsage(const char *invalid)
 {
@@ -32,6 +33,7 @@ void printUsage(const char *invalid)
 
 static void cleanup(void)
 {
+	cleanupEffects();
 	cleanupInput();
 	cleanupWindow();
 	cleanupState();
@@ -51,6 +53,7 @@ int main(int argc, char *argv[])
 	initState();
 	initWindow();
 	initInput();
+	initEffects();
 
 	spawnRenderer();
 	spawnLogic();

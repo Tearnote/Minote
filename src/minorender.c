@@ -126,22 +126,18 @@ void cleanupMinoRenderer(void)
 	minoQueue = NULL;
 }
 
-void calculateHighlights(struct game *game)
+void triggerLockFlash(struct game *game)
 {
-	// Calculate lock flash
-	if (game->frame == lastFrame)
-		return;
 	int flashDuration = CLEAR_OFFSET * 2 * (SEC / logicFrequency);
-	if (game->player.state == PlayerSpawn && game->player.spawnDelay == 0) {
-		for (int i = 0; i < MINOS_PER_PIECE; i++) {
-			int x = rs[game->player.type][game->player.rotation][i]
-				.x;
-			x += game->player.x;
-			int y = rs[game->player.type][game->player.rotation][i]
-				.y;
-			y += game->player.y;
-			addEase(&highlights[y][x], FLASH_STRENGTH, 0.0f, flashDuration, EaseLinear);
-		}
+	for (int i = 0; i < MINOS_PER_PIECE; i++) {
+		int x = rs[game->player.type][game->player.rotation][i]
+			.x;
+		x += game->player.x;
+		int y = rs[game->player.type][game->player.rotation][i]
+			.y;
+		y += game->player.y;
+		addEase(&highlights[y][x], FLASH_STRENGTH, 0.0f, flashDuration,
+		        EaseLinear);
 	}
 }
 

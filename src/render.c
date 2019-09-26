@@ -25,6 +25,7 @@
 #include "timer.h"
 #include "ease.h"
 #include "settings.h"
+#include "effects.h"
 // Damn that's a lot of includes
 
 #define destroyShader \
@@ -89,6 +90,21 @@ static GLuint createShader(const GLchar *source, GLenum type)
 		return 0;
 	}
 	return shader;
+}
+
+static void updateEffects(void)
+{
+	struct effect *e;
+	while ((e = dequeueEffect())) {
+		switch (e->type) {
+		case EffectLockFlash:
+			triggerLockFlash(snap->game);
+			break;
+		default:
+			break;
+		}
+		free(e);
+	}
 }
 
 static void updateBackground(void)
@@ -189,8 +205,8 @@ static void updateFrame(void)
 	mat4x4_mul_vec4(lightPositionTemp, camera, lightPositionWorld);
 	copyArray(lightPosition, lightPositionTemp);
 
+	updateEffects();
 	updateBackground();
-	calculateHighlights(snap->game);
 	updateEase();
 
 	lastFrame = snap->game->frame;

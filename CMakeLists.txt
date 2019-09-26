@@ -129,7 +129,8 @@ set(C_SOURCES
         src/settings.c
         src/fifo.c
         src/queue.c
-        src/ease.c)
+        src/ease.c
+        src/effects.c)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD

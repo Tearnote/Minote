@@ -17,6 +17,7 @@
 #include "settings.h"
 #include "logic.h"
 #include "log.h"
+#include "effects.h"
 
 #define KEYFRAME_FREQ 60
 
@@ -254,6 +255,11 @@ static void lock(void)
 		setGrid(x, y, (enum mino)player->type);
 	}
 	player->state = PlayerSpawn;
+
+	struct effect *e = allocate(sizeof(struct effect));
+	e->type = EffectLockFlash;
+	e->data = NULL;
+	enqueueEffect(e);
 }
 
 static enum pieceType randomPiece(void)
