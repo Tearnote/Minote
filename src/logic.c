@@ -36,7 +36,7 @@ static void updateLogic(void)
 	switch (getState(PhaseGameplay)) {
 	case StateStaged:
 		initGameplay();
-		// break; missing on purpose, no point in wasting a frame
+		// "break;" missing on purpose, no point in wasting a frame
 	case StateIntro:
 	case StateRunning:
 	case StateOutro:

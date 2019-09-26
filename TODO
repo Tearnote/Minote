@@ -10,3 +10,4 @@ Verify that the replay isn't truncated
 Test for desyncs by comparing current state with keyframes
 Add GM requirements into game state and replay
 Fix last frame of replay not recording
+Make some more trivial mutexes into atomics

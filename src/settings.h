@@ -9,7 +9,6 @@
 enum settingLabel {
 	SettingNone,
 	SettingFullscreen,
-	SettingNoSync,
 	SettingReplay,
 	SettingNoSync,
 	SettingSize

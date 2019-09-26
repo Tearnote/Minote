@@ -104,18 +104,12 @@ static void updateBackground(void)
 	}
 
 	if (currentBackground != newBackground) {
-		addEase(&backgroundColor[0],
-		        backgroundColor[0],
-		        backgrounds[newBackground].color[0],
-		        BGFADE_LENGTH / snap->replay->speed, EaseInOutCubic);
-		addEase(&backgroundColor[1],
-		        backgroundColor[1],
-		        backgrounds[newBackground].color[1],
-		        BGFADE_LENGTH / snap->replay->speed, EaseInOutCubic);
-		addEase(&backgroundColor[2],
-		        backgroundColor[2],
-		        backgrounds[newBackground].color[2],
-		        BGFADE_LENGTH / snap->replay->speed, EaseInOutCubic);
+		for (int i = 0; i < 3; i++) {
+			addEase(&backgroundColor[i], backgroundColor[i],
+			        backgrounds[newBackground].color[i],
+			        BGFADE_LENGTH / snap->replay->speed,
+			        EaseInOutCubic);
+		}
 		currentBackground = newBackground;
 	}
 }
