@@ -10,7 +10,7 @@
 void initMinoRenderer(void);
 void cleanupMinoRenderer(void);
 
-void triggerLockFlash(struct game *game);
+void triggerLockFlash(int coords[MINOS_PER_PIECE * 2]);
 
 // Add various parts of the gameplay to the queue of minos to render
 void queueMinoPlayfield(enum mino playfield[PLAYFIELD_H][PLAYFIELD_W]);

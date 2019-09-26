@@ -241,6 +241,21 @@ static void drop(void)
 	}
 }
 
+static void enqueueLockFlash(void)
+{
+	struct effect *e = allocate(sizeof(struct effect));
+	e->type = EffectLockFlash;
+	e->data = allocate(sizeof(int) * 2 * MINOS_PER_PIECE);
+	int *coords = e->data;
+	for (int i = 0; i < MINOS_PER_PIECE; i++) {
+		coords[i * 2] = rs[player->type][player->rotation][i].x;
+		coords[i * 2] += game->player.x;
+		coords[i * 2 + 1] = rs[player->type][player->rotation][i].y;
+		coords[i * 2 + 1] += game->player.y;
+	}
+	enqueueEffect(e);
+}
+
 // Stamp player piece into the playfield
 // Does not do collision checking, so can overwrite filled grids
 static void lock(void)
@@ -256,10 +271,7 @@ static void lock(void)
 	}
 	player->state = PlayerSpawn;
 
-	struct effect *e = allocate(sizeof(struct effect));
-	e->type = EffectLockFlash;
-	e->data = NULL;
-	enqueueEffect(e);
+	enqueueLockFlash();
 }
 
 static enum pieceType randomPiece(void)
@@ -565,6 +577,11 @@ static void updateClear(void)
 			player->clearDelay = 0;
 			addScore(clearedCount);
 			addLevels(clearedCount, true);
+
+			struct effect *e = allocate(sizeof(struct effect));
+			e->type = EffectLineClear;
+			e->data = NULL;
+			enqueueEffect(e);
 		}
 	}
 

@@ -126,18 +126,12 @@ void cleanupMinoRenderer(void)
 	minoQueue = NULL;
 }
 
-void triggerLockFlash(struct game *game)
+void triggerLockFlash(int coords[MINOS_PER_PIECE * 2])
 {
 	int flashDuration = CLEAR_OFFSET * 2 * (SEC / logicFrequency);
 	for (int i = 0; i < MINOS_PER_PIECE; i++) {
-		int x = rs[game->player.type][game->player.rotation][i]
-			.x;
-		x += game->player.x;
-		int y = rs[game->player.type][game->player.rotation][i]
-			.y;
-		y += game->player.y;
-		addEase(&highlights[y][x], FLASH_STRENGTH, 0.0f, flashDuration,
-		        EaseLinear);
+		addEase(&highlights[coords[i * 2 + 1]][coords[i * 2]],
+		        FLASH_STRENGTH, 0.0f, flashDuration, EaseLinear);
 	}
 }
 

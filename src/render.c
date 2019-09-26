@@ -98,7 +98,8 @@ static void updateEffects(void)
 	while ((e = dequeueEffect())) {
 		switch (e->type) {
 		case EffectLockFlash:
-			triggerLockFlash(snap->game);
+			triggerLockFlash(e->data);
+			free(e->data);
 			break;
 		default:
 			break;
