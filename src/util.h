@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <math.h>
 
 #include "pcg/pcg_basic.h"
 
@@ -22,6 +23,8 @@ typedef pcg32_random_t rng;
         pcg32_srandom_r((rngptr), (seed), 'M'*'i'+'n'*'o'+'t'*'e')
 #define random(rngptr, bound) \
         pcg32_boundedrand_r((rngptr), (bound))
+#define frandom(rngptr) \
+        ldexp(pcg32_random_r(rngptr), -32)
 
 // No C app is complete without its own assert
 #ifdef NDEBUG

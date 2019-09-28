@@ -6,7 +6,6 @@
 #include <string.h>
 #include <stdbool.h>
 #include <time.h>
-#include <inttypes.h>
 
 #include "state.h"
 #include "input.h"
@@ -16,7 +15,6 @@
 #include "replay.h"
 #include "settings.h"
 #include "logic.h"
-#include "log.h"
 #include "effects.h"
 
 #define KEYFRAME_FREQ 60

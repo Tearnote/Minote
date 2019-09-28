@@ -4,6 +4,7 @@
 
 #include <stdbool.h>
 #include <string.h>
+#include <time.h>
 
 #include "glad/glad.h"
 
@@ -40,6 +41,8 @@ static GLfloat vertexData[] = {
 struct particle {
 	float x, y;
 	float progress;
+	float distance;
+	float direction;
 };
 
 struct particleInstance {
@@ -52,8 +55,11 @@ struct particleInstance {
 static psarray *particleQueue = NULL;
 static darray *instanceQueue = NULL;
 
+rng randomizer = {};
+
 void initParticleRenderer(void)
 {
+	srandom(&randomizer, (uint64_t)time(NULL));
 	particleQueue = createPsarray(sizeof(struct particle), INSTANCE_LIMIT);
 	instanceQueue = createDarray(sizeof(struct particleInstance));
 
@@ -129,15 +135,26 @@ void triggerLineClear(const bool lines[PLAYFIELD_H])
 
 		for (int y = 0; y < 8; y++) {
 			for (int x = 0; x < PLAYFIELD_W; x++) {
-				struct particle *newParticle = producePsarrayItem(particleQueue);
+				struct particle *newParticle =
+					producePsarrayItem(particleQueue);
 				if (!newParticle)
 					continue;
 				newParticle->x = x - PLAYFIELD_W / 2;
 				newParticle->y = PLAYFIELD_H - 1 - i;
 				newParticle->y += y * 0.125f;
 				newParticle->progress = 0.0f;
+				newParticle->distance = frandom(&randomizer);
+				newParticle->distance = SineEaseOut(newParticle->distance);
+				newParticle->distance *= 5.0f;
+				if (random(&randomizer, 2))
+					newParticle->direction = radf(180.0f);
+				else
+					newParticle->direction = 0.0f;
+				double duration = frandom(&randomizer);
+				duration = SineEaseOut(duration);
+				duration *= 1.6 * SEC;
 				addEase(&newParticle->progress, 0.0f, 1.0f,
-				        1 * SEC, EaseOutQuadratic);
+				        duration, EaseOutQuadratic);
 			}
 		}
 	}
@@ -157,12 +174,15 @@ void updateParticles(void)
 
 		struct particleInstance
 			*newInstance = produceDarrayItem(instanceQueue);
-		newInstance->x =
-			(float)particle->x + 1.0f + particle->progress * 4;
-		newInstance->y = (float)particle->y;
+		newInstance->x = cosf(particle->direction);
+		newInstance->x *= particle->progress * particle->distance;
+		newInstance->x += (float)particle->x + 1.0f;
+		newInstance->y = sinf(particle->direction);
+		newInstance->y *= particle->progress * particle->distance;
+		newInstance->y += (float)particle->y;
 		newInstance->w = 1.0f;
 		newInstance->h = 0.125f;
-		newInstance->direction = 0.0f;
+		newInstance->direction = particle->direction;
 		newInstance->r = 1.0f;
 		newInstance->g = 1.0f;
 		newInstance->b = 1.0f;
