@@ -68,7 +68,7 @@ static struct background backgrounds[] = {
 	{ .level = 500, .color = { 0.368f, 0.290f, 0.084f }},
 	{ .level = 600, .color = { 0.030f, 0.238f, 0.151f }},
 	{ .level = 700, .color = { 0.093f, 0.137f, 0.057f }},
-	{ .level = 800, .color = { 0.104f, 0.022f, 0.002f }},
+	{ .level = 800, .color = { 0.468f, 0.348f, 0.153f }},
 	{ .level = 900, .color = { 0.366f, 0.265f, 0.590f }}
 };
 

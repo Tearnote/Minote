@@ -23,6 +23,8 @@ struct effect {
 };
 
 struct lineClearData {
+	int lines;
+	float speed;
 	enum mino playfield[PLAYFIELD_H][PLAYFIELD_W];
 	bool clearedLines[PLAYFIELD_H];
 };

@@ -582,6 +582,9 @@ static void updateClear(void)
 			struct effect *e = allocate(sizeof(struct effect));
 			e->type = EffectLineClear;
 			struct lineClearData *data = allocate(sizeof(struct lineClearData));
+			data->lines = clearedCount;
+			data->speed = 1.0f / ((float)CLEAR_DELAY / 41.0f);
+			data->speed *= replay->speed;
 			copyArray(data->playfield, oldPlayfield);
 			copyArray(data->clearedLines, game->clearedLines);
 			e->data = data;

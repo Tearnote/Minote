@@ -2,7 +2,6 @@
 
 #include "particlerender.h"
 
-#include <stdbool.h>
 #include <string.h>
 #include <time.h>
 
@@ -18,8 +17,8 @@
 #include "ease.h"
 #include "timer.h"
 
-#define INSTANCE_LIMIT 2048 // More particles than that will be ignored
-#define FADE_THRESHOLD 0.8f
+#define INSTANCE_LIMIT 2560 // More particles than that will be ignored
+#define FADE_THRESHOLD 0.9f
 
 static GLuint program = 0;
 static GLuint vao = 0;
@@ -30,20 +29,21 @@ static GLint cameraAttr = -1;
 static GLint projectionAttr = -1;
 
 static GLfloat vertexData[] = {
-	0.0f, 0.0f,
-	1.0f, 0.0f,
-	1.0f, 1.0f,
+	0.0f, -0.5f,
+	1.0f, -0.5f,
+	1.0f, 0.5f,
 
-	0.0f, 0.0f,
-	1.0f, 1.0f,
-	0.0f, 1.0f
+	0.0f, -0.5f,
+	1.0f, 0.5f,
+	0.0f, 0.5f
 };
 
 struct particle {
 	float x, y;
 	float progress;
-	float distance;
-	float direction;
+	int direction; // -1 is left, 1 is right
+	float radius; // positive is up, negative is down
+	float spins; // in radians
 	enum mino type;
 };
 
@@ -131,34 +131,53 @@ void cleanupParticleRenderer(void)
 
 void triggerLineClear(struct lineClearData *data)
 {
-	for (int i = 0; i < PLAYFIELD_H; i++) {
-		if (!data->clearedLines[i])
+	for (int y = 0; y < PLAYFIELD_H; y++) {
+		if (!data->clearedLines[y])
 			continue;
-
-		for (int y = 0; y < 8; y++) {
-			for (int x = 0; x < PLAYFIELD_W; x++) {
-				struct particle *newParticle =
-					producePsarrayItem(particleQueue);
-				if (!newParticle)
-					continue;
-				newParticle->x = x - PLAYFIELD_W / 2;
-				newParticle->y = PLAYFIELD_H - 1 - i;
-				newParticle->y += y * 0.125f;
-				newParticle->progress = 0.0f;
-				newParticle->distance = frandom(&randomizer);
-				newParticle->distance = SineEaseOut(newParticle->distance);
-				newParticle->distance *= 5.0f;
-				if (random(&randomizer, 2))
-					newParticle->direction = radf(180.0f);
-				else
-					newParticle->direction = 0.0f;
-				newParticle->type = data->playfield[i][x];
-				assert(newParticle->type != MinoNone);
-				double duration = frandom(&randomizer);
-				duration = SineEaseOut(duration);
-				duration *= 1.2 * SEC;
-				addEase(&newParticle->progress, 0.0f, 1.0f,
-				        duration, EaseOutQuadratic);
+		for (int i = 0; i < data->lines; i++) {
+			for (int my = 0; my < 8; my++) {
+				for (int x = 0; x < PLAYFIELD_W; x++) {
+					struct particle *newParticle =
+						producePsarrayItem(
+							particleQueue);
+					if (!newParticle)
+						continue;
+					newParticle->x = x - PLAYFIELD_W / 2;
+					newParticle->y = PLAYFIELD_H - 1 - y;
+					newParticle->y += my * 0.125f + 0.0625f;
+					newParticle->progress = 0.0f;
+					newParticle->direction =
+						random(&randomizer, 2) * 2 - 1;
+					newParticle->radius =
+						frandom(&randomizer);
+					newParticle->radius =
+						ExponentialEaseInOut(
+							newParticle->radius);
+					newParticle->radius *= 2.0f;
+					newParticle->radius -= 1.0f;
+					newParticle->radius *= 64.0f;
+					newParticle->spins =
+						frandom(&randomizer);
+					newParticle->spins = QuadraticEaseOut(
+						newParticle->spins);
+					newParticle->spins *= 16.0f;
+					newParticle->spins /=
+						newParticle->radius;
+					newParticle->type =
+						data->playfield[y][x];
+					assert(newParticle->type != MinoNone);
+					double duration = frandom(&randomizer);
+					if (data->lines == 4)
+						duration = duration / 2.0f + 0.5f;
+					duration *= 2.0 * SEC;
+					duration *= 1.0f / data->speed;
+					enum easeType type = EaseOutExponential;
+					if (data->lines == 4)
+						type = EaseInOutExponential;
+					addEase(&newParticle->progress, 0.0f,
+					        1.0f,
+					        duration, type);
+				}
 			}
 		}
 	}
@@ -178,15 +197,21 @@ void updateParticles(void)
 
 		struct particleInstance
 			*newInstance = produceDarrayItem(instanceQueue);
-		newInstance->x = cosf(particle->direction);
-		newInstance->x *= particle->progress * particle->distance;
-		newInstance->x += (float)particle->x + 1.0f;
-		newInstance->y = sinf(particle->direction);
-		newInstance->y *= particle->progress * particle->distance;
+		float angle = particle->progress * particle->spins;
+		angle -= radf(90.0f);
+		newInstance->x = cosf(angle) * particle->radius;
+		if (particle->direction == -1)
+			newInstance->x *= -1.0f;
+		newInstance->x += (float)particle->x;
+		newInstance->y = sinf(angle) * particle->radius;
+		newInstance->y += particle->radius;
 		newInstance->y += (float)particle->y;
-		newInstance->w = 1.0f;
+		newInstance->w = 1.0f - particle->progress;
 		newInstance->h = 0.125f;
-		newInstance->direction = particle->direction;
+		newInstance->direction = angle - radf(90.0f);
+		if (particle->direction == -1)
+			newInstance->direction =
+				radf(180.0f) - newInstance->direction;
 		newInstance->r = minoColors[particle->type][0];
 		newInstance->g = minoColors[particle->type][1];
 		newInstance->b = minoColors[particle->type][2];
