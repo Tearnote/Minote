@@ -7,6 +7,8 @@
 
 #include "glad/glad.h"
 
+#include "AHEasing/easing.h"
+
 #include "gameplay.h"
 #include "log.h"
 #include "array.h"
@@ -15,6 +17,7 @@
 #include "timer.h"
 
 #define INSTANCE_LIMIT 2048 // More particles than that will be ignored
+#define FADE_THRESHOLD 0.8f
 
 static GLuint program = 0;
 static GLuint vao = 0;
@@ -164,6 +167,13 @@ void updateParticles(void)
 		newInstance->g = 1.0f;
 		newInstance->b = 1.0f;
 		newInstance->a = 0.8f;
+		if (particle->progress > FADE_THRESHOLD) {
+			float fadeout = particle->progress - FADE_THRESHOLD;
+			fadeout *= 1.0f / (1.0f - FADE_THRESHOLD);
+			fadeout = 1.0f - fadeout;
+			//fadeout = LinearInterpolation(fadeout);
+			newInstance->a *= fadeout;
+		}
 	}
 }
 

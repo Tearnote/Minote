@@ -17,6 +17,7 @@ vec4 minoColors[MinoSize] = {
 	{ 1,    1,    1,    1 }  // MinoPending
 };
 
+
 rotationSystem rs = {
 	{}, // PieceNone
 	{ // PieceI

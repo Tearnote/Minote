@@ -13,7 +13,7 @@ uniform mat4 projection;
 
 void main()
 {
-	float direction = vDirection + radians(180);
+	float direction = vDirection + radians(180.0);
 	vec4 worldPosition = vec4(vPosition, 0.0, 1.0);
 	worldPosition.xy *= vSize;
 	worldPosition.xy *= mat2(cos(direction), -sin(direction), sin(direction), cos(direction));
