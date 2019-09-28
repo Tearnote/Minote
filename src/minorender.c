@@ -10,7 +10,7 @@
 #include "linmath/linmath.h"
 #include "render.h"
 #include "log.h"
-#include "queue.h"
+#include "array.h"
 #include "state.h"
 #include "mino.h"
 #include "util.h"
@@ -49,14 +49,14 @@ struct minoInstance {
 	GLfloat r, g, b, a;
 	GLfloat highlight;
 };
-static queue *minoQueue = NULL;
+static darray *minoQueue = NULL;
 
 // Strength of the highlight effect on each block
 float highlights[PLAYFIELD_H][PLAYFIELD_W] = {};
 
 void initMinoRenderer(void)
 {
-	minoQueue = createQueue(sizeof(struct minoInstance));
+	minoQueue = createDarray(sizeof(struct minoInstance));
 
 	const GLchar vertSrc[] = {
 #include "mino.vert"
@@ -122,7 +122,7 @@ void cleanupMinoRenderer(void)
 	vertexBuffer = 0;
 	destroyProgram(program);
 	program = 0;
-	destroyQueue(minoQueue);
+	destroyDarray(minoQueue);
 	minoQueue = NULL;
 }
 
@@ -143,7 +143,7 @@ void queueMinoPlayfield(enum mino field[PLAYFIELD_H][PLAYFIELD_W])
 			if (minoType == MinoNone)
 				continue;
 			struct minoInstance
-				*newInstance = produceQueueItem(minoQueue);
+				*newInstance = produceDarrayItem(minoQueue);
 			newInstance->x = (GLfloat)(x - PLAYFIELD_W / 2.0);
 			newInstance->y = (GLfloat)(PLAYFIELD_H - 1 - y);
 			newInstance->r = minoColors[minoType][0] / 4;
@@ -162,7 +162,7 @@ void queueMinoPlayer(struct player *player)
 
 	for (int i = 0; i < MINOS_PER_PIECE; i++) {
 		struct coord minoCoord = rs[player->type][player->rotation][i];
-		struct minoInstance *newInstance = produceQueueItem(minoQueue);
+		struct minoInstance *newInstance = produceDarrayItem(minoQueue);
 		float lockDim = (float)player->lockDelay / LOCK_DELAY;
 		lockDim *= LOCKDIM_STRENGTH;
 		lockDim = 1.0f - lockDim;
@@ -184,7 +184,7 @@ void queueMinoPreview(struct player *player)
 		return;
 	for (int i = 0; i < MINOS_PER_PIECE; i++) {
 		struct coord minoCoord = rs[player->preview][0][i];
-		struct minoInstance *newInstance = produceQueueItem(minoQueue);
+		struct minoInstance *newInstance = produceDarrayItem(minoQueue);
 		if (player->preview == PieceI)
 			minoCoord.y += 1;
 		newInstance->x = (GLfloat)(minoCoord.x - PIECE_BOX / 2.0);
@@ -199,7 +199,7 @@ void queueMinoPreview(struct player *player)
 
 void queueMinoSync(void)
 {
-	produceQueueItem(minoQueue);
+	produceDarrayItem(minoQueue);
 }
 
 void renderMino(void)
@@ -236,5 +236,5 @@ void renderMino(void)
 	glBindVertexArray(0);
 	glUseProgram(0);
 
-	clearQueue(minoQueue);
+	clearDarray(minoQueue);
 }

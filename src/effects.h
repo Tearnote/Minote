@@ -10,6 +10,7 @@
 enum effectType {
 	EffectNone,
 	EffectLockFlash,
+	EffectLineClear,
 	EffectSize
 };
 

@@ -7,7 +7,7 @@
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 
-#include "queue.h"
+#include "array.h"
 #include "gameplay.h"
 #include "render.h"
 #include "log.h"
@@ -38,11 +38,11 @@ static GLfloat vertexData[] = {
 struct segmentInstance {
 	GLfloat x1, y1, x2, y2;
 };
-static queue *segmentQueue = NULL;
+static darray *segmentQueue = NULL;
 
 void initBorderRenderer(void)
 {
-	segmentQueue = createQueue(sizeof(struct segmentInstance));
+	segmentQueue = createDarray(sizeof(struct segmentInstance));
 
 	const GLchar vertSrc[] = {
 #include "border.vert"
@@ -94,13 +94,13 @@ void cleanupBorderRenderer(void)
 	vertexBuffer = 0;
 	destroyProgram(program);
 	program = 0;
-	destroyQueue(segmentQueue);
+	destroyDarray(segmentQueue);
 	segmentQueue = NULL;
 }
 
 static void queueBorderSegment(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2)
 {
-	struct segmentInstance *newInstance = produceQueueItem(segmentQueue);
+	struct segmentInstance *newInstance = produceDarrayItem(segmentQueue);
 	newInstance->x1 = x1;
 	newInstance->y1 = y1;
 	newInstance->x2 = x2;
@@ -209,5 +209,5 @@ void renderBorder(void)
 	glBindVertexArray(0);
 	glUseProgram(0);
 
-	clearQueue(segmentQueue);
+	clearDarray(segmentQueue);
 }

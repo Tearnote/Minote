@@ -18,7 +18,7 @@
 #include "font.h"
 #include "render.h"
 #include "log.h"
-#include "queue.h"
+#include "array.h"
 #include "util.h"
 #include "state.h"
 
@@ -40,13 +40,13 @@ struct textVertex {
 
 static vec4 color = { 0.0f, 0.0f, 0.0f, 1.0f };
 
-// Each font has a separate queue
-static queue *textQueue[FontSize] = {};
+// Each font has a separate darray
+static darray *textQueue[FontSize] = {};
 
 void initTextRenderer(void)
 {
 	for (int i = 0; i < FontSize; i++)
-		textQueue[i] = createQueue(sizeof(struct textVertex));
+		textQueue[i] = createDarray(sizeof(struct textVertex));
 
 	initFonts();
 
@@ -91,7 +91,7 @@ void cleanupTextRenderer(void)
 	cleanupFonts();
 
 	for (int i = 0; i < FontSize; i++) {
-		destroyQueue(textQueue[i]);
+		destroyDarray(textQueue[i]);
 		textQueue[i] = NULL;
 	}
 }
@@ -146,38 +146,38 @@ queueGlyph(enum fontType font, ucs4_t codepoint, const vec3 position,
 	topRight[2] = adjusted[2];
 
 	struct textVertex *newVertex;
-	newVertex = produceQueueItem(textQueue[font]);
+	newVertex = produceDarrayItem(textQueue[font]);
 	newVertex->x = bottomLeft[0];
 	newVertex->y = bottomLeft[1];
 	newVertex->z = bottomLeft[2];
 	newVertex->tx = tx1;
 	newVertex->ty = ty2;
-	newVertex = produceQueueItem(textQueue[font]);
+	newVertex = produceDarrayItem(textQueue[font]);
 	newVertex->x = bottomRight[0];
 	newVertex->y = bottomRight[1];
 	newVertex->z = bottomRight[2];
 	newVertex->tx = tx2;
 	newVertex->ty = ty2;
-	newVertex = produceQueueItem(textQueue[font]);
+	newVertex = produceDarrayItem(textQueue[font]);
 	newVertex->x = topRight[0];
 	newVertex->y = topRight[1];
 	newVertex->z = topRight[2];
 	newVertex->tx = tx2;
 	newVertex->ty = ty1;
 
-	newVertex = produceQueueItem(textQueue[font]);
+	newVertex = produceDarrayItem(textQueue[font]);
 	newVertex->x = bottomLeft[0];
 	newVertex->y = bottomLeft[1];
 	newVertex->z = bottomLeft[2];
 	newVertex->tx = tx1;
 	newVertex->ty = ty2;
-	newVertex = produceQueueItem(textQueue[font]);
+	newVertex = produceDarrayItem(textQueue[font]);
 	newVertex->x = topRight[0];
 	newVertex->y = topRight[1];
 	newVertex->z = topRight[2];
 	newVertex->tx = tx2;
 	newVertex->ty = ty1;
-	newVertex = produceQueueItem(textQueue[font]);
+	newVertex = produceDarrayItem(textQueue[font]);
 	newVertex->x = topLeft[0];
 	newVertex->y = topLeft[1];
 	newVertex->z = topLeft[2];
@@ -317,5 +317,5 @@ void renderText(void)
 	glEnable(GL_DEPTH_TEST);
 
 	for (int i = 0; i < FontSize; i++)
-		clearQueue(textQueue[i]);
+		clearDarray(textQueue[i]);
 }

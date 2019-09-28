@@ -61,7 +61,9 @@ set(GLSL_SOURCES
         src/glsl/blur.vert.glsl
         src/glsl/blur.frag.glsl
         src/glsl/compose.vert.glsl
-        src/glsl/compose.frag.glsl)
+        src/glsl/compose.frag.glsl
+        src/glsl/particle.vert.glsl
+        src/glsl/particle.frag.glsl)
 
 foreach (GLSL_PATH ${GLSL_SOURCES})
     get_filename_component(GLSL_FILENAME ${GLSL_PATH} NAME_WLE)
@@ -118,6 +120,7 @@ set(C_SOURCES
         src/minorender.c
         src/borderrender.c
         src/postrender.c
+        src/particlerender.c
         src/render.c
         src/state.c
         src/thread.c
@@ -128,7 +131,7 @@ set(C_SOURCES
         src/replay.c
         src/settings.c
         src/fifo.c
-        src/queue.c
+        src/array.c
         src/ease.c
         src/effects.c)
 

@@ -12,7 +12,7 @@
 #include "readall/readall.h"
 
 #include "gameplay.h"
-#include "queue.h"
+#include "array.h"
 #include "log.h"
 #include "input.h"
 #include "state.h"
@@ -27,7 +27,7 @@ void
 pushReplayHeader(struct replay *replay, struct game *game, int keyframeFreq)
 {
 	if (!replay->frames)
-		replay->frames = createVqueue();
+		replay->frames = createVdarray();
 	copyArray(replay->header.magic, HEADER_MAGIC);
 	copyArray(replay->header.version, HEADER_VERSION);
 	memcpy(&replay->header.initialRng, &game->rngState,
@@ -39,8 +39,8 @@ void pushReplayFrame(struct replay *replay, struct game *frame)
 {
 	if (replay->header.totalFrames % replay->header.keyframeFreq == 0) {
 		struct replayKeyframe *keyframe =
-			produceVqueueItem(replay->frames,
-			                  sizeof(struct replayKeyframe));
+			produceVdarrayItem(replay->frames,
+			                   sizeof(struct replayKeyframe));
 		memcpy(&keyframe->rngState, &frame->rngState,
 		       sizeof(keyframe->rngState));
 		// Can't use copyArray, different element size
@@ -82,8 +82,8 @@ void pushReplayFrame(struct replay *replay, struct game *frame)
 		keyframe->time = frame->time;
 	}
 
-	struct replayInputframe *inputframe = produceVqueueItem(replay->frames,
-	                                                        sizeof(struct replayInputframe));
+	struct replayInputframe *inputframe = produceVdarrayItem(replay->frames,
+	                                                         sizeof(struct replayInputframe));
 	for (int i = 0; i < GameCmdSize; i++)
 		inputframe->inputs[i] = frame->cmdRaw[i];
 	inputframe->lastDirection = frame->lastDirection;
@@ -178,7 +178,7 @@ void saveReplay(struct replay *replay)
 void loadReplay(struct replay *replay)
 {
 	if (!replay->frames)
-		replay->frames = createVqueue();
+		replay->frames = createVdarray();
 
 	lzma_stream lzma = LZMA_STREAM_INIT;
 	lzma_ret lzmaRet =

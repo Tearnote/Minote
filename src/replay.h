@@ -8,7 +8,7 @@
 #include <stdint.h>
 
 #include "gameplay.h"
-#include "queue.h"
+#include "array.h"
 
 enum replayState {
 	ReplayNone,
@@ -71,7 +71,7 @@ struct replayInputframe {
 struct replay {
 	enum replayState state;
 	struct replayHeader header;
-	vqueue *frames; //THREADLOCAL gameplay
+	vdarray *frames; //THREADLOCAL gameplay
 	bool playing; // If viewer state, are we playing or paused
 	int frame;
 	float speed;

@@ -26,6 +26,7 @@
 #include "ease.h"
 #include "settings.h"
 #include "effects.h"
+#include "particlerender.h"
 // Damn that's a lot of includes
 
 #define destroyShader \
@@ -99,6 +100,10 @@ static void updateEffects(void)
 		switch (e->type) {
 		case EffectLockFlash:
 			triggerLockFlash(e->data);
+			free(e->data);
+			break;
+		case EffectLineClear:
+			triggerLineClear(e->data);
 			free(e->data);
 			break;
 		default:
@@ -209,6 +214,7 @@ static void updateFrame(void)
 	updateEffects();
 	updateBackground();
 	updateEase();
+	updateParticles(); // Needs to be after updateEase
 
 	lastFrame = snap->game->frame;
 }
@@ -231,12 +237,14 @@ static void renderFrame(void)
 	if (snap->replay->state == ReplayViewing)
 		queueReplayText(snap->replay);
 	renderText();
+	renderParticles();
 
 	renderPostEnd();
 }
 
 static void cleanupRenderer(void)
 {
+	cleanupParticleRenderer();
 	cleanupPostRenderer();
 	cleanupTextRenderer();
 	cleanupBorderRenderer();
@@ -292,6 +300,7 @@ static void initRenderer(void)
 	initBorderRenderer();
 	initTextRenderer();
 	initPostRenderer();
+	initParticleRenderer();
 
 	lastRenderTime = getTime();
 

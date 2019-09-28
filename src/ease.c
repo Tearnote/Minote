@@ -2,12 +2,13 @@
 
 #include "ease.h"
 
+#include <string.h>
 #include <stdbool.h>
 
 #include "AHEasing/easing.h"
 
 #include "timer.h"
-#include "queue.h"
+#include "array.h"
 
 struct ease {
 	float *target;
@@ -16,10 +17,9 @@ struct ease {
 	nsec start;
 	nsec length;
 	enum easeType type;
-	bool finished;
 };
 
-queue *eases;
+pdarray *eases;
 
 static AHEasingFunction easeFunc[EaseSize] = {
 	NULL,
@@ -36,34 +36,23 @@ static AHEasingFunction easeFunc[EaseSize] = {
 	BounceEaseIn, BounceEaseOut, BounceEaseInOut
 };
 
-static struct ease *getNewEase(void)
-{
-	struct ease *result = NULL;
-	for (int i = 0; i < eases->count; i++) {
-		result = getQueueItem(eases, i);
-		if (result->finished)
-			return result;
-	}
-	return produceQueueItem(eases);
-}
-
 void initEase(void)
 {
-	eases = createQueue(sizeof(struct ease));
+	eases = createPdarray(sizeof(struct ease));
 }
 
 void cleanupEase(void)
 {
-	destroyQueue(eases);
+	destroyPdarray(eases);
 	eases = NULL;
 }
 
 void updateEase(void)
 {
 	for (int i = 0; i < eases->count; i++) {
-		struct ease *ease = getQueueItem(eases, i);
+		struct ease *ease = getPdarrayItem(eases, i);
 		// Ease is inactive
-		if (ease->finished)
+		if (!isPdarrayItemAlive(eases, i))
 			continue;
 
 		// Ease has not started yet (shouldn't happen)
@@ -74,7 +63,7 @@ void updateEase(void)
 		// Ease just finished
 		if (time >= ease->start + ease->length) {
 			*ease->target = ease->to;
-			ease->finished = true;
+			killPdarrayItem(eases, i);
 			continue;
 		}
 
@@ -91,12 +80,11 @@ void updateEase(void)
 void
 addEase(float *target, float from, float to, nsec length, enum easeType type)
 {
-	struct ease *newEase = getNewEase();
+	struct ease *newEase = producePdarrayItem(eases);
 	newEase->target = target;
 	newEase->from = from;
 	newEase->to = to;
 	newEase->start = getTime();
 	newEase->length = length;
 	newEase->type = type;
-	newEase->finished = false;
 }

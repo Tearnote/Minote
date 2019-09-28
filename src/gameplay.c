@@ -580,7 +580,9 @@ static void updateClear(void)
 
 			struct effect *e = allocate(sizeof(struct effect));
 			e->type = EffectLineClear;
-			e->data = NULL;
+			e->data = allocate(sizeof(game->clearedLines));
+			memcpy(e->data, game->clearedLines,
+			       sizeof(game->clearedLines));
 			enqueueEffect(e);
 		}
 	}

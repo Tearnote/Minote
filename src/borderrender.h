@@ -10,10 +10,10 @@
 void initBorderRenderer(void);
 void cleanupBorderRenderer(void);
 
-// Add border segments to the queue
+// Add border segments to the darray
 void queueBorder(enum mino playfield[PLAYFIELD_H][PLAYFIELD_W]);
 
-// Render all border segments in one go, clear the queue
+// Render all border segments in one go, clear the darray
 void renderBorder(void);
 
 #endif //BORDERRENDER_H
