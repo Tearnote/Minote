@@ -10,6 +10,7 @@
 
 #include "AHEasing/easing.h"
 
+#include "effects.h"
 #include "gameplay.h"
 #include "log.h"
 #include "array.h"
@@ -43,6 +44,7 @@ struct particle {
 	float progress;
 	float distance;
 	float direction;
+	enum mino type;
 };
 
 struct particleInstance {
@@ -127,10 +129,10 @@ void cleanupParticleRenderer(void)
 	particleQueue = NULL;
 }
 
-void triggerLineClear(const bool lines[PLAYFIELD_H])
+void triggerLineClear(struct lineClearData *data)
 {
 	for (int i = 0; i < PLAYFIELD_H; i++) {
-		if (!lines[i])
+		if (!data->clearedLines[i])
 			continue;
 
 		for (int y = 0; y < 8; y++) {
@@ -150,9 +152,11 @@ void triggerLineClear(const bool lines[PLAYFIELD_H])
 					newParticle->direction = radf(180.0f);
 				else
 					newParticle->direction = 0.0f;
+				newParticle->type = data->playfield[i][x];
+				assert(newParticle->type != MinoNone);
 				double duration = frandom(&randomizer);
 				duration = SineEaseOut(duration);
-				duration *= 1.6 * SEC;
+				duration *= 1.2 * SEC;
 				addEase(&newParticle->progress, 0.0f, 1.0f,
 				        duration, EaseOutQuadratic);
 			}
@@ -183,10 +187,11 @@ void updateParticles(void)
 		newInstance->w = 1.0f;
 		newInstance->h = 0.125f;
 		newInstance->direction = particle->direction;
-		newInstance->r = 1.0f;
-		newInstance->g = 1.0f;
-		newInstance->b = 1.0f;
-		newInstance->a = 0.8f;
+		newInstance->r = minoColors[particle->type][0];
+		newInstance->g = minoColors[particle->type][1];
+		newInstance->b = minoColors[particle->type][2];
+		newInstance->a = minoColors[particle->type][3];
+		newInstance->a *= 0.8f;
 		if (particle->progress > FADE_THRESHOLD) {
 			float fadeout = particle->progress - FADE_THRESHOLD;
 			fadeout *= 1.0f / (1.0f - FADE_THRESHOLD);

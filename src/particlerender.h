@@ -6,12 +6,12 @@
 
 #include <stdbool.h>
 
-#include "gameplay.h"
+#include "effects.h"
 
 void initParticleRenderer(void);
 void cleanupParticleRenderer(void);
 
-void triggerLineClear(const bool lines[PLAYFIELD_H]);
+void triggerLineClear(struct lineClearData *data);
 
 void updateParticles(void);
 void renderParticles(void);

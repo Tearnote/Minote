@@ -569,6 +569,9 @@ static void updateClear(void)
 {
 	if (player->state == PlayerSpawn &&
 	    player->spawnDelay + 1 == CLEAR_OFFSET) {
+		enum mino oldPlayfield[PLAYFIELD_H][PLAYFIELD_W];
+		memcpy(oldPlayfield, game->playfield,
+		       sizeof(enum mino) * PLAYFIELD_H * PLAYFIELD_W);
 		int clearedCount = checkClears();
 		if (clearedCount) {
 			player->state = PlayerClear;
@@ -578,9 +581,10 @@ static void updateClear(void)
 
 			struct effect *e = allocate(sizeof(struct effect));
 			e->type = EffectLineClear;
-			e->data = allocate(sizeof(game->clearedLines));
-			memcpy(e->data, game->clearedLines,
-			       sizeof(game->clearedLines));
+			struct lineClearData *data = allocate(sizeof(struct lineClearData));
+			copyArray(data->playfield, oldPlayfield);
+			copyArray(data->clearedLines, game->clearedLines);
+			e->data = data;
 			enqueueEffect(e);
 		}
 	}

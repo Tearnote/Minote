@@ -4,8 +4,11 @@
 #ifndef EFFECTS_H
 #define EFFECTS_H
 
+#include <stdbool.h>
+
 #include "fifo.h"
 #include "thread.h"
+#include "gameplay.h"
 
 enum effectType {
 	EffectNone,
@@ -17,6 +20,11 @@ enum effectType {
 struct effect {
 	enum effectType type;
 	void *data;
+};
+
+struct lineClearData {
+	enum mino playfield[PLAYFIELD_H][PLAYFIELD_W];
+	bool clearedLines[PLAYFIELD_H];
 };
 
 extern fifo *effects;
