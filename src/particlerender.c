@@ -200,13 +200,16 @@ void updateParticles(void)
 		float angle = particle->progress * particle->spins;
 		angle -= radf(90.0f);
 		newInstance->x = cosf(angle) * particle->radius;
-		if (particle->direction == -1)
+		if (particle->direction == -1) {
 			newInstance->x *= -1.0f;
+			newInstance->x += 1.0f;
+		}
 		newInstance->x += (float)particle->x;
 		newInstance->y = sinf(angle) * particle->radius;
 		newInstance->y += particle->radius;
 		newInstance->y += (float)particle->y;
 		newInstance->w = 1.0f - particle->progress;
+		newInstance->w *= 1.1f;
 		newInstance->h = 0.125f;
 		newInstance->direction = angle - radf(90.0f);
 		if (particle->direction == -1)
