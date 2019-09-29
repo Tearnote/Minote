@@ -66,6 +66,8 @@ void pushReplayFrame(struct replay *replay, struct game *frame)
 		keyframe->player.clearDelay = frame->player.clearDelay;
 		keyframe->player.spawnDelay = frame->player.spawnDelay;
 		keyframe->player.dropBonus = frame->player.dropBonus;
+		keyframe->player.ghostEnabled = frame->player.ghostEnabled;
+		keyframe->player.yGhost = frame->player.yGhost;
 		keyframe->level = frame->level;
 		keyframe->nextLevelstop = frame->nextLevelstop;
 		keyframe->score = frame->score;
@@ -339,6 +341,8 @@ void applyReplayKeyframe(struct game *game, struct replay *replay, int frame)
 	game->player.clearDelay = keyframe->player.clearDelay;
 	game->player.spawnDelay = keyframe->player.spawnDelay;
 	game->player.dropBonus = keyframe->player.dropBonus;
+	game->player.ghostEnabled = keyframe->player.ghostEnabled;
+	game->player.yGhost = keyframe->player.yGhost;
 	game->level = keyframe->level;
 	game->nextLevelstop = keyframe->nextLevelstop;
 	game->score = keyframe->score;

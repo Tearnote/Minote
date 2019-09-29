@@ -19,8 +19,10 @@
 
 #define INSTANCE_LIMIT 256 // More minos than that will be ignored
 
+#define STACK_DIM 0.25f
 #define LOCKDIM_STRENGTH 0.75f
 #define FLASH_STRENGTH 0.75f
+#define GHOST_OPACITY 0.25f
 
 static GLuint program = 0;
 static GLuint vao = 0;
@@ -146,9 +148,9 @@ void queueMinoPlayfield(enum mino field[PLAYFIELD_H][PLAYFIELD_W])
 				*newInstance = produceDarrayItem(minoQueue);
 			newInstance->x = (GLfloat)(x - PLAYFIELD_W / 2.0);
 			newInstance->y = (GLfloat)(PLAYFIELD_H - 1 - y);
-			newInstance->r = minoColors[minoType][0] / 4;
-			newInstance->g = minoColors[minoType][1] / 4;
-			newInstance->b = minoColors[minoType][2] / 4;
+			newInstance->r = minoColors[minoType][0] * STACK_DIM;
+			newInstance->g = minoColors[minoType][1] * STACK_DIM;
+			newInstance->b = minoColors[minoType][2] * STACK_DIM;
 			newInstance->a = minoColors[minoType][3];
 			newInstance->highlight = highlights[y][x];
 		}
@@ -174,6 +176,28 @@ void queueMinoPlayer(struct player *player)
 		newInstance->g = minoColors[player->type][1] * lockDim;
 		newInstance->b = minoColors[player->type][2] * lockDim;
 		newInstance->a = minoColors[player->type][3];
+		newInstance->highlight = 0.0f;
+	}
+}
+
+void queueMinoGhost(struct player *player)
+{
+	if (!player->ghostEnabled)
+		return;
+	if (player->state != PlayerActive && player->state != PlayerSpawned)
+		return;
+
+	for (int i = 0; i < MINOS_PER_PIECE; i++) {
+		struct coord minoCoord = rs[player->type][player->rotation][i];
+		struct minoInstance *newInstance = produceDarrayItem(minoQueue);
+		newInstance->x =
+			(GLfloat)(minoCoord.x + player->x - PLAYFIELD_W / 2.0);
+		newInstance->y =
+			(GLfloat)(PLAYFIELD_H - 1 - minoCoord.y - player->yGhost);
+		newInstance->r = minoColors[player->type][0];
+		newInstance->g = minoColors[player->type][1];
+		newInstance->b = minoColors[player->type][2];
+		newInstance->a = minoColors[player->type][3] * GHOST_OPACITY;
 		newInstance->highlight = 0.0f;
 	}
 }

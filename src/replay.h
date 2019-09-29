@@ -41,6 +41,8 @@ struct replayKeyframePlayer {
 	int16_t clearDelay;
 	int16_t spawnDelay;
 	int8_t dropBonus;
+	int8_t ghostEnabled;
+	int8_t yGhost;
 };
 
 struct replayKeyframe {

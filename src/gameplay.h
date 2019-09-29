@@ -101,6 +101,8 @@ struct player {
 	int clearDelay;
 	int spawnDelay;
 	int dropBonus;
+	bool ghostEnabled;
+	int yGhost;
 };
 
 // Complete description of the gameplay's current state

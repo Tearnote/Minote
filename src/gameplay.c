@@ -16,6 +16,7 @@
 #include "settings.h"
 #include "logic.h"
 #include "effects.h"
+#include "log.h"
 
 #define KEYFRAME_FREQ 60
 
@@ -388,6 +389,8 @@ static void spawnPiece(void)
 
 	if (!first)
 		addLevels(1, false);
+	if (game->level >= 100)
+		player->ghostEnabled = false;
 
 	if (!checkPosition())
 		gameOver();
@@ -410,6 +413,7 @@ void initGameplay(void)
 	player->dasDelay = DAS_DELAY; // Starts out pre-charged
 	player->spawnDelay = SPAWN_DELAY; // Start instantly
 	game->frame = -1; // So that the first calculated frame ends up at 0
+	player->ghostEnabled = true;
 
 	replay->speed = 1.0f;
 	if (getSettingBool(SettingReplay)) {
@@ -611,7 +615,22 @@ static void updateSpawn(void)
 	}
 }
 
-static void updateGravity()
+static void updateGhost(void)
+{
+	if (!player->ghostEnabled)
+		return;
+	if(player->state != PlayerActive && player->state != PlayerSpawned)
+		return;
+
+	int yOrig = player->y;
+	player->yGhost = yOrig;
+	while (canDrop())
+		player->y += 1;
+	player->yGhost = player->y;
+	player->y = yOrig;
+}
+
+static void updateGravity(void)
 {
 	if (player->state != PlayerSpawned && player->state != PlayerActive)
 		return;
@@ -650,25 +669,6 @@ void updateWin(void)
 		updateGrade();
 		gameOver();
 	}
-}
-
-void calculateNextFrame(void)
-{
-	updateRotations();
-	updateShifts();
-	updateClear();
-	updateSpawn();
-	updateGravity();
-	updateLocking();
-
-	if (player->state == PlayerSpawned)
-		player->state = PlayerActive;
-
-	game->frame += 1;
-	if (game->frame > 0)
-		game->time += TIMER_FRAME;
-
-	updateWin();
 }
 
 // Maps generic inputs to gameplay commands
@@ -714,14 +714,6 @@ static enum replayCmd inputToReplayCmd(enum inputType i)
 	default:
 		return ReplCmdNone;
 	}
-}
-
-static void clampReplayFrame(void)
-{
-	if (game->frame < 0)
-		game->frame = 0;
-	if (game->frame >= replay->header.totalFrames)
-		game->frame = replay->header.totalFrames - 1;
 }
 
 // Receive unfiltered inputs
@@ -790,6 +782,26 @@ static void processInputs(void)
 	filterInputs();
 }
 
+void calculateNextFrame(void)
+{
+	updateRotations();
+	updateShifts();
+	updateClear();
+	updateSpawn();
+	updateGhost();
+	updateGravity();
+	updateLocking();
+
+	if (player->state == PlayerSpawned)
+		player->state = PlayerActive;
+
+	game->frame += 1;
+	if (game->frame > 0)
+		game->time += TIMER_FRAME;
+
+	updateWin();
+}
+
 void jumpToFrame(int frame)
 {
 	if (frame < 0)
@@ -823,6 +835,8 @@ static void processReplayInput(struct input *i)
 			replay->playing = !replay->playing;
 			break;
 		case ReplCmdFwd:
+			if (replay->frame + 1 == replay->header.totalFrames)
+				break;
 			replay->frame += 1;
 			processInputs();
 			calculateNextFrame();
@@ -847,7 +861,6 @@ static void processReplayInput(struct input *i)
 		default:
 			break;
 		}
-		clampReplayFrame();
 		logicFrequency = DEFAULT_FREQUENCY * replay->speed;
 	default:
 		break;

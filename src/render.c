@@ -229,6 +229,7 @@ static void renderFrame(void)
 	renderScene();
 	queueMinoPlayfield(snap->game->playfield);
 	queueMinoPlayer(&snap->game->player);
+	queueMinoGhost(&snap->game->player);
 	queueMinoPreview(&snap->game->player);
 	renderMino();
 	queueBorder(snap->game->playfield);

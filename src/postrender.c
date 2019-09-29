@@ -315,7 +315,7 @@ static void calculateVignette(void)
 		float progress = (double)(elapsed - thirdLength)
 		                 / (double)(thirdLength * 2);
 		progress = 1.0f - progress;
-		progress = SineEaseOut(progress);
+		//progress = SineEaseOut(progress);
 		falloff = VIGNETTE_BASE
 		          + (VIGNETTE_MAX - VIGNETTE_BASE) * progress;
 	}

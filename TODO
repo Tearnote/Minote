@@ -12,3 +12,5 @@ Add GM requirements into game state and replay
 Fix last frame of replay not recording
 Make some more trivial mutexes into atomics
 Add proper init+cleanup to replay.c (atm it leaks vdarray)
+Fix effects getting activated when seeking a replay backwards
+Fix input filtering getting activated when replay is not running
