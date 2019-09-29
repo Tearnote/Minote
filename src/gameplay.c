@@ -581,7 +581,8 @@ static void updateClear(void)
 
 			struct effect *e = allocate(sizeof(struct effect));
 			e->type = EffectLineClear;
-			struct lineClearData *data = allocate(sizeof(struct lineClearData));
+			struct lineClearData
+				*data = allocate(sizeof(struct lineClearData));
 			data->lines = clearedCount;
 			data->speed = 1.0f / ((float)CLEAR_DELAY / 41.0f);
 			data->speed *= replay->speed;
@@ -621,7 +622,12 @@ static void updateGravity()
 		if (game->cmdHeld[GameCmdSonic])
 			gravity = SONIC_DROP;
 	}
-	player->ySub += gravity;
+
+	if (canDrop())
+		player->ySub += gravity;
+	else
+		player->ySub = 0;
+
 	while (player->ySub >= SUBGRID) {
 		drop();
 		player->ySub -= SUBGRID;
