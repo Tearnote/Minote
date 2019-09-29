@@ -63,7 +63,9 @@ set(GLSL_SOURCES
         src/glsl/compose.vert.glsl
         src/glsl/compose.frag.glsl
         src/glsl/particle.vert.glsl
-        src/glsl/particle.frag.glsl)
+        src/glsl/particle.frag.glsl
+        src/glsl/vignette.vert.glsl
+        src/glsl/vignette.frag.glsl)
 
 foreach (GLSL_PATH ${GLSL_SOURCES})
     get_filename_component(GLSL_FILENAME ${GLSL_PATH} NAME_WLE)

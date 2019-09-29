@@ -31,6 +31,9 @@ static GLuint composeProgram = 0;
 static GLint screenAttr = -1;
 static GLint bloomAttr = -1;
 static GLint bloomStrengthAttr = -1;
+static GLuint vignetteProgram = 0;
+static GLint falloffAttr = -1;
+static GLint aspectAttr = -1;
 
 static GLuint vao = 0;
 static GLuint vertexBuffer = 0;
@@ -90,6 +93,18 @@ void initPostRenderer(void)
 	bloomAttr = glGetUniformLocation(composeProgram, "bloom");
 	bloomStrengthAttr =
 		glGetUniformLocation(composeProgram, "bloomStrength");
+
+	const GLchar vignetteVertSrc[] = {
+#include "vignette.vert"
+		, 0x00 };
+	const GLchar vignetteFragSrc[] = {
+#include "vignette.frag"
+		, 0x00 };
+	vignetteProgram = createProgram(vignetteVertSrc, vignetteFragSrc);
+	if (vignetteProgram == 0)
+		logError("Failed to initialize post renderer");
+	falloffAttr = glGetUniformLocation(vignetteProgram, "falloff");
+	aspectAttr = glGetUniformLocation(vignetteProgram, "aspect");
 
 	// Create VAO
 	glGenBuffers(1, &vertexBuffer);
@@ -293,7 +308,7 @@ void renderPostEnd(void)
 		glDrawArrays(GL_TRIANGLES, 0, countof(vertexData) / 4);
 	}
 
-	// Draw everything on screen
+	// Draw bloom
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	glViewport(0, 0, fboWidth, fboHeight);
 
@@ -311,6 +326,14 @@ void renderPostEnd(void)
 	glDrawArrays(GL_TRIANGLES, 0, countof(vertexData) / 4);
 
 	glActiveTexture(GL_TEXTURE0);
+
+	// Draw vignette
+	glUseProgram(vignetteProgram);
+
+	glUniform1f(falloffAttr, 0.4f);
+	glUniform1f(aspectAttr, (float)fboWidth / (float)fboHeight);
+	glDrawArrays(GL_TRIANGLES, 0, countof(vertexData) / 4);
+
 	glEnable(GL_DEPTH_TEST);
 	glBindVertexArray(0);
 	glUseProgram(0);
