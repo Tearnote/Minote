@@ -9,6 +9,8 @@ void cleanupPostRenderer(void);
 
 void resizePostRender(int width, int height);
 
+void pulseVignette(float speed);
+
 void renderPostStart(void);
 void renderPostEnd(void);
 

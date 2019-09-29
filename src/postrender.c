@@ -6,10 +6,17 @@
 
 #include "glad/glad.h"
 
+#include "AHEasing/easing.h"
+
 #include "render.h"
 #include "util.h"
 #include "log.h"
 #include "window.h"
+#include "timer.h"
+
+#define VIGNETTE_BASE 0.4f
+#define VIGNETTE_MAX 0.46f
+#define VIGNETTE_PULSE (0.9 * SEC)
 
 static GLuint renderFbo = 0;
 static GLuint renderFboColor = 0;
@@ -54,6 +61,11 @@ static int bloomWidth = DEFAULT_WIDTH;
 static int bloomHeight = DEFAULT_HEIGHT;
 
 static int blurKernel[] = { 0, 1, 2, 3, 4, 5, 7, 8, 9, 10 };
+
+static float falloff = VIGNETTE_BASE;
+
+static nsec vignettePulseStart = -1;
+static float vignettePulseSpeed = 1.0f;
 
 void initPostRenderer(void)
 {
@@ -270,6 +282,45 @@ void cleanupPostRenderer(void)
 	vertexBuffer = 0;
 }
 
+void pulseVignette(float speed)
+{
+	vignettePulseStart = getTime();
+	vignettePulseSpeed = speed;
+}
+
+static void calculateVignette(void)
+{
+	nsec length =
+		(double)VIGNETTE_PULSE * (double)(1.0f / vignettePulseSpeed);
+	if (vignettePulseStart == -1) {
+		falloff = VIGNETTE_BASE;
+		return;
+	}
+	nsec time = getTime();
+	if (time >= vignettePulseStart + length) {
+		falloff = VIGNETTE_BASE;
+		return;
+	}
+
+	// We are in the middle of a pulse
+	nsec elapsed = time - vignettePulseStart;
+	nsec thirdLength = length / 3;
+	if (elapsed < thirdLength) { // We are in the first half
+		float progress =
+			(double)elapsed / (double)(thirdLength);
+		progress = SineEaseOut(progress);
+		falloff = VIGNETTE_BASE
+		          + (VIGNETTE_MAX - VIGNETTE_BASE) * progress;
+	} else { // They had us in the second half
+		float progress = (double)(elapsed - thirdLength)
+		                 / (double)(thirdLength * 2);
+		progress = 1.0f - progress;
+		progress = SineEaseOut(progress);
+		falloff = VIGNETTE_BASE
+		          + (VIGNETTE_MAX - VIGNETTE_BASE) * progress;
+	}
+}
+
 void renderPostStart(void)
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, renderFbo);
@@ -330,7 +381,8 @@ void renderPostEnd(void)
 	// Draw vignette
 	glUseProgram(vignetteProgram);
 
-	glUniform1f(falloffAttr, 0.4f);
+	calculateVignette();
+	glUniform1f(falloffAttr, falloff);
 	glUniform1f(aspectAttr, (float)fboWidth / (float)fboHeight);
 	glDrawArrays(GL_TRIANGLES, 0, countof(vertexData) / 4);
 

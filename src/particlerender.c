@@ -16,6 +16,7 @@
 #include "render.h"
 #include "ease.h"
 #include "timer.h"
+#include "postrender.h"
 
 #define INSTANCE_LIMIT 2560 // More particles than that will be ignored
 #define FADE_THRESHOLD 0.9f
@@ -181,6 +182,9 @@ void triggerLineClear(struct lineClearData *data)
 			}
 		}
 	}
+
+	if (data->lines == 4)
+		pulseVignette(data->speed);
 }
 
 void updateParticles(void)
