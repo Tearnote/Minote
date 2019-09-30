@@ -15,7 +15,7 @@
 #include "timer.h"
 
 #define BLOOM_PASSES 4
-#define BLOOM_SIZE 720
+#define BLOOM_SIZE 512
 
 #define VIGNETTE_BASE 0.4f
 #define VIGNETTE_MAX 0.46f
@@ -197,9 +197,8 @@ void initPostRenderer(void)
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, bloomFbo);
-	for (int i = 0; i < BLOOM_PASSES; i++)
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i,
-		                       GL_TEXTURE_2D, bloomFboColor[i], 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+	                       GL_TEXTURE_2D, bloomFboColor[0], 0);
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER)
 	    != GL_FRAMEBUFFER_COMPLETE) {
 		logCrit("Failed to initialize bloom framebuffer");
@@ -212,7 +211,7 @@ void resizePostRender(int width, int height)
 {
 	bloomHeight = BLOOM_SIZE;
 	bloomWidth = (float)bloomHeight * ((float)width / (float)height);
-	
+
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderFboColor);
 	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA8,
 	                        width, height, GL_TRUE);
@@ -230,7 +229,8 @@ void resizePostRender(int width, int height)
 	for (int i = 0; i < BLOOM_PASSES; i++) {
 		glBindTexture(GL_TEXTURE_2D, bloomFboColor[i]);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, bloomWidth / (1 << i),
-		             bloomHeight / (1 << i), 0, GL_BGRA, GL_UNSIGNED_BYTE,
+		             bloomHeight / (1 << i), 0, GL_BGRA,
+		             GL_UNSIGNED_BYTE,
 		             NULL);
 	}
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -333,7 +333,8 @@ void renderPostEnd(void)
 	glUseProgram(blurProgram);
 
 	for (int i = 1; i < BLOOM_PASSES; i++) {
-		glDrawBuffer(GL_COLOR_ATTACHMENT0 + i);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+		                       GL_TEXTURE_2D, bloomFboColor[i], 0);
 		glViewport(0, 0, bloomWidth / (1 << i), bloomHeight / (1 << i));
 		glClear(GL_COLOR_BUFFER_BIT);
 		glBindTexture(GL_TEXTURE_2D, bloomFboColor[i - 1]);
@@ -343,7 +344,8 @@ void renderPostEnd(void)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_ONE, GL_ONE);
 	for (int i = BLOOM_PASSES - 2; i >= 0; i--) {
-		glDrawBuffer(GL_COLOR_ATTACHMENT0 + i);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+		                       GL_TEXTURE_2D, bloomFboColor[i], 0);
 		glViewport(0, 0, bloomWidth / (1 << i), bloomHeight / (1 << i));
 		glBindTexture(GL_TEXTURE_2D, bloomFboColor[i + 1]);
 		glUniform1f(stepAttr, 0.5f);
