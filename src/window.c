@@ -69,6 +69,7 @@ void initWindow(void)
 		logCritGLFW("Failed to create a window");
 		exit(EXIT_FAILURE);
 	}
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 	glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 	glfwSetWindowContentScaleCallback(window, windowScaleCallback);
 
