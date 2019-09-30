@@ -778,12 +778,11 @@ static void processInputs(void)
 			free(in);
 		}
 	}
-
-	filterInputs();
 }
 
 void calculateNextFrame(void)
 {
+	filterInputs();
 	updateRotations();
 	updateShifts();
 	updateClear();
