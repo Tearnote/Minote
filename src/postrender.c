@@ -26,9 +26,8 @@ static GLuint resolveFbo = 0;
 static GLuint resolveFboColor = 0;
 
 static GLuint bloomFbo = 0;
-static GLuint bloomFboColor = 0;
-static GLuint bloom2Fbo = 0;
-static GLuint bloom2FboColor = 0;
+static GLuint bloomFboColor1 = 0;
+static GLuint bloomFboColor2 = 0;
 
 static GLuint thresholdProgram = 0;
 static GLint thresholdAttr = -1;
@@ -161,16 +160,14 @@ void initPostRenderer(void)
 	// Create the bloom framebuffers
 	glGenFramebuffers(1, &bloomFbo);
 
-	glGenTextures(1, &bloomFboColor);
-	glBindTexture(GL_TEXTURE_2D, bloomFboColor);
+	glGenTextures(1, &bloomFboColor1);
+	glBindTexture(GL_TEXTURE_2D, bloomFboColor1);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	glGenFramebuffers(1, &bloom2Fbo);
-
-	glGenTextures(1, &bloom2FboColor);
-	glBindTexture(GL_TEXTURE_2D, bloom2FboColor);
+	glGenTextures(1, &bloomFboColor2);
+	glBindTexture(GL_TEXTURE_2D, bloomFboColor2);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -189,7 +186,6 @@ void initPostRenderer(void)
 		logCrit("Failed to initialize render framebuffer");
 		exit(EXIT_FAILURE);
 	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, resolveFbo);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
@@ -199,24 +195,15 @@ void initPostRenderer(void)
 		logCrit("Failed to initialize resolve framebuffer");
 		exit(EXIT_FAILURE);
 	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, bloomFbo);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-	                       GL_TEXTURE_2D, bloomFboColor, 0);
+	                       GL_TEXTURE_2D, bloomFboColor1, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,
+	                       GL_TEXTURE_2D, bloomFboColor2, 0);
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER)
 	    != GL_FRAMEBUFFER_COMPLETE) {
 		logCrit("Failed to initialize bloom framebuffer");
-		exit(EXIT_FAILURE);
-	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, bloom2Fbo);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-	                       GL_TEXTURE_2D, bloom2FboColor, 0);
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER)
-	    != GL_FRAMEBUFFER_COMPLETE) {
-		logCrit("Failed to initialize bloom2 framebuffer");
 		exit(EXIT_FAILURE);
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -242,12 +229,12 @@ void resizePostRender(int width, int height)
 	             GL_UNSIGNED_BYTE, NULL);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	glBindTexture(GL_TEXTURE_2D, bloomFboColor);
+	glBindTexture(GL_TEXTURE_2D, bloomFboColor1);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16, bloomWidth, bloomHeight, 0,
 	             GL_BGRA, GL_UNSIGNED_BYTE, NULL);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	glBindTexture(GL_TEXTURE_2D, bloom2FboColor);
+	glBindTexture(GL_TEXTURE_2D, bloomFboColor2);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16, bloomWidth, bloomHeight, 0,
 	             GL_BGRA, GL_UNSIGNED_BYTE, NULL);
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -258,12 +245,10 @@ void resizePostRender(int width, int height)
 
 void cleanupPostRenderer(void)
 {
-	glDeleteTextures(1, &bloom2FboColor);
-	bloom2FboColor = 0;
-	glDeleteFramebuffers(1, &bloom2Fbo);
-	bloom2Fbo = 0;
-	glDeleteTextures(1, &bloomFboColor);
-	bloomFboColor = 0;
+	glDeleteTextures(1, &bloomFboColor2);
+	bloomFboColor2 = 0;
+	glDeleteTextures(1, &bloomFboColor1);
+	bloomFboColor1 = 0;
 	glDeleteFramebuffers(1, &bloomFbo);
 	bloomFbo = 0;
 	glDeleteTextures(1, &resolveFboColor);
@@ -328,6 +313,9 @@ void renderPostStart(void)
 
 void renderPostEnd(void)
 {
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_BLEND);
+
 	// Resolve the MSAA image
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, renderFbo);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, resolveFbo);
@@ -337,10 +325,11 @@ void renderPostEnd(void)
 	// Draw the threshold
 	glBindFramebuffer(GL_FRAMEBUFFER, bloomFbo);
 	glViewport(0, 0, bloomWidth, bloomHeight);
+	glClearColor(0.0, 0.0, 0.0, 0.0);
+	glClear(GL_COLOR_BUFFER_BIT);
 
 	glUseProgram(thresholdProgram);
 	glBindVertexArray(vao);
-	glDisable(GL_DEPTH_TEST);
 
 	glBindTexture(GL_TEXTURE_2D, resolveFboColor);
 	glUniform1f(thresholdAttr, 0.7f);
@@ -348,12 +337,13 @@ void renderPostEnd(void)
 
 	// Draw blur
 	glUseProgram(blurProgram);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, bloomFbo);
 
 	for (int i = 0; i < countof(blurKernel); i++) {
-		GLuint fb = (i % 2 == 0) ? (bloom2Fbo) : (bloomFbo);
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fb);
-
-		GLuint tx = (i % 2 == 0) ? (bloomFboColor) : (bloom2FboColor);
+		GLuint tx = (i % 2 == 0) ? (bloomFboColor1) : (bloomFboColor2);
+		GLenum buf = (i % 2 == 0) ? (GL_COLOR_ATTACHMENT1) : (GL_COLOR_ATTACHMENT0);
+		glDrawBuffer(buf);
+		glClear(GL_COLOR_BUFFER_BIT);
 		glBindTexture(GL_TEXTURE_2D, tx);
 		glUniform1i(stepAttr, blurKernel[i]);
 		glDrawArrays(GL_TRIANGLES, 0, countof(vertexData) / 4);
@@ -370,13 +360,14 @@ void renderPostEnd(void)
 	glUniform1i(screenAttr, 0);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D,
-	              (countof(blurKernel) % 2 == 0) ? (bloomFboColor)
-	                                             : (bloom2FboColor));
+	              (countof(blurKernel) % 2 == 0) ? (bloomFboColor1)
+	                                             : (bloomFboColor2));
 	glUniform1i(bloomAttr, 1);
 	glUniform1f(bloomStrengthAttr, 0.4f);
 	glDrawArrays(GL_TRIANGLES, 0, countof(vertexData) / 4);
 
 	glActiveTexture(GL_TEXTURE0);
+	glEnable(GL_BLEND);
 
 	// Draw vignette
 	glUseProgram(vignetteProgram);
@@ -386,7 +377,7 @@ void renderPostEnd(void)
 	glUniform1f(aspectAttr, (float)fboWidth / (float)fboHeight);
 	glDrawArrays(GL_TRIANGLES, 0, countof(vertexData) / 4);
 
-	glEnable(GL_DEPTH_TEST);
 	glBindVertexArray(0);
 	glUseProgram(0);
+	glEnable(GL_DEPTH_TEST);
 }
