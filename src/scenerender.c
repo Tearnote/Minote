@@ -8,6 +8,8 @@
 #include "log.h"
 #include "util.h"
 
+#define HIGHLIGHT_BRIGHTNESS 1.5f
+
 static GLuint program = 0;
 static GLuint vao = 0;
 static GLuint vertexBuffer = 0;
@@ -41,66 +43,69 @@ static GLfloat vertexData[] = { // vec3 position, vec4 color
 
 	// Backplane
 	quad(-5.1f, -0.1f, -1.0f,
-		5.1f, -0.1f, -1.0f,
-		5.1f, 20.1f, -1.0f,
-		-5.1f, 20.1f, -1.0f,
-		0.0f, 0.0f, 0.0f, 0.9f),
+	     5.1f, -0.1f, -1.0f,
+	     5.1f, 20.1f, -1.0f,
+	     -5.1f, 20.1f, -1.0f,
+	     0.0f, 0.0f, 0.0f, 0.9f),
 
 	// Bottom wall
 	quad(-5.1f, -0.1f, -1.0f,
 	     -5.1f, -0.1f, 0.2f,
-		5.1f, -0.1f, 0.2f,
-		5.1f, -0.1f, -1.0f,
-		0.0f, 0.0f, 0.0f, 0.95f),
+	     5.1f, -0.1f, 0.2f,
+	     5.1f, -0.1f, -1.0f,
+	     0.0f, 0.0f, 0.0f, 0.95f),
 
 	// Bottom wall highlight
 	quad(-5.2f, -0.2f, 0.2f,
-		5.2f, -0.2f, 0.2f,
-		5.1f, -0.1f, 0.2f,
-		-5.1f, -0.1f, 0.2f,
-		1.0f, 1.0f, 1.0f, 1.0f),
+	     5.2f, -0.2f, 0.2f,
+	     5.1f, -0.1f, 0.2f,
+	     -5.1f, -0.1f, 0.2f,
+	     HIGHLIGHT_BRIGHTNESS, HIGHLIGHT_BRIGHTNESS, HIGHLIGHT_BRIGHTNESS,
+	     1.0f),
 
 	// Left wall
 	quad(-5.1f, -0.1f, 0.2f,
-		-5.1f, -0.1f, -1.0f,
-		-5.1f, 20.1f, -1.0f,
-		-5.1f, 20.1f, 0.2f,
-		0.0f, 0.0f, 0.0f, 0.95f),
+	     -5.1f, -0.1f, -1.0f,
+	     -5.1f, 20.1f, -1.0f,
+	     -5.1f, 20.1f, 0.2f,
+	     0.0f, 0.0f, 0.0f, 0.95f),
 
 	// Left wall highlight
 	quad(-5.2f, -0.2f, 0.2f,
-		-5.1f, -0.1f, 0.2f,
-		-5.1f, 20.1f, 0.2f,
-		-5.2f, 20.1f, 0.2f,
-		1.0f, 1.0f, 1.0f, 1.0f),
+	     -5.1f, -0.1f, 0.2f,
+	     -5.1f, 20.1f, 0.2f,
+	     -5.2f, 20.1f, 0.2f,
+	     HIGHLIGHT_BRIGHTNESS, HIGHLIGHT_BRIGHTNESS, HIGHLIGHT_BRIGHTNESS,
+	     1.0f),
 
 	// Right wall
 	quad(5.1f, -0.1f, -1.0f,
-		5.1f, -0.1f, 0.2f,
-		5.1f, 20.1f, 0.2f,
-		5.1f, 20.1f, -1.0f,
-		0.0f, 0.0f, 0.0f, 0.95f),
+	     5.1f, -0.1f, 0.2f,
+	     5.1f, 20.1f, 0.2f,
+	     5.1f, 20.1f, -1.0f,
+	     0.0f, 0.0f, 0.0f, 0.95f),
 
 	// Right wall highlight
 	quad(5.1f, -0.1f, 0.2f,
-		5.2f, -0.2f, 0.2f,
-		5.2f, 20.1f, 0.2f,
-		5.1f, 20.1f, 0.2f,
-		1.0f, 1.0f, 1.0f, 1.0f),
+	     5.2f, -0.2f, 0.2f,
+	     5.2f, 20.1f, 0.2f,
+	     5.1f, 20.1f, 0.2f,
+	     HIGHLIGHT_BRIGHTNESS, HIGHLIGHT_BRIGHTNESS, HIGHLIGHT_BRIGHTNESS,
+	     1.0f),
 
 	// Preview box
 	quad(-3.0f, 20.5f, -1.0f,
-		3.0f, 20.5f, -1.0f,
-		3.0f, 23.5f, -1.0f,
-		-3.0f, 23.5f, -1.0f,
-		0.0f, 0.0f, 0.0f, 0.9f),
+	     3.0f, 20.5f, -1.0f,
+	     3.0f, 23.5f, -1.0f,
+	     -3.0f, 23.5f, -1.0f,
+	     0.0f, 0.0f, 0.0f, 0.9f),
 
 	// Grade box
 	quad(6.0f, 14.5f, -0.5f,
-		11.0f, 14.5f, -0.5f,
-		11.0f, 19.5f, -0.5f,
-		6.0f, 19.5f, -0.5f,
-		0.0f, 0.0f, 0.0f, 0.5f)
+	     11.0f, 14.5f, -0.5f,
+	     11.0f, 19.5f, -0.5f,
+	     6.0f, 19.5f, -0.5f,
+	     0.0f, 0.0f, 0.0f, 0.5f)
 };
 
 void initSceneRenderer(void)

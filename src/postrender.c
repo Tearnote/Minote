@@ -213,7 +213,7 @@ void resizePostRender(int width, int height)
 	bloomWidth = (float)bloomHeight * ((float)width / (float)height);
 
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderFboColor);
-	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA8,
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA16F,
 	                        width, height, GL_TRUE);
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 
@@ -223,12 +223,12 @@ void resizePostRender(int width, int height)
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
 	glBindTexture(GL_TEXTURE_2D, resolveFboColor);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_BGRA,
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_BGRA,
 	             GL_UNSIGNED_BYTE, NULL);
 
 	for (int i = 0; i < BLOOM_PASSES; i++) {
 		glBindTexture(GL_TEXTURE_2D, bloomFboColor[i]);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, bloomWidth / (1 << i),
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, bloomWidth / (1 << i),
 		             bloomHeight / (1 << i), 0, GL_BGRA,
 		             GL_UNSIGNED_BYTE,
 		             NULL);
@@ -326,7 +326,7 @@ void renderPostEnd(void)
 	glBindVertexArray(vao);
 
 	glBindTexture(GL_TEXTURE_2D, resolveFboColor);
-	glUniform1f(thresholdAttr, 0.7f);
+	glUniform1f(thresholdAttr, 1.0f);
 	glDrawArrays(GL_TRIANGLES, 0, countof(vertexData) / 4);
 
 	// Draw blur

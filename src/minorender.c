@@ -21,7 +21,7 @@
 
 #define STACK_DIM 0.25f
 #define LOCKDIM_STRENGTH 0.75f
-#define FLASH_STRENGTH 0.75f
+#define FLASH_STRENGTH 1.2f
 #define GHOST_OPACITY 0.25f
 
 static GLuint program = 0;
