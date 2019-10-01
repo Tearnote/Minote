@@ -233,6 +233,7 @@ bool canDrop(void)
 static void drop(void)
 {
 	if (canDrop()) {
+		player->lockDelay = 0;
 		player->y += 1;
 		if (game->cmdHeld[GameCmdSoft])
 			player->dropBonus += 1;
