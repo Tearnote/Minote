@@ -19,10 +19,10 @@
 
 #define INSTANCE_LIMIT 256 // More minos than that will be ignored
 
-#define STACK_DIM 0.25f
-#define LOCKDIM_STRENGTH 0.75f
+#define STACK_DIM 0.4f
+#define LOCKDIM_STRENGTH 0.6f
 #define FLASH_STRENGTH 1.2f
-#define GHOST_OPACITY 0.25f
+#define GHOST_OPACITY 0.2f
 
 static GLuint program = 0;
 static GLuint vao = 0;
@@ -38,6 +38,7 @@ static GLint ambientStrengthAttr = -1;
 static GLint diffuseStrengthAttr = -1;
 static GLint specularStrengthAttr = -1;
 static GLint shininessAttr = -1;
+static GLint highlightMaxAttr = -1;
 
 static mat4x4 normalCamera = {};
 
@@ -79,6 +80,7 @@ void initMinoRenderer(void)
 	specularStrengthAttr =
 		glGetUniformLocation(program, "specularStrength");
 	shininessAttr = glGetUniformLocation(program, "shininess");
+	highlightMaxAttr = glGetUniformLocation(program, "highlightMax");
 
 	glGenBuffers(1, &vertexBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
@@ -133,7 +135,7 @@ void triggerLockFlash(int coords[MINOS_PER_PIECE * 2])
 	int flashDuration = CLEAR_OFFSET * 2 * (SEC / logicFrequency);
 	for (int i = 0; i < MINOS_PER_PIECE; i++) {
 		addEase(&highlights[coords[i * 2 + 1]][coords[i * 2]],
-		        FLASH_STRENGTH, 0.0f, flashDuration, EaseLinear);
+		        1.0f, 0.0f, flashDuration, EaseLinear);
 	}
 }
 
@@ -248,12 +250,12 @@ void renderMino(void)
 	glUniformMatrix4fv(normalCameraAttr, 1, GL_FALSE, normalCamera[0]);
 	glUniformMatrix4fv(projectionAttr, 1, GL_FALSE, projection[0]);
 	glUniform3fv(lightPositionAttr, 1, lightPosition);
-	//glUniform3f(lightColorAttr, 0.7f, 0.839f, 1.0f);
 	glUniform3f(lightColorAttr, 1.0f, 1.0f, 1.0f);
 	glUniform1f(ambientStrengthAttr, 0.05f);
-	glUniform1f(diffuseStrengthAttr, 1.0f);
-	glUniform1f(specularStrengthAttr, 0.25f);
-	glUniform1f(shininessAttr, 32.0f);
+	glUniform1f(diffuseStrengthAttr, 0.95f);
+	glUniform1f(specularStrengthAttr, 0.4f);
+	glUniform1f(shininessAttr, 8.0f);
+	glUniform1f(highlightMaxAttr, FLASH_STRENGTH);
 	glDrawArraysInstanced(GL_TRIANGLES, 0, countof(vertexData) / 6,
 	                      (GLsizei)minoQueue->count);
 

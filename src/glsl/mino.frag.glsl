@@ -14,6 +14,7 @@ uniform float ambientStrength;
 uniform float diffuseStrength;
 uniform float specularStrength;
 uniform float shininess;
+uniform float highlightMax;
 
 void main()
 {
@@ -26,8 +27,8 @@ void main()
 	float shine = pow(max(dot(viewDirection, reflectDirection), 0.0), shininess);
 	vec3 specular = specularStrength * shine * lightColor;
 
-	float colorMod = mix(0.5, 1.5, fVertical);
+	float colorMod = mix(0.3333, 1.0, fVertical);
 	vec4 newColor = vec4(vec3(fColor) * colorMod, fColor.a);
 	outColor = vec4(ambient + diffuse + specular, 1.0) * newColor;
-	outColor = mix(outColor, vec4(1.0, 1.0, 1.0, 1.0), fHighlight);
+	outColor = mix(outColor, vec4(highlightMax, highlightMax, highlightMax, 1.0), fHighlight);
 }

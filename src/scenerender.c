@@ -8,7 +8,7 @@
 #include "log.h"
 #include "util.h"
 
-#define HIGHLIGHT_BRIGHTNESS 1.5f
+#define HIGHLIGHT_BRIGHTNESS 1.2f
 
 static GLuint program = 0;
 static GLuint vao = 0;

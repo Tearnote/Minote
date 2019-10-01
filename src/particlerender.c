@@ -20,7 +20,7 @@
 
 #define INSTANCE_LIMIT 2560 // More particles than that will be ignored
 #define FADE_THRESHOLD 0.9f
-#define COLOR_BOOST 1.2f
+#define COLOR_BOOST 1.1f
 
 static GLuint program = 0;
 static GLuint vao = 0;

@@ -14,7 +14,7 @@
 #include "window.h"
 #include "timer.h"
 
-#define BLOOM_PASSES 4
+#define BLOOM_PASSES 6
 #define BLOOM_SIZE 720
 
 #define VIGNETTE_BASE 0.4f

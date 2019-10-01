@@ -234,7 +234,6 @@ static void drop(void)
 {
 	if (canDrop()) {
 		player->y += 1;
-		player->lockDelay = 0;
 		if (game->cmdHeld[GameCmdSoft])
 			player->dropBonus += 1;
 	}
@@ -619,7 +618,7 @@ static void updateGhost(void)
 {
 	if (!player->ghostEnabled)
 		return;
-	if(player->state != PlayerActive && player->state != PlayerSpawned)
+	if (player->state != PlayerActive && player->state != PlayerSpawned)
 		return;
 
 	int yOrig = player->y;
@@ -655,12 +654,17 @@ static void updateGravity(void)
 
 void updateLocking(void)
 {
-	if (player->state != PlayerActive || canDrop())
+	if (player->state != PlayerActive)
 		return;
-	player->lockDelay += 1;
-	// Two sources of locking: lock delay expired, and manlock
-	if (player->lockDelay > LOCK_DELAY || game->cmdHeld[GameCmdSoft])
-		lock();
+	if (canDrop()) {
+		player->lockDelay = 0;
+	} else {
+		player->lockDelay += 1;
+		// Two sources of locking: lock delay expired, and manlock
+		if (player->lockDelay > LOCK_DELAY
+		    || game->cmdHeld[GameCmdSoft])
+			lock();
+	}
 }
 
 void updateWin(void)
