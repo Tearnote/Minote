@@ -20,6 +20,7 @@
 
 #define INSTANCE_LIMIT 2560 // More particles than that will be ignored
 #define FADE_THRESHOLD 0.9f
+#define COLOR_BOOST 1.2f
 
 static GLuint program = 0;
 static GLuint vao = 0;
@@ -219,9 +220,9 @@ void updateParticles(void)
 		if (particle->direction == -1)
 			newInstance->direction =
 				radf(180.0f) - newInstance->direction;
-		newInstance->r = minoColors[particle->type][0];
-		newInstance->g = minoColors[particle->type][1];
-		newInstance->b = minoColors[particle->type][2];
+		newInstance->r = minoColors[particle->type][0] * COLOR_BOOST;
+		newInstance->g = minoColors[particle->type][1] * COLOR_BOOST;
+		newInstance->b = minoColors[particle->type][2] * COLOR_BOOST;
 		newInstance->a = minoColors[particle->type][3];
 		newInstance->a *= 0.8f;
 		if (particle->progress > FADE_THRESHOLD) {

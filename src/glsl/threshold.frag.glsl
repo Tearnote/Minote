@@ -10,9 +10,8 @@ uniform float threshold;
 void main()
 {
 	vec4 fragColor = texture(screen, fTexCoords);
-	float brightness = dot(fragColor.rgb, vec3(0.3333, 0.3333, 0.3333));
-	if(brightness > threshold)
-		outColor = vec4(fragColor.rgb, 1.0);
-	else
-		outColor = vec4(0.0, 0.0, 0.0, 1.0);
+	float brightness = max(fragColor.r, max(fragColor.g, fragColor.b));
+	float contribution = max(0, brightness - threshold);
+	contribution /= max(brightness, 0.00001);
+	outColor = fragColor * contribution;
 }

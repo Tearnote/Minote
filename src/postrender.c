@@ -15,7 +15,7 @@
 #include "timer.h"
 
 #define BLOOM_PASSES 4
-#define BLOOM_SIZE 512
+#define BLOOM_SIZE 720
 
 #define VIGNETTE_BASE 0.4f
 #define VIGNETTE_MAX 0.46f
@@ -367,7 +367,7 @@ void renderPostEnd(void)
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, bloomFboColor[0]);
 	glUniform1i(bloomAttr, 1);
-	glUniform1f(bloomStrengthAttr, 0.4f);
+	glUniform1f(bloomStrengthAttr, 1.0f);
 	glDrawArrays(GL_TRIANGLES, 0, countof(vertexData) / 4);
 
 	glActiveTexture(GL_TEXTURE0);
