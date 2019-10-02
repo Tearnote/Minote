@@ -20,7 +20,7 @@
 
 #define INSTANCE_LIMIT 2560 // More particles than that will be ignored
 #define FADE_THRESHOLD 0.9f
-#define COLOR_BOOST 1.1f
+#define COLOR_BOOST 1.2f
 
 static GLuint program = 0;
 static GLuint vao = 0;
@@ -162,7 +162,11 @@ void triggerLineClear(struct lineClearData *data)
 						frandom(&randomizer);
 					newParticle->spins = QuadraticEaseOut(
 						newParticle->spins);
-					newParticle->spins *= 16.0f;
+					int power = 3;
+					power += data->combo * 2;
+					if (power > 20 || data->lines == 4)
+						power = 20;
+					newParticle->spins *= (float)power;
 					newParticle->spins /=
 						newParticle->radius;
 					newParticle->type =
@@ -170,7 +174,8 @@ void triggerLineClear(struct lineClearData *data)
 					assert(newParticle->type != MinoNone);
 					double duration = frandom(&randomizer);
 					if (data->lines == 4)
-						duration = duration / 2.0f + 0.5f;
+						duration =
+							duration / 2.0f + 0.5f;
 					duration *= 2.0 * SEC;
 					duration *= 1.0f / data->speed;
 					enum easeType type = EaseOutExponential;

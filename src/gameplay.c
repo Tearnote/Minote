@@ -588,6 +588,7 @@ static void updateClear(void)
 			struct lineClearData
 				*data = allocate(sizeof(struct lineClearData));
 			data->lines = clearedCount;
+			data->combo = game->combo;
 			data->speed = 1.0f / ((float)CLEAR_DELAY / 41.0f);
 			data->speed *= replay->speed;
 			copyArray(data->playfield, oldPlayfield);
