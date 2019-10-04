@@ -7,6 +7,7 @@
 void initSceneRenderer(void);
 void cleanupSceneRenderer(void);
 
+void updateScene(int newCombo);
 void renderScene(void);
 
 #endif // SCENERENDER_H

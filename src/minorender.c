@@ -253,9 +253,9 @@ void renderMino(void)
 	glUniformMatrix4fv(projectionAttr, 1, GL_FALSE, projection[0]);
 	glUniform3fv(lightPositionAttr, 1, lightPosition);
 	glUniform3f(lightColorAttr, 1.0f, 1.0f, 1.0f);
-	glUniform1f(ambientStrengthAttr, 0.05f);
+	glUniform1f(ambientStrengthAttr, 0.2f);
 	glUniform3fv(ambientColorAttr, 1, tintColor);
-	glUniform1f(diffuseStrengthAttr, 0.95f);
+	glUniform1f(diffuseStrengthAttr, 0.9f);
 	glUniform1f(specularStrengthAttr, 0.4f);
 	glUniform1f(shininessAttr, 8.0f);
 	glUniform1f(highlightMaxAttr, FLASH_STRENGTH);

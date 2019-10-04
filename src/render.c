@@ -213,6 +213,7 @@ static void updateFrame(void)
 
 	updateEffects();
 	updateBackground();
+	updateScene(snap->game->combo);
 	updateEase();
 	updateParticles(); // Needs to be after updateEase
 

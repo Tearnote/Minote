@@ -136,7 +136,7 @@ void triggerLineClear(struct lineClearData *data)
 	for (int y = 0; y < PLAYFIELD_H; y++) {
 		if (!data->clearedLines[y])
 			continue;
-		for (int i = 0; i < data->lines; i++) {
+		for (int i = 0; i < (data->lines + 1) / 2; i++) {
 			for (int my = 0; my < 8; my++) {
 				for (int x = 0; x < PLAYFIELD_W; x++) {
 					struct particle *newParticle =

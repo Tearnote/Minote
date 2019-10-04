@@ -7,8 +7,7 @@
 #include "render.h"
 #include "log.h"
 #include "util.h"
-
-#define HIGHLIGHT_BRIGHTNESS 1.2f
+#include "ease.h"
 
 static GLuint program = 0;
 static GLuint vao = 0;
@@ -16,6 +15,7 @@ static GLuint vertexBuffer = 0;
 
 static GLint cameraAttr = -1;
 static GLint projectionAttr = -1;
+static GLint strengthAttr = -1;
 
 #define quad(x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4, r, g, b, a) \
         x1, y1, z1, r, g, b, a, \
@@ -60,7 +60,7 @@ static GLfloat vertexData[] = { // vec3 position, vec4 color
 	     5.2f, -0.2f, 0.2f,
 	     5.1f, -0.1f, 0.2f,
 	     -5.1f, -0.1f, 0.2f,
-	     HIGHLIGHT_BRIGHTNESS, HIGHLIGHT_BRIGHTNESS, HIGHLIGHT_BRIGHTNESS,
+	     1.0f, 1.0f, 1.0f,
 	     1.0f),
 
 	// Left wall
@@ -75,7 +75,7 @@ static GLfloat vertexData[] = { // vec3 position, vec4 color
 	     -5.1f, -0.1f, 0.2f,
 	     -5.1f, 20.1f, 0.2f,
 	     -5.2f, 20.1f, 0.2f,
-	     HIGHLIGHT_BRIGHTNESS, HIGHLIGHT_BRIGHTNESS, HIGHLIGHT_BRIGHTNESS,
+	     1.0f, 1.0f, 1.0f,
 	     1.0f),
 
 	// Right wall
@@ -90,7 +90,7 @@ static GLfloat vertexData[] = { // vec3 position, vec4 color
 	     5.2f, -0.2f, 0.2f,
 	     5.2f, 20.1f, 0.2f,
 	     5.1f, 20.1f, 0.2f,
-	     HIGHLIGHT_BRIGHTNESS, HIGHLIGHT_BRIGHTNESS, HIGHLIGHT_BRIGHTNESS,
+	     1.0f, 1.0f, 1.0f,
 	     1.0f),
 
 	// Preview box
@@ -108,6 +108,9 @@ static GLfloat vertexData[] = { // vec3 position, vec4 color
 	     0.0f, 0.0f, 0.0f, 0.5f)
 };
 
+static float strength = 1.0f;
+static int combo = 1;
+
 void initSceneRenderer(void)
 {
 	const GLchar vertSrc[] = {
@@ -121,6 +124,7 @@ void initSceneRenderer(void)
 		logError("Failed to initialize scene renderer");
 	cameraAttr = glGetUniformLocation(program, "camera");
 	projectionAttr = glGetUniformLocation(program, "projection");
+	strengthAttr = glGetUniformLocation(program, "strength");
 
 	glGenBuffers(1, &vertexBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
@@ -139,6 +143,9 @@ void initSceneRenderer(void)
 	                      (GLvoid *)(sizeof(GLfloat) * 3));
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
+
+	combo = 1;
+	strength = 1.2f;
 }
 
 void cleanupSceneRenderer(void)
@@ -151,6 +158,16 @@ void cleanupSceneRenderer(void)
 	program = 0;
 }
 
+void updateScene(int newCombo)
+{
+	if (combo == newCombo)
+		return;
+
+	addEase(&strength, strength, 1.1f + 0.05f * (float)newCombo, 0.5 * SEC,
+	        EaseOutQuadratic);
+	combo = newCombo;
+}
+
 void renderScene(void)
 {
 	glUseProgram(program);
@@ -158,6 +175,7 @@ void renderScene(void)
 
 	glUniformMatrix4fv(cameraAttr, 1, GL_FALSE, camera[0]);
 	glUniformMatrix4fv(projectionAttr, 1, GL_FALSE, projection[0]);
+	glUniform1f(strengthAttr, strength);
 	glDrawArrays(GL_TRIANGLES, 0, countof(vertexData) / 7);
 
 	glBindVertexArray(0);
