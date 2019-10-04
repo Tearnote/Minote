@@ -12,11 +12,11 @@ thread logicThreadID = 0;
 
 _Atomic double logicFrequency = DEFAULT_FREQUENCY;
 #define LOGIC_TICK (SEC / logicFrequency)
-static nsec nextUpdateTime = 0;
+static nsec nextUpdateTime = -1;
 
 static void updateLogic(void)
 {
-	if (!nextUpdateTime)
+	if (nextUpdateTime == -1)
 		nextUpdateTime = getTime();
 
 	switch (getState(PhaseMain)) {
@@ -53,9 +53,7 @@ static void updateLogic(void)
 static void sleepLogic(void)
 {
 	nextUpdateTime += LOGIC_TICK;
-	nsec timeRemaining = nextUpdateTime - getTime();
-	if (timeRemaining > 0)
-		sleep(timeRemaining);
+	sleep(nextUpdateTime);
 }
 
 void *logicThread(void *param)

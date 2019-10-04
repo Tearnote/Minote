@@ -2,30 +2,16 @@
 
 #include "timer.h"
 
+#ifdef WIN32
+#include <windows.h>
+#include <winnt.h>
+#else // WIN32
+#include <pthread.h>
+#endif // WIN32
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 
-#ifdef WIN32
-#include <mmsystem.h>
-#endif // WIN32
-
-#include <time.h>
-
-void initTimer(void)
-{
-#ifdef WIN32
-	// Increase resolution of sleep from ~15ms to ~1.5ms
-	timeBeginPeriod(1);
-#endif // WIN32
-}
-
-void cleanupTimer(void)
-{
-#ifdef WIN32
-	// Restore normal sleep resolution
-	timeEndPeriod(1);
-#endif // WIN32
-}
+#include "log.h"
 
 nsec getTime(void)
 {
@@ -33,15 +19,27 @@ nsec getTime(void)
 	return (nsec)(glfwGetTime() * SEC);
 }
 
-void sleep(nsec ns)
+static void yield(void)
 {
-	struct timespec duration = {};
-	duration.tv_sec = (long)(ns / SEC);
-	duration.tv_nsec = (long)(ns % SEC);
 #ifdef WIN32
-	// winpthreads cannot sleep for less than 1ms at a time
-	if (duration.tv_nsec < MSEC)
-		duration.tv_nsec = MSEC;
+	YieldProcessor();
+#else // WIN32
+	sched_yield();
 #endif // WIN32
-	nanosleep(&duration, NULL);
+}
+
+void sleep(nsec until)
+{
+	nsec diff = getTime() - until;
+	if (diff > 0) {
+		logDebug("Sleep target missed by %"nsecf, diff);
+		return;
+	}
+
+	while (getTime() < until)
+		yield();
+
+	diff = getTime() - until;
+	if (diff > MSEC)
+		logDebug("Overwaited by %"nsecf, diff);
 }

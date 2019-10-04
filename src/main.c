@@ -37,7 +37,6 @@ static void cleanup(void)
 	cleanupInput();
 	cleanupWindow();
 	cleanupState();
-	cleanupTimer();
 	cleanupLogging();
 	cleanupSettings();
 }
@@ -49,7 +48,6 @@ int main(int argc, char *argv[])
 	logInfo("Starting up %U %U", APP_NAME, APP_VERSION);
 	initSettings();
 	loadSwitchSettings(argc, argv);
-	initTimer();
 	initState();
 	initWindow();
 	initInput();

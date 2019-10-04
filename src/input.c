@@ -24,10 +24,10 @@
 fifo *inputs = NULL;
 mutex inputMutex = newMutex;
 
-#define INPUT_FREQUENCY 1000 // in Hz
+#define INPUT_FREQUENCY 500 // in Hz
 #define TIME_PER_POLL (SEC / INPUT_FREQUENCY)
 
-static nsec nextPollTime = 0;
+static nsec nextPollTime = -1;
 
 static bool gamepads[GLFW_JOYSTICK_LAST + 1] = {};
 static GLFWgamepadstate gamepadStates[GLFW_JOYSTICK_LAST + 1] = {};
@@ -269,7 +269,7 @@ void cleanupInput(void)
 
 void updateInput(void)
 {
-	if (!nextPollTime)
+	if (nextPollTime == -1)
 		nextPollTime = getTime();
 
 	// Get events from the system and immediately execute event callbacks
@@ -288,7 +288,5 @@ void updateInput(void)
 void sleepInput(void)
 {
 	nextPollTime += TIME_PER_POLL;
-	nsec timeRemaining = nextPollTime - getTime();
-	if (timeRemaining > 0)
-		sleep(timeRemaining);
+	sleep(nextPollTime);
 }
