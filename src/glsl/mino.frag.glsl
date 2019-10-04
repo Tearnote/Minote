@@ -11,6 +11,7 @@ out vec4 outColor;
 uniform vec3 lightPosition;
 uniform vec3 lightColor;
 uniform float ambientStrength;
+uniform vec3 ambientColor;
 uniform float diffuseStrength;
 uniform float specularStrength;
 uniform float shininess;
@@ -22,7 +23,7 @@ void main()
 	vec3 viewDirection = normalize(-fPosition);
 	vec3 reflectDirection = reflect(lightDirection, fNormal);
 
-	vec3 ambient = ambientStrength * lightColor;
+	vec3 ambient = ambientStrength * ambientColor;
 	vec3 diffuse = diffuseStrength * max(dot(fNormal, -lightDirection), 0.0) * lightColor;
 	float shine = pow(max(dot(viewDirection, reflectDirection), 0.0), shininess);
 	vec3 specular = specularStrength * shine * lightColor;

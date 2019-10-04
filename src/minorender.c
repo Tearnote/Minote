@@ -35,6 +35,7 @@ static GLint projectionAttr = -1;
 static GLint lightPositionAttr = -1;
 static GLint lightColorAttr = -1;
 static GLint ambientStrengthAttr = -1;
+static GLint ambientColorAttr = -1;
 static GLint diffuseStrengthAttr = -1;
 static GLint specularStrengthAttr = -1;
 static GLint shininessAttr = -1;
@@ -76,6 +77,7 @@ void initMinoRenderer(void)
 	lightPositionAttr = glGetUniformLocation(program, "lightPosition");
 	lightColorAttr = glGetUniformLocation(program, "lightColor");
 	ambientStrengthAttr = glGetUniformLocation(program, "ambientStrength");
+	ambientColorAttr = glGetUniformLocation(program, "ambientColor");
 	diffuseStrengthAttr = glGetUniformLocation(program, "diffuseStrength");
 	specularStrengthAttr =
 		glGetUniformLocation(program, "specularStrength");
@@ -252,6 +254,7 @@ void renderMino(void)
 	glUniform3fv(lightPositionAttr, 1, lightPosition);
 	glUniform3f(lightColorAttr, 1.0f, 1.0f, 1.0f);
 	glUniform1f(ambientStrengthAttr, 0.05f);
+	glUniform3fv(ambientColorAttr, 1, tintColor);
 	glUniform1f(diffuseStrengthAttr, 0.95f);
 	glUniform1f(specularStrengthAttr, 0.4f);
 	glUniform1f(shininessAttr, 8.0f);

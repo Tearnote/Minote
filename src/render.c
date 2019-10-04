@@ -73,7 +73,7 @@ static struct background backgrounds[] = {
 };
 
 static int currentBackground = 0;
-static float backgroundColor[3] = {};
+vec3 tintColor = {};
 
 // Compiles a shader from source
 static GLuint createShader(const GLchar *source, GLenum type)
@@ -127,7 +127,7 @@ static void updateBackground(void)
 
 	if (currentBackground != newBackground) {
 		for (int i = 0; i < 3; i++) {
-			addEase(&backgroundColor[i], backgroundColor[i],
+			addEase(&tintColor[i], tintColor[i],
 			        backgrounds[newBackground].color[i],
 			        BGFADE_LENGTH / snap->replay->speed,
 			        EaseInOutCubic);
@@ -216,14 +216,13 @@ static void updateFrame(void)
 	updateEase();
 	updateParticles(); // Needs to be after updateEase
 
-	lastFrame = snap->game->frame;
 }
 
 static void renderFrame(void)
 {
 	renderPostStart();
 
-	glClearColor(backgroundColor[0], backgroundColor[1], backgroundColor[2],
+	glClearColor(tintColor[0], tintColor[1], tintColor[2],
 	             1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	renderScene();
@@ -293,7 +292,7 @@ static void initRenderer(void)
 	lightPositionWorld[3] = 1.0f;
 
 	currentBackground = 0;
-	copyArray(backgroundColor, backgrounds[currentBackground].color);
+	copyArray(tintColor, backgrounds[currentBackground].color);
 
 	initEase();
 	initSceneRenderer();

@@ -21,7 +21,7 @@
 extern mat4x4 camera;
 extern mat4x4 projection;
 extern vec3 lightPosition; // In view space
-extern int lastFrame;
+extern vec3 tintColor;
 
 extern thread rendererThreadID;
 
