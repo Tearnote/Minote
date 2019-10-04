@@ -3,6 +3,7 @@
 #include "timer.h"
 
 #ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <winnt.h>
 #else // WIN32
@@ -19,27 +20,12 @@ nsec getTime(void)
 	return (nsec)(glfwGetTime() * SEC);
 }
 
-static void yield(void)
-{
-#ifdef WIN32
-	YieldProcessor();
-#else // WIN32
-	sched_yield();
-#endif // WIN32
-}
-
 void sleep(nsec until)
 {
 	nsec diff = getTime() - until;
-	if (diff > 0) {
-		logDebug("Sleep target missed by %"nsecf, diff);
+	if (diff > 0)
 		return;
-	}
 
 	while (getTime() < until)
-		yield();
-
-	diff = getTime() - until;
-	if (diff > MSEC)
-		logDebug("Overwaited by %"nsecf, diff);
+		; // Busywait
 }
