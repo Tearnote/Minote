@@ -11,7 +11,8 @@
 void initParticleRenderer(void);
 void cleanupParticleRenderer(void);
 
-void triggerLineClear(struct lineClearData *data);
+void triggerLineClear(struct lineClearEffectData *data);
+void triggerThump(struct thumpEffectData *data);
 
 void updateParticles(void);
 void renderParticles(void);

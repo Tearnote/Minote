@@ -16,7 +16,6 @@
 #include "settings.h"
 #include "logic.h"
 #include "effects.h"
-#include "log.h"
 
 #define KEYFRAME_FREQ 60
 
@@ -232,11 +231,30 @@ bool canDrop(void)
 // Move one grid downwards, if possible
 static void drop(void)
 {
-	if (canDrop()) {
-		player->lockDelay = 0;
-		player->y += 1;
-		if (game->cmdHeld[GameCmdSoft])
-			player->dropBonus += 1;
+	if (!canDrop())
+		return;
+
+	player->lockDelay = 0;
+	player->y += 1;
+	if (game->cmdHeld[GameCmdSoft])
+		player->dropBonus += 1;
+
+	for (int i = 0; i < MINOS_PER_PIECE; i++) {
+		int x = player->x;
+		x += rs[player->type][player->rotation][i].x;
+		int y = player->y;
+		y += rs[player->type][player->rotation][i].y;
+		if (!getGrid(x, y + 1))
+			continue;
+
+		struct effect *e = allocate(sizeof(struct effect));
+		e->type = EffectThump;
+		struct thumpEffectData
+			*data = allocate(sizeof(struct thumpEffectData));
+		e->data = data;
+		data->x = x;
+		data->y = y;
+		enqueueEffect(e);
 	}
 }
 
@@ -406,7 +424,8 @@ void initGameplay(void)
 	replay = snap->replay;
 
 	// Non-zero initial values
-	game->nextLevelstop = 100;
+	game->level = 500;
+	game->nextLevelstop = 600;
 	game->combo = 1;
 	strcpy(game->gradeString, grades[0].name);
 	game->eligible = true;
@@ -585,8 +604,9 @@ static void updateClear(void)
 
 			struct effect *e = allocate(sizeof(struct effect));
 			e->type = EffectLineClear;
-			struct lineClearData
-				*data = allocate(sizeof(struct lineClearData));
+			struct lineClearEffectData
+				*data =
+				allocate(sizeof(struct lineClearEffectData));
 			data->lines = clearedCount;
 			data->combo = game->combo;
 			data->speed = 1.0f / ((float)CLEAR_DELAY / 41.0f);

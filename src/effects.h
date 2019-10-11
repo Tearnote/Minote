@@ -14,6 +14,7 @@ enum effectType {
 	EffectNone,
 	EffectLockFlash,
 	EffectLineClear,
+	EffectThump,
 	EffectSize
 };
 
@@ -22,12 +23,17 @@ struct effect {
 	void *data;
 };
 
-struct lineClearData {
+struct lineClearEffectData {
 	int lines;
 	int combo;
 	float speed;
 	enum mino playfield[PLAYFIELD_H][PLAYFIELD_W];
 	bool clearedLines[PLAYFIELD_H];
+};
+
+struct thumpEffectData {
+	int x;
+	int y;
 };
 
 extern fifo *effects;

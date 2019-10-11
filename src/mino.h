@@ -23,7 +23,7 @@ enum mino {
 	MinoJ,
 	MinoS,
 	MinoGarbage,
-	MinoPending,
+	MinoPure,
 	MinoSize
 };
 

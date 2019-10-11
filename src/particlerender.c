@@ -131,7 +131,7 @@ void cleanupParticleRenderer(void)
 	particleQueue = NULL;
 }
 
-void triggerLineClear(struct lineClearData *data)
+void triggerLineClear(struct lineClearEffectData *data)
 {
 	for (int y = 0; y < PLAYFIELD_H; y++) {
 		if (!data->clearedLines[y])
@@ -149,7 +149,8 @@ void triggerLineClear(struct lineClearData *data)
 					newParticle->y += my * 0.125f + 0.0625f;
 					newParticle->progress = 0.0f;
 					newParticle->direction =
-						random(&randomizer, 2) * 2 - 1;
+						(int)random(&randomizer, 2) * 2
+						- 1;
 					newParticle->radius =
 						frandom(&randomizer);
 					newParticle->radius =
@@ -168,7 +169,7 @@ void triggerLineClear(struct lineClearData *data)
 						power = 20;
 					newParticle->spins *= (float)power;
 					newParticle->spins /=
-						newParticle->radius;
+						fabsf(newParticle->radius);
 					newParticle->type =
 						data->playfield[y][x];
 					assert(newParticle->type != MinoNone);
@@ -191,6 +192,30 @@ void triggerLineClear(struct lineClearData *data)
 
 	if (data->lines == 4)
 		pulseVignette(data->speed);
+}
+
+void triggerThump(struct thumpEffectData *data)
+{
+	for (int i = 0; i < 8; i++) {
+		struct particle
+			*newParticle = producePsarrayItem(particleQueue);
+		if (!newParticle)
+			return;
+		newParticle->x = data->x - PLAYFIELD_W / 2;
+		newParticle->y = PLAYFIELD_H - 1 - data->y;
+		newParticle->progress = 0.0f;
+		newParticle->direction = (i % 2) * 2 - 1;
+		newParticle->radius = 0.5f + 0.5f * frandom(&randomizer);
+		newParticle->radius *= 8.0f;
+		newParticle->spins = frandom(&randomizer);
+		newParticle->spins *= 2.0f;
+		newParticle->spins /= fabsf(newParticle->radius);
+		newParticle->type = MinoPure;
+		double duration = 0.5 + 0.5 * frandom(&randomizer);
+		duration *= 0.5 * SEC;
+		enum easeType type = EaseOutExponential;
+		addEase(&newParticle->progress, 0.0f, 1.0f, duration, type);
+	}
 }
 
 void updateParticles(void)

@@ -106,7 +106,13 @@ static void updateEffects(void)
 			triggerLineClear(e->data);
 			free(e->data);
 			break;
+		case EffectThump:
+			triggerThump(e->data);
+			free(e->data);
+			break;
 		default:
+			if (e->data)
+				free(e->data);
 			break;
 		}
 		free(e);
