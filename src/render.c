@@ -110,6 +110,10 @@ static void updateEffects(void)
 			triggerThump(e->data);
 			free(e->data);
 			break;
+		case EffectSlide:
+			triggerSlide(e->data);
+			free(e->data);
+			break;
 		default:
 			if (e->data)
 				free(e->data);

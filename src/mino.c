@@ -13,8 +13,7 @@ vec4 minoColors[MinoSize] = {
 	{ 0,    1,    1,    1 }, // MinoT
 	{ 0,    0,    1,    1 }, // MinoJ
 	{ 1,    0,    1,    1 }, // MinoS
-	{ .22f, .22f, .22f, 1 }, // MinoGarbage
-	{ 1.0f, 1.0f, 1.0f, 1 }  // MinoPure
+	{ .22f, .22f, .22f, 1 }  // MinoGarbage
 };
 
 rotationSystem rs = {

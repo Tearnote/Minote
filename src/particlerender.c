@@ -46,7 +46,7 @@ struct particle {
 	int direction; // -1 is left, 1 is right
 	float radius; // positive is up, negative is down
 	float spins; // in radians
-	enum mino type;
+	float r, g, b, a;
 };
 
 struct particleInstance {
@@ -170,28 +170,30 @@ void triggerLineClear(struct lineClearEffectData *data)
 					newParticle->spins *= (float)power;
 					newParticle->spins /=
 						fabsf(newParticle->radius);
-					newParticle->type =
-						data->playfield[y][x];
-					assert(newParticle->type != MinoNone);
+					enum mino type = data->playfield[y][x];
+					assert(type != MinoNone);
+					newParticle->r = minoColors[type][0];
+					newParticle->g = minoColors[type][1];
+					newParticle->b = minoColors[type][2];
+					newParticle->a = minoColors[type][3];
 					double duration = frandom(&randomizer);
 					if (data->lines == 4)
 						duration =
 							duration / 2.0f + 0.5f;
 					duration *= 2.0 * SEC;
-					duration *= 1.0f / data->speed;
-					enum easeType type = EaseOutExponential;
+					enum easeType ease = EaseOutExponential;
 					if (data->lines == 4)
-						type = EaseInOutExponential;
+						ease = EaseInOutExponential;
 					addEase(&newParticle->progress, 0.0f,
 					        1.0f,
-					        duration, type);
+					        duration, ease);
 				}
 			}
 		}
 	}
 
 	if (data->lines == 4)
-		pulseVignette(data->speed);
+		pulseVignette();
 }
 
 void triggerThump(struct thumpEffectData *data)
@@ -210,7 +212,44 @@ void triggerThump(struct thumpEffectData *data)
 		newParticle->spins = frandom(&randomizer);
 		newParticle->spins *= 2.0f;
 		newParticle->spins /= fabsf(newParticle->radius);
-		newParticle->type = MinoPure;
+		newParticle->r = 0.5f;
+		newParticle->g = 0.5f;
+		newParticle->b = 0.5f;
+		newParticle->a = 1.0f;
+		double duration = 0.5 + 0.5 * frandom(&randomizer);
+		duration *= 0.5 * SEC;
+		enum easeType type = EaseOutExponential;
+		addEase(&newParticle->progress, 0.0f, 1.0f, duration, type);
+	}
+}
+
+void triggerSlide(struct slideEffectData *data)
+{
+	for (int i = 0; i < 8; i++) {
+		struct particle
+			*newParticle = producePsarrayItem(particleQueue);
+		if (!newParticle)
+			return;
+		newParticle->x = data->x - PLAYFIELD_W / 2;
+		newParticle->y = PLAYFIELD_H - 1 - data->y;
+		newParticle->progress = 0.0f;
+		newParticle->direction = data->direction;
+		newParticle->radius = 0.5f + 0.5f * frandom(&randomizer);
+		newParticle->radius *= 8.0f;
+		newParticle->spins = frandom(&randomizer);
+		newParticle->spins *= 2.0f;
+		newParticle->spins /= fabsf(newParticle->radius);
+		if (data->strong) {
+			newParticle->r = 1.0f;
+			newParticle->g = 0.0f;
+			newParticle->b = 0.0f;
+			newParticle->a = 1.0f;
+		} else {
+			newParticle->r = 0.0f;
+			newParticle->g = 0.0f;
+			newParticle->b = 1.0f;
+			newParticle->a = 1.0f;
+		}
 		double duration = 0.5 + 0.5 * frandom(&randomizer);
 		duration *= 0.5 * SEC;
 		enum easeType type = EaseOutExponential;
@@ -250,19 +289,19 @@ void updateParticles(void)
 		if (particle->direction == -1)
 			newInstance->direction =
 				radf(180.0f) - newInstance->direction;
-		newInstance->r = minoColors[particle->type][0];
+		newInstance->r = particle->r;
 		newInstance->r += tintColor[0];
 		newInstance->r /= 2.0f;
 		newInstance->r *= COLOR_BOOST;
-		newInstance->g = minoColors[particle->type][1];
+		newInstance->g = particle->g;
 		newInstance->g += tintColor[1];
 		newInstance->g /= 2.0f;
 		newInstance->g *= COLOR_BOOST;
-		newInstance->b = minoColors[particle->type][2];
+		newInstance->b = particle->b;
 		newInstance->b += tintColor[2];
 		newInstance->b /= 2.0f;
 		newInstance->b *= COLOR_BOOST;
-		newInstance->a = minoColors[particle->type][3];
+		newInstance->a = particle->a;
 		newInstance->a *= 0.8f;
 		if (particle->progress > FADE_THRESHOLD) {
 			float fadeout = particle->progress - FADE_THRESHOLD;

@@ -201,8 +201,30 @@ static bool tryKicks(void)
 static void shift(int direction)
 {
 	player->x += direction;
-	if (!checkPosition())
+	if (!checkPosition()) {
 		player->x -= direction;
+		return;
+	}
+
+	for (int i = 0; i < MINOS_PER_PIECE; i++) {
+		int x = player->x;
+		x += rs[player->type][player->rotation][i].x;
+		int y = player->y;
+		y += rs[player->type][player->rotation][i].y;
+		if (!getGrid(x, y + 1))
+			continue;
+
+		struct effect *e = allocate(sizeof(struct effect));
+		e->type = EffectSlide;
+		struct slideEffectData
+			*data = allocate(sizeof(struct slideEffectData));
+		e->data = data;
+		data->x = x;
+		data->y = y;
+		data->direction = direction;
+		data->strong = (player->dasCharge == DAS_CHARGE);
+		enqueueEffect(e);
+	}
 }
 
 // Attempt to rotate player piece
@@ -424,8 +446,7 @@ void initGameplay(void)
 	replay = snap->replay;
 
 	// Non-zero initial values
-	game->level = 500;
-	game->nextLevelstop = 600;
+	game->nextLevelstop = 100;
 	game->combo = 1;
 	strcpy(game->gradeString, grades[0].name);
 	game->eligible = true;
@@ -625,8 +646,6 @@ static void updateClear(void)
 				allocate(sizeof(struct lineClearEffectData));
 			data->lines = clearedCount;
 			data->combo = game->combo;
-			data->speed = 1.0f / ((float)CLEAR_DELAY / 41.0f);
-			data->speed *= replay->speed;
 			copyArray(data->playfield, oldPlayfield);
 			copyArray(data->clearedLines, game->clearedLines);
 			e->data = data;

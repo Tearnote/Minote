@@ -13,6 +13,7 @@ void cleanupParticleRenderer(void);
 
 void triggerLineClear(struct lineClearEffectData *data);
 void triggerThump(struct thumpEffectData *data);
+void triggerSlide(struct slideEffectData *data);
 
 void updateParticles(void);
 void renderParticles(void);

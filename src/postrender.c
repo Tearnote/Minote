@@ -63,7 +63,6 @@ static int bloomHeight = DEFAULT_HEIGHT;
 
 static float falloff = VIGNETTE_BASE;
 static nsec vignettePulseStart = -1;
-static float vignettePulseSpeed = 1.0f;
 
 void initPostRenderer(void)
 {
@@ -261,29 +260,26 @@ void cleanupPostRenderer(void)
 	vertexBuffer = 0;
 }
 
-void pulseVignette(float speed)
+void pulseVignette(void)
 {
 	vignettePulseStart = getTime();
-	vignettePulseSpeed = speed;
 }
 
 static void calculateVignette(void)
 {
-	nsec length =
-		(double)VIGNETTE_PULSE * (double)(1.0f / vignettePulseSpeed);
 	if (vignettePulseStart == -1) {
 		falloff = VIGNETTE_BASE;
 		return;
 	}
 	nsec time = getTime();
-	if (time >= vignettePulseStart + length) {
+	if (time >= vignettePulseStart + VIGNETTE_PULSE) {
 		falloff = VIGNETTE_BASE;
 		return;
 	}
 
 	// We are in the middle of a pulse
 	nsec elapsed = time - vignettePulseStart;
-	nsec thirdLength = length / 3;
+	nsec thirdLength = VIGNETTE_PULSE / 3;
 	if (elapsed < thirdLength) { // We are in the first half
 		float progress =
 			(double)elapsed / (double)(thirdLength);

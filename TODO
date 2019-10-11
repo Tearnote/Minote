@@ -14,3 +14,4 @@ Make some more trivial mutexes into atomics
 Add proper init+cleanup to replay.c (atm it leaks vdarray)
 Fix effects getting activated when seeking a replay backwards
 Refactor out gameplay logic
+Make effect speed dependent on replay speed
