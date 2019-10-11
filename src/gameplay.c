@@ -543,6 +543,22 @@ static void thump(void)
 		for (int yy = y; yy >= 0; yy--) {
 			for (int xx = 0; xx < PLAYFIELD_W; xx++)
 				setGrid(xx, yy, getGrid(xx, yy - 1));
+
+			if (yy != y)
+				continue;
+			for (int xx = 0; xx < PLAYFIELD_W; xx++) {
+				if (!getGrid(xx, yy) || !getGrid(xx, yy + 1))
+					continue;
+				struct effect
+					*e = allocate(sizeof(struct effect));
+				e->type = EffectThump;
+				struct thumpEffectData *data = allocate(
+					sizeof(struct thumpEffectData));
+				e->data = data;
+				data->x = xx;
+				data->y = yy;
+				enqueueEffect(e);
+			}
 		}
 		game->clearedLines[y] = false;
 	}
