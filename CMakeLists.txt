@@ -113,6 +113,7 @@ set(C_INTERNALLIBS
 set(C_SOURCES
         src/main.c
         src/gameplay.c
+        src/gameplay_pure.c
         src/input.c
         src/log.c
         src/logic.c

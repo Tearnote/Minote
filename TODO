@@ -15,3 +15,5 @@ Add proper init+cleanup to replay.c (atm it leaks vdarray)
 Fix effects getting activated when seeking a replay backwards
 Refactor out gameplay logic
 Make effect speed dependent on replay speed
+Move gameplay state to game struct to reduce mutex thrashing
+Move gameplay parameters to the inside of game struct
