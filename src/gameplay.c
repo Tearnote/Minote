@@ -688,6 +688,8 @@ static void updateGhost(void)
 
 static void updateGravity(void)
 {
+	if (getState(PhaseGameplay) == StateOutro)
+		return;
 	if (player->state != PlayerSpawned && player->state != PlayerActive)
 		return;
 	int gravity = GRAVITY;
