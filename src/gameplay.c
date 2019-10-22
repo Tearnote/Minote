@@ -69,6 +69,8 @@ static enum gameplayCmd inputToGameCmd(enum inputType i)
 		return GameCmdCW;
 	case InputButton3:
 		return GameCmdCCW2;
+	case InputButton4:
+		return GameCmdHold;
 	default:
 		return GameCmdNone;
 	}

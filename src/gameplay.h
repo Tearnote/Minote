@@ -66,6 +66,7 @@ enum gameplayCmd {
 	GameCmdLeft, GameCmdRight,
 	GameCmdCCW, GameCmdCW, GameCmdCCW2,
 	GameCmdSoft, GameCmdSonic,
+	GameCmdHold,
 	GameCmdSize
 };
 

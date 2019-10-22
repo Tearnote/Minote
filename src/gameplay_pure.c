@@ -594,8 +594,8 @@ static void updateGravity(void)
 	if (player->state == PlayerActive) {
 		if (game->cmdHeld[GameCmdSoft] && gravity < SOFT_DROP)
 			gravity = SOFT_DROP;
-		if (game->cmdHeld[GameCmdSonic])
-			gravity = SONIC_DROP;
+		//if (game->cmdHeld[GameCmdSonic])
+		//	gravity = SONIC_DROP;
 	}
 
 	if (canDrop())
