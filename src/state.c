@@ -18,15 +18,12 @@ void initState(void)
 	setState(PhaseMain, StateStaged);
 	app = allocate(sizeof(*app));
 	app->game = allocate(sizeof(*app->game));
-	app->replay = allocate(sizeof(*app->replay));
 }
 
 void cleanupState(void)
 {
 	if (app->game)
 		free(app->game);
-	if (app->replay)
-		free(app->replay);
 	if (app) {
 		free(app);
 		app = NULL;

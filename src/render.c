@@ -21,7 +21,6 @@
 #include "textrender.h"
 #include "postrender.h"
 #include "util.h"
-#include "replay.h"
 #include "timer.h"
 #include "ease.h"
 #include "settings.h"
@@ -139,8 +138,7 @@ static void updateBackground(void)
 		for (int i = 0; i < 3; i++) {
 			addEase(&tintColor[i], tintColor[i],
 			        backgrounds[newBackground].color[i],
-			        BGFADE_LENGTH / snap->replay->speed,
-			        EaseInOutCubic);
+			        BGFADE_LENGTH, EaseInOutCubic);
 		}
 		currentBackground = newBackground;
 	}
@@ -203,12 +201,6 @@ static void updateFrame(void)
 		unlockMutex(&appMutex);
 		return;
 	}
-	if (app->replay) {
-		memcpy(snap->replay, app->replay, sizeof(*snap->replay));
-	} else {
-		unlockMutex(&appMutex);
-		return;
-	}
 	unlockMutex(&appMutex);
 
 	vec3 eye = { 0.0f, 12.0f, 32.0f };
@@ -245,8 +237,6 @@ static void renderFrame(void)
 	queueBorder(snap->game->playfield);
 	renderBorder();
 	queueGameplayText(snap->game);
-	if (snap->replay->state == ReplayViewing)
-		queueReplayText(snap->replay);
 	renderText();
 	renderParticles();
 
@@ -262,8 +252,6 @@ static void cleanupRenderer(void)
 	cleanupMinoRenderer();
 	cleanupSceneRenderer();
 	cleanupEase();
-	if (snap->replay)
-		free(snap->replay);
 	if (snap->game)
 		free(snap->game);
 	if (snap)
@@ -294,7 +282,6 @@ static void initRenderer(void)
 
 	snap = allocate(sizeof(*snap));
 	snap->game = allocate(sizeof(*snap->game));
-	snap->replay = allocate(sizeof(*snap->replay));
 
 	mat4x4_translate(camera, 0.0f, -12.0f, -32.0f);
 	lightPositionWorld[0] = -8.0f;

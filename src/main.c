@@ -26,7 +26,6 @@ void printUsage(const char *invalid)
 	puts("");
 	puts("Available options:");
 	puts("  --help - Print usage help");
-	puts("  --replay - Open replay.mre in replay viewer");
 	puts("  --fullscreen - Use exclusive fullscreen mode");
 	puts("  --nosync - Disable hard GPU sync for higher performance at the cost of latency");
 }

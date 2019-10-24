@@ -7,8 +7,6 @@ playable.
 
 `Minote --help` - Print usage help
 
-`Minote --replay` - Open `replay.mre` in replay viewer
-
 `Minote --fullscreen` - Use exclusive fullscreen mode
 
 `Minote --nosync` - Disable hard GPU sync for higher performance at the

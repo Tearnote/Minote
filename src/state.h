@@ -8,7 +8,6 @@
 
 #include "thread.h"
 #include "gameplay.h"
-#include "replay.h"
 
 enum state {
 	StateNone,
@@ -29,7 +28,6 @@ enum phase {
 
 struct app {
 	struct game *game;
-	struct replay *replay;
 };
 
 extern struct app *app; //SYNC appMutex

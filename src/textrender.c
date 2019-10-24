@@ -260,24 +260,6 @@ void queueGameplayText(struct game *game)
 	}
 }
 
-void queueReplayText(struct replay *replay)
-{
-	vec3 position = { -9.5f, 13.0f, 1.0f };
-	float size = 1.0f;
-	if (replay->playing)
-		queueString(FontSans, position, size, "Playing...");
-	else
-		queueString(FontSans, position, size, "Paused.");
-	position[1] -= 1.25f;
-	queueString(FontMono, position, size, "%.4fx", replay->speed);
-	// frame is a zero-based index, we show it one-based
-	position[1] -= 2.0f;
-	queueString(FontMono, position, size, "%d", (int)replay->frame + 1);
-	position[1] -= 1.2f;
-	queueString(FontMono, position, size, "%d",
-	            replay->header.totalFrames);
-}
-
 void renderText(void)
 {
 	glDisable(GL_DEPTH_TEST);
