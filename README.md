@@ -49,3 +49,6 @@ retrieved on 2019-09-05, used under zlib license.
 
 [`parson`](https://github.com/kgabis/parson) retrieved on 2019-09-06,
 used under MIT license.
+
+[`AHEasing`](https://github.com/warrenm/AHEasing) retrieved on
+2019-09-22, used under WTFPL.
