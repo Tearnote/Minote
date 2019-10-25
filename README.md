@@ -25,9 +25,8 @@ make
 ```
 
 ### External libraries
-Requires [`GLFW`](https://www.glfw.org/) 3.3,
-[`libunistring`](https://www.gnu.org/software/libunistring/) and
-[`LibLZMA`](https://tukaani.org/xz/).
+Requires [`GLFW`](https://www.glfw.org/) 3.3 and 
+[`libunistring`](https://www.gnu.org/software/libunistring/).
 
 ### Included libraries
 [`glad`](https://glad.dav1d.de/) loader generated on 2019-05-06, in
