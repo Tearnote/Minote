@@ -15,6 +15,7 @@
 typedef pthread_t thread;
 typedef pthread_mutex_t mutex;
 #define newMutex PTHREAD_MUTEX_INITIALIZER
+#define atomic _Atomic
 
 void spawnThread(thread *id, void *(*func)(void *),
                  void *arg, const char *name);

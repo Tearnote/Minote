@@ -9,7 +9,7 @@
 
 #define DEFAULT_FREQUENCY 59.84
 
-extern _Atomic double logicFrequency; // in Hz
+extern atomic double logicFrequency; // in Hz
 
 void *logicThread(void *param);
 extern thread logicThreadID;
