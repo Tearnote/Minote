@@ -21,6 +21,9 @@
 #include "array.h"
 #include "util.h"
 #include "state.h"
+#include "menu.h"
+#include "gameplay.h"
+#include "ease.h"
 
 #define VERTEX_LIMIT 8192
 
@@ -42,6 +45,27 @@ static vec4 color = { 0.0f, 0.0f, 0.0f, 1.0f };
 
 // Each font has a separate darray
 static darray *textQueue[FontSize] = {};
+
+#define MENU_OFFSET 2.0f
+
+static float menuOffsets[MenuSize] = {};
+static enum menuEntry lastEntry = MenuNone;
+
+static const char *entriesInactive[] = {
+	"", // MenuNone
+	"", // MenuFirst
+	"Begin", // MenuPlay
+	"Leave", // MenuQuit
+	"", // MenuLast
+};
+
+static const char *entriesActive[] = {
+	"", // MenuNone
+	"", // MenuFirst
+	"Begin!", // MenuPlay
+	"Leave...", // MenuQuit
+	"", // MenuLast
+};
 
 void initTextRenderer(void)
 {
@@ -186,7 +210,7 @@ queueGlyph(enum fontType font, ucs4_t codepoint, const vec3 position,
 }
 
 static void
-queueString(enum fontType font, vec3 position, float size, char *fmt, ...)
+queueString(enum fontType font, vec3 position, float size, const char *fmt, ...)
 {
 	uint8_t *ustring;
 	va_list ap;
@@ -214,6 +238,35 @@ queueString(enum fontType font, vec3 position, float size, char *fmt, ...)
 	}
 
 	free(ustring);
+}
+
+void queueMenuText(struct menu *menu)
+{
+	if (menu->entry != lastEntry) {
+		addEase(&menuOffsets[lastEntry], 1.0f, 0.0f, 0.15f * SEC,
+		        EaseOutQuadratic);
+		addEase(&menuOffsets[menu->entry], 0.0f, 1.0f, 0.3f * SEC,
+		        EaseOutQuadratic);
+		lastEntry = menu->entry;
+	}
+
+	vec3 position = { -15.0f, 6.0f, 2.0f };
+	float size = 2.5f;
+	for (enum menuEntry i = MenuFirst + 1; i < MenuLast; i++) {
+		const char *text;
+		if (lastEntry == i)
+			text = entriesActive[i];
+		else
+			text = entriesInactive[i];
+		position[0] = -15.0f + menuOffsets[i] * MENU_OFFSET;
+		queueString(FontSans, position, size, text);
+		position[1] -= 3.0f;
+	}
+
+	position[0] = -2.0f;
+	position[1] = 18.0f;
+	size = 5.0f;
+	queueString(FontSans, position, size, "Minote.");
 }
 
 void queueGameplayText(struct game *game)
@@ -251,7 +304,7 @@ void queueGameplayText(struct game *game)
 	            game->time / SEC / 60,
 	            game->time / SEC % 60,
 	            game->time / (SEC / 100) % 100);
-	if (getState(PhaseGameplay) == StateIntro) {
+	if (game->state == GameplayIntro) {
 		position[0] = 6.0f;
 		position[1] = 11.5f;
 		size = 1.0f;

@@ -5,15 +5,6 @@ Refactor file operations (fclose can return a write error!)
 Package licenses and readme
 Make libraries use our own malloc when possible
 Add some more logging
-Verify replay values to prevent crashes
-Verify that the replay isn't truncated
-Test for desyncs by comparing current state with keyframes
-Add GM requirements into game state and replay
-Fix last frame of replay not recording
+Move GM requirements into game state
 Make some more trivial mutexes into atomics
-Add proper init+cleanup to replay.c (atm it leaks vdarray)
-Fix effects getting activated when seeking a replay backwards
-Refactor out gameplay logic
-Make effect speed dependent on replay speed
-Move gameplay state to game struct to reduce mutex thrashing
-Move gameplay parameters to the inside of game struct
+Move gameplay parameters to a new struct inside of game struct

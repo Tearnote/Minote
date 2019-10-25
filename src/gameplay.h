@@ -1,5 +1,5 @@
 // Minote - gameplay.h
-// Holds and handles gameplay logic
+// Handles gameplay logic
 
 #ifndef GAMEPLAY_H
 #define GAMEPLAY_H
@@ -60,6 +60,14 @@ extern int GRAVITY;
 // Number of recent pieces kept by the randomizer for avoiding repeats
 #define HISTORY_SIZE 4
 
+enum gameplayState {
+	GameplayNone,
+	GameplayIntro,
+	GameplayPlaying,
+	GameplayOutro,
+	GameplaySize
+};
+
 // Types of commands accepted by the gameplay
 enum gameplayCmd {
 	GameCmdNone,
@@ -100,6 +108,7 @@ struct player {
 // Complete description of the gameplay's current state
 // Does not use pointers, so that it can be copied and serialized
 struct game {
+	enum gameplayState state;
 	rng rngState;
 	enum mino playfield[PLAYFIELD_H][PLAYFIELD_W];
 	bool clearedLines[PLAYFIELD_H];

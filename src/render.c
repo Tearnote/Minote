@@ -126,7 +126,8 @@ static void updateBackground(void)
 {
 	int newBackground = 0;
 
-	if (getState(PhaseGameplay) != StateIntro) {
+	if (snap->game->state != GameplayNone &&
+	    snap->game->state != GameplayIntro) {
 		for (int i = 1; i < countof(backgrounds); i++) {
 			if (backgrounds[i].level > snap->game->level)
 				break;
@@ -195,7 +196,8 @@ static void updateFrame(void)
 
 	// Make a local copy of the game state
 	lockMutex(&appMutex);
-	if (app->game) {
+	if (app->menu && app->game) {
+		memcpy(snap->menu, app->menu, sizeof(*snap->menu));
 		memcpy(snap->game, app->game, sizeof(*snap->game));
 	} else { // Gameplay might not be done initializing
 		unlockMutex(&appMutex);
@@ -228,15 +230,23 @@ static void renderFrame(void)
 	glClearColor(tintColor[0], tintColor[1], tintColor[2],
 	             1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	renderScene();
-	queueMinoPlayfield(snap->game->playfield);
-	queueMinoPlayer(&snap->game->player);
-	queueMinoGhost(&snap->game->player);
-	queueMinoPreview(&snap->game->player);
-	renderMino();
-	queueBorder(snap->game->playfield);
-	renderBorder();
-	queueGameplayText(snap->game);
+
+	if (getState(PhaseMenu) == StateRunning) {
+		queueMenuText(snap->menu);
+	}
+
+	if (getState(PhaseGameplay) == StateRunning) {
+		renderScene();
+		queueMinoPlayfield(snap->game->playfield);
+		queueMinoPlayer(&snap->game->player);
+		queueMinoGhost(&snap->game->player);
+		queueMinoPreview(&snap->game->player);
+		renderMino();
+		queueBorder(snap->game->playfield);
+		renderBorder();
+		queueGameplayText(snap->game);
+	}
+
 	renderText();
 	renderParticles();
 
@@ -254,6 +264,8 @@ static void cleanupRenderer(void)
 	cleanupEase();
 	if (snap->game)
 		free(snap->game);
+	if (snap->menu)
+		free(snap->menu);
 	if (snap)
 		free(snap);
 	snap = NULL;
@@ -281,6 +293,7 @@ static void initRenderer(void)
 	glEnable(GL_MULTISAMPLE);
 
 	snap = allocate(sizeof(*snap));
+	snap->menu = allocate(sizeof(*snap->menu));
 	snap->game = allocate(sizeof(*snap->game));
 
 	mat4x4_translate(camera, 0.0f, -12.0f, -32.0f);

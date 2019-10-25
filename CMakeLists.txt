@@ -131,7 +131,8 @@ set(C_SOURCES
         src/fifo.c
         src/array.c
         src/ease.c
-        src/effects.c)
+        src/effects.c
+        src/menu.c)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD

@@ -7,26 +7,26 @@
 #include <stdbool.h>
 
 #include "thread.h"
+#include "menu.h"
 #include "gameplay.h"
 
 enum state {
 	StateNone,
 	StateStaged,
-	StateIntro,
 	StateRunning,
-	StatePaused,
-	StateOutro,
 	StateUnstaged,
 	StateSize
 };
 
 enum phase {
 	PhaseMain, // Meta, performs batch operations on other phases
+	PhaseMenu, // Primary
 	PhaseGameplay, // Primary
 	PhaseSize
 };
 
 struct app {
+	struct menu *menu;
 	struct game *game;
 };
 

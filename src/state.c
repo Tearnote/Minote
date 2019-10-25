@@ -17,6 +17,7 @@ void initState(void)
 	clearArray(phases);
 	setState(PhaseMain, StateStaged);
 	app = allocate(sizeof(*app));
+	app->menu = allocate(sizeof(*app->menu));
 	app->game = allocate(sizeof(*app->game));
 }
 
@@ -24,6 +25,8 @@ void cleanupState(void)
 {
 	if (app->game)
 		free(app->game);
+	if (app->menu)
+		free(app->menu);
 	if (app) {
 		free(app);
 		app = NULL;

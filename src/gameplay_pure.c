@@ -476,7 +476,7 @@ static enum pieceType randomPiece(void)
 
 static void gameOver(void)
 {
-	setState(PhaseGameplay, StateOutro);
+	game->state = GameplayOutro;
 }
 
 // Generate a new random piece for the player to control
@@ -586,7 +586,7 @@ static void drop(void)
 
 static void updateGravity(void)
 {
-	if (getState(PhaseGameplay) == StateOutro)
+	if (game->state == GameplayOutro)
 		return;
 	if (player->state != PlayerSpawned && player->state != PlayerActive)
 		return;

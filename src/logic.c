@@ -2,6 +2,7 @@
 
 #include "logic.h"
 
+#include "menu.h"
 #include "gameplay.h"
 #include "thread.h"
 #include "state.h"
@@ -21,13 +22,33 @@ static void updateLogic(void)
 	switch (getState(PhaseMain)) {
 	case StateStaged:
 		setState(PhaseMain, StateRunning);
-		setState(PhaseGameplay, StateStaged);
+		setState(PhaseMenu, StateStaged);
 		break;
 	case StateUnstaged:
-		if (getState(PhaseGameplay) != StateNone) {
+		// Abort starting new things, clean up started things
+		if (getState(PhaseMenu) == StateStaged)
+			setState(PhaseMenu, StateNone);
+		else if (getState(PhaseMenu) == StateRunning)
+			setState(PhaseMenu, StateUnstaged);
+		if (getState(PhaseGameplay) == StateStaged)
+			setState(PhaseGameplay, StateNone);
+		else if (getState(PhaseGameplay) == StateRunning)
 			setState(PhaseGameplay, StateUnstaged);
-		}
 		setState(PhaseMain, StateNone);
+	default:
+		break;
+	}
+
+	switch (getState(PhaseMenu)) {
+	case StateStaged:
+		initMenu();
+		// break;
+	case StateRunning:
+		updateMenu();
+		break;
+	case StateUnstaged:
+		cleanupMenu();
+		break;
 	default:
 		break;
 	}
@@ -35,10 +56,8 @@ static void updateLogic(void)
 	switch (getState(PhaseGameplay)) {
 	case StateStaged:
 		initGameplay();
-		// "break;" missing on purpose, no point in wasting a frame
-	case StateIntro:
+		// break;
 	case StateRunning:
-	case StateOutro:
 		updateGameplay();
 		break;
 	case StateUnstaged:
