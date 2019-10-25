@@ -59,10 +59,12 @@ void initWindow(void)
 	if (getSettingBool(SettingFullscreen)) {
 		const GLFWvidmode
 			*mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-		window = glfwCreateWindow(mode->width, mode->height, APP_NAME,
+		window = glfwCreateWindow(mode->width, mode->height,
+		                          APP_NAME" "APP_VERSION,
 		                          glfwGetPrimaryMonitor(), NULL);
 	} else {
-		window = glfwCreateWindow(windowWidth, windowHeight, APP_NAME,
+		window = glfwCreateWindow(windowWidth, windowHeight,
+		                          APP_NAME" "APP_VERSION,
 		                          NULL, NULL);
 	}
 	if (window == NULL) {
