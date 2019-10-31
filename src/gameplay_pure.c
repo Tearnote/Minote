@@ -1,13 +1,10 @@
-//
-// Created by hmaraszek on 12/10/2019.
-//
+// Minote - gameplay_pure.c
 
 #include "gameplay_pure.h"
 
 #include "util.h"
 #include "gameplay.h"
 #include "effects.h"
-#include "state.h"
 
 static struct game *game = NULL;
 static struct player *player = NULL;
@@ -646,9 +643,7 @@ void updateLocking(void)
 {
 	if (player->state != PlayerActive)
 		return;
-	if (canDrop()) {
-		player->lockDelay = 0;
-	} else {
+	if (!canDrop()) {
 		player->lockDelay += 1;
 		// Two sources of locking: lock delay expired, and manlock
 		if (player->lockDelay > LOCK_DELAY
