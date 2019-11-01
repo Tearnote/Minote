@@ -175,17 +175,8 @@ static bool tryKicks(void)
 	return false; // Failure, returned to original position
 }
 
-// Attempt to move player piece sideways
-// -1 is left
-// 1 is right
-static void shift(int direction)
+void enqueueSlide(int direction)
 {
-	player->x += direction;
-	if (!checkPosition()) {
-		player->x -= direction;
-		return;
-	}
-
 	for (int i = 0; i < MINOS_PER_PIECE; i++) {
 		int x = player->x;
 		x += rs[player->type][player->rotation][i].x;
@@ -205,6 +196,20 @@ static void shift(int direction)
 		data->strong = (player->dasCharge == DAS_CHARGE);
 		enqueueEffect(e);
 	}
+}
+
+// Attempt to move player piece sideways
+// -1 is left
+// 1 is right
+static void shift(int direction)
+{
+	player->x += direction;
+	if (!checkPosition()) {
+		player->x -= direction;
+		return;
+	}
+
+	enqueueSlide(direction);
 }
 
 // Attempt to rotate player piece
@@ -329,6 +334,13 @@ static void checkRequirements(void)
 	}
 }
 
+static void enqueueBravo(void)
+{
+	struct effect *e = allocate(sizeof(struct effect));
+	e->type = EffectBravo;
+	enqueueEffect(e);
+}
+
 static void addScore(int lines)
 {
 	int score;
@@ -351,12 +363,15 @@ static void addScore(int lines)
 		}
 	}
 bravoOut:
+	if (bravo == 4)
+		enqueueBravo();
 	score *= bravo;
 
 	game->score += score;
 	updateGrade();
 }
 
+// "strong" lets the levels break past the levelstop
 static void addLevels(int count, bool strong)
 {
 	game->level += count;
@@ -400,6 +415,21 @@ static void thump(void)
 	}
 }
 
+void
+enqueueLineClear(const enum mino playfield[PLAYFIELD_H][PLAYFIELD_W], int lines)
+{
+	struct effect *e = allocate(sizeof(struct effect));
+	e->type = EffectLineClear;
+	struct lineClearEffectData
+		*data = allocate(sizeof(struct lineClearEffectData));
+	data->lines = lines;
+	data->combo = game->combo;
+	copyArray(data->playfield, playfield);
+	copyArray(data->clearedLines, game->clearedLines);
+	e->data = data;
+	enqueueEffect(e);
+}
+
 static void updateClear(void)
 {
 	if (player->state == PlayerSpawn &&
@@ -413,18 +443,7 @@ static void updateClear(void)
 			player->clearDelay = 0;
 			addScore(clearedCount);
 			addLevels(clearedCount, true);
-
-			struct effect *e = allocate(sizeof(struct effect));
-			e->type = EffectLineClear;
-			struct lineClearEffectData
-				*data =
-				allocate(sizeof(struct lineClearEffectData));
-			data->lines = clearedCount;
-			data->combo = game->combo;
-			copyArray(data->playfield, oldPlayfield);
-			copyArray(data->clearedLines, game->clearedLines);
-			e->data = data;
-			enqueueEffect(e);
+			enqueueLineClear(oldPlayfield, clearedCount);
 		}
 	}
 
@@ -535,7 +554,6 @@ static bool canDrop(void)
 	return result;
 }
 
-
 static void updateGhost(void)
 {
 	if (!player->ghostEnabled)
@@ -551,17 +569,8 @@ static void updateGhost(void)
 	player->y = yOrig;
 }
 
-// Move one grid downwards, if possible
-static void drop(void)
+void enqueueThump(void)
 {
-	if (!canDrop())
-		return;
-
-	player->lockDelay = 0;
-	player->y += 1;
-	if (game->cmdHeld[GameCmdSoft])
-		player->dropBonus += 1;
-
 	for (int i = 0; i < MINOS_PER_PIECE; i++) {
 		int x = player->x;
 		x += rs[player->type][player->rotation][i].x;
@@ -579,6 +588,20 @@ static void drop(void)
 		data->y = y;
 		enqueueEffect(e);
 	}
+}
+
+// Move one grid downwards, if possible
+static void drop(void)
+{
+	if (!canDrop())
+		return;
+
+	player->lockDelay = 0;
+	player->y += 1;
+	if (game->cmdHeld[GameCmdSoft])
+		player->dropBonus += 1;
+
+	enqueueThump();
 }
 
 static void updateGravity(void)

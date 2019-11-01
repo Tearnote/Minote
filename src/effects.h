@@ -16,6 +16,7 @@ enum effectType {
 	EffectLineClear,
 	EffectThump,
 	EffectSlide,
+	EffectBravo,
 	EffectSize
 };
 
