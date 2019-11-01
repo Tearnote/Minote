@@ -363,7 +363,7 @@ static void addScore(int lines)
 		}
 	}
 bravoOut:
-	if (bravo == 4)
+	if (bravo != 1)
 		enqueueBravo();
 	score *= bravo;
 

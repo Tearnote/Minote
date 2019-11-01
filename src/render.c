@@ -113,6 +113,9 @@ static void updateEffects(void)
 			triggerSlide(e->data);
 			free(e->data);
 			break;
+		case EffectBravo:
+			triggerBravo();
+			break;
 		default:
 			if (e->data)
 				free(e->data);

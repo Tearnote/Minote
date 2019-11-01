@@ -257,6 +257,41 @@ void triggerSlide(struct slideEffectData *data)
 	}
 }
 
+void triggerBravo(void)
+{
+	for (int x = 0; x < PLAYFIELD_W; x++) {
+		for (int y = 0; y < PLAYFIELD_H_VISIBLE; y++) {
+			struct particle
+				*newParticle =
+				producePsarrayItem(particleQueue);
+			if (!newParticle)
+				return;
+			newParticle->x = x - PLAYFIELD_W / 2;
+			newParticle->y = PLAYFIELD_H_VISIBLE - 1 - y;
+			newParticle->y += frandom(&randomizer);
+			newParticle->progress = 0.0f;
+			newParticle->direction = ((x + y) % 2) * 2 - 1;
+			newParticle->radius = frandom(&randomizer);
+			newParticle->radius = ExponentialEaseInOut(newParticle->radius);
+			newParticle->radius *= 2.0f;
+			newParticle->radius -= 1.0f;
+			newParticle->radius *= 8.0f;
+			newParticle->spins = frandom(&randomizer);
+			newParticle->spins *= 4.0f;
+			newParticle->spins /= fabsf(newParticle->radius);
+			newParticle->r = 1.0f;
+			newParticle->g = 1.0f;
+			newParticle->b = 1.0f;
+			newParticle->a = 0.75f;
+			double duration = 0.5 + 0.5 * frandom(&randomizer);
+			duration *= 4.0 * SEC;
+			enum easeType type = EaseOutExponential;
+			addEase(&newParticle->progress, 0.0f, 1.0f, duration,
+			        type);
+		}
+	}
+}
+
 void updateParticles(void)
 {
 	if (isPsarrayEmpty(particleQueue))
