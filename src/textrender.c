@@ -304,12 +304,11 @@ void queueGameplayText(struct game *game)
 	            game->time / SEC / 60,
 	            game->time / SEC % 60,
 	            game->time / (SEC / 100) % 100);
-	if (game->state == GameplayIntro) {
-		position[0] = 6.0f;
-		position[1] = 11.5f;
-		size = 1.0f;
-		queueString(FontSans, position, size,
-		            "Press Start/Enter to begin.");
+	if (game->state == GameplayReady) {
+		position[0] = -2.0f;
+		position[1] = 8.0f;
+		size = 6.0f;
+		queueString(FontMono, position, size, "%d", game->ready / 60 + 1);
 	}
 }
 

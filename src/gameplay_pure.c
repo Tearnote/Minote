@@ -107,6 +107,22 @@ static void filterInputs(void)
 	}
 }
 
+static void updateState(void)
+{
+	if (game->state == GameplayReady) {
+		game->ready -= 1;
+		if (game->ready == 0)
+			game->state = GameplayPlaying;
+	} else 	if (game->state == GameplayPlaying) {
+		game->frame += 1;
+		if (game->frame > 0)
+			game->time += TIMER_FRAME;
+	}
+
+	if (player->state == PlayerSpawned)
+		player->state = PlayerActive;
+}
+
 static enum mino getGrid(int x, int y)
 {
 	return getPlayfieldGrid(game->playfield, x, y);
@@ -503,11 +519,6 @@ static void spawnPiece(void)
 	player->y = -2 + PLAYFIELD_H_HIDDEN;
 
 	// Picking the next piece
-	bool first = false;
-	if (player->preview == PieceNone) {
-		player->preview = randomPiece();
-		first = true;
-	}
 	player->type = player->preview;
 	player->preview = randomPiece();
 
@@ -528,8 +539,7 @@ static void spawnPiece(void)
 			rotate(-1);
 	}
 
-	if (!first)
-		addLevels(1, false);
+	addLevels(1, false);
 	if (game->level >= 100)
 		player->ghostEnabled = false;
 
@@ -539,6 +549,8 @@ static void spawnPiece(void)
 
 static void updateSpawn(void)
 {
+	if (game->state != GameplayPlaying)
+		return;
 	if (player->state == PlayerSpawn || player->state == PlayerNone) {
 		player->spawnDelay += 1;
 		if (player->spawnDelay >= SPAWN_DELAY)
@@ -664,7 +676,7 @@ static void lock(void)
 
 void updateLocking(void)
 {
-	if (player->state != PlayerActive)
+	if (player->state != PlayerActive || game->state != GameplayPlaying)
 		return;
 	if (!canDrop()) {
 		player->lockDelay += 1;
@@ -689,6 +701,7 @@ void initGameplayPure(struct game *g)
 	player = &g->player;
 
 	memset(game, 0, sizeof(*game));
+	game->level = -1;
 	game->nextLevelstop = 100;
 	game->combo = 1;
 	strcpy(game->gradeString, grades[0].name);
@@ -696,9 +709,12 @@ void initGameplayPure(struct game *g)
 	player->dasDelay = DAS_DELAY; // Starts out pre-charged
 	player->spawnDelay = SPAWN_DELAY; // Start instantly
 	game->frame = -1; // So that the first calculated frame ends up at 0
+	game->ready = 3 * 60;
 	player->ghostEnabled = true;
 	srandom(&game->rngState, (uint64_t)time(NULL));
 	adjustGravity();
+	player->preview = randomPiece();
+	game->state = GameplayReady;
 }
 
 void cleanupGameplayPure(struct game *g)
@@ -713,6 +729,7 @@ void advanceGameplayPure(struct game *g, bool cmd[GameCmdSize])
 	copyArray(game->cmdRaw, cmd);
 
 	filterInputs();
+	updateState();
 	updateRotations();
 	updateShifts();
 	updateClear();
@@ -720,13 +737,5 @@ void advanceGameplayPure(struct game *g, bool cmd[GameCmdSize])
 	updateGhost();
 	updateGravity();
 	updateLocking();
-
-	if (player->state == PlayerSpawned)
-		player->state = PlayerActive;
-
-	game->frame += 1;
-	if (game->frame > 0)
-		game->time += TIMER_FRAME;
-
 	updateWin();
 }

@@ -130,7 +130,7 @@ static void updateBackground(void)
 	int newBackground = 0;
 
 	if (snap->game->state != GameplayNone &&
-	    snap->game->state != GameplayIntro) {
+	    snap->game->state != GameplayReady) {
 		for (int i = 1; i < countof(backgrounds); i++) {
 			if (backgrounds[i].level > snap->game->level)
 				break;

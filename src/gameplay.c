@@ -78,8 +78,8 @@ static void processGameInput(struct input *i)
 	switch (i->action) {
 	case ActionPressed:
 		// Starting and quitting is handled outside of gameplay logic
-		if (i->type == InputStart && game->state == GameplayIntro)
-			game->state = GameplayPlaying;
+		//if (i->type == InputStart && game->state == GameplayReady)
+		//	game->state = GameplayPlaying;
 		if (i->type == InputQuit) {
 			setState(PhaseGameplay, StateUnstaged);
 			break;
@@ -119,7 +119,6 @@ void initGameplay(void)
 	player = &game->player;
 
 	initGameplayPure(game);
-	game->state = GameplayIntro;
 	setState(PhaseGameplay, StateRunning);
 }
 
@@ -141,8 +140,7 @@ void cleanupGameplay(void)
 void updateGameplay(void)
 {
 	processInputs();
-	if (game->state == GameplayPlaying)
-		advanceGameplayPure(game, cmds);
+	advanceGameplayPure(game, cmds);
 
 	lockMutex(&appMutex);
 	memcpy(app->game, game, sizeof(*app->game));

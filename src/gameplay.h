@@ -62,7 +62,7 @@ extern int GRAVITY;
 
 enum gameplayState {
 	GameplayNone,
-	GameplayIntro,
+	GameplayReady,
 	GameplayPlaying,
 	GameplayOutro,
 	GameplaySize
@@ -126,6 +126,7 @@ struct game {
 	enum gameplayCmd lastDirection; // GameCmdLeft or GameCmdRight
 	int frame;
 	nsec time;
+	int ready;
 };
 
 void initGameplay(void);
