@@ -726,7 +726,10 @@ void advanceGameplayPure(struct game *g, bool cmd[GameCmdSize])
 {
 	game = g;
 	player = &game->player;
-	copyArray(game->cmdRaw, cmd);
+	if (game->state != GameplayOutro)
+		copyArray(game->cmdRaw, cmd);
+	else
+		clearArray(game->cmdRaw);
 
 	filterInputs();
 	updateState();
