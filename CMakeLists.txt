@@ -107,32 +107,32 @@ set(C_INTERNALLIBS
         lib/parson/parson.c
         lib/AHEasing/easing.c)
 set(C_SOURCES
-        src/main.c
-        src/gameplay.c
-        src/gameplay_pure.c
-        src/input.c
-        src/log.c
-        src/logic.c
-        src/mino.c
-        src/textrender.c
-        src/scenerender.c
-        src/minorender.c
-        src/borderrender.c
-        src/postrender.c
-        src/particlerender.c
-        src/render.c
-        src/state.c
-        src/thread.c
-        src/timer.c
-        src/util.c
-        src/window.c
-        src/font.c
-        src/settings.c
-        src/fifo.c
-        src/array.c
-        src/ease.c
-        src/effects.c
-        src/menu.c)
+        src/main/main.c
+        src/logic/gameplay.c
+        src/logic/pure.c
+        src/main/input.c
+        src/util/log.c
+        src/logic/logic.c
+        src/types/mino.c
+        src/render/text.c
+        src/render/scene.c
+        src/render/mino.c
+        src/render/border.c
+        src/render/post.c
+        src/render/particle.c
+        src/render/render.c
+        src/global/state.c
+        src/util/thread.c
+        src/util/timer.c
+        src/util/util.c
+        src/main/window.c
+        src/render/font.c
+        src/global/settings.c
+        src/types/fifo.c
+        src/types/array.c
+        src/render/ease.c
+        src/global/effects.c
+        src/logic/menu.c)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD
