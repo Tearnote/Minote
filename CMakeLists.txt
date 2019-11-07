@@ -108,31 +108,31 @@ set(C_INTERNALLIBS
         lib/AHEasing/easing.c)
 set(C_SOURCES
         src/main/main.c
+        src/main/window.c
+        src/main/input.c
+        src/logic/logic.c
         src/logic/gameplay.c
         src/logic/pure.c
-        src/main/input.c
-        src/util/log.c
-        src/logic/logic.c
-        src/types/mino.c
+        src/logic/menu.c
+        src/render/render.c
         src/render/text.c
         src/render/scene.c
         src/render/mino.c
         src/render/border.c
         src/render/post.c
         src/render/particle.c
-        src/render/render.c
-        src/global/state.c
-        src/util/thread.c
-        src/util/timer.c
-        src/util/util.c
-        src/main/window.c
         src/render/font.c
+        src/render/ease.c
+        src/global/state.c
         src/global/settings.c
+        src/global/effects.c
         src/types/fifo.c
         src/types/array.c
-        src/render/ease.c
-        src/global/effects.c
-        src/logic/menu.c)
+        src/types/mino.c
+        src/util/util.c
+        src/util/log.c
+        src/util/thread.c
+        src/util/timer.c)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD

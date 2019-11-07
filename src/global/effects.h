@@ -1,14 +1,16 @@
-// Minote - effects.h
+// Minote - global/effects.h
 // A fifo for communicating gfx activations from logic to render thread
+//TODO Turn into generic observer pattern
+//TODO https://gameprogrammingpatterns.com/observer.html
 
-#ifndef EFFECTS_H
-#define EFFECTS_H
+#ifndef GLOBAL_EFFECTS_H
+#define GLOBAL_EFFECTS_H
 
 #include <stdbool.h>
 
 #include "types/fifo.h"
+#include "types/mino.h"
 #include "util/thread.h"
-#include "logic/gameplay.h"
 
 enum effectType {
 	EffectNone,
@@ -22,7 +24,7 @@ enum effectType {
 
 struct effect {
 	enum effectType type;
-	void *data;
+	void *data; // One of the below structs or NULL
 };
 
 struct lineClearEffectData {
@@ -33,26 +35,19 @@ struct lineClearEffectData {
 };
 
 struct thumpEffectData {
-	int x;
-	int y;
+	int x, y;
 };
 
 struct slideEffectData {
-	int x;
-	int y;
+	int x, y;
 	int direction; // -1 for left, 1 for right
-	bool strong;
+	bool strong; // true for a DAS shift
 };
-
-extern fifo *effects;
-extern mutex effectsMutex;
 
 void initEffects(void);
 void cleanupEffects(void);
 
-#define enqueueEffect(e) \
-        syncFifoEnqueue(effects, (e), &effectsMutex)
-#define dequeueEffect() \
-        syncFifoDequeue(effects, &effectsMutex)
+void enqueueEffect(struct effect *e);
+struct effect *dequeueEffect(void);
 
-#endif //EFFECTS_H
+#endif //GLOBAL_EFFECTS_H

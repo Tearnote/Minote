@@ -15,11 +15,6 @@
 #define TIMER_FRAMERATE 60 // in Hz
 #define TIMER_FRAME (SEC / TIMER_FRAMERATE)
 
-#define PLAYFIELD_W 10
-#define PLAYFIELD_H 21
-#define PLAYFIELD_H_HIDDEN 1
-#define PLAYFIELD_H_VISIBLE (PLAYFIELD_H - PLAYFIELD_H_HIDDEN)
-
 // Frames until the first autoshift
 // 2 is right after the normal shift
 #define DAS_CHARGE 16

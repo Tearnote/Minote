@@ -10,6 +10,11 @@
 #define MINOS_PER_PIECE 4
 #define CENTER_COLUMN 1 // For purpose of kick exceptions
 
+#define PLAYFIELD_W 10
+#define PLAYFIELD_H 21
+#define PLAYFIELD_H_HIDDEN 1
+#define PLAYFIELD_H_VISIBLE (PLAYFIELD_H - PLAYFIELD_H_HIDDEN)
+
 // All types of minos that can exist on the playfield
 // In addition to minos the player can control,
 // some extra types are reserved for later use
