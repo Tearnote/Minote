@@ -1,10 +1,12 @@
-// Minote - settings.c
+// Minote - global/settings.c
 
-#include "settings.h"
+#include "global/settings.h"
 
-#include "state.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
 #include "util/log.h"
-#include "main/main.h"
 #include "util/thread.h"
 
 mutex settingsMutex = newMutex;
@@ -19,11 +21,11 @@ enum settingType {
 struct setting {
 	enum settingType type;
 	union {
-		//int intValue;
+		int intValue;
 		bool boolValue;
 	};
 	union {
-		//int intDefaultValue;
+		int intDefaultValue;
 		bool boolDefaultValue;
 	};
 };
@@ -34,7 +36,7 @@ static struct setting settings[SettingSize] = {
 	{ .type = SettingTypeBool, .boolDefaultValue = false } // SettingNoSync
 };
 
-/*int getSettingInt(enum settingLabel label)
+int getSettingInt(enum settingLabel label)
 {
 	lockMutex(&settingsMutex);
 	if (settings[label].type != SettingTypeInt) {
@@ -44,7 +46,7 @@ static struct setting settings[SettingSize] = {
 	int value = settings[label].intValue;
 	unlockMutex(&settingsMutex);
 	return value;
-}*/
+}
 
 bool getSettingBool(enum settingLabel label)
 {
@@ -58,14 +60,14 @@ bool getSettingBool(enum settingLabel label)
 	return value;
 }
 
-/*static void setSettingInt(enum settingLabel label, int value)
+static void setSettingInt(enum settingLabel label, int value)
 {
 	if (settings[label].type != SettingTypeInt) {
 		logError("Wrong type queried for setting #%d", label);
 		return;
 	}
 	settings[label].intValue = value;
-}*/
+}
 
 static void setSettingBool(enum settingLabel label, bool value)
 {
@@ -78,16 +80,15 @@ static void setSettingBool(enum settingLabel label, bool value)
 
 void initSettings(void)
 {
-	for (int i = 0; i < SettingSize; i++) {
+	for (int i = 0; i < SettingSize; i += 1) {
 		switch (settings[i].type) {
-/*		case SettingTypeInt:
+		case SettingTypeInt:
 			settings[i].intValue = settings[i].intDefaultValue;
-			break;*/
+			break;
 		case SettingTypeBool:
 			settings[i].boolValue = settings[i].boolDefaultValue;
 			break;
-		default:
-			break;
+		default:;
 		}
 	}
 }
@@ -97,11 +98,24 @@ void cleanupSettings(void)
 	// Settings so clean you could eat off them
 }
 
+// Logging might not be available yet
+static void printUsage(const char *invalid)
+{
+	if (invalid)
+		fprintf(stderr, "ERROR: Invalid argument: %s\n\n", invalid);
+	puts("Minote [ OPTIONS ]");
+	puts("");
+	puts("Available options:");
+	puts("  --help - Print usage help");
+	puts("  --fullscreen - Use exclusive fullscreen mode");
+	puts("  --nosync - Disable hard GPU sync for higher performance at the cost of latency");
+}
+
 void loadSwitchSettings(int argc, char *argv[])
 {
 	if (argc <= 1)
 		return;
-	for (int i = 1; i < argc; i++) {
+	for (int i = 1; i < argc; i += 1) {
 		if (strcmp(argv[i], "--fullscreen") == 0) {
 			setSettingBool(SettingFullscreen, true);
 		} else if (strcmp(argv[i], "--nosync") == 0) {

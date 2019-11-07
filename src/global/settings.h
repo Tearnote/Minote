@@ -1,8 +1,8 @@
-// Minote - settings.h
+// Minote - global/settings.h
 // Loads and provides settings from various sources
 
-#ifndef SETTINGS_H
-#define SETTINGS_H
+#ifndef GLOBAL_SETTINGS_H
+#define GLOBAL_SETTINGS_H
 
 #include <stdbool.h>
 
@@ -17,7 +17,7 @@ void initSettings(void);
 void cleanupSettings(void);
 void loadSwitchSettings(int argc, char *argv[]);
 
-//int getSettingInt(enum settingLabel label);
+int getSettingInt(enum settingLabel label);
 bool getSettingBool(enum settingLabel label);
 
-#endif // SETTINGS_H
+#endif //GLOBAL_SETTINGS_H

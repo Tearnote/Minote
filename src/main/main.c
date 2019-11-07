@@ -18,18 +18,6 @@
 #include "global/settings.h"
 #include "global/effects.h"
 
-void printUsage(const char *invalid)
-{
-	if (invalid)
-		printf("ERROR: Invalid argument: %s\n\n", invalid);
-	puts("Minote [ OPTIONS ]");
-	puts("");
-	puts("Available options:");
-	puts("  --help - Print usage help");
-	puts("  --fullscreen - Use exclusive fullscreen mode");
-	puts("  --nosync - Disable hard GPU sync for higher performance at the cost of latency");
-}
-
 static void cleanup(void)
 {
 	cleanupEffects();
