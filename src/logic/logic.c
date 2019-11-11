@@ -30,10 +30,10 @@ static void updateLogic(void)
 			setState(PhaseMenu, StateNone);
 		else if (getState(PhaseMenu) == StateRunning)
 			setState(PhaseMenu, StateUnstaged);
-		if (getState(PhaseGameplay) == StateStaged)
-			setState(PhaseGameplay, StateNone);
-		else if (getState(PhaseGameplay) == StateRunning)
-			setState(PhaseGameplay, StateUnstaged);
+		if (getState(PhaseGame) == StateStaged)
+			setState(PhaseGame, StateNone);
+		else if (getState(PhaseGame) == StateRunning)
+			setState(PhaseGame, StateUnstaged);
 		setState(PhaseMain, StateNone);
 	default:
 		break;
@@ -53,7 +53,7 @@ static void updateLogic(void)
 		break;
 	}
 
-	switch (getState(PhaseGameplay)) {
+	switch (getState(PhaseGame)) {
 	case StateStaged:
 		initGameplay();
 		// break;

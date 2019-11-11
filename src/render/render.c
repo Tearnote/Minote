@@ -197,16 +197,9 @@ static void updateFrame(void)
 	}
 	unlockMutex(&viewportMutex);
 
-	// Make a local copy of the game state
-	lockMutex(&appMutex);
-	if (app->menu && app->game) {
-		memcpy(snap->menu, app->menu, sizeof(*snap->menu));
-		memcpy(snap->game, app->game, sizeof(*snap->game));
-	} else { // Gameplay might not be done initializing
-		unlockMutex(&appMutex);
-		return;
-	}
-	unlockMutex(&appMutex);
+	// Make a local copy of the global state
+	readStateData(PhaseMenu, snap->menu);
+	readStateData(PhaseGame, snap->game);
 
 	vec3 eye = { 0.0f, 12.0f, 32.0f };
 	vec3 center = { 0.0f, 12.0f, 0.0f };
@@ -238,7 +231,7 @@ static void renderFrame(void)
 		queueMenuText(snap->menu);
 	}
 
-	if (getState(PhaseGameplay) == StateRunning) {
+	if (getState(PhaseGame) == StateRunning) {
 		renderScene();
 		queueMinoPlayfield(snap->game->playfield);
 		queueMinoPlayer(&snap->game->player);

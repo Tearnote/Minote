@@ -12,13 +12,9 @@
 #include "types/mino.h"
 #include "util/util.h"
 #include "util/timer.h"
-#include "logic.h"
-#include "global/effects.h"
 #include "pure.h"
 
-// Thread-local copy of the game state being rendered
-static struct app *snap = NULL;
-// Convenience pointers
+// Thread-local copy of the global state
 struct game *game = NULL;
 struct player *player = NULL;
 
@@ -81,7 +77,7 @@ static void processGameInput(struct input *i)
 		//if (i->type == InputStart && game->state == GameplayReady)
 		//	game->state = GameplayPlaying;
 		if (i->type == InputQuit) {
-			setState(PhaseGameplay, StateUnstaged);
+			setState(PhaseGame, StateUnstaged);
 			break;
 		}
 
@@ -113,27 +109,23 @@ static void processInputs(void)
 
 void initGameplay(void)
 {
-	snap = allocate(sizeof(*snap));
-	snap->game = allocate(sizeof(*snap->game));
-	game = snap->game;
+	game = allocate(sizeof(*game));
 	player = &game->player;
 
 	initGameplayPure(game);
-	setState(PhaseGameplay, StateRunning);
+	writeStateData(PhaseGame, game);
+	setState(PhaseGame, StateRunning);
 }
 
 void cleanupGameplay(void)
 {
-	setState(PhaseGameplay, StateNone);
+	setState(PhaseGame, StateNone);
 	if (game) {
 		cleanupGameplayPure(game);
 		free(game);
 	}
-	if (snap)
-		free(snap);
 	game = NULL;
 	player = NULL;
-	snap = NULL;
 	setState(PhaseMenu, StateStaged);
 }
 
@@ -141,8 +133,5 @@ void updateGameplay(void)
 {
 	processInputs();
 	advanceGameplayPure(game, cmds);
-
-	lockMutex(&appMutex);
-	memcpy(app->game, game, sizeof(*app->game));
-	unlockMutex(&appMutex);
+	writeStateData(PhaseGame, game);
 }

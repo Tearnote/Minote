@@ -7,6 +7,7 @@
 #include <stdbool.h>
 
 #include "types/mino.h"
+#include "types/game.h"
 #include "util/timer.h"
 #include "util/util.h"
 
@@ -51,78 +52,6 @@ extern int GRAVITY;
 
 // The number of times the randomizer attempts to pick a piece not in history
 #define MAX_REROLLS 4
-
-// Number of recent pieces kept by the randomizer for avoiding repeats
-#define HISTORY_SIZE 4
-
-enum gameplayState {
-	GameplayNone,
-	GameplayReady,
-	GameplayPlaying,
-	GameplayOutro,
-	GameplaySize
-};
-
-// Types of commands accepted by the gameplay
-enum gameplayCmd {
-	GameCmdNone,
-	GameCmdLeft, GameCmdRight,
-	GameCmdCCW, GameCmdCW, GameCmdCCW2,
-	GameCmdSoft, GameCmdSonic,
-	GameCmdHold,
-	GameCmdSize
-};
-
-enum playerState {
-	PlayerNone,
-	PlayerSpawned, // The exact frame of piece spawn
-	PlayerActive, // Piece can be freely manipulated
-	PlayerClear, // Clear delay is running
-	PlayerSpawn, // Spawn delay is running
-	PlayerSize
-};
-
-// Variables regarding player control
-struct player {
-	enum playerState state;
-	int x, y;
-	int ySub;
-	enum pieceType type;
-	enum pieceType preview;
-	enum pieceType history[HISTORY_SIZE];
-	int rotation; // 0 to 3, 0 is spawn
-	int dasDirection, dasCharge, dasDelay;
-	int lockDelay;
-	int clearDelay;
-	int spawnDelay;
-	int dropBonus;
-	bool ghostEnabled;
-	int yGhost;
-};
-
-// Complete description of the gameplay's current state
-// Does not use pointers, so that it can be copied and serialized
-struct game {
-	enum gameplayState state;
-	rng rngState;
-	enum mino playfield[PLAYFIELD_H][PLAYFIELD_W];
-	bool clearedLines[PLAYFIELD_H];
-	struct player player;
-	int level;
-	int nextLevelstop;
-	int score;
-	int combo;
-	int grade;
-	char gradeString[3];
-	bool eligible;
-	bool cmdRaw[GameCmdSize];
-	bool cmdHeld[GameCmdSize];
-	bool cmdPrev[GameCmdSize];
-	enum gameplayCmd lastDirection; // GameCmdLeft or GameCmdRight
-	int frame;
-	nsec time;
-	int ready;
-};
 
 void initGameplay(void);
 void cleanupGameplay(void);

@@ -107,32 +107,34 @@ set(C_INTERNALLIBS
         lib/parson/parson.c
         lib/AHEasing/easing.c)
 set(C_SOURCES
-        src/main/main.c
-        src/main/window.c
-        src/main/input.c
-        src/logic/logic.c
-        src/logic/gameplay.c
-        src/logic/pure.c
-        src/logic/menu.c
-        src/render/render.c
-        src/render/text.c
-        src/render/scene.c
-        src/render/mino.c
-        src/render/border.c
-        src/render/post.c
-        src/render/particle.c
-        src/render/font.c
-        src/render/ease.c
-        src/global/state.c
-        src/global/settings.c
-        src/global/effects.c
-        src/types/fifo.c
-        src/types/array.c
-        src/types/mino.c
-        src/util/util.c
-        src/util/log.c
-        src/util/thread.c
-        src/util/timer.c)
+        src/main/main.h src/main/main.c
+        src/main/window.h src/main/window.c
+        src/main/input.h src/main/input.c
+        src/logic/logic.h src/logic/logic.c
+        src/logic/gameplay.h src/logic/gameplay.c
+        src/logic/pure.h src/logic/pure.c
+        src/logic/menu.h src/logic/menu.c
+        src/render/render.h src/render/render.c
+        src/render/text.h src/render/text.c
+        src/render/scene.h src/render/scene.c
+        src/render/mino.h src/render/mino.c
+        src/render/border.h src/render/border.c
+        src/render/post.h src/render/post.c
+        src/render/particle.h src/render/particle.c
+        src/render/font.h src/render/font.c
+        src/render/ease.h src/render/ease.c
+        src/global/state.h src/global/state.c
+        src/global/settings.h src/global/settings.c
+        src/global/effects.h src/global/effects.c
+        src/types/fifo.h src/types/fifo.c
+        src/types/array.h src/types/array.c
+        src/types/mino.h src/types/mino.c
+        src/types/game.h
+        src/types/menu.h
+        src/util/util.h src/util/util.c
+        src/util/log.h src/util/log.c
+        src/util/thread.h src/util/thread.c
+        src/util/timer.h src/util/timer.c)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD

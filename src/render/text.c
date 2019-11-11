@@ -21,8 +21,8 @@
 #include "types/array.h"
 #include "util/util.h"
 #include "global/state.h"
-#include "logic/menu.h"
-#include "logic/gameplay.h"
+#include "types/menu.h"
+#include "types/game.h"
 #include "render/ease.h"
 
 #define VERTEX_LIMIT 8192

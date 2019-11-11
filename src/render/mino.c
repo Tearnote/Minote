@@ -16,6 +16,7 @@
 #include "util/util.h"
 #include "render/ease.h"
 #include "logic/logic.h"
+#include "logic/gameplay.h"
 
 #define INSTANCE_LIMIT 256 // More minos than that will be ignored
 

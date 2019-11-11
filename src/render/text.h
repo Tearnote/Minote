@@ -4,8 +4,8 @@
 #ifndef TEXT_H
 #define TEXT_H
 
-#include "logic/menu.h"
-#include "logic/gameplay.h"
+#include "types/menu.h"
+#include "types/game.h"
 
 void initTextRenderer(void);
 void cleanupTextRenderer(void);

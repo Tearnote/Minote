@@ -1,12 +1,13 @@
 // Minote - menu.c
 
-#include "menu.h"
+#include "logic/menu.h"
 
+#include "types/menu.h"
 #include "global/state.h"
 #include "util/util.h"
 #include "main/input.h"
 
-static struct menu *snap;
+static struct menu *menu;
 
 static enum menuCmd inputToMenuCmd(enum inputType i)
 {
@@ -35,20 +36,20 @@ static void processMenuInput(struct input *i)
 	enum menuCmd cmd = inputToMenuCmd(i->type);
 	switch (cmd) {
 	case MenuCmdUp:
-		snap->entry -= 1;
-		if (snap->entry <= MenuFirst)
-			snap->entry = MenuFirst + 1;
+		menu->entry -= 1;
+		if (menu->entry <= MenuFirst)
+			menu->entry = MenuFirst + 1;
 		break;
 	case MenuCmdDown:
-		snap->entry += 1;
-		if (snap->entry >= MenuLast)
-			snap->entry = MenuLast - 1;
+		menu->entry += 1;
+		if (menu->entry >= MenuLast)
+			menu->entry = MenuLast - 1;
 		break;
 	case MenuCmdConfirm:
-		switch (snap->entry) {
+		switch (menu->entry) {
 		case MenuPlay:
 			setState(PhaseMenu, StateUnstaged);
-			setState(PhaseGameplay, StateStaged);
+			setState(PhaseGame, StateStaged);
 			break;
 		case MenuQuit:
 			setState(PhaseMain, StateUnstaged);
@@ -64,17 +65,18 @@ static void processMenuInput(struct input *i)
 
 void initMenu(void)
 {
-	snap = allocate(sizeof(*snap));
-	snap->entry = MenuFirst + 1;
+	menu = allocate(sizeof(*menu));
+	menu->entry = MenuFirst + 1;
+	writeStateData(PhaseMenu, menu);
 	setState(PhaseMenu, StateRunning);
 }
 
 void cleanupMenu(void)
 {
 	setState(PhaseMenu, StateNone);
-	if (snap)
-		free(snap);
-	snap = NULL;
+	if (menu)
+		free(menu);
+	menu = NULL;
 }
 
 void updateMenu(void)
@@ -85,7 +87,5 @@ void updateMenu(void)
 		free(in);
 	}
 
-	lockMutex(&appMutex);
-	memcpy(app->menu, snap, sizeof(*app->menu));
-	unlockMutex(&appMutex);
+	writeStateData(PhaseMenu, menu);
 }
