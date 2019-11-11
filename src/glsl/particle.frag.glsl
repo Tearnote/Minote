@@ -1,3 +1,5 @@
+// Minote - glsl/particle.frag.glsl
+
 #version 330 core
 
 in vec4 fColor;

@@ -1,3 +1,5 @@
+// Minote - glsl/border.frag.glsl
+
 #version 330 core
 
 out vec4 outColor;
