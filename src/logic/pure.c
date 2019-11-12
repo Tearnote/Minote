@@ -8,6 +8,7 @@
 
 static struct game *game = NULL;
 static struct player *player = NULL;
+static struct laws *laws = NULL;
 
 struct grade {
 	int score;
@@ -209,7 +210,7 @@ void enqueueSlide(int direction)
 		data->x = x;
 		data->y = y;
 		data->direction = direction;
-		data->strong = (player->dasCharge == DAS_CHARGE);
+		data->strong = (player->dasCharge == laws->dasCharge);
 		enqueueEffect(e);
 	}
 }
@@ -268,7 +269,7 @@ static void updateShifts(void)
 	if (!shiftDirection || shiftDirection != player->dasDirection) {
 		player->dasDirection = shiftDirection;
 		player->dasCharge = 0;
-		player->dasDelay = DAS_DELAY; // Starts out pre-charged
+		player->dasDelay = laws->dasDelay; // Starts out pre-charged
 		if (shiftDirection && player->state == PlayerActive)
 			shift(shiftDirection);
 	}
@@ -276,14 +277,14 @@ static void updateShifts(void)
 	// If moving, advance and apply DAS
 	if (!shiftDirection)
 		return;
-	if (player->dasCharge < DAS_CHARGE)
+	if (player->dasCharge < laws->dasCharge)
 		player->dasCharge += 1;
-	if (player->dasCharge == DAS_CHARGE) {
-		if (player->dasDelay < DAS_DELAY)
+	if (player->dasCharge == laws->dasCharge) {
+		if (player->dasDelay < laws->dasDelay)
 			player->dasDelay += 1;
 
 		// If during ARE, keep the DAS charged
-		if (player->dasDelay >= DAS_DELAY
+		if (player->dasDelay >= laws->dasDelay
 		    && player->state == PlayerActive) {
 			player->dasDelay = 0;
 			shift(player->dasDirection);
@@ -330,7 +331,7 @@ static void adjustGravity(void)
 	for (int i = 0; i < countof(thresholds); i++) {
 		if (game->level < thresholds[i].level)
 			return;
-		GRAVITY = thresholds[i].gravity;
+		laws->gravity = thresholds[i].gravity;
 	}
 }
 
@@ -449,7 +450,7 @@ enqueueLineClear(const enum mino playfield[PLAYFIELD_H][PLAYFIELD_W], int lines)
 static void updateClear(void)
 {
 	if (player->state == PlayerSpawn &&
-	    player->spawnDelay + 1 == CLEAR_OFFSET) {
+	    player->spawnDelay + 1 == laws->clearOffset) {
 		enum mino oldPlayfield[PLAYFIELD_H][PLAYFIELD_W];
 		memcpy(oldPlayfield, game->playfield,
 		       sizeof(enum mino) * PLAYFIELD_H * PLAYFIELD_W);
@@ -465,7 +466,7 @@ static void updateClear(void)
 
 	if (player->state == PlayerClear) {
 		player->clearDelay += 1;
-		if (player->clearDelay > CLEAR_DELAY) {
+		if (player->clearDelay > laws->clearDelay) {
 			thump();
 			player->state = PlayerSpawn;
 		}
@@ -541,7 +542,7 @@ static void spawnPiece(void)
 
 	addLevels(1, false);
 	if (game->level >= 100)
-		player->ghostEnabled = false;
+		laws->ghost = false;
 
 	if (!checkPosition())
 		gameOver();
@@ -553,7 +554,7 @@ static void updateSpawn(void)
 		return;
 	if (player->state == PlayerSpawn || player->state == PlayerNone) {
 		player->spawnDelay += 1;
-		if (player->spawnDelay >= SPAWN_DELAY)
+		if (player->spawnDelay >= laws->spawnDelay)
 			spawnPiece();
 	}
 }
@@ -568,7 +569,7 @@ static bool canDrop(void)
 
 static void updateGhost(void)
 {
-	if (!player->ghostEnabled)
+	if (!laws->ghost)
 		return;
 	if (player->state != PlayerActive && player->state != PlayerSpawned)
 		return;
@@ -622,10 +623,10 @@ static void updateGravity(void)
 		return;
 	if (player->state != PlayerSpawned && player->state != PlayerActive)
 		return;
-	int gravity = GRAVITY;
+	int gravity = laws->gravity;
 	if (player->state == PlayerActive) {
-		if (game->cmdHeld[GameCmdSoft] && gravity < SOFT_DROP)
-			gravity = SOFT_DROP;
+		if (game->cmdHeld[GameCmdSoft] && gravity < laws->softDrop)
+			gravity = laws->softDrop;
 		//if (game->cmdHeld[GameCmdSonic])
 		//	gravity = SONIC_DROP;
 	}
@@ -681,7 +682,7 @@ void updateLocking(void)
 	if (!canDrop()) {
 		player->lockDelay += 1;
 		// Two sources of locking: lock delay expired, and manlock
-		if (player->lockDelay > LOCK_DELAY
+		if (player->lockDelay > laws->lockDelay
 		    || game->cmdHeld[GameCmdSoft])
 			lock();
 	}
@@ -699,6 +700,7 @@ void initGameplayPure(struct game *g)
 {
 	game = g;
 	player = &g->player;
+	laws = &player->laws;
 
 	memset(game, 0, sizeof(*game));
 	game->level = -1;
@@ -706,11 +708,18 @@ void initGameplayPure(struct game *g)
 	game->combo = 1;
 	strcpy(game->gradeString, grades[0].name);
 	game->eligible = true;
-	player->dasDelay = DAS_DELAY; // Starts out pre-charged
-	player->spawnDelay = SPAWN_DELAY; // Start instantly
+	laws->ghost = true;
+	laws->softDrop = 256;
+	laws->dasCharge = 16;
+	laws->dasDelay = 1;
+	laws->lockDelay = 30;
+	laws->clearOffset = 4;
+	laws->clearDelay = 41;
+	laws->spawnDelay = 30;
+	player->dasDelay = laws->dasDelay; // Starts out pre-charged
+	player->spawnDelay = laws->spawnDelay; // Start instantly
 	game->frame = -1; // So that the first calculated frame ends up at 0
 	game->ready = 3 * 60;
-	player->ghostEnabled = true;
 	srandom(&game->rngState, (uint64_t)time(NULL));
 	adjustGravity();
 	player->preview = randomPiece();
@@ -726,6 +735,7 @@ void advanceGameplayPure(struct game *g, bool cmd[GameCmdSize])
 {
 	game = g;
 	player = &game->player;
+	laws = &player->laws;
 	if (game->state != GameplayOutro)
 		copyArray(game->cmdRaw, cmd);
 	else

@@ -3,9 +3,7 @@
 #include "gameplay.h"
 
 #include <stdlib.h>
-#include <string.h>
 #include <stdbool.h>
-#include <time.h>
 
 #include "global/state.h"
 #include "main/input.h"
@@ -16,9 +14,6 @@
 
 // Thread-local copy of the global state
 struct game *game = NULL;
-struct player *player = NULL;
-
-int GRAVITY = 0;
 
 static bool cmds[GameCmdSize] = {};
 
@@ -110,7 +105,6 @@ static void processInputs(void)
 void initGameplay(void)
 {
 	game = allocate(sizeof(*game));
-	player = &game->player;
 
 	initGameplayPure(game);
 	writeStateData(PhaseGame, game);
@@ -125,7 +119,6 @@ void cleanupGameplay(void)
 		free(game);
 	}
 	game = NULL;
-	player = NULL;
 	setState(PhaseMenu, StateStaged);
 }
 

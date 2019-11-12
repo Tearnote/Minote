@@ -4,6 +4,8 @@
 #ifndef TYPES_GAME_H
 #define TYPES_GAME_H
 
+#include <stdbool.h>
+
 #include "types/mino.h"
 #include "util/util.h"
 #include "util/timer.h"
@@ -20,8 +22,22 @@ enum playerState {
 	PlayerSize
 };
 
+struct laws {
+	bool ghost; // Whether the ghost is visible
+	int gravity; // Neutral drop speed in subgrids per frame
+	int softDrop; // Soft drop speed in subgrids per frame
+	int sonicDrop; // Sonic drop speed in subgrids per frame
+	int dasCharge; // Frame# of the first autoshift, incl. start frame
+	int dasDelay; // Frames between autoshifts //TODO 0 for instant
+	int lockDelay; // Frames it takes for a resting piece to lock
+	int clearOffset; // Frames between lock and clear check
+	int clearDelay; // Frames between clear and thump
+	int spawnDelay; // Frames between lock and spawn (excluding clear delay)
+};
+
 struct player {
 	enum playerState state;
+	struct laws laws;
 	int x, y;
 	int ySub;
 	enum pieceType type;
@@ -33,7 +49,6 @@ struct player {
 	int clearDelay;
 	int spawnDelay;
 	int dropBonus;
-	bool ghostEnabled;
 	int yGhost;
 };
 

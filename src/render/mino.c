@@ -135,7 +135,9 @@ void cleanupMinoRenderer(void)
 
 void triggerLockFlash(int coords[MINOS_PER_PIECE * 2])
 {
-	int flashDuration = CLEAR_OFFSET * 2 * (SEC / logicFrequency);
+	int flashDuration =
+		//player->laws.clearOffset * 2 * (SEC / logicFrequency);
+		4 * 2 * (SEC / logicFrequency); //TODO replace 4 with clearOffset
 	for (int i = 0; i < MINOS_PER_PIECE; i++) {
 		addEase(&highlights[coords[i * 2 + 1]][coords[i * 2]],
 		        1.0f, 0.0f, flashDuration, EaseLinear);
@@ -170,7 +172,8 @@ void queueMinoPlayer(struct player *player)
 	for (int i = 0; i < MINOS_PER_PIECE; i++) {
 		struct coord minoCoord = rs[player->type][player->rotation][i];
 		struct minoInstance *newInstance = produceDarrayItem(minoQueue);
-		float lockDim = (float)player->lockDelay / LOCK_DELAY;
+		float lockDim =
+			(float)player->lockDelay / player->laws.lockDelay;
 		lockDim *= LOCKDIM_STRENGTH;
 		lockDim = 1.0f - lockDim;
 		newInstance->x =
@@ -187,7 +190,7 @@ void queueMinoPlayer(struct player *player)
 
 void queueMinoGhost(struct player *player)
 {
-	if (!player->ghostEnabled)
+	if (!player->laws.ghost)
 		return;
 	if (player->state != PlayerActive && player->state != PlayerSpawned)
 		return;
@@ -198,7 +201,8 @@ void queueMinoGhost(struct player *player)
 		newInstance->x =
 			(GLfloat)(minoCoord.x + player->x - PLAYFIELD_W / 2.0);
 		newInstance->y =
-			(GLfloat)(PLAYFIELD_H - 1 - minoCoord.y - player->yGhost);
+			(GLfloat)(PLAYFIELD_H - 1 - minoCoord.y
+			          - player->yGhost);
 		newInstance->r = minoColors[player->type][0];
 		newInstance->g = minoColors[player->type][1];
 		newInstance->b = minoColors[player->type][2];
