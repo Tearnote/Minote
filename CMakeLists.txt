@@ -109,7 +109,6 @@ set(C_INTERNALLIBS
 set(C_SOURCES
         src/main/main.h src/main/main.c
         src/main/window.h src/main/window.c
-        src/main/input.h src/main/input.c
         src/logic/logic.h src/logic/logic.c
         src/logic/gameplay.h src/logic/gameplay.c
         src/logic/pure.h src/logic/pure.c
@@ -126,6 +125,7 @@ set(C_SOURCES
         src/global/state.h src/global/state.c
         src/global/settings.h src/global/settings.c
         src/global/effects.h src/global/effects.c
+        src/global/input.h src/global/input.c
         src/types/fifo.h src/types/fifo.c
         src/types/array.h src/types/array.c
         src/types/mino.h src/types/mino.c

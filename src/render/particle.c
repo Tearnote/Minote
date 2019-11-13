@@ -16,6 +16,7 @@
 #include "render.h"
 #include "render/ease.h"
 #include "util/timer.h"
+#include "util/util.h"
 #include "post.h"
 
 #define INSTANCE_LIMIT 2560 // More particles than that will be ignored

@@ -5,7 +5,7 @@
 #include "types/menu.h"
 #include "global/state.h"
 #include "util/util.h"
-#include "main/input.h"
+#include "global/input.h"
 
 static struct menu *menu;
 

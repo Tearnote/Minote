@@ -145,3 +145,22 @@ rotationSystem rs = {
 		}
 	}
 };
+
+enum mino
+getPlayfieldGrid(enum mino field[PLAYFIELD_H][PLAYFIELD_W], int x, int y)
+{
+	if (x < 0 || x >= PLAYFIELD_W || y >= PLAYFIELD_H)
+		return MinoGarbage;
+	if (y < 0)
+		return MinoNone;
+	return field[y][x];
+}
+
+void setPlayfieldGrid(enum mino field[PLAYFIELD_H][PLAYFIELD_W],
+                      int x, int y, enum mino val)
+{
+	if (x < 0 || x >= PLAYFIELD_W ||
+	    y < 0 || y >= PLAYFIELD_H)
+		return;
+	field[y][x] = val;
+}

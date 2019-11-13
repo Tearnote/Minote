@@ -4,6 +4,9 @@
 #ifndef PURE_H
 #define PURE_H
 
+#include <stdbool.h>
+
+#include "types/game.h"
 #include "gameplay.h"
 
 void initGameplayPure(struct game *g);

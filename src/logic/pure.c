@@ -6,6 +6,9 @@
 #include "gameplay.h"
 #include "global/effects.h"
 
+// The number of times the randomizer attempts to pick a piece not in history
+#define MAX_REROLLS 4
+
 static struct game *game = NULL;
 static struct player *player = NULL;
 static struct laws *laws = NULL;

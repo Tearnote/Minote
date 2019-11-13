@@ -12,7 +12,7 @@
 
 #include "readall/readall.h"
 #include "global/state.h"
-#include "window.h"
+#include "main/window.h"
 #include "util/timer.h"
 #include "util/log.h"
 #include "util/thread.h"

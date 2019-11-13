@@ -15,6 +15,8 @@
 #define PLAYFIELD_H_HIDDEN 1
 #define PLAYFIELD_H_VISIBLE (PLAYFIELD_H - PLAYFIELD_H_HIDDEN)
 
+#define SUBGRID 256 // Number of "subpixels" in a playfield grid
+
 // All types of minos that can exist on the playfield
 // In addition to minos the player can control,
 // some extra types are reserved for later use
@@ -61,5 +63,12 @@ typedef piece rotationSystem[PieceSize][4];
 
 extern vec4 minoColors[MinoSize];
 extern rotationSystem rs;
+
+// Return the mino at the specific cell
+// Accepts inputs outside of bounds
+enum mino
+getPlayfieldGrid(enum mino field[PLAYFIELD_H][PLAYFIELD_W], int x, int y);
+void setPlayfieldGrid(enum mino field[PLAYFIELD_H][PLAYFIELD_W],
+                      int x, int y, enum mino val);
 
 #endif // MINO_H

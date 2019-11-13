@@ -1,43 +1,21 @@
-// Minote - gameplay.c
+// Minote - logic/gameplay.c
 
-#include "gameplay.h"
+#include "logic/gameplay.h"
 
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "global/state.h"
-#include "main/input.h"
-#include "types/mino.h"
-#include "util/util.h"
 #include "util/timer.h"
-#include "pure.h"
+#include "global/state.h"
+#include "global/input.h"
+#include "logic/pure.h"
 
 // Thread-local copy of the global state
 struct game *game = NULL;
 
+// State of the inputs
 static bool cmds[GameCmdSize] = {};
 
-// Accepts inputs outside of bounds
-enum mino
-getPlayfieldGrid(enum mino field[PLAYFIELD_H][PLAYFIELD_W], int x, int y)
-{
-	if (x < 0 || x >= PLAYFIELD_W || y >= PLAYFIELD_H)
-		return MinoGarbage;
-	if (y < 0)
-		return MinoNone;
-	return field[y][x];
-}
-
-void setPlayfieldGrid(enum mino field[PLAYFIELD_H][PLAYFIELD_W],
-                      int x, int y, enum mino val)
-{
-	if (x < 0 || x >= PLAYFIELD_W ||
-	    y < 0 || y >= PLAYFIELD_H)
-		return;
-	field[y][x] = val;
-}
-
-// Maps generic inputs to gameplay commands
 static enum gameplayCmd inputToGameCmd(enum inputType i)
 {
 	switch (i) {
@@ -62,15 +40,11 @@ static enum gameplayCmd inputToGameCmd(enum inputType i)
 	}
 }
 
-// Receive unfiltered inputs
 static void processGameInput(struct input *i)
 {
 	enum gameplayCmd cmd = inputToGameCmd(i->type);
 	switch (i->action) {
 	case ActionPressed:
-		// Starting and quitting is handled outside of gameplay logic
-		//if (i->type == InputStart && game->state == GameplayReady)
-		//	game->state = GameplayPlaying;
 		if (i->type == InputQuit) {
 			setState(PhaseGame, StateUnstaged);
 			break;
@@ -84,17 +58,16 @@ static void processGameInput(struct input *i)
 
 	case ActionReleased:
 		if (cmd != GameCmdNone)
-			cmds[inputToGameCmd(i->type)] = false;
+			cmds[cmd] = false;
 		break;
 	default:
 		break;
 	}
 }
 
-// Fills in cmds with pending inputs
+// Fills in cmds with inputs from the queue
 static void processInputs(void)
 {
-	// Receive all pending inputs
 	struct input *in = NULL;
 	while ((in = dequeueInput())) {
 		processGameInput(in);
@@ -117,8 +90,8 @@ void cleanupGameplay(void)
 	if (game) {
 		cleanupGameplayPure(game);
 		free(game);
+		game = NULL;
 	}
-	game = NULL;
 	setState(PhaseMenu, StateStaged);
 }
 

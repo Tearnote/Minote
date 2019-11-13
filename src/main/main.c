@@ -10,7 +10,7 @@
 
 #include "util/log.h"
 #include "window.h"
-#include "input.h"
+#include "global/input.h"
 #include "global/state.h"
 #include "render/render.h"
 #include "logic/logic.h"
