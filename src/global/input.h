@@ -1,13 +1,8 @@
-// Minote - input.h
-// Polls devices for inputs, converts to generic controls and puts them in a FIFO
+// Minote - global/input.h
+// Lets threads send and receive inputs via a FIFO
 
-#ifndef INPUT_H
-#define INPUT_H
-
-#include <stdbool.h>
-
-#include "util/thread.h"
-#include "types/fifo.h"
+#ifndef GLOBAL_INPUT_H
+#define GLOBAL_INPUT_H
 
 // Generic list of inputs used by the game
 enum inputType {
@@ -31,17 +26,10 @@ struct input {
 	//nsec timestamp;
 };
 
-extern fifo *inputs; //SYNC inputMutex enqueueInput dequeueInput
-extern mutex inputMutex;
-
 void initInput(void);
 void cleanupInput(void);
-void updateInput(void);
-void sleepInput(void);
 
-#define enqueueInput(i) \
-        syncFifoEnqueue(inputs, (i), &inputMutex)
-#define dequeueInput() \
-        syncFifoDequeue(inputs, &inputMutex)
+void enqueueInput(struct input *i);
+struct input *dequeueInput(void);
 
-#endif // INPUT_H
+#endif //GLOBAL_INPUT_H

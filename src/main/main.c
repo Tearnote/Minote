@@ -4,12 +4,9 @@
 
 #include "main.h"
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
 #include "util/log.h"
-#include "window.h"
+#include "main/window.h"
+#include "main/poll.h"
 #include "global/input.h"
 #include "global/state.h"
 #include "render/render.h"
@@ -44,10 +41,12 @@ int main(int argc, char *argv[])
 	spawnLogic();
 
 	// Main thread's loop, handles input updates and window events
+	initPoll();
 	while (isRunning()) {
-		updateInput();
-		sleepInput();
+		updatePoll();
+		sleepPoll();
 	}
+	cleanupPoll();
 
 	// Other threads loop on isRunning(), so it's safe to wait on them here
 	awaitLogic();

@@ -109,6 +109,7 @@ set(C_INTERNALLIBS
 set(C_SOURCES
         src/main/main.h src/main/main.c
         src/main/window.h src/main/window.c
+        src/main/poll.h src/main/poll.c
         src/logic/logic.h src/logic/logic.c
         src/logic/gameplay.h src/logic/gameplay.c
         src/logic/pure.h src/logic/pure.c
