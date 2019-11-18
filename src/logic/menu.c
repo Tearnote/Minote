@@ -3,8 +3,8 @@
 #include "logic/menu.h"
 
 #include "types/menu.h"
-#include "global/state.h"
 #include "util/util.h"
+#include "global/state.h"
 #include "global/input.h"
 
 static struct menu *menu;
@@ -74,9 +74,10 @@ void initMenu(void)
 void cleanupMenu(void)
 {
 	setState(PhaseMenu, StateNone);
-	if (menu)
+	if (menu) {
 		free(menu);
-	menu = NULL;
+		menu = NULL;
+	}
 }
 
 void updateMenu(void)
