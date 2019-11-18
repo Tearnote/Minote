@@ -1,9 +1,8 @@
-// Minote - logic.h
+// Minote - logic/logic.h
 // A thread that handles and advances state
-// Currently only gameplay state exists
 
-#ifndef LOGIC_H
-#define LOGIC_H
+#ifndef LOGIC_LOGIC_H
+#define LOGIC_LOGIC_H
 
 #include "util/thread.h"
 
@@ -11,11 +10,7 @@
 
 extern atomic double logicFrequency; // in Hz
 
-void *logicThread(void *param);
-extern thread logicThreadID;
-#define spawnLogic() \
-        spawnThread(&logicThreadID, logicThread, NULL, "logicThread")
-#define awaitLogic() \
-        awaitThread(logicThreadID)
+void spawnLogic(void);
+void awaitLogic(void);
 
-#endif // LOGIC_H
+#endif // LOGIC_LOGIC_H

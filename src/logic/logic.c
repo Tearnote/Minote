@@ -1,12 +1,12 @@
-// Minote - logic.c
+// Minote - logic/logic.c
 
-#include "logic.h"
+#include "logic/logic.h"
 
-#include "menu.h"
-#include "gameplay.h"
 #include "util/thread.h"
-#include "global/state.h"
 #include "util/timer.h"
+#include "global/state.h"
+#include "logic/menu.h"
+#include "logic/gameplay.h"
 
 thread logicThreadID = 0;
 
@@ -74,7 +74,7 @@ static void sleepLogic(void)
 	sleep(nextUpdateTime);
 }
 
-void *logicThread(void *param)
+static void *logicThread(void *param)
 {
 	(void)param;
 
@@ -83,4 +83,14 @@ void *logicThread(void *param)
 		sleepLogic();
 	}
 	return NULL;
+}
+
+void spawnLogic(void)
+{
+	spawnThread(&logicThreadID, logicThread, NULL, "logicThread");
+}
+
+void awaitLogic(void)
+{
+	awaitThread(logicThreadID);
 }
