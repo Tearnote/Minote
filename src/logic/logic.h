@@ -13,4 +13,4 @@ extern atomic double logicFrequency; // in Hz
 void spawnLogic(void);
 void awaitLogic(void);
 
-#endif // LOGIC_LOGIC_H
+#endif //LOGIC_LOGIC_H

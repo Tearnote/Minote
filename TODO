@@ -7,4 +7,5 @@ Make libraries use our own malloc when possible
 Add some more logging
 Move GM requirements into game state
 Make some more trivial mutexes into atomics
-Move gameplay parameters to a new struct inside of game struct
+Change grade from a string to an enum with a string lookup table in render thread
+Make playfield an opaque struct

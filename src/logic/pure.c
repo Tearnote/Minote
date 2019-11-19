@@ -1,10 +1,16 @@
-// Minote - gameplay_pure.c
+// Minote - logic/pure.c
 
-#include "pure.h"
+#include "logic/pure.h"
 
+#include "types/game.h"
 #include "util/util.h"
-#include "gameplay.h"
+#include "util/timer.h"
 #include "global/effects.h"
+
+// The length of a frame for the purpose of calculating the timer
+// Emulates time drift
+#define TIMER_FRAMERATE 60 // in Hz
+#define TIMER_FRAME (SEC / TIMER_FRAMERATE)
 
 // The number of times the randomizer attempts to pick a piece not in history
 #define MAX_REROLLS 4
@@ -111,13 +117,14 @@ static void filterInputs(void)
 	}
 }
 
+// Check for triggers and progress through phases
 static void updateState(void)
 {
 	if (game->state == GameplayReady) {
 		game->ready -= 1;
 		if (game->ready == 0)
 			game->state = GameplayPlaying;
-	} else 	if (game->state == GameplayPlaying) {
+	} else if (game->state == GameplayPlaying) {
 		game->frame += 1;
 		if (game->frame > 0)
 			game->time += TIMER_FRAME;
@@ -127,6 +134,7 @@ static void updateState(void)
 		player->state = PlayerActive;
 }
 
+// Convenience functions
 static enum mino getGrid(int x, int y)
 {
 	return getPlayfieldGrid(game->playfield, x, y);
@@ -137,12 +145,14 @@ static void setGrid(int x, int y, enum mino val)
 	setPlayfieldGrid(game->playfield, x, y, val);
 }
 
-// Check that player's position doesn't overlap the playfield
+// Check whether player's position doesn't overlap the playfield
 static bool checkPosition(void)
 {
-	for (int i = 0; i < MINOS_PER_PIECE; i++) {
-		int x = player->x + rs[player->type][player->rotation][i].x;
-		int y = player->y + rs[player->type][player->rotation][i].y;
+	for (int i = 0; i < MINOS_PER_PIECE; i += 1) {
+		int x = player->x;
+		int y = player->y;
+		x += rs[player->type][player->rotation][i].x;
+		y += rs[player->type][player->rotation][i].y;
 		if (getGrid(x, y))
 			return false;
 	}
@@ -168,15 +178,15 @@ static bool tryKicks(void)
 	     player->type == PieceT ||
 	     player->type == PieceJ)) {
 		bool success = true;
-		for (int i = 0; i < MINOS_PER_PIECE; i++) {
+		for (int i = 0; i < MINOS_PER_PIECE; i += 1) {
 			int xLocal = rs[player->type][player->rotation][i].x;
-			int x = player->x
-			        + rs[player->type][player->rotation][i].x;
-			int y = player->y
-			        + rs[player->type][player->rotation][i].y;
+			int x = player->x;
+			int y = player->y;
+			x += rs[player->type][player->rotation][i].x;
+			y += rs[player->type][player->rotation][i].y;
 			if (xLocal != CENTER_COLUMN && getGrid(x, y)) {
 				success = true;
-				break;
+				break; // Exception to the middle column rule
 			}
 			if (getGrid(x, y))
 				success = false;
@@ -185,6 +195,7 @@ static bool tryKicks(void)
 			return false;
 	}
 
+	// No special treatments
 	player->x += preference;
 	if (checkPosition())
 		return true; // 1 to the right
@@ -197,18 +208,17 @@ static bool tryKicks(void)
 
 void enqueueSlide(int direction)
 {
-	for (int i = 0; i < MINOS_PER_PIECE; i++) {
+	for (int i = 0; i < MINOS_PER_PIECE; i += 1) {
 		int x = player->x;
-		x += rs[player->type][player->rotation][i].x;
 		int y = player->y;
+		x += rs[player->type][player->rotation][i].x;
 		y += rs[player->type][player->rotation][i].y;
 		if (!getGrid(x, y + 1))
 			continue;
 
-		struct effect *e = allocate(sizeof(struct effect));
+		struct effect *e = allocate(sizeof(*e));
 		e->type = EffectSlide;
-		struct slideEffectData
-			*data = allocate(sizeof(struct slideEffectData));
+		struct slideEffectData *data = allocate(sizeof(*data));
 		e->data = data;
 		data->x = x;
 		data->y = y;
@@ -219,8 +229,7 @@ void enqueueSlide(int direction)
 }
 
 // Attempt to move player piece sideways
-// -1 is left
-// 1 is right
+// -1 is left, 1 is right
 static void shift(int direction)
 {
 	player->x += direction;
@@ -233,8 +242,7 @@ static void shift(int direction)
 }
 
 // Attempt to rotate player piece
-// 1 is CW
-// -1 is CCW
+// 1 is CW, -1 is CCW
 static void rotate(int direction)
 {
 	int prevRotation = player->rotation;
@@ -295,12 +303,14 @@ static void updateShifts(void)
 	}
 }
 
+// Check each row for being full, empty them
+// Return the number of lines cleared at the same time
 static int checkClears(void)
 {
 	int count = 0;
-	for (int y = 0; y < PLAYFIELD_H; y++) {
+	for (int y = 0; y < PLAYFIELD_H; y += 1) {
 		bool isCleared = true;
-		for (int x = 0; x < PLAYFIELD_W; x++) {
+		for (int x = 0; x < PLAYFIELD_W; x += 1) {
 			if (!getGrid(x, y)) {
 				isCleared = false;
 				break;
@@ -312,41 +322,42 @@ static int checkClears(void)
 		game->clearedLines[y] = true;
 		clearArray(game->playfield[y]);
 	}
-	if (count == 0)
-		game->combo = 1;
 	return count;
 }
 
 static void updateGrade(void)
 {
-	for (int i = 0; i < countof(grades); i++) {
+	for (int i = 0; i < countof(grades); i += 1) {
 		if (game->score < grades[i].score)
 			return;
 		if (i == countof(grades) - 1 &&
 		    (!game->eligible || game->level < 999))
-			return;
+			return; // Extra GM requirements not met
 		strcpy(game->gradeString, grades[i].name);
 	}
 }
 
+// Set gravity to the level-specific value
+// Gravity is the only variable law in Pure
 static void adjustGravity(void)
 {
-	for (int i = 0; i < countof(thresholds); i++) {
+	for (int i = 0; i < countof(thresholds); i += 1) {
 		if (game->level < thresholds[i].level)
 			return;
 		laws->gravity = thresholds[i].gravity;
 	}
 }
 
+// Disqualify player from GM rank if any requirement is not met
 static void checkRequirements(void)
 {
 	if (!game->eligible)
-		return;
-	for (int i = 0; i < countof(requirementChecked); i++) {
+		return; // Already disqualified
+	for (int i = 0; i < countof(requirementChecked); i += 1) {
 		if (requirementChecked[i])
-			continue;
+			continue; // Only check each treshold once, when reached
 		if (game->level < requirements[i].level)
-			return;
+			return; // Threshold not reached yet
 		requirementChecked[i] = true;
 		if (game->score < requirements[i].score ||
 		    game->time > requirements[i].time)
@@ -356,11 +367,12 @@ static void checkRequirements(void)
 
 static void enqueueBravo(void)
 {
-	struct effect *e = allocate(sizeof(struct effect));
+	struct effect *e = allocate(sizeof(*e));
 	e->type = EffectBravo;
 	enqueueEffect(e);
 }
 
+// Credit the player for a line clear
 static void addScore(int lines)
 {
 	int score;
@@ -374,24 +386,26 @@ static void addScore(int lines)
 	game->combo += 2 * lines - 2;
 	score *= game->combo;
 	int bravo = 4;
-	for (int y = 0; y < PLAYFIELD_H; y++) {
-		for (int x = 0; x < PLAYFIELD_W; x++) {
+	for (int y = 0; y < PLAYFIELD_H; y += 1) {
+		for (int x = 0; x < PLAYFIELD_W; x += 1) {
 			if (game->playfield[y][x] != MinoNone) {
 				bravo = 1;
-				goto bravoOut;
+				goto bravoOut; // Multilevel break
 			}
 		}
 	}
 bravoOut:
-	if (bravo != 1)
+	if (bravo != 1) {
 		enqueueBravo();
-	score *= bravo;
+		score *= bravo;
+	}
 
 	game->score += score;
-	updateGrade();
 }
 
-// "strong" lets the levels break past the levelstop
+// Increase level according to lines cleared
+// Count of 1 is equivalent to piece spawn
+// "strong" lets the level break past the levelstop
 static void addLevels(int count, bool strong)
 {
 	game->level += count;
@@ -402,29 +416,32 @@ static void addLevels(int count, bool strong)
 	if (game->nextLevelstop > 900)
 		game->nextLevelstop = 999;
 
+	// Set the level-specific laws
 	adjustGravity();
-	checkRequirements();
+	if (game->level >= 100)
+		laws->ghost = false;
 }
 
+// Drop the floating parts of the stack to the ground after a line clear
 static void thump(void)
 {
-	for (int y = 0; y < PLAYFIELD_H; y++) {
+	for (int y = 0; y < PLAYFIELD_H; y += 1) {
 		if (!game->clearedLines[y])
-			continue;
-		for (int yy = y; yy >= 0; yy--) {
-			for (int xx = 0; xx < PLAYFIELD_W; xx++)
+			continue; // Drop only above cleared lines
+		for (int yy = y; yy >= 0; yy -= 1) {
+			for (int xx = 0; xx < PLAYFIELD_W; xx += 1)
 				setGrid(xx, yy, getGrid(xx, yy - 1));
 
 			if (yy != y)
-				continue;
-			for (int xx = 0; xx < PLAYFIELD_W; xx++) {
+				continue; // Stop once the cleared line is reached
+			for (int xx = 0; xx < PLAYFIELD_W; xx += 1) {
+				// Thump effect requires a thumper and a thumpee
 				if (!getGrid(xx, yy) || !getGrid(xx, yy + 1))
 					continue;
-				struct effect
-					*e = allocate(sizeof(struct effect));
+				struct effect *e = allocate(sizeof(*e));
 				e->type = EffectThump;
-				struct thumpEffectData *data = allocate(
-					sizeof(struct thumpEffectData));
+				struct thumpEffectData
+					*data = allocate(sizeof(*data));
 				e->data = data;
 				data->x = xx;
 				data->y = yy;
@@ -435,13 +452,12 @@ static void thump(void)
 	}
 }
 
-void
+static void
 enqueueLineClear(const enum mino playfield[PLAYFIELD_H][PLAYFIELD_W], int lines)
 {
-	struct effect *e = allocate(sizeof(struct effect));
+	struct effect *e = allocate(sizeof(*e));
 	e->type = EffectLineClear;
-	struct lineClearEffectData
-		*data = allocate(sizeof(struct lineClearEffectData));
+	struct lineClearEffectData *data = allocate(sizeof(*data));
 	data->lines = lines;
 	data->combo = game->combo;
 	copyArray(data->playfield, playfield);
@@ -450,8 +466,10 @@ enqueueLineClear(const enum mino playfield[PLAYFIELD_H][PLAYFIELD_W], int lines)
 	enqueueEffect(e);
 }
 
+// Check for clears and advance clear counters
 static void updateClear(void)
 {
+	// Line clear check is delayed by the clear offset
 	if (player->state == PlayerSpawn &&
 	    player->spawnDelay + 1 == laws->clearOffset) {
 		enum mino oldPlayfield[PLAYFIELD_H][PLAYFIELD_W];
@@ -463,10 +481,15 @@ static void updateClear(void)
 			player->clearDelay = 0;
 			addScore(clearedCount);
 			addLevels(clearedCount, true);
+			checkRequirements();
+			updateGrade();
 			enqueueLineClear(oldPlayfield, clearedCount);
+		} else { // Piece locked without a clear
+			game->combo = 1;
 		}
 	}
 
+	// Advance counter, switch back to spawn delay if elapsed
 	if (player->state == PlayerClear) {
 		player->clearDelay += 1;
 		if (player->clearDelay > laws->clearDelay) {
@@ -476,6 +499,7 @@ static void updateClear(void)
 	}
 }
 
+// Return a random piece according to randomizer rules
 static enum pieceType randomPiece(void)
 {
 	bool first = false;
@@ -486,7 +510,7 @@ static enum pieceType randomPiece(void)
 	}
 
 	enum pieceType result = PieceNone;
-	for (int i = 0; i < MAX_REROLLS; i++) {
+	for (int i = 0; i < MAX_REROLLS; i += 1) {
 		result = random(&game->rngState, PieceSize - 1) + 1;
 		while (first && // Unfair first piece prevention
 		       (result == PieceS ||
@@ -494,6 +518,7 @@ static enum pieceType randomPiece(void)
 		        result == PieceO))
 			result = random(&game->rngState, PieceSize - 1) + 1;
 
+		// If piece in history, reroll
 		bool valid = true;
 		for (int j = 0; j < HISTORY_SIZE; j++) {
 			if (result == player->history[j])
@@ -503,7 +528,8 @@ static enum pieceType randomPiece(void)
 			break;
 	}
 
-	for (int i = HISTORY_SIZE - 2; i >= 0; i--) {
+	// Rotate history
+	for (int i = HISTORY_SIZE - 2; i >= 0; i -= 1) {
 		player->history[i + 1] = player->history[i];
 	}
 	player->history[0] = result;
@@ -518,7 +544,7 @@ static void gameOver(void)
 // Generate a new random piece for the player to control
 static void spawnPiece(void)
 {
-	player->state = PlayerSpawned;
+	player->state = PlayerSpawned; // Some moves restricted on first frame
 	player->x = PLAYFIELD_W / 2 - PIECE_BOX / 2; // Centered
 	player->y = -2 + PLAYFIELD_H_HIDDEN;
 
@@ -527,7 +553,7 @@ static void spawnPiece(void)
 	player->preview = randomPiece();
 
 	if (player->type == PieceI)
-		player->y += 1;
+		player->y += 1; // I starts higher than other pieces
 	player->ySub = 0;
 	player->lockDelay = 0;
 	player->spawnDelay = 0;
@@ -544,8 +570,6 @@ static void spawnPiece(void)
 	}
 
 	addLevels(1, false);
-	if (game->level >= 100)
-		laws->ghost = false;
 
 	if (!checkPosition())
 		gameOver();
@@ -554,7 +578,7 @@ static void spawnPiece(void)
 static void updateSpawn(void)
 {
 	if (game->state != GameplayPlaying)
-		return;
+		return; // Do not spawn during countdown or gameover
 	if (player->state == PlayerSpawn || player->state == PlayerNone) {
 		player->spawnDelay += 1;
 		if (player->spawnDelay >= laws->spawnDelay)
@@ -562,6 +586,7 @@ static void updateSpawn(void)
 	}
 }
 
+// Checks whether a piece can move downwards
 static bool canDrop(void)
 {
 	player->y += 1;
@@ -577,6 +602,7 @@ static void updateGhost(void)
 	if (player->state != PlayerActive && player->state != PlayerSpawned)
 		return;
 
+	// Get the lowest position for the ghost by sonic dropping the player
 	int yOrig = player->y;
 	player->yGhost = yOrig;
 	while (canDrop())
@@ -585,7 +611,7 @@ static void updateGhost(void)
 	player->y = yOrig;
 }
 
-void enqueueThump(void)
+void enqueuePlayerThump(void)
 {
 	for (int i = 0; i < MINOS_PER_PIECE; i++) {
 		int x = player->x;
@@ -606,7 +632,7 @@ void enqueueThump(void)
 	}
 }
 
-// Move one grid downwards, if possible
+// Drop the player one grid if possible
 static void drop(void)
 {
 	if (!canDrop())
@@ -617,29 +643,28 @@ static void drop(void)
 	if (game->cmdHeld[GameCmdSoft])
 		player->dropBonus += 1;
 
-	enqueueThump();
+	enqueuePlayerThump();
 }
 
 static void updateGravity(void)
 {
 	if (game->state == GameplayOutro)
-		return;
+		return; // Prevent zombie blocks
 	if (player->state != PlayerSpawned && player->state != PlayerActive)
 		return;
+
 	int gravity = laws->gravity;
 	if (player->state == PlayerActive) {
 		if (game->cmdHeld[GameCmdSoft] && gravity < laws->softDrop)
 			gravity = laws->softDrop;
-		//if (game->cmdHeld[GameCmdSonic])
-		//	gravity = SONIC_DROP;
 	}
 
-	if (canDrop())
+	if (canDrop()) // Queue up the gravity drops
 		player->ySub += gravity;
 	else
 		player->ySub = 0;
 
-	while (player->ySub >= SUBGRID) {
+	while (player->ySub >= SUBGRID) { // Drop until queue empty
 		drop();
 		player->ySub -= SUBGRID;
 	}
@@ -649,13 +674,13 @@ static void enqueueLockFlash(void)
 {
 	struct effect *e = allocate(sizeof(struct effect));
 	e->type = EffectLockFlash;
-	e->data = allocate(sizeof(int) * 2 * MINOS_PER_PIECE);
-	int *coords = e->data;
-	for (int i = 0; i < MINOS_PER_PIECE; i++) {
-		coords[i * 2] = rs[player->type][player->rotation][i].x;
-		coords[i * 2] += game->player.x;
-		coords[i * 2 + 1] = rs[player->type][player->rotation][i].y;
-		coords[i * 2 + 1] += game->player.y;
+	struct coord *coords = allocate(sizeof(struct coord) * MINOS_PER_PIECE);
+	e->data = coords;
+	for (int i = 0; i < MINOS_PER_PIECE; i += 1) {
+		coords[i].x = rs[player->type][player->rotation][i].x;
+		coords[i].x += game->player.x;
+		coords[i].y = rs[player->type][player->rotation][i].y;
+		coords[i].y += game->player.y;
 	}
 	enqueueEffect(e);
 }
@@ -665,12 +690,12 @@ static void enqueueLockFlash(void)
 static void lock(void)
 {
 	if (game->cmdHeld[GameCmdSoft])
-		player->dropBonus += 1;
-	for (int i = 0; i < MINOS_PER_PIECE; i++) {
-		int x = player->x + rs[player->type][player->rotation][i].x;
-		int y = player->y + rs[player->type][player->rotation][i].y;
-		if (player->y + rs[player->type][player->rotation][i].y < 0)
-			continue;
+		player->dropBonus += 1; // Lock frame can also increase this
+	for (int i = 0; i < MINOS_PER_PIECE; i += 1) {
+		int x = player->x;
+		int y = player->y;
+		x += rs[player->type][player->rotation][i].x;
+		y += rs[player->type][player->rotation][i].y;
 		setGrid(x, y, (enum mino)player->type);
 	}
 	player->state = PlayerSpawn;
@@ -682,23 +707,23 @@ void updateLocking(void)
 {
 	if (player->state != PlayerActive || game->state != GameplayPlaying)
 		return;
-	if (!canDrop()) {
-		player->lockDelay += 1;
-		// Two sources of locking: lock delay expired, and manlock
-		if (player->lockDelay > laws->lockDelay
-		    || game->cmdHeld[GameCmdSoft])
-			lock();
-	}
+	if (canDrop())
+		return;
+
+	player->lockDelay += 1;
+	// Two sources of locking: lock delay expired, manlock
+	if (player->lockDelay > laws->lockDelay
+	    || game->cmdHeld[GameCmdSoft])
+		lock();
 }
 
 void updateWin(void)
 {
-	if (game->level >= 999) {
-		updateGrade();
+	if (game->level >= 999)
 		gameOver();
-	}
 }
 
+// Initialize fields used by this mode, other fields are zeroed
 void initGameplayPure(struct game *g)
 {
 	game = g;
@@ -711,6 +736,10 @@ void initGameplayPure(struct game *g)
 	game->combo = 1;
 	strcpy(game->gradeString, grades[0].name);
 	game->eligible = true;
+	game->frame = -1; // So that the first calculated frame ends up at 0
+	game->ready = 3 * 50;
+	srandom(&game->rngState, (uint64_t)time(NULL));
+
 	laws->ghost = true;
 	laws->softDrop = 256;
 	laws->dasCharge = 16;
@@ -719,19 +748,18 @@ void initGameplayPure(struct game *g)
 	laws->clearOffset = 4;
 	laws->clearDelay = 41;
 	laws->spawnDelay = 30;
+	adjustGravity();
+
 	player->dasDelay = laws->dasDelay; // Starts out pre-charged
 	player->spawnDelay = laws->spawnDelay; // Start instantly
-	game->frame = -1; // So that the first calculated frame ends up at 0
-	game->ready = 3 * 60;
-	srandom(&game->rngState, (uint64_t)time(NULL));
-	adjustGravity();
 	player->preview = randomPiece();
+
 	game->state = GameplayReady;
 }
 
 void cleanupGameplayPure(struct game *g)
 {
-	// Pure like a wipeout...
+	// Nothing ever happened
 }
 
 void advanceGameplayPure(struct game *g, bool cmd[GameCmdSize])
@@ -741,7 +769,7 @@ void advanceGameplayPure(struct game *g, bool cmd[GameCmdSize])
 	laws = &player->laws;
 	if (game->state != GameplayOutro)
 		copyArray(game->cmdRaw, cmd);
-	else
+	else // Drop inputs after gameover
 		clearArray(game->cmdRaw);
 
 	filterInputs();

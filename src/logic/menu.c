@@ -1,4 +1,4 @@
-// Minote - menu.c
+// Minote - logic/menu.c
 
 #include "logic/menu.h"
 

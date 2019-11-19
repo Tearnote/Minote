@@ -9,4 +9,4 @@ void cleanupMenu(void);
 
 void updateMenu(void);
 
-#endif // LOGIC_MENU_H
+#endif //LOGIC_MENU_H
