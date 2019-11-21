@@ -1,19 +1,21 @@
-// Minote - main.c
+// Minote - main/main.c
 // Entry point
 // Spawns threads, itself is the input handling thread
 
-#include "main.h"
+#include "main/main.h"
+
+#include <stdlib.h>
 
 #include "util/log.h"
-#include "main/window.h"
-#include "main/poll.h"
-#include "global/input.h"
-#include "global/state.h"
-#include "render/render.h"
-#include "logic/logic.h"
 #include "util/timer.h"
 #include "global/settings.h"
 #include "global/effects.h"
+#include "global/input.h"
+#include "global/state.h"
+#include "main/window.h"
+#include "main/poll.h"
+#include "logic/logic.h"
+#include "render/render.h"
 
 static void cleanup(void)
 {
@@ -52,5 +54,5 @@ int main(int argc, char *argv[])
 	awaitLogic();
 	awaitRenderer();
 
-	return 0;
+	return EXIT_SUCCESS;
 }

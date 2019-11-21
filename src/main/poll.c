@@ -1,6 +1,4 @@
-//
-// Created by Tear on 14/11/2019.
-//
+// Minote - main/poll.c
 
 #include "main/poll.h"
 
@@ -39,7 +37,6 @@ static void generateInput(enum inputType type, enum inputAction action)
 	struct input *newInput = allocate(sizeof(*newInput));
 	newInput->type = type;
 	newInput->action = action;
-	//newInput->timestamp = nextPollTime;
 	enqueueInput(newInput);
 }
 
@@ -108,7 +105,8 @@ void keyCallback(GLFWwindow *w, int key, int scancode, int action, int mods)
 
 static void enumerateGamepads(void)
 {
-	for (int i = 0; i <= GLFW_JOYSTICK_LAST; i++) {
+	for (int i = 0; i <= GLFW_JOYSTICK_LAST; i += 1) {
+		// Gamepad = xinput mapping
 		bool detected = glfwJoystickIsGamepad(i);
 		if (gamepads[i] && !detected) {
 			gamepads[i] = detected;
@@ -122,12 +120,14 @@ static void enumerateGamepads(void)
 			        glfwGetGamepadName(i));
 			continue;
 		}
+		// Joystick = no xinput mapping
 		if (!detected && !gamepads[i] && glfwJoystickPresent(i))
 			logWarn("Unsupported joystick #%d connected: %s", i,
 			        glfwGetJoystickName(i));
 	}
 }
 
+// Naively reenumerate all joysticks on any device change
 static void joystickCallback(int jid, int event)
 {
 	(void)jid, (void)event;
@@ -167,14 +167,14 @@ void cleanupPoll(void)
 
 static void pollGamepadEvents(void)
 {
-	for (int i = 0; i <= GLFW_JOYSTICK_LAST; i++) {
+	for (int i = 0; i <= GLFW_JOYSTICK_LAST; i += 1) {
 		if (!gamepads[i])
 			continue;
 		GLFWgamepadstate newState;
 		glfwGetGamepadState(i, &newState);
-		for (int j = 0; j < countof(newState.buttons); j++) {
+		for (int j = 0; j < countof(newState.buttons); j += 1) {
 			if (gamepadStates[i].buttons[j] == newState.buttons[j])
-				continue;
+				continue; // No change in button state
 			gamepadStates[i].buttons[j] = newState.buttons[j];
 
 			enum inputType keyType;
@@ -223,6 +223,7 @@ static void pollGamepadEvents(void)
 			generateInput(keyType, keyAction);
 		}
 
+		// Analog stick 8-way emulation
 		float oldX = gamepadStates[i].axes[GLFW_GAMEPAD_AXIS_LEFT_X];
 		float oldY = gamepadStates[i].axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
 		float newX = newState.axes[GLFW_GAMEPAD_AXIS_LEFT_X];

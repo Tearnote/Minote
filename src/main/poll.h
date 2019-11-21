@@ -1,6 +1,5 @@
-//
-// Created by Tear on 14/11/2019.
-//
+// Minote - main/poll.h
+// Polls input events and inserts them into the queue
 
 #ifndef MAIN_POLL_H
 #define MAIN_POLL_H

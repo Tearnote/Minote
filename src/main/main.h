@@ -1,11 +1,11 @@
-// Minote - main.h
+// Minote - main/main.h
 // Minote prealpha
 // by Tearnote, 2019
 
-#ifndef MAIN_H
-#define MAIN_H
+#ifndef MAIN_MAIN_H
+#define MAIN_MAIN_H
 
 #define APP_NAME "Minote"
-#define APP_VERSION "alpha4"
+#define APP_VERSION "alpha5"
 
-#endif // MAIN_H
+#endif //MAIN_MAIN_H
