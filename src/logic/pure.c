@@ -422,6 +422,23 @@ static void addLevels(int count, bool strong)
 		laws->ghost = false;
 }
 
+static void enqueueClearThump(int y)
+{
+	for (int x = 0; x < PLAYFIELD_W; x += 1) {
+		// Thump effect requires a thumper and a thumpee
+		if (!getGrid(x, y) || !getGrid(x, y + 1))
+			continue;
+		struct effect *e = allocate(sizeof(*e));
+		e->type = EffectThump;
+		struct thumpEffectData
+			*data = allocate(sizeof(*data));
+		e->data = data;
+		data->x = x;
+		data->y = y;
+		enqueueEffect(e);
+	}
+}
+
 // Drop the floating parts of the stack to the ground after a line clear
 static void thump(void)
 {
@@ -432,21 +449,8 @@ static void thump(void)
 			for (int xx = 0; xx < PLAYFIELD_W; xx += 1)
 				setGrid(xx, yy, getGrid(xx, yy - 1));
 
-			if (yy != y)
-				continue; // Stop once the cleared line is reached
-			for (int xx = 0; xx < PLAYFIELD_W; xx += 1) {
-				// Thump effect requires a thumper and a thumpee
-				if (!getGrid(xx, yy) || !getGrid(xx, yy + 1))
-					continue;
-				struct effect *e = allocate(sizeof(*e));
-				e->type = EffectThump;
-				struct thumpEffectData
-					*data = allocate(sizeof(*data));
-				e->data = data;
-				data->x = xx;
-				data->y = yy;
-				enqueueEffect(e);
-			}
+			if (yy == y)
+				enqueueClearThump(y);
 		}
 		game->clearedLines[y] = false;
 	}
