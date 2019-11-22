@@ -9,3 +9,4 @@ Move GM requirements into game state
 Make some more trivial mutexes into atomics
 Change grade from a string to an enum with a string lookup table in render thread
 Make playfield an opaque struct
+Replace #defines

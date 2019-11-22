@@ -1,15 +1,15 @@
-// Minote - window.c
+// Minote - main/window.c
 
-#include "window.h"
+#include "main/window.h"
 
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 
-#include "main.h"
 #include "util/log.h"
-#include "render/render.h"
 #include "util/util.h"
 #include "global/settings.h"
+#include "main/main.h"
+#include "render/render.h"
 
 GLFWwindow *window = NULL;
 int windowWidth = DEFAULT_WIDTH;
@@ -51,11 +51,9 @@ void initWindow(void)
 #ifdef __APPLE__
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif // __APPLE__
-	glfwWindowHint(GLFW_SCALE_TO_MONITOR,
-	               GLFW_TRUE); // Declare DPI awareness
-	glfwWindowHint(GLFW_SRGB_CAPABLE,
-	               GLFW_TRUE);
-	glfwWindowHint(GLFW_SAMPLES, 4);
+	glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE); // DPI aware
+	glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE); // Linear gamma
+	glfwWindowHint(GLFW_SAMPLES, 4); // 4xMSAA
 	if (getSettingBool(SettingFullscreen)) {
 		const GLFWvidmode
 			*mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
