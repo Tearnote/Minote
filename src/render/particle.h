@@ -1,10 +1,8 @@
-// Minote - particlerender.h
+// Minote - render/particle.h
 // Spawns and renders particle effects
 
-#ifndef PARTICLE_H
-#define PARTICLE_H
-
-#include <stdbool.h>
+#ifndef RENDER_PARTICLE_H
+#define RENDER_PARTICLE_H
 
 #include "global/effects.h"
 
@@ -19,4 +17,4 @@ void triggerBravo(void);
 void updateParticles(void);
 void renderParticles(void);
 
-#endif //PARTICLE_H
+#endif //RENDER_PARTICLE_H

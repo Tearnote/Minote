@@ -1,4 +1,4 @@
-// Minote - minorender.c
+// Minote - render/border.c
 
 #include "border.h"
 
@@ -8,10 +8,9 @@
 #include <GLFW/glfw3.h>
 
 #include "types/array.h"
-#include "logic/gameplay.h"
-#include "render.h"
 #include "util/log.h"
 #include "util/util.h"
+#include "render/render.h"
 
 #define INSTANCE_LIMIT 512 // More segments than that will be ignored
 
@@ -109,8 +108,8 @@ static void queueBorderSegment(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2)
 
 void queueBorder(enum mino field[PLAYFIELD_H][PLAYFIELD_W])
 {
-	for (int y = PLAYFIELD_H_HIDDEN; y < PLAYFIELD_H; y++) {
-		for (int x = 0; x < PLAYFIELD_W; x++) {
+	for (int y = PLAYFIELD_H_HIDDEN; y < PLAYFIELD_H; y += 1) {
+		for (int x = 0; x < PLAYFIELD_W; x += 1) {
 			enum mino minoType = field[y][x];
 			if (minoType == MinoNone)
 				continue;

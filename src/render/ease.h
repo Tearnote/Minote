@@ -1,8 +1,8 @@
-// Minote - ease.h
+// Minote - render/ease.h
 // Change a floating point variable smoothly over time
 
-#ifndef EASE_H
-#define EASE_H
+#ifndef RENDER_EASE_H
+#define RENDER_EASE_H
 
 #include "util/timer.h"
 
@@ -30,4 +30,4 @@ void updateEase(void);
 void
 addEase(float *target, float from, float to, nsec length, enum easeType type);
 
-#endif //EASE_H
+#endif //RENDER_EASE_H

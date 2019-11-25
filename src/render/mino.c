@@ -1,22 +1,22 @@
-// Minote - minorender.c
+// Minote - render/mino.c
 
-#include "mino.h"
+#include "render/mino.h"
+
+#include <math.h>
 
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 
-#include <math.h>
-
 #include "linmath/linmath.h"
-#include "render.h"
-#include "util/log.h"
+
 #include "types/array.h"
-#include "global/state.h"
 #include "types/mino.h"
+#include "types/game.h"
+#include "util/log.h"
 #include "util/util.h"
-#include "render/ease.h"
 #include "logic/logic.h"
-#include "logic/gameplay.h"
+#include "render/render.h"
+#include "render/ease.h"
 
 #define INSTANCE_LIMIT 256 // More minos than that will be ignored
 
@@ -138,7 +138,7 @@ void triggerLockFlash(int coords[MINOS_PER_PIECE * 2])
 	int flashDuration =
 		//player->laws.clearOffset * 2 * (SEC / logicFrequency);
 		4 * 2 * (SEC / logicFrequency); //TODO replace 4 with clearOffset
-	for (int i = 0; i < MINOS_PER_PIECE; i++) {
+	for (int i = 0; i < MINOS_PER_PIECE; i += 1) {
 		addEase(&highlights[coords[i * 2 + 1]][coords[i * 2]],
 		        1.0f, 0.0f, flashDuration, EaseLinear);
 	}
@@ -146,8 +146,8 @@ void triggerLockFlash(int coords[MINOS_PER_PIECE * 2])
 
 void queueMinoPlayfield(enum mino field[PLAYFIELD_H][PLAYFIELD_W])
 {
-	for (int y = PLAYFIELD_H_HIDDEN; y < PLAYFIELD_H; y++) {
-		for (int x = 0; x < PLAYFIELD_W; x++) {
+	for (int y = PLAYFIELD_H_HIDDEN; y < PLAYFIELD_H; y += 1) {
+		for (int x = 0; x < PLAYFIELD_W; x += 1) {
 			enum mino minoType = field[y][x];
 			if (minoType == MinoNone)
 				continue;
@@ -169,7 +169,7 @@ void queueMinoPlayer(struct player *player)
 	if (player->state != PlayerActive)
 		return;
 
-	for (int i = 0; i < MINOS_PER_PIECE; i++) {
+	for (int i = 0; i < MINOS_PER_PIECE; i += 1) {
 		struct coord minoCoord = rs[player->type][player->rotation][i];
 		struct minoInstance *newInstance = produceDarrayItem(minoQueue);
 		float lockDim =
@@ -195,7 +195,7 @@ void queueMinoGhost(struct player *player)
 	if (player->state != PlayerActive && player->state != PlayerSpawned)
 		return;
 
-	for (int i = 0; i < MINOS_PER_PIECE; i++) {
+	for (int i = 0; i < MINOS_PER_PIECE; i += 1) {
 		struct coord minoCoord = rs[player->type][player->rotation][i];
 		struct minoInstance *newInstance = produceDarrayItem(minoQueue);
 		newInstance->x =
@@ -215,7 +215,7 @@ void queueMinoPreview(struct player *player)
 {
 	if (player->preview == MinoNone)
 		return;
-	for (int i = 0; i < MINOS_PER_PIECE; i++) {
+	for (int i = 0; i < MINOS_PER_PIECE; i += 1) {
 		struct coord minoCoord = rs[player->preview][0][i];
 		struct minoInstance *newInstance = produceDarrayItem(minoQueue);
 		if (player->preview == PieceI)

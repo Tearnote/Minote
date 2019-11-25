@@ -1,11 +1,11 @@
-// Minote - minorender.h
+// Minote - render/mino.h
 // Renders minos to the screen
 
-#ifndef MINORENDER_H
-#define MINORENDER_H
+#ifndef RENDER_MINO_H
+#define RENDER_MINO_H
 
 #include "types/mino.h"
-#include "global/state.h"
+#include "types/game.h"
 
 void initMinoRenderer(void);
 void cleanupMinoRenderer(void);
@@ -24,4 +24,4 @@ void queueMinoSync(void);
 // Render everything in the darray with a single draw call, clear the darray
 void renderMino(void);
 
-#endif //MINO_H
+#endif //RENDER_MINO_H

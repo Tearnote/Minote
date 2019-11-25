@@ -1,8 +1,8 @@
-// Minote - font.h
+// Minote - render/font.h
 // Loads and keeps track of fonts
 
-#ifndef FONT_H
-#define FONT_H
+#ifndef RENDER_FONT_H
+#define RENDER_FONT_H
 
 #include "glad/glad.h"
 
@@ -36,4 +36,4 @@ extern struct font fonts[FontSize];
 void initFonts(void);
 void cleanupFonts(void);
 
-#endif //FONT_H
+#endif //RENDER_FONT_H

@@ -1,23 +1,19 @@
-// Minote - particlerender.c
+// Minote - render/particle.c
 
-#include "particle.h"
-
-#include <string.h>
-#include <time.h>
+#include "render/particle.h"
 
 #include "glad/glad.h"
 
 #include "AHEasing/easing.h"
 
-#include "global/effects.h"
-#include "logic/gameplay.h"
-#include "util/log.h"
 #include "types/array.h"
-#include "render.h"
-#include "render/ease.h"
-#include "util/timer.h"
 #include "util/util.h"
-#include "post.h"
+#include "util/log.h"
+#include "util/timer.h"
+#include "global/effects.h"
+#include "render/render.h"
+#include "render/ease.h"
+#include "render/post.h"
 
 #define INSTANCE_LIMIT 2560 // More particles than that will be ignored
 #define FADE_THRESHOLD 0.9f
@@ -134,12 +130,12 @@ void cleanupParticleRenderer(void)
 
 void triggerLineClear(struct lineClearEffectData *data)
 {
-	for (int y = 0; y < PLAYFIELD_H; y++) {
+	for (int y = 0; y < PLAYFIELD_H; y += 1) {
 		if (!data->clearedLines[y])
 			continue;
-		for (int i = 0; i < (data->lines + 1) / 2; i++) {
-			for (int my = 0; my < 8; my++) {
-				for (int x = 0; x < PLAYFIELD_W; x++) {
+		for (int i = 0; i < (data->lines + 1) / 2; i += 1) {
+			for (int my = 0; my < 8; my += 1) {
+				for (int x = 0; x < PLAYFIELD_W; x += 1) {
 					struct particle *newParticle =
 						producePsarrayItem(
 							particleQueue);
@@ -199,7 +195,7 @@ void triggerLineClear(struct lineClearEffectData *data)
 
 void triggerThump(struct thumpEffectData *data)
 {
-	for (int i = 0; i < 8; i++) {
+	for (int i = 0; i < 8; i += 1) {
 		struct particle
 			*newParticle = producePsarrayItem(particleQueue);
 		if (!newParticle)
@@ -226,7 +222,7 @@ void triggerThump(struct thumpEffectData *data)
 
 void triggerSlide(struct slideEffectData *data)
 {
-	for (int i = 0; i < 8; i++) {
+	for (int i = 0; i < 8; i += 1) {
 		struct particle
 			*newParticle = producePsarrayItem(particleQueue);
 		if (!newParticle)
@@ -260,8 +256,8 @@ void triggerSlide(struct slideEffectData *data)
 
 void triggerBravo(void)
 {
-	for (int x = 0; x < PLAYFIELD_W; x++) {
-		for (int y = 0; y < PLAYFIELD_H_VISIBLE; y++) {
+	for (int x = 0; x < PLAYFIELD_W; x += 1) {
+		for (int y = 0; y < PLAYFIELD_H_VISIBLE; y += 1) {
 			struct particle
 				*newParticle =
 				producePsarrayItem(particleQueue);
@@ -297,7 +293,7 @@ void updateParticles(void)
 {
 	if (isPsarrayEmpty(particleQueue))
 		return;
-	for (int i = 0; i < particleQueue->count; i++) {
+	for (int i = 0; i < particleQueue->count; i += 1) {
 		struct particle *particle = getPsarrayItem(particleQueue, i);
 		if (!isPsarrayItemAlive(particleQueue, i))
 			continue;

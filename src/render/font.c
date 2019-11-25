@@ -1,6 +1,6 @@
-// Minote - font.c
+// Minote - render/font.c
 
-#include "font.h"
+#include "render/font.h"
 
 #include <string.h>
 
@@ -61,7 +61,7 @@ static void initFont(struct font *font, const char *name, const char *json,
 
 	// First pass: determining the highest codepoint
 	int highestCodepoint = 0;
-	for (int i = 0; i < glyphsCount; i++) {
+	for (int i = 0; i < glyphsCount; i += 1) {
 		JSON_Object *glyph = json_array_get_object(glyphs, i);
 		int codepoint = (int)json_object_get_number(glyph, "id");
 		if (codepoint > highestCodepoint)
@@ -72,7 +72,7 @@ static void initFont(struct font *font, const char *name, const char *json,
 	font->glyphCount = highestCodepoint + 1;
 	font->glyphs = allocate(sizeof(struct glyphInfo) * font->glyphCount);
 	memset(font->glyphs, 0, font->glyphCount);
-	for (int i = 0; i < glyphsCount; i++) {
+	for (int i = 0; i < glyphsCount; i += 1) {
 		JSON_Object *glyph = json_array_get_object(glyphs, i);
 		int codepoint = (int)json_object_get_number(glyph, "id");
 		font->glyphs[codepoint].x =
@@ -129,7 +129,7 @@ void initFonts(void)
 
 void cleanupFonts(void)
 {
-	for (int i = 0; i < FontSize; i++) {
+	for (int i = 0; i < FontSize; i += 1) {
 		glDeleteTextures(1, &fonts[i].atlas);
 		fonts[i].atlas = 0;
 		free(fonts[i].glyphs);

@@ -1,14 +1,11 @@
-// Minote - ease.c
+// Minote - render/ease.c
 
-#include "ease.h"
-
-#include <string.h>
-#include <stdbool.h>
+#include "render/ease.h"
 
 #include "AHEasing/easing.h"
 
-#include "util/timer.h"
 #include "types/array.h"
+#include "util/timer.h"
 
 struct ease {
 	float *target;
@@ -49,7 +46,7 @@ void cleanupEase(void)
 
 void updateEase(void)
 {
-	for (int i = 0; i < eases->count; i++) {
+	for (int i = 0; i < eases->count; i += 1) {
 		struct ease *ease = getPdarrayItem(eases, i);
 		// Ease is inactive
 		if (!isPdarrayItemAlive(eases, i))
