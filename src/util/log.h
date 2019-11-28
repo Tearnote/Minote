@@ -29,7 +29,7 @@ void initLogging(void);
 void cleanupLogging(void);
 
 // Standard printf formatting
-void logPrio(int prio, const char *fmt, ...); //SYNC safe
+void logPrio(int prio, const char *fmt, ...);
 #define logDebug(...) \
         logPrio(PRIO_DEBUG, __VA_ARGS__)
 #define logInfo(...) \
@@ -43,7 +43,7 @@ void logPrio(int prio, const char *fmt, ...); //SYNC safe
 
 // Convenience functions for inserting the GLFW error after the message
 // No formatting
-void logPrioGLFW(int prio, const char *msg); //SYNC safe
+void logPrioGLFW(int prio, const char *msg);
 //#define logWarnGLFW(msg) \
 	logPrioGLFW(PRIO_WARN, (msg))
 //#define logErrorGLFW(msg) \

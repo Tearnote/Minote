@@ -9,4 +9,7 @@ Move GM requirements into game state
 Make some more trivial mutexes into atomics
 Change grade from a string to an enum with a string lookup table in render thread
 Make playfield an opaque struct
-Replace #defines
+Replace #defines with consts
+Switch from specialized drawcalls to generic triangle renderers
+Turn the effect system from a clusterfuck into an Observer pattern
+Turn the ease system from a singleton into state struct + function(state, *var)

@@ -10,9 +10,6 @@
 
 #include "linmath/linmath.h"
 
-#include "util/util.h"
-#include "util/thread.h"
-
 #define PROJECTION_NEAR 0.1f
 #define PROJECTION_FAR 100.0f
 
@@ -25,23 +22,18 @@ extern mat4x4 projection;
 extern vec3 lightPosition; // In view space
 extern vec3 tintColor;
 
-extern thread rendererThreadID;
-
-void *rendererThread(void *param);
-#define spawnRenderer() \
-        spawnThread(&rendererThreadID, rendererThread, NULL, "rendererThread")
-#define awaitRenderer() \
-        awaitThread(rendererThreadID)
-
 // These two are called by window events
 
-void resizeRenderer(int width, int height); //SYNC safe
-void rescaleRenderer(float scale); //SYNC safe
+void resizeRenderer(int width, int height);
+void rescaleRenderer(float scale);
 
 // Compiles and binds a pair of shaders
 GLuint createProgram(const GLchar *vertexShaderSrc,
                      const GLchar *fragmentShaderSrc);
 #define destroyProgram \
         glDeleteProgram
+
+void spawnRenderer(void);
+void awaitRenderer(void);
 
 #endif // RENDER_RENDER_H

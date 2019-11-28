@@ -1,12 +1,12 @@
-// Minote - scenerender.c
+// Minote - render/scene.c
 
-#include "scene.h"
+#include "render/scene.h"
 
 #include "glad/glad.h"
 
-#include "render.h"
-#include "util/log.h"
 #include "util/util.h"
+#include "util/log.h"
+#include "render/render.h"
 #include "render/ease.h"
 
 static GLuint program = 0;

@@ -1,8 +1,8 @@
-// Minote - textrender.h
+// Minote - render/text.h
 // Renders text using Multi-channel Signed Distance Fields
 
-#ifndef TEXT_H
-#define TEXT_H
+#ifndef RENDER_TEXT_H
+#define RENDER_TEXT_H
 
 #include "types/menu.h"
 #include "types/game.h"
@@ -14,4 +14,4 @@ void queueMenuText(struct menu *menu);
 void queueGameplayText(struct game *game);
 void renderText(void);
 
-#endif //TEXT_H
+#endif //RENDER_TEXT_H

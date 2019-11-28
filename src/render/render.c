@@ -1,4 +1,4 @@
-// Minote - render.c
+// Minote - render/render.c
 // Wild unreadable OpenGL in tall grass
 
 #include "render.h"
@@ -8,24 +8,24 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 #include "linmath/linmath.h"
-#include "util/log.h"
-#include "main/window.h"
-#include "util/thread.h"
-#include "global/state.h"
-#include "scene.h"
-#include "render/mino.h"
-#include "render/border.h"
-#include "text.h"
-#include "post.h"
+
 #include "util/util.h"
+#include "util/log.h"
+#include "util/thread.h"
 #include "util/timer.h"
-#include "render/ease.h"
+#include "global/state.h"
 #include "global/settings.h"
 #include "global/effects.h"
-#include "particle.h"
+#include "main/window.h"
+#include "render/scene.h"
+#include "render/mino.h"
+#include "render/border.h"
+#include "render/text.h"
+#include "render/post.h"
+#include "render/ease.h"
+#include "render/particle.h"
 // Damn that's a lot of includes
 
 #define destroyShader \
@@ -39,10 +39,10 @@ mat4x4 projection = {};
 vec3 lightPosition = {};
 vec4 lightPositionWorld = {};
 
-int viewportWidth = DEFAULT_WIDTH; //SYNC viewportMutex
-int viewportHeight = DEFAULT_HEIGHT; //SYNC viewportMutex
-float viewportScale = 1.0f; //SYNC viewportMutex
-bool viewportDirty = true; //SYNC viewportMutex
+int viewportWidth = DEFAULT_WIDTH;
+int viewportHeight = DEFAULT_HEIGHT;
+float viewportScale = 1.0f;
+bool viewportDirty = true;
 mutex viewportMutex = newMutex;
 
 // Thread-local copy of the game state being rendered
@@ -131,7 +131,7 @@ static void updateBackground(void)
 
 	if (snap->game->state != GameplayNone &&
 	    snap->game->state != GameplayReady) {
-		for (int i = 1; i < countof(backgrounds); i++) {
+		for (int i = 1; i < countof(backgrounds); i += 1) {
 			if (backgrounds[i].level > snap->game->level)
 				break;
 			newBackground = i;
@@ -139,7 +139,7 @@ static void updateBackground(void)
 	}
 
 	if (currentBackground != newBackground) {
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < 3; i += 1) {
 			addEase(&tintColor[i], tintColor[i],
 			        backgrounds[newBackground].color[i],
 			        BGFADE_LENGTH, EaseInOutCubic);
@@ -323,7 +323,7 @@ static void syncRenderer(void)
 	glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, MSEC * 100);
 }
 
-void *rendererThread(void *param)
+static void *rendererThread(void *param)
 {
 	(void)param;
 
@@ -358,4 +358,14 @@ void rescaleRenderer(float scale)
 	viewportDirty = true;
 	viewportScale = scale;
 	unlockMutex(&viewportMutex);
+}
+
+void spawnRenderer(void)
+{
+	spawnThread(&rendererThreadID, rendererThread, NULL, "rendererThread");
+}
+
+void awaitRenderer(void)
+{
+	awaitThread(rendererThreadID);
 }

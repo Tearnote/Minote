@@ -1,6 +1,6 @@
-// Minote - textrender.c
+// Minote - render/text.c
 
-#include "text.h"
+#include "render/text.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -15,14 +15,14 @@
 
 #include "linmath/linmath.h"
 
-#include "font.h"
-#include "render.h"
-#include "util/log.h"
 #include "types/array.h"
-#include "util/util.h"
-#include "global/state.h"
 #include "types/menu.h"
 #include "types/game.h"
+#include "util/log.h"
+#include "util/util.h"
+#include "global/state.h"
+#include "render/render.h"
+#include "render/font.h"
 #include "render/ease.h"
 
 #define VERTEX_LIMIT 8192
@@ -69,7 +69,7 @@ static const char *entriesActive[] = {
 
 void initTextRenderer(void)
 {
-	for (int i = 0; i < FontSize; i++)
+	for (int i = 0; i < FontSize; i += 1)
 		textQueue[i] = createDarray(sizeof(struct textVertex));
 
 	initFonts();
@@ -114,7 +114,7 @@ void cleanupTextRenderer(void)
 
 	cleanupFonts();
 
-	for (int i = 0; i < FontSize; i++) {
+	for (int i = 0; i < FontSize; i += 1) {
 		destroyDarray(textQueue[i]);
 		textQueue[i] = NULL;
 	}
@@ -252,7 +252,7 @@ void queueMenuText(struct menu *menu)
 
 	vec3 position = { -15.0f, 6.0f, 2.0f };
 	float size = 2.5f;
-	for (enum menuEntry i = MenuFirst + 1; i < MenuLast; i++) {
+	for (enum menuEntry i = MenuFirst + 1; i < MenuLast; i += 1) {
 		const char *text;
 		if (lastEntry == i)
 			text = entriesActive[i];
@@ -320,7 +320,7 @@ void renderText(void)
 	glUseProgram(program);
 	glBindVertexArray(vao);
 
-	for (int i = 0; i < FontSize; i++) {
+	for (int i = 0; i < FontSize; i += 1) {
 		glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
 		glBufferData(GL_ARRAY_BUFFER,
 		             sizeof(struct textVertex) * VERTEX_LIMIT, NULL,
@@ -350,6 +350,6 @@ void renderText(void)
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 
-	for (int i = 0; i < FontSize; i++)
+	for (int i = 0; i < FontSize; i += 1)
 		clearDarray(textQueue[i]);
 }
