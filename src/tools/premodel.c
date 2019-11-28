@@ -1,4 +1,4 @@
-// Minote - premodel.c
+// Minote - tools/premodel.c
 // External tool that converts Wavefront .obj to vertex data
 
 #include <stdlib.h>
@@ -8,7 +8,6 @@
 
 #define TINYOBJ_LOADER_C_IMPLEMENTATION
 #include "tinyobjloader-c/tinyobj_loader_c.h"
-
 #include "readall/readall.h"
 
 int main(int argc, char *argv[])
@@ -22,13 +21,13 @@ int main(int argc, char *argv[])
 	FILE *input = NULL;
 	FILE *output = NULL;
 	input = fopen(argv[1], "r");
-	if (input == NULL) {
+	if (!input) {
 		fprintf(stderr, "Could not open %s for reading: %s\n",
 		        argv[1], strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 	output = fopen(argv[2], "w");
-	if (output == NULL) {
+	if (!output) {
 		fprintf(stderr, "Could not open %s for writing: %s\n",
 		        argv[2], strerror(errno));
 		exit(EXIT_FAILURE);
@@ -41,6 +40,7 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 	fclose(input);
+	input = NULL;
 
 	tinyobj_attrib_t attrib;
 	tinyobj_shape_t *shapes = NULL;
@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
 	}
 
 	for (int i = 0; i < attrib.num_faces; i += 3) {
-		for (int j = 0; j < 3; j++) {
+		for (int j = 0; j < 3; j += 1) {
 			int vertexIndex = attrib.faces[i + j].v_idx;
 			int normalIndex = attrib.faces[i + j].vn_idx;
 			fprintf(output, "%ff, %ff, %ff, %ff, %ff, %ff",

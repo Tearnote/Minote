@@ -1,4 +1,4 @@
-// Minote - preshade.c
+// Minote - tools/preshade.c
 // External tool that preprocesses shaders
 // so that they can be included in the source
 
@@ -20,13 +20,13 @@ int main(int argc, char *argv[])
 	FILE *output = NULL;
 
 	input = fopen(argv[1], "r");
-	if (input == NULL) {
+	if (!input) {
 		fprintf(stderr, "Could not open %s for reading: %s\n",
 		        argv[1], strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 	output = fopen(argv[2], "w");
-	if (output == NULL) {
+	if (!output) {
 		fprintf(stderr, "Could not open %s for writing: %s\n",
 		        argv[2], strerror(errno));
 		exit(EXIT_FAILURE);
