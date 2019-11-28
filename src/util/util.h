@@ -56,4 +56,7 @@ void _assertFailed(const char *cond);
 // This function does nothing.
 void noop(void);
 
+// https://tauday.com/
+#define M_TAU 6.28318530717958647693
+
 #endif // UTIL_H

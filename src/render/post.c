@@ -1,18 +1,16 @@
-// Minote - postrender.c
+// Minote - render/post.c
 
 #include "post.h"
-
-#include <stdlib.h>
 
 #include "glad/glad.h"
 
 #include "AHEasing/easing.h"
 
-#include "render.h"
 #include "util/util.h"
 #include "util/log.h"
-#include "main/window.h"
 #include "util/timer.h"
+#include "main/window.h"
+#include "render/render.h"
 
 #define BLOOM_PASSES 6
 #define BLOOM_SIZE 720
@@ -158,7 +156,7 @@ void initPostRenderer(void)
 	glGenFramebuffers(1, &bloomFbo);
 
 	glGenTextures(BLOOM_PASSES, bloomFboColor);
-	for (int i = 0; i < BLOOM_PASSES; i++) {
+	for (int i = 0; i < BLOOM_PASSES; i += 1) {
 		glBindTexture(GL_TEXTURE_2D, bloomFboColor[i]);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
 		                GL_LINEAR);
@@ -225,7 +223,7 @@ void resizePostRender(int width, int height)
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_BGRA,
 	             GL_UNSIGNED_BYTE, NULL);
 
-	for (int i = 0; i < BLOOM_PASSES; i++) {
+	for (int i = 0; i < BLOOM_PASSES; i += 1) {
 		glBindTexture(GL_TEXTURE_2D, bloomFboColor[i]);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, bloomWidth / (1 << i),
 		             bloomHeight / (1 << i), 0, GL_BGRA,
@@ -328,7 +326,7 @@ void renderPostEnd(void)
 	// Draw blur
 	glUseProgram(blurProgram);
 
-	for (int i = 1; i < BLOOM_PASSES; i++) {
+	for (int i = 1; i < BLOOM_PASSES; i += 1) {
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
 		                       GL_TEXTURE_2D, bloomFboColor[i], 0);
 		glViewport(0, 0, bloomWidth / (1 << i), bloomHeight / (1 << i));
@@ -339,7 +337,7 @@ void renderPostEnd(void)
 	}
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_ONE, GL_ONE);
-	for (int i = BLOOM_PASSES - 2; i >= 0; i--) {
+	for (int i = BLOOM_PASSES - 2; i >= 0; i -= 1) {
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
 		                       GL_TEXTURE_2D, bloomFboColor[i], 0);
 		glViewport(0, 0, bloomWidth / (1 << i), bloomHeight / (1 << i));

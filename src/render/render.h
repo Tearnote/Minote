@@ -1,14 +1,16 @@
-// Minote - render.h
+// Minote - render/render.h
 // A thread that periodically presents the game's state on the screen
 // Manages the OpenGL context of the game window
 
-#ifndef RENDER_H
-#define RENDER_H
+#ifndef RENDER_RENDER_H
+#define RENDER_RENDER_H
 
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 
 #include "linmath/linmath.h"
+
+#include "util/util.h"
 #include "util/thread.h"
 
 #define PROJECTION_NEAR 0.1f
@@ -16,7 +18,7 @@
 
 // Convert degrees to radians
 #define radf(x) \
-        ((x) * M_PI / 180.0)
+        ((x) * M_TAU / 360.0)
 
 extern mat4x4 camera;
 extern mat4x4 projection;
@@ -42,4 +44,4 @@ GLuint createProgram(const GLchar *vertexShaderSrc,
 #define destroyProgram \
         glDeleteProgram
 
-#endif // RENDER_H
+#endif // RENDER_RENDER_H

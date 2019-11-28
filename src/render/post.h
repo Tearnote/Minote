@@ -1,8 +1,8 @@
-// Minote - postrender.h
+// Minote - render/post.h
 // Handles rendering of post-processing effects
 
-#ifndef POST_H
-#define POST_H
+#ifndef RENDER_POST_H
+#define RENDER_POST_H
 
 void initPostRenderer(void);
 void cleanupPostRenderer(void);
@@ -14,4 +14,4 @@ void pulseVignette(void);
 void renderPostStart(void);
 void renderPostEnd(void);
 
-#endif //POST_H
+#endif //RENDER_POST_H
