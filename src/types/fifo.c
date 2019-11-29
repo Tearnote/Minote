@@ -1,6 +1,6 @@
-// Minote - fifo.c
+// Minote - types/fifo.c
 
-#include "fifo.h"
+#include "types/fifo.h"
 
 #include <stdlib.h>
 #include <stdbool.h>

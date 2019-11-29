@@ -1,4 +1,4 @@
-// Minote - array.h
+// Minote - types/array.h
 // Data structures with variable length
 // darray  - Dynamic array. Allocates more memory each time the limit is reached
 // vdarray - Variable member size dynamic array. darray where each member can
@@ -8,8 +8,8 @@
 // psarray - Pooled static array. pdarray with fixed maximum size, pointers
 //           to the data are guaranteed to stay valid
 
-#ifndef ARRAY_H
-#define ARRAY_H
+#ifndef TYPES_ARRAY_H
+#define TYPES_ARRAY_H
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -76,4 +76,4 @@ void *getPsarrayItem(psarray *ps, int index);
 void clearPsarray(psarray *ps);
 bool isPsarrayEmpty(psarray *ps);
 
-#endif // ARRAY_H
+#endif // TYPES_ARRAY_H

@@ -1,6 +1,6 @@
-// Minote - mino.c
+// Minote - types/mino.c
 
-#include "mino.h"
+#include "types/mino.h"
 
 #include "linmath/linmath.h"
 

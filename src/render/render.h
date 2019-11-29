@@ -36,4 +36,4 @@ GLuint createProgram(const GLchar *vertexShaderSrc,
 void spawnRenderer(void);
 void awaitRenderer(void);
 
-#endif // RENDER_RENDER_H
+#endif //RENDER_RENDER_H

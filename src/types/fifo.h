@@ -1,10 +1,10 @@
-// Minote - fifo.h
+// Minote - types/fifo.h
 // A generic FIFO
 // Elements need to be allocated and freed manually
 // Empty the FIFO before destroying
 
-#ifndef FIFO_H
-#define FIFO_H
+#ifndef TYPES_FIFO_H
+#define TYPES_FIFO_H
 
 #include <stdbool.h>
 
@@ -24,4 +24,4 @@ void enqueueFifo(fifo *f, void *data);
 void *dequeueFifo(fifo *f);
 bool isFifoEmpty(fifo *f);
 
-#endif // FIFO_H
+#endif // TYPES_FIFO_H

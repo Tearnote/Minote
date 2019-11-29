@@ -1,6 +1,6 @@
-// Minote - darray.c
+// Minote - types/array.c
 
-#include "array.h"
+#include "types/array.h"
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -117,7 +117,7 @@ void destroyPdarray(struct pdarray *pd)
 void *producePdarrayItem(struct pdarray *pd)
 {
 	// First, check for dead items
-	for (int i = 0; i < pd->dead->count; i++) {
+	for (int i = 0; i < pd->dead->count; i += 1) {
 		bool *dead = getDarrayItem(pd->dead, i);
 		if (!*dead)
 			continue;
@@ -192,7 +192,7 @@ void destroyPsarray(struct psarray *ps)
 void *producePsarrayItem(struct psarray *ps)
 {
 	// First, check for dead items
-	for (int i = 0; i < ps->dead->count; i++) {
+	for (int i = 0; i < ps->dead->count; i += 1) {
 		bool *dead = getDarrayItem(ps->dead, i);
 		if (!*dead)
 			continue;

@@ -1,8 +1,8 @@
-// Minote - mino.h
+// Minote - types/mino.h
 // Data structures to handle minos (single blocks) and pieces (lists of offsets)
 
-#ifndef MINO_H
-#define MINO_H
+#ifndef TYPES_MINO_H
+#define TYPES_MINO_H
 
 #include "linmath/linmath.h"
 
@@ -71,4 +71,4 @@ getPlayfieldGrid(enum mino field[PLAYFIELD_H][PLAYFIELD_W], int x, int y);
 void setPlayfieldGrid(enum mino field[PLAYFIELD_H][PLAYFIELD_W],
                       int x, int y, enum mino val);
 
-#endif // MINO_H
+#endif //TYPES_MINO_H

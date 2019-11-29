@@ -8,7 +8,8 @@ Add some more logging
 Move GM requirements into game state
 Make some more trivial mutexes into atomics
 Change grade from a string to an enum with a string lookup table in render thread
-Make playfield an opaque struct
+Make playfield an opaque struct with accessors for its contents
+Make rotation system into a function
 Replace #defines with consts
 Switch from specialized drawcalls to generic triangle renderers
 Turn the effect system from a clusterfuck into an Observer pattern
