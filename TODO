@@ -11,6 +11,9 @@ Change grade from a string to an enum with a string lookup table in render threa
 Make playfield an opaque struct with accessors for its contents
 Make rotation system into a function
 Replace #defines with consts
-Switch from specialized drawcalls to generic triangle renderers
+Switch from specialized drawcalls to generic triangle and mesh renderers
 Turn the effect system from a clusterfuck into an Observer pattern
 Turn the ease system from a singleton into state struct + function(state, *var)
+Use unions instead of void* argument where possible
+Typedef the structs
+Use coord struct everywhere, with help of compound literals
