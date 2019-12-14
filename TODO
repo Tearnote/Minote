@@ -1,3 +1,2 @@
 Switch from iostream to fmt
-Fix Release build
 Document build step variations

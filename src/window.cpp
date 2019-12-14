@@ -3,9 +3,7 @@
 #include "window.h"
 
 #include <string>
-#include <functional>
-#include <gsl/gsl>
-#include <utility>
+#include "gsl/gsl"
 #include "log.h"
 
 using namespace std::string_literals;

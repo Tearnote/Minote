@@ -18,8 +18,10 @@ cmake --build .
 Requires [`GLFW`](https://www.glfw.org/) 3.3.
 
 ### Included libraries
-[`gsl-lite`](https://github.com/martinmoene/gsl-lite) retrieved on 2019-12-07,
-used under MIT license.
+[`GSL`](https://github.com/Microsoft/GSL) retrieved on 2019-12-14, used
+under MIT license.
+
+[`fmt`](https://fmt.dev) 6.1.2, used under MIT license.
 
 [`asap`](https://github.com/mobius3/asap) retrieved on 2019-12-08, used
 under MIT license.

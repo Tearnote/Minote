@@ -18,9 +18,9 @@ endif()
 
 # Internal library settings
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    add_compile_definitions(gsl_CONFIG_CONTRACT_CHECKING_OFF)
+    add_compile_definitions(GSL_UNENFORCED_ON_CONTRACT_VIOLATION)
 else()
-    add_compile_definitions(gsl_CONFIG_CONTRACT_VIOLATION_THROWS)
+    add_compile_definitions(GSL_THROW_ON_CONTRACT_VIOLATION)
 endif()
 
 # External library settings
@@ -39,7 +39,8 @@ include_directories(${GLFW_INCLUDE_DIRS})
 include_directories(src)
 include_directories(lib)
 set(CXX_INTERNALLIBS
-        lib/glad/glad.c)
+        lib/glad/glad.c
+        lib/fmt/format.cc)
 set(CXX_SOURCES
         src/main.cpp
         src/log.cpp src/log.h src/log.tcc
