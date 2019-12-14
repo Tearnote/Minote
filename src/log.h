@@ -6,8 +6,8 @@
 #include <string>
 #include <string_view>
 #include <vector>
-#include <fstream>
 #include <mutex>
+#include "fmt/core.h"
 using namespace std::string_literals;
 
 // Static logger class
@@ -68,7 +68,7 @@ private:
 			"WARN"s,
 			"ERROR"s,
 			"CRIT"s};
-	static inline std::ofstream logFile{};
+	static inline std::FILE* logFile{};
 #if NDEBUG
 	static inline const std::string logFilename{"minote.log"s};
 #else //NDEBUG
@@ -79,7 +79,7 @@ private:
 	static auto log(Level, std::string_view, Args...) -> void;
 
 	template<typename ...Args>
-	static auto logTo(std::ostream&, Level, std::string_view, Args...) -> void;
+	static auto logTo(FILE*, Level, std::string_view, Args...) -> void;
 };
 
 #include "log.tcc"

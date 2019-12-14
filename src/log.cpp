@@ -2,9 +2,8 @@
 
 #include "log.h"
 
-#include <iostream>
-#include <cstring>
-#include <cerrno>
+#include "fmt/core.h"
+
 using namespace std::string_literals;
 
 auto Log::setLevel(Log::Level lv) -> void
@@ -19,21 +18,18 @@ auto Log::enable(const Log::Target tgt) -> void
 
 	targets[tgt] = true;
 
-	if (tgt == Console)
-		std::ios_base::sync_with_stdio(false); // Speed up console streams
-
 	if (tgt == File) {
-		logFile.open(logFilename);
-		if (!logFile.good()) {
+		logFile = std::fopen(logFilename.c_str(), "w");
+		if (!logFile) {
 			targets[File] = false; // Disable broken target
 			const bool consoleState{targets[Console]};
 			targets[Console] = true; // Temporarily enable console
-			warn("Unable to open "s, logFilename, " for writing: ", strerror(errno));
+			warn("Unable to open "s, logFilename, " for writing: ", std::string_view{strerror(errno)});
 			targets[Console] = consoleState; // Switch to console's previous state
 		}
 	}
 
-	Ensures(targets[File] == logFile.is_open());
+	Ensures(targets[File] == (logFile != nullptr));
 }
 
 auto Log::disable(const Log::Target tgt) -> void
@@ -42,8 +38,10 @@ auto Log::disable(const Log::Target tgt) -> void
 
 	targets[tgt] = false;
 
-	if (tgt == File && logFile.is_open())
-		logFile.close();
+	if (tgt == File && logFile) {
+		std::fclose(logFile);
+		logFile = nullptr;
+	}
 
-	Ensures(targets[File] == logFile.is_open());
+	Ensures(targets[File] == (logFile != nullptr));
 }

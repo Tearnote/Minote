@@ -6,7 +6,8 @@
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 #include "gsl/gsl"
-#include "log.h"
+
+using namespace std::string_literals;
 
 System::System()
 {

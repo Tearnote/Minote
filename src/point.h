@@ -4,8 +4,7 @@
 #define MINOTE_POINT_H
 
 #include <string>
-#include <ostream>
-#include <sstream>
+#include "fmt/core.h"
 
 template<typename T>
 struct Point {
@@ -16,18 +15,10 @@ struct Point {
 template<typename T>
 using Size = Point<T>;
 
-template<typename T>
-auto operator<<(std::ostream& out, const Point<T>& p) -> std::ostream&
-{
-	return out << "(" << p.x << ", " << p.y << ")";
-}
-
 template <typename T>
-auto to_string( const T& value ) -> std::string
+auto to_string(const Point<T>& p) -> std::string
 {
-	std::ostringstream ss{};
-	ss << value;
-	return ss.str();
+	return fmt::format("({}, {})", p.x, p.y);
 }
 
 #endif //MINOTE_POINT_H
