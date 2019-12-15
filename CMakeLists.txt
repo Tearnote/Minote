@@ -51,7 +51,8 @@ set(CXX_SOURCES
         src/timer.h
         src/game.cpp src/game.h
         src/renderer.cpp src/renderer.h
-        src/state.h src/gameplay.cpp src/gameplay.h)
+        src/state.h
+        src/gameplay.cpp src/gameplay.h)
 
 add_executable(Minote ${CXX_SOURCES} ${CXX_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD

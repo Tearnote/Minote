@@ -9,5 +9,10 @@ auto Gameplay::update(bool active) -> Result
 
 auto Gameplay::render(bool active, Renderer& renderer) const -> void
 {
-	return;
+	renderScene();
+}
+
+auto Gameplay::renderScene() const -> void
+{
+
 }

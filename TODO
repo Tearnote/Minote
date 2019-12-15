@@ -1,1 +1,34 @@
 Document build step variations
+
+--RENDERER DESIGN--
+// per drawcall:
+// - model
+// - texture
+// - phong params
+// per instance:
+// - matrix
+// - tint
+
+drawFlat(modelVerts[], matrices[], tints[])
+drawPhong(modelVerts[], matrices[], tints[], phongParams)
+drawMsdf(msdfVerts[], matrices[], tints[], texture)
+
+modelVerts = struct {
+    vec3 pos;
+    vec4 color;
+}
+
+msdfVerts = struct {
+    vec3 pos;
+    vec2 tx;
+}
+
+matrices = mat4x4
+
+tints = vec4
+
+phongParams = struct {
+    float diffuse;
+    float specular;
+    float shine;
+}

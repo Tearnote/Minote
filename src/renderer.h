@@ -17,3 +17,4 @@ private:
 };
 
 #endif //MINOTE_RENDERER_H
+
