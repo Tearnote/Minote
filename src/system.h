@@ -5,6 +5,7 @@
 
 #include <atomic>
 #include <string_view>
+#include "timer.h"
 
 // Represents an initialized graphics and input system
 // Only up to one instance can exist at a time
@@ -18,9 +19,12 @@ public:
 	// Loop on this to keep the application responsive
 	auto update() -> void;
 
+	// Return time since system creation
+	auto getTime() const -> nsec;
+
 	// Check whether the last system operation failed
 	// If yes, throw an exception that includes the system error code and message
-	auto checkError(std::string_view str) -> void;
+	auto checkError(std::string_view str) const -> void;
 
 private:
 	static inline std::atomic<bool> exists{false};

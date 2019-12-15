@@ -34,7 +34,12 @@ auto System::update() -> void
 	glfwPollEvents();
 }
 
-auto System::checkError(std::string_view str) -> void
+auto System::getTime() const -> nsec
+{
+	return secToNsec(glfwGetTime());
+}
+
+auto System::checkError(std::string_view str) const -> void
 {
 	const char* errorDescription;
 	int code = glfwGetError(&errorDescription);

@@ -102,7 +102,7 @@ auto Window::keyCallback(GLFWwindow* window, int key, int, int action, int) -> v
 	Expects(glfwGetWindowUserPointer(window));
 
 	auto* object = static_cast<Window*>(glfwGetWindowUserPointer(window));
-	object->pushInput({key, action, secToNsec(glfwGetTime())});
+	object->pushInput({key, action, object->system.getTime()});
 }
 
 auto Window::pushInput(Input i) -> void

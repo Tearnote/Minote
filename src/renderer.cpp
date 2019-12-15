@@ -9,7 +9,7 @@ Renderer::Renderer(Window& w)
 :window{w}
 {
 	window.attachContext();
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+	if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
 		throw std::runtime_error{"Failed to initialize OpenGL"};
 	glfwSwapInterval(1); // Enable vsync
 	glEnable(GL_DEPTH_TEST);
@@ -26,7 +26,7 @@ Renderer::Renderer(Window& w)
 
 auto Renderer::render() -> void
 {
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClearColor(0.262f, 0.533f, 0.849f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	window.swapBuffers();
 }
