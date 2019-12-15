@@ -47,7 +47,8 @@ set(CXX_SOURCES
         src/log.cpp src/log.h src/log.tcc
         src/system.cpp src/system.h
         src/window.cpp src/window.h
-        src/point.cpp src/point.h src/inputQueue.cpp src/inputQueue.h)
+        src/point.h
+        src/timer.h)
 
 add_executable(Minote ${CXX_SOURCES} ${CXX_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD

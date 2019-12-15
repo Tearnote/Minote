@@ -31,7 +31,7 @@ System::~System()
 
 auto System::update() -> void
 {
-	glfwWaitEvents();
+	glfwPollEvents();
 }
 
 auto System::throwSystemError(std::string_view str) -> void

@@ -3,7 +3,6 @@
 #include "log.h"
 #include "system.h"
 #include "window.h"
-#include "inputQueue.h"
 
 auto main() -> int
 {
@@ -19,10 +18,12 @@ auto main() -> int
 
 		System system{};
 		Window window{system, "Minote"};
-		InputQueue iqueue{window};
 
-		while (window.isOpen())
+		while (window.isOpen()) {
 			system.update();
+			while (auto i = window.popInput())
+				Log::debug("Keypress ", i->key, "/", i->action, " at ", i->timestamp);
+		}
 
 		Log::info("Shutting down");
 	}

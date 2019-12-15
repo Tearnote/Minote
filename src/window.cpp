@@ -3,6 +3,7 @@
 #include "window.h"
 
 #include <string>
+#include <chrono>
 #include "gsl/gsl"
 #include "log.h"
 
@@ -66,20 +67,6 @@ auto Window::isOpen() -> bool
 	return !glfwWindowShouldClose(window);
 }
 
-auto Window::registerKeyHandler(KeyHandlerCallback cb) -> void
-{
-	Expects(!keyHandler);
-
-	keyHandler = std::move(cb);
-}
-
-auto Window::unregisterKeyHandler() -> void
-{
-	Expects(keyHandler);
-
-	keyHandler = nullptr;
-}
-
 auto Window::framebufferResizeCallback(GLFWwindow* window, int w, int h) -> void
 {
 	Expects(glfwGetWindowUserPointer(window));
@@ -106,5 +93,23 @@ auto Window::keyCallback(GLFWwindow* window, int key, int, int action, int) -> v
 	Expects(glfwGetWindowUserPointer(window));
 
 	auto* object = static_cast<Window*>(glfwGetWindowUserPointer(window));
-	object->keyHandler(key, action);
+	object->pushInput({key, action, secToNsec(glfwGetTime())});
+}
+
+auto Window::pushInput(Input i) -> void
+{
+	std::unique_lock lock{inputsMutex};
+	inputs.push(i);
+}
+
+auto Window::popInput() -> std::optional<Input>
+{
+	std::unique_lock lock{inputsMutex};
+
+	if (inputs.empty())
+		return std::nullopt;
+
+	Input result{inputs.front()};
+	inputs.pop();
+	return result;
 }
