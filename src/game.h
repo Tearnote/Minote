@@ -10,7 +10,11 @@
 // Returns on !Window::isOpen()
 class Game {
 public:
-	explicit Game(Window&);
+	struct Inputs {
+		Window& w;
+	};
+
+	explicit Game(Inputs);
 	~Game();
 
 private:

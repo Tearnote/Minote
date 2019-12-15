@@ -8,13 +8,13 @@ using namespace std::string_literals;
 
 auto Log::setLevel(Log::Level lv) -> void
 {
-	std::unique_lock<std::recursive_mutex> lock{mutex};
+	std::unique_lock lock{mutex};
 	level = lv;
 }
 
 auto Log::enable(const Log::Target tgt) -> void
 {
-	std::unique_lock<std::recursive_mutex> lock{mutex};
+	std::unique_lock lock{mutex};
 
 	targets[tgt] = true;
 
@@ -34,7 +34,7 @@ auto Log::enable(const Log::Target tgt) -> void
 
 auto Log::disable(const Log::Target tgt) -> void
 {
-	std::unique_lock<std::recursive_mutex> lock{mutex};
+	std::unique_lock lock{mutex};
 
 	targets[tgt] = false;
 

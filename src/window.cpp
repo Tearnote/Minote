@@ -33,9 +33,8 @@ Window::Window(System& sys, std::string_view name, bool fullscreen, Size<int> si
 	else {
 		window = glfwCreateWindow(size.x, size.y, std::string{name}.c_str(), nullptr, nullptr);
 	}
+	system.checkError("Failed to create a "s + to_string(size) + " window"s);
 	glfwSetWindowUserPointer(window, this);
-	if (!window)
-		system.throwSystemError("Failed to create a "s + to_string(size) + " window"s);
 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 	glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
@@ -69,8 +68,12 @@ auto Window::isOpen() -> bool
 
 auto Window::close() -> void
 {
+	Expects(isOpen());
+
 	std::unique_lock lock{openMutex};
 	glfwSetWindowShouldClose(window, true);
+
+	Ensures(!isOpen());
 }
 
 auto Window::framebufferResizeCallback(GLFWwindow* window, int w, int h) -> void
@@ -118,4 +121,22 @@ auto Window::popInput() -> std::optional<Input>
 	Input result{inputs.front()};
 	inputs.pop();
 	return result;
+}
+
+auto Window::attachContext() -> void
+{
+	glfwMakeContextCurrent(window);
+	system.checkError("Failed to activate the OpenGL context");
+}
+
+auto Window::detachContext() -> void
+{
+	glfwMakeContextCurrent(nullptr);
+	system.checkError("Failed to deactive the OpenGL context");
+}
+
+auto Window::swapBuffers() -> void
+{
+	glfwSwapBuffers(window);
+	system.checkError("Failed to swap renderbuffers");
 }

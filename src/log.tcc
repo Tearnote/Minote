@@ -14,7 +14,7 @@
 template<typename ...Args>
 auto Log::log(const Level lv, std::string_view str, Args... args) -> void
 {
-	std::unique_lock<std::recursive_mutex> lock{mutex};
+	std::unique_lock lock{mutex};
 
 	Expects(targets[File] == (logFile != nullptr));
 
@@ -35,7 +35,7 @@ auto Log::log(const Level lv, std::string_view str, Args... args) -> void
 template<typename ...Args>
 auto Log::logTo(FILE* out, const Log::Level lv, std::string_view str, Args... args) -> void
 {
-	std::unique_lock<std::recursive_mutex> lock{mutex};
+	std::unique_lock lock{mutex};
 
 	fmt::print(out, "{} [{}] {}\n", asap::now().str(), levelNames[lv], fmt::join(std::tuple{str, args...}, ""));
 #if !NDEBUG

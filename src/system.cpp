@@ -14,7 +14,7 @@ System::System()
 	Expects(!exists);
 
 	if (glfwInit() == GLFW_FALSE)
-		throwSystemError("GLFW initialization error");
+		checkError("GLFW initialization error");
 
 	exists = true;
 
@@ -34,10 +34,13 @@ auto System::update() -> void
 	glfwPollEvents();
 }
 
-auto System::throwSystemError(std::string_view str) -> void
+auto System::checkError(std::string_view str) -> void
 {
 	const char* errorDescription;
 	int code = glfwGetError(&errorDescription);
+	if (code == GLFW_NO_ERROR)
+		return;
+
 	std::string message{str};
 	message += ": "s + std::to_string(code);
 	if (errorDescription)

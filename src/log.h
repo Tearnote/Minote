@@ -7,7 +7,6 @@
 #include <string_view>
 #include <vector>
 #include <mutex>
-#include "fmt/core.h"
 using namespace std::string_literals;
 
 // Static logger class

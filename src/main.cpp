@@ -22,7 +22,7 @@ auto main() -> int
 
 		{ // Limiting the scope of Game
 
-			Game game{window};
+			Game game{{window}};
 
 			while (window.isOpen())
 				system.update();

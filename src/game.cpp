@@ -2,11 +2,11 @@
 
 #include "game.h"
 #include "log.h"
+#include "renderer.h"
 
-Game::Game(Window& w)
-		:window{w},
-		 thread{&Game::run, this}
-{ }
+Game::Game(Inputs i)
+		:window{i.w},
+		 thread{&Game::run, this} { }
 
 Game::~Game()
 {
@@ -15,13 +15,24 @@ Game::~Game()
 
 auto Game::run() -> void
 {
-	while (window.isOpen()) {
-		while (auto i = window.popInput()) {
-			if (i->action != GLFW_PRESS)
-				continue;
-			Log::debug("Key pressed: ", i->key, " at ", i->timestamp);
-			if (i->key == GLFW_KEY_ESCAPE)
-				window.close();
+	try {
+		Renderer renderer{window};
+
+		while (window.isOpen()) {
+			while (auto i = window.popInput()) {
+				if (i->action != GLFW_PRESS)
+					continue;
+				Log::debug("Key pressed: ", i->key, " at ", i->timestamp);
+				if (i->key == GLFW_KEY_ESCAPE)
+					window.close();
+			}
+
+			renderer.render();
 		}
+	}
+	catch (std::exception &e) {
+		Log::crit("Exception caught: ", e.what());
+		Log::disable(Log::File);
+		window.close();
 	}
 }

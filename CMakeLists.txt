@@ -1,8 +1,8 @@
 # Project information
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.15)
 project(Minote VERSION 0.0
         DESCRIPTION "Modern action puzzle game"
-        LANGUAGES CXX)
+        LANGUAGES C CXX)
 
 # Build settings
 set(CMAKE_CXX_STANDARD 17)
@@ -49,7 +49,8 @@ set(CXX_SOURCES
         src/window.cpp src/window.h
         src/point.h
         src/timer.h
-        src/game.cpp src/game.h)
+        src/game.cpp src/game.h
+        src/renderer.cpp src/renderer.h)
 
 add_executable(Minote ${CXX_SOURCES} ${CXX_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD

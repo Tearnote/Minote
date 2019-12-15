@@ -43,6 +43,16 @@ public:
 	// Thread-safe
 	auto popInput() -> std::optional<Input>;
 
+	// Pin the window's OpenGL context to calling thread
+	// Required before drawing can be done
+	// Detach before destroying the window
+	auto attachContext() -> void;
+	auto detachContext() -> void;
+
+	// Swap buffers to present a rendered image
+	// Context must be attached to calling thread
+	auto swapBuffers() -> void;
+
 private:
 	static inline const Size<int> defaultSize{1280, 720};
 
@@ -52,7 +62,7 @@ private:
 	double scale{0.0};
 	GLFWwindow* window;
 
-	std::mutex openMutex;
+	std::recursive_mutex openMutex;
 	std::mutex inputsMutex;
 	std::queue<Input> inputs;
 

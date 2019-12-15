@@ -18,8 +18,9 @@ public:
 	// Loop on this to keep the application responsive
 	auto update() -> void;
 
-	// Throw an exception that includes a system error code and message
-	auto throwSystemError(std::string_view str) -> void;
+	// Check whether the last system operation failed
+	// If yes, throw an exception that includes the system error code and message
+	auto checkError(std::string_view str) -> void;
 
 private:
 	static inline std::atomic<bool> exists{false};
