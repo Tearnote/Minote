@@ -3,6 +3,7 @@
 #include "log.h"
 #include "system.h"
 #include "window.h"
+#include "game.h"
 
 auto main() -> int
 {
@@ -19,10 +20,13 @@ auto main() -> int
 		System system{};
 		Window window{system, "Minote"};
 
-		while (window.isOpen()) {
-			system.update();
-			while (auto i = window.popInput())
-				Log::debug("Keypress ", i->key, "/", i->action, " at ", i->timestamp);
+		{ // Limiting the scope of Game
+
+			Game game{window};
+
+			while (window.isOpen())
+				system.update();
+
 		}
 
 		Log::info("Shutting down");

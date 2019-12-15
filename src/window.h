@@ -34,11 +34,13 @@ public:
 			bool fullscreen = false, Size<int> size = defaultSize);
 	~Window();
 
-	// Returns false if a signal has been sent for the window to close.
-	// When this happens, destroy this object ASAP.
+	// Checks/sets whether the window should be destroyed
+	// Thread-safe
 	auto isOpen() -> bool;
+	auto close() -> void;
 
-	// Get the latest input from the window's queue, thread-safe
+	// Get the latest input from the window's queue
+	// Thread-safe
 	auto popInput() -> std::optional<Input>;
 
 private:
@@ -50,6 +52,7 @@ private:
 	double scale{0.0};
 	GLFWwindow* window;
 
+	std::mutex openMutex;
 	std::mutex inputsMutex;
 	std::queue<Input> inputs;
 

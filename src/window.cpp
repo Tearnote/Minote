@@ -3,7 +3,6 @@
 #include "window.h"
 
 #include <string>
-#include <chrono>
 #include "gsl/gsl"
 #include "log.h"
 
@@ -64,7 +63,14 @@ Window::~Window()
 
 auto Window::isOpen() -> bool
 {
+	std::unique_lock lock{openMutex};
 	return !glfwWindowShouldClose(window);
+}
+
+auto Window::close() -> void
+{
+	std::unique_lock lock{openMutex};
+	glfwSetWindowShouldClose(window, true);
 }
 
 auto Window::framebufferResizeCallback(GLFWwindow* window, int w, int h) -> void
