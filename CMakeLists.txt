@@ -44,15 +44,14 @@ set(CXX_INTERNALLIBS
         lib/fmt/format.cc)
 set(CXX_SOURCES
         src/main.cpp
-        src/log.cpp src/log.h src/log.tcc
-        src/system.cpp src/system.h
-        src/window.cpp src/window.h
+        src/log.h src/log.tcc src/log.cpp
+        src/system.h src/system.cpp
+        src/window.h src/window.cpp
         src/point.h
         src/timer.h
-        src/game.cpp src/game.h
-        src/renderer.cpp src/renderer.h
-        src/state.h
-        src/gameplay.cpp src/gameplay.h)
+        src/game.h src/game.cpp
+        src/renderer.h src/renderer.cpp
+        src/state.h src/state.tcc src/gameplay.cpp src/gameplay.h)
 
 add_executable(Minote ${CXX_SOURCES} ${CXX_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD

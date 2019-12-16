@@ -4,15 +4,12 @@
 #define MINOTE_GAMEPLAY_H
 
 #include "state.h"
+#include "game.h"
 
-class Gameplay : public State {
+class Gameplay : public State<Game> {
 public:
 	using State::State;
-	auto update(bool active) -> Result override;
-	auto render(bool active, Renderer& renderer) const -> void override;
-
-private:
-	void renderScene() const;
+	auto update() -> Result override;
 };
 
 #endif //MINOTE_GAMEPLAY_H

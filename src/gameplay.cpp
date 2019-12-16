@@ -2,17 +2,10 @@
 
 #include "gameplay.h"
 
-auto Gameplay::update(bool active) -> Result
-{
-	return Success;
-}
+#include "log.h"
 
-auto Gameplay::render(bool active, Renderer& renderer) const -> void
+auto Gameplay::update() -> Result
 {
-	renderScene();
-}
-
-auto Gameplay::renderScene() const -> void
-{
-
+	Log::debug("Updating gameplay");
+	return {};
 }

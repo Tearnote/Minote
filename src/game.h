@@ -24,17 +24,10 @@ private:
 	std::thread thread;
 	Window& window;
 
-	std::vector<std::unique_ptr<State>> stateStack{};
+	StateStack<Game> states;
 
 	// Body of the thread
 	auto run() -> void;
-
-	auto pushState(std::unique_ptr<State>) -> void;
-	// Popping state is requested by the return value of State::update() instead,
-	// to prevent destroying a state object from within itself.
-
-	auto updateStates() -> void;
-	auto renderStates(Renderer&) const -> void;
 };
 
 #endif //MINOTE_GAME_H

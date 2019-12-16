@@ -3,30 +3,47 @@
 #ifndef MINOTE_STATE_H
 #define MINOTE_STATE_H
 
-#include "renderer.h"
+#include <memory>
+#include <vector>
 
-// Circular dependency avoidance
-class Game;
-
-// Interface for a game state class
+template<typename T>
 class State {
 public:
-	enum Result {
-		Success,
-		Delete
+	enum ResultCode {
+		None,
+		Delete,
+		Add
+	};
+	struct Result {
+		ResultCode code{None};
+		std::unique_ptr<State<T>> next{};
 	};
 
-	explicit State(Game& g)
-			:game{g} { }
+	bool active{true};
+
+	explicit State(T& self, State<T>* parent = nullptr)
+			:owner{self}, parent{parent} { }
+
 	virtual ~State() = default;
 
-	// Active refers to whether the state is at the top of the stack or not
-	virtual auto update(bool active /*TODO Mapper&*/) -> Result = 0;
-	virtual auto render(bool active, Renderer&) const -> void = 0;
+	virtual auto update() -> Result = 0;
 
 private:
-	// Reference back to owner, for operations on the state stack
-	Game& game;
+	T& owner;
+	State<T>* parent;
 };
+
+template<typename T>
+class StateStack {
+public:
+	auto add(std::unique_ptr<State<T>>&&) -> void;
+	auto clear() -> void;
+	auto update() -> void;
+
+private:
+	std::vector<std::unique_ptr<State<T>>> states{};
+};
+
+#include "state.tcc"
 
 #endif //MINOTE_STATE_H
