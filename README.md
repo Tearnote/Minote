@@ -1,5 +1,5 @@
 # Minote
-An upcoming puzzle action game. Currently being rewritten in C++17.
+An upcoming puzzle action game, written in C11.
 
 ## Building
 Continuously tested on Linux (GCC) and Windows (MSYS2 MinGW). Should be
@@ -18,14 +18,6 @@ cmake --build .
 Requires [`GLFW`](https://www.glfw.org/) 3.3.
 
 ### Included libraries
-[`GSL`](https://github.com/Microsoft/GSL) retrieved on 2019-12-14, used
-under MIT license.
-
-[`fmt`](https://fmt.dev) 6.1.2, used under MIT license.
-
-[`asap`](https://github.com/mobius3/asap) retrieved on 2019-12-08, used
-under MIT license.
-
 [`glad`](https://glad.dav1d.de/) loader generated on 2019-05-06, in
 Public Domain.
 
