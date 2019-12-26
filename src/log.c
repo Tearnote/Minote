@@ -15,12 +15,12 @@
 #include "util.h"
 
 static const char* levelStrings[LogSize] = {
-		[LogTrace] = "TRACE",
-		[LogDebug] = "DEBUG",
-		[LogInfo]  = "INFO",
-		[LogWarn]  = "WARN",
-		[LogError] = "ERROR",
-		[LogCrit]  = "CRIT",
+		[LogTrace] = u8"TRACE",
+		[LogDebug] = u8"DEBUG",
+		[LogInfo]  = u8"INFO",
+		[LogWarn]  = u8"WARN",
+		[LogError] = u8"ERROR",
+		[LogCrit]  = u8"CRIT",
 };
 
 struct Log {
@@ -37,21 +37,21 @@ static void logTo(FILE* file, LogLevel level, const char* fmt, va_list ap)
 {
 	time_t epochtime = time(null);
 	struct tm* timeinfo = localtime(&epochtime);
-	int result = fprintf(file, "%02d:%02d:%02d [%s] ",
+	int result = fprintf(file, u8"%02d:%02d:%02d [%s] ",
 			timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec,
 			levelStrings[level]);
 	if (result < 0) {
-		perror("Failed to write into log file");
+		perror(u8"Failed to write into log file");
 		errno = 0;
 	}
 	result = vfprintf(file, fmt, ap);
 	if (result < 0) {
-		perror("Failed to write into log file");
+		perror(u8"Failed to write into log file");
 		errno = 0;
 	}
 	result = fputc('\n', file);
 	if (result == EOF) {
-		perror("Failed to write into log file");
+		perror(u8"Failed to write into log file");
 		errno = 0;
 	}
 }
@@ -123,7 +123,7 @@ void logEnableFile(Log* l, const char* filepath)
 	if (!l->file) {
 		bool consoleEnabled = l->consoleEnabled;
 		logEnableConsole(l);
-		logError(l, "Failed to open %s for writing: %s",
+		logError(l, u8"Failed to open %s for writing: %s",
 				filepath, strerror(errno));
 		errno = 0;
 		if (!consoleEnabled)
@@ -153,7 +153,7 @@ void logDisableFile(Log* l)
 	if (result) {
 		bool consoleEnabled = l->consoleEnabled;
 		logEnableConsole(l);
-		logError(l, "Failed to flush %s: %s",
+		logError(l, u8"Failed to flush %s: %s",
 				l->filepath, strerror(errno));
 		errno = 0;
 		if (!consoleEnabled)

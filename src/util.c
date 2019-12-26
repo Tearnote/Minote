@@ -9,7 +9,7 @@ void* alloc(size_t bytes)
 	assert(bytes);
 	void* result = calloc(1, bytes);
 	if (!result) {
-		perror("Could not allocate memory");
+		perror(u8"Could not allocate memory");
 		exit(EXIT_FAILURE);
 	}
 	return result;

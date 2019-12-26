@@ -23,7 +23,9 @@ set(C_INTERNALLIBS
 set(C_SOURCES
         src/main.h src/main.c
         src/log.h src/log.c
-        src/util.h src/util.c)
+        src/util.h src/util.c
+        src/window.h src/window.c
+        src/point.h)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD

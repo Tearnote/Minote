@@ -34,9 +34,9 @@ enum LogLevel {
 void logInit(void);
 
 /**
- * Clean up the log system.
- * All created logs need to be destroyed before calling this function.
- * No log function can be used until logInit() is called again.
+ * Clean up the log system. All created logs need to be destroyed before
+ * calling this function. No log function can be used until logInit() is
+ * called again.
  */
 void logCleanup(void);
 
