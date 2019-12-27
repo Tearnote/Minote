@@ -103,6 +103,7 @@ Window* windowCreate(const char* title, Size2i size, bool fullscreen)
 void windowDestroy(Window* w)
 {
 	glfwDestroyWindow(w->window);
+	logDebug(winlog, u8"Window %s destroyed", w->title);
 	free(w);
 }
 
