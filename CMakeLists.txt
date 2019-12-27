@@ -36,4 +36,4 @@ add_custom_command(TARGET Minote POST_BUILD
         ${CMAKE_SOURCE_DIR}/conf ${PROJECT_BINARY_DIR}/conf)
 
 # Link the game
-target_link_libraries(Minote PRIVATE glfw)
+target_link_libraries(Minote PRIVATE glfw ${CMAKE_DL_LIBS})

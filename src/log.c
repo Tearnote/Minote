@@ -2,6 +2,8 @@
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
 #include <errno.h>
 #include <string.h>
 #include <assert.h>
@@ -33,7 +35,7 @@ struct Log {
 
 static bool initialized = false;
 
-static void logTo(FILE* file, LogLevel level, const char* fmt, va_list ap)
+static void logTo(FILE* file, LogLevel level, const char* fmt, va_list* ap)
 {
 	time_t epochtime = time(null);
 	struct tm* timeinfo = localtime(&epochtime);
@@ -44,7 +46,9 @@ static void logTo(FILE* file, LogLevel level, const char* fmt, va_list ap)
 		perror(u8"Failed to write into log file");
 		errno = 0;
 	}
-	result = vfprintf(file, fmt, ap);
+	va_list apCopy;
+	va_copy(apCopy, *ap);
+	result = vfprintf(file, fmt, apCopy);
 	if (result < 0) {
 		perror(u8"Failed to write into log file");
 		errno = 0;
@@ -56,7 +60,7 @@ static void logTo(FILE* file, LogLevel level, const char* fmt, va_list ap)
 	}
 }
 
-static void logPrio(Log* l, LogLevel level, const char* fmt, va_list ap)
+static void logPrio(Log* l, LogLevel level, const char* fmt, va_list* ap)
 {
 	assert(initialized);
 	assert(l);
