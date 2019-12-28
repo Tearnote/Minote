@@ -1,3 +1,8 @@
+/**
+ * Implementation of window.h
+ * @file
+ */
+
 #include "window.h"
 
 #include <stdlib.h>
@@ -5,16 +10,25 @@
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 #include "util.h"
+#include "queue.h"
 
 struct Window {
-	GLFWwindow* window;
-	const char* title;
+	GLFWwindow* window; ///< Underlying GLFWwindow object
+	const char* title; ///< Window title from the title bar
+	Queue* inputs; ///< Message queue for storing keypresses
 };
 
+/// State of window system initialization
 static bool initialized = false;
 
+/// Log file used by the window system
 static Log* winlog = null;
 
+/**
+ * Return the last GLFW error message and clear GLFW's error state
+ * @return String literal describing the error. Use immediately, before calling
+ * any other GLFW functions
+ */
 static const char* windowError(void)
 {
 	const char* description;
@@ -24,15 +38,26 @@ static const char* windowError(void)
 	return description;
 }
 
-static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+/**
+ * Function to run on each keypress event. The ::Window object is retrieved from
+ * the GLFWwindow's user pointer.
+ * @param window The GLFWwindow object
+ * @param key Platform-independent key identifier
+ * @param scancode Platform-dependent keycode
+ * @param action GLFW_PRESS or GLFW_RELEASE
+ * @param mods Bitmask of active modifier keys (ctrl, shift etc)
+ */
+static void
+keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	(void)scancode, (void)mods;
 	assert(glfwGetWindowUserPointer(window));
+	if (action == GLFW_REPEAT) return; // Key repeat is not needed
 
-	Window* object = glfwGetWindowUserPointer(window);
-	if (action == GLFW_PRESS)
-		logTrace(winlog, u8"Window %s received keypress %d", object->title, key);
-	//TOTO push an input onto the stack
+	Window* w = glfwGetWindowUserPointer(window);
+	if (!queueEnqueue(w->inputs, &(KeyInput){.key = key, .action = action}))
+		logWarn(winlog, u8"Window input queue is full, key #%d %s dropped",
+				key, action == GLFW_PRESS ? u8"press" : u8"release");
 }
 
 void windowInit(Log* log)
@@ -67,8 +92,8 @@ Window* windowCreate(const char* title, Size2i size, bool fullscreen)
 {
 	assert(title);
 	assert(size.x >= 0 && size.y >= 0);
-	Window* result = alloc(sizeof(*result));
-	result->title = title;
+	Window* w = alloc(sizeof(*w));
+	w->title = title;
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -82,28 +107,30 @@ Window* windowCreate(const char* title, Size2i size, bool fullscreen)
 	if (fullscreen) {
 		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-		result->window = glfwCreateWindow(mode->width, mode->height, title,
+		w->window = glfwCreateWindow(mode->width, mode->height, title,
 				monitor, null);
 	} else {
-		result->window = glfwCreateWindow(size.x, size.y, title, null, null);
+		w->window = glfwCreateWindow(size.x, size.y, title, null, null);
 	}
-	if (!result->window) {
-		logCrit(winlog, u8"Failed to create window %s: %s", title, windowError());
+	if (!w->window) {
+		logCrit(winlog, u8"Failed to create window \"%s\": %s",
+				title, windowError());
 		exit(EXIT_FAILURE);
 	}
-	glfwSetWindowUserPointer(result->window, result);
-	glfwSetInputMode(result->window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-	glfwSetKeyCallback(result->window, keyCallback);
-	glfwGetFramebufferSize(result->window, &size.x, &size.y);
-	logInfo(winlog, u8"Created a %s%dx%d window",
-			fullscreen ? u8"fullscreen " : u8"", size.x, size.y);
-	return result;
+	glfwSetWindowUserPointer(w->window, w);
+	glfwSetInputMode(w->window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+	w->inputs = queueCreate(sizeof(KeyInput), 64);
+	glfwSetKeyCallback(w->window, keyCallback);
+	glfwGetFramebufferSize(w->window, &size.x, &size.y);
+	logInfo(winlog, u8"Window \"%s\" created at %dx%d%s",
+			title, size.x, size.y, fullscreen ? u8" fullscreen" : u8"");
+	return w;
 }
 
 void windowDestroy(Window* w)
 {
 	glfwDestroyWindow(w->window);
-	logDebug(winlog, u8"Window %s destroyed", w->title);
+	logDebug(winlog, u8"Window \"%s\" destroyed", w->title);
 	free(w);
 }
 

@@ -1,5 +1,5 @@
 /**
- * Useful functions and macros to compliment the standard library.
+ * Useful functions and macros to compliment the standard library
  * @file
  */
 
@@ -18,7 +18,7 @@
  * Error-checking wrapper for calloc(). Clears memory to 0 and terminates
  * execution on error.
  * @param bytes Number of bytes to allocate, at least 1
- * @return Pointer to allocated memory. Cannot be #null
+ * @return Pointer to allocated memory
  */
 void* alloc(size_t bytes);
 

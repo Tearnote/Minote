@@ -1,5 +1,5 @@
 /**
- * System for creating windows with OpenGL contexts.
+ * System for creating windows with OpenGL contexts
  * @file
  * Open windows collect inputs in a thread-safe queue, and these inputs need
  * to be regularly collected. Additionally, the system needs to be regularly
@@ -18,6 +18,13 @@
  * windowCreate().
  */
 typedef struct Window Window;
+
+/// Struct containing information about a keypress event
+typedef struct KeyInput {
+	int key; /// GLFW keycode
+	int action; /// GLFW_PRESS or GLFW_RELEASE
+	//nsec timestamp; /// Time when the event was detected
+} KeyInput;
 
 /**
  * Initialize the window system. Needs to be called before any other window

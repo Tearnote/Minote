@@ -1,3 +1,8 @@
+/**
+ * Implementation of util.h
+ * @file
+ */
+
 #include "util.h"
 
 #include <stdlib.h>

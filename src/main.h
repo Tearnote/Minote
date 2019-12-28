@@ -1,5 +1,5 @@
 /**
- * Application-wide definitions and globals.
+ * Application-wide definitions and globals
  * @file
  */
 
@@ -8,19 +8,13 @@
 
 #include "log.h"
 
-/**
- * Main log file of the application.
- */
+/// Main log file of the application
 extern Log* applog;
 
-/**
- * Name of the application.
- */
+/// Name of the application
 #define APP_NAME u8"Minote"
 
-/**
- * Version number of the application.
- */
+/// Version number of the application
 #define APP_VERSION u8"0.0"
 
 #endif //MINOTE_MAIN_H

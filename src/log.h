@@ -1,5 +1,5 @@
 /**
- * Facility for logging runtime events.
+ * Facility for logging runtime events
  * @file
  * Supports log levels and multiple output targets per logger.
  */
@@ -12,20 +12,18 @@
  */
 typedef struct Log Log;
 
-/**
- * Log level enum, in ascending order of severity.
- */
-typedef enum LogLevel LogLevel;
-enum LogLevel {
-	LogNone,
-	LogTrace,
-	LogDebug,
-	LogInfo,
-	LogWarn,
-	LogError,
-	LogCrit,
-	LogSize
-};
+/// Log level enum, in ascending order of severity
+/// @enum LogLevel
+typedef enum LogLevel {
+	LogNone, ///< zero value
+	LogTrace, ///< logTrace()
+	LogDebug, ///< logDebug()
+	LogInfo, ///< logInfo()
+	LogWarn, ///< logWarn()
+	LogError, ///< logError()
+	LogCrit, ///< logCrit()
+	LogSize ///< terminator
+} LogLevel;
 
 /**
  * Initialize the log system. Needs to be called before any other log
@@ -91,7 +89,7 @@ void logDisableFile(Log* l);
 void logSetLevel(Log* l, LogLevel level);
 
 /**
- * Log a message at Trace level to all enabled targets. This level is for
+ * %Log a message at Trace level to all enabled targets. This level is for
  * active debugging purposes only and no logTrace() should be present in
  * shipped code.
  * @param l The ::Log object
@@ -101,7 +99,7 @@ void logSetLevel(Log* l, LogLevel level);
 void logTrace(Log* l, const char* fmt, ...);
 
 /**
- * Log a message at Debug level to all enabled targets. This level is for
+ * %Log a message at Debug level to all enabled targets. This level is for
  * messages that aid a developer trying to diagnose a problem.
  * @param l The ::Log object
  * @param fmt Format string in printf syntax
@@ -110,7 +108,7 @@ void logTrace(Log* l, const char* fmt, ...);
 void logDebug(Log* l, const char* fmt, ...);
 
 /**
- * Log a message at Info level to all enabled targets. This level is for
+ * %Log a message at Info level to all enabled targets. This level is for
  * lifecycle information that makes sense to an end user.
  * @param l The ::Log object
  * @param fmt Format string in printf syntax
@@ -119,8 +117,8 @@ void logDebug(Log* l, const char* fmt, ...);
 void logInfo(Log* l, const char* fmt, ...);
 
 /**
- * Log a message at Warn level to all enabled targets. This level is for
- * degradation in functionality (for example, open an audio device).
+ * %Log a message at Warn level to all enabled targets. This level is for
+ * degradation in functionality (for example, failed to open an audio device).
  * @param l The ::Log object
  * @param fmt Format string in printf syntax
  * @param ... Any number of arguments to print
@@ -128,7 +126,7 @@ void logInfo(Log* l, const char* fmt, ...);
 void logWarn(Log* l, const char* fmt, ...);
 
 /**
- * Log a message at Error level to all enabled targets. This level is for
+ * %Log a message at Error level to all enabled targets. This level is for
  * complete loss of functionality (for example, could not enter replay mode).
  * @param l The ::Log object
  * @param fmt Format string in printf syntax
@@ -137,7 +135,7 @@ void logWarn(Log* l, const char* fmt, ...);
 void logError(Log* l, const char* fmt, ...);
 
 /**
- * Log a message at Crit level to all enabled targets. This level is for
+ * %Log a message at Crit level to all enabled targets. This level is for
  * situations that cannot be recovered from and execution needs to be aborted.
  * Call logDestroy() before aborting to make sure the message is written.
  * @param l The ::Log object

@@ -25,7 +25,8 @@ set(C_SOURCES
         src/log.h src/log.c
         src/util.h src/util.c
         src/window.h src/window.c
-        src/point.h)
+        src/point.h
+        src/queue.h src/queue.c)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD
@@ -34,6 +35,11 @@ add_custom_command(TARGET Minote POST_BUILD
 add_custom_command(TARGET Minote POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/conf ${PROJECT_BINARY_DIR}/conf)
+target_compile_options(Minote PRIVATE
+        $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
+        -Wall -Wextra -pedantic-errors>
+        $<$<CXX_COMPILER_ID:MSVC>:
+        /W4>)
 
 # Link the game
 target_link_libraries(Minote PRIVATE glfw ${CMAKE_DL_LIBS})

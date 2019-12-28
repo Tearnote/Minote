@@ -1,3 +1,8 @@
+/**
+ * Implementation of log.h
+ * @file
+ */
+
 #include "log.h"
 
 #include <stdbool.h>
@@ -16,6 +21,7 @@
 #endif //_WIN32
 #include "util.h"
 
+/// String representation of each #LogLevel
 static const char* levelStrings[LogSize] = {
 		[LogTrace] = u8"TRACE",
 		[LogDebug] = u8"DEBUG",
@@ -26,15 +32,33 @@ static const char* levelStrings[LogSize] = {
 };
 
 struct Log {
+	/// Messages with lower level than this will be ignored
 	LogLevel level;
+
+	/// If true, messages are printed to stdout/stderr
 	bool consoleEnabled;
+
+	/// If true, messages are printed to #file
 	bool fileEnabled;
+
+	/// File handle to write messages into. Is null if #fileEnabled is false
 	FILE* file;
+
+	/// The string used to open #file. Is null if #fileEnabled is false
 	const char* filepath;
 };
 
+/// State of log system initialization
 static bool initialized = false;
 
+/**
+ * Write a log message to a specified output. Attaches a timestamp and formats
+ * the log level.
+ * @param file The output file
+ * @param level Message level
+ * @param fmt Format string in printf syntax
+ * @param ap List of arguments to print
+ */
 static void logTo(FILE* file, LogLevel level, const char* fmt, va_list* ap)
 {
 	time_t epochtime = time(null);
@@ -46,6 +70,8 @@ static void logTo(FILE* file, LogLevel level, const char* fmt, va_list* ap)
 		perror(u8"Failed to write into log file");
 		errno = 0;
 	}
+	// A copy of va_list is needed in case this is executed more than once per
+	// log function call
 	va_list apCopy;
 	va_copy(apCopy, *ap);
 	result = vfprintf(file, fmt, apCopy);
@@ -60,6 +86,14 @@ static void logTo(FILE* file, LogLevel level, const char* fmt, va_list* ap)
 	}
 }
 
+/**
+ * The actual log message handling function. Performs level filtering and
+ * output selection.
+ * @param l The ::Log object
+ * @param level Message level
+ * @param fmt Format string in printf syntax
+ * @param ap List of arguments to print
+ */
 static void logPrio(Log* l, LogLevel level, const char* fmt, va_list* ap)
 {
 	assert(initialized);
@@ -79,9 +113,9 @@ void logInit(void)
 {
 	if (initialized) return;
 #ifdef _WIN32
-	SetConsoleOutputCP(65001);
+	SetConsoleOutputCP(65001); // Set Windows cmd output encoding to UTF-8
 #else //_WIN32
-	setlocale(LC_ALL, "");
+	setlocale(LC_ALL, ""); // Switch from C locale to system locale
 #endif //_WIN32
 	initialized = true;
 }
@@ -96,9 +130,9 @@ void logCleanup(void)
 Log* logCreate(void)
 {
 	assert(initialized);
-	Log* result = alloc(sizeof(Log));
-	result->level = LogInfo;
-	return result;
+	Log* l = alloc(sizeof(Log));
+	l->level = LogInfo;
+	return l;
 }
 
 void logDestroy(Log* l)
@@ -165,7 +199,8 @@ void logDisableFile(Log* l)
 	}
 	l->filepath = null;
 	l->fileEnabled = false;
-	assert(l->fileEnabled == !!l->file && l->fileEnabled == !!l->filepath);
+	assert(l->fileEnabled == (l->file != null));
+	assert(l->fileEnabled == (l->filepath != null));
 }
 
 void logSetLevel(Log* l, LogLevel level)
@@ -180,7 +215,7 @@ void logTrace(Log* l, const char* fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
-	logPrio(l, LogTrace, fmt, ap);
+	logPrio(l, LogTrace, fmt, &ap);
 	va_end(ap);
 }
 
@@ -188,7 +223,7 @@ void logDebug(Log* l, const char* fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
-	logPrio(l, LogDebug, fmt, ap);
+	logPrio(l, LogDebug, fmt, &ap);
 	va_end(ap);
 }
 
@@ -196,7 +231,7 @@ void logInfo(Log* l, const char* fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
-	logPrio(l, LogInfo, fmt, ap);
+	logPrio(l, LogInfo, fmt, &ap);
 	va_end(ap);
 }
 
@@ -204,7 +239,7 @@ void logWarn(Log* l, const char* fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
-	logPrio(l, LogWarn, fmt, ap);
+	logPrio(l, LogWarn, fmt, &ap);
 	va_end(ap);
 }
 
@@ -212,7 +247,7 @@ void logError(Log* l, const char* fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
-	logPrio(l, LogError, fmt, ap);
+	logPrio(l, LogError, fmt, &ap);
 	va_end(ap);
 }
 
@@ -220,6 +255,6 @@ void logCrit(Log* l, const char* fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
-	logPrio(l, LogCrit, fmt, ap);
+	logPrio(l, LogCrit, fmt, &ap);
 	va_end(ap);
 }

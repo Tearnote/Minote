@@ -1,13 +1,21 @@
+/**
+ * Entry point of the game
+ * @file
+ */
+
 #include "main.h"
 
 #include <stdlib.h>
-
 #include "util.h"
 #include "log.h"
 #include "window.h"
 
 Log* applog = null;
 
+/**
+ * Initialize all game systems. This should be relatively fast and not load
+ * too many resources from disk.
+ */
 static void init(void)
 {
 	logInit();
@@ -25,6 +33,11 @@ static void init(void)
 	windowInit(applog);
 }
 
+/**
+ * Cleanup all game systems, in reverse initialization order. Do not assume
+ * init() was called earlier, or that it was either not called or fully
+ * completed. This function must not fail.
+ */
 static void cleanup(void)
 {
 	windowCleanup();
@@ -35,10 +48,17 @@ static void cleanup(void)
 	logCleanup();
 }
 
+/**
+ * Entry point function. Initializes systems and spawns other threads. Itself
+ * becomes the input handling thread.
+ * @return EXIT_SUCCESS on successful execution, EXIT_FAILURE on a handled
+ * critical error, other values on unhandled error
+ */
 int main(int argc, char* argv[argc + 1])
 {
 	atexit(cleanup);
 	init();
+	logInfo(applog, u8"UTF-8 test: Ążć");
 
 	Window* window = windowCreate(APP_NAME u8" " APP_VERSION,
 			(Size2i){1280, 720}, false);
@@ -48,6 +68,5 @@ int main(int argc, char* argv[argc + 1])
 
 	windowDestroy(window);
 	window = null;
-
 	return EXIT_SUCCESS;
 }
