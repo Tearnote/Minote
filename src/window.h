@@ -71,6 +71,29 @@ bool windowIsOpen(Window* w);
 void windowClose(Window* w);
 
 /**
+ * Activate the ::Window's OpenGL context on the current thread. This is
+ * required before OpenGL commands can be used. No other ::Window's context
+ * can be active on the same thread, and windowContextDeactivate() must be
+ * called before the ::Window is destroyed.
+ * @param w The ::Window object
+ */
+void windowContextActivate(Window* w);
+
+/**
+ * Dectivate the ::Window's OpenGL context on the current thread. Must be
+ * called on the same thread that activated it.
+ * @param w The ::Window object
+ */
+void windowContextDeactivate(Window* w);
+
+/**
+ * Flip the ::Window's front and back buffers. Usually called by a ::Renderer
+ * wishing to present its image to the screen.
+ * @param w The ::Window object
+ */
+void windowFlip(Window* w);
+
+/**
  * Remove and return a ::KeyInput from the ::Window's input queue. If the queue
  * is empty, nothing happens. Run this often to keep the queue from filling up
  * and discarding input events.

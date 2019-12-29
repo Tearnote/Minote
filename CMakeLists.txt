@@ -40,7 +40,6 @@ find_package(Threads REQUIRED)
 include_directories(${GLFW_INCLUDE_DIRS})
 
 # Build the game
-include_directories(src)
 include_directories(lib)
 set(C_INTERNALLIBS
         lib/glad/glad.c)
@@ -52,7 +51,7 @@ set(C_SOURCES
         src/point.h
         src/queue.h src/queue.c
         src/game.h src/game.c
-        src/thread.h src/thread.c src/system.c src/system.h src/time.c src/time.h)
+        src/thread.h src/thread.c src/system.c src/system.h src/time.c src/time.h src/renderer.c src/renderer.h src/color.h)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD

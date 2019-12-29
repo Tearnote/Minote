@@ -23,6 +23,7 @@
 /**
  * Return the time passed since systemInit().
  * @return Number of nanoseconds since system initialization
+ * @remark This function is thread-safe.
  */
 nsec getTime(void);
 
@@ -30,6 +31,7 @@ nsec getTime(void);
  * Do nothing until the specified time is reached. This executes busywait, so
  * use this for sleeping only if there is no better alternative.
  * @param until Target timestamp
+ * @remark This function is thread-safe.
  */
 void sleepUntil(nsec until);
 

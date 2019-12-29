@@ -18,8 +18,6 @@ thread* threadCreate(void* func(void*), void* arg)
 	int error = pthread_create(t, null, func, arg);
 	if (error) {
 		fprintf(stderr, u8"Could not create thread: %s", strerror(error));
-		free(t);
-		t = null;
 		exit(EXIT_FAILURE);
 	}
 	return t;
@@ -39,8 +37,6 @@ mutex* mutexCreate(void)
 	int error = pthread_mutex_init(m, null);
 	if (error) {
 		fprintf(stderr, u8"Could not create mutex: %s", strerror(error));
-		free(m);
-		m = null;
 		exit(EXIT_FAILURE);
 	}
 	return m;
@@ -52,8 +48,6 @@ void mutexDestroy(mutex* m)
 	int error = pthread_mutex_destroy(m);
 	if (error) {
 		fprintf(stderr, u8"Could not destroy mutex: %s", strerror(error));
-		free(m);
-		m = null;
 		exit(EXIT_FAILURE);
 	}
 	free(m);

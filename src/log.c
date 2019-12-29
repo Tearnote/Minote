@@ -172,7 +172,8 @@ void logEnableFile(Log* l, const char* filepath)
 		l->fileEnabled = true;
 		l->filepath = filepath;
 	}
-	assert(l->fileEnabled == !!l->file && l->fileEnabled == !!l->filepath);
+	assert(l->fileEnabled == (l->file != null));
+	assert(l->fileEnabled == (l->filepath != null));
 }
 
 void logDisableConsole(Log* l)

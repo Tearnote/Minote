@@ -119,6 +119,21 @@ void windowClose(Window* w)
 	w->open = false;
 }
 
+void windowContextActivate(Window* w)
+{
+	glfwMakeContextCurrent(w->window);
+}
+
+void windowContextDeactivate(Window* w)
+{
+	glfwMakeContextCurrent(null);
+}
+
+void windowFlip(Window* w)
+{
+	glfwSwapBuffers(w->window);
+}
+
 bool windowInputDequeue(Window* w, KeyInput* input)
 {
 	mutexLock(w->inputsMutex);

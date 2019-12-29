@@ -10,6 +10,7 @@
 #include <GLFW/glfw3.h>
 #include "util.h"
 #include "window.h"
+#include "renderer.h"
 
 void* game(void* args)
 {
@@ -17,6 +18,8 @@ void* game(void* args)
 	GameArgs* gargs = args;
 	Window* window = gargs->window;
 	Log* gamelog = gargs->log;
+
+	Renderer* renderer = rendererCreate(window, gamelog);
 
 	while (windowIsOpen(window)) {
 		KeyInput i;
@@ -28,7 +31,12 @@ void* game(void* args)
 				windowClose(window);
 			}
 		}
-		//TODO wait on vsync to limit the framerate
+
+		rendererClear(renderer, (Color3){0.262, 0.533, 0.849});
+		rendererFlip(renderer);
 	}
+
+	rendererDestroy(renderer);
+	renderer = null;
 	return null;
 }
