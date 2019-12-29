@@ -2,17 +2,20 @@
 - Document all globals with Doxygen comments
   - All params are `[in]` unless specified otherwise
   - Pointer arguments do not accept `null` unless specified otherwise
-  - Use `/**` style for functions and longer explanations, `///` otherwise
+  - Use `/**` style for functions and longer explanations, `///`
+    otherwise
 - Use `u8` for all string literals
 - `assert()` argument preconditions and return postconditions
 - Initialize every variable on declaration line or immediately
   afterwards
+- Use the init/cleanup and create/destroy idioms for lifecycle
+  management, converting other mechanisms whenever possible
 - When an object is destroyed and its pointer is invalidated, set it to
-  `null` immediately
+  `null` immediately, even if it completely redundant at the time
 - Most functions should either succeed or never return, unless failure
   is expected
-  - Create and use error-checking wrappers for stdlib functions and macros
-  in `util.h`
+  - Create and use error-checking wrappers for library functions and
+    macros in `util.h`
 - Init and cleanup functions must be tolerant to being called twice or
   in wrong order. Cleanup must never fail
 - Typedef structs and enums

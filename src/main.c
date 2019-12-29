@@ -7,10 +7,13 @@
 
 #include <stdlib.h>
 #include "util.h"
+#include "thread.h"
 #include "log.h"
 #include "window.h"
+#include "game.h"
 
-Log* applog = null;
+/// Main log file of the application
+static Log* applog = null;
 
 /**
  * Initialize all game systems. This should be relatively fast and not load
@@ -58,14 +61,21 @@ int main(int argc, char* argv[argc + 1])
 {
 	atexit(cleanup);
 	init();
-	logInfo(applog, u8"UTF-8 test: Ążć");
 
 	Window* window = windowCreate(APP_NAME u8" " APP_VERSION,
 			(Size2i){1280, 720}, false);
+	thread* gameThread = threadCreate(game, &(GameArgs){
+			.log = applog,
+			.window = window
+	});
 
-	while (windowIsOpen(window))
+	while (windowIsOpen(window)) {
 		windowPoll();
+		//TODO spin a little to limit the polling rate
+	}
 
+	threadDestroy(gameThread);
+	gameThread = null;
 	windowDestroy(window);
 	window = null;
 	return EXIT_SUCCESS;

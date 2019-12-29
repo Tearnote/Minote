@@ -54,7 +54,7 @@ void windowPoll(void);
  * messages
  * @param size Size of the window in *logical* pixels. Affected by display DPI
  * @param fullscreen Fullscreen if true, windowed if false. A fullscreen window
- * is created at display resolution, ignoring the size parameter
+ * is created at display resolution, ignoring the @a size parameter
  * @return A newly created ::Window. Needs to be destroyed with windowDestroy()
  */
 Window* windowCreate(const char* title, Size2i size, bool fullscreen);
@@ -67,11 +67,49 @@ Window* windowCreate(const char* title, Size2i size, bool fullscreen);
 void windowDestroy(Window* w);
 
 /**
- * Check whether the window is open. If this returns false, the ::Window object
+ * Check whether a ::Window is open. If this returns false, the ::Window object
  * should be destroyed as soon as possible.
  * @param w The ::Window object
  * @return true if open, false if pending closure
+ * @remark This function is thread-safe.
  */
 bool windowIsOpen(Window* w);
+
+/**
+ * Set a ::Window's open flag to false. The window does not close immediately,
+ * but is signaled to be destroyed as soon as possible by changing the return
+ * value of windowIsOpen().
+ * @param w The ::Window object
+ * @remark This function is thread-safe.
+ */
+void windowClose(Window* w);
+
+/**
+ * Remove and return a ::KeyInput from the ::Window's input queue. If the queue
+ * is empty, nothing happens. Run this often to keep the queue from filling up
+ * and discarding input events.
+ * @param w The ::Window object
+ * @param[out] input Object to rewrite with the removed input
+ * @return true if successful, false if input queue is empty
+ * @remark This function is thread-safe.
+ */
+bool windowInputDequeue(Window* w, KeyInput* input);
+
+/**
+ * Return a ::KeyInput from the ::Window's input queue without removing it. If
+ * the queue is empty, nothing happens.
+ * @param w The ::Window object
+ * @param[out] input Object to rewrite with the peeked input
+ * @return true if successful, false if input queue is empty
+ * @remark This function is thread-safe.
+ */
+bool windowInputPeek(Window* w, KeyInput* input);
+
+/**
+ * Clear the ::Window's input queue.
+ * @param w The ::Window object
+ * @remark This function is thread-safe.
+ */
+void windowInputClear(Window* w);
 
 #endif //MINOTE_WINDOW_H

@@ -11,9 +11,33 @@ set(CMAKE_C_EXTENSIONS OFF)
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif()
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -s -ffunction-sections -Wl,--gc-sections")
+    if(WIN32)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mwindows")
+    endif()
+endif()
+
+# External library settings
+if(WIN32)
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+    set(BUILD_SHARED_LIBS OFF)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
+endif()
+
+# External library settings
+if(WIN32)
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+    set(BUILD_SHARED_LIBS OFF)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
+endif()
 
 # External library dependencies
-find_package(glfw3 CONFIG REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_search_module(GLFW REQUIRED glfw3)
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+find_package(Threads REQUIRED)
+include_directories(${GLFW_INCLUDE_DIRS})
 
 # Build the game
 include_directories(src)
@@ -26,7 +50,9 @@ set(C_SOURCES
         src/util.h src/util.c
         src/window.h src/window.c
         src/point.h
-        src/queue.h src/queue.c)
+        src/queue.h src/queue.c
+        src/game.h src/game.c
+        src/thread.h src/thread.c)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD
@@ -41,5 +67,19 @@ target_compile_options(Minote PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:
         /W4>)
 
+# Linker settings
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT result OUTPUT output)
+    if(result)
+        set_property(TARGET Minote PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+    else()
+        message(WARNING "IPO is not supported: ${output}")
+    endif()
+endif()
+
 # Link the game
-target_link_libraries(Minote PRIVATE glfw ${CMAKE_DL_LIBS})
+target_link_libraries(Minote ${GLFW_STATIC_LIBRARIES})
+target_link_libraries(Minote ${CMAKE_DL_LIBS})
+target_link_libraries(Minote Threads::Threads)
+target_link_libraries(Minote m)

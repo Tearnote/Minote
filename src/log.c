@@ -63,6 +63,7 @@ static void logTo(FILE* file, LogLevel level, const char* fmt, va_list* ap)
 {
 	time_t epochtime = time(null);
 	struct tm* timeinfo = localtime(&epochtime);
+	flockfile(file);
 	int result = fprintf(file, u8"%02d:%02d:%02d [%s] ",
 			timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec,
 			levelStrings[level]);
@@ -80,6 +81,7 @@ static void logTo(FILE* file, LogLevel level, const char* fmt, va_list* ap)
 		errno = 0;
 	}
 	result = fputc('\n', file);
+	funlockfile(file);
 	if (result == EOF) {
 		perror(u8"Failed to write into log file");
 		errno = 0;

@@ -95,6 +95,7 @@ void logSetLevel(Log* l, LogLevel level);
  * @param l The ::Log object
  * @param fmt Format string in printf syntax
  * @param ... Any number of arguments to print
+ * @remark This function is thread-safe.
  */
 void logTrace(Log* l, const char* fmt, ...);
 
@@ -104,6 +105,7 @@ void logTrace(Log* l, const char* fmt, ...);
  * @param l The ::Log object
  * @param fmt Format string in printf syntax
  * @param ... Any number of arguments to print
+ * @remark This function is thread-safe.
  */
 void logDebug(Log* l, const char* fmt, ...);
 
@@ -113,6 +115,7 @@ void logDebug(Log* l, const char* fmt, ...);
  * @param l The ::Log object
  * @param fmt Format string in printf syntax
  * @param ... Any number of arguments to print
+ * @remark This function is thread-safe.
  */
 void logInfo(Log* l, const char* fmt, ...);
 
@@ -122,6 +125,7 @@ void logInfo(Log* l, const char* fmt, ...);
  * @param l The ::Log object
  * @param fmt Format string in printf syntax
  * @param ... Any number of arguments to print
+ * @remark This function is thread-safe.
  */
 void logWarn(Log* l, const char* fmt, ...);
 
@@ -131,6 +135,7 @@ void logWarn(Log* l, const char* fmt, ...);
  * @param l The ::Log object
  * @param fmt Format string in printf syntax
  * @param ... Any number of arguments to print
+ * @remark This function is thread-safe.
  */
 void logError(Log* l, const char* fmt, ...);
 
@@ -141,6 +146,7 @@ void logError(Log* l, const char* fmt, ...);
  * @param l The ::Log object
  * @param fmt Format string in printf syntax
  * @param ... Any number of arguments to print
+ * @remark This function is thread-safe.
  */
 void logCrit(Log* l, const char* fmt, ...);
 

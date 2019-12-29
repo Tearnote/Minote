@@ -8,9 +8,6 @@
 
 #include "log.h"
 
-/// Main log file of the application
-extern Log* applog;
-
 /// Name of the application
 #define APP_NAME u8"Minote"
 

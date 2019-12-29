@@ -11,11 +11,14 @@
 #include <GLFW/glfw3.h>
 #include "util.h"
 #include "queue.h"
+#include "thread.h"
 
 struct Window {
 	GLFWwindow* window; ///< Underlying GLFWwindow object
 	const char* title; ///< Window title from the title bar
 	Queue* inputs; ///< Message queue for storing keypresses
+	mutex* inputsMutex; ///< Mutex protecting the #inputs queue
+	atomic bool open; ///< false if window should be closed, true otherwise
 };
 
 /// State of window system initialization
@@ -55,9 +58,18 @@ keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 	if (action == GLFW_REPEAT) return; // Key repeat is not needed
 
 	Window* w = glfwGetWindowUserPointer(window);
+	mutexLock(w->inputsMutex);
 	if (!queueEnqueue(w->inputs, &(KeyInput){.key = key, .action = action}))
 		logWarn(winlog, u8"Window input queue is full, key #%d %s dropped",
 				key, action == GLFW_PRESS ? u8"press" : u8"release");
+	mutexUnlock(w->inputsMutex);
+}
+
+static void windowCloseCallback(GLFWwindow* window)
+{
+	assert(glfwGetWindowUserPointer(window));
+	Window* w = glfwGetWindowUserPointer(window);
+	w->open = false;
 }
 
 void windowInit(Log* log)
@@ -94,7 +106,8 @@ Window* windowCreate(const char* title, Size2i size, bool fullscreen)
 	assert(size.x >= 0 && size.y >= 0);
 	Window* w = alloc(sizeof(*w));
 	w->title = title;
-
+	atomic_init(&w->open, true);
+	w->inputsMutex = mutexCreate();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -121,6 +134,7 @@ Window* windowCreate(const char* title, Size2i size, bool fullscreen)
 	glfwSetInputMode(w->window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 	w->inputs = queueCreate(sizeof(KeyInput), 64);
 	glfwSetKeyCallback(w->window, keyCallback);
+	glfwSetWindowCloseCallback(w->window, windowCloseCallback);
 	glfwGetFramebufferSize(w->window, &size.x, &size.y);
 	logInfo(winlog, u8"Window \"%s\" created at %dx%d%s",
 			title, size.x, size.y, fullscreen ? u8" fullscreen" : u8"");
@@ -130,11 +144,42 @@ Window* windowCreate(const char* title, Size2i size, bool fullscreen)
 void windowDestroy(Window* w)
 {
 	glfwDestroyWindow(w->window);
+	w->window = null;
+	mutexDestroy(w->inputsMutex);
+	w->inputsMutex = null;
 	logDebug(winlog, u8"Window \"%s\" destroyed", w->title);
 	free(w);
 }
 
 bool windowIsOpen(Window* w)
 {
-	return !glfwWindowShouldClose(w->window);
+	return w->open;
+}
+
+void windowClose(Window* w)
+{
+	w->open = false;
+}
+
+bool windowInputDequeue(Window* w, KeyInput* input)
+{
+	mutexLock(w->inputsMutex);
+	bool result = queueDequeue(w->inputs, input);
+	mutexUnlock(w->inputsMutex);
+	return result;
+}
+
+bool windowInputPeek(Window* w, KeyInput* input)
+{
+	mutexLock(w->inputsMutex);
+	bool result = queuePeek(w->inputs, input);
+	mutexUnlock(w->inputsMutex);
+	return result;
+}
+
+void windowInputClear(Window* w)
+{
+	mutexLock(w->inputsMutex);
+	queueClear(w->inputs);
+	mutexUnlock(w->inputsMutex);
 }
