@@ -27,20 +27,6 @@ typedef struct KeyInput {
 } KeyInput;
 
 /**
- * Initialize the window system. Needs to be called before any other window
- * functions.
- * @param log The ::Log to use for logging during the window system's runtime.
- * Should not be destroyed until after windowCleanup()
- */
-void windowInit(Log* log);
-
-/**
- * Clean up the window system. All ::Window instances must be destroyed first.
- * No window function can be used until windowInit() is called again.
- */
-void windowCleanup(void);
-
-/**
  * 	Collect pending events from the OS and keep every open ::Window responsive.
  * 	Call this as often as your target resolution of user input; at least 240Hz
  * 	is recommended.
@@ -49,7 +35,7 @@ void windowPoll(void);
 
 /**
  * Create a new ::Window instance, which represents a window on the screen.
- * The OpenGL context is inactive by default.
+ * The OpenGL context is inactive by default. Requires systemInit().
  * @param title The string to display on the title bar, also used in error
  * messages
  * @param size Size of the window in *logical* pixels. Affected by display DPI

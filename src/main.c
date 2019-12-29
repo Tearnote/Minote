@@ -11,6 +11,11 @@
 #include "log.h"
 #include "window.h"
 #include "game.h"
+#include "system.h"
+#include "time.h"
+
+/// Frequency of input polling, in Hz
+#define InputFrequency 240
 
 /// Main log file of the application
 static Log* applog = null;
@@ -33,7 +38,7 @@ static void init(void)
 	logEnableFile(applog, logfile);
 	logInfo(applog, u8"Starting up %s %s", APP_NAME, APP_VERSION);
 
-	windowInit(applog);
+	systemInit(applog);
 }
 
 /**
@@ -43,7 +48,7 @@ static void init(void)
  */
 static void cleanup(void)
 {
-	windowCleanup();
+	systemCleanup();
 	if (applog) {
 		logDestroy(applog);
 		applog = null;
@@ -69,9 +74,11 @@ int main(int argc, char* argv[argc + 1])
 			.window = window
 	});
 
+	nsec nextPoll = getTime();
 	while (windowIsOpen(window)) {
+		nextPoll += secToNsec(1) / InputFrequency;
 		windowPoll();
-		//TODO spin a little to limit the polling rate
+		sleepUntil(nextPoll);
 	}
 
 	threadDestroy(gameThread);

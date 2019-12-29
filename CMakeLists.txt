@@ -52,7 +52,7 @@ set(C_SOURCES
         src/point.h
         src/queue.h src/queue.c
         src/game.h src/game.c
-        src/thread.h src/thread.c)
+        src/thread.h src/thread.c src/system.c src/system.h src/time.c src/time.h)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD

@@ -12,6 +12,7 @@
 #include "util.h"
 #include "queue.h"
 #include "thread.h"
+#include "system.h"
 
 struct Window {
 	GLFWwindow* window; ///< Underlying GLFWwindow object
@@ -20,26 +21,6 @@ struct Window {
 	mutex* inputsMutex; ///< Mutex protecting the #inputs queue
 	atomic bool open; ///< false if window should be closed, true otherwise
 };
-
-/// State of window system initialization
-static bool initialized = false;
-
-/// Log file used by the window system
-static Log* winlog = null;
-
-/**
- * Return the last GLFW error message and clear GLFW's error state
- * @return String literal describing the error. Use immediately, before calling
- * any other GLFW functions
- */
-static const char* windowError(void)
-{
-	const char* description;
-	int code = glfwGetError(&description);
-	if (code == GLFW_NO_ERROR)
-		return u8"No error";
-	return description;
-}
 
 /**
  * Function to run on each keypress event. The ::Window object is retrieved from
@@ -60,7 +41,7 @@ keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 	Window* w = glfwGetWindowUserPointer(window);
 	mutexLock(w->inputsMutex);
 	if (!queueEnqueue(w->inputs, &(KeyInput){.key = key, .action = action}))
-		logWarn(winlog, u8"Window input queue is full, key #%d %s dropped",
+		logWarn(syslog, u8"Window input queue is full, key #%d %s dropped",
 				key, action == GLFW_PRESS ? u8"press" : u8"release");
 	mutexUnlock(w->inputsMutex);
 }
@@ -70,29 +51,6 @@ static void windowCloseCallback(GLFWwindow* window)
 	assert(glfwGetWindowUserPointer(window));
 	Window* w = glfwGetWindowUserPointer(window);
 	w->open = false;
-}
-
-void windowInit(Log* log)
-{
-	assert(log);
-	if (initialized) return;
-	winlog = log;
-	if (glfwInit() == GLFW_FALSE) {
-		logCrit(winlog, u8"Failed to initialize GLFW: %s", windowError());
-		winlog = null;
-		exit(EXIT_FAILURE);
-	}
-	logDebug(winlog, u8"GLFW initialized");
-	initialized = true;
-}
-
-void windowCleanup(void)
-{
-	if (!initialized) return;
-	glfwTerminate();
-	logDebug(winlog, u8"GLFW cleaned up");
-	winlog = null;
-	initialized = false;
 }
 
 void windowPoll(void)
@@ -126,8 +84,8 @@ Window* windowCreate(const char* title, Size2i size, bool fullscreen)
 		w->window = glfwCreateWindow(size.x, size.y, title, null, null);
 	}
 	if (!w->window) {
-		logCrit(winlog, u8"Failed to create window \"%s\": %s",
-				title, windowError());
+		logCrit(syslog, u8"Failed to create window \"%s\": %s",
+				title, systemError());
 		exit(EXIT_FAILURE);
 	}
 	glfwSetWindowUserPointer(w->window, w);
@@ -136,7 +94,7 @@ Window* windowCreate(const char* title, Size2i size, bool fullscreen)
 	glfwSetKeyCallback(w->window, keyCallback);
 	glfwSetWindowCloseCallback(w->window, windowCloseCallback);
 	glfwGetFramebufferSize(w->window, &size.x, &size.y);
-	logInfo(winlog, u8"Window \"%s\" created at %dx%d%s",
+	logInfo(syslog, u8"Window \"%s\" created at %dx%d%s",
 			title, size.x, size.y, fullscreen ? u8" fullscreen" : u8"");
 	return w;
 }
@@ -147,7 +105,7 @@ void windowDestroy(Window* w)
 	w->window = null;
 	mutexDestroy(w->inputsMutex);
 	w->inputsMutex = null;
-	logDebug(winlog, u8"Window \"%s\" destroyed", w->title);
+	logDebug(syslog, u8"Window \"%s\" destroyed", w->title);
 	free(w);
 }
 
