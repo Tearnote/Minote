@@ -39,6 +39,30 @@ set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 include_directories(${GLFW_INCLUDE_DIRS})
 
+# Build the preprocessors
+add_executable(Preshade src/tools/preshade.c)
+
+# Preprocess shaders
+include_directories(${PROJECT_BINARY_DIR}/glsl)
+set(GLSL_SOURCES
+        src/glsl/flat.vert.glsl
+        src/glsl/flat.frag.glsl)
+
+foreach (GLSL_PATH ${GLSL_SOURCES})
+    get_filename_component(GLSL_FILENAME ${GLSL_PATH} NAME_WLE)
+    set(GLSL_OUTPUT ${PROJECT_BINARY_DIR}/glsl/${GLSL_FILENAME})
+    add_custom_command(
+            OUTPUT ${GLSL_OUTPUT}
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/glsl/"
+            COMMAND Preshade ${PROJECT_SOURCE_DIR}/${GLSL_PATH} ${GLSL_OUTPUT}
+            DEPENDS ${GLSL_PATH}
+            VERBATIM)
+    list(APPEND GLSL_OUTPUTS ${GLSL_OUTPUT})
+endforeach (GLSL_PATH)
+
+add_custom_target(Preprocess_shaders
+        DEPENDS ${GLSL_OUTPUTS})
+
 # Build the game
 include_directories(lib)
 set(C_INTERNALLIBS
@@ -65,6 +89,9 @@ target_compile_options(Minote PRIVATE
         -Wall -Wextra -pedantic-errors>
         $<$<CXX_COMPILER_ID:MSVC>:
         /W4>)
+
+add_dependencies(Minote Preprocess_shaders)
+add_dependencies(Preprocess_shaders Preshade)
 
 # Linker settings
 if(CMAKE_BUILD_TYPE STREQUAL "Release")

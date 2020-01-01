@@ -14,12 +14,12 @@ typedef struct Renderer Renderer;
 
 /**
  * Create a new ::Renderer instance and attach it to a ::Window.
- * @param w The ::Window to attach to. Must have no other ::Renderer attached
- * @param l A ::Log to use for rendering messages
+ * @param window The ::Window to attach to. Must have no other ::Renderer attached
+ * @param log A ::Log to use for rendering messages
  * @return A newly created ::Renderer. Needs to be destroyed with
  * rendererDestroy()
  */
-Renderer* rendererCreate(Window* w, Log* l);
+Renderer* rendererCreate(Window* window, Log* log);
 
 /**
  * Destroy a ::Renderer instance. The context is freed from the ::Window, and

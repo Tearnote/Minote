@@ -71,6 +71,14 @@ bool windowIsOpen(Window* w);
 void windowClose(Window* w);
 
 /**
+ * Returns the title of a ::Window.
+ * @param w The ::Window object
+ * @return String displayed on the ::Window's title bar
+ * @remark This function is thread-safe.
+ */
+const char* windowGetTitle(Window* w);
+
+/**
  * Activate the ::Window's OpenGL context on the current thread. This is
  * required before OpenGL commands can be used. No other ::Window's context
  * can be active on the same thread, and windowContextDeactivate() must be

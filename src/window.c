@@ -119,6 +119,11 @@ void windowClose(Window* w)
 	w->open = false;
 }
 
+const char* windowGetTitle(Window* w)
+{
+	return w->title;
+}
+
 void windowContextActivate(Window* w)
 {
 	glfwMakeContextCurrent(w->window);
