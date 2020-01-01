@@ -38,7 +38,7 @@ thread* threadCreate(void* func(void*), void* arg);
  * Destroy a ::thread instance. If the thread is still running, block execution
  * of current thread until the specified thread exits. The destroyed object
  * cannot be used anymore and the pointer becomes invalid.
- * @param id The ::thread object
+ * @param t The ::thread object
  */
 void threadDestroy(thread* t);
 

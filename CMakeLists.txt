@@ -66,16 +66,20 @@ add_custom_target(Preprocess_shaders
 # Build the game
 include_directories(lib)
 set(C_INTERNALLIBS
-        lib/glad/glad.c)
+        lib/glad/glad.h lib/glad/glad.c lib/glad/KHR/khrplatform.h
+        lib/linmath/linmath.h)
 set(C_SOURCES
         src/main.h src/main.c
         src/log.h src/log.c
         src/util.h src/util.c
         src/window.h src/window.c
-        src/point.h
+        src/visualdef.h
         src/queue.h src/queue.c
         src/game.h src/game.c
-        src/thread.h src/thread.c src/system.c src/system.h src/time.c src/time.h src/renderer.c src/renderer.h src/color.h)
+        src/thread.h src/thread.c
+        src/system.h src/system.c
+        src/time.h src/time.c
+        src/renderer.h src/renderer.c)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD

@@ -10,7 +10,7 @@
 #define MINOTE_WINDOW_H
 
 #include <stdbool.h>
-#include "point.h"
+#include "visualdef.h"
 #include "log.h"
 
 /**

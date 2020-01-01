@@ -2,6 +2,7 @@ PROJECT_NAME           = Minote
 PROJECT_BRIEF          = "A modern puzzle action game."
 OUTPUT_DIRECTORY       = doc
 OPTIMIZE_OUTPUT_FOR_C  = YES
+FILE_PATTERNS          = *.c *.h *.md *.glsl
 TYPEDEF_HIDES_STRUCT   = YES
 EXTRACT_ALL            = YES
 EXTRACT_STATIC         = YES

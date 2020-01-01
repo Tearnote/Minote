@@ -9,6 +9,7 @@
 #include <assert.h>
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
+#include "linmath/linmath.h"
 #include "util.h"
 
 /// Semantic rename of OpenGL shader object ID
@@ -17,19 +18,10 @@ typedef GLuint Shader;
 /// Semantic rename of OpenGL shader program object ID
 typedef GLuint Program;
 
-/// List of shader programs supported by the renderer
-typedef enum ProgramType {
-	ProgramNone,
-	ProgramFlat, ///< @todo rendererDrawFlat()
-//	ProgramPhong,
-//	ProgramMsdf,
-			ProgramSize
-} ProgramType;
-
 /// Struct that encapsulates a ::Shader's source code
 typedef struct ShaderSource {
 	const char* name; ///< Human-readable name for identification
-	const char* source; ///< Full GLSL source code
+	const GLchar* source; ///< Full GLSL source code
 } ShaderSource;
 
 /// Fragment and vertex ::Shader sources to be linked into a single ::Program
@@ -41,12 +33,12 @@ typedef struct ProgramSources {
 ///< Constant list of shader program sources
 static const ProgramSources ShaderPaths[ProgramSize] = {
 		[ProgramFlat] = {
-				.vert = (ShaderSource){
+				.vert = {
 						.name = "flat.vert",
 						.source = (GLchar[]){
 #include "flat.vert"
 								, '\0'}},
-				.frag = (ShaderSource){
+				.frag = {
 						.name = "flat.frag",
 						.source = (GLchar[]){
 #include "flat.frag"
@@ -153,7 +145,7 @@ static Program programCreate(Renderer* r, ProgramSources sources)
  * Destroy a ::Program instance. The program ID becomes invalid and cannot be
  * used again.
  * @param r The ::Renderer object
- * @param shader ::Program ID to destroy
+ * @param program ::Program ID to destroy
  */
 static void programDestroy(Renderer* r, Program program)
 {
@@ -213,4 +205,104 @@ void rendererClear(Renderer* r, Color3 color)
 void rendererFlip(Renderer* r)
 {
 	windowFlip(r->window);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+typedef GLuint VertexBuffer;
+
+typedef GLuint VertexArray;
+
+struct Model {
+	ProgramType type;
+	const char* name;
+	VertexBuffer triangles;
+	size_t numTriangles;
+	VertexBuffer tints;
+	VertexBuffer transforms;
+	VertexArray vao;
+};
+
+Model* modelCreate(Renderer* r, ProgramType type, const char* name,
+		size_t numTriangles, Triangle triangles[numTriangles])
+{
+	assert(type > ProgramNone && type < ProgramSize);
+	assert(numTriangles);
+	assert(triangles);
+	Model* m = alloc(sizeof(*m));
+	m->type = type;
+	m->name = name;
+	glGenBuffers(1, &m->triangles);
+	glBindBuffer(GL_ARRAY_BUFFER, m->triangles);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Triangle) * numTriangles, triangles,
+			GL_STATIC_DRAW);
+	m->numTriangles = numTriangles;
+	glGenBuffers(1, &m->tints);
+	glGenBuffers(1, &m->transforms);
+	glGenVertexArrays(1, &m->vao);
+	glBindVertexArray(m->vao);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+			(void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+			(void*)offsetof(Vertex, color));
+	glBindBuffer(GL_ARRAY_BUFFER, m->tints);
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Color4),
+			(void*)0);
+	glVertexAttribDivisor(2, 1);
+	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
+	glEnableVertexAttribArray(3);
+	glEnableVertexAttribArray(4);
+	glEnableVertexAttribArray(5);
+	glEnableVertexAttribArray(6);
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(vec4),
+			(void*)0);
+	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(vec4),
+			(void*)sizeof(vec4));
+	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(vec4),
+			(void*)(sizeof(vec4) * 2));
+	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(vec4),
+			(void*)(sizeof(vec4) * 3));
+	glVertexAttribDivisor(3, 1);
+	glVertexAttribDivisor(4, 1);
+	glVertexAttribDivisor(5, 1);
+	glVertexAttribDivisor(6, 1);
+	logDebug(r->log, u8"Model %s created", m->name);
+	return m;
+}
+
+void modelDestroy(Renderer* r, Model* m)
+{
+	glDeleteVertexArrays(1, &m->vao);
+	glDeleteBuffers(1, &m->transforms);
+	glDeleteBuffers(1, &m->tints);
+	glDeleteBuffers(1, &m->triangles);
+	logDebug(r->log, u8"Model %s destroyed", m->name);
+	free(m);
+	m = null;
+}
+
+void modelDraw(Renderer* r, Model* m, size_t instances,
+		Color4 tints[instances], mat4x4 transforms[instances])
+{
+	assert(r);
+	assert(m);
+	assert(m->vao);
+	assert(m->name);
+	assert(m->triangles);
+	assert(m->tints);
+	assert(m->transforms);
+	assert(tints);
+	assert(transforms);
+	glBindBuffer(GL_ARRAY_BUFFER, m->tints);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Color4) * instances, tints,
+			GL_STREAM_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, transforms,
+			GL_STREAM_DRAW);
+	glUseProgram(r->programs[m->type]);
+	glBindVertexArray(m->vao);
+	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numTriangles * 3, instances);
 }
