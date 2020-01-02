@@ -21,5 +21,8 @@ Requires [`GLFW`](https://www.glfw.org/) 3.3.
 [`glad`](https://glad.dav1d.de/) loader generated on 2019-05-06, in
 Public Domain.
 
+[`linmath.h`](https://github.com/datenwolf/linmath.h) retrieved on
+2020-01-01, used under WTFPL.
+
 [`SDL_GameControllerDB`](https://github.com/gabomdq/SDL_GameControllerDB)
 retrieved on 2019-09-05, used under zlib license.
