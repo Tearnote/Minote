@@ -2,6 +2,7 @@
 #define LINMATH_H
 
 #include <math.h>
+#include <string.h>
 
 #ifdef LINMATH_NO_INLINE
 #define LINMATH_H_FUNC static
@@ -582,7 +583,7 @@ LINMATH_H_FUNC void quat_from_mat4x4(quat q, mat4x4 M)
 	q[3] = (M[p[2]][p[1]] - M[p[1]][p[2]])/(2.f*r);
 }
 
-LINMATH_H_FUNC mat4x4_arcball(mat4x4 R, mat4x4 M, vec2 _a, vec2 _b, float s)
+LINMATH_H_FUNC void mat4x4_arcball(mat4x4 R, mat4x4 M, vec2 _a, vec2 _b, float s)
 {
 vec2 a; memcpy(a, _a, sizeof(a));
 vec2 b; memcpy(b, _b, sizeof(b));
