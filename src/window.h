@@ -79,6 +79,22 @@ void windowClose(Window* w);
 const char* windowGetTitle(Window* w);
 
 /**
+ * Return the size of a ::Window in pixels.
+ * @param w The ::Window object
+ * @return Size of the window in pixels
+ * @remark This function is thread-safe.
+ */
+Size2i windowGetSize(Window* w);
+
+/**
+ * Return the scale of a ::Window, with 1.0 being "normal".
+ * @param w The ::Window object
+ * @return Scale of the window
+ * @remark This function is thread-safe.
+ */
+float windowGetScale(Window* w);
+
+/**
  * Activate the ::Window's OpenGL context on the current thread. This is
  * required before OpenGL commands can be used. No other ::Window's context
  * can be active on the same thread, and windowContextDeactivate() must be

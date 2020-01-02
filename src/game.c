@@ -23,15 +23,15 @@ void* game(void* args)
 	Model* triangle = modelCreate(renderer, ProgramFlat, u8"triangle", 1,
 			(Triangle[]){
 					(Vertex){
-							.pos = {-0.5f, -0.5f, 0.0f},
+							.pos = {-0.5f, -0.5f, -2.0f},
 							.color = {1.0f, 0.0f, 0.0f, 1.0f}
 					},
 					(Vertex){
-							.pos = {0.5f, -0.5f, 0.0f},
+							.pos = {0.5f, -0.5f, -2.0f},
 							.color = {0.0f, 0.0f, 1.0f, 1.0f}
 					},
 					(Vertex){
-							.pos = {0.0f, 0.5f, 0.0f},
+							.pos = {0.0f, 0.5f, -2.0f},
 							.color = {0.0f, 1.0f, 0.0f, 1.0f}
 					}
 			});

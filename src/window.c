@@ -20,11 +20,14 @@ struct Window {
 	Queue* inputs; ///< Message queue for storing keypresses
 	mutex* inputsMutex; ///< Mutex protecting the #inputs queue
 	atomic bool open; ///< false if window should be closed, true otherwise
+	atomic size_t width; ///< width of the viewport in pixels
+	atomic size_t height; ///< height of the viewport in pixels
+	atomic float scale; ///< DPI scaling of the window, where 1.0 is "normal"
 };
 
 /**
- * Function to run on each keypress event. The ::Window object is retrieved from
- * the GLFWwindow's user pointer.
+ * Function to run on each keypress event. The key event is added to the
+ * queue. The ::Window object is retrieved from the GLFWwindow's user pointer.
  * @param window The GLFWwindow object
  * @param key Platform-independent key identifier
  * @param scancode Platform-dependent keycode
@@ -46,11 +49,59 @@ keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 	mutexUnlock(w->inputsMutex);
 }
 
+/**
+ * Function to run when user requested window close. The ::Window object is
+ * retrieved from the GLFWwindow's user pointer.
+ * @param window The GLFWwindow object
+ */
 static void windowCloseCallback(GLFWwindow* window)
 {
 	assert(glfwGetWindowUserPointer(window));
 	Window* w = glfwGetWindowUserPointer(window);
 	w->open = false;
+}
+
+/**
+ * Function to run when the window is resized. The new size is kept for later
+ * retrieval with windowGetSize(). The ::Window object is retrieved from the
+ * GLFWwindow's user pointer.
+ * @param window The GLFWwindow object
+ * @param width New window width in pixels
+ * @param height New window height in pixels
+ */
+static void framebufferResizeCallback(GLFWwindow *window, int width, int height)
+{
+	assert(glfwGetWindowUserPointer(window));
+	assert(width);
+	assert(height);
+	Window* w = glfwGetWindowUserPointer(window);
+	w->width = width;
+	w->height = height;
+	assert(w->width);
+	assert(w->height);
+	logDebug(syslog, u8"Window \"%s\" resized to %dx%d",
+			w->title, width, height);
+}
+
+/**
+ * Function to run when the window is rescaled. This might happen when dragging
+ * it to a display with different DPI scaling, or at startup. The new scale is
+ * kept for later retrieval with windowGetScale(). The ::Window object is
+ * retrieved from the GLFWwindow's user pointer.
+ * @param window The GLFWwindow object
+ * @param xScale New window scale, with 1.0 being "normal"
+ * @param yScale Unused. This appears to be 0.0 sometimes so we ignore it
+ */
+static void windowScaleCallback(GLFWwindow *window, float xScale, float yScale)
+{
+	(void)yScale;
+	assert(glfwGetWindowUserPointer(window));
+	assert(xScale);
+	Window* w = glfwGetWindowUserPointer(window);
+	w->scale = xScale;
+	assert(w->scale);
+	logDebug(syslog, "Window \"%s\" DPI scaling changed to %f",
+			w->title, xScale);
 }
 
 void windowPoll(void)
@@ -93,9 +144,21 @@ Window* windowCreate(const char* title, Size2i size, bool fullscreen)
 	w->inputs = queueCreate(sizeof(KeyInput), 64);
 	glfwSetKeyCallback(w->window, keyCallback);
 	glfwSetWindowCloseCallback(w->window, windowCloseCallback);
-	glfwGetFramebufferSize(w->window, &size.x, &size.y);
-	logInfo(syslog, u8"Window \"%s\" created at %dx%d%s",
-			title, size.x, size.y, fullscreen ? u8" fullscreen" : u8"");
+	glfwSetFramebufferSizeCallback(w->window, framebufferResizeCallback);
+	glfwSetWindowContentScaleCallback(w->window, windowScaleCallback);
+	// An initial check is required to get correct values for non-100% scaling
+	int width = 0;
+	int height = 0;
+	float scale = 0.0f;
+	glfwGetFramebufferSize(w->window, &width, &height);
+	framebufferResizeCallback(w->window, width, height);
+	glfwGetWindowContentScale(w->window, &scale, null);
+	windowScaleCallback(w->window, scale, 0);
+	assert(w->width);
+	assert(w->height);
+	assert(w->scale);
+	logInfo(syslog, u8"Window \"%s\" created at %dx%d*%f%s",
+			title, width, height, scale, fullscreen ? u8" fullscreen" : u8"");
 	return w;
 }
 
@@ -122,6 +185,16 @@ void windowClose(Window* w)
 const char* windowGetTitle(Window* w)
 {
 	return w->title;
+}
+
+Size2i windowGetSize(Window* w)
+{
+	return (Size2i){w->width, w->height};
+}
+
+float windowGetScale(Window* w)
+{
+	return w->scale;
 }
 
 void windowContextActivate(Window* w)

@@ -12,11 +12,20 @@
 #include "linmath/linmath.h"
 #include "util.h"
 
+/// Start of the clipping plane, in world distance units
+#define ProjectionNear 0.1f
+
+/// End of the clipping plane (draw distance), in world distance units
+#define ProjectionFar 100.0f
+
 /// Semantic rename of OpenGL shader object ID
 typedef GLuint Shader;
 
-/// Semantic rename of OpenGL shader program object ID
-typedef GLuint Program;
+typedef struct Program {
+	GLuint id;
+	//GLint cameraAttr;
+	GLint projectionAttr;
+} Program;
 
 /// Struct that encapsulates a ::Shader's source code
 typedef struct ShaderSource {
@@ -47,9 +56,11 @@ static const ProgramSources ShaderPaths[ProgramSize] = {
 };
 
 struct Renderer {
-	Window* window; ///< ::Window object the ::Renderer is attached too
 	Log* log; ///< ::Log to use for rendering-related messages
-	Program programs[ProgramSize];
+	Window* window; ///< ::Window object the ::Renderer is attached too
+	Size2i size; ///< Size of the rendering viewport in pixels
+	mat4x4 projection; ///< Projection matrix (perspective transform)
+	Program programs[ProgramSize]; ///< Array of usable shader programs
 };
 
 /**
@@ -111,31 +122,36 @@ static Program programCreate(Renderer* r, ProgramSources sources)
 	assert(sources.frag.source);
 	Shader vert = shaderCreate(r, sources.vert, GL_VERTEX_SHADER);
 	if (vert == 0)
-		return 0;
+		return (Program){0};
 	Shader frag = shaderCreate(r, sources.frag, GL_FRAGMENT_SHADER);
 	if (frag == 0) {
 		shaderDestroy(r, vert); // Proper cleanup, how fancy
-		return 0;
+		return (Program){0};
 	}
 
-	Program program = glCreateProgram();
-	glAttachShader(program, vert);
-	glAttachShader(program, frag);
-	glLinkProgram(program);
+	Program program = {0};
+	program.id = glCreateProgram();
+	glAttachShader(program.id, vert);
+	glAttachShader(program.id, frag);
+	glLinkProgram(program.id);
 	GLint linkStatus = 0;
-	glGetProgramiv(program, GL_LINK_STATUS, &linkStatus);
+	glGetProgramiv(program.id, GL_LINK_STATUS, &linkStatus);
 	if (linkStatus == GL_FALSE) {
 		GLchar infoLog[512];
-		glGetProgramInfoLog(program, 512, null, infoLog);
+		glGetProgramInfoLog(program.id, 512, null, infoLog);
 		logError(r->log, u8"Failed to link shader program %s+%s: %s",
 				sources.vert.name, sources.frag.name, infoLog);
-		glDeleteProgram(program);
-		program = 0;
+		glDeleteProgram(program.id);
+		program.id = 0;
 	}
 	shaderDestroy(r, frag);
 	frag = 0;
 	shaderDestroy(r, vert);
 	vert = 0;
+	/*program.cameraAttr = glGetUniformLocation(program.id, "camera");
+	assert(program.cameraAttr != -1);*/
+	program.projectionAttr = glGetUniformLocation(program.id, "projection");
+	assert(program.projectionAttr != -1);
 	logDebug(r->log, u8"Linked shader program %s+%s",
 			sources.vert.name, sources.frag.name);
 	return program;
@@ -149,7 +165,26 @@ static Program programCreate(Renderer* r, ProgramSources sources)
  */
 static void programDestroy(Renderer* r, Program program)
 {
-	glDeleteProgram(program);
+	glDeleteProgram(program.id);
+	program.id = 0;
+}
+
+/**
+ * Resize the ::Renderer viewport, preferably to ::Window size. Recreates the
+ * matrices as needed.
+ * @param r The ::Renderer object
+ * @param size New viewport size in pixels
+ */
+static void rendererResize(Renderer* r, Size2i size)
+{
+	assert(r);
+	assert(size.x);
+	assert(size.y);
+	r->size.x = size.x;
+	r->size.y = size.y;
+	glViewport(0, 0, size.x, size.y);
+	mat4x4_perspective(r->projection, radf(45.0f),
+			(float)size.x / (float)size.y, ProjectionNear, ProjectionFar);
 }
 
 Renderer* rendererCreate(Window* window, Log* log)
@@ -178,6 +213,8 @@ Renderer* rendererCreate(Window* window, Log* log)
 	for (size_t i = ProgramNone + 1; i < ProgramSize; i += 1)
 		r->programs[i] = programCreate(r, ShaderPaths[i]);
 
+	rendererResize(r, windowGetSize(r->window));
+
 	logDebug(r->log, "Created renderer for window \"%s\"",
 			windowGetTitle(r->window));
 	return r;
@@ -188,7 +225,7 @@ void rendererDestroy(Renderer* r)
 	assert(r);
 	for (size_t i = ProgramNone + 1; i < ProgramSize; i += 1) {
 		programDestroy(r, r->programs[i]);
-		r->programs[i] = 0;
+		r->programs[i] = (Program){0};
 	}
 	windowContextDeactivate(r->window);
 	logDebug(r->log, "Destroyed renderer for window \"%s\"",
@@ -205,12 +242,17 @@ void rendererClear(Renderer* r, Color3 color)
 void rendererFlip(Renderer* r)
 {
 	windowFlip(r->window);
+	Size2i windowSize = windowGetSize(r->window);
+	if (r->size.x != windowSize.x || r->size.y != windowSize.y)
+		rendererResize(r, windowSize);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
+/// Semantic rename of OpenGL vertex buffer object ID
 typedef GLuint VertexBuffer;
 
+/// Semantic rename of OpenGL vertex array object ID
 typedef GLuint VertexArray;
 
 struct Model {
@@ -302,7 +344,8 @@ void modelDraw(Renderer* r, Model* m, size_t instances,
 	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, transforms,
 			GL_STREAM_DRAW);
-	glUseProgram(r->programs[m->type]);
+	glUseProgram(r->programs[m->type].id);
 	glBindVertexArray(m->vao);
+	glUniformMatrix4fv(0, 1, GL_FALSE, r->projection[0]);
 	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numTriangles * 3, instances);
 }
