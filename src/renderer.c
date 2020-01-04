@@ -39,7 +39,7 @@ typedef struct ProgramSources {
 	ShaderSource frag; ///< Source of the fragment ::Shader
 } ProgramSources;
 
-///< Constant list of shader program sources
+/// Constant list of shader program sources
 static const ProgramSources ShaderPaths[ProgramSize] = {
 		[ProgramFlat] = {
 				.vert = {

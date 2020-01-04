@@ -1,1 +1,37 @@
-Document build step variations
+flat shader:
+in vertices (pos, color) - model mesh (simple)
+in tints                 - per call
+in matrices              - per call
+uniform camera           - renderer common
+uniform projection       - renderer common
+
+phong shader:
+in vertices (pos, color, normal) - model mesh (with calculated normals)
+in tints                         - per drawcall
+in matrices                      - per drawcall
+in normalMatrices                - calculated in drawcall
+uniform camera                   - renderer common
+uniform projection               - renderer common
+uniform lightPosition            - renderer common
+uniform lightColor               - renderer common
+uniform ambientStrength          - model material
+uniform diffuseStrength          - model material
+uniform specularStrength         - model material
+uniform shininess                - model material
+
+msdf shader:
+in vertices (pos, color, tex) - model mesh (with texture coords)
+in tints                      - per drawcall
+in matrices                   - per drawcall
+uniform camera                - renderer common
+uniform projection            - renderer common
+uniform atlas                 - per drawcall
+
+post shader:
+in vertices (pos) - renderer common (always a fullscreen quad)
+uniform screen    - per drawcall
+uniform ???       - custom params
+
+custom shader:
+in vertices (pos, ???) - model mesh
+uniform ???            - custom params
