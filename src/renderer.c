@@ -76,6 +76,7 @@ struct Renderer {
 	Window* window; ///< ::Window object the ::Renderer is attached too
 	Size2i size; ///< Size of the rendering viewport in pixels
 	mat4x4 projection; ///< Projection matrix (perspective transform)
+	mat4x4 camera; ///< Camera matrix (world transform)
 	ProgramFlat flat; ///< Data of the built-in #ProgramTypeFlat shader
 };
 
@@ -229,8 +230,18 @@ Renderer* rendererCreate(Window* window, Log* log)
 		logWarn(r->log,
 				u8"\"projection\" uniform not available in shader program %s+%s",
 				r->flat.sources->vert.name, r->flat.sources->frag.name);
+	r->flat.camera = glGetUniformLocation(r->flat.id, "camera");
+	if (r->flat.camera == -1)
+		logWarn(r->log,
+				u8"\"camera\" uniform not available in shader program %s+%s",
+				r->flat.sources->vert.name, r->flat.sources->frag.name);
 
 	rendererResize(r, windowGetSize(r->window));
+
+	vec3 eye = { 0.0f, 12.0f, 32.0f };
+	vec3 center = { 0.0f, 12.0f, 0.0f };
+	vec3 up = { 0.0f, 1.0f, 0.0f };
+	mat4x4_look_at(r->camera, eye, center, up);
 
 	logDebug(r->log, "Created renderer for window \"%s\"",
 			windowGetTitle(r->window));
@@ -360,6 +371,7 @@ void modelDrawFlat(Renderer* r, ModelFlat* m, size_t instances,
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4x4) * instances, transforms);
 	glUseProgram(r->flat.id);
 	glBindVertexArray(m->vao);
-	glUniformMatrix4fv(0, 1, GL_FALSE, r->projection[0]);
+	glUniformMatrix4fv(r->flat.projection, 1, GL_FALSE, r->projection[0]);
+	glUniformMatrix4fv(r->flat.camera, 1, GL_FALSE, r->camera[0]);
 	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numVertices, instances);
 }

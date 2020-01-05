@@ -13,13 +13,12 @@ layout(location = 3) in mat4 iModel; ///< transformation matrix of the instance
 
 out vec4 fColor; ///< rgba output color
 
-//uniform mat4 camera; ///< view transform matrix
+uniform mat4 camera; ///< view transform matrix
 uniform mat4 projection; ///< projection matrix
 
 /// shader entry point
 void main()
 {
-    //gl_Position = projection * camera * iModel * vec4(vPosition, 1.0);
-    gl_Position = projection * iModel * vec4(vPosition, 1.0);
+    gl_Position = projection * camera * iModel * vec4(vPosition, 1.0);
     fColor = vColor * iTint;
 }

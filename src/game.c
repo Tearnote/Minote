@@ -20,19 +20,33 @@ void* game(void* args)
 	Log* gamelog = gargs->log;
 
 	Renderer* renderer = rendererCreate(window, gamelog);
-	ModelFlat* triangle = modelCreateFlat(renderer, u8"triangle", 3,
-			(VertexFlat[]){{
-					               .pos = {-0.5f, -0.5f, -2.0f},
-					               .color = {1.0f, 0.0f, 0.0f, 1.0f}
-			               },
-			               {
-					               .pos = {0.5f, -0.5f, -2.0f},
-					               .color = {0.0f, 0.0f, 1.0f, 1.0f}
-			               },
-			               {
-					               .pos = {0.0f, 0.5f, -2.0f},
-					               .color = {0.0f, 1.0f, 0.0f, 1.0f}
-			               }
+	ModelFlat* triangle = modelCreateFlat(renderer, u8"triangle", 6,
+			(VertexFlat[]){
+					{
+							.pos = {-5.0f, 0.0f, 0.0f},
+							.color = {1.0f, 0.0f, 0.0f, 1.0f}
+					},
+					{
+							.pos = {5.0f, 0.0f, 0.0f},
+							.color = {0.0f, 1.0f, 0.0f, 1.0f}
+					},
+					{
+							.pos = {-5.0f, 20.0f, 0.0f},
+							.color = {0.0f, 0.0f, 1.0f, 1.0f}
+					},
+					//////////
+					{
+							.pos = {5.0f, 0.0f, 0.0f},
+							.color = {0.0f, 1.0f, 0.0f, 1.0f}
+					},
+					{
+							.pos = {5.0f, 20.0f, 0.0f},
+							.color = {1.0f, 0.0f, 0.0f, 1.0f}
+					},
+					{
+							.pos = {-5.0f, 20.0f, 0.0f},
+							.color = {0.0f, 0.0f, 1.0f, 1.0f}
+					},
 			});
 	mat4x4 identity;
 	mat4x4_identity(identity);
