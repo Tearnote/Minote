@@ -11,6 +11,7 @@
 #include <GLFW/glfw3.h>
 #include "linmath/linmath.h"
 #include "util.h"
+#include "time.h"
 
 /// Start of the clipping plane, in world distance units
 #define ProjectionNear 0.1f
@@ -77,6 +78,7 @@ struct Renderer {
 	Size2i size; ///< Size of the rendering viewport in pixels
 	mat4x4 projection; ///< Projection matrix (perspective transform)
 	mat4x4 camera; ///< Camera matrix (world transform)
+	ModelFlat* sync; ///< Invisible model used to prevent frame buffering
 	ProgramFlat flat; ///< Data of the built-in #ProgramTypeFlat shader
 };
 
@@ -183,6 +185,21 @@ static void programDestroy(Renderer* r, Program program)
 }
 
 /**
+ * Prevent the driver from buffering commands. Call this after windowFlip()
+ * to minimize video latency.
+ * @param r The ::Renderer object
+ * @see https://danluu.com/latency-mitigation/
+ */
+static void rendererSync(Renderer* r)
+{
+	mat4x4 identity = {0};
+	mat4x4_identity(identity);
+	modelDrawFlat(r, r->sync, 1, (Color4[]){1.0f, 1.0f, 1.0f, 1.0f}, &identity);
+	GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+	glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, secToNsec(0.1));
+}
+
+/**
  * Resize the ::Renderer viewport, preferably to ::Window size. Recreates the
  * matrices as needed.
  * @param r The ::Renderer object
@@ -208,11 +225,14 @@ Renderer* rendererCreate(Window* window, Log* log)
 	r->window = window;
 	r->log = log;
 
+	// Pick up the OpenGL context
 	windowContextActivate(r->window);
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		logCrit(r->log, "Failed to initialize OpenGL");
 		exit(EXIT_FAILURE);
 	}
+
+	// Set up global OpenGL state
 	glfwSwapInterval(1); // Enable vsync
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
@@ -223,6 +243,7 @@ Renderer* rendererCreate(Window* window, Log* log)
 	glEnable(GL_FRAMEBUFFER_SRGB);
 	glEnable(GL_MULTISAMPLE);
 
+	// Create built-in shaders
 	r->flat.id = programCreate(r, DefaultShaders[ProgramTypeFlat]);
 	r->flat.sources = &DefaultShaders[ProgramTypeFlat];
 	r->flat.projection = glGetUniformLocation(r->flat.id, "projection");
@@ -236,12 +257,30 @@ Renderer* rendererCreate(Window* window, Log* log)
 				u8"\"camera\" uniform not available in shader program %s+%s",
 				r->flat.sources->vert.name, r->flat.sources->frag.name);
 
+	// Set up matrices
 	rendererResize(r, windowGetSize(r->window));
 
-	vec3 eye = { 0.0f, 12.0f, 32.0f };
-	vec3 center = { 0.0f, 12.0f, 0.0f };
-	vec3 up = { 0.0f, 1.0f, 0.0f };
+	// Set up the camera
+	vec3 eye = {0.0f, 12.0f, 32.0f};
+	vec3 center = {0.0f, 12.0f, 0.0f};
+	vec3 up = {0.0f, 1.0f, 0.0f};
 	mat4x4_look_at(r->camera, eye, center, up);
+
+	// Create sync model
+	r->sync = modelCreateFlat(r, "sync", 3, (VertexFlat[]){
+			{
+					.pos = {0.0f, 0.0f, 0.0f},
+					.color = {1.0f, 1.0f, 1.0f, 0.0f}
+			},
+			{
+					.pos = {1.0f, 0.0f, 0.0f},
+					.color = {1.0f, 1.0f, 1.0f, 0.0f}
+			},
+			{
+					.pos = {0.0f, 1.0f, 0.0f},
+					.color = {1.0f, 1.0f, 1.0f, 0.0f}
+			}
+	});
 
 	logDebug(r->log, "Created renderer for window \"%s\"",
 			windowGetTitle(r->window));
@@ -268,6 +307,8 @@ void rendererClear(Renderer* r, Color3 color)
 void rendererFlip(Renderer* r)
 {
 	windowFlip(r->window);
+	rendererSync(r);
+
 	Size2i windowSize = windowGetSize(r->window);
 	if (r->size.x != windowSize.x || r->size.y != windowSize.y)
 		rendererResize(r, windowSize);

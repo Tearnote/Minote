@@ -20,34 +20,9 @@ void* game(void* args)
 	Log* gamelog = gargs->log;
 
 	Renderer* renderer = rendererCreate(window, gamelog);
-	ModelFlat* triangle = modelCreateFlat(renderer, u8"triangle", 6,
-			(VertexFlat[]){
-					{
-							.pos = {-5.0f, 0.0f, 0.0f},
-							.color = {1.0f, 0.0f, 0.0f, 1.0f}
-					},
-					{
-							.pos = {5.0f, 0.0f, 0.0f},
-							.color = {0.0f, 1.0f, 0.0f, 1.0f}
-					},
-					{
-							.pos = {-5.0f, 20.0f, 0.0f},
-							.color = {0.0f, 0.0f, 1.0f, 1.0f}
-					},
-					//////////
-					{
-							.pos = {5.0f, 0.0f, 0.0f},
-							.color = {0.0f, 1.0f, 0.0f, 1.0f}
-					},
-					{
-							.pos = {5.0f, 20.0f, 0.0f},
-							.color = {1.0f, 0.0f, 0.0f, 1.0f}
-					},
-					{
-							.pos = {-5.0f, 20.0f, 0.0f},
-							.color = {0.0f, 0.0f, 1.0f, 1.0f}
-					},
-			});
+	ModelFlat* scene = modelCreateFlat(renderer, u8"scene",
+#include "meshes/scene.mesh"
+	);
 	mat4x4 identity;
 	mat4x4_identity(identity);
 
@@ -63,13 +38,13 @@ void* game(void* args)
 		}
 
 		rendererClear(renderer, (Color3){0.262f, 0.533f, 0.849f});
-		modelDrawFlat(renderer, triangle, 1, (Color4[]){1.0f, 1.0f, 1.0f, 1.0f},
+		modelDrawFlat(renderer, scene, 1, (Color4[]){1.0f, 1.0f, 1.0f, 1.0f},
 				&identity);
 		rendererFlip(renderer);
 	}
 
-	modelDestroyFlat(renderer, triangle);
-	triangle = null;
+	modelDestroyFlat(renderer, scene);
+	scene = null;
 	rendererDestroy(renderer);
 	renderer = null;
 	return null;
