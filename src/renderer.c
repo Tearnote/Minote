@@ -290,8 +290,10 @@ Renderer* rendererCreate(Window* window, Log* log)
 void rendererDestroy(Renderer* r)
 {
 	assert(r);
+	modelDestroyFlat(r, r->sync);
+	r->sync = 0;
 	programDestroy(r, r->flat.id);
-	r->flat.id = 0;
+	r->flat.id = -1;
 	windowContextDeactivate(r->window);
 	logDebug(r->log, "Destroyed renderer for window \"%s\"",
 			windowGetTitle(r->window));
