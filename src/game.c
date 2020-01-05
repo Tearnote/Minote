@@ -48,6 +48,8 @@ void* game(void* args)
 		rendererFlip(renderer);
 	}
 
+	modelDestroyFlat(renderer, mino);
+	mino = null;
 	modelDestroyFlat(renderer, scene);
 	scene = null;
 	rendererDestroy(renderer);
