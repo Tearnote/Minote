@@ -23,6 +23,9 @@ void* game(void* args)
 	ModelFlat* scene = modelCreateFlat(renderer, u8"scene",
 #include "meshes/scene.mesh"
 	);
+	ModelFlat* mino = modelCreateFlat(renderer, u8"mino",
+#include "meshes/mino.mesh"
+	);
 	mat4x4 identity;
 	mat4x4_identity(identity);
 
@@ -39,6 +42,8 @@ void* game(void* args)
 
 		rendererClear(renderer, (Color3){0.262f, 0.533f, 0.849f});
 		modelDrawFlat(renderer, scene, 1, (Color4[]){1.0f, 1.0f, 1.0f, 1.0f},
+				&identity);
+		modelDrawFlat(renderer, mino, 1, (Color4[]){1.0f, 0.0f, 0.0f, 1.0f},
 				&identity);
 		rendererFlip(renderer);
 	}

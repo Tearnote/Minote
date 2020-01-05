@@ -33,7 +33,7 @@ typedef enum ProgramType {
 	ProgramTypeNone, ///< zero value
 	ProgramTypeFlat, ///< Flat shading and no lighting. Most basic shader
 //	ProgramTypePhong, ///< Phong shading. Simple but makes use of light sources
-			ProgramTypeSize ///< terminator
+	ProgramTypeSize ///< terminator
 } ProgramType;
 
 /// Struct that encapsulates a ::Shader's source code
@@ -52,12 +52,12 @@ typedef struct ProgramSources {
 static const ProgramSources DefaultShaders[ProgramTypeSize] = {
 		[ProgramTypeFlat] = {
 				.vert = {
-						.name = "flat.vert",
+						.name = u8"flat.vert",
 						.source = (GLchar[]){
 #include "flat.vert"
 								, '\0'}},
 				.frag = {
-						.name = "flat.frag",
+						.name = u8"flat.frag",
 						.source = (GLchar[]){
 #include "flat.frag"
 								, '\0'}}
@@ -110,7 +110,7 @@ static Shader shaderCreate(Renderer* r, ShaderSource source, GLenum type)
 	}
 	assert(shader);
 	logDebug(r->log, u8"Compiled %s shader %s",
-			type == GL_VERTEX_SHADER ? "vertex" : "fragment", source.name);
+			type == GL_VERTEX_SHADER ? u8"vertex" : u8"fragment", source.name);
 	return shader;
 }
 
@@ -228,7 +228,7 @@ Renderer* rendererCreate(Window* window, Log* log)
 	// Pick up the OpenGL context
 	windowContextActivate(r->window);
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-		logCrit(r->log, "Failed to initialize OpenGL");
+		logCrit(r->log, u8"Failed to initialize OpenGL");
 		exit(EXIT_FAILURE);
 	}
 
@@ -236,8 +236,6 @@ Renderer* rendererCreate(Window* window, Log* log)
 	glfwSwapInterval(1); // Enable vsync
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
-	glCullFace(GL_FRONT);
-	glFrontFace(GL_CW);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_FRAMEBUFFER_SRGB);
@@ -246,12 +244,12 @@ Renderer* rendererCreate(Window* window, Log* log)
 	// Create built-in shaders
 	r->flat.id = programCreate(r, DefaultShaders[ProgramTypeFlat]);
 	r->flat.sources = &DefaultShaders[ProgramTypeFlat];
-	r->flat.projection = glGetUniformLocation(r->flat.id, "projection");
+	r->flat.projection = glGetUniformLocation(r->flat.id, u8"projection");
 	if (r->flat.projection == -1)
 		logWarn(r->log,
 				u8"\"projection\" uniform not available in shader program %s+%s",
 				r->flat.sources->vert.name, r->flat.sources->frag.name);
-	r->flat.camera = glGetUniformLocation(r->flat.id, "camera");
+	r->flat.camera = glGetUniformLocation(r->flat.id, u8"camera");
 	if (r->flat.camera == -1)
 		logWarn(r->log,
 				u8"\"camera\" uniform not available in shader program %s+%s",
@@ -261,13 +259,13 @@ Renderer* rendererCreate(Window* window, Log* log)
 	rendererResize(r, windowGetSize(r->window));
 
 	// Set up the camera
-	vec3 eye = {0.0f, 12.0f, 32.0f};
+	vec3 eye = {-4.0f, 12.0f, 32.0f};
 	vec3 center = {0.0f, 12.0f, 0.0f};
 	vec3 up = {0.0f, 1.0f, 0.0f};
 	mat4x4_look_at(r->camera, eye, center, up);
 
 	// Create sync model
-	r->sync = modelCreateFlat(r, "sync", 3, (VertexFlat[]){
+	r->sync = modelCreateFlat(r, u8"sync", 3, (VertexFlat[]){
 			{
 					.pos = {0.0f, 0.0f, 0.0f},
 					.color = {1.0f, 1.0f, 1.0f, 0.0f}
@@ -282,7 +280,7 @@ Renderer* rendererCreate(Window* window, Log* log)
 			}
 	});
 
-	logDebug(r->log, "Created renderer for window \"%s\"",
+	logDebug(r->log, u8"Created renderer for window \"%s\"",
 			windowGetTitle(r->window));
 	return r;
 }
@@ -295,7 +293,7 @@ void rendererDestroy(Renderer* r)
 	programDestroy(r, r->flat.id);
 	r->flat.id = -1;
 	windowContextDeactivate(r->window);
-	logDebug(r->log, "Destroyed renderer for window \"%s\"",
+	logDebug(r->log, u8"Destroyed renderer for window \"%s\"",
 			windowGetTitle(r->window));
 	free(r);
 }
