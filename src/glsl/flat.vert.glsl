@@ -20,6 +20,6 @@ uniform mat4 projection; ///< projection matrix
 void main()
 {
     //gl_Position = projection * camera * iModel * vec4(vPosition, 1.0);
-    gl_Position = projection * vec4(vPosition, 1.0);
+    gl_Position = projection * iModel * vec4(vPosition, 1.0);
     fColor = vColor * iTint;
 }

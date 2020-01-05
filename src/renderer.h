@@ -1,5 +1,5 @@
 /**
- * System for drawing inside a ::Window using a ::Renderer and ::Model instances
+ * System for drawing inside a ::Window using a ::Renderer and Model* instances
  * @file
  */
 
@@ -49,64 +49,56 @@ void rendererFlip(Renderer* r);
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Struct containing the data of a single mesh vertex
-typedef struct Vertex {
+/// Struct containing the data of a single mesh vertex of ::ModelFlat
+typedef struct VertexFlat {
 	Point3f pos; ///< Vertex position in model space
 	Color4 color; ///< Vertex color
-} Vertex;
+} VertexFlat;
 
-/// Struct that binds 3 vertices into a triangle
-typedef struct Triangle {
-	Vertex v1; ///< First vertex
-	Vertex v2; ///< Second vertex
-	Vertex v3; ///< Third vertex
-} Triangle;
-
-/// List of shader programs supported by the renderer
-typedef enum ProgramType {
-	ProgramNone, ///< zero value
-	ProgramFlat, ///< Flat shading and no lighting. Most basic shader
-//	ProgramPhong,
-//	ProgramMsdf,
-	ProgramSize ///< terminator
-} ProgramType;
+/// Struct that describes material properties of a ::ModelPhong
+typedef struct MaterialPhong {
+	float ambient; ///< Strength of ambient light reflection
+	float diffuse; ///< Strength of diffuse light reflection
+	float specular; ///< Strength of specular light reflection
+	float shine; ///< Smoothness of surface (inverse of specular highlight size)
+} MaterialPhong;
 
 /**
- * Opaque model type. You can obtain an instance with modelCreate().
+ * Model type with flat shading. You can obtain an instance with
+ * modelCreateFlat().
  */
-typedef struct Model Model;
+typedef struct ModelFlat ModelFlat;
 
 /**
- * Create a ::Model instance. The provided mesh is uploaded to the GPU and the
- * model is ready to draw with modelDraw().
+ * Create a ::ModelFlat instance. The provided mesh is uploaded to the GPU
+ * and the model is ready to draw with modelDrawFlat().
  * @param r The ::Renderer object
- * @param type Shader program to use for drawing the model
  * @param name Human-readable name for reference
- * @param numTriangles Number of triangles in @p triangles array
- * @param triangles Model mesh as an array of ::Triangle structs
- * @return Newly created ::Model. Must be destroyed with modelDestroy()
+ * @param numVertices Number of elements in @a vertices array
+ * @param vertices Model mesh as an array of ::VertexFlat structs
+ * @return Newly created ::ModelFlat. Must be destroyed with modelDestroyFlat()
  */
-Model* modelCreate(Renderer* r, ProgramType type, const char* name,
-		size_t numTriangles, Triangle triangles[numTriangles]);
+ModelFlat* modelCreateFlat(Renderer* r, const char* name,
+		size_t numVertices, VertexFlat vertices[]);
 
 /**
- * Destroy a ::Model instance. All referenced GPU resources are freed. The
+ * Destroy a ::ModelFlat instance. All referenced GPU resources are freed. The
  * destroyed object cannot be used anymore and the pointer becomes invalid.
  * @param r The ::Renderer object
- * @param m The ::Model object to destroy
+ * @param m The ::ModelFlat object to destroy
  */
-void modelDestroy(Renderer* r, Model* m);
+void modelDestroyFlat(Renderer* r, ModelFlat* m);
 
 /**
- * Draw a ::Model on the screen. Instanced rendering is used, and each instance
- * can be tinted with a provided color.
+ * Draw a ::ModelFlat on the screen. Instanced rendering is used, and each
+ * instance can be tinted with a provided color.
  * @param r The ::Renderer object
  * @param m The ::Model object to draw
  * @param instances Number of instances to draw
  * @param tints Array of color tints for each instance
  * @param transforms Array of 4x4 matrices for transforming each instance
  */
-void modelDraw(Renderer* r, Model* m, size_t instances,
+void modelDrawFlat(Renderer* r, ModelFlat* m, size_t instances,
 		Color4 tints[instances], mat4x4 transforms[instances]);
 
 #endif //MINOTE_RENDERER_H

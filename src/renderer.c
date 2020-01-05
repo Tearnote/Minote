@@ -21,11 +21,19 @@
 /// Semantic rename of OpenGL shader object ID
 typedef GLuint Shader;
 
-typedef struct Program {
-	GLuint id;
-	//GLint cameraAttr;
-	GLint projectionAttr;
-} Program;
+/// Semantic rename of OpenGL shader program object ID
+typedef GLuint Program;
+
+/// Semantic rename of OpenGL uniform location
+typedef GLint Uniform;
+
+/// List of model types supported by the renderer
+typedef enum ProgramType {
+	ProgramTypeNone, ///< zero value
+	ProgramTypeFlat, ///< Flat shading and no lighting. Most basic shader
+//	ProgramTypePhong, ///< Phong shading. Simple but makes use of light sources
+			ProgramTypeSize ///< terminator
+} ProgramType;
 
 /// Struct that encapsulates a ::Shader's source code
 typedef struct ShaderSource {
@@ -40,8 +48,8 @@ typedef struct ProgramSources {
 } ProgramSources;
 
 /// Constant list of shader program sources
-static const ProgramSources ShaderPaths[ProgramSize] = {
-		[ProgramFlat] = {
+static const ProgramSources DefaultShaders[ProgramTypeSize] = {
+		[ProgramTypeFlat] = {
 				.vert = {
 						.name = "flat.vert",
 						.source = (GLchar[]){
@@ -55,12 +63,20 @@ static const ProgramSources ShaderPaths[ProgramSize] = {
 		}
 };
 
+/// Instance of a #ProgramTypeFlat shader program
+typedef struct ProgramFlat {
+	Program id; ///< ID of the program object
+	Uniform camera; ///< Location of "camera" uniform
+	Uniform projection; ///< Location of "projection" uniform
+	const ProgramSources* sources; ///< Pointer to shader sources for reference
+} ProgramFlat;
+
 struct Renderer {
 	Log* log; ///< ::Log to use for rendering-related messages
 	Window* window; ///< ::Window object the ::Renderer is attached too
 	Size2i size; ///< Size of the rendering viewport in pixels
 	mat4x4 projection; ///< Projection matrix (perspective transform)
-	Program programs[ProgramSize]; ///< Array of usable shader programs
+	ProgramFlat flat; ///< Data of the built-in #ProgramTypeFlat shader
 };
 
 /**
@@ -129,29 +145,25 @@ static Program programCreate(Renderer* r, ProgramSources sources)
 		return (Program){0};
 	}
 
-	Program program = {0};
-	program.id = glCreateProgram();
-	glAttachShader(program.id, vert);
-	glAttachShader(program.id, frag);
-	glLinkProgram(program.id);
+	Program program = -1;
+	program = glCreateProgram();
+	glAttachShader(program, vert);
+	glAttachShader(program, frag);
+	glLinkProgram(program);
 	GLint linkStatus = 0;
-	glGetProgramiv(program.id, GL_LINK_STATUS, &linkStatus);
+	glGetProgramiv(program, GL_LINK_STATUS, &linkStatus);
 	if (linkStatus == GL_FALSE) {
 		GLchar infoLog[512];
-		glGetProgramInfoLog(program.id, 512, null, infoLog);
+		glGetProgramInfoLog(program, 512, null, infoLog);
 		logError(r->log, u8"Failed to link shader program %s+%s: %s",
 				sources.vert.name, sources.frag.name, infoLog);
-		glDeleteProgram(program.id);
-		program.id = 0;
+		glDeleteProgram(program);
+		program = 0;
 	}
 	shaderDestroy(r, frag);
 	frag = 0;
 	shaderDestroy(r, vert);
 	vert = 0;
-	/*program.cameraAttr = glGetUniformLocation(program.id, "camera");
-	assert(program.cameraAttr != -1);*/
-	program.projectionAttr = glGetUniformLocation(program.id, "projection");
-	assert(program.projectionAttr != -1);
 	logDebug(r->log, u8"Linked shader program %s+%s",
 			sources.vert.name, sources.frag.name);
 	return program;
@@ -165,8 +177,8 @@ static Program programCreate(Renderer* r, ProgramSources sources)
  */
 static void programDestroy(Renderer* r, Program program)
 {
-	glDeleteProgram(program.id);
-	program.id = 0;
+	glDeleteProgram(program);
+	program = -1;
 }
 
 /**
@@ -210,8 +222,13 @@ Renderer* rendererCreate(Window* window, Log* log)
 	glEnable(GL_FRAMEBUFFER_SRGB);
 	glEnable(GL_MULTISAMPLE);
 
-	for (size_t i = ProgramNone + 1; i < ProgramSize; i += 1)
-		r->programs[i] = programCreate(r, ShaderPaths[i]);
+	r->flat.id = programCreate(r, DefaultShaders[ProgramTypeFlat]);
+	r->flat.sources = &DefaultShaders[ProgramTypeFlat];
+	r->flat.projection = glGetUniformLocation(r->flat.id, "projection");
+	if (r->flat.projection == -1)
+		logWarn(r->log,
+				u8"\"projection\" uniform not available in shader program %s+%s",
+				r->flat.sources->vert.name, r->flat.sources->frag.name);
 
 	rendererResize(r, windowGetSize(r->window));
 
@@ -223,10 +240,8 @@ Renderer* rendererCreate(Window* window, Log* log)
 void rendererDestroy(Renderer* r)
 {
 	assert(r);
-	for (size_t i = ProgramNone + 1; i < ProgramSize; i += 1) {
-		programDestroy(r, r->programs[i]);
-		r->programs[i] = (Program){0};
-	}
+	programDestroy(r, r->flat.id);
+	r->flat.id = 0;
 	windowContextDeactivate(r->window);
 	logDebug(r->log, "Destroyed renderer for window \"%s\"",
 			windowGetTitle(r->window));
@@ -255,40 +270,37 @@ typedef GLuint VertexBuffer;
 /// Semantic rename of OpenGL vertex array object ID
 typedef GLuint VertexArray;
 
-struct Model {
-	ProgramType type;
+struct ModelFlat {
 	const char* name;
-	VertexBuffer triangles;
-	size_t numTriangles;
+	VertexBuffer vertices;
+	size_t numVertices;
 	VertexBuffer tints;
 	VertexBuffer transforms;
 	VertexArray vao;
 };
 
-Model* modelCreate(Renderer* r, ProgramType type, const char* name,
-		size_t numTriangles, Triangle triangles[numTriangles])
+ModelFlat* modelCreateFlat(Renderer* r, const char* name,
+		size_t numVertices, VertexFlat vertices[])
 {
-	assert(type > ProgramNone && type < ProgramSize);
-	assert(numTriangles);
-	assert(triangles);
-	Model* m = alloc(sizeof(*m));
-	m->type = type;
+	assert(numVertices);
+	assert(vertices);
+	ModelFlat* m = alloc(sizeof(*m));
 	m->name = name;
-	glGenBuffers(1, &m->triangles);
-	glBindBuffer(GL_ARRAY_BUFFER, m->triangles);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Triangle) * numTriangles, triangles,
+	glGenBuffers(1, &m->vertices);
+	glBindBuffer(GL_ARRAY_BUFFER, m->vertices);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(VertexFlat) * numVertices, vertices,
 			GL_STATIC_DRAW);
-	m->numTriangles = numTriangles;
+	m->numVertices = numVertices;
 	glGenBuffers(1, &m->tints);
 	glGenBuffers(1, &m->transforms);
 	glGenVertexArrays(1, &m->vao);
 	glBindVertexArray(m->vao);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexFlat),
 			(void*)0);
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-			(void*)offsetof(Vertex, color));
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(VertexFlat),
+			(void*)offsetof(VertexFlat, color));
 	glBindBuffer(GL_ARRAY_BUFFER, m->tints);
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Color4),
@@ -315,37 +327,39 @@ Model* modelCreate(Renderer* r, ProgramType type, const char* name,
 	return m;
 }
 
-void modelDestroy(Renderer* r, Model* m)
+void modelDestroyFlat(Renderer* r, ModelFlat* m)
 {
 	glDeleteVertexArrays(1, &m->vao);
 	glDeleteBuffers(1, &m->transforms);
 	glDeleteBuffers(1, &m->tints);
-	glDeleteBuffers(1, &m->triangles);
+	glDeleteBuffers(1, &m->vertices);
 	logDebug(r->log, u8"Model %s destroyed", m->name);
 	free(m);
 	m = null;
 }
 
-void modelDraw(Renderer* r, Model* m, size_t instances,
+void modelDrawFlat(Renderer* r, ModelFlat* m, size_t instances,
 		Color4 tints[instances], mat4x4 transforms[instances])
 {
 	assert(r);
 	assert(m);
 	assert(m->vao);
 	assert(m->name);
-	assert(m->triangles);
+	assert(m->vertices);
 	assert(m->tints);
 	assert(m->transforms);
 	assert(tints);
 	assert(transforms);
 	glBindBuffer(GL_ARRAY_BUFFER, m->tints);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Color4) * instances, tints,
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Color4) * instances, null,
 			GL_STREAM_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Color4) * instances, tints);
 	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, transforms,
+	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, null,
 			GL_STREAM_DRAW);
-	glUseProgram(r->programs[m->type].id);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4x4) * instances, transforms);
+	glUseProgram(r->flat.id);
 	glBindVertexArray(m->vao);
 	glUniformMatrix4fv(0, 1, GL_FALSE, r->projection[0]);
-	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numTriangles * 3, instances);
+	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numVertices, instances);
 }
