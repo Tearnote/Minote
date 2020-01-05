@@ -12,6 +12,8 @@
 #include "window.h"
 #include "renderer.h"
 
+#include <stdlib.h>
+
 void* game(void* args)
 {
 	assert(args);
@@ -23,11 +25,25 @@ void* game(void* args)
 	ModelFlat* scene = modelCreateFlat(renderer, u8"scene",
 #include "meshes/scene.mesh"
 	);
-	ModelFlat* mino = modelCreateFlat(renderer, u8"mino",
+	ModelPhong* mino = modelCreatePhong(renderer, u8"mino",
 #include "meshes/mino.mesh"
 	);
 	mat4x4 identity;
 	mat4x4_identity(identity);
+
+	Color4 tints[200] = {0};
+	mat4x4 transforms[200] = {0};
+	for (size_t i = 0; i < 200; i += 1) {
+		tints[i].r = (float)rand() / (float)RAND_MAX;
+		tints[i].g = (float)rand() / (float)RAND_MAX;
+		tints[i].b = (float)rand() / (float)RAND_MAX;
+		tints[i].a = 1.0f;
+		mat4x4_identity(transforms[i]);
+		mat4x4_translate_in_place(transforms[i],
+				(int)(i % 10) - 5,
+				i / 10,
+				0.0f);
+	}
 
 	while (windowIsOpen(window)) {
 		KeyInput i;
@@ -43,12 +59,11 @@ void* game(void* args)
 		rendererClear(renderer, (Color3){0.262f, 0.533f, 0.849f});
 		modelDrawFlat(renderer, scene, 1, (Color4[]){1.0f, 1.0f, 1.0f, 1.0f},
 				&identity);
-		modelDrawFlat(renderer, mino, 1, (Color4[]){1.0f, 0.0f, 0.0f, 1.0f},
-				&identity);
+		modelDrawPhong(renderer, mino, 200, tints, transforms);
 		rendererFlip(renderer);
 	}
 
-	modelDestroyFlat(renderer, mino);
+	modelDestroyPhong(renderer, mino);
 	mino = null;
 	modelDestroyFlat(renderer, scene);
 	scene = null;

@@ -55,6 +55,9 @@ typedef struct VertexFlat {
 	Color4 color; ///< Vertex color
 } VertexFlat;
 
+/// Struct containing the data of a single mesh vertex of ::ModelPhong
+typedef VertexFlat VertexPhong;
+
 /// Struct that describes material properties of a ::ModelPhong
 typedef struct MaterialPhong {
 	float ambient; ///< Strength of ambient light reflection
@@ -70,6 +73,12 @@ typedef struct MaterialPhong {
 typedef struct ModelFlat ModelFlat;
 
 /**
+ * Model type with phong shading. You can obtain an instance with
+ * modelCreatePhong().
+ */
+typedef struct ModelPhong ModelPhong;
+
+/**
  * Create a ::ModelFlat instance. The provided mesh is uploaded to the GPU
  * and the model is ready to draw with modelDrawFlat().
  * @param r The ::Renderer object
@@ -82,12 +91,34 @@ ModelFlat* modelCreateFlat(Renderer* r, const char* name,
 		size_t numVertices, VertexFlat vertices[]);
 
 /**
+ * Create a ::ModelPhong instance. The provided mesh is uploaded to the GPU
+ * and the model is ready to draw with modelDrawPhong().
+ * @param r The ::Renderer object
+ * @param name Human-readable name for reference
+ * @param numVertices Number of elements in @a vertices array
+ * @param vertices Model mesh as an array of ::VertexPhong structs
+ * @param material Material data for the Phong shading model
+ * @return Newly created ::ModelPhong. Must be destroyed with 
+ * modelDestroyPhong()
+ */
+ModelPhong* modelCreatePhong(Renderer* r, const char* name,
+		size_t numVertices, VertexPhong vertices[], MaterialPhong material);
+
+/**
  * Destroy a ::ModelFlat instance. All referenced GPU resources are freed. The
  * destroyed object cannot be used anymore and the pointer becomes invalid.
  * @param r The ::Renderer object
  * @param m The ::ModelFlat object to destroy
  */
 void modelDestroyFlat(Renderer* r, ModelFlat* m);
+
+/**
+ * Destroy a ::ModelPhong instance. All referenced GPU resources are freed. The
+ * destroyed object cannot be used anymore and the pointer becomes invalid.
+ * @param r The ::Renderer object
+ * @param m The ::ModelPhong object to destroy
+ */
+void modelDestroyPhong(Renderer* r, ModelPhong* m);
 
 /**
  * Draw a ::ModelFlat on the screen. Instanced rendering is used, and each
@@ -99,6 +130,18 @@ void modelDestroyFlat(Renderer* r, ModelFlat* m);
  * @param transforms Array of 4x4 matrices for transforming each instance
  */
 void modelDrawFlat(Renderer* r, ModelFlat* m, size_t instances,
+		Color4 tints[instances], mat4x4 transforms[instances]);
+
+/**
+ * Draw a ::ModelPhong on the screen. Instanced rendering is used, and each
+ * instance can be tinted with a provided color.
+ * @param r The ::Renderer object
+ * @param m The ::Model object to draw
+ * @param instances Number of instances to draw
+ * @param tints Array of color tints for each instance
+ * @param transforms Array of 4x4 matrices for transforming each instance
+ */
+void modelDrawPhong(Renderer* r, ModelPhong* m, size_t instances,
 		Color4 tints[instances], mat4x4 transforms[instances]);
 
 #endif //MINOTE_RENDERER_H

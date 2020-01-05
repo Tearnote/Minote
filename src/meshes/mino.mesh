@@ -1,4 +1,4 @@
-54, (VertexFlat[]){
+54, (VertexPhong[]){
 /////////////////////////////////////////////
 // Top wall
     {
@@ -242,4 +242,10 @@
         .pos = {0.875f, 0.875f, 0.0f},
         .color = {0.916f, 0.916f, 0.916f, 1.0f}
     },
+},
+(MaterialPhong){
+    .ambient = 0.2f,
+    .diffuse = 0.9f,
+    .specular = 0.4f,
+    .shine = 8.0f
 }

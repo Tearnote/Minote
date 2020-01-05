@@ -46,7 +46,9 @@ add_executable(Preshade src/tools/preshade.c)
 include_directories(${PROJECT_BINARY_DIR}/glsl)
 set(GLSL_SOURCES
         src/glsl/flat.vert.glsl
-        src/glsl/flat.frag.glsl)
+        src/glsl/flat.frag.glsl
+        src/glsl/phong.vert.glsl
+        src/glsl/phong.frag.glsl)
 
 foreach (GLSL_PATH ${GLSL_SOURCES})
     get_filename_component(GLSL_FILENAME ${GLSL_PATH} NAME_WLE)
