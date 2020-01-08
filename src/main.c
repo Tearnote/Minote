@@ -6,19 +6,16 @@
 #include "main.h"
 
 #include <stdlib.h>
-#include "util.h"
 #include "thread.h"
-#include "log.h"
 #include "window.h"
-#include "game.h"
 #include "system.h"
+#include "util.h"
+#include "game.h"
 #include "time.h"
+#include "log.h"
 
 /// Frequency of input polling, in Hz
 #define InputFrequency 240
-
-/// Main log file of the application
-static Log* applog = null;
 
 /**
  * Initialize all game systems. This should be relatively fast and not load
@@ -27,7 +24,6 @@ static Log* applog = null;
 static void init(void)
 {
 	logInit();
-	applog = logCreate();
 	logEnableConsole(applog);
 #ifdef NDEBUG
 	const char* logfile = u8"minote.log";
@@ -36,9 +32,10 @@ static void init(void)
 	logSetLevel(applog, LogTrace);
 #endif //NDEBUG
 	logEnableFile(applog, logfile);
-	logInfo(applog, u8"Starting up %s %s", APP_NAME, APP_VERSION);
+	logInfo(applog, u8"Starting up %s %s", AppName, AppVersion);
 
-	systemInit(applog);
+	systemInit();
+	windowInit(AppName u8" " AppVersion, (Size2i){1280, 720}, false);
 }
 
 /**
@@ -48,11 +45,8 @@ static void init(void)
  */
 static void cleanup(void)
 {
+	windowCleanup();
 	systemCleanup();
-	if (applog) {
-		logDestroy(applog);
-		applog = null;
-	}
 	logCleanup();
 }
 
@@ -67,15 +61,10 @@ int main(int argc, char* argv[argc + 1])
 	atexit(cleanup);
 	init();
 
-	Window* window = windowCreate(APP_NAME u8" " APP_VERSION,
-			(Size2i){1280, 720}, false);
-	thread* gameThread = threadCreate(game, &(GameArgs){
-			.log = applog,
-			.window = window
-	});
+	thread* gameThread = threadCreate(game, null);
 
 	nsec nextPoll = getTime();
-	while (windowIsOpen(window)) {
+	while (windowIsOpen()) {
 		nextPoll += secToNsec(1) / InputFrequency;
 		windowPoll();
 		sleepUntil(nextPoll);
@@ -83,7 +72,5 @@ int main(int argc, char* argv[argc + 1])
 
 	threadDestroy(gameThread);
 	gameThread = null;
-	windowDestroy(window);
-	window = null;
 	return EXIT_SUCCESS;
 }

@@ -6,7 +6,7 @@
 #ifndef MINOTE_TIME_H
 #define MINOTE_TIME_H
 
-#include <inttypes.h>
+#include <stdint.h>
 
 /**
  * Count of nanoseconds. The main type used for timekeeping. The upper limit
@@ -18,7 +18,8 @@
 #define PRInsec PRId64
 
 /// Generic macro for converting seconds to nanoseconds
-#define secToNsec(SEC) ((SEC) * (nsec)1000000000)
+#define secToNsec(SEC) \
+    ((SEC) * (nsec)1000000000)
 
 /**
  * Return the time passed since systemInit().

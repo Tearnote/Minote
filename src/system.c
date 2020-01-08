@@ -10,24 +10,20 @@
 #include <stdbool.h>
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
-#include "util.h"
+#include "log.h"
 
 /// State of main system initialization
 static bool initialized = false;
 
-Log* syslog = null;
-
-void systemInit(Log* log)
+void systemInit(void)
 {
-	assert(log);
 	if (initialized) return;
-	syslog = log;
+	assert(applog);
 	if (glfwInit() == GLFW_FALSE) {
-		logCrit(syslog, u8"Failed to initialize GLFW: %s", systemError());
-		syslog = null;
+		logCrit(applog, u8"Failed to initialize GLFW: %s", systemError());
 		exit(EXIT_FAILURE);
 	}
-	logDebug(syslog, u8"GLFW initialized");
+	logDebug(applog, u8"GLFW initialized");
 	initialized = true;
 }
 
@@ -35,8 +31,7 @@ void systemCleanup(void)
 {
 	if (!initialized) return;
 	glfwTerminate();
-	logDebug(syslog, u8"GLFW cleaned up");
-	syslog = null;
+	if (applog) logDebug(applog, u8"GLFW cleaned up");
 	initialized = false;
 }
 

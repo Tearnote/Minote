@@ -8,24 +8,19 @@
 #include <assert.h>
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
-#include "util.h"
-#include "window.h"
 #include "renderer.h"
+#include "window.h"
+#include "util.h"
+#include "log.h"
 
-#include <stdlib.h>
-
-void* game(void* args)
+void* game(void* arg)
 {
-	assert(args);
-	GameArgs* gargs = args;
-	Window* window = gargs->window;
-	Log* gamelog = gargs->log;
-
-	Renderer* renderer = rendererCreate(window, gamelog);
-	ModelFlat* scene = modelCreateFlat(renderer, u8"scene",
+	(void)arg;
+	rendererInit();
+	ModelFlat* scene = modelCreateFlat(u8"scene",
 #include "meshes/scene.mesh"
 	);
-	ModelPhong* mino = modelCreatePhong(renderer, u8"mino",
+	ModelPhong* mino = modelCreatePhong(u8"mino",
 #include "meshes/mino.mesh"
 	);
 	mat4x4 identity;
@@ -40,34 +35,34 @@ void* game(void* args)
 		tints[i].a = 1.0f;
 		mat4x4_identity(transforms[i]);
 		mat4x4_translate_in_place(transforms[i],
-				(int)(i % 10) - 5,
-				i / 10,
-				0.0f);
+			(signed)i % 10 - 5,
+			i / 10,
+			0.0f);
 	}
 
-	while (windowIsOpen(window)) {
+	while (windowIsOpen()) {
 		KeyInput i;
-		while (windowInputDequeue(window, &i)) {
-			logTrace(gamelog, u8"Input detected: %d %s",
-					i.key, i.action == GLFW_PRESS ? u8"press" : u8"release");
+		while (windowInputDequeue(&i)) {
+			logTrace(applog, u8"Input detected: %d %s",
+				i.key, i.action == GLFW_PRESS ? u8"press" : u8"release");
 			if (i.key == GLFW_KEY_ESCAPE) {
-				logInfo(gamelog, u8"Esc detected, closing window");
-				windowClose(window);
+				logInfo(applog, u8"Esc detected, closing appwindow");
+				windowClose();
 			}
 		}
 
-		rendererClear(renderer, (Color3){0.262f, 0.533f, 0.849f});
-		modelDrawFlat(renderer, scene, 1, (Color4[]){1.0f, 1.0f, 1.0f, 1.0f},
-				&identity);
-		modelDrawPhong(renderer, mino, 200, tints, transforms);
-		rendererFlip(renderer);
+		rendererFrameBegin();
+		rendererClear((Color3){0.262f, 0.533f, 0.849f});
+		modelDrawFlat(scene, 1, (Color4[]){1.0f, 1.0f, 1.0f, 1.0f},
+			&identity);
+		modelDrawPhong(mino, 200, tints, transforms);
+		rendererFrameEnd();
 	}
 
-	modelDestroyPhong(renderer, mino);
+	modelDestroyPhong(mino);
 	mino = null;
-	modelDestroyFlat(renderer, scene);
+	modelDestroyFlat(scene);
 	scene = null;
-	rendererDestroy(renderer);
-	renderer = null;
+	rendererCleanup();
 	return null;
 }

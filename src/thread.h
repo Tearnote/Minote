@@ -8,18 +8,13 @@
 #ifndef MINOTE_THREAD_H
 #define MINOTE_THREAD_H
 
-#include <pthread.h>
 #include <stdatomic.h>
+#include <pthread.h>
 
-/**
- * Type representing a thread ID. Becomes defined by being passed to
- * threadCreate() and undefined after threadDestroy() returns.
- */
+/// Type representing a thread ID. Must be created with threadCreate().
 typedef pthread_t thread;
 
-/**
- * Type representing a mutex lock. Must be initialized with mutexCreate().
- */
+/// Type representing a mutex lock. Must be initialized with mutexCreate().
 typedef pthread_mutex_t mutex;
 
 /// A renaming of _Atomic to be more in line with other language keywords
@@ -55,16 +50,16 @@ mutex* mutexCreate(void);
 void mutexDestroy(mutex* m);
 
 /**
- * Lock a #mutex or block until it can be locked. Use this to ensure exclusive
+ * Lock a ::mutex or block until it can be locked. Use this to ensure exclusive
  * access to data protected by the mutex. Must be accompanied by a mutexUnlock()
  * as early as possible and without fail.
- * @param m The #mutex to lock
+ * @param m The ::mutex to lock
  */
 void mutexLock(mutex* m);
 
 /**
- * Unlock a previously locked #mutex.
- * @param m The locked #mutex to unlock
+ * Unlock a previously locked ::mutex.
+ * @param m The locked ::mutex to unlock
  */
 void mutexUnlock(mutex* m);
 

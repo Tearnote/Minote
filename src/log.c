@@ -6,12 +6,12 @@
 #include "log.h"
 
 #include <stdbool.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <errno.h>
 #include <string.h>
 #include <assert.h>
+#include <stdio.h>
+#include <errno.h>
 #include <time.h>
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -23,33 +23,26 @@
 
 /// String representation of each #LogLevel
 static const char* levelStrings[LogSize] = {
-		[LogTrace] = u8"TRACE",
-		[LogDebug] = u8"DEBUG",
-		[LogInfo]  = u8"INFO",
-		[LogWarn]  = u8"WARN",
-		[LogError] = u8"ERROR",
-		[LogCrit]  = u8"CRIT",
+	[LogTrace] = u8"TRACE",
+	[LogDebug] = u8"DEBUG",
+	[LogInfo]  = u8"INFO",
+	[LogWarn]  = u8"WARN",
+	[LogError] = u8"ERROR",
+	[LogCrit]  = u8"CRIT",
 };
 
 struct Log {
-	/// Messages with lower level than this will be ignored
-	LogLevel level;
-
-	/// If true, messages are printed to stdout/stderr
-	bool consoleEnabled;
-
-	/// If true, messages are printed to #file
-	bool fileEnabled;
-
-	/// File handle to write messages into. Is null if #fileEnabled is false
-	FILE* file;
-
-	/// The string used to open #file. Is null if #fileEnabled is false
-	const char* filepath;
+	LogLevel level; ///< Messages with lower level than this will be ignored
+	bool consoleEnabled; ///< If true, messages are printed to stdout/stderr
+	bool fileEnabled; ///< If true, messages are printed to #file
+	FILE* file; ///< File handle to write messages into. Is null if #fileEnabled is false
+	const char* filepath; ///< The string used to open #file. Is null if #fileEnabled is false
 };
 
 /// State of log system initialization
 static bool initialized = false;
+
+Log* applog = null;
 
 /**
  * Write a log message to a specified output. Attaches a timestamp and formats
@@ -66,8 +59,8 @@ static void logTo(FILE* file, LogLevel level, const char* fmt, va_list* ap)
 	//TODO turn into a mutex instead
 	//flockfile(file);
 	int result = fprintf(file, u8"%02d:%02d:%02d [%s] ",
-			timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec,
-			levelStrings[level]);
+		timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec,
+		levelStrings[level]);
 	if (result < 0) {
 		perror(u8"Failed to write into log file");
 		errno = 0;
@@ -122,19 +115,24 @@ void logInit(void)
 	setlocale(LC_ALL, ""); // Switch from C locale to system locale
 #endif //_WIN32
 	initialized = true;
+	if (!applog)
+		applog = logCreate();
 }
 
 void logCleanup(void)
 {
 	if (!initialized) return;
-	// Do nothing... for now.
+	if (applog) {
+		logDestroy(applog);
+		applog = null;
+	}
 	initialized = false;
 }
 
 Log* logCreate(void)
 {
 	assert(initialized);
-	Log* l = alloc(sizeof(Log));
+	Log* l = alloc(sizeof(*l));
 	l->level = LogInfo;
 	return l;
 }
@@ -166,7 +164,7 @@ void logEnableFile(Log* l, const char* filepath)
 		bool consoleEnabled = l->consoleEnabled;
 		logEnableConsole(l);
 		logError(l, u8"Failed to open %s for writing: %s",
-				filepath, strerror(errno));
+			filepath, strerror(errno));
 		errno = 0;
 		if (!consoleEnabled)
 			logDisableConsole(l);
@@ -197,7 +195,7 @@ void logDisableFile(Log* l)
 		bool consoleEnabled = l->consoleEnabled;
 		logEnableConsole(l);
 		logError(l, u8"Failed to flush %s: %s",
-				l->filepath, strerror(errno));
+			l->filepath, strerror(errno));
 		errno = 0;
 		if (!consoleEnabled)
 			logDisableConsole(l);

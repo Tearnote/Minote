@@ -8,44 +8,38 @@
 
 #include <stddef.h>
 #include "linmath/linmath.h"
-#include "window.h"
-#include "log.h"
 #include "visualdef.h"
 
 /**
- * Opaque renderer type. You can obtain an instance with rendererCreate().
+ * Initialize the renderer system. windowInit() must have been called first.
+ * This can be called on a different thread than initWindow(), and the
+ * calling thread becomes bound to the OpenGL context.
  */
-typedef struct Renderer Renderer;
+void rendererInit(void);
 
 /**
- * Create a new ::Renderer instance and attach it to a ::Window.
- * @param window The ::Window to attach to. Must have no other ::Renderer attached
- * @param log A ::Log to use for rendering messages
- * @return A newly created ::Renderer. Needs to be destroyed with
- * rendererDestroy()
+ * Cleanup the renderer system. No other renderer functions cannot be used
+ * until rendererInit() is called again.
  */
-Renderer* rendererCreate(Window* window, Log* log);
-
-/**
- * Destroy a ::Renderer instance. The context is freed from the ::Window, and
- * another ::Renderer can be attached instead. he destroyed object cannot be
- * used anymore and the pointer becomes invalid.
- * @param r The ::Renderer object
- */
-void rendererDestroy(Renderer* r);
+void rendererCleanup(void);
 
 /**
  * Clear all buffers to a specified color.
- * @param r The ::Renderer object
- * @param color RGB color to clear with
+ * @param color Color to clear with
  */
-void rendererClear(Renderer* r, Color3 color);
+void rendererClear(Color3 color);
 
 /**
- * Flip buffers, presenting the rendered image to the screen.
- * @param r The ::Renderer object
+ * Prepare for rendering a new frame. You should call rendererClear() to
+ * initialize the framebuffer itself to a known state.
  */
-void rendererFlip(Renderer* r);
+void rendererFrameBegin(void);
+
+/**
+ * Present the rendered image to the screen. This call blocks until the
+ * display's next vertical refresh.
+ */
+void rendererFrameEnd(void);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -81,19 +75,17 @@ typedef struct ModelPhong ModelPhong;
 /**
  * Create a ::ModelFlat instance. The provided mesh is uploaded to the GPU
  * and the model is ready to draw with modelDrawFlat().
- * @param r The ::Renderer object
  * @param name Human-readable name for reference
  * @param numVertices Number of elements in @a vertices array
  * @param vertices Model mesh as an array of ::VertexFlat structs
  * @return Newly created ::ModelFlat. Must be destroyed with modelDestroyFlat()
  */
-ModelFlat* modelCreateFlat(Renderer* r, const char* name,
-		size_t numVertices, VertexFlat vertices[]);
+ModelFlat* modelCreateFlat(const char* name,
+	size_t numVertices, VertexFlat vertices[]);
 
 /**
  * Create a ::ModelPhong instance. The provided mesh is uploaded to the GPU
  * and the model is ready to draw with modelDrawPhong().
- * @param r The ::Renderer object
  * @param name Human-readable name for reference
  * @param numVertices Number of elements in @a vertices array
  * @param vertices Model mesh as an array of ::VertexPhong structs
@@ -101,47 +93,43 @@ ModelFlat* modelCreateFlat(Renderer* r, const char* name,
  * @return Newly created ::ModelPhong. Must be destroyed with 
  * modelDestroyPhong()
  */
-ModelPhong* modelCreatePhong(Renderer* r, const char* name,
-		size_t numVertices, VertexPhong vertices[], MaterialPhong material);
+ModelPhong* modelCreatePhong(const char* name,
+	size_t numVertices, VertexPhong vertices[], MaterialPhong material);
 
 /**
  * Destroy a ::ModelFlat instance. All referenced GPU resources are freed. The
  * destroyed object cannot be used anymore and the pointer becomes invalid.
- * @param r The ::Renderer object
  * @param m The ::ModelFlat object to destroy
  */
-void modelDestroyFlat(Renderer* r, ModelFlat* m);
+void modelDestroyFlat(ModelFlat* m);
 
 /**
  * Destroy a ::ModelPhong instance. All referenced GPU resources are freed. The
  * destroyed object cannot be used anymore and the pointer becomes invalid.
- * @param r The ::Renderer object
  * @param m The ::ModelPhong object to destroy
  */
-void modelDestroyPhong(Renderer* r, ModelPhong* m);
+void modelDestroyPhong(ModelPhong* m);
 
 /**
  * Draw a ::ModelFlat on the screen. Instanced rendering is used, and each
  * instance can be tinted with a provided color.
- * @param r The ::Renderer object
- * @param m The ::Model object to draw
+ * @param m The ::ModelFlat object to draw
  * @param instances Number of instances to draw
  * @param tints Array of color tints for each instance
  * @param transforms Array of 4x4 matrices for transforming each instance
  */
-void modelDrawFlat(Renderer* r, ModelFlat* m, size_t instances,
-		Color4 tints[instances], mat4x4 transforms[instances]);
+void modelDrawFlat(ModelFlat* m, size_t instances,
+	Color4 tints[instances], mat4x4 transforms[instances]);
 
 /**
  * Draw a ::ModelPhong on the screen. Instanced rendering is used, and each
  * instance can be tinted with a provided color.
- * @param r The ::Renderer object
- * @param m The ::Model object to draw
+ * @param m The ::ModelPhong object to draw
  * @param instances Number of instances to draw
  * @param tints Array of color tints for each instance
  * @param transforms Array of 4x4 matrices for transforming each instance
  */
-void modelDrawPhong(Renderer* r, ModelPhong* m, size_t instances,
-		Color4 tints[instances], mat4x4 transforms[instances]);
+void modelDrawPhong(ModelPhong* m, size_t instances,
+	Color4 tints[instances], mat4x4 transforms[instances]);
 
 #endif //MINOTE_RENDERER_H

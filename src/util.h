@@ -26,7 +26,7 @@
  * @return Angle in radians
  */
 #define radf(x) \
-        ((x) * M_TAU / 360.0)
+    ((x) * M_TAU / 360.0)
 
 /**
  * Error-checking wrapper for calloc(). Clears memory to 0 and terminates

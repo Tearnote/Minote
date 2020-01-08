@@ -8,7 +8,7 @@
 #define MINOTE_LOG_H
 
 /**
- * Opaque logger type. You can obtain an instance with logCreate().
+ * Opaque logger. You can obtain an instance with logCreate().
  */
 typedef struct Log Log;
 
@@ -25,21 +25,24 @@ typedef enum LogLevel {
 	LogSize ///< terminator
 } LogLevel;
 
+/// Global logger to use by general facilities
+extern Log* applog;
+
 /**
- * Initialize the log system. Needs to be called before any other log
- * functions.
+ * Initialize the log system and the ::applog instance. Needs to be called
+ * before any other log functions.
  */
 void logInit(void);
 
 /**
- * Clean up the log system. All created logs need to be destroyed before
- * calling this function. No log function can be used until logInit() is
- * called again.
+ * Destroy ::applog and clean up the log system. All created logs need to be
+ * destroyed before calling this function. No log function can be used until
+ * logInit() is called again.
  */
 void logCleanup(void);
 
 /**
- * Create a ::Log instance with log level Info and all targets disabled.
+ * Create a ::Log instance with log level #LogInfo and all targets disabled.
  * @return The newly created ::Log. Needs to be destroyed with logDestroy()
  */
 Log* logCreate(void);
@@ -52,8 +55,8 @@ Log* logCreate(void);
 void logDestroy(Log* l);
 
 /**
- * Enable the console log target. Messages at level Info and below will be
- * printed to stdout, messages at level Warn and above will be printed to
+ * Enable the console log target. Messages at level #LogInfo and below will be
+ * printed to stdout, messages at level #LogWarn and above will be printed to
  * stderr.
  * @param l The ::Log object
  */
@@ -61,7 +64,7 @@ void logEnableConsole(Log* l);
 
 /**
  * Enable the file log target. The destination file is cleared. If the file
- * could not be opened, console is enabled instead and a Warn message is
+ * could not be opened, console is enabled instead and a #LogWarn message is
  * printed. Does nothing if file logging is already enabled.
  * @param l The ::Log object
  * @param filepath Path to the log file to open for writing

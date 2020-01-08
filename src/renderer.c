@@ -5,13 +5,16 @@
 
 #include "renderer.h"
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <assert.h>
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 #include "linmath/linmath.h"
+#include "window.h"
 #include "util.h"
 #include "time.h"
+#include "log.h"
 
 /// Start of the clipping plane, in world distance units
 #define ProjectionNear 0.1f
@@ -29,6 +32,7 @@ typedef GLuint Program;
 typedef GLint Uniform;
 
 /// List of model types supported by the renderer
+/// @enum ProgramType
 typedef enum ProgramType {
 	ProgramTypeNone, ///< zero value
 	ProgramTypeFlat, ///< Flat shading and no lighting. Most basic shader
@@ -50,43 +54,44 @@ typedef struct ProgramSources {
 
 /// Constant list of shader program sources
 static const ProgramSources DefaultShaders[ProgramTypeSize] = {
-		[ProgramTypeFlat] = {
-				.vert = {
-						.name = u8"flat.vert",
-						.source = (GLchar[]){
+	[ProgramTypeFlat] = {
+		.vert = {
+			.name = u8"flat.vert",
+			.source = (GLchar[]){
 #include "flat.vert"
-								, '\0'}},
-				.frag = {
-						.name = u8"flat.frag",
-						.source = (GLchar[]){
+				, '\0'}},
+		.frag = {
+			.name = u8"flat.frag",
+			.source = (GLchar[]){
 #include "flat.frag"
-								, '\0'}}
-		},
-		[ProgramTypePhong] = {
-				.vert = {
-						.name = u8"phong.vert",
-						.source = (GLchar[]){
+				, '\0'}}
+	},
+	[ProgramTypePhong] = {
+		.vert = {
+			.name = u8"phong.vert",
+			.source = (GLchar[]){
 #include "phong.vert"
-								, '\0'}},
-				.frag = {
-						.name = u8"phong.frag",
-						.source = (GLchar[]){
+				, '\0'}},
+		.frag = {
+			.name = u8"phong.frag",
+			.source = (GLchar[]){
 #include "phong.frag"
-								, '\0'}}
-		}
+				, '\0'}}
+	}
 };
 
 /// Instance of a #ProgramTypeFlat shader program
 typedef struct ProgramFlat {
 	Program id; ///< ID of the program object
+	const ProgramSources* sources; ///< Pointer to shader sources for reference
 	Uniform camera; ///< Location of "camera" uniform
 	Uniform projection; ///< Location of "projection" uniform
-	const ProgramSources* sources; ///< Pointer to shader sources for reference
 } ProgramFlat;
 
 /// Instance of a #ProgramTypePhong shader program
 typedef struct ProgramPhong {
 	Program id; ///< ID of the program object
+	const ProgramSources* sources; ///< Pointer to shader sources for reference
 	Uniform camera; ///< Location of "camera" uniform
 	Uniform projection; ///< Location of "projection" uniform
 	Uniform lightPosition; ///< Location of "lightPosition" uniform
@@ -95,12 +100,9 @@ typedef struct ProgramPhong {
 	Uniform diffuse; ///< Location of "diffuse" uniform
 	Uniform specular; ///< Location of "specular" uniform
 	Uniform shine; ///< Location of "shine" uniform
-	const ProgramSources* sources; ///< Pointer to shader sources for reference
 } ProgramPhong;
 
-struct Renderer {
-	Log* log; ///< ::Log to use for rendering-related messages
-	Window* window; ///< ::Window object the ::Renderer is attached too
+typedef struct Renderer {
 	Size2i size; ///< Size of the rendering viewport in pixels
 	mat4x4 projection; ///< Projection matrix (perspective transform)
 	mat4x4 camera; ///< Camera matrix (world transform)
@@ -109,18 +111,23 @@ struct Renderer {
 	ModelFlat* sync; ///< Invisible model used to prevent frame buffering
 	ProgramFlat flat; ///< Data of the built-in #ProgramTypeFlat shader
 	ProgramPhong phong; ///< Data of the built-in #ProgramTypePhong shader
-};
+} Renderer;
+
+/// State of window system initialization
+static bool initialized = false;
+
+/// Global renderer instance
+Renderer apprenderer = {0};
 
 /**
  * Create an OpenGL shader object. The shader is compiled and ready for linking.
- * @param r The ::Renderer object
  * @param source Struct containing shader's name and GLSL source code
  * @param type GL_VERTEX_SHADER or GL_FRAGMENT_SHADER
  * @return Newly created ::Shader's ID
  */
-static Shader shaderCreate(Renderer* r, ShaderSource source, GLenum type)
+static Shader shaderCreate(ShaderSource source, GLenum type)
 {
-	assert(r);
+	assert(initialized);
 	assert(source.name);
 	assert(source.source);
 	assert(type == GL_VERTEX_SHADER || type == GL_FRAGMENT_SHADER);
@@ -132,52 +139,51 @@ static Shader shaderCreate(Renderer* r, ShaderSource source, GLenum type)
 	if (compileStatus == GL_FALSE) {
 		GLchar infoLog[512];
 		glGetShaderInfoLog(shader, 512, null, infoLog);
-		logError(r->log, u8"Failed to compile shader %s: %s",
-				source.name, infoLog);
+		logError(applog, u8"Failed to compile shader %s: %s",
+			source.name, infoLog);
 		glDeleteShader(shader);
 		return 0;
 	}
 	assert(shader);
-	logDebug(r->log, u8"Compiled %s shader %s",
-			type == GL_VERTEX_SHADER ? u8"vertex" : u8"fragment", source.name);
+	logDebug(applog, u8"Compiled %s shader %s",
+		type == GL_VERTEX_SHADER ? u8"vertex" : u8"fragment", source.name);
 	return shader;
 }
 
 /**
  * Destroy a ::Shader instance. The shader ID becomes invalid and cannot be
  * used again.
- * @param r The ::Renderer object
  * @param shader ::Shader ID to destroy
  */
-static void shaderDestroy(Renderer* r, Shader shader)
+static void shaderDestroy(Shader shader)
 {
+	assert(initialized);
 	glDeleteShader(shader);
 }
 
 /**
  * Create a ::Program instance by compiling and linking a vertex shader and a
  * fragment shader.
- * @param r The ::Renderer object
  * @param sources Struct containing vertex and fragment shaders' GLSL sources
  * @return Newly created ::Program's ID
  */
-static Program programCreate(Renderer* r, ProgramSources sources)
+static Program programCreate(ProgramSources sources)
 {
-	assert(r);
+	assert(initialized);
 	assert(sources.vert.name);
 	assert(sources.vert.source);
 	assert(sources.frag.name);
 	assert(sources.frag.source);
-	Shader vert = shaderCreate(r, sources.vert, GL_VERTEX_SHADER);
+	Shader vert = shaderCreate(sources.vert, GL_VERTEX_SHADER);
 	if (vert == 0)
-		return (Program){0};
-	Shader frag = shaderCreate(r, sources.frag, GL_FRAGMENT_SHADER);
+		return 0;
+	Shader frag = shaderCreate(sources.frag, GL_FRAGMENT_SHADER);
 	if (frag == 0) {
-		shaderDestroy(r, vert); // Proper cleanup, how fancy
-		return (Program){0};
+		shaderDestroy(vert); // Proper cleanup, how fancy
+		return 0;
 	}
 
-	Program program = -1;
+	Program program = 0;
 	program = glCreateProgram();
 	glAttachShader(program, vert);
 	glAttachShader(program, frag);
@@ -187,43 +193,55 @@ static Program programCreate(Renderer* r, ProgramSources sources)
 	if (linkStatus == GL_FALSE) {
 		GLchar infoLog[512];
 		glGetProgramInfoLog(program, 512, null, infoLog);
-		logError(r->log, u8"Failed to link shader program %s+%s: %s",
-				sources.vert.name, sources.frag.name, infoLog);
+		logError(applog, u8"Failed to link shader program %s+%s: %s",
+			sources.vert.name, sources.frag.name, infoLog);
 		glDeleteProgram(program);
 		program = 0;
 	}
-	shaderDestroy(r, frag);
+	shaderDestroy(frag);
 	frag = 0;
-	shaderDestroy(r, vert);
+	shaderDestroy(vert);
 	vert = 0;
-	logDebug(r->log, u8"Linked shader program %s+%s",
-			sources.vert.name, sources.frag.name);
+	logDebug(applog, u8"Linked shader program %s+%s",
+		sources.vert.name, sources.frag.name);
 	return program;
 }
 
 /**
  * Destroy a ::Program instance. The program ID becomes invalid and cannot be
  * used again.
- * @param r The ::Renderer object
  * @param program ::Program ID to destroy
  */
-static void programDestroy(Renderer* r, Program program)
+static void programDestroy(Program program)
 {
+	assert(initialized);
 	glDeleteProgram(program);
-	program = -1;
+	program = 0;
+}
+
+static Uniform programUniform(Program program, const char* uniform)
+{
+	assert(initialized);
+	Uniform result = glGetUniformLocation(program, uniform);
+	if (result == -1)
+		logWarn(applog,
+			u8"\"%s\" uniform not available in shader program TODO",
+			uniform);
+	return result;
 }
 
 /**
- * Prevent the driver from buffering commands. Call this after windowFlip()
+ * Prevent the driver from buffering commands. Call this after windowFrameEnd()
  * to minimize video latency.
- * @param r The ::Renderer object
  * @see https://danluu.com/latency-mitigation/
  */
-static void rendererSync(Renderer* r)
+static void rendererSync(void)
 {
+	assert(initialized);
 	mat4x4 identity = {0};
 	mat4x4_identity(identity);
-	modelDrawFlat(r, r->sync, 1, (Color4[]){1.0f, 1.0f, 1.0f, 1.0f}, &identity);
+	modelDrawFlat(apprenderer.sync, 1,
+		(Color4[]){1.0f, 1.0f, 1.0f, 1.0f}, &identity);
 	GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 	glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, secToNsec(0.1));
 }
@@ -231,35 +249,31 @@ static void rendererSync(Renderer* r)
 /**
  * Resize the ::Renderer viewport, preferably to ::Window size. Recreates the
  * matrices as needed.
- * @param r The ::Renderer object
  * @param size New viewport size in pixels
  */
-static void rendererResize(Renderer* r, Size2i size)
+static void rendererResize(Size2i size)
 {
-	assert(r);
-	assert(size.x);
-	assert(size.y);
-	r->size.x = size.x;
-	r->size.y = size.y;
+	assert(initialized);
+	assert(size.x > 0);
+	assert(size.y > 0);
+	apprenderer.size.x = size.x;
+	apprenderer.size.y = size.y;
 	glViewport(0, 0, size.x, size.y);
-	mat4x4_perspective(r->projection, radf(45.0f),
-			(float)size.x / (float)size.y, ProjectionNear, ProjectionFar);
+	mat4x4_perspective(apprenderer.projection, radf(45.0f),
+		(float)size.x / (float)size.y, ProjectionNear, ProjectionFar);
 }
 
-Renderer* rendererCreate(Window* window, Log* log)
+void rendererInit(void)
 {
-	assert(window);
-	assert(log);
-	Renderer* r = alloc(sizeof(*r));
-	r->window = window;
-	r->log = log;
+	if (initialized) return;
 
 	// Pick up the OpenGL context
-	windowContextActivate(r->window);
+	windowContextActivate();
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-		logCrit(r->log, u8"Failed to initialize OpenGL");
+		logCrit(applog, u8"Failed to initialize OpenGL");
 		exit(EXIT_FAILURE);
 	}
+	initialized = true;
 
 	// Set up global OpenGL state
 	glfwSwapInterval(1); // Enable vsync
@@ -271,139 +285,110 @@ Renderer* rendererCreate(Window* window, Log* log)
 	glEnable(GL_MULTISAMPLE);
 
 	// Create built-in shaders
-	r->flat.id = programCreate(r, DefaultShaders[ProgramTypeFlat]);
-	r->flat.sources = &DefaultShaders[ProgramTypeFlat];
-	r->flat.projection = glGetUniformLocation(r->flat.id, u8"projection");
-	if (r->flat.projection == -1)
-		logWarn(r->log,
-				u8"\"projection\" uniform not available in shader program %s+%s",
-				r->flat.sources->vert.name, r->flat.sources->frag.name);
-	r->flat.camera = glGetUniformLocation(r->flat.id, u8"camera");
-	if (r->flat.camera == -1)
-		logWarn(r->log,
-				u8"\"camera\" uniform not available in shader program %s+%s",
-				r->flat.sources->vert.name, r->flat.sources->frag.name);
+	apprenderer.flat.id = programCreate(DefaultShaders[ProgramTypeFlat]);
+	apprenderer.flat.sources = &DefaultShaders[ProgramTypeFlat];
+	apprenderer.flat.projection = programUniform(apprenderer.flat.id,
+		u8"projection");
+	apprenderer.flat.camera = programUniform(apprenderer.flat.id, u8"camera");
 
-	r->phong.id = programCreate(r, DefaultShaders[ProgramTypePhong]);
-	r->phong.sources = &DefaultShaders[ProgramTypePhong];
-	r->phong.projection = glGetUniformLocation(r->phong.id, u8"projection");
-	if (r->phong.projection == -1)
-		logWarn(r->log,
-				u8"\"projection\" uniform not available in shader program %s+%s",
-				r->phong.sources->vert.name, r->phong.sources->frag.name);
-	r->phong.camera = glGetUniformLocation(r->phong.id, u8"camera");
-	if (r->phong.camera == -1)
-		logWarn(r->log,
-				u8"\"camera\" uniform not available in shader program %s+%s",
-				r->phong.sources->vert.name, r->phong.sources->frag.name);
-	r->phong.lightPosition = glGetUniformLocation(r->phong.id,
-			u8"lightPosition");
-	if (r->phong.lightPosition == -1)
-		logWarn(r->log,
-				u8"\"lightPosition\" uniform not available in shader program %s+%s",
-				r->phong.sources->vert.name, r->phong.sources->frag.name);
-	r->phong.lightColor = glGetUniformLocation(r->phong.id, u8"lightColor");
-	if (r->phong.lightColor == -1)
-		logWarn(r->log,
-				u8"\"lightColor\" uniform not available in shader program %s+%s",
-				r->phong.sources->vert.name, r->phong.sources->frag.name);
-	r->phong.ambient = glGetUniformLocation(r->phong.id, u8"ambient");
-	if (r->phong.ambient == -1)
-		logWarn(r->log,
-				u8"\"ambient\" uniform not available in shader program %s+%s",
-				r->phong.sources->vert.name, r->phong.sources->frag.name);
-	r->phong.diffuse = glGetUniformLocation(r->phong.id, u8"diffuse");
-	if (r->phong.diffuse == -1)
-		logWarn(r->log,
-				u8"\"diffuse\" uniform not available in shader program %s+%s",
-				r->phong.sources->vert.name, r->phong.sources->frag.name);
-	r->phong.specular = glGetUniformLocation(r->phong.id, u8"specular");
-	if (r->phong.specular == -1)
-		logWarn(r->log,
-				u8"\"specular\" uniform not available in shader program %s+%s",
-				r->phong.sources->vert.name, r->phong.sources->frag.name);
-	r->phong.shine = glGetUniformLocation(r->phong.id, u8"shine");
-	if (r->phong.shine == -1)
-		logWarn(r->log,
-				u8"\"shine\" uniform not available in shader program %s+%s",
-				r->phong.sources->vert.name, r->phong.sources->frag.name);
+	apprenderer.phong.id = programCreate(DefaultShaders[ProgramTypePhong]);
+	apprenderer.phong.sources = &DefaultShaders[ProgramTypePhong];
+	apprenderer.phong.projection = programUniform(apprenderer.phong.id,
+		u8"projection");
+	apprenderer.phong.camera = programUniform(apprenderer.phong.id, u8"camera");
+	apprenderer.phong.lightPosition = programUniform(apprenderer.phong.id,
+		u8"lightPosition");
+	apprenderer.phong.lightColor = programUniform(apprenderer.phong.id,
+		u8"lightColor");
+	apprenderer.phong.ambient = programUniform(apprenderer.phong.id,
+		u8"ambient");
+	apprenderer.phong.diffuse = programUniform(apprenderer.phong.id,
+		u8"diffuse");
+	apprenderer.phong.specular = programUniform(apprenderer.phong.id,
+		u8"specular");
+	apprenderer.phong.shine = programUniform(apprenderer.phong.id, u8"shine");
 
 	// Set up matrices
-	rendererResize(r, windowGetSize(r->window));
+	rendererResize(windowGetSize());
 
 	// Set up the camera and light source
 	vec3 eye = {-4.0f, 12.0f, 32.0f};
 	vec3 center = {0.0f, 12.0f, 0.0f};
 	vec3 up = {0.0f, 1.0f, 0.0f};
-	mat4x4_look_at(r->camera, eye, center, up);
-	r->lightPosition.x = -8.0f;
-	r->lightPosition.y = 32.0f;
-	r->lightPosition.z = 16.0f;
-	r->lightColor.r = 1.0f;
-	r->lightColor.g = 1.0f;
-	r->lightColor.b = 1.0f;
+	mat4x4_look_at(apprenderer.camera, eye, center, up);
+	apprenderer.lightPosition.x = -8.0f;
+	apprenderer.lightPosition.y = 32.0f;
+	apprenderer.lightPosition.z = 16.0f;
+	apprenderer.lightColor.r = 1.0f;
+	apprenderer.lightColor.g = 1.0f;
+	apprenderer.lightColor.b = 1.0f;
 
 	// Create sync model
-	r->sync = modelCreateFlat(r, u8"sync", 3, (VertexFlat[]){
-			{
-					.pos = {0.0f, 0.0f, 0.0f},
-					.color = {1.0f, 1.0f, 1.0f, 0.0f}
-			},
-			{
-					.pos = {1.0f, 0.0f, 0.0f},
-					.color = {1.0f, 1.0f, 1.0f, 0.0f}
-			},
-			{
-					.pos = {0.0f, 1.0f, 0.0f},
-					.color = {1.0f, 1.0f, 1.0f, 0.0f}
-			}
+	apprenderer.sync = modelCreateFlat(u8"sync", 3, (VertexFlat[]){
+		{
+			.pos = {0.0f, 0.0f, 0.0f},
+			.color = {1.0f, 1.0f, 1.0f, 0.0f}
+		},
+		{
+			.pos = {1.0f, 0.0f, 0.0f},
+			.color = {1.0f, 1.0f, 1.0f, 0.0f}
+		},
+		{
+			.pos = {0.0f, 1.0f, 0.0f},
+			.color = {1.0f, 1.0f, 1.0f, 0.0f}
+		}
 	});
 
-	logDebug(r->log, u8"Created renderer for window \"%s\"",
-			windowGetTitle(r->window));
-	return r;
+	logDebug(applog, u8"Created renderer for window \"%s\"", windowGetTitle());
 }
 
-void rendererDestroy(Renderer* r)
+void rendererCleanup(void)
 {
-	assert(r);
-	modelDestroyFlat(r, r->sync);
-	r->sync = 0;
-	programDestroy(r, r->flat.id);
-	r->flat.id = -1;
-	windowContextDeactivate(r->window);
-	logDebug(r->log, u8"Destroyed renderer for window \"%s\"",
-			windowGetTitle(r->window));
-	free(r);
+	if (!initialized) return;
+	modelDestroyFlat(apprenderer.sync);
+	apprenderer.sync = null;
+	programDestroy(apprenderer.flat.id);
+	apprenderer.flat.id = 0;
+	windowContextDeactivate();
+	logDebug(applog, u8"Destroyed renderer for window \"%s\"",
+		windowGetTitle());
+	initialized = false;
 }
 
-void rendererClear(Renderer* r, Color3 color)
+void rendererClear(Color3 color)
 {
+	assert(initialized);
 	glClearColor(color.r, color.g, color.b, 1.0f);
 	glClear((uint32_t)GL_COLOR_BUFFER_BIT | (uint32_t)GL_DEPTH_BUFFER_BIT);
 }
 
-void rendererFlip(Renderer* r)
+void rendererFrameBegin(void)
 {
-	windowFlip(r->window);
-	rendererSync(r);
-
-	Size2i windowSize = windowGetSize(r->window);
-	if (r->size.x != windowSize.x || r->size.y != windowSize.y)
-		rendererResize(r, windowSize);
+	assert(initialized);
+	Size2i windowSize = windowGetSize();
+	if (apprenderer.size.x != windowSize.x
+		|| apprenderer.size.y != windowSize.y)
+		rendererResize(windowSize);
 
 	vec3 eye = {sinf(glfwGetTime() / 2) * 4, 12.0f, 32.0f};
 	vec3 center = {0.0f, 12.0f, 0.0f};
 	vec3 up = {0.0f, 1.0f, 0.0f};
-	mat4x4_look_at(r->camera, eye, center, up);
-//	r->lightPosition.x = -8.0f;
-//	r->lightPosition.y = 32.0f;
-	r->lightPosition.x = 8.0f * sinf(glfwGetTime() * 6);
-	r->lightPosition.y = 8.0f + 8.0f * sinf(glfwGetTime() * 7);
-	r->lightPosition.z = 16.0f;
-	r->lightColor.r = 1.0f;
-	r->lightColor.g = 1.0f;
-	r->lightColor.b = 1.0f;
+	mat4x4_look_at(apprenderer.camera, eye, center, up);
+//	apprenderer.lightPosition.x = -8.0f;
+//	apprenderer.lightPosition.y = 32.0f;
+	apprenderer.lightPosition.x = 8.0f * sinf(glfwGetTime() * 6);
+	apprenderer.lightPosition.y = 8.0f + 8.0f * sinf(glfwGetTime() * 7);
+	apprenderer.lightPosition.z = 16.0f;
+	apprenderer.lightColor.r = 1.0f;
+	apprenderer.lightColor.g = 1.0f;
+	apprenderer.lightColor.b = 1.0f;
+}
+
+void rendererFrameEnd(void)
+{
+	assert(initialized);
+	windowFlip();
+	rendererSync();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -435,8 +420,9 @@ struct ModelPhong {
 };
 
 static void modelGenerateNormals(size_t numVertices,
-		VertexPhong vertices[numVertices], Point3f normalData[numVertices])
+	VertexPhong vertices[numVertices], Point3f normalData[numVertices])
 {
+	assert(initialized);
 	assert(numVertices);
 	assert(vertices);
 	assert(normalData);
@@ -470,9 +456,10 @@ static void modelGenerateNormals(size_t numVertices,
 	}
 }
 
-ModelFlat* modelCreateFlat(Renderer* r, const char* name,
-		size_t numVertices, VertexFlat vertices[])
+ModelFlat* modelCreateFlat(const char* name,
+	size_t numVertices, VertexFlat vertices[])
 {
+	assert(initialized);
 	assert(numVertices);
 	assert(vertices);
 	ModelFlat* m = alloc(sizeof(*m));
@@ -481,21 +468,21 @@ ModelFlat* modelCreateFlat(Renderer* r, const char* name,
 	glGenBuffers(1, &m->vertices);
 	glBindBuffer(GL_ARRAY_BUFFER, m->vertices);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(VertexFlat) * m->numVertices, vertices,
-			GL_STATIC_DRAW);
+		GL_STATIC_DRAW);
 	glGenBuffers(1, &m->tints);
 	glGenBuffers(1, &m->transforms);
 	glGenVertexArrays(1, &m->vao);
 	glBindVertexArray(m->vao);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexFlat),
-			(void*)0);
+		(void*)0);
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(VertexFlat),
-			(void*)offsetof(VertexFlat, color));
+		(void*)offsetof(VertexFlat, color));
 	glBindBuffer(GL_ARRAY_BUFFER, m->tints);
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Color4),
-			(void*)0);
+		(void*)0);
 	glVertexAttribDivisor(2, 1);
 	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
 	glEnableVertexAttribArray(3);
@@ -503,24 +490,25 @@ ModelFlat* modelCreateFlat(Renderer* r, const char* name,
 	glEnableVertexAttribArray(5);
 	glEnableVertexAttribArray(6);
 	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(vec4),
-			(void*)0);
+		(void*)0);
 	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(vec4),
-			(void*)sizeof(vec4));
+		(void*)sizeof(vec4));
 	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(vec4),
-			(void*)(sizeof(vec4) * 2));
+		(void*)(sizeof(vec4) * 2));
 	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(vec4),
-			(void*)(sizeof(vec4) * 3));
+		(void*)(sizeof(vec4) * 3));
 	glVertexAttribDivisor(3, 1);
 	glVertexAttribDivisor(4, 1);
 	glVertexAttribDivisor(5, 1);
 	glVertexAttribDivisor(6, 1);
-	logDebug(r->log, u8"Model %s created", m->name);
+	logDebug(applog, u8"Model %s created", m->name);
 	return m;
 }
 
-ModelPhong* modelCreatePhong(Renderer* r, const char* name,
-		size_t numVertices, VertexPhong vertices[], MaterialPhong material)
+ModelPhong* modelCreatePhong(const char* name,
+	size_t numVertices, VertexPhong vertices[], MaterialPhong material)
 {
+	assert(initialized);
 	assert(numVertices);
 	assert(vertices);
 	ModelPhong* m = alloc(sizeof(*m));
@@ -531,7 +519,7 @@ ModelPhong* modelCreatePhong(Renderer* r, const char* name,
 	glGenBuffers(1, &m->vertices);
 	glBindBuffer(GL_ARRAY_BUFFER, m->vertices);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(VertexPhong) * m->numVertices,
-			vertices, GL_STATIC_DRAW);
+		vertices, GL_STATIC_DRAW);
 	Point3f normalData[m->numVertices];
 	assert(sizeof(normalData) == sizeof(Point3f) * m->numVertices);
 	memset(normalData, 0, sizeof(normalData));
@@ -539,7 +527,7 @@ ModelPhong* modelCreatePhong(Renderer* r, const char* name,
 	glGenBuffers(1, &m->normals);
 	glBindBuffer(GL_ARRAY_BUFFER, m->normals);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(normalData), normalData,
-			GL_STATIC_DRAW);
+		GL_STATIC_DRAW);
 	glGenBuffers(1, &m->tints);
 	glGenBuffers(1, &m->transforms);
 
@@ -548,18 +536,18 @@ ModelPhong* modelCreatePhong(Renderer* r, const char* name,
 	glBindBuffer(GL_ARRAY_BUFFER, m->vertices);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexPhong),
-			(void*)0);
+		(void*)0);
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(VertexPhong),
-			(void*)offsetof(VertexPhong, color));
+		(void*)offsetof(VertexPhong, color));
 	glBindBuffer(GL_ARRAY_BUFFER, m->normals);
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Point3f),
-			(void*)0);
+		(void*)0);
 	glBindBuffer(GL_ARRAY_BUFFER, m->tints);
 	glEnableVertexAttribArray(3);
 	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(Color4),
-			(void*)0);
+		(void*)0);
 	glVertexAttribDivisor(3, 1);
 	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
 	glEnableVertexAttribArray(4);
@@ -567,24 +555,25 @@ ModelPhong* modelCreatePhong(Renderer* r, const char* name,
 	glEnableVertexAttribArray(6);
 	glEnableVertexAttribArray(7);
 	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
-			(void*)0);
+		(void*)0);
 	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
-			(void*)sizeof(vec4));
+		(void*)sizeof(vec4));
 	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
-			(void*)(sizeof(vec4) * 2));
+		(void*)(sizeof(vec4) * 2));
 	glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
-			(void*)(sizeof(vec4) * 3));
+		(void*)(sizeof(vec4) * 3));
 	glVertexAttribDivisor(4, 1);
 	glVertexAttribDivisor(5, 1);
 	glVertexAttribDivisor(6, 1);
 	glVertexAttribDivisor(7, 1);
 
-	logDebug(r->log, u8"Model %s created", m->name);
+	logDebug(applog, u8"Model %s created", m->name);
 	return m;
 }
 
-void modelDestroyFlat(Renderer* r, ModelFlat* m)
+void modelDestroyFlat(ModelFlat* m)
 {
+	assert(initialized);
 	glDeleteVertexArrays(1, &m->vao);
 	m->vao = 0;
 	glDeleteBuffers(1, &m->transforms);
@@ -593,13 +582,14 @@ void modelDestroyFlat(Renderer* r, ModelFlat* m)
 	m->tints = 0;
 	glDeleteBuffers(1, &m->vertices);
 	m->vertices = 0;
-	logDebug(r->log, u8"Model %s destroyed", m->name);
+	logDebug(applog, u8"Model %s destroyed", m->name);
 	free(m);
 	m = null;
 }
 
-void modelDestroyPhong(Renderer* r, ModelPhong* m)
+void modelDestroyPhong(ModelPhong* m)
 {
+	assert(initialized);
 	glDeleteVertexArrays(1, &m->vao);
 	m->vao = 0;
 	glDeleteBuffers(1, &m->transforms);
@@ -610,15 +600,15 @@ void modelDestroyPhong(Renderer* r, ModelPhong* m)
 	m->normals = 0;
 	glDeleteBuffers(1, &m->vertices);
 	m->vertices = 0;
-	logDebug(r->log, u8"Model %s destroyed", m->name);
+	logDebug(applog, u8"Model %s destroyed", m->name);
 	free(m);
 	m = null;
 }
 
-void modelDrawFlat(Renderer* r, ModelFlat* m, size_t instances,
-		Color4 tints[instances], mat4x4 transforms[instances])
+void modelDrawFlat(ModelFlat* m, size_t instances,
+	Color4 tints[instances], mat4x4 transforms[instances])
 {
-	assert(r);
+	assert(initialized);
 	assert(m);
 	assert(m->vao);
 	assert(m->name);
@@ -629,23 +619,25 @@ void modelDrawFlat(Renderer* r, ModelFlat* m, size_t instances,
 	assert(transforms);
 	glBindBuffer(GL_ARRAY_BUFFER, m->tints);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(Color4) * instances, null,
-			GL_STREAM_DRAW);
+		GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Color4) * instances, tints);
 	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, null,
-			GL_STREAM_DRAW);
+		GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4x4) * instances, transforms);
-	glUseProgram(r->flat.id);
+	glUseProgram(apprenderer.flat.id);
 	glBindVertexArray(m->vao);
-	glUniformMatrix4fv(r->flat.projection, 1, GL_FALSE, r->projection[0]);
-	glUniformMatrix4fv(r->flat.camera, 1, GL_FALSE, r->camera[0]);
+	glUniformMatrix4fv(apprenderer.flat.projection, 1, GL_FALSE,
+		apprenderer.projection[0]);
+	glUniformMatrix4fv(apprenderer.flat.camera, 1, GL_FALSE,
+		apprenderer.camera[0]);
 	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numVertices, instances);
 }
 
-void modelDrawPhong(Renderer* r, ModelPhong* m, size_t instances,
-		Color4 tints[instances], mat4x4 transforms[instances])
+void modelDrawPhong(ModelPhong* m, size_t instances,
+	Color4 tints[instances], mat4x4 transforms[instances])
 {
-	assert(r);
+	assert(initialized);
 	assert(m);
 	assert(m->vao);
 	assert(m->name);
@@ -657,27 +649,29 @@ void modelDrawPhong(Renderer* r, ModelPhong* m, size_t instances,
 	assert(transforms);
 	glBindBuffer(GL_ARRAY_BUFFER, m->tints);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(Color4) * instances, null,
-			GL_STREAM_DRAW);
+		GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Color4) * instances, tints);
 	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, null,
-			GL_STREAM_DRAW);
+		GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4x4) * instances, transforms);
-	glUseProgram(r->phong.id);
+	glUseProgram(apprenderer.phong.id);
 	glBindVertexArray(m->vao);
-	glUniformMatrix4fv(r->phong.projection, 1, GL_FALSE, r->projection[0]);
-	glUniformMatrix4fv(r->phong.camera, 1, GL_FALSE, r->camera[0]);
-	vec3 lightPosition = {r->lightPosition.x,
-	                      r->lightPosition.y,
-	                      r->lightPosition.z};
-	vec3 lightColor = {r->lightColor.r,
-	                   r->lightColor.g,
-	                   r->lightColor.b};
-	glUniform3fv(r->phong.lightPosition, 1, lightPosition);
-	glUniform3fv(r->phong.lightColor, 1, lightColor);
-	glUniform1f(r->phong.ambient, m->material.ambient);
-	glUniform1f(r->phong.diffuse, m->material.diffuse);
-	glUniform1f(r->phong.specular, m->material.specular);
-	glUniform1f(r->phong.shine, m->material.shine);
+	glUniformMatrix4fv(apprenderer.phong.projection, 1, GL_FALSE,
+		apprenderer.projection[0]);
+	glUniformMatrix4fv(apprenderer.phong.camera, 1, GL_FALSE,
+		apprenderer.camera[0]);
+	vec3 lightPosition = {apprenderer.lightPosition.x,
+	                      apprenderer.lightPosition.y,
+	                      apprenderer.lightPosition.z};
+	vec3 lightColor = {apprenderer.lightColor.r,
+	                   apprenderer.lightColor.g,
+	                   apprenderer.lightColor.b};
+	glUniform3fv(apprenderer.phong.lightPosition, 1, lightPosition);
+	glUniform3fv(apprenderer.phong.lightColor, 1, lightColor);
+	glUniform1f(apprenderer.phong.ambient, m->material.ambient);
+	glUniform1f(apprenderer.phong.diffuse, m->material.diffuse);
+	glUniform1f(apprenderer.phong.specular, m->material.specular);
+	glUniform1f(apprenderer.phong.shine, m->material.shine);
 	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numVertices, instances);
 }

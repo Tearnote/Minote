@@ -6,8 +6,8 @@
 #include "util.h"
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <assert.h>
+#include <stdio.h>
 
 void* alloc(size_t bytes)
 {

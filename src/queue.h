@@ -9,13 +9,10 @@
 #ifndef MINOTE_QUEUE_H
 #define MINOTE_QUEUE_H
 
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
 
-/**
- * Opaque struct representing a queue container. Obtain an instance with
- * queueCreate().
- */
+/// Opaque queue container. You can obtain an instance with queueCreate().
 typedef struct Queue Queue;
 
 /**
