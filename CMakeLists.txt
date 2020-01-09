@@ -75,13 +75,14 @@ set(C_SOURCES
         src/log.h src/log.c
         src/util.h src/util.c
         src/window.h src/window.c
-        src/visualdef.h
+        src/visualtypes.h src/visualtypes.c
         src/queue.h src/queue.c
         src/game.h src/game.c
         src/thread.h src/thread.c
         src/system.h src/system.c
         src/time.h src/time.c
-        src/renderer.h src/renderer.c)
+        src/renderer.h src/renderer.c
+        src/shader.h src/shader.c)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD

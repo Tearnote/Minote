@@ -3,8 +3,8 @@
  * @file
  */
 
-#ifndef MINOTE_VISUALDEF_H
-#define MINOTE_VISUALDEF_H
+#ifndef MINOTE_VISUALTYPES_H
+#define MINOTE_VISUALTYPES_H
 
 /// An integer position in 2D space
 typedef struct Point2i {
@@ -59,4 +59,17 @@ typedef struct Color4 {
 	float a; ///< The alpha component
 } Color4;
 
-#endif //MINOTE_VISUALDEF_H
+/// White color convenience constant
+#define Color4White ((Color4){1.0f, 1.0f, 1.0f, 1.0f})
+
+/// Fully transparent color convenience constant
+#define Color4Clear ((Color4){1.0f, 1.0f, 1.0f, 0.0f})
+
+/**
+ * Convert a ::Color3 from sRGB to Linear color space.
+ * @param color Input color
+ * @return Output color
+ */
+Color3 color3ToLinear(Color3 color);
+
+#endif //MINOTE_VISUALTYPES_H

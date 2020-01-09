@@ -8,7 +8,7 @@
 
 #include <stddef.h>
 #include "linmath/linmath.h"
-#include "visualdef.h"
+#include "visualtypes.h"
 
 /**
  * Initialize the renderer system. windowInit() must have been called first.

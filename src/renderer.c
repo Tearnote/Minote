@@ -12,6 +12,7 @@
 #include <GLFW/glfw3.h>
 #include "linmath/linmath.h"
 #include "window.h"
+#include "shader.h"
 #include "util.h"
 #include "time.h"
 #include "log.h"
@@ -22,76 +23,16 @@
 /// End of the clipping plane (draw distance), in world distance units
 #define ProjectionFar 100.0f
 
-/// Semantic rename of OpenGL shader object ID
-typedef GLuint Shader;
-
-/// Semantic rename of OpenGL shader program object ID
-typedef GLuint Program;
-
-/// Semantic rename of OpenGL uniform location
-typedef GLint Uniform;
-
-/// List of model types supported by the renderer
-/// @enum ProgramType
-typedef enum ProgramType {
-	ProgramTypeNone, ///< zero value
-	ProgramTypeFlat, ///< Flat shading and no lighting. Most basic shader
-	ProgramTypePhong, ///< Phong shading. Simple but makes use of light sources
-	ProgramTypeSize ///< terminator
-} ProgramType;
-
-/// Struct that encapsulates a ::Shader's source code
-typedef struct ShaderSource {
-	const char* name; ///< Human-readable name for identification
-	const GLchar* source; ///< Full GLSL source code
-} ShaderSource;
-
-/// Fragment and vertex ::Shader sources to be linked into a single ::Program
-typedef struct ProgramSources {
-	ShaderSource vert; ///< Source of the vertex ::Shader
-	ShaderSource frag; ///< Source of the fragment ::Shader
-} ProgramSources;
-
-/// Constant list of shader program sources
-static const ProgramSources DefaultShaders[ProgramTypeSize] = {
-	[ProgramTypeFlat] = {
-		.vert = {
-			.name = u8"flat.vert",
-			.source = (GLchar[]){
-#include "flat.vert"
-				, '\0'}},
-		.frag = {
-			.name = u8"flat.frag",
-			.source = (GLchar[]){
-#include "flat.frag"
-				, '\0'}}
-	},
-	[ProgramTypePhong] = {
-		.vert = {
-			.name = u8"phong.vert",
-			.source = (GLchar[]){
-#include "phong.vert"
-				, '\0'}},
-		.frag = {
-			.name = u8"phong.frag",
-			.source = (GLchar[]){
-#include "phong.frag"
-				, '\0'}}
-	}
-};
-
 /// Instance of a #ProgramTypeFlat shader program
 typedef struct ProgramFlat {
-	Program id; ///< ID of the program object
-	const ProgramSources* sources; ///< Pointer to shader sources for reference
+	ProgramCommon common;
 	Uniform camera; ///< Location of "camera" uniform
 	Uniform projection; ///< Location of "projection" uniform
 } ProgramFlat;
 
 /// Instance of a #ProgramTypePhong shader program
 typedef struct ProgramPhong {
-	Program id; ///< ID of the program object
-	const ProgramSources* sources; ///< Pointer to shader sources for reference
+	ProgramCommon common;
 	Uniform camera; ///< Location of "camera" uniform
 	Uniform projection; ///< Location of "projection" uniform
 	Uniform lightPosition; ///< Location of "lightPosition" uniform
@@ -109,126 +50,33 @@ typedef struct Renderer {
 	Point3f lightPosition; ///< Position of light source in world space
 	Color3 lightColor; ///< Color of the light source
 	ModelFlat* sync; ///< Invisible model used to prevent frame buffering
-	ProgramFlat flat; ///< Data of the built-in #ProgramTypeFlat shader
-	ProgramPhong phong; ///< Data of the built-in #ProgramTypePhong shader
+	ProgramFlat* flat; ///< The built-in flat shader
+	ProgramPhong* phong; ///< The built-in Phong shader
 } Renderer;
+
+static const char* ProgramFlatVertName = u8"flat.vert";
+static const GLchar* ProgramFlatVertSrc = (GLchar[]){
+#include "flat.vert"
+	, '\0'};
+static const char* ProgramFlatFragName = u8"flat.frag";
+static const GLchar* ProgramFlatFragSrc = (GLchar[]){
+#include "flat.frag"
+	, '\0'};
+
+static const char* ProgramPhongVertName = u8"phong.vert";
+static const GLchar* ProgramPhongVertSrc = (GLchar[]){
+#include "phong.vert"
+	, '\0'};
+static const char* ProgramPhongFragName = u8"phong.frag";
+static const GLchar* ProgramPhongFragSrc = (GLchar[]){
+#include "phong.frag"
+	, '\0'};
 
 /// State of window system initialization
 static bool initialized = false;
 
 /// Global renderer instance
-Renderer apprenderer = {0};
-
-/**
- * Create an OpenGL shader object. The shader is compiled and ready for linking.
- * @param source Struct containing shader's name and GLSL source code
- * @param type GL_VERTEX_SHADER or GL_FRAGMENT_SHADER
- * @return Newly created ::Shader's ID
- */
-static Shader shaderCreate(ShaderSource source, GLenum type)
-{
-	assert(initialized);
-	assert(source.name);
-	assert(source.source);
-	assert(type == GL_VERTEX_SHADER || type == GL_FRAGMENT_SHADER);
-	Shader shader = glCreateShader(type);
-	glShaderSource(shader, 1, &source.source, null);
-	glCompileShader(shader);
-	GLint compileStatus = 0;
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &compileStatus);
-	if (compileStatus == GL_FALSE) {
-		GLchar infoLog[512];
-		glGetShaderInfoLog(shader, 512, null, infoLog);
-		logError(applog, u8"Failed to compile shader %s: %s",
-			source.name, infoLog);
-		glDeleteShader(shader);
-		return 0;
-	}
-	assert(shader);
-	logDebug(applog, u8"Compiled %s shader %s",
-		type == GL_VERTEX_SHADER ? u8"vertex" : u8"fragment", source.name);
-	return shader;
-}
-
-/**
- * Destroy a ::Shader instance. The shader ID becomes invalid and cannot be
- * used again.
- * @param shader ::Shader ID to destroy
- */
-static void shaderDestroy(Shader shader)
-{
-	assert(initialized);
-	glDeleteShader(shader);
-}
-
-/**
- * Create a ::Program instance by compiling and linking a vertex shader and a
- * fragment shader.
- * @param sources Struct containing vertex and fragment shaders' GLSL sources
- * @return Newly created ::Program's ID
- */
-static Program programCreate(ProgramSources sources)
-{
-	assert(initialized);
-	assert(sources.vert.name);
-	assert(sources.vert.source);
-	assert(sources.frag.name);
-	assert(sources.frag.source);
-	Shader vert = shaderCreate(sources.vert, GL_VERTEX_SHADER);
-	if (vert == 0)
-		return 0;
-	Shader frag = shaderCreate(sources.frag, GL_FRAGMENT_SHADER);
-	if (frag == 0) {
-		shaderDestroy(vert); // Proper cleanup, how fancy
-		return 0;
-	}
-
-	Program program = 0;
-	program = glCreateProgram();
-	glAttachShader(program, vert);
-	glAttachShader(program, frag);
-	glLinkProgram(program);
-	GLint linkStatus = 0;
-	glGetProgramiv(program, GL_LINK_STATUS, &linkStatus);
-	if (linkStatus == GL_FALSE) {
-		GLchar infoLog[512];
-		glGetProgramInfoLog(program, 512, null, infoLog);
-		logError(applog, u8"Failed to link shader program %s+%s: %s",
-			sources.vert.name, sources.frag.name, infoLog);
-		glDeleteProgram(program);
-		program = 0;
-	}
-	shaderDestroy(frag);
-	frag = 0;
-	shaderDestroy(vert);
-	vert = 0;
-	logDebug(applog, u8"Linked shader program %s+%s",
-		sources.vert.name, sources.frag.name);
-	return program;
-}
-
-/**
- * Destroy a ::Program instance. The program ID becomes invalid and cannot be
- * used again.
- * @param program ::Program ID to destroy
- */
-static void programDestroy(Program program)
-{
-	assert(initialized);
-	glDeleteProgram(program);
-	program = 0;
-}
-
-static Uniform programUniform(Program program, const char* uniform)
-{
-	assert(initialized);
-	Uniform result = glGetUniformLocation(program, uniform);
-	if (result == -1)
-		logWarn(applog,
-			u8"\"%s\" uniform not available in shader program TODO",
-			uniform);
-	return result;
-}
+Renderer renderer = {0};
 
 /**
  * Prevent the driver from buffering commands. Call this after windowFrameEnd()
@@ -240,8 +88,7 @@ static void rendererSync(void)
 	assert(initialized);
 	mat4x4 identity = {0};
 	mat4x4_identity(identity);
-	modelDrawFlat(apprenderer.sync, 1,
-		(Color4[]){1.0f, 1.0f, 1.0f, 1.0f}, &identity);
+	modelDrawFlat(renderer.sync, 1, (Color4[]){Color4White}, &identity);
 	GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 	glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, secToNsec(0.1));
 }
@@ -256,10 +103,10 @@ static void rendererResize(Size2i size)
 	assert(initialized);
 	assert(size.x > 0);
 	assert(size.y > 0);
-	apprenderer.size.x = size.x;
-	apprenderer.size.y = size.y;
+	renderer.size.x = size.x;
+	renderer.size.y = size.y;
 	glViewport(0, 0, size.x, size.y);
-	mat4x4_perspective(apprenderer.projection, radf(45.0f),
+	mat4x4_perspective(renderer.projection, radf(45.0f),
 		(float)size.x / (float)size.y, ProjectionNear, ProjectionFar);
 }
 
@@ -285,28 +132,24 @@ void rendererInit(void)
 	glEnable(GL_MULTISAMPLE);
 
 	// Create built-in shaders
-	apprenderer.flat.id = programCreate(DefaultShaders[ProgramTypeFlat]);
-	apprenderer.flat.sources = &DefaultShaders[ProgramTypeFlat];
-	apprenderer.flat.projection = programUniform(apprenderer.flat.id,
-		u8"projection");
-	apprenderer.flat.camera = programUniform(apprenderer.flat.id, u8"camera");
+	renderer.flat = programCreate(ProgramFlat,
+		ProgramFlatVertName, ProgramFlatVertSrc,
+		ProgramFlatFragName, ProgramFlatFragSrc);
+	renderer.flat->projection = programUniform(renderer.flat, u8"projection");
+	renderer.flat->camera = programUniform(renderer.flat, u8"camera");
 
-	apprenderer.phong.id = programCreate(DefaultShaders[ProgramTypePhong]);
-	apprenderer.phong.sources = &DefaultShaders[ProgramTypePhong];
-	apprenderer.phong.projection = programUniform(apprenderer.phong.id,
-		u8"projection");
-	apprenderer.phong.camera = programUniform(apprenderer.phong.id, u8"camera");
-	apprenderer.phong.lightPosition = programUniform(apprenderer.phong.id,
+	renderer.phong = programCreate(ProgramPhong,
+		ProgramPhongVertName, ProgramPhongVertSrc,
+		ProgramPhongFragName, ProgramPhongFragSrc);
+	renderer.phong->projection = programUniform(renderer.phong, u8"projection");
+	renderer.phong->camera = programUniform(renderer.phong, u8"camera");
+	renderer.phong->lightPosition = programUniform(renderer.phong,
 		u8"lightPosition");
-	apprenderer.phong.lightColor = programUniform(apprenderer.phong.id,
-		u8"lightColor");
-	apprenderer.phong.ambient = programUniform(apprenderer.phong.id,
-		u8"ambient");
-	apprenderer.phong.diffuse = programUniform(apprenderer.phong.id,
-		u8"diffuse");
-	apprenderer.phong.specular = programUniform(apprenderer.phong.id,
-		u8"specular");
-	apprenderer.phong.shine = programUniform(apprenderer.phong.id, u8"shine");
+	renderer.phong->lightColor = programUniform(renderer.phong, u8"lightColor");
+	renderer.phong->ambient = programUniform(renderer.phong, u8"ambient");
+	renderer.phong->diffuse = programUniform(renderer.phong, u8"diffuse");
+	renderer.phong->specular = programUniform(renderer.phong, u8"specular");
+	renderer.phong->shine = programUniform(renderer.phong, u8"shine");
 
 	// Set up matrices
 	rendererResize(windowGetSize());
@@ -315,27 +158,27 @@ void rendererInit(void)
 	vec3 eye = {-4.0f, 12.0f, 32.0f};
 	vec3 center = {0.0f, 12.0f, 0.0f};
 	vec3 up = {0.0f, 1.0f, 0.0f};
-	mat4x4_look_at(apprenderer.camera, eye, center, up);
-	apprenderer.lightPosition.x = -8.0f;
-	apprenderer.lightPosition.y = 32.0f;
-	apprenderer.lightPosition.z = 16.0f;
-	apprenderer.lightColor.r = 1.0f;
-	apprenderer.lightColor.g = 1.0f;
-	apprenderer.lightColor.b = 1.0f;
+	mat4x4_look_at(renderer.camera, eye, center, up);
+	renderer.lightPosition.x = -8.0f;
+	renderer.lightPosition.y = 32.0f;
+	renderer.lightPosition.z = 16.0f;
+	renderer.lightColor.r = 1.0f;
+	renderer.lightColor.g = 1.0f;
+	renderer.lightColor.b = 1.0f;
 
 	// Create sync model
-	apprenderer.sync = modelCreateFlat(u8"sync", 3, (VertexFlat[]){
+	renderer.sync = modelCreateFlat(u8"sync", 3, (VertexFlat[]){
 		{
 			.pos = {0.0f, 0.0f, 0.0f},
-			.color = {1.0f, 1.0f, 1.0f, 0.0f}
+			.color = Color4Clear
 		},
 		{
 			.pos = {1.0f, 0.0f, 0.0f},
-			.color = {1.0f, 1.0f, 1.0f, 0.0f}
+			.color = Color4Clear
 		},
 		{
 			.pos = {0.0f, 1.0f, 0.0f},
-			.color = {1.0f, 1.0f, 1.0f, 0.0f}
+			.color = Color4Clear
 		}
 	});
 
@@ -345,10 +188,12 @@ void rendererInit(void)
 void rendererCleanup(void)
 {
 	if (!initialized) return;
-	modelDestroyFlat(apprenderer.sync);
-	apprenderer.sync = null;
-	programDestroy(apprenderer.flat.id);
-	apprenderer.flat.id = 0;
+	modelDestroyFlat(renderer.sync);
+	renderer.sync = null;
+	programDestroy(renderer.phong);
+	renderer.phong = null;
+	programDestroy(renderer.flat);
+	renderer.flat = null;
 	windowContextDeactivate();
 	logDebug(applog, u8"Destroyed renderer for window \"%s\"",
 		windowGetTitle());
@@ -366,22 +211,21 @@ void rendererFrameBegin(void)
 {
 	assert(initialized);
 	Size2i windowSize = windowGetSize();
-	if (apprenderer.size.x != windowSize.x
-		|| apprenderer.size.y != windowSize.y)
+	if (renderer.size.x != windowSize.x || renderer.size.y != windowSize.y)
 		rendererResize(windowSize);
 
 	vec3 eye = {sinf(glfwGetTime() / 2) * 4, 12.0f, 32.0f};
 	vec3 center = {0.0f, 12.0f, 0.0f};
 	vec3 up = {0.0f, 1.0f, 0.0f};
-	mat4x4_look_at(apprenderer.camera, eye, center, up);
+	mat4x4_look_at(renderer.camera, eye, center, up);
 //	apprenderer.lightPosition.x = -8.0f;
 //	apprenderer.lightPosition.y = 32.0f;
-	apprenderer.lightPosition.x = 8.0f * sinf(glfwGetTime() * 6);
-	apprenderer.lightPosition.y = 8.0f + 8.0f * sinf(glfwGetTime() * 7);
-	apprenderer.lightPosition.z = 16.0f;
-	apprenderer.lightColor.r = 1.0f;
-	apprenderer.lightColor.g = 1.0f;
-	apprenderer.lightColor.b = 1.0f;
+	renderer.lightPosition.x = 8.0f * sinf(glfwGetTime() * 6);
+	renderer.lightPosition.y = 8.0f + 8.0f * sinf(glfwGetTime() * 7);
+	renderer.lightPosition.z = 16.0f;
+	renderer.lightColor.r = 1.0f;
+	renderer.lightColor.g = 1.0f;
+	renderer.lightColor.b = 1.0f;
 }
 
 void rendererFrameEnd(void)
@@ -419,6 +263,12 @@ struct ModelPhong {
 	MaterialPhong material; ///< Struct of Phong lighting model material data
 };
 
+/**
+ * Generate normal vectors for a given triangle mesh.
+ * @param numVertices Number of vertices in @a vertices and @a normalData
+ * @param vertices Model mesh made out of triangles
+ * @param[out] normalData Normal vectors corresponding to the vertex mesh
+ */
 static void modelGenerateNormals(size_t numVertices,
 	VertexPhong vertices[numVertices], Point3f normalData[numVertices])
 {
@@ -625,12 +475,12 @@ void modelDrawFlat(ModelFlat* m, size_t instances,
 	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, null,
 		GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4x4) * instances, transforms);
-	glUseProgram(apprenderer.flat.id);
+	programUse(renderer.flat);
 	glBindVertexArray(m->vao);
-	glUniformMatrix4fv(apprenderer.flat.projection, 1, GL_FALSE,
-		apprenderer.projection[0]);
-	glUniformMatrix4fv(apprenderer.flat.camera, 1, GL_FALSE,
-		apprenderer.camera[0]);
+	glUniformMatrix4fv(renderer.flat->projection, 1, GL_FALSE,
+		renderer.projection[0]);
+	glUniformMatrix4fv(renderer.flat->camera, 1, GL_FALSE,
+		renderer.camera[0]);
 	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numVertices, instances);
 }
 
@@ -655,23 +505,23 @@ void modelDrawPhong(ModelPhong* m, size_t instances,
 	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, null,
 		GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4x4) * instances, transforms);
-	glUseProgram(apprenderer.phong.id);
+	programUse(renderer.phong);
 	glBindVertexArray(m->vao);
-	glUniformMatrix4fv(apprenderer.phong.projection, 1, GL_FALSE,
-		apprenderer.projection[0]);
-	glUniformMatrix4fv(apprenderer.phong.camera, 1, GL_FALSE,
-		apprenderer.camera[0]);
-	vec3 lightPosition = {apprenderer.lightPosition.x,
-	                      apprenderer.lightPosition.y,
-	                      apprenderer.lightPosition.z};
-	vec3 lightColor = {apprenderer.lightColor.r,
-	                   apprenderer.lightColor.g,
-	                   apprenderer.lightColor.b};
-	glUniform3fv(apprenderer.phong.lightPosition, 1, lightPosition);
-	glUniform3fv(apprenderer.phong.lightColor, 1, lightColor);
-	glUniform1f(apprenderer.phong.ambient, m->material.ambient);
-	glUniform1f(apprenderer.phong.diffuse, m->material.diffuse);
-	glUniform1f(apprenderer.phong.specular, m->material.specular);
-	glUniform1f(apprenderer.phong.shine, m->material.shine);
+	glUniformMatrix4fv(renderer.phong->projection, 1, GL_FALSE,
+		renderer.projection[0]);
+	glUniformMatrix4fv(renderer.phong->camera, 1, GL_FALSE,
+		renderer.camera[0]);
+	vec3 lightPosition = {renderer.lightPosition.x,
+	                      renderer.lightPosition.y,
+	                      renderer.lightPosition.z};
+	vec3 lightColor = {renderer.lightColor.r,
+	                   renderer.lightColor.g,
+	                   renderer.lightColor.b};
+	glUniform3fv(renderer.phong->lightPosition, 1, lightPosition);
+	glUniform3fv(renderer.phong->lightColor, 1, lightColor);
+	glUniform1f(renderer.phong->ambient, m->material.ambient);
+	glUniform1f(renderer.phong->diffuse, m->material.diffuse);
+	glUniform1f(renderer.phong->specular, m->material.specular);
+	glUniform1f(renderer.phong->shine, m->material.shine);
 	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numVertices, instances);
 }

@@ -10,7 +10,7 @@
 #define MINOTE_WINDOW_H
 
 #include <stdbool.h>
-#include "visualdef.h"
+#include "visualtypes.h"
 
 /// Struct containing information about a keypress event
 typedef struct KeyInput {

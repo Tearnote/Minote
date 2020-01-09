@@ -8,6 +8,7 @@
 #include <assert.h>
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
+#include "visualtypes.h"
 #include "renderer.h"
 #include "window.h"
 #include "util.h"
@@ -52,8 +53,8 @@ void* game(void* arg)
 		}
 
 		rendererFrameBegin();
-		rendererClear((Color3){0.262f, 0.533f, 0.849f});
-		modelDrawFlat(scene, 1, (Color4[]){1.0f, 1.0f, 1.0f, 1.0f},
+		rendererClear(color3ToLinear((Color3){0.544f, 0.751f, 0.928f}));
+		modelDrawFlat(scene, 1, (Color4[]){Color4White},
 			&identity);
 		modelDrawPhong(mino, 200, tints, transforms);
 		rendererFrameEnd();
