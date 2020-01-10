@@ -2,18 +2,18 @@ flat shader:
 in vertices (pos, color) - model mesh (simple)
 in tints                 - per call
 in matrices              - per call
-uniform camera           - renderer common
-uniform projection       - renderer common
+uniform camera           - renderer base
+uniform projection       - renderer base
 
 phong shader:
 in vertices (pos, color, normal) - model mesh (with calculated normals)
 in tints                         - per drawcall
 in matrices                      - per drawcall
 in normalMatrices                - calculated in drawcall
-uniform camera                   - renderer common
-uniform projection               - renderer common
-uniform lightPosition            - renderer common
-uniform lightColor               - renderer common
+uniform camera                   - renderer base
+uniform projection               - renderer base
+uniform lightPosition            - renderer base
+uniform lightColor               - renderer base
 uniform ambientStrength          - model material
 uniform diffuseStrength          - model material
 uniform specularStrength         - model material
@@ -23,12 +23,12 @@ msdf shader:
 in vertices (pos, color, tex) - model mesh (with texture coords)
 in tints                      - per drawcall
 in matrices                   - per drawcall
-uniform camera                - renderer common
-uniform projection            - renderer common
+uniform camera                - renderer base
+uniform projection            - renderer base
 uniform atlas                 - per drawcall
 
 post shader:
-in vertices (pos) - renderer common (always a fullscreen quad)
+in vertices (pos) - renderer base (always a fullscreen quad)
 uniform screen    - per drawcall
 uniform ???       - custom params
 

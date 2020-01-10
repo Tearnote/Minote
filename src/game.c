@@ -18,10 +18,10 @@ void* game(void* arg)
 {
 	(void)arg;
 	rendererInit();
-	ModelFlat* scene = modelCreateFlat(u8"scene",
+	Model* scene = modelCreateFlat(u8"scene",
 #include "meshes/scene.mesh"
 	);
-	ModelPhong* mino = modelCreatePhong(u8"mino",
+	Model* mino = modelCreatePhong(u8"mino",
 #include "meshes/mino.mesh"
 	);
 	mat4x4 identity;
@@ -54,15 +54,15 @@ void* game(void* arg)
 
 		rendererFrameBegin();
 		rendererClear(color3ToLinear((Color3){0.544f, 0.751f, 0.928f}));
-		modelDrawFlat(scene, 1, (Color4[]){Color4White},
+		modelDraw(scene, 1, (Color4[]){Color4White},
 			&identity);
-		modelDrawPhong(mino, 200, tints, transforms);
+		modelDraw(mino, 200, tints, transforms);
 		rendererFrameEnd();
 	}
 
-	modelDestroyPhong(mino);
+	modelDestroy(mino);
 	mino = null;
-	modelDestroyFlat(scene);
+	modelDestroy(scene);
 	scene = null;
 	rendererCleanup();
 	return null;

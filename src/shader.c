@@ -14,6 +14,7 @@ typedef GLuint Shader;
 
 /**
  * Create an OpenGL shader object. The shader is compiled and ready for linking.
+ * @param name Human-readable name for reference
  * @param source Struct containing shader's name and GLSL source code
  * @param type GL_VERTEX_SHADER or GL_FRAGMENT_SHADER
  * @return Newly created ::Shader's ID
@@ -54,6 +55,7 @@ static void shaderDestroy(Shader shader)
 /**
  * Create a ::Program instance by compiling and linking a vertex shader and a
  * fragment shader.
+ * @param size Size of the struct to create in bytes
  * @param vertName Human-readable name of the vertex shader
  * @param vertSrc GLSL source code of the vertex shader
  * @param fragName Human-readable name of the fragment shader
@@ -69,7 +71,7 @@ void* _programCreate(size_t size, const char* vertName, const char* vertSrc,
 	assert(fragName);
 	assert(fragSrc);
 	// Overallocating memory so that it fits in the user's provided struct type
-	ProgramCommon* result = alloc(size);
+	ProgramBase* result = alloc(size);
 	result->vertName = vertName;
 	result->fragName = fragName;
 	Shader vert = shaderCreate(vertName, vertSrc, GL_VERTEX_SHADER);
@@ -108,7 +110,7 @@ void* _programCreate(size_t size, const char* vertName, const char* vertSrc,
  * used again.
  * @param program ::Program ID to destroy
  */
-void _programDestroy(ProgramCommon* program)
+void _programDestroy(ProgramBase* program)
 {
 	assert(program);
 	glDeleteProgram(program->id);
@@ -119,7 +121,7 @@ void _programDestroy(ProgramCommon* program)
 	program = null;
 }
 
-Uniform _programUniform(ProgramCommon* program, const char* uniform)
+Uniform _programUniform(ProgramBase* program, const char* uniform)
 {
 	assert(program);
 	assert(uniform);
@@ -131,7 +133,7 @@ Uniform _programUniform(ProgramCommon* program, const char* uniform)
 	return result;
 }
 
-void _programUse(ProgramCommon* program)
+void _programUse(ProgramBase* program)
 {
 	assert(program);
 	glUseProgram(program->id);

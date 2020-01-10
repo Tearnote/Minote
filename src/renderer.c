@@ -23,16 +23,16 @@
 /// End of the clipping plane (draw distance), in world distance units
 #define ProjectionFar 100.0f
 
-/// Instance of a #ProgramTypeFlat shader program
+/// Program type for flat shading 
 typedef struct ProgramFlat {
-	ProgramCommon common;
+	ProgramBase base; ///< Declaration of base type
 	Uniform camera; ///< Location of "camera" uniform
 	Uniform projection; ///< Location of "projection" uniform
 } ProgramFlat;
 
-/// Instance of a #ProgramTypePhong shader program
+/// Program type for Phong shading
 typedef struct ProgramPhong {
-	ProgramCommon common;
+	ProgramBase base; ///< Declaration of base type
 	Uniform camera; ///< Location of "camera" uniform
 	Uniform projection; ///< Location of "projection" uniform
 	Uniform lightPosition; ///< Location of "lightPosition" uniform
@@ -43,13 +43,14 @@ typedef struct ProgramPhong {
 	Uniform shine; ///< Location of "shine" uniform
 } ProgramPhong;
 
+/// Representation of a rendering engine bound to an OpenGL context
 typedef struct Renderer {
 	Size2i size; ///< Size of the rendering viewport in pixels
 	mat4x4 projection; ///< Projection matrix (perspective transform)
 	mat4x4 camera; ///< Camera matrix (world transform)
 	Point3f lightPosition; ///< Position of light source in world space
 	Color3 lightColor; ///< Color of the light source
-	ModelFlat* sync; ///< Invisible model used to prevent frame buffering
+	Model* sync; ///< Invisible model used to prevent frame buffering
 	ProgramFlat* flat; ///< The built-in flat shader
 	ProgramPhong* phong; ///< The built-in Phong shader
 } Renderer;
@@ -72,14 +73,14 @@ static const GLchar* ProgramPhongFragSrc = (GLchar[]){
 #include "phong.frag"
 	, '\0'};
 
-/// State of window system initialization
+/// State of renderer system initialization
 static bool initialized = false;
 
 /// Global renderer instance
 Renderer renderer = {0};
 
 /**
- * Prevent the driver from buffering commands. Call this after windowFrameEnd()
+ * Prevent the driver from buffering commands. Call this after windowFlip()
  * to minimize video latency.
  * @see https://danluu.com/latency-mitigation/
  */
@@ -88,7 +89,7 @@ static void rendererSync(void)
 	assert(initialized);
 	mat4x4 identity = {0};
 	mat4x4_identity(identity);
-	modelDrawFlat(renderer.sync, 1, (Color4[]){Color4White}, &identity);
+	modelDraw(renderer.sync, 1, (Color4[]){Color4White}, &identity);
 	GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 	glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, secToNsec(0.1));
 }
@@ -188,7 +189,7 @@ void rendererInit(void)
 void rendererCleanup(void)
 {
 	if (!initialized) return;
-	modelDestroyFlat(renderer.sync);
+	modelDestroy(renderer.sync);
 	renderer.sync = null;
 	programDestroy(renderer.phong);
 	renderer.phong = null;
@@ -243,25 +244,177 @@ typedef GLuint VertexBuffer;
 /// Semantic rename of OpenGL vertex array object ID
 typedef GLuint VertexArray;
 
-struct ModelFlat {
+/// Type tag for the Model object
+/// @enum ModelType
+typedef enum ModelType {
+	ModelTypeNone, ///< zero value
+	ModelTypeFlat, ///< ::ModelFlat
+	ModelTypePhong, ///< ::ModelPhong
+	ModelTypeSize ///< terminator
+} ModelType;
+
+/// Base type for a Model. Contains all attributes common to every model type.
+typedef struct Model {
+	ModelType type; ///< Correct type to cast the Model to
 	const char* name; ///< Human-readable name for reference
-	VertexBuffer vertices; ///< VBO with model vertex data
+} ModelBase;
+
+/// Model type with flat shading. Each instance can be tinted.
+typedef struct ModelFlat {
+	ModelBase base; ///< Declaration of base type
 	size_t numVertices; ///< Number of vertices in the model
+	VertexBuffer vertices; ///< VBO with model vertex data
 	VertexBuffer tints; ///< VBO for storing per-draw tint colors
 	VertexBuffer transforms; ///< VBO for storing per-draw model matrices
 	VertexArray vao; ///< VAO attribute mapping of the model
-};
+} ModelFlat;
 
-struct ModelPhong {
-	const char* name; ///< Human-readable name for reference
+/// Model type with Phong shading. Makes use of light source and material data.
+typedef struct ModelPhong {
+	ModelBase base; ///< Declaration of base type
+	size_t numVertices; ///< Number of vertices in the model
 	VertexBuffer vertices; ///< VBO with model vertex data
 	VertexBuffer normals; ///< VBO with model normals, generated from vertices
-	size_t numVertices; ///< Number of vertices in the model
 	VertexBuffer tints; ///< VBO for storing per-draw tint colors
 	VertexBuffer transforms; ///< VBO for storing per-draw model matrices
 	VertexArray vao; ///< VAO attribute mapping of the model
 	MaterialPhong material; ///< Struct of Phong lighting model material data
-};
+} ModelPhong;
+
+/**
+ * Destroy a ::ModelFlat instance. All referenced GPU resources are freed. The
+ * destroyed object cannot be used anymore and the pointer becomes invalid.
+ * @param m The ::ModelFlat object to destroy
+ */
+static void modelDestroyFlat(ModelFlat* m)
+{
+	assert(initialized);
+	assert(m);
+	glDeleteVertexArrays(1, &m->vao);
+	m->vao = 0;
+	glDeleteBuffers(1, &m->transforms);
+	m->transforms = 0;
+	glDeleteBuffers(1, &m->tints);
+	m->tints = 0;
+	glDeleteBuffers(1, &m->vertices);
+	m->vertices = 0;
+	logDebug(applog, u8"Model %s destroyed", m->base.name);
+	free(m);
+	m = null;
+}
+
+/**
+ * Destroy a ::ModelPhong instance. All referenced GPU resources are freed. The
+ * destroyed object cannot be used anymore and the pointer becomes invalid.
+ * @param m The ::ModelPhong object to destroy
+ */
+static void modelDestroyPhong(ModelPhong* m)
+{
+	assert(initialized);
+	assert(m);
+	glDeleteVertexArrays(1, &m->vao);
+	m->vao = 0;
+	glDeleteBuffers(1, &m->transforms);
+	m->transforms = 0;
+	glDeleteBuffers(1, &m->tints);
+	m->tints = 0;
+	glDeleteBuffers(1, &m->normals);
+	m->normals = 0;
+	glDeleteBuffers(1, &m->vertices);
+	m->vertices = 0;
+	logDebug(applog, u8"Model %s destroyed", m->base.name);
+	free(m);
+	m = null;
+}
+
+/**
+ * Draw a ::ModelFlat on the screen. Instanced rendering is used, and each
+ * instance can be tinted with a provided color.
+ * @param m The ::ModelFlat object to draw
+ * @param instances Number of instances to draw
+ * @param tints Array of color tints for each instance
+ * @param transforms Array of 4x4 matrices for transforming each instance
+ */
+static void modelDrawFlat(ModelFlat* m, size_t instances,
+	Color4 tints[instances], mat4x4 transforms[instances])
+{
+	assert(initialized);
+	assert(m);
+	assert(m->base.type == ModelTypeFlat);
+	assert(m->vao);
+	assert(m->base.name);
+	assert(m->vertices);
+	assert(m->tints);
+	assert(m->transforms);
+	assert(tints);
+	assert(transforms);
+	glBindBuffer(GL_ARRAY_BUFFER, m->tints);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Color4) * instances, null,
+		GL_STREAM_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Color4) * instances, tints);
+	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, null,
+		GL_STREAM_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4x4) * instances, transforms);
+	programUse(renderer.flat);
+	glBindVertexArray(m->vao);
+	glUniformMatrix4fv(renderer.flat->projection, 1, GL_FALSE,
+		renderer.projection[0]);
+	glUniformMatrix4fv(renderer.flat->camera, 1, GL_FALSE,
+		renderer.camera[0]);
+	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numVertices, instances);
+}
+
+/**
+ * Draw a ::ModelPhong on the screen. Instanced rendering is used, and each
+ * instance can be tinted with a provided color.
+ * @param m The ::ModelPhong object to draw
+ * @param instances Number of instances to draw
+ * @param tints Array of color tints for each instance
+ * @param transforms Array of 4x4 matrices for transforming each instance
+ */
+static void modelDrawPhong(ModelPhong* m, size_t instances,
+	Color4 tints[instances], mat4x4 transforms[instances])
+{
+	assert(initialized);
+	assert(m);
+	assert(m->base.type == ModelTypePhong);
+	assert(m->vao);
+	assert(m->base.name);
+	assert(m->vertices);
+	assert(m->normals);
+	assert(m->tints);
+	assert(m->transforms);
+	assert(tints);
+	assert(transforms);
+	glBindBuffer(GL_ARRAY_BUFFER, m->tints);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Color4) * instances, null,
+		GL_STREAM_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Color4) * instances, tints);
+	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, null,
+		GL_STREAM_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4x4) * instances, transforms);
+	programUse(renderer.phong);
+	glBindVertexArray(m->vao);
+	glUniformMatrix4fv(renderer.phong->projection, 1, GL_FALSE,
+		renderer.projection[0]);
+	glUniformMatrix4fv(renderer.phong->camera, 1, GL_FALSE,
+		renderer.camera[0]);
+	vec3 lightPosition = {renderer.lightPosition.x,
+	                      renderer.lightPosition.y,
+	                      renderer.lightPosition.z};
+	vec3 lightColor = {renderer.lightColor.r,
+	                   renderer.lightColor.g,
+	                   renderer.lightColor.b};
+	glUniform3fv(renderer.phong->lightPosition, 1, lightPosition);
+	glUniform3fv(renderer.phong->lightColor, 1, lightColor);
+	glUniform1f(renderer.phong->ambient, m->material.ambient);
+	glUniform1f(renderer.phong->diffuse, m->material.diffuse);
+	glUniform1f(renderer.phong->specular, m->material.specular);
+	glUniform1f(renderer.phong->shine, m->material.shine);
+	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numVertices, instances);
+}
 
 /**
  * Generate normal vectors for a given triangle mesh.
@@ -306,14 +459,16 @@ static void modelGenerateNormals(size_t numVertices,
 	}
 }
 
-ModelFlat* modelCreateFlat(const char* name,
+Model* modelCreateFlat(const char* name,
 	size_t numVertices, VertexFlat vertices[])
 {
 	assert(initialized);
+	assert(name);
 	assert(numVertices);
 	assert(vertices);
 	ModelFlat* m = alloc(sizeof(*m));
-	m->name = name;
+	m->base.type = ModelTypeFlat;
+	m->base.name = name;
 	m->numVertices = numVertices;
 	glGenBuffers(1, &m->vertices);
 	glBindBuffer(GL_ARRAY_BUFFER, m->vertices);
@@ -351,18 +506,20 @@ ModelFlat* modelCreateFlat(const char* name,
 	glVertexAttribDivisor(4, 1);
 	glVertexAttribDivisor(5, 1);
 	glVertexAttribDivisor(6, 1);
-	logDebug(applog, u8"Model %s created", m->name);
-	return m;
+	logDebug(applog, u8"Model %s created", m->base.name);
+	return (Model*)m;
 }
 
-ModelPhong* modelCreatePhong(const char* name,
+Model* modelCreatePhong(const char* name,
 	size_t numVertices, VertexPhong vertices[], MaterialPhong material)
 {
 	assert(initialized);
+	assert(name);
 	assert(numVertices);
 	assert(vertices);
 	ModelPhong* m = alloc(sizeof(*m));
-	m->name = name;
+	m->base.type = ModelTypePhong;
+	m->base.name = name;
 	memcpy(&m->material, &material, sizeof(m->material));
 
 	m->numVertices = numVertices;
@@ -417,111 +574,39 @@ ModelPhong* modelCreatePhong(const char* name,
 	glVertexAttribDivisor(6, 1);
 	glVertexAttribDivisor(7, 1);
 
-	logDebug(applog, u8"Model %s created", m->name);
-	return m;
+	logDebug(applog, u8"Model %s created", m->base.name);
+	return (Model*)m;
 }
 
-void modelDestroyFlat(ModelFlat* m)
+void modelDestroy(Model* m)
 {
-	assert(initialized);
-	glDeleteVertexArrays(1, &m->vao);
-	m->vao = 0;
-	glDeleteBuffers(1, &m->transforms);
-	m->transforms = 0;
-	glDeleteBuffers(1, &m->tints);
-	m->tints = 0;
-	glDeleteBuffers(1, &m->vertices);
-	m->vertices = 0;
-	logDebug(applog, u8"Model %s destroyed", m->name);
-	free(m);
-	m = null;
+	assert(m);
+	assert(m->type > ModelTypeNone && m->type < ModelTypeSize);
+	switch (m->type) {
+	case ModelTypeFlat:
+		modelDestroyFlat((ModelFlat*)m);
+		break;
+	case ModelTypePhong:
+		modelDestroyPhong((ModelPhong*)m);
+		break;
+	default:
+		assert(false);
+	}
 }
 
-void modelDestroyPhong(ModelPhong* m)
-{
-	assert(initialized);
-	glDeleteVertexArrays(1, &m->vao);
-	m->vao = 0;
-	glDeleteBuffers(1, &m->transforms);
-	m->transforms = 0;
-	glDeleteBuffers(1, &m->tints);
-	m->tints = 0;
-	glDeleteBuffers(1, &m->normals);
-	m->normals = 0;
-	glDeleteBuffers(1, &m->vertices);
-	m->vertices = 0;
-	logDebug(applog, u8"Model %s destroyed", m->name);
-	free(m);
-	m = null;
-}
-
-void modelDrawFlat(ModelFlat* m, size_t instances,
+void modelDraw(Model* m, size_t instances,
 	Color4 tints[instances], mat4x4 transforms[instances])
 {
-	assert(initialized);
 	assert(m);
-	assert(m->vao);
-	assert(m->name);
-	assert(m->vertices);
-	assert(m->tints);
-	assert(m->transforms);
-	assert(tints);
-	assert(transforms);
-	glBindBuffer(GL_ARRAY_BUFFER, m->tints);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Color4) * instances, null,
-		GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Color4) * instances, tints);
-	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, null,
-		GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4x4) * instances, transforms);
-	programUse(renderer.flat);
-	glBindVertexArray(m->vao);
-	glUniformMatrix4fv(renderer.flat->projection, 1, GL_FALSE,
-		renderer.projection[0]);
-	glUniformMatrix4fv(renderer.flat->camera, 1, GL_FALSE,
-		renderer.camera[0]);
-	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numVertices, instances);
-}
-
-void modelDrawPhong(ModelPhong* m, size_t instances,
-	Color4 tints[instances], mat4x4 transforms[instances])
-{
-	assert(initialized);
-	assert(m);
-	assert(m->vao);
-	assert(m->name);
-	assert(m->vertices);
-	assert(m->normals);
-	assert(m->tints);
-	assert(m->transforms);
-	assert(tints);
-	assert(transforms);
-	glBindBuffer(GL_ARRAY_BUFFER, m->tints);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Color4) * instances, null,
-		GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Color4) * instances, tints);
-	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, null,
-		GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4x4) * instances, transforms);
-	programUse(renderer.phong);
-	glBindVertexArray(m->vao);
-	glUniformMatrix4fv(renderer.phong->projection, 1, GL_FALSE,
-		renderer.projection[0]);
-	glUniformMatrix4fv(renderer.phong->camera, 1, GL_FALSE,
-		renderer.camera[0]);
-	vec3 lightPosition = {renderer.lightPosition.x,
-	                      renderer.lightPosition.y,
-	                      renderer.lightPosition.z};
-	vec3 lightColor = {renderer.lightColor.r,
-	                   renderer.lightColor.g,
-	                   renderer.lightColor.b};
-	glUniform3fv(renderer.phong->lightPosition, 1, lightPosition);
-	glUniform3fv(renderer.phong->lightColor, 1, lightColor);
-	glUniform1f(renderer.phong->ambient, m->material.ambient);
-	glUniform1f(renderer.phong->diffuse, m->material.diffuse);
-	glUniform1f(renderer.phong->specular, m->material.specular);
-	glUniform1f(renderer.phong->shine, m->material.shine);
-	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numVertices, instances);
+	assert(m->type > ModelTypeNone && m->type < ModelTypeSize);
+	switch (m->type) {
+	case ModelTypeFlat:
+		modelDrawFlat((ModelFlat*)m, instances, tints, transforms);
+		break;
+	case ModelTypePhong:
+		modelDrawPhong((ModelPhong*)m, instances, tints, transforms);
+		break;
+	default:
+		assert(false);
+	}
 }

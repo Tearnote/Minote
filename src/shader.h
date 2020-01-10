@@ -16,18 +16,18 @@ typedef GLint Uniform;
 
 /**
  * Base struct of Program type. To be a valid Program type usable with below
- * functions, a struct needs to have ::ProgramCommon as its first element.
+ * functions, a struct needs to have ::ProgramBase as its first element.
  */
-typedef struct ProgramCommon {
+typedef struct ProgramBase {
 	Program id; ///< ID of the program object
 	const char* vertName; ///< Filename of the vertex shader for reference
 	const char* fragName; ///< Filename of the fragment shader for reference
-} ProgramCommon;
+} ProgramBase;
 
 /**
  * Create a new Program of specified valid type. Shaders are compiled, linked
  * and ready for use.
- * @param type A struct type with ::ProgramCommon as its first element
+ * @param type A struct type with ::ProgramBase as its first element
  * @param vertName Name of the vertex shader
  * @param vertSrc GLSL source of the vertex shader
  * @param fragName Name of the fragment shader
@@ -43,7 +43,7 @@ typedef struct ProgramCommon {
  * @param program The Program object
  */
 #define programDestroy(program) \
-    (_programDestroy((ProgramCommon*)(program)))
+    (_programDestroy((ProgramBase*)(program)))
 
 /**
  * Obtain a uniform location from the program. If it fails, returns -1 and logs
@@ -53,7 +53,7 @@ typedef struct ProgramCommon {
  * @return Uniform location in the program, or -1 on failure
  */
 #define programUniform(program, uniform) \
-    (_programUniform((ProgramCommon*)(program), (uniform)))
+    (_programUniform((ProgramBase*)(program), (uniform)))
 
 /**
  * Activate a Program for rendering. The same Program stays active for any
@@ -61,7 +61,7 @@ typedef struct ProgramCommon {
  * @param program The Program object
  */
 #define programUse(program) \
-    (_programUse((ProgramCommon*)(program)))
+    (_programUse((ProgramBase*)(program)))
 
 ////////////////////////////////////////////////////////////////////////////////
 // Implementation details
@@ -69,10 +69,10 @@ typedef struct ProgramCommon {
 void* _programCreate(size_t size, const char* vertName, const char* vertSrc,
 	const char* fragName, const char* fragSrc);
 
-void _programDestroy(ProgramCommon* program);
+void _programDestroy(ProgramBase* program);
 
-Uniform _programUniform(ProgramCommon* program, const char* uniform);
+Uniform _programUniform(ProgramBase* program, const char* uniform);
 
-void _programUse(ProgramCommon* program);
+void _programUse(ProgramBase* program);
 
 #endif //MINOTE_SHADER_H

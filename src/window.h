@@ -33,7 +33,6 @@ void windowInit(const char* title, Size2i size, bool fullscreen);
 /**
  * Close the open window and clean up the window system. No window function
  * can be used until windowInit() is called again.
- * @param w The ::Window object
  */
 void windowCleanup(void);
 
@@ -62,7 +61,6 @@ void windowClose(void);
 
 /**
  * Returns the title of the window.
- * @param w The ::Window object
  * @return String displayed on the window's title bar
  * @remark This function is thread-safe.
  */

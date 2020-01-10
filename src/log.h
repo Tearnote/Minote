@@ -12,7 +12,7 @@
  */
 typedef struct Log Log;
 
-/// Log level enum, in ascending order of severity
+/// Log level in ascending order of severity
 /// @enum LogLevel
 typedef enum LogLevel {
 	LogNone, ///< zero value
