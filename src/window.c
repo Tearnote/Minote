@@ -18,7 +18,7 @@
 typedef struct Window {
 	GLFWwindow* window; ///< Underlying GLFWwindow object
 	const char* title; ///< Window title from the title bar
-	Queue* inputs; ///< Message queue for storing keypresses
+	queue* inputs; ///< Message queue for storing keypresses
 	mutex* inputsMutex; ///< Mutex protecting the #inputs queue
 	atomic bool open; ///< false if window should be closed, true otherwise
 	// These two are not #Size2i because the struct cannot be atomic

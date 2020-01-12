@@ -11,7 +11,7 @@
 #include <string.h>
 #include "util.h"
 
-struct Queue {
+struct queue {
 	unsigned char* data; ///< Dynamically allocated array for storing elements
 	size_t elementSize; ///< Size of each element
 	size_t capacity; ///< Size of #data as a count of elements
@@ -19,12 +19,12 @@ struct Queue {
 	size_t tail; ///< Index of the next element to dequeue
 };
 
-Queue* queueCreate(size_t elementSize, size_t maxElements)
+queue* queueCreate(size_t elementSize, size_t maxElements)
 {
 	assert(elementSize);
 	assert(maxElements);
 	assert(elementSize <= SIZE_MAX / (maxElements + 1)); // Overflow check
-	Queue* q = alloc(sizeof(*q));
+	queue* q = alloc(sizeof(*q));
 	// In the implementation at least 1 element needs to be free, to prevent
 	// confusion between empty and full states
 	q->capacity = maxElements + 1;
@@ -33,7 +33,7 @@ Queue* queueCreate(size_t elementSize, size_t maxElements)
 	return q;
 }
 
-void queueDestroy(Queue* q)
+void queueDestroy(queue* q)
 {
 	assert(q);
 	free(q->data);
@@ -41,7 +41,7 @@ void queueDestroy(Queue* q)
 	free(q);
 }
 
-bool queueEnqueue(Queue* q, void* element)
+bool queueEnqueue(queue* q, void* element)
 {
 	assert(q);
 	assert(element);
@@ -51,7 +51,7 @@ bool queueEnqueue(Queue* q, void* element)
 	return true;
 }
 
-bool queueDequeue(Queue* q, void* element)
+bool queueDequeue(queue* q, void* element)
 {
 	assert(q);
 	assert(element);
@@ -61,7 +61,7 @@ bool queueDequeue(Queue* q, void* element)
 	return true;
 }
 
-bool queuePeek(Queue* q, void* element)
+bool queuePeek(queue* q, void* element)
 {
 	assert(q);
 	assert(element);
@@ -70,19 +70,19 @@ bool queuePeek(Queue* q, void* element)
 	return true;
 }
 
-bool queueIsEmpty(Queue* q)
+bool queueIsEmpty(queue* q)
 {
 	assert(q);
 	return q->head == q->tail;
 }
 
-bool queueIsFull(Queue* q)
+bool queueIsFull(queue* q)
 {
 	assert(q);
 	return (q->head + 1) % q->capacity == q->tail;
 }
 
-void queueClear(Queue* q)
+void queueClear(queue* q)
 {
 	assert(q);
 	q->head = 0;

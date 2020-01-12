@@ -36,4 +36,16 @@
  */
 void* alloc(size_t bytes);
 
+/**
+ * Error-checking wrapper for realloc(). Terminates execution on error, but
+ * if the buffer is grown the additional space is not cleared to 0 - this should
+ * be done manually to keep all data in a defined state.
+ * @param buffer Pointer to previously allocated memory. Becomes undefined after
+ * this call
+ * @param newSize Target size to resize #buffer to, in bytes
+ * @return Pointer to the resized buffer. The old value of @a buffer should be
+ * immediately overwritten by this pointer
+ */
+void* ralloc(void* buffer, size_t newSize);
+
 #endif //MINOTE_UTIL_H
