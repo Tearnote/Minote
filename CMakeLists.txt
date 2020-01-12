@@ -82,7 +82,8 @@ set(C_SOURCES
         src/system.h src/system.c
         src/time.h src/time.c
         src/renderer.h src/renderer.c
-        src/shader.h src/shader.c)
+        src/shader.h src/shader.c
+        src/darray.h src/darray.c src/play.c src/play.h)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD
