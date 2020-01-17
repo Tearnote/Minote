@@ -1,6 +1,8 @@
 /**
  * Semantic structures for dealing with coordinates, sizes and colors
  * @file
+ * Alignment is ensured so that casting between these structs and arrays of
+ * the fundamental type is allowed.
  */
 
 #ifndef MINOTE_VISUALTYPES_H

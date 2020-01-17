@@ -9,8 +9,7 @@
 #ifndef MINOTE_DARRAY_H
 #define MINOTE_DARRAY_H
 
-#include <stdbool.h>
-#include <stdint.h>
+#include <stddef.h>
 
 /// Opaque dynamic array. You can obtain an instance with darrayCreate().
 typedef struct darray darray;

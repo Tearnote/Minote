@@ -7,6 +7,7 @@
 #define MINOTE_UTIL_H
 
 #include <stddef.h>
+#include <stdlib.h> // Provide free()
 
 /**
  * A better replacement for NULL.
