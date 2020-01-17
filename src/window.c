@@ -15,23 +15,16 @@
 #include "util.h"
 #include "log.h"
 
-typedef struct Window {
-	GLFWwindow* window; ///< Underlying GLFWwindow object
-	const char* title; ///< Window title from the title bar
-	queue* inputs; ///< Message queue for storing keypresses
-	mutex* inputsMutex; ///< Mutex protecting the #inputs queue
-	atomic bool open; ///< false if window should be closed, true otherwise
-	// These two are not #Size2i because the struct cannot be atomic
-	atomic size_t width; ///< width of the viewport in pixels
-	atomic size_t height; ///< height of the viewport in pixels
-	atomic float scale; ///< DPI scaling of the window, where 1.0 is "normal"
-} Window;
-
-/// State of window system initialization
-static bool initialized = false;
-
-/// Global window instance
-static Window appwindow = {0};
+static bool initialized = false; ///< State of window system initialization
+static GLFWwindow* window; ///< Underlying GLFWwindow object
+static const char* windowTitle; ///< Window title from the title bar
+static queue* inputs; ///< Message queue for storing keypresses
+static mutex* inputsMutex; ///< Mutex protecting the #inputs queue
+static atomic bool windowOpen; ///< false if window should be closed, true otherwise
+// These two are not #size2i because the struct cannot be atomic
+static atomic size_t viewportWidth; ///< width of the viewport in pixels
+static atomic size_t viewportHeight; ///< height of the viewport in pixels
+static atomic float viewportScale; ///< DPI scaling of the window, where 1.0 is "normal"
 
 /**
  * Function to run on each keypress event. The key event is added to the queue.
@@ -42,28 +35,28 @@ static Window appwindow = {0};
  * @param mods Bitmask of active modifier keys (ctrl, shift etc)
  */
 static void
-keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+keyCallback(GLFWwindow* w, int key, int scancode, int action, int mods)
 {
-	(void)window, (void)scancode, (void)mods;
+	(void)w, (void)scancode, (void)mods;
 	assert(initialized);
 	if (action == GLFW_REPEAT) return; // Key repeat is not needed
-	mutexLock(appwindow.inputsMutex);
-	if (!queueEnqueue(appwindow.inputs,
+	mutexLock(inputsMutex);
+	if (!queueEnqueue(inputs,
 		&(KeyInput){.key = key, .action = action}))
 		logWarn(applog, u8"Window input queue is full, key #%d %s dropped",
 			key, action == GLFW_PRESS ? u8"press" : u8"release");
-	mutexUnlock(appwindow.inputsMutex);
+	mutexUnlock(inputsMutex);
 }
 
 /**
  * Function to run when user requested window close.
  * @param window Unused
  */
-static void windowCloseCallback(GLFWwindow* window)
+static void windowCloseCallback(GLFWwindow* w)
 {
-	(void)window;
+	(void)w;
 	assert(initialized);
-	appwindow.open = false;
+	windowOpen = false;
 }
 
 /**
@@ -73,16 +66,16 @@ static void windowCloseCallback(GLFWwindow* window)
  * @param width New window width in pixels
  * @param height New window height in pixels
  */
-static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
+static void framebufferResizeCallback(GLFWwindow* w, int width, int height)
 {
-	(void)window;
+	(void)w;
 	assert(initialized);
 	assert(width);
 	assert(height);
-	appwindow.width = width;
-	appwindow.height = height;
+	viewportWidth = width;
+	viewportHeight = height;
 	logDebug(applog, u8"Window \"%s\" resized to %dx%d",
-		appwindow.title, width, height);
+		windowTitle, width, height);
 }
 
 /**
@@ -93,14 +86,14 @@ static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
  * @param xScale New window scale, with 1.0 being "normal"
  * @param yScale Unused. This appears to be 0.0 sometimes so we ignore it
  */
-static void windowScaleCallback(GLFWwindow* window, float xScale, float yScale)
+static void windowScaleCallback(GLFWwindow* w, float xScale, float yScale)
 {
-	(void)window, (void)yScale;
+	(void)w, (void)yScale;
 	assert(initialized);
 	assert(xScale);
-	appwindow.scale = xScale;
+	viewportScale = xScale;
 	logDebug(applog, "Window \"%s\" DPI scaling changed to %f",
-		appwindow.title, xScale);
+		windowTitle, xScale);
 }
 
 void windowInit(const char* title, size2i size, bool fullscreen)
@@ -108,9 +101,9 @@ void windowInit(const char* title, size2i size, bool fullscreen)
 	assert(title);
 	assert(size.x >= 0 && size.y >= 0);
 	if (initialized) return;
-	appwindow.title = title;
-	atomic_init(&appwindow.open, true);
-	appwindow.inputsMutex = mutexCreate();
+	windowTitle = title;
+	atomic_init(&windowOpen, true);
+	inputsMutex = mutexCreate();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -123,32 +116,32 @@ void windowInit(const char* title, size2i size, bool fullscreen)
 	if (fullscreen) {
 		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-		appwindow.window = glfwCreateWindow(mode->width, mode->height, title,
-			monitor, null);
+		window = glfwCreateWindow(mode->width, mode->height, title, monitor,
+			null);
 	} else {
-		appwindow.window = glfwCreateWindow(size.x, size.y, title, null, null);
+		window = glfwCreateWindow(size.x, size.y, title, null, null);
 	}
-	if (!appwindow.window) {
-		logCrit(applog, u8"Failed to create window \"%s\": %s",
-			title, systemError());
+	if (!window) {
+		logCrit(applog, u8"Failed to create window \"%s\": %s", title,
+			systemError());
 		exit(EXIT_FAILURE);
 	}
 	initialized = true;
 
-	glfwSetInputMode(appwindow.window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-	appwindow.inputs = queueCreate(sizeof(KeyInput), 64);
-	glfwSetKeyCallback(appwindow.window, keyCallback);
-	glfwSetWindowCloseCallback(appwindow.window, windowCloseCallback);
-	glfwSetFramebufferSizeCallback(appwindow.window, framebufferResizeCallback);
-	glfwSetWindowContentScaleCallback(appwindow.window, windowScaleCallback);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+	inputs = queueCreate(sizeof(KeyInput), 64);
+	glfwSetKeyCallback(window, keyCallback);
+	glfwSetWindowCloseCallback(window, windowCloseCallback);
+	glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+	glfwSetWindowContentScaleCallback(window, windowScaleCallback);
 	// An initial check is required to get correct values for non-100% scaling
 	int width = 0;
 	int height = 0;
 	float scale = 0.0f;
-	glfwGetFramebufferSize(appwindow.window, &width, &height);
-	framebufferResizeCallback(appwindow.window, width, height);
-	glfwGetWindowContentScale(appwindow.window, &scale, null);
-	windowScaleCallback(appwindow.window, scale, 0);
+	glfwGetFramebufferSize(window, &width, &height);
+	framebufferResizeCallback(window, width, height);
+	glfwGetWindowContentScale(window, &scale, null);
+	windowScaleCallback(window, scale, 0);
 	logInfo(applog, u8"Window \"%s\" created at %dx%d*%f%s",
 		title, width, height, scale, fullscreen ? u8" fullscreen" : u8"");
 }
@@ -156,13 +149,14 @@ void windowInit(const char* title, size2i size, bool fullscreen)
 void windowCleanup(void)
 {
 	if (!initialized) return;
-	queueDestroy(appwindow.inputs);
-	appwindow.inputs = null;
-	glfwDestroyWindow(appwindow.window);
-	appwindow.window = null;
-	mutexDestroy(appwindow.inputsMutex);
-	appwindow.inputsMutex = null;
-	logDebug(applog, u8"Window \"%s\" destroyed", appwindow.title);
+	queueDestroy(inputs);
+	inputs = null;
+	glfwDestroyWindow(window);
+	window = null;
+	mutexDestroy(inputsMutex);
+	inputsMutex = null;
+	logDebug(applog, u8"Window \"%s\" destroyed", windowTitle);
+	windowTitle = null;
 	initialized = false;
 }
 
@@ -175,37 +169,37 @@ void windowPoll(void)
 bool windowIsOpen(void)
 {
 	assert(initialized);
-	return appwindow.open;
+	return windowOpen;
 }
 
 void windowClose(void)
 {
 	assert(initialized);
-	appwindow.open = false;
+	windowOpen = false;
 }
 
 const char* windowGetTitle(void)
 {
 	assert(initialized);
-	return appwindow.title;
+	return windowTitle;
 }
 
 size2i windowGetSize(void)
 {
 	assert(initialized);
-	return (size2i){appwindow.width, appwindow.height};
+	return (size2i){viewportWidth, viewportHeight};
 }
 
 float windowGetScale(void)
 {
 	assert(initialized);
-	return appwindow.scale;
+	return viewportScale;
 }
 
 void windowContextActivate(void)
 {
 	assert(initialized);
-	glfwMakeContextCurrent(appwindow.window);
+	glfwMakeContextCurrent(window);
 }
 
 void windowContextDeactivate(void)
@@ -217,31 +211,31 @@ void windowContextDeactivate(void)
 void windowFlip(void)
 {
 	assert(initialized);
-	glfwSwapBuffers(appwindow.window);
+	glfwSwapBuffers(window);
 }
 
 bool windowInputDequeue(KeyInput* input)
 {
 	assert(initialized);
-	mutexLock(appwindow.inputsMutex);
-	bool result = queueDequeue(appwindow.inputs, input);
-	mutexUnlock(appwindow.inputsMutex);
+	mutexLock(inputsMutex);
+	bool result = queueDequeue(inputs, input);
+	mutexUnlock(inputsMutex);
 	return result;
 }
 
 bool windowInputPeek(KeyInput* input)
 {
 	assert(initialized);
-	mutexLock(appwindow.inputsMutex);
-	bool result = queuePeek(appwindow.inputs, input);
-	mutexUnlock(appwindow.inputsMutex);
+	mutexLock(inputsMutex);
+	bool result = queuePeek(inputs, input);
+	mutexUnlock(inputsMutex);
 	return result;
 }
 
 void windowInputClear(void)
 {
 	assert(initialized);
-	mutexLock(appwindow.inputsMutex);
-	queueClear(appwindow.inputs);
-	mutexUnlock(appwindow.inputsMutex);
+	mutexLock(inputsMutex);
+	queueClear(inputs);
+	mutexUnlock(inputsMutex);
 }

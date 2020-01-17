@@ -43,18 +43,6 @@ typedef struct ProgramPhong {
 	Uniform shine; ///< Location of "shine" uniform
 } ProgramPhong;
 
-/// Representation of a rendering engine bound to an OpenGL context
-typedef struct Renderer {
-	size2i size; ///< Size of the rendering viewport in pixels
-	mat4x4 projection; ///< Projection matrix (perspective transform)
-	mat4x4 camera; ///< Camera matrix (world transform)
-	point3f lightPosition; ///< Position of light source in world space
-	color3 lightColor; ///< Color of the light source
-	Model* sync; ///< Invisible model used to prevent frame buffering
-	ProgramFlat* flat; ///< The built-in flat shader
-	ProgramPhong* phong; ///< The built-in Phong shader
-} Renderer;
-
 static const char* ProgramFlatVertName = u8"flat.vert";
 static const GLchar* ProgramFlatVertSrc = (GLchar[]){
 #include "flat.vert"
@@ -73,11 +61,15 @@ static const GLchar* ProgramPhongFragSrc = (GLchar[]){
 #include "phong.frag"
 	, '\0'};
 
-/// State of renderer system initialization
-static bool initialized = false;
-
-/// Global renderer instance
-Renderer renderer = {0};
+static bool initialized = false; ///< State of renderer system initialization
+static size2i viewportSize; ///< Size of the rendering viewport in pixels
+static mat4x4 projection; ///< Projection matrix (perspective transform)
+static mat4x4 camera; ///< Camera matrix (world transform)
+static point3f lightPosition; ///< Position of light source in world space
+static color3 lightColor; ///< Color of the light source
+static Model* sync; ///< Invisible model used to prevent frame buffering
+static ProgramFlat* flat; ///< The built-in flat shader
+static ProgramPhong* phong; ///< The built-in Phong shader
 
 /**
  * Prevent the driver from buffering commands. Call this after windowFlip()
@@ -89,7 +81,7 @@ static void rendererSync(void)
 	assert(initialized);
 	mat4x4 identity = {0};
 	mat4x4_identity(identity);
-	modelDraw(renderer.sync, 1, (color4[]){Color4White}, &identity);
+	modelDraw(sync, 1, (color4[]){Color4White}, &identity);
 	GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 	glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, secToNsec(0.1));
 }
@@ -104,10 +96,10 @@ static void rendererResize(size2i size)
 	assert(initialized);
 	assert(size.x > 0);
 	assert(size.y > 0);
-	renderer.size.x = size.x;
-	renderer.size.y = size.y;
+	viewportSize.x = size.x;
+	viewportSize.y = size.y;
 	glViewport(0, 0, size.x, size.y);
-	mat4x4_perspective(renderer.projection, radf(45.0f),
+	mat4x4_perspective(projection, radf(45.0f),
 		(float)size.x / (float)size.y, ProjectionNear, ProjectionFar);
 }
 
@@ -133,24 +125,23 @@ void rendererInit(void)
 	glEnable(GL_MULTISAMPLE);
 
 	// Create built-in shaders
-	renderer.flat = programCreate(ProgramFlat,
+	flat = programCreate(ProgramFlat,
 		ProgramFlatVertName, ProgramFlatVertSrc,
 		ProgramFlatFragName, ProgramFlatFragSrc);
-	renderer.flat->projection = programUniform(renderer.flat, u8"projection");
-	renderer.flat->camera = programUniform(renderer.flat, u8"camera");
+	flat->projection = programUniform(flat, u8"projection");
+	flat->camera = programUniform(flat, u8"camera");
 
-	renderer.phong = programCreate(ProgramPhong,
+	phong = programCreate(ProgramPhong,
 		ProgramPhongVertName, ProgramPhongVertSrc,
 		ProgramPhongFragName, ProgramPhongFragSrc);
-	renderer.phong->projection = programUniform(renderer.phong, u8"projection");
-	renderer.phong->camera = programUniform(renderer.phong, u8"camera");
-	renderer.phong->lightPosition = programUniform(renderer.phong,
-		u8"lightPosition");
-	renderer.phong->lightColor = programUniform(renderer.phong, u8"lightColor");
-	renderer.phong->ambient = programUniform(renderer.phong, u8"ambient");
-	renderer.phong->diffuse = programUniform(renderer.phong, u8"diffuse");
-	renderer.phong->specular = programUniform(renderer.phong, u8"specular");
-	renderer.phong->shine = programUniform(renderer.phong, u8"shine");
+	phong->projection = programUniform(phong, u8"projection");
+	phong->camera = programUniform(phong, u8"camera");
+	phong->lightPosition = programUniform(phong, u8"lightPosition");
+	phong->lightColor = programUniform(phong, u8"lightColor");
+	phong->ambient = programUniform(phong, u8"ambient");
+	phong->diffuse = programUniform(phong, u8"diffuse");
+	phong->specular = programUniform(phong, u8"specular");
+	phong->shine = programUniform(phong, u8"shine");
 
 	// Set up matrices
 	rendererResize(windowGetSize());
@@ -159,16 +150,16 @@ void rendererInit(void)
 	vec3 eye = {-4.0f, 12.0f, 32.0f};
 	vec3 center = {0.0f, 12.0f, 0.0f};
 	vec3 up = {0.0f, 1.0f, 0.0f};
-	mat4x4_look_at(renderer.camera, eye, center, up);
-	renderer.lightPosition.x = -8.0f;
-	renderer.lightPosition.y = 32.0f;
-	renderer.lightPosition.z = 16.0f;
-	renderer.lightColor.r = 1.0f;
-	renderer.lightColor.g = 1.0f;
-	renderer.lightColor.b = 1.0f;
+	mat4x4_look_at(camera, eye, center, up);
+	lightPosition.x = -8.0f;
+	lightPosition.y = 32.0f;
+	lightPosition.z = 16.0f;
+	lightColor.r = 1.0f;
+	lightColor.g = 1.0f;
+	lightColor.b = 1.0f;
 
 	// Create sync model
-	renderer.sync = modelCreateFlat(u8"sync", 3, (VertexFlat[]){
+	sync = modelCreateFlat(u8"sync", 3, (VertexFlat[]){
 		{
 			.pos = {0.0f, 0.0f, 0.0f},
 			.color = Color4Clear
@@ -189,12 +180,12 @@ void rendererInit(void)
 void rendererCleanup(void)
 {
 	if (!initialized) return;
-	modelDestroy(renderer.sync);
-	renderer.sync = null;
-	programDestroy(renderer.phong);
-	renderer.phong = null;
-	programDestroy(renderer.flat);
-	renderer.flat = null;
+	modelDestroy(sync);
+	sync = null;
+	programDestroy(phong);
+	phong = null;
+	programDestroy(flat);
+	flat = null;
 	windowContextDeactivate();
 	logDebug(applog, u8"Destroyed renderer for window \"%s\"",
 		windowGetTitle());
@@ -212,21 +203,21 @@ void rendererFrameBegin(void)
 {
 	assert(initialized);
 	size2i windowSize = windowGetSize();
-	if (renderer.size.x != windowSize.x || renderer.size.y != windowSize.y)
+	if (viewportSize.x != windowSize.x || viewportSize.y != windowSize.y)
 		rendererResize(windowSize);
 
 	vec3 eye = {sinf(glfwGetTime() / 2) * 4, 12.0f, 32.0f};
 	vec3 center = {0.0f, 12.0f, 0.0f};
 	vec3 up = {0.0f, 1.0f, 0.0f};
-	mat4x4_look_at(renderer.camera, eye, center, up);
-//	apprenderer.lightPosition.x = -8.0f;
-//	apprenderer.lightPosition.y = 32.0f;
-	renderer.lightPosition.x = 8.0f * sinf(glfwGetTime() * 6);
-	renderer.lightPosition.y = 8.0f + 8.0f * sinf(glfwGetTime() * 7);
-	renderer.lightPosition.z = 16.0f;
-	renderer.lightColor.r = 1.0f;
-	renderer.lightColor.g = 1.0f;
-	renderer.lightColor.b = 1.0f;
+	mat4x4_look_at(camera, eye, center, up);
+//	lightPosition.x = -8.0f;
+//	lightPosition.y = 32.0f;
+	lightPosition.x = 8.0f * sinf(glfwGetTime() * 6);
+	lightPosition.y = 8.0f + 8.0f * sinf(glfwGetTime() * 7);
+	lightPosition.z = 16.0f;
+	lightColor.r = 1.0f;
+	lightColor.g = 1.0f;
+	lightColor.b = 1.0f;
 }
 
 void rendererFrameEnd(void)
@@ -356,12 +347,10 @@ static void modelDrawFlat(ModelFlat* m, size_t instances,
 	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, null,
 		GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4x4) * instances, transforms);
-	programUse(renderer.flat);
+	programUse(flat);
 	glBindVertexArray(m->vao);
-	glUniformMatrix4fv(renderer.flat->projection, 1, GL_FALSE,
-		renderer.projection[0]);
-	glUniformMatrix4fv(renderer.flat->camera, 1, GL_FALSE,
-		renderer.camera[0]);
+	glUniformMatrix4fv(flat->projection, 1, GL_FALSE, projection[0]);
+	glUniformMatrix4fv(flat->camera, 1, GL_FALSE, camera[0]);
 	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numVertices, instances);
 }
 
@@ -395,24 +384,16 @@ static void modelDrawPhong(ModelPhong* m, size_t instances,
 	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, null,
 		GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4x4) * instances, transforms);
-	programUse(renderer.phong);
+	programUse(phong);
 	glBindVertexArray(m->vao);
-	glUniformMatrix4fv(renderer.phong->projection, 1, GL_FALSE,
-		renderer.projection[0]);
-	glUniformMatrix4fv(renderer.phong->camera, 1, GL_FALSE,
-		renderer.camera[0]);
-	vec3 lightPosition = {renderer.lightPosition.x,
-	                      renderer.lightPosition.y,
-	                      renderer.lightPosition.z};
-	vec3 lightColor = {renderer.lightColor.r,
-	                   renderer.lightColor.g,
-	                   renderer.lightColor.b};
-	glUniform3fv(renderer.phong->lightPosition, 1, lightPosition);
-	glUniform3fv(renderer.phong->lightColor, 1, lightColor);
-	glUniform1f(renderer.phong->ambient, m->material.ambient);
-	glUniform1f(renderer.phong->diffuse, m->material.diffuse);
-	glUniform1f(renderer.phong->specular, m->material.specular);
-	glUniform1f(renderer.phong->shine, m->material.shine);
+	glUniformMatrix4fv(phong->projection, 1, GL_FALSE, projection[0]);
+	glUniformMatrix4fv(phong->camera, 1, GL_FALSE, camera[0]);
+	glUniform3fv(phong->lightPosition, 1, lightPosition.arr);
+	glUniform3fv(phong->lightColor, 1, lightColor.arr);
+	glUniform1f(phong->ambient, m->material.ambient);
+	glUniform1f(phong->diffuse, m->material.diffuse);
+	glUniform1f(phong->specular, m->material.specular);
+	glUniform1f(phong->shine, m->material.shine);
 	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numVertices, instances);
 }
 
