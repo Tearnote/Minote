@@ -80,13 +80,13 @@ typedef union color4 {
 } color4;
 
 /// White color convenience constant
-#define Color4White ((color4){1.0f, 1.0f, 1.0f, 1.0f})
+#define color4White ((color4){1.0f, 1.0f, 1.0f, 1.0f})
 
 /// Fully transparent color convenience constant
-#define Color4Clear ((color4){1.0f, 1.0f, 1.0f, 0.0f})
+#define color4Clear ((color4){1.0f, 1.0f, 1.0f, 0.0f})
 
 /**
- * Convert a ::Color3 from sRGB to Linear color space.
+ * Convert a ::color3 from sRGB to Linear color space.
  * @param color Input color
  * @return Output color
  */

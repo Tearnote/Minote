@@ -28,7 +28,7 @@ static atomic float viewportScale; ///< DPI scaling of the window, where 1.0 is 
 
 /**
  * Function to run on each keypress event. The key event is added to the queue.
- * @param window Unused
+ * @param w Unused
  * @param key Platform-independent key identifier
  * @param scancode Platform-dependent keycode
  * @param action GLFW_PRESS or GLFW_RELEASE
@@ -50,7 +50,7 @@ keyCallback(GLFWwindow* w, int key, int scancode, int action, int mods)
 
 /**
  * Function to run when user requested window close.
- * @param window Unused
+ * @param w Unused
  */
 static void windowCloseCallback(GLFWwindow* w)
 {
@@ -62,7 +62,7 @@ static void windowCloseCallback(GLFWwindow* w)
 /**
  * Function to run when the window is resized. The new size is kept for later
  * retrieval with windowGetSize().
- * @param window Unused
+ * @param w Unused
  * @param width New window width in pixels
  * @param height New window height in pixels
  */
@@ -82,7 +82,7 @@ static void framebufferResizeCallback(GLFWwindow* w, int width, int height)
  * Function to run when the window is rescaled. This might happen when dragging
  * it to a display with different DPI scaling, or at startup. The new scale is
  * kept for later retrieval with windowGetScale().
- * @param window Unused
+ * @param w Unused
  * @param xScale New window scale, with 1.0 being "normal"
  * @param yScale Unused. This appears to be 0.0 sometimes so we ignore it
  */

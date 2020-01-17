@@ -43,7 +43,7 @@ void* alloc(size_t bytes);
  * be done manually to keep all data in a defined state.
  * @param buffer Pointer to previously allocated memory. Becomes undefined after
  * this call
- * @param newSize Target size to resize #buffer to, in bytes
+ * @param newSize Target size to resize @a buffer to, in bytes
  * @return Pointer to the resized buffer. The old value of @a buffer should be
  * immediately overwritten by this pointer
  */

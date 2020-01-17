@@ -1,5 +1,5 @@
 /**
- * System for drawing inside a ::Window using a ::Renderer and ::Model instances
+ * System for drawing inside of a window using primitives and ::Model instances
  * @file
  */
 

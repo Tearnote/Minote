@@ -70,6 +70,6 @@ void playUpdate(void)
 void playDraw(void)
 {
 	rendererClear(color3ToLinear((color3){0.544f, 0.751f, 0.928f}));
-	modelDraw(scene, 1, (color4[]){Color4White}, &identity);
+	modelDraw(scene, 1, (color4[]){color4White}, &identity);
 	modelDraw(mino, 200, tints, transforms);
 }

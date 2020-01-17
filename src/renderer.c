@@ -81,13 +81,13 @@ static void rendererSync(void)
 	assert(initialized);
 	mat4x4 identity = {0};
 	mat4x4_identity(identity);
-	modelDraw(sync, 1, (color4[]){Color4White}, &identity);
+	modelDraw(sync, 1, (color4[]){color4White}, &identity);
 	GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 	glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, secToNsec(0.1));
 }
 
 /**
- * Resize the ::Renderer viewport, preferably to ::Window size. Recreates the
+ * Resize the rendering viewport, preferably to window size. Recreates the
  * matrices as needed.
  * @param size New viewport size in pixels
  */
@@ -162,15 +162,15 @@ void rendererInit(void)
 	sync = modelCreateFlat(u8"sync", 3, (VertexFlat[]){
 		{
 			.pos = {0.0f, 0.0f, 0.0f},
-			.color = Color4Clear
+			.color = color4Clear
 		},
 		{
 			.pos = {1.0f, 0.0f, 0.0f},
-			.color = Color4Clear
+			.color = color4Clear
 		},
 		{
 			.pos = {0.0f, 1.0f, 0.0f},
-			.color = Color4Clear
+			.color = color4Clear
 		}
 	});
 
