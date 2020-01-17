@@ -28,7 +28,7 @@ typedef struct KeyInput {
  * @param fullscreen Fullscreen if true, windowed if false. A fullscreen window
  * is created at display resolution, ignoring the @a size parameter
  */
-void windowInit(const char* title, Size2i size, bool fullscreen);
+void windowInit(const char* title, size2i size, bool fullscreen);
 
 /**
  * Close the open window and clean up the window system. No window function
@@ -71,7 +71,7 @@ const char* windowGetTitle(void);
  * @return Size of the window in pixels
  * @remark This function is thread-safe.
  */
-Size2i windowGetSize(void);
+size2i windowGetSize(void);
 
 /**
  * Return the scale of the window, with 1.0 being "normal".

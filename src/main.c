@@ -35,7 +35,7 @@ static void init(void)
 	logInfo(applog, u8"Starting up %s %s", AppName, AppVersion);
 
 	systemInit();
-	windowInit(AppName u8" " AppVersion, (Size2i){1280, 720}, false);
+	windowInit(AppName u8" " AppVersion, (size2i){1280, 720}, false);
 }
 
 /**

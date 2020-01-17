@@ -103,7 +103,7 @@ static void windowScaleCallback(GLFWwindow* window, float xScale, float yScale)
 		appwindow.title, xScale);
 }
 
-void windowInit(const char* title, Size2i size, bool fullscreen)
+void windowInit(const char* title, size2i size, bool fullscreen)
 {
 	assert(title);
 	assert(size.x >= 0 && size.y >= 0);
@@ -190,10 +190,10 @@ const char* windowGetTitle(void)
 	return appwindow.title;
 }
 
-Size2i windowGetSize(void)
+size2i windowGetSize(void)
 {
 	assert(initialized);
-	return (Size2i){appwindow.width, appwindow.height};
+	return (size2i){appwindow.width, appwindow.height};
 }
 
 float windowGetScale(void)

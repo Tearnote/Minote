@@ -18,7 +18,7 @@ static Model* mino = null;
 
 static mat4x4 identity = {0};
 
-static Color4 tints[200] = {0};
+static color4 tints[200] = {0};
 static mat4x4 transforms[200] = {0};
 
 void playInit(void)
@@ -69,7 +69,7 @@ void playUpdate(void)
 
 void playDraw(void)
 {
-	rendererClear(color3ToLinear((Color3){0.544f, 0.751f, 0.928f}));
-	modelDraw(scene, 1, (Color4[]){Color4White}, &identity);
+	rendererClear(color3ToLinear((color3){0.544f, 0.751f, 0.928f}));
+	modelDraw(scene, 1, (color4[]){Color4White}, &identity);
 	modelDraw(mino, 200, tints, transforms);
 }

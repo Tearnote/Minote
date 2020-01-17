@@ -27,7 +27,7 @@ void rendererCleanup(void);
  * Clear all buffers to a specified color.
  * @param color Color to clear with
  */
-void rendererClear(Color3 color);
+void rendererClear(color3 color);
 
 /**
  * Prepare for rendering a new frame. You should call rendererClear() afterwards
@@ -45,8 +45,8 @@ void rendererFrameEnd(void);
 
 /// Data of a single mesh vertex of ::ModelFlat
 typedef struct VertexFlat {
-	Point3f pos; ///< Vertex position in model space
-	Color4 color; ///< Vertex color
+	point3f pos; ///< Vertex position in model space
+	color4 color; ///< Vertex color
 } VertexFlat;
 
 /// Data of a single mesh vertex of ::ModelPhong
@@ -102,6 +102,6 @@ void modelDestroy(Model* m);
  * @param transforms Array of 4x4 matrices for transforming each instance
  */
 void modelDraw(Model* m, size_t instances,
-	Color4 tints[instances], mat4x4 transforms[instances]);
+	color4 tints[instances], mat4x4 transforms[instances]);
 
 #endif //MINOTE_RENDERER_H

@@ -45,11 +45,11 @@ typedef struct ProgramPhong {
 
 /// Representation of a rendering engine bound to an OpenGL context
 typedef struct Renderer {
-	Size2i size; ///< Size of the rendering viewport in pixels
+	size2i size; ///< Size of the rendering viewport in pixels
 	mat4x4 projection; ///< Projection matrix (perspective transform)
 	mat4x4 camera; ///< Camera matrix (world transform)
-	Point3f lightPosition; ///< Position of light source in world space
-	Color3 lightColor; ///< Color of the light source
+	point3f lightPosition; ///< Position of light source in world space
+	color3 lightColor; ///< Color of the light source
 	Model* sync; ///< Invisible model used to prevent frame buffering
 	ProgramFlat* flat; ///< The built-in flat shader
 	ProgramPhong* phong; ///< The built-in Phong shader
@@ -89,7 +89,7 @@ static void rendererSync(void)
 	assert(initialized);
 	mat4x4 identity = {0};
 	mat4x4_identity(identity);
-	modelDraw(renderer.sync, 1, (Color4[]){Color4White}, &identity);
+	modelDraw(renderer.sync, 1, (color4[]){Color4White}, &identity);
 	GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 	glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, secToNsec(0.1));
 }
@@ -99,7 +99,7 @@ static void rendererSync(void)
  * matrices as needed.
  * @param size New viewport size in pixels
  */
-static void rendererResize(Size2i size)
+static void rendererResize(size2i size)
 {
 	assert(initialized);
 	assert(size.x > 0);
@@ -201,7 +201,7 @@ void rendererCleanup(void)
 	initialized = false;
 }
 
-void rendererClear(Color3 color)
+void rendererClear(color3 color)
 {
 	assert(initialized);
 	glClearColor(color.r, color.g, color.b, 1.0f);
@@ -211,7 +211,7 @@ void rendererClear(Color3 color)
 void rendererFrameBegin(void)
 {
 	assert(initialized);
-	Size2i windowSize = windowGetSize();
+	size2i windowSize = windowGetSize();
 	if (renderer.size.x != windowSize.x || renderer.size.y != windowSize.y)
 		rendererResize(windowSize);
 
@@ -336,7 +336,7 @@ static void modelDestroyPhong(ModelPhong* m)
  * @param transforms Array of 4x4 matrices for transforming each instance
  */
 static void modelDrawFlat(ModelFlat* m, size_t instances,
-	Color4 tints[instances], mat4x4 transforms[instances])
+	color4 tints[instances], mat4x4 transforms[instances])
 {
 	assert(initialized);
 	assert(m);
@@ -349,9 +349,9 @@ static void modelDrawFlat(ModelFlat* m, size_t instances,
 	assert(tints);
 	assert(transforms);
 	glBindBuffer(GL_ARRAY_BUFFER, m->tints);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Color4) * instances, null,
+	glBufferData(GL_ARRAY_BUFFER, sizeof(color4) * instances, null,
 		GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Color4) * instances, tints);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(color4) * instances, tints);
 	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, null,
 		GL_STREAM_DRAW);
@@ -374,7 +374,7 @@ static void modelDrawFlat(ModelFlat* m, size_t instances,
  * @param transforms Array of 4x4 matrices for transforming each instance
  */
 static void modelDrawPhong(ModelPhong* m, size_t instances,
-	Color4 tints[instances], mat4x4 transforms[instances])
+	color4 tints[instances], mat4x4 transforms[instances])
 {
 	assert(initialized);
 	assert(m);
@@ -388,9 +388,9 @@ static void modelDrawPhong(ModelPhong* m, size_t instances,
 	assert(tints);
 	assert(transforms);
 	glBindBuffer(GL_ARRAY_BUFFER, m->tints);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Color4) * instances, null,
+	glBufferData(GL_ARRAY_BUFFER, sizeof(color4) * instances, null,
 		GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Color4) * instances, tints);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(color4) * instances, tints);
 	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, null,
 		GL_STREAM_DRAW);
@@ -423,7 +423,7 @@ static void modelDrawPhong(ModelPhong* m, size_t instances,
  * @param[out] normalData Normal vectors corresponding to the vertex mesh
  */
 static void modelGenerateNormals(size_t numVertices,
-	VertexPhong vertices[numVertices], Point3f normalData[numVertices])
+	VertexPhong vertices[numVertices], point3f normalData[numVertices])
 {
 	assert(initialized);
 	assert(numVertices);
@@ -486,7 +486,7 @@ Model* modelCreateFlat(const char* name,
 		(void*)offsetof(VertexFlat, color));
 	glBindBuffer(GL_ARRAY_BUFFER, m->tints);
 	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Color4),
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(color4),
 		(void*)0);
 	glVertexAttribDivisor(2, 1);
 	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
@@ -527,8 +527,8 @@ Model* modelCreatePhong(const char* name,
 	glBindBuffer(GL_ARRAY_BUFFER, m->vertices);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(VertexPhong) * m->numVertices,
 		vertices, GL_STATIC_DRAW);
-	Point3f normalData[m->numVertices];
-	assert(sizeof(normalData) == sizeof(Point3f) * m->numVertices);
+	point3f normalData[m->numVertices];
+	assert(sizeof(normalData) == sizeof(point3f) * m->numVertices);
 	memset(normalData, 0, sizeof(normalData));
 	modelGenerateNormals(m->numVertices, vertices, normalData);
 	glGenBuffers(1, &m->normals);
@@ -549,11 +549,11 @@ Model* modelCreatePhong(const char* name,
 		(void*)offsetof(VertexPhong, color));
 	glBindBuffer(GL_ARRAY_BUFFER, m->normals);
 	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Point3f),
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(point3f),
 		(void*)0);
 	glBindBuffer(GL_ARRAY_BUFFER, m->tints);
 	glEnableVertexAttribArray(3);
-	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(Color4),
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(color4),
 		(void*)0);
 	glVertexAttribDivisor(3, 1);
 	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
@@ -595,7 +595,7 @@ void modelDestroy(Model* m)
 }
 
 void modelDraw(Model* m, size_t instances,
-	Color4 tints[instances], mat4x4 transforms[instances])
+	color4 tints[instances], mat4x4 transforms[instances])
 {
 	assert(m);
 	assert(m->type > ModelTypeNone && m->type < ModelTypeSize);
