@@ -96,7 +96,7 @@ void playDraw(void)
 		mat4x4* transform = darrayProduce(transforms);
 		memcpy(tint->arr, minoColor(type).arr, sizeof(tint->arr));
 		if (y >= FieldHeightVisible)
-			tint->a /= 4.0f;
+			tint->a /= 8.0f;
 		mat4x4_identity(*transform);
 		mat4x4_translate_in_place(*transform, x - (signed)(FieldWidth / 2), y,
 			0.0f);

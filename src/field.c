@@ -8,6 +8,7 @@
 #include <assert.h>
 #include "util.h"
 
+/// Array of canonical mino colors
 static const color4 MinoColors[MinoSize] = {
 	[MinoNone] = Color4Clear,
 	[MinoI] = {1.0f, 0.0f, 0.0f, 1.0f},
@@ -17,7 +18,7 @@ static const color4 MinoColors[MinoSize] = {
 	[MinoT] = {0.0f, 1.0f, 1.0f, 1.0f},
 	[MinoJ] = {0.0f, 0.0f, 1.0f, 1.0f},
 	[MinoS] = {1.0f, 0.0f, 1.0f, 1.0f},
-	[MinoGarbage] = {.22f, .22f, .22f, 1.0f}
+	[MinoGarbage] = {0.2f, 0.2f, 0.2f, 1.0f}
 };
 
 struct Field {
@@ -64,5 +65,6 @@ mino fieldGet(Field* f, point2i place)
 
 color4 minoColor(mino type)
 {
+	assert(type >= MinoNone && type < MinoSize);
 	return MinoColors[type];
 }
