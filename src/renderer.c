@@ -81,7 +81,7 @@ static void rendererSync(void)
 	assert(initialized);
 	mat4x4 identity = {0};
 	mat4x4_identity(identity);
-	modelDraw(sync, 1, (color4[]){color4White}, &identity);
+	modelDraw(sync, 1, (color4[]){Color4White}, &identity);
 	GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 	glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, secToNsec(0.1));
 }
@@ -162,15 +162,15 @@ void rendererInit(void)
 	sync = modelCreateFlat(u8"sync", 3, (VertexFlat[]){
 		{
 			.pos = {0.0f, 0.0f, 0.0f},
-			.color = color4Clear
+			.color = Color4Clear
 		},
 		{
 			.pos = {1.0f, 0.0f, 0.0f},
-			.color = color4Clear
+			.color = Color4Clear
 		},
 		{
 			.pos = {0.0f, 1.0f, 0.0f},
-			.color = color4Clear
+			.color = Color4Clear
 		}
 	});
 
@@ -196,7 +196,8 @@ void rendererClear(color3 color)
 {
 	assert(initialized);
 	glClearColor(color.r, color.g, color.b, 1.0f);
-	glClear((uint32_t)GL_COLOR_BUFFER_BIT | (uint32_t)GL_DEPTH_BUFFER_BIT);
+	glClear((uint32_t)GL_COLOR_BUFFER_BIT
+		| (uint32_t)GL_DEPTH_BUFFER_BIT);
 }
 
 void rendererFrameBegin(void)
@@ -206,14 +207,12 @@ void rendererFrameBegin(void)
 	if (viewportSize.x != windowSize.x || viewportSize.y != windowSize.y)
 		rendererResize(windowSize);
 
-	vec3 eye = {sinf(glfwGetTime() / 2) * 4, 12.0f, 32.0f};
+	vec3 eye = {0.0f, 12.0f, 32.0f};
 	vec3 center = {0.0f, 12.0f, 0.0f};
 	vec3 up = {0.0f, 1.0f, 0.0f};
 	mat4x4_look_at(camera, eye, center, up);
-//	lightPosition.x = -8.0f;
-//	lightPosition.y = 32.0f;
-	lightPosition.x = 8.0f * sinf(glfwGetTime() * 6);
-	lightPosition.y = 8.0f + 8.0f * sinf(glfwGetTime() * 7);
+	lightPosition.x = -8.0f;
+	lightPosition.y = 32.0f;
 	lightPosition.z = 16.0f;
 	lightColor.r = 1.0f;
 	lightColor.g = 1.0f;

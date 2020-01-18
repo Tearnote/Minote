@@ -50,7 +50,13 @@ void* darrayProduce(darray* d)
 	}
 
 	d->count += 1;
-	return darrayGet(d, d->count);
+	return darrayGet(d, d->count - 1);
+}
+
+void* darrayData(darray* d)
+{
+	assert(d);
+	return d->data;
 }
 
 void* darrayGet(darray* d, size_t index)

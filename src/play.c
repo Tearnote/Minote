@@ -10,45 +10,56 @@
 #include <GLFW/glfw3.h>
 #include "renderer.h"
 #include "window.h"
+#include "darray.h"
+#include "field.h"
 #include "util.h"
 #include "log.h"
 
-static Model* scene = null;
-static Model* mino = null;
+#define FieldWidth 10u
+#define FieldHeight 22u
+#define FieldHeightVisible 20u
 
+static Model* scene = null;
+static Model* minoblock = null;
+static darray* tints = null;
+static darray* transforms = null;
 static mat4x4 identity = {0};
 
-static color4 tints[200] = {0};
-static mat4x4 transforms[200] = {0};
+//static color4 tints[FieldWidth * FieldHeight] = {0};
+//static mat4x4 transforms[FieldWidth * FieldHeight] = {0};
+
+Field* field = null;
 
 void playInit(void)
 {
 	scene = modelCreateFlat(u8"scene",
 #include "meshes/scene.mesh"
 	);
-	mino = modelCreatePhong(u8"mino",
+	minoblock = modelCreatePhong(u8"mino",
 #include "meshes/mino.mesh"
 	);
+	tints = darrayCreate(sizeof(color4));
+	transforms = darrayCreate(sizeof(mat4x4));
 	mat4x4_identity(identity);
 
-	for (size_t i = 0; i < 200; i += 1) {
-		tints[i].r = (float)rand() / (float)RAND_MAX;
-		tints[i].g = (float)rand() / (float)RAND_MAX;
-		tints[i].b = (float)rand() / (float)RAND_MAX;
-		tints[i].a = 1.0f;
-		mat4x4_identity(transforms[i]);
-		mat4x4_translate_in_place(transforms[i],
-			(signed)i % 10 - 5,
-			i / 10,
-			0.0f);
-	}
+	field = fieldCreate((size2i){FieldWidth, FieldHeight});
+	for (size_t i = 0; i < FieldWidth * FieldHeight; i++)
+		fieldSet(field, (point2i){i % FieldWidth, i / FieldWidth},
+			i < FieldWidth ? MinoGarbage : rand() % MinoSize);
+
 	logDebug(applog, "Play state initialized");
 }
 
 void playCleanup(void)
 {
-	modelDestroy(mino);
-	mino = null;
+	darrayDestroy(transforms);
+	transforms = null;
+	darrayDestroy(tints);
+	tints = null;
+	fieldDestroy(field);
+	field = null;
+	modelDestroy(minoblock);
+	minoblock = null;
 	modelDestroy(scene);
 	scene = null;
 	logDebug(applog, "Play state cleaned up");
@@ -69,7 +80,29 @@ void playUpdate(void)
 
 void playDraw(void)
 {
-	rendererClear(color3ToLinear((color3){0.544f, 0.751f, 0.928f}));
-	modelDraw(scene, 1, (color4[]){color4White}, &identity);
-	modelDraw(mino, 200, tints, transforms);
+	rendererClear((color3){0.010f, 0.276f, 0.685f});
+	modelDraw(scene, 1, (color4[]){Color4White}, &identity);
+	for (size_t i = 0; i < FieldWidth * FieldHeight; i += 1) {
+		int x = i % FieldWidth;
+		int y = i / FieldWidth;
+		// Flip the order of processing the left half of the playfield
+		// to fix alpha sorting issues
+		if (x < FieldWidth / 2)
+			x = FieldWidth / 2 - x - 1;
+		mino type = fieldGet(field, (point2i){x, y});
+		if (type == MinoNone) continue;
+
+		color4* tint = darrayProduce(tints);
+		mat4x4* transform = darrayProduce(transforms);
+		memcpy(tint->arr, minoColor(type).arr, sizeof(tint->arr));
+		if (y >= FieldHeightVisible)
+			tint->a /= 4.0f;
+		mat4x4_identity(*transform);
+		mat4x4_translate_in_place(*transform, x - (signed)(FieldWidth / 2), y,
+			0.0f);
+	}
+	modelDraw(minoblock, darraySize(transforms), darrayData(tints),
+		darrayData(transforms));
+	darrayClear(tints);
+	darrayClear(transforms);
 }

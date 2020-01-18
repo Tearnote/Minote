@@ -40,6 +40,14 @@ void darrayDestroy(darray* d);
 void* darrayProduce(darray* d);
 
 /**
+ * Provide the raw data pointer of the ::darray. It can be treated as an array
+ * of darraySize() elements.
+ * @param d The ::darray object
+ * @return Pointer to the internal element array
+ */
+void* darrayData(darray* d);
+
+/**
  * Return a ::darray element from a given index.
  * @param d The ::darray object
  * @param index Index of the element to return. Must be smaller than the current
