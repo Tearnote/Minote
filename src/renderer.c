@@ -37,6 +37,7 @@ typedef struct ProgramPhong {
 	Uniform projection; ///< Location of "projection" uniform
 	Uniform lightPosition; ///< Location of "lightPosition" uniform
 	Uniform lightColor; ///< Location of "lightColor" uniform
+	Uniform ambientColor; ///< location of "ambientColor" uniform
 	Uniform ambient; ///< Location of "ambient" uniform
 	Uniform diffuse; ///< Location of "diffuse" uniform
 	Uniform specular; ///< Location of "specular" uniform
@@ -62,14 +63,15 @@ static const GLchar* ProgramPhongFragSrc = (GLchar[]){
 	, '\0'};
 
 static bool initialized = false; ///< State of renderer system initialization
-static size2i viewportSize; ///< Size of the rendering viewport in pixels
-static mat4x4 projection; ///< Projection matrix (perspective transform)
-static mat4x4 camera; ///< Camera matrix (world transform)
-static point3f lightPosition; ///< Position of light source in world space
-static color3 lightColor; ///< Color of the light source
-static Model* sync; ///< Invisible model used to prevent frame buffering
-static ProgramFlat* flat; ///< The built-in flat shader
-static ProgramPhong* phong; ///< The built-in Phong shader
+static size2i viewportSize = {0}; ///< Size of the rendering viewport in pixels
+static mat4x4 projection = {0}; ///< Projection matrix (perspective transform)
+static mat4x4 camera = {0}; ///< Camera matrix (world transform)
+static point3f lightPosition = {0}; ///< Position of light source in world space
+static color3 lightColor = {0}; ///< Color of the light source
+static color3 ambientColor = {0}; ///< Color of the ambient reflection
+static Model* sync = null; ///< Invisible model used to prevent frame buffering
+static ProgramFlat* flat = null; ///< The built-in flat shader
+static ProgramPhong* phong = null; ///< The built-in Phong shader
 
 /**
  * Prevent the driver from buffering commands. Call this after windowFlip()
@@ -138,6 +140,7 @@ void rendererInit(void)
 	phong->camera = programUniform(phong, u8"camera");
 	phong->lightPosition = programUniform(phong, u8"lightPosition");
 	phong->lightColor = programUniform(phong, u8"lightColor");
+	phong->ambientColor = programUniform(phong, u8"ambientColor");
 	phong->ambient = programUniform(phong, u8"ambient");
 	phong->diffuse = programUniform(phong, u8"diffuse");
 	phong->specular = programUniform(phong, u8"specular");
@@ -146,7 +149,7 @@ void rendererInit(void)
 	// Set up matrices
 	rendererResize(windowGetSize());
 
-	// Set up the camera and light source
+	// Set up the camera and light globals
 	vec3 eye = {-4.0f, 12.0f, 32.0f};
 	vec3 center = {0.0f, 12.0f, 0.0f};
 	vec3 up = {0.0f, 1.0f, 0.0f};
@@ -157,6 +160,9 @@ void rendererInit(void)
 	lightColor.r = 1.0f;
 	lightColor.g = 1.0f;
 	lightColor.b = 1.0f;
+	ambientColor.r = 1.0f;
+	ambientColor.g = 1.0f;
+	ambientColor.b = 1.0f;
 
 	// Create sync model
 	sync = modelCreateFlat(u8"sync", 3, (VertexFlat[]){
@@ -195,6 +201,7 @@ void rendererCleanup(void)
 void rendererClear(color3 color)
 {
 	assert(initialized);
+	memcpy(ambientColor.arr, color.arr, sizeof(ambientColor.arr));
 	glClearColor(color.r, color.g, color.b, 1.0f);
 	glClear((uint32_t)GL_COLOR_BUFFER_BIT
 		| (uint32_t)GL_DEPTH_BUFFER_BIT);
@@ -389,6 +396,7 @@ static void modelDrawPhong(ModelPhong* m, size_t instances,
 	glUniformMatrix4fv(phong->camera, 1, GL_FALSE, camera[0]);
 	glUniform3fv(phong->lightPosition, 1, lightPosition.arr);
 	glUniform3fv(phong->lightColor, 1, lightColor.arr);
+	glUniform3fv(phong->ambientColor, 1, ambientColor.arr);
 	glUniform1f(phong->ambient, m->material.ambient);
 	glUniform1f(phong->diffuse, m->material.diffuse);
 	glUniform1f(phong->specular, m->material.specular);

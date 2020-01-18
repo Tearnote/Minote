@@ -24,7 +24,8 @@ void rendererInit(void);
 void rendererCleanup(void);
 
 /**
- * Clear all buffers to a specified color.
+ * Clear all buffers to a specified color. This color is also used for Phong
+ * ambient reflection.
  * @param color Color to clear with
  */
 void rendererClear(color3 color);
