@@ -25,11 +25,11 @@ void main()
     vec3 normal = normalize(fNormal);
     vec3 lightDirection = normalize(fLightPosition - fPosition);
     vec3 viewDirection = normalize(-fPosition);
-    vec3 reflectDirection = reflect(-lightDirection, normal);
+    vec3 halfwayDirection = normalize(lightDirection + viewDirection);
 
     vec3 outAmbient = ambient * ambientColor * lightColor;
     vec3 outDiffuse = diffuse * max(dot(normal, lightDirection), 0.0) * lightColor;
-    vec3 outSpecular = specular * pow(max(dot(viewDirection, reflectDirection), 0.0), shine) * lightColor;
+    vec3 outSpecular = specular * pow(max(dot(normal, halfwayDirection), 0.0), shine) * lightColor;
 
     outColor = vec4(outAmbient + outDiffuse + outSpecular, 1.0) * fColor;
 }

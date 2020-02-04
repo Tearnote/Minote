@@ -247,5 +247,5 @@
     .ambient = 0.2f,
     .diffuse = 0.9f,
     .specular = 0.4f,
-    .shine = 8.0f
+    .shine = 24.0f
 }

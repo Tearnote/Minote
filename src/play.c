@@ -25,9 +25,6 @@ static darray* tints = null;
 static darray* transforms = null;
 static mat4x4 identity = {0};
 
-//static color4 tints[FieldWidth * FieldHeight] = {0};
-//static mat4x4 transforms[FieldWidth * FieldHeight] = {0};
-
 Field* field = null;
 
 void playInit(void)
@@ -96,7 +93,7 @@ void playDraw(void)
 		mat4x4* transform = darrayProduce(transforms);
 		memcpy(tint->arr, minoColor(type).arr, sizeof(tint->arr));
 		if (y >= FieldHeightVisible)
-			tint->a /= 8.0f;
+			tint->a /= 4.0f;
 		mat4x4_identity(*transform);
 		mat4x4_translate_in_place(*transform, x - (signed)(FieldWidth / 2), y,
 			0.0f);
