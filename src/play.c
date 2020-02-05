@@ -6,18 +6,21 @@
 #include "play.h"
 
 #include <stdlib.h>
-#include "glad/glad.h"
-#include <GLFW/glfw3.h>
 #include "renderer.h"
 #include "window.h"
+#include "mapper.h"
 #include "darray.h"
 #include "field.h"
 #include "util.h"
+#include "time.h"
 #include "log.h"
 
 #define FieldWidth 10u
 #define FieldHeight 22u
 #define FieldHeightVisible 20u
+
+#define UpdateFrequency 59.84
+#define UpdateTick (secToNsec(1) / UpdateFrequency)
 
 static Model* scene = null;
 static Model* minoblock = null;
@@ -26,6 +29,7 @@ static darray* transforms = null;
 static mat4x4 identity = {0};
 
 Field* field = null;
+nsec nextUpdate = 0;
 
 void playInit(void)
 {
@@ -43,6 +47,8 @@ void playInit(void)
 	for (size_t i = 0; i < FieldWidth * FieldHeight; i++)
 		fieldSet(field, (point2i){i % FieldWidth, i / FieldWidth},
 			i < FieldWidth ? MinoGarbage : rand() % MinoSize);
+
+	nextUpdate = getTime() + UpdateTick;
 
 	logDebug(applog, "Play state initialized");
 }
@@ -64,14 +70,13 @@ void playCleanup(void)
 
 void playUpdate(void)
 {
-	KeyInput i;
-	while (windowInputDequeue(&i)) {
-		logTrace(applog, u8"Input detected: %d %s",
-			i.key, i.action == GLFW_PRESS ? u8"press" : u8"release");
-		if (i.key == GLFW_KEY_ESCAPE) {
-			logInfo(applog, u8"Esc detected, closing appwindow");
-			windowClose();
+	while (nextUpdate <= getTime()) {
+		PlayerInput i;
+		while (mapperDequeue(&i)) {
+			if (i.key == 256)
+				windowClose();
 		}
+		nextUpdate += UpdateTick;
 	}
 }
 

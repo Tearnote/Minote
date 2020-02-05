@@ -7,16 +7,19 @@
 
 #include "renderer.h"
 #include "window.h"
+#include "mapper.h"
 #include "util.h"
 #include "play.h"
 
 void* game(void* arg)
 {
 	(void)arg;
+	mapperInit();
 	rendererInit();
 	playInit();
 
 	while (windowIsOpen()) {
+		mapperUpdate();
 		playUpdate();
 
 		rendererFrameBegin();
@@ -26,5 +29,6 @@ void* game(void* arg)
 
 	playCleanup();
 	rendererCleanup();
+	mapperCleanup();
 	return null;
 }

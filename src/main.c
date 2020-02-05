@@ -15,7 +15,9 @@
 #include "log.h"
 
 /// Frequency of input polling, in Hz
-#define InputFrequency 240
+#define InputFrequency 240.0
+/// Inverse of #InputFrequency, in ::nsec
+#define InputTick (secToNsec(1) / InputFrequency)
 
 /**
  * Initialize all game systems. This should be relatively fast and not load
@@ -65,7 +67,7 @@ int main(int argc, char* argv[argc + 1])
 
 	nsec nextPoll = getTime();
 	while (windowIsOpen()) {
-		nextPoll += secToNsec(1) / InputFrequency;
+		nextPoll += InputTick;
 		windowPoll();
 		sleepUntil(nextPoll);
 	}
