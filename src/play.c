@@ -72,14 +72,14 @@ void playUpdate(void)
 {
 	// Update as many times as we need to catch up
 	while (nextUpdate <= getTime()) {
-		PlayerInput i;
+		GameInput i;
 		while (mapperPeek(&i)) { // Exhaust all inputs...
 			if (i.timestamp <= nextUpdate)
 				mapperDequeue(&i);
 			else
 				break; // Or abort if we encounter an input from the future
 
-			if (i.key == 256)
+			if (i.type == InputQuit)
 				windowClose();
 		}
 		nextUpdate += UpdateTick;
