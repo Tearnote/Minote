@@ -6,6 +6,7 @@
 #ifndef MINOTE_TIME_H
 #define MINOTE_TIME_H
 
+#include <inttypes.h>
 #include <stdint.h>
 
 /**

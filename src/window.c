@@ -42,7 +42,7 @@ keyCallback(GLFWwindow* w, int key, int scancode, int action, int mods)
 	if (action == GLFW_REPEAT) return; // Key repeat is not needed
 	mutexLock(inputsMutex);
 	if (!queueEnqueue(inputs,
-		&(KeyInput){.key = key, .action = action}))
+		&(KeyInput){.key = key, .action = action, .timestamp = getTime()}))
 		logWarn(applog, u8"Window input queue is full, key #%d %s dropped",
 			key, action == GLFW_PRESS ? u8"press" : u8"release");
 	mutexUnlock(inputsMutex);

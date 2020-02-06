@@ -11,12 +11,13 @@
 
 #include <stdbool.h>
 #include "visualtypes.h"
+#include "time.h"
 
 /// Struct containing information about a keypress event
 typedef struct KeyInput {
 	int key; ///< GLFW keycode
 	int action; ///< GLFW_PRESS or GLFW_RELEASE
-	//nsec timestamp; ///< Time when the event was detected
+	nsec timestamp; ///< Time when the event was detected
 } KeyInput;
 
 /**

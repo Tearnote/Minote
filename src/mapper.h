@@ -7,11 +7,13 @@
 #define MINOTE_MAPPER_H
 
 #include <stdbool.h>
+#include "time.h"
 
 /// A logical input converted from raw device inputs via mappings
 typedef struct PlayerInput {
 	int key;
 	int action;
+	nsec timestamp;
 } PlayerInput;
 
 /**

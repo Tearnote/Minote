@@ -5,6 +5,7 @@
 
 #include "mapper.h"
 
+#include <assert.h>
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 #include "window.h"
@@ -37,18 +38,23 @@ void mapperCleanup(void)
 
 void mapperUpdate(void)
 {
+	assert(initialized);
 	KeyInput key;
 	while (windowInputDequeue(&key)) {
-		queueEnqueue(inputs, &(PlayerInput){ .key = key.key, .action = key.action });
+		queueEnqueue(inputs, &(PlayerInput){ .key = key.key, .action = key.action, .timestamp = key.timestamp });
 	}
 }
 
 bool mapperDequeue(PlayerInput* input)
 {
+	assert(initialized);
+	assert(input);
 	return queueDequeue(inputs, input);
 }
 
 bool mapperPeek(PlayerInput* input)
 {
+	assert(initialized);
+	assert(input);
 	return queuePeek(inputs, input);
 }

@@ -50,7 +50,7 @@ void playInit(void)
 
 	nextUpdate = getTime() + UpdateTick;
 
-	logDebug(applog, "Play state initialized");
+	logDebug(applog, u8"Play state initialized");
 }
 
 void playCleanup(void)
@@ -65,14 +65,20 @@ void playCleanup(void)
 	minoblock = null;
 	modelDestroy(scene);
 	scene = null;
-	logDebug(applog, "Play state cleaned up");
+	logDebug(applog, u8"Play state cleaned up");
 }
 
 void playUpdate(void)
 {
+	// Update as many times as we need to catch up
 	while (nextUpdate <= getTime()) {
 		PlayerInput i;
-		while (mapperDequeue(&i)) {
+		while (mapperPeek(&i)) { // Exhaust all inputs...
+			if (i.timestamp <= nextUpdate)
+				mapperDequeue(&i);
+			else
+				break; // Or abort if we encounter an input from the future
+
 			if (i.key == 256)
 				windowClose();
 		}

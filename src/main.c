@@ -15,7 +15,7 @@
 #include "log.h"
 
 /// Frequency of input polling, in Hz
-#define InputFrequency 240.0
+#define InputFrequency 480.0
 /// Inverse of #InputFrequency, in ::nsec
 #define InputTick (secToNsec(1) / InputFrequency)
 
