@@ -26,7 +26,6 @@ static Model* scene = null;
 static Model* minoblock = null;
 static darray* tints = null;
 static darray* transforms = null;
-static mat4x4 identity = {0};
 
 Field* field = null;
 nsec nextUpdate = 0;
@@ -41,7 +40,6 @@ void playInit(void)
 	);
 	tints = darrayCreate(sizeof(color4));
 	transforms = darrayCreate(sizeof(mat4x4));
-	mat4x4_identity(identity);
 
 	field = fieldCreate((size2i){FieldWidth, FieldHeight});
 	for (size_t i = 0; i < FieldWidth * FieldHeight; i++)
@@ -89,7 +87,7 @@ void playUpdate(void)
 void playDraw(void)
 {
 	rendererClear((color3){0.010f, 0.276f, 0.685f});
-	modelDraw(scene, 1, (color4[]){Color4White}, &identity);
+	modelDraw(scene, 1, (color4[]){Color4White}, &IdentityMatrix);
 	for (size_t i = 0; i < FieldWidth * FieldHeight; i += 1) {
 		int x = i % FieldWidth;
 		int y = i / FieldWidth;

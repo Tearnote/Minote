@@ -10,6 +10,12 @@
 #include "linmath/linmath.h"
 #include "visualtypes.h"
 
+/// Convenient 4x4 matrix for when you want to perform no transform
+#define IdentityMatrix ((mat4x4){{1.0f, 0.0f, 0.0f, 0.0f}, \
+                                 {0.0f, 1.0f, 0.0f, 0.0f}, \
+                                 {0.0f, 0.0f, 1.0f, 0.0f}, \
+                                 {0.0f, 0.0f, 0.0f, 1.0f}})
+
 /**
  * Initialize the renderer system. windowInit() must have been called first.
  * This can be called on a different thread than windowInit(), and the
