@@ -6,6 +6,7 @@
 #include "play.h"
 
 #include <stdlib.h>
+#include <assert.h>
 #include "renderer.h"
 #include "window.h"
 #include "mapper.h"
@@ -19,24 +20,30 @@
 #define FieldHeight 22u
 #define FieldHeightVisible 20u
 
+/// Frequency of game logic updates, simulated by semi-threading, in Hz
 #define UpdateFrequency 59.84
+/// Inverse of #UpdateFrequency, in ::nsec
 #define UpdateTick (secToNsec(1) / UpdateFrequency)
 
 static Model* scene = null;
-static Model* minoblock = null;
+
+static Model* block = null;
 static darray* tints = null;
 static darray* transforms = null;
 
-Field* field = null;
-nsec nextUpdate = 0;
+static Field* field = null;
+static nsec nextUpdate = 0;
+
+static bool initialized = false;
 
 void playInit(void)
 {
+	if (initialized) return;
 	scene = modelCreateFlat(u8"scene",
 #include "meshes/scene.mesh"
 	);
-	minoblock = modelCreatePhong(u8"mino",
-#include "meshes/mino.mesh"
+	block = modelCreatePhong(u8"block",
+#include "meshes/block.mesh"
 	);
 	tints = darrayCreate(sizeof(color4));
 	transforms = darrayCreate(sizeof(mat4x4));
@@ -48,26 +55,41 @@ void playInit(void)
 
 	nextUpdate = getTime() + UpdateTick;
 
+	initialized = true;
 	logDebug(applog, u8"Play state initialized");
 }
 
 void playCleanup(void)
 {
-	darrayDestroy(transforms);
-	transforms = null;
-	darrayDestroy(tints);
-	tints = null;
-	fieldDestroy(field);
-	field = null;
-	modelDestroy(minoblock);
-	minoblock = null;
-	modelDestroy(scene);
-	scene = null;
+	if (!initialized) return;
+	if (transforms) {
+		darrayDestroy(transforms);
+		transforms = null;
+	}
+	if (tints) {
+		darrayDestroy(tints);
+		tints = null;
+	}
+	if (field) {
+		fieldDestroy(field);
+		field = null;
+	}
+	if (block) {
+		modelDestroy(block);
+		block = null;
+	}
+	if (scene) {
+		modelDestroy(scene);
+		scene = null;
+	}
+	initialized = false;
 	logDebug(applog, u8"Play state cleaned up");
 }
 
 void playUpdate(void)
 {
+	assert(initialized);
+
 	// Update as many times as we need to catch up
 	while (nextUpdate <= getTime()) {
 		GameInput i;
@@ -86,6 +108,8 @@ void playUpdate(void)
 
 void playDraw(void)
 {
+	assert(initialized);
+
 	rendererClear((color3){0.010f, 0.276f, 0.685f});
 	modelDraw(scene, 1, (color4[]){Color4White}, &IdentityMatrix);
 	for (size_t i = 0; i < FieldWidth * FieldHeight; i += 1) {
@@ -107,7 +131,7 @@ void playDraw(void)
 		mat4x4_translate_in_place(*transform, x - (signed)(FieldWidth / 2), y,
 			0.0f);
 	}
-	modelDraw(minoblock, darraySize(transforms), darrayData(tints),
+	modelDraw(block, darraySize(transforms), darrayData(tints),
 		darrayData(transforms));
 	darrayClear(tints);
 	darrayClear(transforms);

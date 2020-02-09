@@ -25,23 +25,23 @@
 
 /// Program type for flat shading 
 typedef struct ProgramFlat {
-	ProgramBase base; ///< Declaration of base type
-	Uniform camera; ///< Location of "camera" uniform
-	Uniform projection; ///< Location of "projection" uniform
+	ProgramBase base;
+	Uniform camera;
+	Uniform projection;
 } ProgramFlat;
 
 /// Program type for Phong shading
 typedef struct ProgramPhong {
-	ProgramBase base; ///< Declaration of base type
-	Uniform camera; ///< Location of "camera" uniform
-	Uniform projection; ///< Location of "projection" uniform
-	Uniform lightPosition; ///< Location of "lightPosition" uniform
-	Uniform lightColor; ///< Location of "lightColor" uniform
-	Uniform ambientColor; ///< location of "ambientColor" uniform
-	Uniform ambient; ///< Location of "ambient" uniform
-	Uniform diffuse; ///< Location of "diffuse" uniform
-	Uniform specular; ///< Location of "specular" uniform
-	Uniform shine; ///< Location of "shine" uniform
+	ProgramBase base;
+	Uniform camera;
+	Uniform projection;
+	Uniform lightPosition;
+	Uniform lightColor;
+	Uniform ambientColor;
+	Uniform ambient;
+	Uniform diffuse;
+	Uniform specular;
+	Uniform shine;
 } ProgramPhong;
 
 static const char* ProgramFlatVertName = u8"flat.vert";
@@ -62,16 +62,16 @@ static const GLchar* ProgramPhongFragSrc = (GLchar[]){
 #include "phong.frag"
 	, '\0'};
 
-static bool initialized = false; ///< State of renderer system initialization
-static size2i viewportSize = {0}; ///< Size of the rendering viewport in pixels
-static mat4x4 projection = {0}; ///< Projection matrix (perspective transform)
-static mat4x4 camera = {0}; ///< Camera matrix (world transform)
-static point3f lightPosition = {0}; ///< Position of light source in world space
-static color3 lightColor = {0}; ///< Color of the light source
-static color3 ambientColor = {0}; ///< Color of the ambient reflection
+static bool initialized = false;
+static size2i viewportSize = {0}; ///< in pixels
+static mat4x4 projection = {0}; ///< perspective transform
+static mat4x4 camera = {0}; ///< view transform
+static point3f lightPosition = {0}; ///< in world space
+static color3 lightColor = {0};
+static color3 ambientColor = {0};
 static Model* sync = null; ///< Invisible model used to prevent frame buffering
-static ProgramFlat* flat = null; ///< The built-in flat shader
-static ProgramPhong* phong = null; ///< The built-in Phong shader
+static ProgramFlat* flat = null;
+static ProgramPhong* phong = null;
 
 /**
  * Prevent the driver from buffering commands. Call this after windowFlip()
@@ -242,7 +242,6 @@ typedef GLuint VertexBuffer;
 typedef GLuint VertexArray;
 
 /// Type tag for the Model object
-/// @enum ModelType
 typedef enum ModelType {
 	ModelTypeNone, ///< zero value
 	ModelTypeFlat, ///< ::ModelFlat
@@ -258,24 +257,24 @@ typedef struct Model {
 
 /// Model type with flat shading. Each instance can be tinted.
 typedef struct ModelFlat {
-	ModelBase base; ///< Declaration of base type
-	size_t numVertices; ///< Number of vertices in the model
+	ModelBase base;
+	size_t numVertices;
 	VertexBuffer vertices; ///< VBO with model vertex data
 	VertexBuffer tints; ///< VBO for storing per-draw tint colors
 	VertexBuffer transforms; ///< VBO for storing per-draw model matrices
-	VertexArray vao; ///< VAO attribute mapping of the model
+	VertexArray vao;
 } ModelFlat;
 
 /// Model type with Phong shading. Makes use of light source and material data.
 typedef struct ModelPhong {
-	ModelBase base; ///< Declaration of base type
-	size_t numVertices; ///< Number of vertices in the model
+	ModelBase base;
+	size_t numVertices;
 	VertexBuffer vertices; ///< VBO with model vertex data
 	VertexBuffer normals; ///< VBO with model normals, generated from vertices
 	VertexBuffer tints; ///< VBO for storing per-draw tint colors
 	VertexBuffer transforms; ///< VBO for storing per-draw model matrices
-	VertexArray vao; ///< VAO attribute mapping of the model
-	MaterialPhong material; ///< Struct of Phong lighting model material data
+	VertexArray vao;
+	MaterialPhong material;
 } ModelPhong;
 
 /**

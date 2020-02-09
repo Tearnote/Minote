@@ -18,9 +18,13 @@
 /// Format string for printing nsec values
 #define PRInsec PRId64
 
-/// Generic macro for converting seconds to nanoseconds
-#define secToNsec(SEC) \
-    ((SEC) * (nsec)1000000000)
+/**
+ * Generic macro for converting seconds to nanoseconds
+ * @param sec Number of seconds
+ * @return Number of nanoseconds in ::nsec
+ */
+#define secToNsec(sec) \
+    ((sec) * (nsec)1000000000)
 
 /**
  * Return the time passed since systemInit().
@@ -30,7 +34,7 @@
 nsec getTime(void);
 
 /**
- * Do nothing until the specified time is reached. This executes busywait, so
+ * Do nothing until the specified time is reached. This performs a busywait, so
  * use this for sleeping only if there is no better alternative.
  * @param until Target timestamp
  * @remark This function is thread-safe.

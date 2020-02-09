@@ -15,9 +15,9 @@
 
 typedef struct darray {
 	uint8_t* data; ///< Dynamically reallocated array for storing elements
-	size_t elementSize; ///< Size of each element
+	size_t elementSize; ///< in bytes
 	int count; ///< Number of elements currently in #data
-	int capacity; ///< The maximum number of elements that can fit in #data
+	int capacity; ///< Number of elements that can fit in #data without resizing
 } darray;
 
 darray* darrayCreate(size_t elementSize)

@@ -15,15 +15,15 @@
 #include "util.h"
 #include "log.h"
 
-static bool initialized = false; ///< State of window system initialization
+static bool initialized = false;
 static GLFWwindow* window; ///< Underlying GLFWwindow object
 static const char* windowTitle; ///< Window title from the title bar
 static queue* inputs; ///< Message queue for storing keypresses
 static mutex* inputsMutex; ///< Mutex protecting the #inputs queue
 static atomic bool windowOpen; ///< false if window should be closed, true otherwise
 // These two are not #size2i because the struct cannot be atomic
-static atomic size_t viewportWidth; ///< width of the viewport in pixels
-static atomic size_t viewportHeight; ///< height of the viewport in pixels
+static atomic size_t viewportWidth; ///< in pixels
+static atomic size_t viewportHeight; ///< in pixels
 static atomic float viewportScale; ///< DPI scaling of the window, where 1.0 is "normal"
 
 /**

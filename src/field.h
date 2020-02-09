@@ -6,18 +6,17 @@
 #ifndef MINOTE_FIELD_H
 #define MINOTE_FIELD_H
 
-#include "visualtypes.h"
+#include "basetypes.h"
 
-/// Types of minos that can appear on the playfield
 typedef enum mino {
 	MinoNone, ///< zero value
-	MinoI, ///< I piece (red)
-	MinoL, ///< L piece (orange)
-	MinoO, ///< O piece (yellow)
-	MinoZ, ///< Z piece (green)
-	MinoT, ///< T piece (cyan)
-	MinoJ, ///< J piece (blue)
-	MinoS, ///< S piece (purple)
+	MinoI, ///< red
+	MinoL, ///< orange
+	MinoO, ///< yellow
+	MinoZ, ///< green
+	MinoT, ///< cyan
+	MinoJ, ///< blue
+	MinoS, ///< purple
 	MinoGarbage, ///< mino from any source other than player piece
 	MinoSize ///< terminator
 } mino;

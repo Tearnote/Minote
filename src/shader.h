@@ -1,4 +1,5 @@
-/** Generic subsystem for shader creation
+/**
+ * Generic subsystem for shader creation
  * @file
  */
 
@@ -19,7 +20,7 @@ typedef GLint Uniform;
  * functions, a struct needs to have ::ProgramBase as its first element.
  */
 typedef struct ProgramBase {
-	Program id; ///< ID of the program object
+	Program id;
 	const char* vertName; ///< Filename of the vertex shader for reference
 	const char* fragName; ///< Filename of the fragment shader for reference
 } ProgramBase;

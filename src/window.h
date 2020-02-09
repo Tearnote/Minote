@@ -10,7 +10,7 @@
 #define MINOTE_WINDOW_H
 
 #include <stdbool.h>
-#include "visualtypes.h"
+#include "basetypes.h"
 #include "time.h"
 
 /// Struct containing information about a keypress event

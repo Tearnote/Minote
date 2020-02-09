@@ -6,17 +6,16 @@
 
 #version 330 core
 
-layout(location = 0) in vec3 vPosition; ///< xyz coordinate of the vertex
-layout(location = 1) in vec4 vColor; ///< rgba color of the vertex
-layout(location = 2) in vec4 iTint; ///< rgba tint of the instance
-layout(location = 3) in mat4 iModel; ///< transformation matrix of the instance
+layout(location = 0) in vec3 vPosition;
+layout(location = 1) in vec4 vColor;
+layout(location = 2) in vec4 iTint;
+layout(location = 3) in mat4 iModel;
 
-out vec4 fColor; ///< rgba output color
+out vec4 fColor;
 
-uniform mat4 camera; ///< view transform matrix
-uniform mat4 projection; ///< projection matrix
+uniform mat4 camera;
+uniform mat4 projection;
 
-/// shader entry point
 void main()
 {
     gl_Position = projection * camera * iModel * vec4(vPosition, 1.0);

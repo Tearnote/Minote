@@ -13,7 +13,7 @@
 
 struct queue {
 	unsigned char* data; ///< Dynamically allocated array for storing elements
-	size_t elementSize; ///< Size of each element
+	size_t elementSize; ///< in bytes
 	size_t capacity; ///< Size of #data as a count of elements
 	size_t head; ///< Index of the first empty space to enqueue into
 	size_t tail; ///< Index of the next element to dequeue

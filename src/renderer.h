@@ -8,7 +8,7 @@
 
 #include <stddef.h>
 #include "linmath/linmath.h"
-#include "visualtypes.h"
+#include "basetypes.h"
 
 /// Convenient 4x4 matrix for when you want to perform no transform
 #define IdentityMatrix ((mat4x4){{1.0f, 0.0f, 0.0f, 0.0f}, \
@@ -52,8 +52,8 @@ void rendererFrameEnd(void);
 
 /// Data of a single mesh vertex of ::ModelFlat
 typedef struct VertexFlat {
-	point3f pos; ///< Vertex position in model space
-	color4 color; ///< Vertex color
+	point3f pos; ///< in model space
+	color4 color;
 } VertexFlat;
 
 /// Data of a single mesh vertex of ::ModelPhong
@@ -61,9 +61,9 @@ typedef VertexFlat VertexPhong;
 
 /// Material properties of a ::ModelPhong
 typedef struct MaterialPhong {
-	float ambient; ///< Strength of ambient light reflection
-	float diffuse; ///< Strength of diffuse light reflection
-	float specular; ///< Strength of specular light reflection
+	float ambient;
+	float diffuse;
+	float specular;
 	float shine; ///< Smoothness of surface (inverse of specular highlight size)
 } MaterialPhong;
 

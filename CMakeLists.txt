@@ -75,7 +75,7 @@ set(C_SOURCES
         src/log.h src/log.c
         src/util.h src/util.c
         src/window.h src/window.c
-        src/visualtypes.h src/visualtypes.c
+        src/basetypes.h src/basetypes.c
         src/queue.h src/queue.c
         src/game.h src/game.c
         src/thread.h src/thread.c

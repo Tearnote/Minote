@@ -21,7 +21,6 @@
 #endif //_WIN32
 #include "util.h"
 
-/// String representation of each #LogLevel
 static const char* levelStrings[LogSize] = {
 	[LogTrace] = u8"TRACE",
 	[LogDebug] = u8"DEBUG",
@@ -39,7 +38,6 @@ struct Log {
 	const char* filepath; ///< The string used to open #file. Is null if #fileEnabled is false
 };
 
-/// State of log system initialization
 static bool initialized = false;
 
 Log* applog = null;
@@ -56,8 +54,6 @@ static void logTo(FILE* file, LogLevel level, const char* fmt, va_list* ap)
 {
 	time_t epochtime = time(null);
 	struct tm* timeinfo = localtime(&epochtime);
-	//TODO turn into a mutex instead
-	//flockfile(file);
 	int result = fprintf(file, u8"%02d:%02d:%02d [%s] ",
 		timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec,
 		levelStrings[level]);
@@ -75,8 +71,6 @@ static void logTo(FILE* file, LogLevel level, const char* fmt, va_list* ap)
 		errno = 0;
 	}
 	result = fputc('\n', file);
-	//TODO turn into a mutex instead
-	//funlockfile(file);
 	if (result == EOF) {
 		perror(u8"Failed to write into log file");
 		errno = 0;

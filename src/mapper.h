@@ -9,7 +9,6 @@
 #include <stdbool.h>
 #include "time.h"
 
-/// Types of player inputs accepted by the game
 typedef enum InputType {
 	InputNone, ///< zero value
 	InputLeft, InputRight, InputUp, InputDown,
@@ -18,7 +17,6 @@ typedef enum InputType {
 	InputSize ///< terminator
 } InputType;
 
-/// Action taken by an input
 typedef enum InputAction {
 	ActionNone, ///< zero value
 	ActionPressed,

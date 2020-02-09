@@ -11,12 +11,10 @@
 #include "window.h"
 #include "queue.h"
 #include "util.h"
-#include "log.h"
 
-/// Queue holding player inputs ready to be retrieved
+/// Queue holding inputs ready to be retrieved
 static queue* inputs = null;
 
-/// State of mapper system initialization
 static bool initialized = false;
 
 /**

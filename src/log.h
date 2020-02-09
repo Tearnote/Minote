@@ -7,13 +7,10 @@
 #ifndef MINOTE_LOG_H
 #define MINOTE_LOG_H
 
-/**
- * Opaque logger. You can obtain an instance with logCreate().
- */
+/// Opaque logger. You can obtain an instance with logCreate().
 typedef struct Log Log;
 
-/// Log level in ascending order of severity
-/// @enum LogLevel
+/// in ascending order of severity
 typedef enum LogLevel {
 	LogNone, ///< zero value
 	LogTrace, ///< logTrace()

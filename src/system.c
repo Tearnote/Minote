@@ -12,7 +12,6 @@
 #include <GLFW/glfw3.h>
 #include "log.h"
 
-/// State of main system initialization
 static bool initialized = false;
 
 void systemInit(void)

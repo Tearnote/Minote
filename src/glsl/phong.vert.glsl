@@ -6,22 +6,21 @@
 
 #version 330 core
 
-layout(location = 0) in vec3 vPosition; ///< coordinate of the vertex
-layout(location = 1) in vec4 vColor; ///< color of the vertex
-layout(location = 2) in vec3 vNormal; ///< normal vector of the vertex
-layout(location = 3) in vec4 iTint; ///< tint of the instance
-layout(location = 4) in mat4 iModel; ///< transformation matrix of the instance
+layout(location = 0) in vec3 vPosition;
+layout(location = 1) in vec4 vColor;
+layout(location = 2) in vec3 vNormal;
+layout(location = 3) in vec4 iTint;
+layout(location = 4) in mat4 iModel;
 
-out vec3 fPosition; ///< fragment position in view space
-out vec4 fColor; ///< fragment color
-out vec3 fNormal; ///< fragment normal vector in view space
-out vec3 fLightPosition; ///< position of the light source in view space
+out vec3 fPosition; // in view space
+out vec4 fColor;
+out vec3 fNormal; // in view space
+out vec3 fLightPosition; // in view space
 
-uniform mat4 camera; ///< view transform matrix
-uniform mat4 projection; ///< projection matrix
-uniform vec3 lightPosition; ///< position of the light source in world space
+uniform mat4 camera;
+uniform mat4 projection;
+uniform vec3 lightPosition; // in world space
 
-/// shader entry point
 void main()
 {
     gl_Position = projection * camera * iModel * vec4(vPosition, 1.0);

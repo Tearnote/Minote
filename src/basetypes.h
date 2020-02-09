@@ -5,14 +5,14 @@
  * interchangeably.
  */
 
-#ifndef MINOTE_VISUALTYPES_H
-#define MINOTE_VISUALTYPES_H
+#ifndef MINOTE_BASETYPES_H
+#define MINOTE_BASETYPES_H
 
 /// An integer position in 2D space
 typedef union point2i {
 	struct {
-		int x; ///< The x coordinate
-		int y; ///< The y coordinate
+		int x;
+		int y;
 	};
 	int arr[2]; ///< array representation
 } point2i;
@@ -23,9 +23,9 @@ typedef point2i size2i;
 /// An integer position in 3D space
 typedef union point3i {
 	struct {
-		int x; ///< The x coordinate
-		int y; ///< The y coordinate
-		int z; ///< The z coordinate
+		int x;
+		int y;
+		int z;
 	};
 	int arr[3]; ///< array representation
 } point3i;
@@ -36,8 +36,8 @@ typedef point3i size3i;
 /// A floating-point position in 2D space
 typedef union point2f {
 	struct {
-		float x; ///< The x coordinate
-		float y; ///< The y coordinate
+		float x;
+		float y;
 	};
 	float arr[2]; ///< array representation
 } point2f;
@@ -48,9 +48,9 @@ typedef point2f size2f;
 /// A floating-point position in 3D space
 typedef union point3f {
 	struct {
-		float x; ///< The x coordinate
-		float y; ///< The y coordinate
-		float z; ///< The z coordinate
+		float x;
+		float y;
+		float z;
 	};
 	float arr[3]; ///< array representation
 } point3f;
@@ -61,9 +61,9 @@ typedef point3f size3f;
 /// An RGB color triple. Values higher than 1.0 represent HDR.
 typedef union color3 {
 	struct {
-		float r; ///< The red component
-		float g; ///< The green component
-		float b; ///< The blue component
+		float r;
+		float g;
+		float b;
 	};
 	float arr[3]; ///< array representation
 } color3;
@@ -71,10 +71,10 @@ typedef union color3 {
 /// An RGBA color quad. Values higher than 1.0 represent HDR.
 typedef union color4 {
 	struct {
-		float r; ///< The red component
-		float g; ///< The green component
-		float b; ///< The blue component
-		float a; ///< The alpha component
+		float r;
+		float g;
+		float b;
+		float a;
 	};
 	float arr[4]; ///< array representation
 } color4;
@@ -92,4 +92,4 @@ typedef union color4 {
  */
 color3 color3ToLinear(color3 color);
 
-#endif //MINOTE_VISUALTYPES_H
+#endif //MINOTE_BASETYPES_H

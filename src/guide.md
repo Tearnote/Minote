@@ -1,5 +1,5 @@
 # Minote code guidelines
-- Document all globals with Doxygen comments
+- Document globals with Doxygen comments
   - All params are `[in]` unless specified otherwise
   - Pointer arguments do not accept `null` unless specified otherwise
   - Use `/**` style for functions and longer explanations, `///`

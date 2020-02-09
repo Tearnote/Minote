@@ -7,7 +7,7 @@
 #define MINOTE_PLAY_H
 
 /**
- * Initialize the play state.
+ * Initialize the play state. Needs to be called before the state can be used.
  */
 void playInit(void);
 
