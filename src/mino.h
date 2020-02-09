@@ -34,11 +34,32 @@ typedef enum spin {
 	SpinSize ///< terminator
 } spin;
 
-/// x and y size of a piece's bounding box
-#define PieceBox 4
+#define MinosPerPiece 4
 
 /// Shape of a player piece at a specific ::spin
-typedef mino piece[PieceBox * PieceBox];
+typedef point2i piece[MinosPerPiece];
+
+/**
+ * Rotate a spin to the next clockwise value.
+ * @param[in,out] val Address of the ::spin to alter
+ */
+void spinClockwise(spin* val);
+
+/**
+ * Rotate a spin to the next counter-clockwise value.
+ * @param val Address of the ::spin to alter
+ */
+void spinCounterClockwise(spin* val);
+
+/**
+ * Query the rotation system for a specific piece.
+ * @param type Type of the piece, between MinoNone and MinoGarbage (exclusive)
+ * @param rotation Spin of the piece
+ * @return Read-only piece data
+ */
+piece* getPiece(mino type, spin rotation);
+
+////////////////////////////////////////////////////////////////////////////////
 
 /// Opaque playfield grid. You can obtain an instance with fieldCreate().
 typedef struct Field Field;

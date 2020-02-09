@@ -20,6 +20,9 @@
 #define FieldHeight 22u ///< Height of #field
 #define FieldHeightVisible 20u ///< Number of bottom rows the player can see
 
+#define SpawnX 3 ///< X position of player piece spawn
+#define SpawnY 18 ///< Y position of player piece spawn
+
 /// Frequency of game logic updates, simulated by semi-threading, in Hz
 #define UpdateFrequency 59.84
 /// Inverse of #UpdateFrequency, in ::nsec
@@ -31,6 +34,7 @@ static nsec nextUpdate = 0;
 typedef struct Player {
 	mino type;
 	spin rotation;
+	point2i pos;
 } Player;
 
 /// A play's logical state
@@ -52,6 +56,17 @@ static bool initialized = false;
 void playInit(void)
 {
 	if (initialized) return;
+
+	// Logic init
+	tet.field = fieldCreate((size2i){FieldWidth, FieldHeight});
+	tet.player.type = MinoT;
+	tet.player.rotation = SpinNone;
+	tet.player.pos.x = SpawnX;
+	tet.player.pos.y = SpawnY;
+
+	nextUpdate = getTime() + UpdateTick;
+
+	// Render init
 	scene = modelCreateFlat(u8"scene",
 #include "meshes/scene.mesh"
 	);
@@ -60,13 +75,6 @@ void playInit(void)
 	);
 	tints = darrayCreate(sizeof(color4));
 	transforms = darrayCreate(sizeof(mat4x4));
-
-	tet.field = fieldCreate((size2i){FieldWidth, FieldHeight});
-	for (size_t i = 0; i < FieldWidth * FieldHeight; i++)
-		fieldSet(tet.field, (point2i){i % FieldWidth, i / FieldWidth},
-			i < FieldWidth ? MinoGarbage : rand() % MinoSize);
-
-	nextUpdate = getTime() + UpdateTick;
 
 	initialized = true;
 	logDebug(applog, u8"Play state initialized");
@@ -114,6 +122,21 @@ void playUpdate(void)
 
 			if (i.type == InputQuit)
 				windowClose();
+
+			if (i.action != ActionPressed)
+				continue;
+			switch (i.type) {
+			case InputLeft:
+				tet.player.pos.x -= 1; break;
+			case InputRight:
+				tet.player.pos.x += 1; break;
+			case InputButton1:
+			case InputButton3:
+				spinCounterClockwise(&tet.player.rotation); break;
+			case InputButton2:
+				spinClockwise(&tet.player.rotation); break;
+			default: break;
+			}
 		}
 		nextUpdate += UpdateTick;
 	}
@@ -125,6 +148,26 @@ void playDraw(void)
 
 	rendererClear((color3){0.010f, 0.276f, 0.685f});
 	modelDraw(scene, 1, (color4[]){Color4White}, &IdentityMatrix);
+
+	// Draw player piece
+	piece* playerPiece = getPiece(tet.player.type, tet.player.rotation);
+	for (size_t i = 0; i < MinosPerPiece; i += 1) {
+		int x = (*playerPiece)[i].x + tet.player.pos.x;
+		int y = (*playerPiece)[i].y + tet.player.pos.y;
+
+		color4* tint = darrayProduce(tints);
+		mat4x4* transform = darrayProduce(transforms);
+		memcpy(tint->arr, minoColor(tet.player.type).arr, sizeof(tint->arr));
+		mat4x4_identity(*transform);
+		mat4x4_translate_in_place(*transform, x - (signed)(FieldWidth / 2), y,
+			0.0f);
+	}
+	modelDraw(block, darraySize(transforms), darrayData(tints),
+		darrayData(transforms));
+	darrayClear(tints);
+	darrayClear(transforms);
+
+	// Draw field contents
 	for (size_t i = 0; i < FieldWidth * FieldHeight; i += 1) {
 		int x = i % FieldWidth;
 		int y = i / FieldWidth;
