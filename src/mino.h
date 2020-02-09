@@ -1,13 +1,17 @@
 /**
- * Object type containing a field of minos
+ * Definitions and objects for dealing with minos, pieces and fields
  * @file
  */
 
-#ifndef MINOTE_FIELD_H
-#define MINOTE_FIELD_H
+#ifndef MINOTE_MINO_H
+#define MINOTE_MINO_H
 
 #include "basetypes.h"
 
+/**
+ * Possible states of a ::Field cell. Values below #MinoGarbage are also valid
+ * player pieces.
+ */
 typedef enum mino {
 	MinoNone, ///< zero value
 	MinoI, ///< red
@@ -20,6 +24,21 @@ typedef enum mino {
 	MinoGarbage, ///< mino from any source other than player piece
 	MinoSize ///< terminator
 } mino;
+
+/// Orthogonal rotation, increasing counterclockwise
+typedef enum spin {
+	SpinNone, ///< 0 degrees
+	Spin90,
+	Spin180,
+	Spin270,
+	SpinSize ///< terminator
+} spin;
+
+/// x and y size of a piece's bounding box
+#define PieceBox 4
+
+/// Shape of a player piece at a specific ::spin
+typedef mino piece[PieceBox * PieceBox];
 
 /// Opaque playfield grid. You can obtain an instance with fieldCreate().
 typedef struct Field Field;
@@ -64,4 +83,4 @@ mino fieldGet(Field* f, point2i place);
  */
 color4 minoColor(mino type);
 
-#endif //MINOTE_FIELD_H
+#endif //MINOTE_MINO_H

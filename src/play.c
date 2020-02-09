@@ -11,28 +11,41 @@
 #include "window.h"
 #include "mapper.h"
 #include "darray.h"
-#include "field.h"
+#include "mino.h"
 #include "util.h"
 #include "time.h"
 #include "log.h"
 
-#define FieldWidth 10u
-#define FieldHeight 22u
-#define FieldHeightVisible 20u
+#define FieldWidth 10u ///< Width of #field
+#define FieldHeight 22u ///< Height of #field
+#define FieldHeightVisible 20u ///< Number of bottom rows the player can see
 
 /// Frequency of game logic updates, simulated by semi-threading, in Hz
 #define UpdateFrequency 59.84
 /// Inverse of #UpdateFrequency, in ::nsec
 #define UpdateTick (secToNsec(1) / UpdateFrequency)
+/// Timestamp of the next game logic update
+static nsec nextUpdate = 0;
+
+/// A player-controlled active piece
+typedef struct Player {
+	mino type;
+	spin rotation;
+} Player;
+
+/// A play's logical state
+typedef struct Tetrion {
+	Field* field;
+	Player player;
+} Tetrion;
+
+static Tetrion tet = {0};
 
 static Model* scene = null;
 
 static Model* block = null;
-static darray* tints = null;
-static darray* transforms = null;
-
-static Field* field = null;
-static nsec nextUpdate = 0;
+static darray* tints = null; ///< of #block
+static darray* transforms = null; ///< of #block
 
 static bool initialized = false;
 
@@ -48,9 +61,9 @@ void playInit(void)
 	tints = darrayCreate(sizeof(color4));
 	transforms = darrayCreate(sizeof(mat4x4));
 
-	field = fieldCreate((size2i){FieldWidth, FieldHeight});
+	tet.field = fieldCreate((size2i){FieldWidth, FieldHeight});
 	for (size_t i = 0; i < FieldWidth * FieldHeight; i++)
-		fieldSet(field, (point2i){i % FieldWidth, i / FieldWidth},
+		fieldSet(tet.field, (point2i){i % FieldWidth, i / FieldWidth},
 			i < FieldWidth ? MinoGarbage : rand() % MinoSize);
 
 	nextUpdate = getTime() + UpdateTick;
@@ -70,9 +83,9 @@ void playCleanup(void)
 		darrayDestroy(tints);
 		tints = null;
 	}
-	if (field) {
-		fieldDestroy(field);
-		field = null;
+	if (tet.field) {
+		fieldDestroy(tet.field);
+		tet.field = null;
 	}
 	if (block) {
 		modelDestroy(block);
@@ -119,7 +132,7 @@ void playDraw(void)
 		// to fix alpha sorting issues
 		if (x < FieldWidth / 2)
 			x = FieldWidth / 2 - x - 1;
-		mino type = fieldGet(field, (point2i){x, y});
+		mino type = fieldGet(tet.field, (point2i){x, y});
 		if (type == MinoNone) continue;
 
 		color4* tint = darrayProduce(tints);
