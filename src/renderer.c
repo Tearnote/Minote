@@ -201,7 +201,7 @@ void rendererCleanup(void)
 void rendererClear(color3 color)
 {
 	assert(initialized);
-	memcpy(ambientColor.arr, color.arr, sizeof(ambientColor.arr));
+	color3Copy(ambientColor, color);
 	glClearColor(color.r, color.g, color.b, 1.0f);
 	glClear((uint32_t)GL_COLOR_BUFFER_BIT
 		| (uint32_t)GL_DEPTH_BUFFER_BIT);
@@ -507,7 +507,7 @@ Model* modelCreatePhong(const char* name,
 	ModelPhong* m = alloc(sizeof(*m));
 	m->base.type = ModelTypePhong;
 	m->base.name = name;
-	memcpy(&m->material, &material, sizeof(m->material));
+	structCopy(m->material, material);
 
 	m->numVertices = numVertices;
 	glGenBuffers(1, &m->vertices);
@@ -516,7 +516,7 @@ Model* modelCreatePhong(const char* name,
 		vertices, GL_STATIC_DRAW);
 	point3f normalData[m->numVertices];
 	assert(sizeof(normalData) == sizeof(point3f) * m->numVertices);
-	memset(normalData, 0, sizeof(normalData));
+	arrayClear(normalData);
 	modelGenerateNormals(m->numVertices, vertices, normalData);
 	glGenBuffers(1, &m->normals);
 	glBindBuffer(GL_ARRAY_BUFFER, m->normals);

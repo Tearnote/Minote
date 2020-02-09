@@ -149,24 +149,6 @@ void playDraw(void)
 	rendererClear((color3){0.010f, 0.276f, 0.685f});
 	modelDraw(scene, 1, (color4[]){Color4White}, &IdentityMatrix);
 
-	// Draw player piece
-	piece* playerPiece = getPiece(tet.player.type, tet.player.rotation);
-	for (size_t i = 0; i < MinosPerPiece; i += 1) {
-		int x = (*playerPiece)[i].x + tet.player.pos.x;
-		int y = (*playerPiece)[i].y + tet.player.pos.y;
-
-		color4* tint = darrayProduce(tints);
-		mat4x4* transform = darrayProduce(transforms);
-		memcpy(tint->arr, minoColor(tet.player.type).arr, sizeof(tint->arr));
-		mat4x4_identity(*transform);
-		mat4x4_translate_in_place(*transform, x - (signed)(FieldWidth / 2), y,
-			0.0f);
-	}
-	modelDraw(block, darraySize(transforms), darrayData(tints),
-		darrayData(transforms));
-	darrayClear(tints);
-	darrayClear(transforms);
-
 	// Draw field contents
 	for (size_t i = 0; i < FieldWidth * FieldHeight; i += 1) {
 		int x = i % FieldWidth;
@@ -180,9 +162,27 @@ void playDraw(void)
 
 		color4* tint = darrayProduce(tints);
 		mat4x4* transform = darrayProduce(transforms);
-		memcpy(tint->arr, minoColor(type).arr, sizeof(tint->arr));
+		color4Copy(*tint, minoColor(type));
 		if (y >= FieldHeightVisible)
 			tint->a /= 4.0f;
+		mat4x4_identity(*transform);
+		mat4x4_translate_in_place(*transform, x - (signed)(FieldWidth / 2), y,
+			0.0f);
+	}
+	modelDraw(block, darraySize(transforms), darrayData(tints),
+		darrayData(transforms));
+	darrayClear(tints);
+	darrayClear(transforms);
+
+	// Draw player piece
+	piece* playerPiece = getPiece(tet.player.type, tet.player.rotation);
+	for (size_t i = 0; i < MinosPerPiece; i += 1) {
+		int x = (*playerPiece)[i].x + tet.player.pos.x;
+		int y = (*playerPiece)[i].y + tet.player.pos.y;
+
+		color4* tint = darrayProduce(tints);
+		mat4x4* transform = darrayProduce(transforms);
+		color4Copy(*tint, minoColor(tet.player.type));
 		mat4x4_identity(*transform);
 		mat4x4_translate_in_place(*transform, x - (signed)(FieldWidth / 2), y,
 			0.0f);

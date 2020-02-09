@@ -86,6 +86,22 @@ typedef union color4 {
 #define Color4Clear ((color4){1.0f, 1.0f, 1.0f, 0.0f})
 
 /**
+ * Copy the value of a color3 into another.
+ * @param dst Destination color3
+ * @param src Source color3
+ */
+#define color3Copy(dst, src) \
+    arrayCopy((dst).arr, (src).arr)
+
+/**
+ * Copy the value of a color4 into another.
+ * @param dst Destination color4
+ * @param src Source color4
+ */
+#define color4Copy(dst, src) \
+    arrayCopy((dst).arr, (src).arr)
+
+/**
  * Convert a ::color3 from sRGB to Linear color space.
  * @param color Input color
  * @return Output color
