@@ -1,5 +1,5 @@
 /**
- * Converter of raw inputs into player inputs
+ * Converter of raw collectedInputs into player collectedInputs
  * @file
  */
 
@@ -24,12 +24,12 @@ typedef enum InputAction {
 	ActionSize ///< terminator
 } InputAction;
 
-/// A logical input converted from raw device inputs via mappings
+/// A logical input converted from raw device collectedInputs via mappings
 typedef struct Input {
 	InputType type;
 	InputAction action;
 	nsec timestamp;
-} GameInput;
+} Input;
 
 /**
  * Initialize the mapper system. windowInit() must have been called first.
@@ -44,24 +44,24 @@ void mapperInit(void);
 void mapperCleanup(void);
 
 /**
- * Process all pending inputs from the window and insert them into the player
+ * Process all pending collectedInputs from the window and insert them into the player
  * event queue.
  */
 void mapperUpdate(void);
 
 /**
- * Remove and return the next ::GameInput from the mapper's queue.
+ * Remove and return the next ::Input from the mapper's queue.
  * @param[out] element Address to rewrite with the removed input
- * @return true if successful, false if no inputs left
+ * @return true if successful, false if no collectedInputs left
  */
-bool mapperDequeue(GameInput* input);
+bool mapperDequeue(Input* input);
 
 /**
- * Return the ::GameInput from the front of the mapper's queue without
- * removing it. If there are no inputs left, nothing happens.
+ * Return the ::Input from the front of the mapper's queue without
+ * removing it. If there are no collectedInputs left, nothing happens.
  * @param[out] element Address to rewrite with the peeked input
- * @return true if successful, false if no inputs left
+ * @return true if successful, false if no collectedInputs left
  */
-bool mapperPeek(GameInput* input);
+bool mapperPeek(Input* input);
 
 #endif //MINOTE_MAPPER_H

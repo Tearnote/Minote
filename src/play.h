@@ -1,6 +1,8 @@
 /**
- * Game state - play
+ * Layer: play
  * @file
+ * Wrapper for gamemode sublayers. Simulates their logic frames at a correct
+ * framerate.
  */
 
 #ifndef MINOTE_PLAY_H

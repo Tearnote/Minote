@@ -1,7 +1,7 @@
 /**
  * System for opening a window with an OpenGL context
  * @file
- * An open window collects inputs in a thread-safe queue, and these inputs need
+ * An open window collects collectedInputs in a thread-safe queue, and these collectedInputs need
  * to be regularly collected. Additionally, the system needs to be regularly
  * polled with windowPoll() to keep the window responsive.
  */

@@ -19,7 +19,7 @@ static bool initialized = false;
 static GLFWwindow* window; ///< Underlying GLFWwindow object
 static const char* windowTitle; ///< Window title from the title bar
 static queue* inputs; ///< Message queue for storing keypresses
-static mutex* inputsMutex; ///< Mutex protecting the #inputs queue
+static mutex* inputsMutex; ///< Mutex protecting the #collectedInputs queue
 static atomic bool windowOpen; ///< false if window should be closed, true otherwise
 // These two are not #size2i because the struct cannot be atomic
 static atomic size_t viewportWidth; ///< in pixels

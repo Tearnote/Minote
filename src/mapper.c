@@ -11,8 +11,9 @@
 #include "window.h"
 #include "queue.h"
 #include "util.h"
+#include "log.h"
 
-/// Queue holding inputs ready to be retrieved
+/// Queue holding collectedInputs ready to be retrieved
 static queue* inputs = null;
 
 static bool initialized = false;
@@ -77,7 +78,7 @@ static InputAction rawActionToAction(int action)
 void mapperInit(void)
 {
 	if (initialized) return;
-	inputs = queueCreate(sizeof(GameInput), 64);
+	inputs = queueCreate(sizeof(Input), 64);
 	initialized = true;
 }
 
@@ -100,21 +101,22 @@ void mapperUpdate(void)
 		InputAction action = rawActionToAction(key.action);
 		if (type == InputNone || action == ActionNone)
 			continue;
-		queueEnqueue(inputs, &(GameInput){
+		if(!queueEnqueue(inputs, &(Input){
 			.type = type,
 			.action = action,
-			.timestamp = key.timestamp});
+			.timestamp = key.timestamp}))
+			logWarn(applog, "Mapper queue full, input dropped");
 	}
 }
 
-bool mapperDequeue(GameInput* input)
+bool mapperDequeue(Input* input)
 {
 	assert(initialized);
 	assert(input);
 	return queueDequeue(inputs, input);
 }
 
-bool mapperPeek(GameInput* input)
+bool mapperPeek(Input* input)
 {
 	assert(initialized);
 	assert(input);

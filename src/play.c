@@ -5,7 +5,6 @@
 
 #include "play.h"
 
-#include <stdlib.h>
 #include <assert.h>
 #include "renderer.h"
 #include "window.h"
@@ -30,6 +29,9 @@
 /// Timestamp of the next game logic update
 static nsec nextUpdate = 0;
 
+/// List of collectedInputs for the next logic frame to process
+static darray* collectedInputs = null;
+
 /// A player-controlled active piece
 typedef struct Player {
 	mino type;
@@ -53,17 +55,47 @@ static darray* transforms = null; ///< of #block
 
 static bool initialized = false;
 
+/**
+ * Simulate one frame of gameplay logic.
+ * @param in List of ::Input events that happened during the frame
+ */
+static void playAdvance(darray* inputs)
+{
+	for (size_t i = 0; i < darraySize(inputs); i += 1) {
+		Input* in = darrayGet(inputs, i);
+		if (in->action != ActionPressed)
+			continue;
+		switch (in->type) {
+		case InputLeft:
+			tet.player.pos.x -= 1;
+			break;
+		case InputRight:
+			tet.player.pos.x += 1;
+			break;
+		case InputButton1:
+		case InputButton3:
+			spinCounterClockwise(&tet.player.rotation);
+			break;
+		case InputButton2:
+			spinClockwise(&tet.player.rotation);
+			break;
+		default:
+			break;
+		}
+	}
+}
+
 void playInit(void)
 {
 	if (initialized) return;
 
 	// Logic init
+	collectedInputs = darrayCreate(sizeof(Input));
 	tet.field = fieldCreate((size2i){FieldWidth, FieldHeight});
 	tet.player.type = MinoT;
 	tet.player.rotation = SpinNone;
 	tet.player.pos.x = SpawnX;
 	tet.player.pos.y = SpawnY;
-
 	nextUpdate = getTime() + UpdateTick;
 
 	// Render init
@@ -91,10 +123,6 @@ void playCleanup(void)
 		darrayDestroy(tints);
 		tints = null;
 	}
-	if (tet.field) {
-		fieldDestroy(tet.field);
-		tet.field = null;
-	}
 	if (block) {
 		modelDestroy(block);
 		block = null;
@@ -102,6 +130,14 @@ void playCleanup(void)
 	if (scene) {
 		modelDestroy(scene);
 		scene = null;
+	}
+	if (tet.field) {
+		fieldDestroy(tet.field);
+		tet.field = null;
+	}
+	if (collectedInputs) {
+		darrayDestroy(collectedInputs);
+		collectedInputs = null;
 	}
 	initialized = false;
 	logDebug(applog, u8"Play state cleaned up");
@@ -113,31 +149,20 @@ void playUpdate(void)
 
 	// Update as many times as we need to catch up
 	while (nextUpdate <= getTime()) {
-		GameInput i;
-		while (mapperPeek(&i)) { // Exhaust all inputs...
+		Input i;
+		while (mapperPeek(&i)) { // Exhaust all collectedInputs...
 			if (i.timestamp <= nextUpdate)
-				mapperDequeue(&i);
+				mapperDequeue(darrayProduce(collectedInputs));
 			else
 				break; // Or abort if we encounter an input from the future
 
-			if (i.type == InputQuit)
+			// Interpret quit events here
+			if (i.type == InputQuit && i.action == ActionPressed)
 				windowClose();
-
-			if (i.action != ActionPressed)
-				continue;
-			switch (i.type) {
-			case InputLeft:
-				tet.player.pos.x -= 1; break;
-			case InputRight:
-				tet.player.pos.x += 1; break;
-			case InputButton1:
-			case InputButton3:
-				spinCounterClockwise(&tet.player.rotation); break;
-			case InputButton2:
-				spinClockwise(&tet.player.rotation); break;
-			default: break;
-			}
 		}
+
+		playAdvance(collectedInputs);
+		darrayClear(collectedInputs);
 		nextUpdate += UpdateTick;
 	}
 }

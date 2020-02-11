@@ -1,7 +1,7 @@
 /**
  * Simulation and rendering thread (game thread)
  * @file
- * Most of the work is done here. Simulation is advanced using inputs gathered
+ * Most of the work is done here. Simulation is advanced using collectedInputs gathered
  * by the input thread, and rendering blocks on vsync to provide rate control.
  */
 
