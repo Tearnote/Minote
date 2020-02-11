@@ -142,7 +142,7 @@ void windowInit(const char* title, size2i size, bool fullscreen)
 	framebufferResizeCallback(window, width, height);
 	glfwGetWindowContentScale(window, &scale, null);
 	windowScaleCallback(window, scale, 0);
-	logInfo(applog, u8"Window \"%s\" created at %dx%d*%f%s",
+	logInfo(applog, u8"Window \"%s\" created at %dx%d *%f%s",
 		title, width, height, scale, fullscreen ? u8" fullscreen" : u8"");
 }
 

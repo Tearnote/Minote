@@ -14,11 +14,6 @@
 #include "time.h"
 #include "log.h"
 
-/// Frequency of input polling, in Hz
-#define InputFrequency 480.0
-/// Inverse of #InputFrequency, in ::nsec
-#define InputTick (secToNsec(1) / InputFrequency)
-
 /**
  * Initialize all game systems. This should be relatively fast and not load
  * too many resources from disk.
@@ -65,11 +60,18 @@ int main(int argc, char* argv[argc + 1])
 
 	thread* gameThread = threadCreate(game, null);
 
-	nsec nextPoll = getTime();
+	int measuredSecond = getTime() / secToNsec(1);
+	int frameCount = 0;
 	while (windowIsOpen()) {
-		nextPoll += InputTick;
+		int currentSecond = getTime() / secToNsec(1);
+		if (currentSecond == measuredSecond) {
+			frameCount += 1;
+		} else {
+			frameCount = 0;
+			measuredSecond = currentSecond;
+		}
 		windowPoll();
-		sleepUntil(nextPoll);
+		sleepFor(secToNsec(1) / 1000); // 1ms minimum
 	}
 
 	threadDestroy(gameThread);

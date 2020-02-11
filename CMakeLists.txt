@@ -117,6 +117,9 @@ endif()
 
 # Link the game
 target_link_libraries(Minote ${GLFW_STATIC_LIBRARIES})
+if(WIN32)
+    target_link_libraries(Minote winmm)
+endif()
 target_link_libraries(Minote ${CMAKE_DL_LIBS})
 target_link_libraries(Minote Threads::Threads)
 target_link_libraries(Minote m)

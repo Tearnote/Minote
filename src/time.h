@@ -34,11 +34,20 @@
 nsec getTime(void);
 
 /**
+ * Sleep the thread for the specific duration. Keep in mind that on Windows this
+ * will be at least 1ms and might have strong jitter. Must be called after
+ * systemInit().
+ * @param duration Requested sleep duration
+ * @remark This function is thread-safe.
+ */
+void sleepFor(nsec duration);
+
+/**
  * Do nothing until the specified time is reached. This performs a busywait, so
  * use this for sleeping only if there is no better alternative.
  * @param until Target timestamp
  * @remark This function is thread-safe.
  */
-void sleepUntil(nsec until);
+void spinUntil(nsec until);
 
 #endif //MINOTE_TIME_H
