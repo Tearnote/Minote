@@ -95,36 +95,31 @@ void pureCleanup(void)
 
 void pureAdvance(darray* inputs)
 {
-	for (size_t i = 0; i < darraySize(inputs); i += 1) {
-		Input* in = darrayGet(inputs, i);
-		if (in->action != ActionPressed)
-			continue;
-		switch (in->type) {
-		case InputLeft:
-			tet.player.pos.x -= 1;
-			break;
-		case InputRight:
-			tet.player.pos.x += 1;
-			break;
-		case InputButton1:
-		case InputButton3:
-			spinCounterClockwise(&tet.player.rotation);
-			break;
-		case InputButton2:
-			spinClockwise(&tet.player.rotation);
-			break;
-		default:
-			break;
-		}
-	}
+//	pureUpdateInputs();
+//	pureUpdateState();
+//	pureUpdateRotations();
+//	pureUpdateShifts();
+//	pureUpdateClear();
+//	pureUpdateSpawn();
+//	pureUpdateGhost();
+//	pureUpdateGravity();
+//	pureUpdateLocking();
+//	pureUpdateWin();
 }
 
-void pureDraw(void)
+/**
+ * Draw the scene model, which visually wraps the tetrion field.
+ */
+static void pureDrawScene(void)
 {
-	rendererClear((color3){0.010f, 0.276f, 0.685f});
 	modelDraw(scene, 1, (color4[]){Color4White}, &IdentityMatrix);
+}
 
-	// Draw field contents
+/**
+ * Draw the contents of the tetrion field.
+ */
+static void pureDrawField(void)
+{
 	for (size_t i = 0; i < FieldWidth * FieldHeight; i += 1) {
 		int x = i % FieldWidth;
 		int y = i / FieldWidth;
@@ -148,8 +143,13 @@ void pureDraw(void)
 		darrayData(transforms));
 	darrayClear(tints);
 	darrayClear(transforms);
+}
 
-	// Draw player piece
+/**
+ * Draw the player piece on top of the field.
+ */
+static void pureDrawPlayer(void)
+{
 	piece* playerPiece = getPiece(tet.player.type, tet.player.rotation);
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
 		int x = (*playerPiece)[i].x + tet.player.pos.x;
@@ -166,4 +166,15 @@ void pureDraw(void)
 		darrayData(transforms));
 	darrayClear(tints);
 	darrayClear(transforms);
+}
+
+void pureDraw(void)
+{
+	rendererClear((color3){0.010f, 0.276f, 0.685f}); //TODO make into layer
+	pureDrawScene();
+	pureDrawField();
+	pureDrawPlayer();
+//	pureDrawGhost();
+//	pureDrawBorder();
+//  pureDrawStats();
 }
