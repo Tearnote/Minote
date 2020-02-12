@@ -9,23 +9,23 @@
 #define MINOTE_PLAY_H
 
 /**
- * Initialize the play state. Needs to be called before the state can be used.
+ * Initialize the play layer. Needs to be called before the layer can be used.
  */
 void playInit(void);
 
 /**
- * Clean up the play state. Play functions cannot be used until playInit() is
+ * Clean up the play layer. Play functions cannot be used until playInit() is
  * called again.
  */
 void playCleanup(void);
 
 /**
- * Advance the play state.
+ * Advance the play layer.
  */
 void playUpdate(void);
 
 /**
- * Draw the play state to the screen.
+ * Draw the play layer to the screen.
  */
 void playDraw(void);
 
