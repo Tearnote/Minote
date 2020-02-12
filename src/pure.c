@@ -5,6 +5,7 @@
 
 #include "pure.h"
 
+#include <assert.h>
 #include "renderer.h"
 #include "mapper.h"
 #include "mino.h"
@@ -20,6 +21,10 @@
 
 /// A player-controlled active piece
 typedef struct Player {
+	bool inputMapRaw[InputSize]; ///< Unfiltered input state
+	bool inputMap[InputSize]; ///< Filtered input state
+	bool inputMapPrev[InputSize]; ///< #inputMap of the previous frame
+	InputType lastDirection; ///< None, Left or Right - used to improve kb play
 	mino type;
 	spin rotation;
 	point2i pos;
@@ -31,6 +36,7 @@ typedef struct Tetrion {
 	Player player;
 } Tetrion;
 
+/// Full state of the mode
 static Tetrion tet = {0};
 
 static Model* scene = null;
@@ -41,11 +47,15 @@ static darray* transforms = null; ///< of #block
 
 static bool initialized = false;
 
+#define inputHeld(type) \
+	(tet.player.inputMap[(type)])
+
 void pureInit(void)
 {
 	if (initialized) return;
 
 	// Logic init
+	structClear(tet);
 	tet.field = fieldCreate((size2i){FieldWidth, FieldHeight});
 	tet.player.type = MinoT;
 	tet.player.rotation = SpinNone;
@@ -93,9 +103,40 @@ void pureCleanup(void)
 	logDebug(applog, u8"Pure sublayer cleaned up");
 }
 
+static void pureUpdateInputs(darray* inputs)
+{
+	assert(inputs);
+
+	// Update raw inputs
+	for (size_t i = 0; i < darraySize(inputs); i += 1) {
+		Input* in = darrayGet(inputs, i);
+		assert(in->type < InputSize);
+		tet.player.inputMapRaw[in->type] = in->state;
+	}
+
+	// Rotate the input arrays
+	arrayCopy(tet.player.inputMapPrev, tet.player.inputMap);
+	arrayCopy(tet.player.inputMap, tet.player.inputMapRaw);
+
+	// Filter conflicting inputs
+	if (tet.player.inputMap[InputDown] || tet.player.inputMap[InputUp]) {
+		tet.player.inputMap[InputLeft] = false;
+		tet.player.inputMap[InputRight] = false;
+	}
+	if (tet.player.inputMap[InputLeft] && tet.player.inputMap[InputRight]) {
+		if (tet.player.lastDirection == InputLeft)
+			tet.player.inputMap[InputRight] = false;
+		if (tet.player.lastDirection == InputRight)
+			tet.player.inputMap[InputLeft] = false;
+	}
+}
+
 void pureAdvance(darray* inputs)
 {
-//	pureUpdateInputs();
+	assert(inputs);
+	assert(initialized);
+
+	pureUpdateInputs(inputs);
 //	pureUpdateState();
 //	pureUpdateRotations();
 //	pureUpdateShifts();
@@ -170,6 +211,8 @@ static void pureDrawPlayer(void)
 
 void pureDraw(void)
 {
+	assert(initialized);
+
 	rendererClear((color3){0.010f, 0.276f, 0.685f}); //TODO make into layer
 	pureDrawScene();
 	pureDrawField();

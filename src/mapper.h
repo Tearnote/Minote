@@ -17,17 +17,10 @@ typedef enum InputType {
 	InputSize ///< terminator
 } InputType;
 
-typedef enum InputAction {
-	ActionNone, ///< zero value
-	ActionPressed,
-	ActionReleased,
-	ActionSize ///< terminator
-} InputAction;
-
 /// A logical input converted from raw device collectedInputs via mappings
 typedef struct Input {
 	InputType type;
-	InputAction action;
+	bool state; ///< true if press, false if release
 	nsec timestamp;
 } Input;
 

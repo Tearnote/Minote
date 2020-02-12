@@ -66,7 +66,7 @@ void playUpdate(void)
 				break; // Or abort if we encounter an input from the future
 
 			// Interpret quit events here for now
-			if (i.type == InputQuit && i.action == ActionPressed)
+			if (i.type == InputQuit && i.state)
 				windowClose();
 		}
 

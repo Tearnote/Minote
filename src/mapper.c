@@ -59,20 +59,17 @@ static InputType rawKeyToType(int key)
 }
 
 /**
- * Convert a GLFW action code to a ::InputAction.
+ * Convert a GLFW action code to a ::Input state bool.
  * @param key Any GLFW action code
- * @return Matching ::InputAction value, or ::ActionNone
+ * @return Matching bool value
  */
-static InputAction rawActionToAction(int action)
+static bool actionToState(int action)
 {
-	switch (action) {
-	case GLFW_PRESS:
-		return ActionPressed;
-	case GLFW_RELEASE:
-		return ActionReleased;
-	default:
-		return ActionNone;
-	}
+	assert(action == GLFW_PRESS || action == GLFW_RELEASE);
+	if (action == GLFW_PRESS)
+		return true;
+	else
+		return false;
 }
 
 void mapperInit(void)
@@ -98,12 +95,12 @@ void mapperUpdate(void)
 	KeyInput key;
 	while (windowInputDequeue(&key)) {
 		InputType type = rawKeyToType(key.key);
-		InputAction action = rawActionToAction(key.action);
-		if (type == InputNone || action == ActionNone)
+		bool state = actionToState(key.action);
+		if (type == InputNone)
 			continue;
 		if(!queueEnqueue(inputs, &(Input){
 			.type = type,
-			.action = action,
+			.state = state,
 			.timestamp = key.timestamp}))
 			logWarn(applog, "Mapper queue full, input dropped");
 	}
