@@ -6,6 +6,7 @@
 #ifndef MINOTE_MINO_H
 #define MINOTE_MINO_H
 
+#include <stdbool.h>
 #include "basetypes.h"
 
 /**
@@ -35,6 +36,7 @@ typedef enum spin {
 } spin;
 
 #define MinosPerPiece 4
+#define CenterColumn 1 ///< Used in kick exception rules
 
 /// Shape of a player piece at a specific ::spin
 typedef point2i piece[MinosPerPiece];
@@ -58,6 +60,13 @@ void spinCounterClockwise(spin* val);
  * @return Read-only piece data
  */
 piece* getPiece(mino type, spin rotation);
+
+/**
+ * Return the canonical color of a ::mino.
+ * @param type Mino being queried
+ * @return The base color of @a type
+ */
+color4 minoColor(mino type);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -98,10 +107,12 @@ void fieldSet(Field* f, point2i place, mino value);
 mino fieldGet(Field* f, point2i place);
 
 /**
- * Return the canonical color of a ::mino.
- * @param type Mino being queried
- * @return The base color of @a type
+ * Check if a piece is on top of any taken cells of the field.
+ * @param p Piece to test
+ * @param pPos Offset of @a p on the @a field
+ * @param field Field to test
+ * @return true if there is overlap, false if there is not
  */
-color4 minoColor(mino type);
+bool pieceOverlapsField(piece* p, point2i pPos, Field* field);
 
 #endif //MINOTE_MINO_H

@@ -1,5 +1,5 @@
 /**
- * Implementation of field.h
+ * Implementation of mino.h
  * @file
  */
 
@@ -171,6 +171,12 @@ piece* getPiece(mino type, spin rotation)
 	return &rotationSystem[type][rotation];
 }
 
+color4 minoColor(mino type)
+{
+	assert(type >= MinoNone && type < MinoSize);
+	return MinoColors[type];
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 struct Field {
@@ -215,8 +221,17 @@ mino fieldGet(Field* f, point2i place)
 	return f->grid[place.y * f->size.x + place.x];
 }
 
-color4 minoColor(mino type)
+bool pieceOverlapsField(piece* p, point2i pPos, Field* field)
 {
-	assert(type >= MinoNone && type < MinoSize);
-	return MinoColors[type];
+	assert(p);
+	assert(field);
+	for (size_t i = 0; i < MinosPerPiece; i += 1) {
+		point2i cell = {
+			.x = (*p)[i].x + pPos.x,
+			.y = (*p)[i].y + pPos.y
+		};
+		if (fieldGet(field, cell))
+			return true;
+	}
+	return false;
 }
