@@ -26,3 +26,6 @@ Public Domain.
 
 [`SDL_GameControllerDB`](https://github.com/gabomdq/SDL_GameControllerDB)
 retrieved on 2019-09-05, used under zlib license.
+
+[`PCG PRNG`](http://www.pcg-random.org/) Minimal C 0.9, used under Apache
+license.

@@ -9,6 +9,7 @@
 #include <stddef.h>
 #include <stdlib.h> // Provide free()
 #include <string.h>
+#include "pcg/pcg_basic.h"
 
 /**
  * A better replacement for NULL.
@@ -30,19 +31,46 @@
 #define radf(x) \
     ((x) * M_TAU / 360.0)
 
+/// Convenient rename of the PCG PRNG state
+typedef pcg32_random_t rng;
+
+/**
+ * Initialize an ::rng with the provided seed.
+ * @param[in,out] rngptr Pointer to a valid ::rng to initialize
+ * @param seed uint64_t seed value
+ */
+#define srandom(rngptr, seed) \
+        pcg32_srandom_r((rngptr), (seed), 'M'*'i'+'n'*'o'+'t'*'e')
+
+/**
+ * Pull a random number from 0 to an upper bound (exclusive).
+ * @param rngptr[in,out] Pointer to an initialized ::rng
+ * @param bound Exclusive upper bound
+ * @return The random number
+ */
+#define random(rngptr, bound) \
+        pcg32_boundedrand_r((rngptr), (bound))
+
+/**
+ * Pull a random floating-point number between 0.0 and 1.0 (exclusive).
+ * @param rngptr[in,out] Pointer to an initialized ::rng
+ * @return The random number
+ */
+#define frandom(rngptr) \
+        ldexp(pcg32_random_r((rngptr)), -32)
 /**
  * Clear an array, setting all bytes to 0.
  * @param arr Array argument
  */
 #define arrayClear(arr) \
-    memset((arr), 0, sizeof((arr)));
+    memset((arr), 0, sizeof((arr)))
 
 /**
  * Clear a struct, setting all bytes to 0.
  * @param sct Struct instance argument
  */
 #define structClear(sct) \
-    memset(&(sct), 0, sizeof((sct)));
+    memset(&(sct), 0, sizeof((sct)))
 
 /**
  * Copy the contents of one array into another array of the same or bigger size.

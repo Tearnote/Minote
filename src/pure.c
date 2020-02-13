@@ -6,6 +6,8 @@
 #include "pure.h"
 
 #include <assert.h>
+#include <stdint.h>
+#include <time.h>
 #include "renderer.h"
 #include "mapper.h"
 #include "mino.h"
@@ -18,6 +20,9 @@
 
 #define SpawnX 3 ///< X position of player piece spawn
 #define SpawnY 18 ///< Y position of player piece spawn
+
+#define HistorySize 4
+#define MaxRerolls 4
 
 #define SoftDrop 256
 #define DasCharge 16
@@ -45,8 +50,11 @@ typedef struct Player {
 
 	PlayerState state;
 	mino type;
+	mino preview;
+	mino history[HistorySize];
 	spin rotation;
 	point2i pos;
+	int ySub;
 
 	int dasDirection;
 	int dasCharge;
@@ -54,12 +62,15 @@ typedef struct Player {
 	int lockDelay;
 	int clearDelay;
 	int spawnDelay;
+
+	int dropBonus;
 } Player;
 
 /// A play's logical state
 typedef struct Tetrion {
 	Field* field;
 	Player player;
+	rng rngState;
 } Tetrion;
 
 /// Full state of the mode
@@ -78,57 +89,6 @@ static bool initialized = false;
 
 #define inputHeld(type) \
     (tet.player.inputMap[(type)])
-
-void pureInit(void)
-{
-	if (initialized) return;
-
-	// Logic init
-	structClear(tet);
-	tet.field = fieldCreate((size2i){FieldWidth, FieldHeight});
-	tet.player.dasDelay = DasDelay; // Starts out pre-charged
-	tet.player.spawnDelay = SpawnDelay; // Start instantly
-
-	// Render init
-	scene = modelCreateFlat(u8"scene",
-#include "meshes/scene.mesh"
-	);
-	block = modelCreatePhong(u8"block",
-#include "meshes/block.mesh"
-	);
-	tints = darrayCreate(sizeof(color4));
-	transforms = darrayCreate(sizeof(mat4x4));
-
-	initialized = true;
-	logDebug(applog, u8"Pure sublayer initialized");
-}
-
-void pureCleanup(void)
-{
-	if (!initialized) return;
-	if (transforms) {
-		darrayDestroy(transforms);
-		transforms = null;
-	}
-	if (tints) {
-		darrayDestroy(tints);
-		tints = null;
-	}
-	if (block) {
-		modelDestroy(block);
-		block = null;
-	}
-	if (scene) {
-		modelDestroy(scene);
-		scene = null;
-	}
-	if (tet.field) {
-		fieldDestroy(tet.field);
-		tet.field = null;
-	}
-	initialized = false;
-	logDebug(applog, u8"Pure sublayer cleaned up");
-}
 
 /**
  * Try to kick the player piece into a legal position.
@@ -180,7 +140,7 @@ static bool tryKicks(void)
 /**
  * Attempt to rotate the player piece in the specified direction, kicking the
  * piece if needed.
- * @param direction 1 for clockwise, -1 for counter-clockwise
+ * @param direction -1 for clockwise, 1 for counter-clockwise
  */
 static void rotate(int direction)
 {
@@ -194,13 +154,54 @@ static void rotate(int direction)
 		tet.player.rotation = prevRotation;
 }
 
+/**
+ * Attempt to shift the player piece in the given direction.
+ * @param direction -1 for left, 1 for right
+ */
 static void shift(int direction)
 {
+	assert(direction == 1 || direction == -1);
 	tet.player.pos.x += direction;
-	if (pieceOverlapsField(getPiece(tet.player.type, tet.player.rotation),
-		tet.player.pos, tet.field)) {
+	piece* playerPiece = getPiece(tet.player.type, tet.player.rotation);
+	if (pieceOverlapsField(playerPiece, tet.player.pos, tet.field)) {
 		tet.player.pos.x -= direction;
 	}
+}
+
+static mino randomPiece(void)
+{
+	bool first = false;
+	if (tet.player.history[0] == MinoNone) { // History empty, initialize
+		first = true;
+		for (int i = 0; i < HistorySize; i += 1)
+			tet.player.history[i] = MinoZ;
+	}
+
+	mino result = MinoNone;
+	for (int i = 0; i < MaxRerolls; i += 1) {
+		result = random(&tet.rngState, MinoGarbage - 1) + 1;
+		while (first && // Unfair first piece prevention
+			(result == MinoS ||
+				result == MinoZ ||
+				result == MinoO))
+			result = random(&tet.rngState, MinoGarbage - 1) + 1;
+
+		// If piece in history, reroll
+		bool valid = true;
+		for (int j = 0; j < HistorySize; j += 1) {
+			if (result == tet.player.history[j])
+				valid = false;
+		}
+		if (valid)
+			break;
+	}
+
+	// Rotate history
+	for (int i = HistorySize - 2; i >= 0; i -= 1) {
+		tet.player.history[i + 1] = tet.player.history[i];
+	}
+	tet.player.history[0] = result;
+	return result;
 }
 
 static void spawnPiece(void)
@@ -210,18 +211,17 @@ static void spawnPiece(void)
 	tet.player.pos.y = SpawnY;
 
 	// Picking the next piece
-//	tet.player.type = tet.player.preview;
-//	tet.player.preview = randomPiece();
-	tet.player.type = MinoT;
+	tet.player.type = tet.player.preview;
+	tet.player.preview = randomPiece();
 
 	if (tet.player.type == MinoI)
 		tet.player.pos.y -= 1; // I starts higher than other pieces
-//	tet.player.ySub = 0;
+	tet.player.ySub = 0;
 	tet.player.lockDelay = 0;
 	tet.player.spawnDelay = 0;
 	tet.player.clearDelay = 0;
 	tet.player.rotation = SpinNone;
-//	tet.player.dropBonus = 0;
+	tet.player.dropBonus = 0;
 
 	// IRS
 	if (inputHeld(InputButton2)) {
@@ -343,6 +343,59 @@ static void pureUpdateSpawn(void)
 		if (tet.player.spawnDelay >= SpawnDelay)
 			spawnPiece();
 	}
+}
+
+void pureInit(void)
+{
+	if (initialized) return;
+
+	// Logic init
+	structClear(tet);
+	tet.field = fieldCreate((size2i){FieldWidth, FieldHeight});
+	srandom(&tet.rngState, (uint64_t)time(NULL));
+	tet.player.dasDelay = DasDelay; // Starts out pre-charged
+	tet.player.spawnDelay = SpawnDelay; // Start instantly
+	tet.player.preview = randomPiece();
+
+	// Render init
+	scene = modelCreateFlat(u8"scene",
+#include "meshes/scene.mesh"
+	);
+	block = modelCreatePhong(u8"block",
+#include "meshes/block.mesh"
+	);
+	tints = darrayCreate(sizeof(color4));
+	transforms = darrayCreate(sizeof(mat4x4));
+
+	initialized = true;
+	logDebug(applog, u8"Pure sublayer initialized");
+}
+
+void pureCleanup(void)
+{
+	if (!initialized) return;
+	if (transforms) {
+		darrayDestroy(transforms);
+		transforms = null;
+	}
+	if (tints) {
+		darrayDestroy(tints);
+		tints = null;
+	}
+	if (block) {
+		modelDestroy(block);
+		block = null;
+	}
+	if (scene) {
+		modelDestroy(scene);
+		scene = null;
+	}
+	if (tet.field) {
+		fieldDestroy(tet.field);
+		tet.field = null;
+	}
+	initialized = false;
+	logDebug(applog, u8"Pure sublayer cleaned up");
 }
 
 void pureAdvance(darray* inputs)

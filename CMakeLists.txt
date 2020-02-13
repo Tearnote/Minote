@@ -69,7 +69,9 @@ add_custom_target(Preprocess_shaders
 include_directories(lib)
 set(C_INTERNALLIBS
         lib/glad/glad.h lib/glad/glad.c lib/glad/KHR/khrplatform.h
-        lib/linmath/linmath.h)
+        lib/linmath/linmath.h
+        lib/pcg/pcg_basic.h lib/pcg/pcg_basic.c)
+
 set(C_SOURCES
         src/main.h src/main.c
         src/log.h src/log.c
