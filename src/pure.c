@@ -63,14 +63,32 @@ typedef struct Player {
 	int clearDelay;
 	int spawnDelay;
 
+	int level;
 	int dropBonus;
 } Player;
 
+typedef enum TetrionState {
+	TetrionNone,
+	TetrionReady,
+	TetrionPlaying,
+	TetrionOutro,
+	TetrionSize
+} TetrionState;
+
 /// A play's logical state
 typedef struct Tetrion {
+	TetrionState state;
+	int ready;
+	int frame;
+
 	Field* field;
 	Player player;
 	rng rngState;
+
+	int score;
+	int combo;
+	int grade;
+	bool eligible;
 } Tetrion;
 
 /// Full state of the mode
@@ -204,6 +222,27 @@ static mino randomPiece(void)
 	return result;
 }
 
+static int getLevelstop(int level)
+{
+	int result = (level / 100 + 1) * 100;
+	if (result >= 1000)
+		result = 999;
+	return result;
+}
+
+static void addLevels(int count, bool strong)
+{
+	int levelstop = getLevelstop(count);
+	tet.player.level += count;
+	if (!strong && tet.player.level >= levelstop)
+		tet.player.level = levelstop - 1;
+}
+
+static void gameOver(void)
+{
+	tet.state = TetrionOutro;
+}
+
 static void spawnPiece(void)
 {
 	tet.player.state = PlayerSpawned; // Some moves restricted on first frame
@@ -231,10 +270,11 @@ static void spawnPiece(void)
 			rotate(1);
 	}
 
-//	addLevels(1, false);
+	addLevels(1, false);
 
-//	if (!checkPosition())
-//		gameOver();
+	piece* playerPiece = getPiece(tet.player.type, tet.player.rotation);
+	if (pieceOverlapsField(playerPiece, tet.player.pos, tet.field))
+		gameOver();
 }
 
 /**
@@ -246,10 +286,14 @@ static void pureUpdateInputs(darray* inputs)
 	assert(inputs);
 
 	// Update raw inputs
-	for (size_t i = 0; i < darraySize(inputs); i += 1) {
-		Input* in = darrayGet(inputs, i);
-		assert(in->type < InputSize);
-		tet.player.inputMapRaw[in->type] = in->state;
+	if (tet.state != TetrionOutro) {
+		for (size_t i = 0; i < darraySize(inputs); i += 1) {
+			Input* in = darrayGet(inputs, i);
+			assert(in->type < InputSize);
+			tet.player.inputMapRaw[in->type] = in->state;
+		}
+	} else { // Force-release everything on gameover
+		arrayClear(tet.player.inputMapRaw);
 	}
 
 	// Rotate the input arrays
@@ -274,6 +318,11 @@ static void pureUpdateInputs(darray* inputs)
  */
 static void pureUpdateState(void)
 {
+	if (tet.state == TetrionReady) {
+		tet.ready -= 1;
+		if (tet.ready == 0)
+			tet.state = TetrionPlaying;
+	}
 	if (tet.player.state == PlayerSpawned)
 		tet.player.state = PlayerActive;
 }
@@ -336,8 +385,8 @@ static void pureUpdateShift(void)
  */
 static void pureUpdateSpawn(void)
 {
-//	if (game->state != GameplayPlaying)
-//		return; // Do not spawn during countdown or gameover
+	if (tet.state != TetrionPlaying)
+		return; // Do not spawn during countdown or gameover
 	if (tet.player.state == PlayerSpawn || tet.player.state == PlayerNone) {
 		tet.player.spawnDelay += 1;
 		if (tet.player.spawnDelay >= SpawnDelay)
@@ -351,11 +400,18 @@ void pureInit(void)
 
 	// Logic init
 	structClear(tet);
+	tet.combo = 1;
+	tet.eligible = true;
+	tet.frame = -1;
+	tet.ready = 3 * 50;
 	tet.field = fieldCreate((size2i){FieldWidth, FieldHeight});
 	srandom(&tet.rngState, (uint64_t)time(NULL));
+	tet.player.level = -1;
 	tet.player.dasDelay = DasDelay; // Starts out pre-charged
 	tet.player.spawnDelay = SpawnDelay; // Start instantly
 	tet.player.preview = randomPiece();
+
+	tet.state = TetrionReady;
 
 	// Render init
 	scene = modelCreateFlat(u8"scene",
