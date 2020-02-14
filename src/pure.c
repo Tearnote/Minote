@@ -488,6 +488,28 @@ static void pureUpdateGravity(void)
 	}
 }
 
+static void lock(void)
+{
+	if (inputHeld(InputDown))
+		tet.player.dropBonus += 1; // Lock frame can also increase this
+	piece* playerPiece = getPiece(tet.player.type, tet.player.rotation);
+	fieldStampPiece(tet.field, playerPiece, tet.player.pos, tet.player.type);
+	tet.player.state = PlayerSpawn;
+}
+
+static void pureUpdateLocking(void)
+{
+	if (tet.player.state != PlayerActive || tet.state != TetrionPlaying)
+		return;
+	if (canDrop())
+		return;
+
+	tet.player.lockDelay += 1;
+	// Two sources of locking: lock delay expired, manlock
+	if (tet.player.lockDelay > LockDelay || inputHeld(InputDown))
+		lock();
+}
+
 void pureInit(void)
 {
 	if (initialized) return;
@@ -560,7 +582,7 @@ void pureAdvance(darray* inputs)
 //	pureUpdateClear();
 	pureUpdateSpawn();
 	pureUpdateGravity();
-//	pureUpdateLocking();
+	pureUpdateLocking();
 //	pureUpdateWin();
 }
 

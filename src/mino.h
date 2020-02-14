@@ -107,6 +107,16 @@ void fieldSet(Field* f, point2i place, mino value);
 mino fieldGet(Field* f, point2i place);
 
 /**
+ * Stamp a ::piece into a ::Field, overwriting cells with a specified value. No
+ * collision checking is performed.
+ * @param f The ::Field object
+ * @param piece Shape of the stamp
+ * @param place The offset to apply to the @a piece
+ * @param type Value to overwrite with
+ */
+void fieldStampPiece(Field* f, piece* piece, point2i place, mino type);
+
+/**
  * Check if a piece is on top of any taken cells of the field.
  * @param p Piece to test
  * @param pPos Offset of @a p on the @a field
