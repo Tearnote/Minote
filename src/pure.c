@@ -510,6 +510,12 @@ static void pureUpdateLocking(void)
 		lock();
 }
 
+static void pureUpdateWin(void)
+{
+	if (tet.player.level >= 999)
+		gameOver();
+}
+
 void pureInit(void)
 {
 	if (initialized) return;
@@ -583,7 +589,7 @@ void pureAdvance(darray* inputs)
 	pureUpdateSpawn();
 	pureUpdateGravity();
 	pureUpdateLocking();
-//	pureUpdateWin();
+	pureUpdateWin();
 }
 
 /**
