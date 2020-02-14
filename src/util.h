@@ -58,6 +58,10 @@ typedef pcg32_random_t rng;
  */
 #define frandom(rngptr) \
         ldexp(pcg32_random_r((rngptr)), -32)
+
+#define countof(x) \
+    ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
+
 /**
  * Clear an array, setting all bytes to 0.
  * @param arr Array argument

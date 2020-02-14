@@ -20,6 +20,7 @@
 
 #define SpawnX 3 ///< X position of player piece spawn
 #define SpawnY 18 ///< Y position of player piece spawn
+#define SubGrid 256
 
 #define HistorySize 4
 #define MaxRerolls 4
@@ -31,6 +32,44 @@
 #define ClearOffset 4
 #define ClearDelay 41
 #define SpawnDelay 30
+
+typedef struct Threshold {
+	int level;
+	int gravity;
+} Threshold;
+
+#define thresholds ((Threshold[]){     \
+	{ .level = 0, .gravity = 4 },      \
+	{ .level = 30, .gravity = 6 },     \
+	{ .level = 35, .gravity = 8 },     \
+	{ .level = 40, .gravity = 10 },    \
+	{ .level = 50, .gravity = 12 },    \
+	{ .level = 60, .gravity = 16 },    \
+	{ .level = 70, .gravity = 32 },    \
+	{ .level = 80, .gravity = 48 },    \
+	{ .level = 90, .gravity = 64 },    \
+	{ .level = 100, .gravity = 80 },   \
+	{ .level = 120, .gravity = 96 },   \
+	{ .level = 140, .gravity = 112 },  \
+	{ .level = 160, .gravity = 128 },  \
+	{ .level = 170, .gravity = 144 },  \
+	{ .level = 200, .gravity = 4 },    \
+	{ .level = 220, .gravity = 32 },   \
+	{ .level = 230, .gravity = 64 },   \
+	{ .level = 233, .gravity = 96 },   \
+	{ .level = 236, .gravity = 128 },  \
+	{ .level = 239, .gravity = 160 },  \
+	{ .level = 243, .gravity = 192 },  \
+	{ .level = 247, .gravity = 224 },  \
+	{ .level = 251, .gravity = 256 },  \
+	{ .level = 300, .gravity = 512 },  \
+	{ .level = 330, .gravity = 768 },  \
+	{ .level = 360, .gravity = 1024 }, \
+	{ .level = 400, .gravity = 1280 }, \
+	{ .level = 420, .gravity = 1024 }, \
+	{ .level = 450, .gravity = 768 },  \
+	{ .level = 500, .gravity = 5120 }  \
+})
 
 typedef enum PlayerState {
 	PlayerNone, ///< zero value
@@ -394,6 +433,61 @@ static void pureUpdateSpawn(void)
 	}
 }
 
+static int getGravity(int level)
+{
+	int result = 0;
+	for (int i = 0; i < countof(thresholds); i += 1) {
+		if (level < thresholds[i].level)
+			break;
+		result = thresholds[i].gravity;
+	}
+	return result;
+}
+
+static bool canDrop(void)
+{
+	piece* playerPiece = getPiece(tet.player.type, tet.player.rotation);
+	return !pieceOverlapsField(playerPiece, (point2i){
+		.x = tet.player.pos.x,
+		.y = tet.player.pos.y - 1
+	}, tet.field);
+}
+
+static void drop(void)
+{
+	if (!canDrop())
+		return;
+
+	tet.player.lockDelay = 0;
+	tet.player.pos.y -= 1;
+	if (inputHeld(InputDown))
+		tet.player.dropBonus += 1;
+}
+
+static void pureUpdateGravity(void)
+{
+	if (tet.state == TetrionOutro)
+		return; // Prevent zombie blocks
+	if (tet.player.state != PlayerSpawned && tet.player.state != PlayerActive)
+		return;
+
+	int gravity = getGravity(tet.player.level);
+	if (tet.player.state == PlayerActive) {
+		if (inputHeld(InputDown) && gravity < SoftDrop)
+			gravity = SoftDrop;
+	}
+
+	if (canDrop()) // Queue up the gravity drops
+		tet.player.ySub += gravity;
+	else
+		tet.player.ySub = 0;
+
+	while (tet.player.ySub >= SubGrid) { // Drop until queue empty
+		drop();
+		tet.player.ySub -= SubGrid;
+	}
+}
+
 void pureInit(void)
 {
 	if (initialized) return;
@@ -465,8 +559,7 @@ void pureAdvance(darray* inputs)
 	pureUpdateShift();
 //	pureUpdateClear();
 	pureUpdateSpawn();
-//	pureUpdateGhost();
-//	pureUpdateGravity();
+	pureUpdateGravity();
 //	pureUpdateLocking();
 //	pureUpdateWin();
 }
