@@ -107,6 +107,35 @@ void fieldSet(Field* f, point2i place, mino value);
 mino fieldGet(Field* f, point2i place);
 
 /**
+ * Set a row of ::Field cells to MinoNone.
+ * @param f The ::Field object
+ * @param row Row to clear
+ */
+void fieldClearRow(Field* f, int row);
+
+/**
+ * Move every row higher than the chosen one one row downwards.
+ * @param f The ::Field object
+ * @param row The row that will be overwritten on drop
+ */
+void fieldDropRow(Field* f, int row);
+
+/**
+ * Check if a ::Field's row is entirely filled.
+ * @param f The ::Field object
+ * @param row Row to check
+ * @return true if full, false if at least one cell empty
+ */
+bool fieldIsRowFull(Field* f, int row);
+
+/**
+ * Check if an entire ::Field is empty.
+ * @param f The ::Field object
+ * @return true is empty, false, if at least one cell filled
+ */
+bool fieldIsEmpty(Field* f);
+
+/**
  * Stamp a ::piece into a ::Field, overwriting cells with a specified value. No
  * collision checking is performed.
  * @param f The ::Field object

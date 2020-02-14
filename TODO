@@ -1,2 +1,3 @@
 Make rng a proper object
 Use point2i correctly in pureDraw
+Move data to puretables

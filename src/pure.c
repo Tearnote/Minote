@@ -25,6 +25,9 @@
 #define HistorySize 4
 #define MaxRerolls 4
 
+#define ClockFrequency 60.0
+#define ClockTick (secToNsec(1) / ClockFrequency)
+
 #define SoftDrop 256
 #define DasCharge 16
 #define DasDelay 1
@@ -38,37 +41,71 @@ typedef struct Threshold {
 	int gravity;
 } Threshold;
 
-#define thresholds ((Threshold[]){     \
-	{ .level = 0, .gravity = 4 },      \
-	{ .level = 30, .gravity = 6 },     \
-	{ .level = 35, .gravity = 8 },     \
-	{ .level = 40, .gravity = 10 },    \
-	{ .level = 50, .gravity = 12 },    \
-	{ .level = 60, .gravity = 16 },    \
-	{ .level = 70, .gravity = 32 },    \
-	{ .level = 80, .gravity = 48 },    \
-	{ .level = 90, .gravity = 64 },    \
-	{ .level = 100, .gravity = 80 },   \
-	{ .level = 120, .gravity = 96 },   \
-	{ .level = 140, .gravity = 112 },  \
-	{ .level = 160, .gravity = 128 },  \
-	{ .level = 170, .gravity = 144 },  \
-	{ .level = 200, .gravity = 4 },    \
-	{ .level = 220, .gravity = 32 },   \
-	{ .level = 230, .gravity = 64 },   \
-	{ .level = 233, .gravity = 96 },   \
-	{ .level = 236, .gravity = 128 },  \
-	{ .level = 239, .gravity = 160 },  \
-	{ .level = 243, .gravity = 192 },  \
-	{ .level = 247, .gravity = 224 },  \
-	{ .level = 251, .gravity = 256 },  \
-	{ .level = 300, .gravity = 512 },  \
-	{ .level = 330, .gravity = 768 },  \
-	{ .level = 360, .gravity = 1024 }, \
-	{ .level = 400, .gravity = 1280 }, \
-	{ .level = 420, .gravity = 1024 }, \
-	{ .level = 450, .gravity = 768 },  \
-	{ .level = 500, .gravity = 5120 }  \
+#define Thresholds ((Threshold[]){     \
+    { .level = 0, .gravity = 4 },      \
+    { .level = 30, .gravity = 6 },     \
+    { .level = 35, .gravity = 8 },     \
+    { .level = 40, .gravity = 10 },    \
+    { .level = 50, .gravity = 12 },    \
+    { .level = 60, .gravity = 16 },    \
+    { .level = 70, .gravity = 32 },    \
+    { .level = 80, .gravity = 48 },    \
+    { .level = 90, .gravity = 64 },    \
+    { .level = 100, .gravity = 80 },   \
+    { .level = 120, .gravity = 96 },   \
+    { .level = 140, .gravity = 112 },  \
+    { .level = 160, .gravity = 128 },  \
+    { .level = 170, .gravity = 144 },  \
+    { .level = 200, .gravity = 4 },    \
+    { .level = 220, .gravity = 32 },   \
+    { .level = 230, .gravity = 64 },   \
+    { .level = 233, .gravity = 96 },   \
+    { .level = 236, .gravity = 128 },  \
+    { .level = 239, .gravity = 160 },  \
+    { .level = 243, .gravity = 192 },  \
+    { .level = 247, .gravity = 224 },  \
+    { .level = 251, .gravity = 256 },  \
+    { .level = 300, .gravity = 512 },  \
+    { .level = 330, .gravity = 768 },  \
+    { .level = 360, .gravity = 1024 }, \
+    { .level = 400, .gravity = 1280 }, \
+    { .level = 420, .gravity = 1024 }, \
+    { .level = 450, .gravity = 768 },  \
+    { .level = 500, .gravity = 5120 }  \
+})
+
+typedef struct Requirement {
+	int level;
+	int score;
+	nsec time;
+} Requirement;
+
+#define Requirements ((Requirement[]){                                \
+    { .level = 300, .score = 12000,  .time = secToNsec(4 * 60 + 15)}, \
+    { .level = 500, .score = 40000,  .time = secToNsec(7 * 60)},      \
+    { .level = 999, .score = 126000, .time = secToNsec(13 * 60 + 30)} \
+})
+
+#define Grades ((int[]){ \
+    0,                   \
+    400,                 \
+    800,                 \
+    1400,                \
+    2000,                \
+    3500,                \
+    5500,                \
+    8000,                \
+    12000,               \
+    16000,               \
+    22000,               \
+    30000,               \
+    40000,               \
+    52000,               \
+    66000,               \
+    82000,               \
+    100000,              \
+    120000,              \
+    126000               \
 })
 
 typedef enum PlayerState {
@@ -114,6 +151,13 @@ typedef enum TetrionState {
 	TetrionSize
 } TetrionState;
 
+typedef enum ReqStatus {
+	ReqNone,
+	ReqPassed,
+	ReqFailed,
+	ReqSize
+} ReqStatus;
+
 /// A play's logical state
 typedef struct Tetrion {
 	TetrionState state;
@@ -121,13 +165,14 @@ typedef struct Tetrion {
 	int frame;
 
 	Field* field;
+	bool linesCleared[FieldHeight];
 	Player player;
 	rng rngState;
 
 	int score;
 	int combo;
 	int grade;
-	bool eligible;
+	ReqStatus reqs[countof(Requirements)];
 } Tetrion;
 
 /// Full state of the mode
@@ -361,6 +406,8 @@ static void pureUpdateState(void)
 		tet.ready -= 1;
 		if (tet.ready == 0)
 			tet.state = TetrionPlaying;
+	} else if (tet.state == TetrionPlaying) {
+		tet.frame += 1;
 	}
 	if (tet.player.state == PlayerSpawned)
 		tet.player.state = PlayerActive;
@@ -419,6 +466,117 @@ static void pureUpdateShift(void)
 	}
 }
 
+static int checkClears(void)
+{
+	int count = 0;
+	for (int y = 0; y < FieldHeight; y += 1) {
+		if (!fieldIsRowFull(tet.field, y))
+			continue;
+		count += 1;
+		tet.linesCleared[y] = true;
+		fieldClearRow(tet.field, y);
+	}
+	return count;
+}
+
+static void addScore(int lines)
+{
+	int score;
+	score = tet.player.level + lines;
+	int remainder = score % 4;
+	score /= 4;
+	if (remainder)
+		score += 1;
+	score += tet.player.dropBonus;
+	score *= lines;
+	tet.combo += 2 * lines - 2;
+	score *= tet.combo;
+	if (fieldIsEmpty(tet.field))
+		score *= 4; // Bravo bonus
+
+	tet.score += score;
+}
+
+static nsec getClock(int frame)
+{
+	return frame * ClockTick;
+}
+
+static void updateRequirements(void)
+{
+	assert(countof(tet.reqs) == countof(Requirements));
+	for (size_t i = 0; i < countof(tet.reqs); i += 1) {
+		if (tet.reqs[i])
+			continue; // Only check each treshold once, when reached
+		if (tet.player.level < Requirements[i].level)
+			return; // Threshold not reached yet
+		if (tet.score >= Requirements[i].score &&
+			getClock(tet.frame) <= Requirements[i].time)
+			tet.reqs[i] = ReqPassed;
+		else
+			tet.reqs[i] = ReqFailed;
+	}
+}
+
+static bool requirementsMet(void)
+{
+	for (size_t i = 0; i < countof(tet.reqs); i += 1) {
+		if (tet.reqs[i] != ReqPassed)
+			return false;
+	}
+	return true;
+}
+
+static void updateGrade(void)
+{
+	for (size_t i = 0; i < countof(Grades); i += 1) {
+		if (tet.score < Grades[i])
+			return;
+		if (i == countof(Grades) - 1 &&
+			(!requirementsMet() || tet.player.level < 999))
+			return; // Final grade, requirements not met
+		tet.grade = i;
+	}
+}
+
+static void thump(void)
+{
+	for (int y = FieldHeight - 1; y >= 0; y -= 1) {
+		if (!tet.linesCleared[y])
+			continue; // Drop only above cleared lines
+		fieldDropRow(tet.field, y);
+		tet.linesCleared[y] = false;
+	}
+}
+
+static void pureUpdateClear(void)
+{
+	// Line clear check is delayed by the clear offset
+	if (tet.player.state == PlayerSpawn &&
+		tet.player.spawnDelay + 1 == ClearOffset) {
+		int clearedCount = checkClears();
+		if (clearedCount) {
+			tet.player.state = PlayerClear;
+			tet.player.clearDelay = 0;
+			addScore(clearedCount);
+			addLevels(clearedCount, true);
+			updateRequirements();
+			updateGrade();
+		} else { // Piece locked without a clear
+			tet.combo = 1;
+		}
+	}
+
+	// Advance counter, switch back to spawn delay if elapsed
+	if (tet.player.state == PlayerClear) {
+		tet.player.clearDelay += 1;
+		if (tet.player.clearDelay > ClearDelay) {
+			thump();
+			tet.player.state = PlayerSpawn;
+		}
+	}
+}
+
 /**
  * Spawn a new piece if needed.
  */
@@ -436,10 +594,10 @@ static void pureUpdateSpawn(void)
 static int getGravity(int level)
 {
 	int result = 0;
-	for (int i = 0; i < countof(thresholds); i += 1) {
-		if (level < thresholds[i].level)
+	for (int i = 0; i < countof(Thresholds); i += 1) {
+		if (level < Thresholds[i].level)
 			break;
-		result = thresholds[i].gravity;
+		result = Thresholds[i].gravity;
 	}
 	return result;
 }
@@ -523,7 +681,6 @@ void pureInit(void)
 	// Logic init
 	structClear(tet);
 	tet.combo = 1;
-	tet.eligible = true;
 	tet.frame = -1;
 	tet.ready = 3 * 50;
 	tet.field = fieldCreate((size2i){FieldWidth, FieldHeight});
@@ -585,7 +742,7 @@ void pureAdvance(darray* inputs)
 	pureUpdateState();
 	pureUpdateRotation();
 	pureUpdateShift();
-//	pureUpdateClear();
+	pureUpdateClear();
 	pureUpdateSpawn();
 	pureUpdateGravity();
 	pureUpdateLocking();
@@ -635,6 +792,9 @@ static void pureDrawField(void)
  */
 static void pureDrawPlayer(void)
 {
+	if (tet.player.state != PlayerActive &&
+		tet.player.state != PlayerSpawned)
+		return;
 	piece* playerPiece = getPiece(tet.player.type, tet.player.rotation);
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
 		int x = (*playerPiece)[i].x + tet.player.pos.x;
@@ -662,6 +822,7 @@ void pureDraw(void)
 	pureDrawField();
 	pureDrawPlayer();
 //	pureDrawGhost();
+//  pureDrawPreview();
 //	pureDrawBorder();
 //  pureDrawStats();
 }

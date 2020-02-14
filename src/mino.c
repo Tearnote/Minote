@@ -221,8 +221,65 @@ mino fieldGet(Field* f, point2i place)
 	return f->grid[place.y * f->size.x + place.x];
 }
 
+void fieldClearRow(Field* f, int row)
+{
+	assert(f);
+	for (int x = 0; x < f->size.x; x += 1)
+		fieldSet(f, (point2i){
+			.x = x,
+			.y = row
+		}, MinoNone);
+}
+
+void fieldDropRow(Field* f, int row)
+{
+	assert(f);
+	for (int y = row; y < f->size.y; y += 1) {
+		for (int x = 0; x < f->size.x; x += 1) {
+			fieldSet(f, (point2i){
+				.x = x,
+				.y = y
+			}, fieldGet(f, (point2i){
+				.x = x,
+				.y = y + 1
+			}));
+		}
+	}
+}
+
+bool fieldIsRowFull(Field* f, int row)
+{
+	assert(f);
+	for (int x = 0; x < f->size.x; x += 1) {
+		if (!fieldGet(f, (point2i){
+			.x = x,
+			.y = row
+		}))
+			return false;
+	}
+	return true;
+}
+
+bool fieldIsEmpty(Field* f)
+{
+	assert(f);
+	for (int y = 0; y < f->size.y; y += 1) {
+		for (int x = 0; x < f->size.x; x += 1) {
+			if (fieldGet(f, (point2i){
+				.x = x,
+				.y = y
+			}))
+				return false;
+		}
+	}
+	return true;
+}
+
 void fieldStampPiece(Field* f, piece* piece, point2i place, mino type)
 {
+	assert(f);
+	assert(piece);
+	assert(type < MinoSize);
 	for (int i = 0; i < MinosPerPiece; i += 1) {
 		fieldSet(f, (point2i){
 			.x = place.x + (*piece)[i].x,
