@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
+#include <math.h>
 
 void* alloc(size_t bytes)
 {
@@ -30,4 +31,32 @@ void* ralloc(void* buffer, size_t newSize)
 		exit(EXIT_FAILURE);
 	}
 	return result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+Rng* rngCreate(uint64_t seed)
+{
+	Rng* r = alloc(sizeof(*r));
+	pcg32_srandom_r(r, seed, 'M'*'i'+'n'*'o'+'t'*'e');
+	return r;
+}
+
+void rngDestroy(Rng* r)
+{
+	assert(r);
+	free(r);
+}
+
+uint32_t rngInt(Rng* r, uint32_t bound)
+{
+	assert(r);
+	assert(bound >= 2);
+	return pcg32_boundedrand_r(r, bound);
+}
+
+double rngFloat(Rng* r)
+{
+	assert(r);
+	return ldexp(pcg32_random_r(r), -32);
 }

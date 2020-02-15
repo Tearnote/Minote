@@ -167,7 +167,7 @@ typedef struct Tetrion {
 	Field* field;
 	bool linesCleared[FieldHeight];
 	Player player;
-	rng rngState;
+	Rng* rng;
 
 	int score;
 	int combo;
@@ -281,12 +281,12 @@ static mino randomPiece(void)
 
 	mino result = MinoNone;
 	for (int i = 0; i < MaxRerolls; i += 1) {
-		result = random(&tet.rngState, MinoGarbage - 1) + 1;
+		result = rngInt(tet.rng, MinoGarbage - 1) + 1;
 		while (first && // Unfair first piece prevention
 			(result == MinoS ||
 				result == MinoZ ||
 				result == MinoO))
-			result = random(&tet.rngState, MinoGarbage - 1) + 1;
+			result = rngInt(tet.rng, MinoGarbage - 1) + 1;
 
 		// If piece in history, reroll
 		bool valid = true;
@@ -684,7 +684,7 @@ void pureInit(void)
 	tet.frame = -1;
 	tet.ready = 3 * 50;
 	tet.field = fieldCreate((size2i){FieldWidth, FieldHeight});
-	srandom(&tet.rngState, (uint64_t)time(NULL));
+	tet.rng = rngCreate((uint64_t)time(null));
 	tet.player.level = -1;
 	tet.player.dasDelay = DasDelay; // Starts out pre-charged
 	tet.player.spawnDelay = SpawnDelay; // Start instantly
@@ -724,6 +724,10 @@ void pureCleanup(void)
 	if (scene) {
 		modelDestroy(scene);
 		scene = null;
+	}
+	if (tet.rng) {
+		rngDestroy(tet.rng);
+		tet.rng = null;
 	}
 	if (tet.field) {
 		fieldDestroy(tet.field);

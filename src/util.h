@@ -31,33 +31,41 @@
 #define radf(x) \
     ((x) * M_TAU / 360.0)
 
-/// Convenient rename of the PCG PRNG state
-typedef pcg32_random_t rng;
+/// PCG PRNG object. You can obtain an instance with rngCreate().
+typedef pcg32_random_t Rng;
 
 /**
- * Initialize an ::rng with the provided seed.
- * @param[in,out] rngptr Pointer to a valid ::rng to initialize
- * @param seed uint64_t seed value
+ * Create a new ::Rng instance.
+ * @param seed Initializer value. Using the same seed guarantees the same values
+ * @return Newly created ::Rng. Must be destroyed with rngDestroy()
  */
-#define srandom(rngptr, seed) \
-        pcg32_srandom_r((rngptr), (seed), 'M'*'i'+'n'*'o'+'t'*'e')
+Rng* rngCreate(uint64_t seed);
 
 /**
- * Pull a random number from 0 to an upper bound (exclusive).
- * @param rngptr[in,out] Pointer to an initialized ::rng
- * @param bound Exclusive upper bound
- * @return The random number
+ * Destroy a ::Rng instance. The destroyed object cannot be used anymore and
+ * the pointer becomes invalid.
+ * @param r The ::Rng object
  */
-#define random(rngptr, bound) \
-        pcg32_boundedrand_r((rngptr), (bound))
+void rngDestroy(Rng* r);
 
 /**
- * Pull a random floating-point number between 0.0 and 1.0 (exclusive).
- * @param rngptr[in,out] Pointer to an initialized ::rng
- * @return The random number
+ * Return a random positive integer, up to a bound (exclusive). ::Rng state
+ * is advanced by one step.
+ * @param r The ::Rng object
+ * @param bound The return value will be smaller than this argument
+ * @return A random integer
  */
-#define frandom(rngptr) \
-        ldexp(pcg32_random_r((rngptr)), -32)
+uint32_t rngInt(Rng* r, uint32_t bound);
+
+/**
+ * Return a random floating-point value between 0.0 (inclusive) and 1.0
+ * (exclusive). ::Rng state is advanced by one step.
+ * @param r The ::Rng object
+ * @return A random floating-point number
+ */
+double rngFloat(Rng* r);
+
+////////////////////////////////////////////////////////////////////////////////
 
 #define countof(x) \
     ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))

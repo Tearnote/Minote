@@ -1,3 +1,4 @@
-Make rng a proper object
 Use point2i correctly in pureDraw
-Move data to puretables
+Move pure data to puretables
+Do something about all these getPiece calls
+Document pure
