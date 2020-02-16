@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <time.h>
+#include "puretables.h"
 #include "renderer.h"
 #include "mapper.h"
 #include "mino.h"
@@ -39,78 +40,6 @@
 #define PreviewX -2.0f
 #define PreviewY 21.0f
 #define FieldDim 0.4f
-
-typedef struct Threshold {
-	int level;
-	int gravity;
-} Threshold;
-
-#define Thresholds ((Threshold[]){     \
-    { .level = 0, .gravity = 4 },      \
-    { .level = 30, .gravity = 6 },     \
-    { .level = 35, .gravity = 8 },     \
-    { .level = 40, .gravity = 10 },    \
-    { .level = 50, .gravity = 12 },    \
-    { .level = 60, .gravity = 16 },    \
-    { .level = 70, .gravity = 32 },    \
-    { .level = 80, .gravity = 48 },    \
-    { .level = 90, .gravity = 64 },    \
-    { .level = 100, .gravity = 80 },   \
-    { .level = 120, .gravity = 96 },   \
-    { .level = 140, .gravity = 112 },  \
-    { .level = 160, .gravity = 128 },  \
-    { .level = 170, .gravity = 144 },  \
-    { .level = 200, .gravity = 4 },    \
-    { .level = 220, .gravity = 32 },   \
-    { .level = 230, .gravity = 64 },   \
-    { .level = 233, .gravity = 96 },   \
-    { .level = 236, .gravity = 128 },  \
-    { .level = 239, .gravity = 160 },  \
-    { .level = 243, .gravity = 192 },  \
-    { .level = 247, .gravity = 224 },  \
-    { .level = 251, .gravity = 256 },  \
-    { .level = 300, .gravity = 512 },  \
-    { .level = 330, .gravity = 768 },  \
-    { .level = 360, .gravity = 1024 }, \
-    { .level = 400, .gravity = 1280 }, \
-    { .level = 420, .gravity = 1024 }, \
-    { .level = 450, .gravity = 768 },  \
-    { .level = 500, .gravity = 5120 }  \
-})
-
-typedef struct Requirement {
-	int level;
-	int score;
-	nsec time;
-} Requirement;
-
-#define Requirements ((Requirement[]){                                \
-    { .level = 300, .score = 12000,  .time = secToNsec(4 * 60 + 15)}, \
-    { .level = 500, .score = 40000,  .time = secToNsec(7 * 60)},      \
-    { .level = 999, .score = 126000, .time = secToNsec(13 * 60 + 30)} \
-})
-
-#define Grades ((int[]){ \
-    0,                   \
-    400,                 \
-    800,                 \
-    1400,                \
-    2000,                \
-    3500,                \
-    5500,                \
-    8000,                \
-    12000,               \
-    16000,               \
-    22000,               \
-    30000,               \
-    40000,               \
-    52000,               \
-    66000,               \
-    82000,               \
-    100000,              \
-    120000,              \
-    126000               \
-})
 
 typedef enum PlayerState {
 	PlayerNone, ///< zero value
@@ -176,7 +105,7 @@ typedef struct Tetrion {
 	int score;
 	int combo;
 	int grade;
-	ReqStatus reqs[countof(Requirements)];
+	ReqStatus reqs[countof(PureRequirements)];
 } Tetrion;
 
 /// Full state of the mode
@@ -403,14 +332,14 @@ static nsec getClock(int frame)
 
 static void updateRequirements(void)
 {
-	assert(countof(tet.reqs) == countof(Requirements));
+	assert(countof(tet.reqs) == countof(PureRequirements));
 	for (size_t i = 0; i < countof(tet.reqs); i += 1) {
 		if (tet.reqs[i])
 			continue; // Only check each treshold once, when reached
-		if (tet.player.level < Requirements[i].level)
-			return; // Threshold not reached yet
-		if (tet.score >= Requirements[i].score &&
-			getClock(tet.frame) <= Requirements[i].time)
+		if (tet.player.level < PureRequirements[i].level)
+			return; // PureThreshold not reached yet
+		if (tet.score >= PureRequirements[i].score &&
+			getClock(tet.frame) <= PureRequirements[i].time)
 			tet.reqs[i] = ReqPassed;
 		else
 			tet.reqs[i] = ReqFailed;
@@ -428,10 +357,10 @@ static bool requirementsMet(void)
 
 static void updateGrade(void)
 {
-	for (size_t i = 0; i < countof(Grades); i += 1) {
-		if (tet.score < Grades[i])
+	for (size_t i = 0; i < countof(PureGrades); i += 1) {
+		if (tet.score < PureGrades[i])
 			return;
-		if (i == countof(Grades) - 1 &&
+		if (i == countof(PureGrades) - 1 &&
 			(!requirementsMet() || tet.player.level < 999))
 			return; // Final grade, requirements not met
 		tet.grade = i;
@@ -451,10 +380,10 @@ static void thump(void)
 static int getGravity(int level)
 {
 	int result = 0;
-	for (int i = 0; i < countof(Thresholds); i += 1) {
-		if (level < Thresholds[i].level)
+	for (int i = 0; i < countof(PureThresholds); i += 1) {
+		if (level < PureThresholds[i].level)
 			break;
-		result = Thresholds[i].gravity;
+		result = PureThresholds[i].gravity;
 	}
 	return result;
 }
