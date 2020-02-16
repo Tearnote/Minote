@@ -21,6 +21,8 @@
 #define SpawnX 3 ///< X position of player piece spawn
 #define SpawnY 18 ///< Y position of player piece spawn
 #define SubGrid 256
+#define PreviewX -2.0f
+#define PreviewY 21.0f
 
 #define HistorySize 4
 #define MaxRerolls 4
@@ -801,8 +803,8 @@ static void pureDrawPlayer(void)
 		return;
 	piece* playerPiece = getPiece(tet.player.type, tet.player.rotation);
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
-		int x = (*playerPiece)[i].x + tet.player.pos.x;
-		int y = (*playerPiece)[i].y + tet.player.pos.y;
+		float x = (*playerPiece)[i].x + tet.player.pos.x;
+		float y = (*playerPiece)[i].y + tet.player.pos.y;
 
 		color4* tint = darrayProduce(tints);
 		mat4x4* transform = darrayProduce(transforms);
@@ -810,6 +812,31 @@ static void pureDrawPlayer(void)
 		mat4x4_identity(*transform);
 		mat4x4_translate_in_place(*transform, x - (signed)(FieldWidth / 2), y,
 			0.0f);
+	}
+	modelDraw(block, darraySize(transforms), darrayData(tints),
+		darrayData(transforms));
+	darrayClear(tints);
+	darrayClear(transforms);
+}
+
+/**
+ * Draw the preview piece on top of the field.
+ */
+static void pureDrawPreview(void)
+{
+	if (tet.player.preview == MinoNone)
+		return;
+	piece* previewPiece = getPiece(tet.player.preview, SpinNone);
+	for (size_t i = 0; i < MinosPerPiece; i += 1) {
+		float x = (*previewPiece)[i].x + PreviewX;
+		float y = (*previewPiece)[i].y + PreviewY;
+		if (tet.player.preview == MinoI)
+			y -= 1;
+		color4* tint = darrayProduce(tints);
+		mat4x4* transform = darrayProduce(transforms);
+		color4Copy(*tint, minoColor(tet.player.preview));
+		mat4x4_identity(*transform);
+		mat4x4_translate_in_place(*transform, x, y, 0.0f);
 	}
 	modelDraw(block, darraySize(transforms), darrayData(tints),
 		darrayData(transforms));
@@ -826,7 +853,7 @@ void pureDraw(void)
 	pureDrawField();
 	pureDrawPlayer();
 //	pureDrawGhost();
-//  pureDrawPreview();
+	pureDrawPreview();
 //	pureDrawBorder();
 //  pureDrawStats();
 }
