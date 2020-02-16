@@ -16,13 +16,10 @@
 
 #define FieldWidth 10u ///< Width of #field
 #define FieldHeight 22u ///< Height of #field
-#define FieldHeightVisible 20u ///< Number of bottom rows the player can see
 
 #define SpawnX 3 ///< X position of player piece spawn
 #define SpawnY 18 ///< Y position of player piece spawn
 #define SubGrid 256
-#define PreviewX -2.0f
-#define PreviewY 21.0f
 
 #define HistorySize 4
 #define MaxRerolls 4
@@ -37,6 +34,11 @@
 #define ClearOffset 4
 #define ClearDelay 41
 #define SpawnDelay 30
+
+#define FieldHeightVisible 20u ///< Number of bottom rows the player can see
+#define PreviewX -2.0f
+#define PreviewY 21.0f
+#define FieldDim 0.4f
 
 typedef struct Threshold {
 	int level;
@@ -781,6 +783,9 @@ static void pureDrawField(void)
 		color4* tint = darrayProduce(tints);
 		mat4x4* transform = darrayProduce(transforms);
 		color4Copy(*tint, minoColor(type));
+		tint->r *= FieldDim;
+		tint->g *= FieldDim;
+		tint->b *= FieldDim;
 		if (y >= FieldHeightVisible)
 			tint->a /= 4.0f;
 		mat4x4_identity(*transform);
