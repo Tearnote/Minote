@@ -361,6 +361,192 @@ static void spawnPiece(void)
 		gameOver();
 }
 
+static int checkClears(void)
+{
+	int count = 0;
+	for (int y = 0; y < FieldHeight; y += 1) {
+		if (!fieldIsRowFull(tet.field, y))
+			continue;
+		count += 1;
+		tet.linesCleared[y] = true;
+		fieldClearRow(tet.field, y);
+	}
+	return count;
+}
+
+static void addScore(int lines)
+{
+	int score;
+	score = tet.player.level + lines;
+	int remainder = score % 4;
+	score /= 4;
+	if (remainder)
+		score += 1;
+	score += tet.player.dropBonus;
+	score *= lines;
+	tet.combo += 2 * lines - 2;
+	score *= tet.combo;
+	if (fieldIsEmpty(tet.field))
+		score *= 4; // Bravo bonus
+
+	tet.score += score;
+}
+
+static nsec getClock(int frame)
+{
+	return frame * ClockTick;
+}
+
+static void updateRequirements(void)
+{
+	assert(countof(tet.reqs) == countof(Requirements));
+	for (size_t i = 0; i < countof(tet.reqs); i += 1) {
+		if (tet.reqs[i])
+			continue; // Only check each treshold once, when reached
+		if (tet.player.level < Requirements[i].level)
+			return; // Threshold not reached yet
+		if (tet.score >= Requirements[i].score &&
+			getClock(tet.frame) <= Requirements[i].time)
+			tet.reqs[i] = ReqPassed;
+		else
+			tet.reqs[i] = ReqFailed;
+	}
+}
+
+static bool requirementsMet(void)
+{
+	for (size_t i = 0; i < countof(tet.reqs); i += 1) {
+		if (tet.reqs[i] != ReqPassed)
+			return false;
+	}
+	return true;
+}
+
+static void updateGrade(void)
+{
+	for (size_t i = 0; i < countof(Grades); i += 1) {
+		if (tet.score < Grades[i])
+			return;
+		if (i == countof(Grades) - 1 &&
+			(!requirementsMet() || tet.player.level < 999))
+			return; // Final grade, requirements not met
+		tet.grade = i;
+	}
+}
+
+static void thump(void)
+{
+	for (int y = FieldHeight - 1; y >= 0; y -= 1) {
+		if (!tet.linesCleared[y])
+			continue; // Drop only above cleared lines
+		fieldDropRow(tet.field, y);
+		tet.linesCleared[y] = false;
+	}
+}
+
+static int getGravity(int level)
+{
+	int result = 0;
+	for (int i = 0; i < countof(Thresholds); i += 1) {
+		if (level < Thresholds[i].level)
+			break;
+		result = Thresholds[i].gravity;
+	}
+	return result;
+}
+
+static bool canDrop(void)
+{
+	piece* playerPiece = getPiece(tet.player.type, tet.player.rotation);
+	return !pieceOverlapsField(playerPiece, (point2i){
+		.x = tet.player.pos.x,
+		.y = tet.player.pos.y - 1
+	}, tet.field);
+}
+
+static void drop(void)
+{
+	if (!canDrop())
+		return;
+
+	tet.player.lockDelay = 0;
+	tet.player.pos.y -= 1;
+	if (inputHeld(InputDown))
+		tet.player.dropBonus += 1;
+}
+
+static void lock(void)
+{
+	if (inputHeld(InputDown))
+		tet.player.dropBonus += 1; // Lock frame can also increase this
+	piece* playerPiece = getPiece(tet.player.type, tet.player.rotation);
+	fieldStampPiece(tet.field, playerPiece, tet.player.pos, tet.player.type);
+	tet.player.state = PlayerSpawn;
+}
+
+void pureInit(void)
+{
+	if (initialized) return;
+
+	// Logic init
+	structClear(tet);
+	tet.combo = 1;
+	tet.frame = -1;
+	tet.ready = 3 * 50;
+	tet.field = fieldCreate((size2i){FieldWidth, FieldHeight});
+	tet.rng = rngCreate((uint64_t)time(null));
+	tet.player.level = -1;
+	tet.player.dasDelay = DasDelay; // Starts out pre-charged
+	tet.player.spawnDelay = SpawnDelay; // Start instantly
+	tet.player.preview = randomPiece();
+
+	tet.state = TetrionReady;
+
+	// Render init
+	scene = modelCreateFlat(u8"scene",
+#include "meshes/scene.mesh"
+	);
+	block = modelCreatePhong(u8"block",
+#include "meshes/block.mesh"
+	);
+	tints = darrayCreate(sizeof(color4));
+	transforms = darrayCreate(sizeof(mat4x4));
+
+	initialized = true;
+	logDebug(applog, u8"Pure sublayer initialized");
+}
+
+void pureCleanup(void)
+{
+	if (!initialized) return;
+	if (transforms) {
+		darrayDestroy(transforms);
+		transforms = null;
+	}
+	if (tints) {
+		darrayDestroy(tints);
+		tints = null;
+	}
+	if (block) {
+		modelDestroy(block);
+		block = null;
+	}
+	if (scene) {
+		modelDestroy(scene);
+		scene = null;
+	}
+	if (tet.rng) {
+		rngDestroy(tet.rng);
+		tet.rng = null;
+	}
+	if (tet.field) {
+		fieldDestroy(tet.field);
+		tet.field = null;
+	}
+	initialized = false;
+	logDebug(applog, u8"Pure sublayer cleaned up");
+}
+
 /**
  * Populate and rotate the input arrays for press and hold detection.
  * @param inputs List of this frame's new inputs
@@ -466,89 +652,6 @@ static void pureUpdateShift(void)
 	}
 }
 
-static int checkClears(void)
-{
-	int count = 0;
-	for (int y = 0; y < FieldHeight; y += 1) {
-		if (!fieldIsRowFull(tet.field, y))
-			continue;
-		count += 1;
-		tet.linesCleared[y] = true;
-		fieldClearRow(tet.field, y);
-	}
-	return count;
-}
-
-static void addScore(int lines)
-{
-	int score;
-	score = tet.player.level + lines;
-	int remainder = score % 4;
-	score /= 4;
-	if (remainder)
-		score += 1;
-	score += tet.player.dropBonus;
-	score *= lines;
-	tet.combo += 2 * lines - 2;
-	score *= tet.combo;
-	if (fieldIsEmpty(tet.field))
-		score *= 4; // Bravo bonus
-
-	tet.score += score;
-}
-
-static nsec getClock(int frame)
-{
-	return frame * ClockTick;
-}
-
-static void updateRequirements(void)
-{
-	assert(countof(tet.reqs) == countof(Requirements));
-	for (size_t i = 0; i < countof(tet.reqs); i += 1) {
-		if (tet.reqs[i])
-			continue; // Only check each treshold once, when reached
-		if (tet.player.level < Requirements[i].level)
-			return; // Threshold not reached yet
-		if (tet.score >= Requirements[i].score &&
-			getClock(tet.frame) <= Requirements[i].time)
-			tet.reqs[i] = ReqPassed;
-		else
-			tet.reqs[i] = ReqFailed;
-	}
-}
-
-static bool requirementsMet(void)
-{
-	for (size_t i = 0; i < countof(tet.reqs); i += 1) {
-		if (tet.reqs[i] != ReqPassed)
-			return false;
-	}
-	return true;
-}
-
-static void updateGrade(void)
-{
-	for (size_t i = 0; i < countof(Grades); i += 1) {
-		if (tet.score < Grades[i])
-			return;
-		if (i == countof(Grades) - 1 &&
-			(!requirementsMet() || tet.player.level < 999))
-			return; // Final grade, requirements not met
-		tet.grade = i;
-	}
-}
-
-static void thump(void)
-{
-	for (int y = FieldHeight - 1; y >= 0; y -= 1) {
-		if (!tet.linesCleared[y])
-			continue; // Drop only above cleared lines
-		fieldDropRow(tet.field, y);
-		tet.linesCleared[y] = false;
-	}
-}
-
 static void pureUpdateClear(void)
 {
 	// Line clear check is delayed by the clear offset
@@ -591,37 +694,6 @@ static void pureUpdateSpawn(void)
 	}
 }
 
-static int getGravity(int level)
-{
-	int result = 0;
-	for (int i = 0; i < countof(Thresholds); i += 1) {
-		if (level < Thresholds[i].level)
-			break;
-		result = Thresholds[i].gravity;
-	}
-	return result;
-}
-
-static bool canDrop(void)
-{
-	piece* playerPiece = getPiece(tet.player.type, tet.player.rotation);
-	return !pieceOverlapsField(playerPiece, (point2i){
-		.x = tet.player.pos.x,
-		.y = tet.player.pos.y - 1
-	}, tet.field);
-}
-
-static void drop(void)
-{
-	if (!canDrop())
-		return;
-
-	tet.player.lockDelay = 0;
-	tet.player.pos.y -= 1;
-	if (inputHeld(InputDown))
-		tet.player.dropBonus += 1;
-}
-
 static void pureUpdateGravity(void)
 {
 	if (tet.state == TetrionOutro)
@@ -646,15 +718,6 @@ static void pureUpdateGravity(void)
 	}
 }
 
-static void lock(void)
-{
-	if (inputHeld(InputDown))
-		tet.player.dropBonus += 1; // Lock frame can also increase this
-	piece* playerPiece = getPiece(tet.player.type, tet.player.rotation);
-	fieldStampPiece(tet.field, playerPiece, tet.player.pos, tet.player.type);
-	tet.player.state = PlayerSpawn;
-}
-
 static void pureUpdateLocking(void)
 {
 	if (tet.player.state != PlayerActive || tet.state != TetrionPlaying)
@@ -672,69 +735,6 @@ static void pureUpdateWin(void)
 {
 	if (tet.player.level >= 999)
 		gameOver();
-}
-
-void pureInit(void)
-{
-	if (initialized) return;
-
-	// Logic init
-	structClear(tet);
-	tet.combo = 1;
-	tet.frame = -1;
-	tet.ready = 3 * 50;
-	tet.field = fieldCreate((size2i){FieldWidth, FieldHeight});
-	tet.rng = rngCreate((uint64_t)time(null));
-	tet.player.level = -1;
-	tet.player.dasDelay = DasDelay; // Starts out pre-charged
-	tet.player.spawnDelay = SpawnDelay; // Start instantly
-	tet.player.preview = randomPiece();
-
-	tet.state = TetrionReady;
-
-	// Render init
-	scene = modelCreateFlat(u8"scene",
-#include "meshes/scene.mesh"
-	);
-	block = modelCreatePhong(u8"block",
-#include "meshes/block.mesh"
-	);
-	tints = darrayCreate(sizeof(color4));
-	transforms = darrayCreate(sizeof(mat4x4));
-
-	initialized = true;
-	logDebug(applog, u8"Pure sublayer initialized");
-}
-
-void pureCleanup(void)
-{
-	if (!initialized) return;
-	if (transforms) {
-		darrayDestroy(transforms);
-		transforms = null;
-	}
-	if (tints) {
-		darrayDestroy(tints);
-		tints = null;
-	}
-	if (block) {
-		modelDestroy(block);
-		block = null;
-	}
-	if (scene) {
-		modelDestroy(scene);
-		scene = null;
-	}
-	if (tet.rng) {
-		rngDestroy(tet.rng);
-		tet.rng = null;
-	}
-	if (tet.field) {
-		fieldDestroy(tet.field);
-		tet.field = null;
-	}
-	initialized = false;
-	logDebug(applog, u8"Pure sublayer cleaned up");
 }
 
 void pureAdvance(darray* inputs)
