@@ -768,7 +768,7 @@ static void pureDrawScene(void)
 /**
  * Draw the contents of the tetrion field.
  */
-static void pureDrawField(void)
+static void pureQueueField(void)
 {
 	for (size_t i = 0; i < FieldWidth * FieldHeight; i += 1) {
 		int x = i % FieldWidth;
@@ -792,16 +792,12 @@ static void pureDrawField(void)
 		mat4x4_translate_in_place(*transform, x - (signed)(FieldWidth / 2), y,
 			0.0f);
 	}
-	modelDraw(block, darraySize(transforms), darrayData(tints),
-		darrayData(transforms));
-	darrayClear(tints);
-	darrayClear(transforms);
 }
 
 /**
  * Draw the player piece on top of the field.
  */
-static void pureDrawPlayer(void)
+static void pureQueuePlayer(void)
 {
 	if (tet.player.state != PlayerActive &&
 		tet.player.state != PlayerSpawned)
@@ -818,16 +814,12 @@ static void pureDrawPlayer(void)
 		mat4x4_translate_in_place(*transform, x - (signed)(FieldWidth / 2), y,
 			0.0f);
 	}
-	modelDraw(block, darraySize(transforms), darrayData(tints),
-		darrayData(transforms));
-	darrayClear(tints);
-	darrayClear(transforms);
 }
 
 /**
  * Draw the preview piece on top of the field.
  */
-static void pureDrawPreview(void)
+static void pureQueuePreview(void)
 {
 	if (tet.player.preview == MinoNone)
 		return;
@@ -843,6 +835,10 @@ static void pureDrawPreview(void)
 		mat4x4_identity(*transform);
 		mat4x4_translate_in_place(*transform, x, y, 0.0f);
 	}
+}
+
+static void pureDrawQueuedBlocks(void)
+{
 	modelDraw(block, darraySize(transforms), darrayData(tints),
 		darrayData(transforms));
 	darrayClear(tints);
@@ -855,10 +851,11 @@ void pureDraw(void)
 
 	rendererClear((color3){0.010f, 0.276f, 0.685f}); //TODO make into layer
 	pureDrawScene();
-	pureDrawField();
-	pureDrawPlayer();
-//	pureDrawGhost();
-	pureDrawPreview();
+	pureQueueField();
+	pureQueuePlayer();
+//	pureQueueGhost();
+	pureQueuePreview();
+	pureDrawQueuedBlocks();
 //	pureDrawBorder();
 //  pureDrawStats();
 }

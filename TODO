@@ -2,4 +2,3 @@ Use point2i correctly in pureDraw
 Move pure data to puretables
 Do something about all these getPiece calls
 Document pure
-Merge block draws into a single drawcall
