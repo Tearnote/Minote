@@ -48,6 +48,17 @@ void rendererFrameBegin(void);
  */
 void rendererFrameEnd(void);
 
+/**
+ * Disable color write, so that only the depth buffer is updated. Useful as a
+ * transparency pre-pass.
+ */
+void rendererDepthOnlyBegin(void);
+
+/**
+ * Re-enable color write, ending the depth pre-pass.
+ */
+void rendererDepthOnlyEnd(void);
+
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Data of a single mesh vertex of ::ModelFlat
@@ -105,7 +116,7 @@ void modelDestroy(Model* m);
  * instance can be tinted with a provided color.
  * @param m The ::Model object to draw
  * @param instances Number of instances to draw
- * @param tints Array of color tints for each instance
+ * @param tints Array of color blockTintsOpaque for each instance
  * @param transforms Array of 4x4 matrices for transforming each instance
  */
 void modelDraw(Model* m, size_t instances,

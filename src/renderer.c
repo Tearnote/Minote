@@ -120,6 +120,7 @@ void rendererInit(void)
 	// Set up global OpenGL state
 	glfwSwapInterval(1); // Enable vsync
 	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -233,6 +234,16 @@ void rendererFrameEnd(void)
 	rendererSync();
 }
 
+void rendererDepthOnlyBegin(void)
+{
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+}
+
+void rendererDepthOnlyEnd(void)
+{
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Semantic rename of OpenGL vertex buffer object ID
@@ -328,7 +339,7 @@ static void modelDestroyPhong(ModelPhong* m)
  * instance can be tinted with a provided color.
  * @param m The ::ModelFlat object to draw
  * @param instances Number of instances to draw
- * @param tints Array of color tints for each instance
+ * @param tints Array of color blockTintsOpaque for each instance
  * @param transforms Array of 4x4 matrices for transforming each instance
  */
 static void modelDrawFlat(ModelFlat* m, size_t instances,
@@ -364,7 +375,7 @@ static void modelDrawFlat(ModelFlat* m, size_t instances,
  * instance can be tinted with a provided color.
  * @param m The ::ModelPhong object to draw
  * @param instances Number of instances to draw
- * @param tints Array of color tints for each instance
+ * @param tints Array of color blockTintsOpaque for each instance
  * @param transforms Array of 4x4 matrices for transforming each instance
  */
 static void modelDrawPhong(ModelPhong* m, size_t instances,

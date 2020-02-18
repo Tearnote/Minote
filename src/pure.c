@@ -117,8 +117,10 @@ static Tetrion tet = {0};
 static Model* scene = null;
 
 static Model* block = null;
-static darray* tints = null; ///< of #block
-static darray* transforms = null; ///< of #block
+static darray* blockTintsOpaque = null;
+static darray* blockTransformsOpaque = null;
+static darray* blockTintsAlpha = null;
+static darray* blockTransformsAlpha = null;
 
 static bool initialized = false;
 
@@ -521,8 +523,10 @@ void pureInit(void)
 	block = modelCreatePhong(u8"block",
 #include "meshes/block.mesh"
 	);
-	tints = darrayCreate(sizeof(color4));
-	transforms = darrayCreate(sizeof(mat4x4));
+	blockTintsOpaque = darrayCreate(sizeof(color4));
+	blockTransformsOpaque = darrayCreate(sizeof(mat4x4));
+	blockTintsAlpha = darrayCreate(sizeof(color4));
+	blockTransformsAlpha = darrayCreate(sizeof(mat4x4));
 
 	initialized = true;
 	logDebug(applog, u8"Pure sublayer initialized");
@@ -531,13 +535,21 @@ void pureInit(void)
 void pureCleanup(void)
 {
 	if (!initialized) return;
-	if (transforms) {
-		darrayDestroy(transforms);
-		transforms = null;
+	if (blockTransformsAlpha) {
+		darrayDestroy(blockTransformsAlpha);
+		blockTransformsAlpha = null;
 	}
-	if (tints) {
-		darrayDestroy(tints);
-		tints = null;
+	if (blockTintsAlpha) {
+		darrayDestroy(blockTintsAlpha);
+		blockTintsAlpha = null;
+	}
+	if (blockTransformsOpaque) {
+		darrayDestroy(blockTransformsOpaque);
+		blockTransformsOpaque = null;
+	}
+	if (blockTintsOpaque) {
+		darrayDestroy(blockTintsOpaque);
+		blockTintsOpaque = null;
 	}
 	if (block) {
 		modelDestroy(block);
@@ -793,15 +805,19 @@ static void pureQueueField(void)
 	for (size_t i = 0; i < FieldWidth * FieldHeight; i += 1) {
 		int x = i % FieldWidth;
 		int y = i / FieldWidth;
-		// Flip the order of processing the left half of the playfield
-		// to fix alpha sorting issues
-		if (x < FieldWidth / 2)
-			x = FieldWidth / 2 - x - 1;
 		mino type = fieldGet(tet.field, (point2i){x, y});
 		if (type == MinoNone) continue;
-
-		color4* tint = darrayProduce(tints);
-		mat4x4* transform = darrayProduce(transforms);
+		
+		color4* tint = null;
+		mat4x4* transform = null;
+		if (minoColor(type).a == 1.0) {
+			tint = darrayProduce(blockTintsOpaque);
+			transform = darrayProduce(blockTransformsOpaque);
+		} else {
+			tint = darrayProduce(blockTintsAlpha);
+			transform = darrayProduce(blockTransformsAlpha);
+		}
+		
 		color4Copy(*tint, minoColor(type));
 		tint->r *= FieldDim;
 		tint->g *= FieldDim;
@@ -827,8 +843,16 @@ static void pureQueuePlayer(void)
 		float x = (*playerPiece)[i].x + tet.player.pos.x;
 		float y = (*playerPiece)[i].y + tet.player.pos.y;
 
-		color4* tint = darrayProduce(tints);
-		mat4x4* transform = darrayProduce(transforms);
+		color4* tint = null;
+		mat4x4* transform = null;
+		if (minoColor(tet.player.type).a == 1.0) {
+			tint = darrayProduce(blockTintsOpaque);
+			transform = darrayProduce(blockTransformsOpaque);
+		} else {
+			tint = darrayProduce(blockTintsAlpha);
+			transform = darrayProduce(blockTransformsAlpha);
+		}
+
 		color4Copy(*tint, minoColor(tet.player.type));
 		mat4x4_identity(*transform);
 		mat4x4_translate_in_place(*transform, x - (signed)(FieldWidth / 2), y,
@@ -849,8 +873,17 @@ static void pureQueuePreview(void)
 		float y = (*previewPiece)[i].y + PreviewY;
 		if (tet.player.preview == MinoI)
 			y -= 1;
-		color4* tint = darrayProduce(tints);
-		mat4x4* transform = darrayProduce(transforms);
+		
+		color4* tint = null;
+		mat4x4* transform = null;
+		if (minoColor(tet.player.preview).a == 1.0) {
+			tint = darrayProduce(blockTintsOpaque);
+			transform = darrayProduce(blockTransformsOpaque);
+		} else {
+			tint = darrayProduce(blockTintsAlpha);
+			transform = darrayProduce(blockTransformsAlpha);
+		}
+
 		color4Copy(*tint, minoColor(tet.player.preview));
 		mat4x4_identity(*transform);
 		mat4x4_translate_in_place(*transform, x, y, 0.0f);
@@ -858,14 +891,22 @@ static void pureQueuePreview(void)
 }
 
 /**
- * Draw all queued blocks in one call.
+ * Draw all queued blocks with alpha pre-pass.
  */
 static void pureDrawQueuedBlocks(void)
 {
-	modelDraw(block, darraySize(transforms), darrayData(tints),
-		darrayData(transforms));
-	darrayClear(tints);
-	darrayClear(transforms);
+	modelDraw(block, darraySize(blockTransformsOpaque), darrayData(blockTintsOpaque),
+		darrayData(blockTransformsOpaque));
+	darrayClear(blockTintsOpaque);
+	darrayClear(blockTransformsOpaque);
+	rendererDepthOnlyBegin();
+	modelDraw(block, darraySize(blockTransformsAlpha), darrayData(blockTintsAlpha),
+		darrayData(blockTransformsAlpha));
+	rendererDepthOnlyEnd();
+	modelDraw(block, darraySize(blockTransformsAlpha), darrayData(blockTintsAlpha),
+		darrayData(blockTransformsAlpha));
+	darrayClear(blockTintsAlpha);
+	darrayClear(blockTransformsAlpha);
 }
 
 void pureDraw(void)
