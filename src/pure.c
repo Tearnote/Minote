@@ -20,27 +20,28 @@
 
 #define SpawnX 3 ///< X position of player piece spawn
 #define SpawnY 18 ///< Y position of player piece spawn
-#define SubGrid 256
+#define SubGrid 256 ///< Number of subpixels per cell, used for gravity
 
-#define HistorySize 4
-#define MaxRerolls 4
+#define HistorySize 4 ///< Number of past pieces to remember for rng bias
+#define MaxRerolls 4 ///< Number of times the rng avoids pieces from history
 
-#define ClockFrequency 60.0
-#define ClockTick (secToNsec(1) / ClockFrequency)
+#define ClockFrequency 60.0 ///< Rate of the ingame timer (slightly off-sync)
+#define ClockTick (secToNsec(1) / ClockFrequency) ///< Duration of a timer tick
 
-#define SoftDrop 256
-#define DasCharge 16
-#define DasDelay 1
-#define LockDelay 30
-#define ClearOffset 4
-#define ClearDelay 41
-#define SpawnDelay 30
+#define SoftDrop 256 ///< Speed of gravity while holding down, in subgrids
+#define AutoshiftCharge 16 ///< Frames direction has to be held before autoshift
+#define AutoshiftRepeat 1 ///< Frames between autoshifts
+#define LockDelay 30 ///< Frames a piece can spend on the stack before locking
+#define ClearOffset 4 ///< Frames between piece lock and line clear
+#define ClearDelay 41 ///< Frames between line clear and thump
+#define SpawnDelay 30 ///< Frames between lock/thumb and new piece spawn
 
 #define FieldHeightVisible 20u ///< Number of bottom rows the player can see
-#define PreviewX -2.0f
-#define PreviewY 21.0f
-#define FieldDim 0.4f
+#define PreviewX -2.0f ///< X offset of preview piece
+#define PreviewY 21.0f ///< Y offset of preview piece
+#define FieldDim 0.4f ///< Multiplier of field block color
 
+/// State of player piece FSM
 typedef enum PlayerState {
 	PlayerNone, ///< zero value
 	PlayerSpawned, ///< the frame of piece spawn
@@ -58,54 +59,56 @@ typedef struct Player {
 	InputType lastDirection; ///< None, Left or Right - used to improve kb play
 
 	PlayerState state;
-	mino type;
-	mino preview;
-	mino history[HistorySize];
-	spin rotation;
-	point2i pos;
-	int ySub;
+	mino type; ///< Current player piece
+	mino preview; ///< Next player piece
+	mino history[HistorySize]; ///< Past player pieces
+	spin rotation; ///< ::spin of current piece
+	point2i pos; ///< Position of current piece
+	int ySub; ///< Y subgrid of current piece
 
-	int dasDirection;
-	int dasCharge;
-	int dasDelay;
+	int autoshiftDirection; ///< Autoshift state: -1 left, 1 right, 0 none
+	int autoshiftCharge;
+	int autoshiftDelay;
 	int lockDelay;
 	int clearDelay;
 	int spawnDelay;
 
 	int level;
-	int dropBonus;
+	int dropBonus; ///< Accumulated soft drop bonus score
 } Player;
 
+/// State of tetrion FSM
 typedef enum TetrionState {
-	TetrionNone,
-	TetrionReady,
-	TetrionPlaying,
-	TetrionOutro,
-	TetrionSize
+	TetrionNone, ///< zero value
+	TetrionReady, ///< intro
+	TetrionPlaying, ///< gameplay
+	TetrionOutro, ///< outro
+	TetrionSize ///< terminator
 } TetrionState;
 
+/// State of a grade requirement
 typedef enum ReqStatus {
-	ReqNone,
-	ReqPassed,
-	ReqFailed,
-	ReqSize
+	ReqNone, ///< not tested yet
+	ReqPassed, ///< success
+	ReqFailed, ///< failure
+	ReqSize ///< terminator
 } ReqStatus;
 
 /// A play's logical state
 typedef struct Tetrion {
 	TetrionState state;
-	int ready;
-	int frame;
+	int ready; ///< Countdown timer
+	int frame; ///< Frame counter since #ready = 0
 
 	Field* field;
-	bool linesCleared[FieldHeight];
+	bool linesCleared[FieldHeight]; ///< Storage for line clears pending a thump
 	Player player;
 	Rng* rng;
 
 	int score;
-	int combo;
+	int combo; ///< Holdover combo from previous piece
 	int grade;
-	ReqStatus reqs[countof(PureRequirements)];
+	ReqStatus reqs[countof(PureRequirements)]; ///< Max grade requirements
 } Tetrion;
 
 /// Full state of the mode
@@ -119,9 +122,19 @@ static darray* transforms = null; ///< of #block
 
 static bool initialized = false;
 
+/**
+ * Test whether an input has been pressed just now.
+ * @param type ::InputType to test
+ * @return true if just pressed, false otherwise
+ */
 #define inputPressed(type) \
     (tet.player.inputMap[(type)] && !tet.player.inputMapPrev[(type)])
 
+/**
+ * Test whether an input is pressed during this frame.
+ * @param type ::InputType to test
+ * @return true if pressed, false if not pressed
+ */
 #define inputHeld(type) \
     (tet.player.inputMap[(type)])
 
@@ -203,6 +216,11 @@ static void shift(int direction)
 	}
 }
 
+/**
+ * Return a random new piece type, taking into account history bias and other
+ * restrictions.
+ * @return Picked piece type
+ */
 static mino randomPiece(void)
 {
 	bool first = false;
@@ -239,6 +257,11 @@ static mino randomPiece(void)
 	return result;
 }
 
+/**
+ * Return the next upcoming levelstop for a given level.
+ * @param level
+ * @return Next levelstop value, or the final levelstop
+ */
 static int getLevelstop(int level)
 {
 	int result = (level / 100 + 1) * 100;
@@ -247,19 +270,30 @@ static int getLevelstop(int level)
 	return result;
 }
 
+/**
+ * Increase the level counter after a clear or piece spawn.
+ * @param count Number of levels to add
+ * @param strong true to break past levelstop, false to get stopped
+ */
 static void addLevels(int count, bool strong)
 {
-	int levelstop = getLevelstop(count);
+	int levelstop = getLevelstop(tet.player.level);
 	tet.player.level += count;
 	if (!strong && tet.player.level >= levelstop)
 		tet.player.level = levelstop - 1;
 }
 
+/**
+ * Stop the round.
+ */
 static void gameOver(void)
 {
 	tet.state = TetrionOutro;
 }
 
+/**
+ * Prepare the player piece for a brand new adventure at the top of the field.
+ */
 static void spawnPiece(void)
 {
 	tet.player.state = PlayerSpawned; // Some moves restricted on first frame
@@ -271,7 +305,7 @@ static void spawnPiece(void)
 	tet.player.preview = randomPiece();
 
 	if (tet.player.type == MinoI)
-		tet.player.pos.y -= 1; // I starts higher than other pieces
+		tet.player.pos.y -= 1; // I starts lower than other pieces
 	tet.player.ySub = 0;
 	tet.player.lockDelay = 0;
 	tet.player.spawnDelay = 0;
@@ -294,6 +328,10 @@ static void spawnPiece(void)
 		gameOver();
 }
 
+/**
+ * Check if field row for full lines and initiate clears.
+ * @return Number of lines cleared
+ */
 static int checkClears(void)
 {
 	int count = 0;
@@ -307,6 +345,10 @@ static int checkClears(void)
 	return count;
 }
 
+/**
+ * Award score for a line clear. Takes into account state and various bonuses.
+ * @param lines Number of lines cleared
+ */
 static void addScore(int lines)
 {
 	int score;
@@ -325,11 +367,20 @@ static void addScore(int lines)
 	tet.score += score;
 }
 
+/**
+ * Return time value of the visible clock. This is intentionally out of sync
+ * with real playtime.
+ * @param frame Frames since ready = 0
+ * @return Time since ready = 0
+ */
 static nsec getClock(int frame)
 {
 	return frame * ClockTick;
 }
 
+/**
+ * Check all requirements and update their status.
+ */
 static void updateRequirements(void)
 {
 	assert(countof(tet.reqs) == countof(PureRequirements));
@@ -346,6 +397,11 @@ static void updateRequirements(void)
 	}
 }
 
+/**
+ * Check whether player is qualified to obtain max grade.
+ * @return true if qualified, flase if at least one requirement is failed
+ * or not tested yet
+ */
 static bool requirementsMet(void)
 {
 	for (size_t i = 0; i < countof(tet.reqs); i += 1) {
@@ -355,6 +411,9 @@ static bool requirementsMet(void)
 	return true;
 }
 
+/**
+ * Set grade to the highest one the player is qualified for.
+ */
 static void updateGrade(void)
 {
 	for (size_t i = 0; i < countof(PureGrades); i += 1) {
@@ -367,6 +426,9 @@ static void updateGrade(void)
 	}
 }
 
+/**
+ * "Thump" previously cleared lines, bringing them crashing into the ground.
+ */
 static void thump(void)
 {
 	for (int y = FieldHeight - 1; y >= 0; y -= 1) {
@@ -377,6 +439,11 @@ static void thump(void)
 	}
 }
 
+/**
+ * Return the gravity that applies at a specific level.
+ * @param level
+ * @return Gravity speed in subgrids
+ */
 static int getGravity(int level)
 {
 	int result = 0;
@@ -388,6 +455,11 @@ static int getGravity(int level)
 	return result;
 }
 
+/**
+ * Check whether the player piece could move down one cell without overlapping
+ * the field.
+ * @return true if no overlap, false if overlap
+ */
 static bool canDrop(void)
 {
 	piece* playerPiece = getPiece(tet.player.type, tet.player.rotation);
@@ -397,6 +469,10 @@ static bool canDrop(void)
 	}, tet.field);
 }
 
+/**
+ * Move the player piece down one cell if possible, also calculating other
+ * appropriate values.
+ */
 static void drop(void)
 {
 	if (!canDrop())
@@ -408,6 +484,9 @@ static void drop(void)
 		tet.player.dropBonus += 1;
 }
 
+/**
+ * Stamp player piece onto the grid.
+ */
 static void lock(void)
 {
 	if (inputHeld(InputDown))
@@ -429,7 +508,7 @@ void pureInit(void)
 	tet.field = fieldCreate((size2i){FieldWidth, FieldHeight});
 	tet.rng = rngCreate((uint64_t)time(null));
 	tet.player.level = -1;
-	tet.player.dasDelay = DasDelay; // Starts out pre-charged
+	tet.player.autoshiftDelay = AutoshiftRepeat; // Starts out pre-charged
 	tet.player.spawnDelay = SpawnDelay; // Start instantly
 	tet.player.preview = randomPiece();
 
@@ -517,7 +596,7 @@ static void pureUpdateInputs(darray* inputs)
 }
 
 /**
- * Check for triggers and progress through phases.
+ * Check for state triggers and progress through states.
  */
 static void pureUpdateState(void)
 {
@@ -559,10 +638,10 @@ static void pureUpdateShift(void)
 
 	// If not moving or moving in the opposite direction of ongoing DAS,
 	// reset DAS and shift instantly
-	if (!shiftDirection || shiftDirection != tet.player.dasDirection) {
-		tet.player.dasDirection = shiftDirection;
-		tet.player.dasCharge = 0;
-		tet.player.dasDelay = DasDelay; // Starts out pre-charged
+	if (!shiftDirection || shiftDirection != tet.player.autoshiftDirection) {
+		tet.player.autoshiftDirection = shiftDirection;
+		tet.player.autoshiftCharge = 0;
+		tet.player.autoshiftDelay = AutoshiftRepeat; // Starts out pre-charged
 		if (shiftDirection && tet.player.state == PlayerActive)
 			shift(shiftDirection);
 	}
@@ -570,21 +649,24 @@ static void pureUpdateShift(void)
 	// If moving, advance and apply DAS
 	if (!shiftDirection)
 		return;
-	if (tet.player.dasCharge < DasCharge)
-		tet.player.dasCharge += 1;
-	if (tet.player.dasCharge == DasCharge) {
-		if (tet.player.dasDelay < DasDelay)
-			tet.player.dasDelay += 1;
+	if (tet.player.autoshiftCharge < AutoshiftCharge)
+		tet.player.autoshiftCharge += 1;
+	if (tet.player.autoshiftCharge == AutoshiftCharge) {
+		if (tet.player.autoshiftDelay < AutoshiftRepeat)
+			tet.player.autoshiftDelay += 1;
 
 		// If during ARE, keep the DAS charged
-		if (tet.player.dasDelay >= DasDelay
+		if (tet.player.autoshiftDelay >= AutoshiftRepeat
 			&& tet.player.state == PlayerActive) {
-			tet.player.dasDelay = 0;
-			shift(tet.player.dasDirection);
+			tet.player.autoshiftDelay = 0;
+			shift(tet.player.autoshiftDirection);
 		}
 	}
 }
 
+/**
+ * Check for cleared lines, handle and progress clears.
+ */
 static void pureUpdateClear(void)
 {
 	// Line clear check is delayed by the clear offset
@@ -627,6 +709,9 @@ static void pureUpdateSpawn(void)
 	}
 }
 
+/**
+ * Move player piece down through gravity or manual dropping.
+ */
 static void pureUpdateGravity(void)
 {
 	if (tet.state == TetrionOutro)
@@ -651,6 +736,9 @@ static void pureUpdateGravity(void)
 	}
 }
 
+/**
+ * Lock player piece by lock delay expiry or manual lock.
+ */
 static void pureUpdateLocking(void)
 {
 	if (tet.player.state != PlayerActive || tet.state != TetrionPlaying)
@@ -664,6 +752,9 @@ static void pureUpdateLocking(void)
 		lock();
 }
 
+/**
+ * Win the game. Try to get this function called while playing.
+ */
 static void pureUpdateWin(void)
 {
 	if (tet.player.level >= 999)
@@ -695,7 +786,7 @@ static void pureDrawScene(void)
 }
 
 /**
- * Draw the contents of the tetrion field.
+ * Queue the contents of the tetrion field.
  */
 static void pureQueueField(void)
 {
@@ -724,7 +815,7 @@ static void pureQueueField(void)
 }
 
 /**
- * Draw the player piece on top of the field.
+ * Queue the player piece on top of the field.
  */
 static void pureQueuePlayer(void)
 {
@@ -746,7 +837,7 @@ static void pureQueuePlayer(void)
 }
 
 /**
- * Draw the preview piece on top of the field.
+ * Queue the preview piece on top of the field.
  */
 static void pureQueuePreview(void)
 {
@@ -766,6 +857,9 @@ static void pureQueuePreview(void)
 	}
 }
 
+/**
+ * Draw all queued blocks in one call.
+ */
 static void pureDrawQueuedBlocks(void)
 {
 	modelDraw(block, darraySize(transforms), darrayData(tints),
