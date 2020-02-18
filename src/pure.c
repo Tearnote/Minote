@@ -40,6 +40,7 @@
 #define PreviewX -2.0f ///< X offset of preview piece
 #define PreviewY 21.0f ///< Y offset of preview piece
 #define FieldDim 0.4f ///< Multiplier of field block color
+#define GhostDim 0.2f ///< Multiplier of ghost block alpha
 
 /// State of player piece FSM
 typedef enum PlayerState {
@@ -807,7 +808,7 @@ static void pureQueueField(void)
 		int y = i / FieldWidth;
 		mino type = fieldGet(tet.field, (point2i){x, y});
 		if (type == MinoNone) continue;
-		
+
 		color4* tint = null;
 		mat4x4* transform = null;
 		if (minoColor(type).a == 1.0) {
@@ -817,7 +818,7 @@ static void pureQueueField(void)
 			tint = darrayProduce(blockTintsAlpha);
 			transform = darrayProduce(blockTransformsAlpha);
 		}
-		
+
 		color4Copy(*tint, minoColor(type));
 		tint->r *= FieldDim;
 		tint->g *= FieldDim;
@@ -838,6 +839,7 @@ static void pureQueuePlayer(void)
 	if (tet.player.state != PlayerActive &&
 		tet.player.state != PlayerSpawned)
 		return;
+
 	piece* playerPiece = getPiece(tet.player.type, tet.player.rotation);
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
 		float x = (*playerPiece)[i].x + tet.player.pos.x;
@@ -861,6 +863,39 @@ static void pureQueuePlayer(void)
 }
 
 /**
+ * Queue the ghost piece, if it should be visible.
+ */
+static void pureQueueGhost(void)
+{
+	if (tet.player.level >= 100) return;
+	if (tet.player.state != PlayerActive &&
+		tet.player.state != PlayerSpawned)
+		return;
+
+	piece* playerPiece = getPiece(tet.player.type, tet.player.rotation);
+	point2i ghostPos = tet.player.pos;
+	while (!pieceOverlapsField(playerPiece, (point2i){
+		ghostPos.x,
+		ghostPos.y - 1
+	}, tet.field))
+		ghostPos.y -= 1; // Drop down as much as possible
+
+	for (size_t i = 0; i < MinosPerPiece; i += 1) {
+		float x = (*playerPiece)[i].x + ghostPos.x;
+		float y = (*playerPiece)[i].y + ghostPos.y;
+
+		color4* tint = darrayProduce(blockTintsAlpha);
+		mat4x4* transform = darrayProduce(blockTransformsAlpha);
+
+		color4Copy(*tint, minoColor(tet.player.type));
+		tint->a *= GhostDim;
+		mat4x4_identity(*transform);
+		mat4x4_translate_in_place(*transform, x - (signed)(FieldWidth / 2), y,
+			0.0f);
+	}
+}
+
+/**
  * Queue the preview piece on top of the field.
  */
 static void pureQueuePreview(void)
@@ -873,7 +908,7 @@ static void pureQueuePreview(void)
 		float y = (*previewPiece)[i].y + PreviewY;
 		if (tet.player.preview == MinoI)
 			y -= 1;
-		
+
 		color4* tint = null;
 		mat4x4* transform = null;
 		if (minoColor(tet.player.preview).a == 1.0) {
@@ -895,15 +930,18 @@ static void pureQueuePreview(void)
  */
 static void pureDrawQueuedBlocks(void)
 {
-	modelDraw(block, darraySize(blockTransformsOpaque), darrayData(blockTintsOpaque),
+	modelDraw(block, darraySize(blockTransformsOpaque),
+		darrayData(blockTintsOpaque),
 		darrayData(blockTransformsOpaque));
 	darrayClear(blockTintsOpaque);
 	darrayClear(blockTransformsOpaque);
 	rendererDepthOnlyBegin();
-	modelDraw(block, darraySize(blockTransformsAlpha), darrayData(blockTintsAlpha),
+	modelDraw(block, darraySize(blockTransformsAlpha),
+		darrayData(blockTintsAlpha),
 		darrayData(blockTransformsAlpha));
 	rendererDepthOnlyEnd();
-	modelDraw(block, darraySize(blockTransformsAlpha), darrayData(blockTintsAlpha),
+	modelDraw(block, darraySize(blockTransformsAlpha),
+		darrayData(blockTintsAlpha),
 		darrayData(blockTransformsAlpha));
 	darrayClear(blockTintsAlpha);
 	darrayClear(blockTransformsAlpha);
@@ -917,7 +955,7 @@ void pureDraw(void)
 	pureDrawScene();
 	pureQueueField();
 	pureQueuePlayer();
-//	pureQueueGhost();
+	pureQueueGhost();
 	pureQueuePreview();
 	pureDrawQueuedBlocks();
 //	pureDrawBorder();
