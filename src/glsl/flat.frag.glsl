@@ -7,10 +7,11 @@
 #version 330 core
 
 in vec4 fColor;
+in vec4 fHighlight;
 
 out vec4 outColor;
 
 void main()
 {
-    outColor = fColor;
+    outColor = vec4(mix(fColor.rgb, fHighlight.rgb, fHighlight.a), fColor.a);
 }

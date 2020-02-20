@@ -1060,5 +1060,4 @@ void pureDraw(void)
 	pureQueuePreview();
 	pureDrawQueuedBlocks();
 	pureDrawBorder();
-//  pureDrawStats();
 }

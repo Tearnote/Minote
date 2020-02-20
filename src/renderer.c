@@ -272,6 +272,7 @@ typedef struct ModelFlat {
 	size_t numVertices;
 	VertexBuffer vertices; ///< VBO with model vertex data
 	VertexBuffer tints; ///< VBO for storing per-draw tint colors
+	VertexBuffer highlights; ///< VBO for storing per-draw color highlight colors
 	VertexBuffer transforms; ///< VBO for storing per-draw model matrices
 	VertexArray vao;
 } ModelFlat;
@@ -283,6 +284,7 @@ typedef struct ModelPhong {
 	VertexBuffer vertices; ///< VBO with model vertex data
 	VertexBuffer normals; ///< VBO with model normals, generated from vertices
 	VertexBuffer tints; ///< VBO for storing per-draw tint colors
+	VertexBuffer highlights; ///< VBO for storing per-draw color highlight colors
 	VertexBuffer transforms; ///< VBO for storing per-draw model matrices
 	VertexArray vao;
 	MaterialPhong material;
@@ -301,6 +303,8 @@ static void modelDestroyFlat(ModelFlat* m)
 	m->vao = 0;
 	glDeleteBuffers(1, &m->transforms);
 	m->transforms = 0;
+	glDeleteBuffers(1, &m->highlights);
+	m->highlights = 0;
 	glDeleteBuffers(1, &m->tints);
 	m->tints = 0;
 	glDeleteBuffers(1, &m->vertices);
@@ -323,6 +327,8 @@ static void modelDestroyPhong(ModelPhong* m)
 	m->vao = 0;
 	glDeleteBuffers(1, &m->transforms);
 	m->transforms = 0;
+	glDeleteBuffers(1, &m->highlights);
+	m->highlights = 0;
 	glDeleteBuffers(1, &m->tints);
 	m->tints = 0;
 	glDeleteBuffers(1, &m->normals);
@@ -367,6 +373,8 @@ static void modelDrawFlat(ModelFlat* m, size_t instances,
 	glBindVertexArray(m->vao);
 	glUniformMatrix4fv(flat->projection, 1, GL_FALSE, projection[0]);
 	glUniformMatrix4fv(flat->camera, 1, GL_FALSE, camera[0]);
+	glDisableVertexAttribArray(3);
+	glVertexAttrib4f(3, 0.0f, 0.0f, 0.0f, 0.0f);
 	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numVertices, instances);
 }
 
@@ -411,6 +419,8 @@ static void modelDrawPhong(ModelPhong* m, size_t instances,
 	glUniform1f(phong->diffuse, m->material.diffuse);
 	glUniform1f(phong->specular, m->material.specular);
 	glUniform1f(phong->shine, m->material.shine);
+	glDisableVertexAttribArray(4);
+	glVertexAttrib4f(4, 0.0f, 0.0f, 0.0f, 0.0f);
 	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numVertices, instances);
 }
 
@@ -473,6 +483,7 @@ Model* modelCreateFlat(const char* name,
 	glBufferData(GL_ARRAY_BUFFER, sizeof(VertexFlat) * m->numVertices, vertices,
 		GL_STATIC_DRAW);
 	glGenBuffers(1, &m->tints);
+	glGenBuffers(1, &m->highlights);
 	glGenBuffers(1, &m->transforms);
 	glGenVertexArrays(1, &m->vao);
 	glBindVertexArray(m->vao);
@@ -487,23 +498,28 @@ Model* modelCreateFlat(const char* name,
 	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(color4),
 		(void*)0);
 	glVertexAttribDivisor(2, 1);
-	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
+	glBindBuffer(GL_ARRAY_BUFFER, m->highlights);
 	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(color4),
+		(void*)0);
+	glVertexAttribDivisor(3, 1);
+	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
 	glEnableVertexAttribArray(4);
 	glEnableVertexAttribArray(5);
 	glEnableVertexAttribArray(6);
-	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
-		(void*)0);
+	glEnableVertexAttribArray(7);
 	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
-		(void*)sizeof(vec4));
+		(void*)0);
 	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
-		(void*)(sizeof(vec4) * 2));
+		(void*)sizeof(vec4));
 	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
+		(void*)(sizeof(vec4) * 2));
+	glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
 		(void*)(sizeof(vec4) * 3));
-	glVertexAttribDivisor(3, 1);
 	glVertexAttribDivisor(4, 1);
 	glVertexAttribDivisor(5, 1);
 	glVertexAttribDivisor(6, 1);
+	glVertexAttribDivisor(7, 1);
 	logDebug(applog, u8"Model %s created", m->base.name);
 	return (Model*)m;
 }
@@ -534,6 +550,7 @@ Model* modelCreatePhong(const char* name,
 	glBufferData(GL_ARRAY_BUFFER, sizeof(normalData), normalData,
 		GL_STATIC_DRAW);
 	glGenBuffers(1, &m->tints);
+	glGenBuffers(1, &m->highlights);
 	glGenBuffers(1, &m->transforms);
 
 	glGenVertexArrays(1, &m->vao);
@@ -554,23 +571,28 @@ Model* modelCreatePhong(const char* name,
 	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(color4),
 		(void*)0);
 	glVertexAttribDivisor(3, 1);
-	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
+	glBindBuffer(GL_ARRAY_BUFFER, m->highlights);
 	glEnableVertexAttribArray(4);
+	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(color4),
+		(void*)0);
+	glVertexAttribDivisor(4, 1);
+	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
 	glEnableVertexAttribArray(5);
 	glEnableVertexAttribArray(6);
 	glEnableVertexAttribArray(7);
-	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
-		(void*)0);
+	glEnableVertexAttribArray(8);
 	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
-		(void*)sizeof(vec4));
+		(void*)0);
 	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
-		(void*)(sizeof(vec4) * 2));
+		(void*)sizeof(vec4));
 	glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
+		(void*)(sizeof(vec4) * 2));
+	glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
 		(void*)(sizeof(vec4) * 3));
-	glVertexAttribDivisor(4, 1);
 	glVertexAttribDivisor(5, 1);
 	glVertexAttribDivisor(6, 1);
 	glVertexAttribDivisor(7, 1);
+	glVertexAttribDivisor(8, 1);
 
 	logDebug(applog, u8"Model %s created", m->base.name);
 	return (Model*)m;

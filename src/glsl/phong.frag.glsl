@@ -8,6 +8,7 @@
 
 in vec3 fPosition;
 in vec4 fColor;
+in vec4 fHighlight;
 in vec3 fNormal;
 in vec3 fLightPosition;
 
@@ -32,4 +33,5 @@ void main()
     vec3 outSpecular = specular * pow(max(dot(normal, halfwayDirection), 0.0), shine) * lightColor;
 
     outColor = vec4(outAmbient + outDiffuse + outSpecular, 1.0) * fColor;
+    outColor = vec4(mix(outColor.rgb, fHighlight.rgb, fHighlight.a), outColor.a);
 }

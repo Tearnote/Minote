@@ -10,10 +10,12 @@ layout(location = 0) in vec3 vPosition;
 layout(location = 1) in vec4 vColor;
 layout(location = 2) in vec3 vNormal;
 layout(location = 3) in vec4 iTint;
-layout(location = 4) in mat4 iModel;
+layout(location = 4) in vec4 iHighlight;
+layout(location = 5) in mat4 iModel;
 
 out vec3 fPosition; // in view space
 out vec4 fColor;
+out vec4 fHighlight;
 out vec3 fNormal; // in view space
 out vec3 fLightPosition; // in view space
 
@@ -27,5 +29,6 @@ void main()
     fPosition = vec3(camera * iModel * vec4(vPosition, 1.0));
     fNormal = mat3(transpose(inverse(camera * iModel))) * vNormal;
     fColor = vColor * iTint;
+    fHighlight = iHighlight;
     fLightPosition = vec3(camera * vec4(lightPosition, 1.0));
 }
