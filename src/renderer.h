@@ -116,7 +116,7 @@ void modelDestroy(Model* m);
  * instance can be tinted with a provided color.
  * @param m The ::Model object to draw
  * @param instances Number of instances to draw
- * @param tints Array of color blockTintsOpaque for each instance
+ * @param tints Array of color tints for each instance. Can be null.
  * @param transforms Array of 4x4 matrices for transforming each instance
  */
 void modelDraw(Model* m, size_t instances,

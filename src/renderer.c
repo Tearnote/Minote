@@ -345,7 +345,7 @@ static void modelDestroyPhong(ModelPhong* m)
  * instance can be tinted with a provided color.
  * @param m The ::ModelFlat object to draw
  * @param instances Number of instances to draw
- * @param tints Array of color blockTintsOpaque for each instance
+ * @param tints Array of color tints for each instance. Can be null.
  * @param transforms Array of 4x4 matrices for transforming each instance
  */
 static void modelDrawFlat(ModelFlat* m, size_t instances,
@@ -359,22 +359,28 @@ static void modelDrawFlat(ModelFlat* m, size_t instances,
 	assert(m->vertices);
 	assert(m->tints);
 	assert(m->transforms);
-	assert(tints);
 	assert(transforms);
-	glBindBuffer(GL_ARRAY_BUFFER, m->tints);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(color4) * instances, null,
-		GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(color4) * instances, tints);
+
+	glBindVertexArray(m->vao);
+	programUse(flat);
+	if (tints) {
+		glEnableVertexAttribArray(2);
+		glBindBuffer(GL_ARRAY_BUFFER, m->tints);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(color4) * instances, null,
+			GL_STREAM_DRAW);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(color4) * instances, tints);
+	} else {
+		glDisableVertexAttribArray(2);
+		glVertexAttrib4f(2, 1.0f, 1.0f, 1.0f, 1.0f);
+	}
+	glDisableVertexAttribArray(3);
+	glVertexAttrib4f(3, 0.0f, 0.0f, 0.0f, 0.0f);
 	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, null,
 		GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4x4) * instances, transforms);
-	programUse(flat);
-	glBindVertexArray(m->vao);
 	glUniformMatrix4fv(flat->projection, 1, GL_FALSE, projection[0]);
 	glUniformMatrix4fv(flat->camera, 1, GL_FALSE, camera[0]);
-	glDisableVertexAttribArray(3);
-	glVertexAttrib4f(3, 0.0f, 0.0f, 0.0f, 0.0f);
 	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numVertices, instances);
 }
 
@@ -383,7 +389,7 @@ static void modelDrawFlat(ModelFlat* m, size_t instances,
  * instance can be tinted with a provided color.
  * @param m The ::ModelPhong object to draw
  * @param instances Number of instances to draw
- * @param tints Array of color blockTintsOpaque for each instance
+ * @param tints Array of color tints for each instance. Can be null
  * @param transforms Array of 4x4 matrices for transforming each instance
  */
 static void modelDrawPhong(ModelPhong* m, size_t instances,
@@ -398,18 +404,26 @@ static void modelDrawPhong(ModelPhong* m, size_t instances,
 	assert(m->normals);
 	assert(m->tints);
 	assert(m->transforms);
-	assert(tints);
 	assert(transforms);
-	glBindBuffer(GL_ARRAY_BUFFER, m->tints);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(color4) * instances, null,
-		GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(color4) * instances, tints);
+
+	glBindVertexArray(m->vao);
+	programUse(phong);
+	if (tints) {
+		glEnableVertexAttribArray(3);
+		glBindBuffer(GL_ARRAY_BUFFER, m->tints);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(color4) * instances, null,
+			GL_STREAM_DRAW);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(color4) * instances, tints);
+	} else {
+		glDisableVertexAttribArray(3);
+		glVertexAttrib4f(3, 1.0f, 1.0f, 1.0f, 1.0f);
+	}
+	glDisableVertexAttribArray(4);
+	glVertexAttrib4f(4, 0.0f, 0.0f, 0.0f, 0.0f);
 	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, null,
 		GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4x4) * instances, transforms);
-	programUse(phong);
-	glBindVertexArray(m->vao);
 	glUniformMatrix4fv(phong->projection, 1, GL_FALSE, projection[0]);
 	glUniformMatrix4fv(phong->camera, 1, GL_FALSE, camera[0]);
 	glUniform3fv(phong->lightPosition, 1, lightPosition.arr);
@@ -419,8 +433,6 @@ static void modelDrawPhong(ModelPhong* m, size_t instances,
 	glUniform1f(phong->diffuse, m->material.diffuse);
 	glUniform1f(phong->specular, m->material.specular);
 	glUniform1f(phong->shine, m->material.shine);
-	glDisableVertexAttribArray(4);
-	glVertexAttrib4f(4, 0.0f, 0.0f, 0.0f, 0.0f);
 	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numVertices, instances);
 }
 
