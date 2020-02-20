@@ -116,10 +116,12 @@ void modelDestroy(Model* m);
  * instance can be tinted with a provided color.
  * @param m The ::Model object to draw
  * @param instances Number of instances to draw
- * @param tints Array of color tints for each instance. Can be null.
- * @param transforms Array of 4x4 matrices for transforming each instance
+ * @param tints Color tints for each instance. Can be null
+ * @param highlights Highlight colors to blend into each instance. Can be null
+ * @param transforms 4x4 matrices for transforming each instance
  */
 void modelDraw(Model* m, size_t instances,
-	color4 tints[instances], mat4x4 transforms[instances]);
+	color4 tints[instances], color4 highlights[instances],
+	mat4x4 transforms[instances]);
 
 #endif //MINOTE_RENDERER_H

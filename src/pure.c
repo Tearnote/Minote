@@ -818,7 +818,7 @@ void pureAdvance(darray* inputs)
  */
 static void pureDrawScene(void)
 {
-	modelDraw(scene, 1, (color4[]){Color4White}, &IdentityMatrix);
+	modelDraw(scene, 1, (color4[]){Color4White}, null, &IdentityMatrix);
 }
 
 /**
@@ -947,17 +947,17 @@ static void pureQueuePreview(void)
 static void pureDrawQueuedBlocks(void)
 {
 	modelDraw(block, darraySize(blockTransformsOpaque),
-		darrayData(blockTintsOpaque),
+		darrayData(blockTintsOpaque), null,
 		darrayData(blockTransformsOpaque));
 	darrayClear(blockTintsOpaque);
 	darrayClear(blockTransformsOpaque);
 	rendererDepthOnlyBegin();
 	modelDraw(block, darraySize(blockTransformsAlpha),
-		darrayData(blockTintsAlpha),
+		darrayData(blockTintsAlpha), null,
 		darrayData(blockTransformsAlpha));
 	rendererDepthOnlyEnd();
 	modelDraw(block, darraySize(blockTransformsAlpha),
-		darrayData(blockTintsAlpha),
+		darrayData(blockTintsAlpha), null,
 		darrayData(blockTransformsAlpha));
 	darrayClear(blockTintsAlpha);
 	darrayClear(blockTransformsAlpha);
@@ -1042,7 +1042,7 @@ static void pureDrawBorder(void)
 	}
 
 	modelDraw(border, darraySize(borderTransforms),
-		darrayData(borderTints),
+		darrayData(borderTints), null,
 		darrayData(borderTransforms));
 	darrayClear(borderTints);
 	darrayClear(borderTransforms);

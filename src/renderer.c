@@ -81,9 +81,7 @@ static ProgramPhong* phong = null;
 static void rendererSync(void)
 {
 	assert(initialized);
-	mat4x4 identity = {0};
-	mat4x4_identity(identity);
-	modelDraw(sync, 1, (color4[]){Color4White}, &identity);
+	modelDraw(sync, 1, null, null, &IdentityMatrix);
 	GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 	glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, secToNsec(0.1));
 }
@@ -345,11 +343,13 @@ static void modelDestroyPhong(ModelPhong* m)
  * instance can be tinted with a provided color.
  * @param m The ::ModelFlat object to draw
  * @param instances Number of instances to draw
- * @param tints Array of color tints for each instance. Can be null.
- * @param transforms Array of 4x4 matrices for transforming each instance
+ * @param tints Color tints for each instance. Can be null.
+ * @param highlights Highlight colors to blend into each instance. Can be null
+ * @param transforms 4x4 matrices for transforming each instance
  */
 static void modelDrawFlat(ModelFlat* m, size_t instances,
-	color4 tints[instances], mat4x4 transforms[instances])
+	color4 tints[instances], color4 highlights[instances],
+	mat4x4 transforms[instances])
 {
 	assert(initialized);
 	assert(m);
@@ -373,8 +373,17 @@ static void modelDrawFlat(ModelFlat* m, size_t instances,
 		glDisableVertexAttribArray(2);
 		glVertexAttrib4f(2, 1.0f, 1.0f, 1.0f, 1.0f);
 	}
-	glDisableVertexAttribArray(3);
-	glVertexAttrib4f(3, 0.0f, 0.0f, 0.0f, 0.0f);
+	if (highlights) {
+		glEnableVertexAttribArray(3);
+		glBindBuffer(GL_ARRAY_BUFFER, m->highlights);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(color4) * instances, null,
+			GL_STREAM_DRAW);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(color4) * instances,
+			highlights);
+	} else {
+		glDisableVertexAttribArray(3);
+		glVertexAttrib4f(3, 0.0f, 0.0f, 0.0f, 0.0f);
+	}
 	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, null,
 		GL_STREAM_DRAW);
@@ -389,11 +398,13 @@ static void modelDrawFlat(ModelFlat* m, size_t instances,
  * instance can be tinted with a provided color.
  * @param m The ::ModelPhong object to draw
  * @param instances Number of instances to draw
- * @param tints Array of color tints for each instance. Can be null
- * @param transforms Array of 4x4 matrices for transforming each instance
+ * @param tints Color tints for each instance. Can be null
+ * @param highlights Highlight colors to blend into each instance. Can be null
+ * @param transforms 4x4 matrices for transforming each instance
  */
 static void modelDrawPhong(ModelPhong* m, size_t instances,
-	color4 tints[instances], mat4x4 transforms[instances])
+	color4 tints[instances], color4 highlights[instances],
+	mat4x4 transforms[instances])
 {
 	assert(initialized);
 	assert(m);
@@ -418,8 +429,17 @@ static void modelDrawPhong(ModelPhong* m, size_t instances,
 		glDisableVertexAttribArray(3);
 		glVertexAttrib4f(3, 1.0f, 1.0f, 1.0f, 1.0f);
 	}
-	glDisableVertexAttribArray(4);
-	glVertexAttrib4f(4, 0.0f, 0.0f, 0.0f, 0.0f);
+	if (highlights) {
+		glEnableVertexAttribArray(4);
+		glBindBuffer(GL_ARRAY_BUFFER, m->highlights);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(color4) * instances, null,
+			GL_STREAM_DRAW);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(color4) * instances,
+			highlights);
+	} else {
+		glDisableVertexAttribArray(4);
+		glVertexAttrib4f(4, 0.0f, 0.0f, 0.0f, 0.0f);
+	}
 	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, null,
 		GL_STREAM_DRAW);
@@ -627,16 +647,20 @@ void modelDestroy(Model* m)
 }
 
 void modelDraw(Model* m, size_t instances,
-	color4 tints[instances], mat4x4 transforms[instances])
+	color4 tints[instances], color4 highlights[instances],
+	mat4x4 transforms[instances])
 {
 	assert(m);
 	assert(m->type > ModelTypeNone && m->type < ModelTypeSize);
+	assert(transforms);
+
 	switch (m->type) {
 	case ModelTypeFlat:
-		modelDrawFlat((ModelFlat*)m, instances, tints, transforms);
+		modelDrawFlat((ModelFlat*)m, instances, tints, highlights, transforms);
 		break;
 	case ModelTypePhong:
-		modelDrawPhong((ModelPhong*)m, instances, tints, transforms);
+		modelDrawPhong((ModelPhong*)m, instances, tints, highlights,
+			transforms);
 		break;
 	default:
 		assert(false);
