@@ -492,13 +492,13 @@ Model* modelCreateFlat(const char* name,
 	glEnableVertexAttribArray(4);
 	glEnableVertexAttribArray(5);
 	glEnableVertexAttribArray(6);
-	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(vec4),
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
 		(void*)0);
-	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(vec4),
+	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
 		(void*)sizeof(vec4));
-	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(vec4),
+	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
 		(void*)(sizeof(vec4) * 2));
-	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(vec4),
+	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
 		(void*)(sizeof(vec4) * 3));
 	glVertexAttribDivisor(3, 1);
 	glVertexAttribDivisor(4, 1);

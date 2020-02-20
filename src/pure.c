@@ -40,7 +40,9 @@
 #define PreviewX -2.0f ///< X offset of preview piece
 #define PreviewY 21.0f ///< Y offset of preview piece
 #define FieldDim 0.4f ///< Multiplier of field block color
+#define ExtraRowDim 0.25f ///< Multiplier of field block alpha above the scene
 #define GhostDim 0.2f ///< Multiplier of ghost block alpha
+#define BorderDim 0.5f ///< Multiplier of border alpha
 
 /// State of player piece FSM
 typedef enum PlayerState {
@@ -122,6 +124,10 @@ static darray* blockTintsOpaque = null;
 static darray* blockTransformsOpaque = null;
 static darray* blockTintsAlpha = null;
 static darray* blockTransformsAlpha = null;
+
+static Model* border = null;
+static darray* borderTints = null;
+static darray* borderTransforms = null;
 
 static bool initialized = false;
 
@@ -528,6 +534,11 @@ void pureInit(void)
 	blockTransformsOpaque = darrayCreate(sizeof(mat4x4));
 	blockTintsAlpha = darrayCreate(sizeof(color4));
 	blockTransformsAlpha = darrayCreate(sizeof(mat4x4));
+	border = modelCreateFlat(u8"border",
+#include "meshes/border.mesh"
+	);
+	borderTints = darrayCreate(sizeof(color4));
+	borderTransforms = darrayCreate(sizeof(mat4x4));
 
 	initialized = true;
 	logDebug(applog, u8"Pure sublayer initialized");
@@ -536,6 +547,18 @@ void pureInit(void)
 void pureCleanup(void)
 {
 	if (!initialized) return;
+	if (borderTransforms) {
+		darrayDestroy(borderTransforms);
+		borderTransforms = null;
+	}
+	if (borderTints) {
+		darrayDestroy(borderTints);
+		borderTints = null;
+	}
+	if (border) {
+		modelDestroy(border);
+		border = null;
+	}
 	if (blockTransformsAlpha) {
 		darrayDestroy(blockTransformsAlpha);
 		blockTransformsAlpha = null;
@@ -824,10 +847,8 @@ static void pureQueueField(void)
 		tint->g *= FieldDim;
 		tint->b *= FieldDim;
 		if (y >= FieldHeightVisible)
-			tint->a /= 4.0f;
-		mat4x4_identity(*transform);
-		mat4x4_translate_in_place(*transform, x - (signed)(FieldWidth / 2), y,
-			0.0f);
+			tint->a *= ExtraRowDim;
+		mat4x4_translate(*transform, x - (signed)(FieldWidth / 2), y, 0.0f);
 	}
 }
 
@@ -856,9 +877,7 @@ static void pureQueuePlayer(void)
 		}
 
 		color4Copy(*tint, minoColor(tet.player.type));
-		mat4x4_identity(*transform);
-		mat4x4_translate_in_place(*transform, x - (signed)(FieldWidth / 2), y,
-			0.0f);
+		mat4x4_translate(*transform, x - (signed)(FieldWidth / 2), y, 0.0f);
 	}
 }
 
@@ -889,9 +908,7 @@ static void pureQueueGhost(void)
 
 		color4Copy(*tint, minoColor(tet.player.type));
 		tint->a *= GhostDim;
-		mat4x4_identity(*transform);
-		mat4x4_translate_in_place(*transform, x - (signed)(FieldWidth / 2), y,
-			0.0f);
+		mat4x4_translate(*transform, x - (signed)(FieldWidth / 2), y, 0.0f);
 	}
 }
 
@@ -920,8 +937,7 @@ static void pureQueuePreview(void)
 		}
 
 		color4Copy(*tint, minoColor(tet.player.preview));
-		mat4x4_identity(*transform);
-		mat4x4_translate_in_place(*transform, x, y, 0.0f);
+		mat4x4_translate(*transform, x, y, 0.0f);
 	}
 }
 
@@ -947,6 +963,91 @@ static void pureDrawQueuedBlocks(void)
 	darrayClear(blockTransformsAlpha);
 }
 
+static void borderQueue(point3f pos, size3f size, color4 color)
+{
+	color4* tint = darrayProduce(borderTints);
+	mat4x4* transform = darrayProduce(borderTransforms);
+	color4Copy(*tint, color);
+	mat4x4_identity(*transform);
+	mat4x4_translate_in_place(*transform, pos.x, pos.y, pos.z);
+	mat4x4_scale_aniso(*transform, *transform, size.x, size.y, size.z);
+}
+
+/**
+ * Draw the border around the contour of field blocks.
+ */
+static void pureDrawBorder(void)
+{
+	for (size_t i = 0; i < FieldWidth * FieldHeight; i += 1) {
+		int x = i % FieldWidth;
+		int y = i / FieldWidth;
+
+		if (!fieldGet(tet.field, (point2i){x, y})) continue;
+
+		// Coords transformed to world space
+		float tx = x - (signed)(FieldWidth / 2);
+		float ty = y;
+		float alpha = BorderDim;
+		if (y >= FieldHeightVisible)
+			alpha *= ExtraRowDim;
+
+		// Left
+		if (!fieldGet(tet.field, (point2i){x - 1, y}))
+			borderQueue((point3f){tx, ty + 0.125f, 0.0f},
+				(size3f){0.125f, 0.75f, 1.0f},
+				(color4){1.0f, 1.0f, 1.0f, alpha});
+		// Right
+		if (!fieldGet(tet.field, (point2i){x + 1, y}))
+			borderQueue((point3f){tx + 0.875f, ty + 0.125f, 0.0f},
+				(size3f){0.125f, 0.75f, 1.0f},
+				(color4){1.0f, 1.0f, 1.0f, alpha});
+		// Down
+		if (!fieldGet(tet.field, (point2i){x, y - 1}))
+			borderQueue((point3f){tx + 0.125f, ty, 0.0f},
+				(size3f){0.75f, 0.125f, 1.0f},
+				(color4){1.0f, 1.0f, 1.0f, alpha});
+		// Up
+		if (!fieldGet(tet.field, (point2i){x, y + 1}))
+			borderQueue((point3f){tx + 0.125f, ty + 0.875f, 0.0f},
+				(size3f){0.75f, 0.125f, 1.0f},
+				(color4){1.0f, 1.0f, 1.0f, alpha});
+		// Down Left
+		if (!fieldGet(tet.field, (point2i){x - 1, y - 1})
+			|| !fieldGet(tet.field, (point2i){x - 1, y})
+			|| !fieldGet(tet.field, (point2i){x, y - 1}))
+			borderQueue((point3f){tx, ty, 0.0f},
+				(size3f){0.125f, 0.125f, 1.0f},
+				(color4){1.0f, 1.0f, 1.0f, alpha});
+		// Down Right
+		if (!fieldGet(tet.field, (point2i){x + 1, y - 1})
+			|| !fieldGet(tet.field, (point2i){x + 1, y})
+			|| !fieldGet(tet.field, (point2i){x, y - 1}))
+			borderQueue((point3f){tx + 0.875f, ty, 0.0f},
+				(size3f){0.125f, 0.125f, 1.0f},
+				(color4){1.0f, 1.0f, 1.0f, alpha});
+		// Up Left
+		if (!fieldGet(tet.field, (point2i){x - 1, y + 1})
+			|| !fieldGet(tet.field, (point2i){x - 1, y})
+			|| !fieldGet(tet.field, (point2i){x, y + 1}))
+			borderQueue((point3f){tx, ty + 0.875f, 0.0f},
+				(size3f){0.125f, 0.125f, 1.0f},
+				(color4){1.0f, 1.0f, 1.0f, alpha});
+		// Up Right
+		if (!fieldGet(tet.field, (point2i){x + 1, y + 1})
+			|| !fieldGet(tet.field, (point2i){x + 1, y})
+			|| !fieldGet(tet.field, (point2i){x, y + 1}))
+			borderQueue((point3f){tx + 0.875f, ty + 0.875f, 0.0f},
+				(size3f){0.125f, 0.125f, 1.0f},
+				(color4){1.0f, 1.0f, 1.0f, alpha});
+	}
+
+	modelDraw(border, darraySize(borderTransforms),
+		darrayData(borderTints),
+		darrayData(borderTransforms));
+	darrayClear(borderTints);
+	darrayClear(borderTransforms);
+}
+
 void pureDraw(void)
 {
 	assert(initialized);
@@ -958,6 +1059,6 @@ void pureDraw(void)
 	pureQueueGhost();
 	pureQueuePreview();
 	pureDrawQueuedBlocks();
-//	pureDrawBorder();
+	pureDrawBorder();
 //  pureDrawStats();
 }
