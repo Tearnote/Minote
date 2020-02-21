@@ -70,7 +70,8 @@ include_directories(lib)
 set(C_INTERNALLIBS
         lib/glad/glad.h lib/glad/glad.c lib/glad/KHR/khrplatform.h
         lib/linmath/linmath.h
-        lib/pcg/pcg_basic.h lib/pcg/pcg_basic.c)
+        lib/pcg/pcg_basic.h lib/pcg/pcg_basic.c
+        lib/aheasing/easing.h lib/aheasing/easing.c)
 
 set(C_SOURCES
         src/main.h src/main.c

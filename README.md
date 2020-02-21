@@ -29,3 +29,6 @@ retrieved on 2019-09-05, used under zlib license.
 
 [`PCG PRNG`](http://www.pcg-random.org/) Minimal C 0.9, used under Apache
 license.
+
+[`AHEasing`](https://github.com/warrenm/AHEasing) retrieved on 2020-02-21, used
+under WTFPL.
