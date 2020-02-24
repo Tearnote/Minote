@@ -39,7 +39,7 @@
 #define FieldHeightVisible 20u ///< Number of bottom rows the player can see
 #define PreviewX -2.0f ///< X offset of preview piece
 #define PreviewY 21.0f ///< Y offset of preview piece
-#define FieldDim 0.4f ///< Multiplier of field block color
+#define FieldDim 0.3f ///< Multiplier of field block color
 #define ExtraRowDim 0.25f ///< Multiplier of field block alpha above the scene
 #define GhostDim 0.2f ///< Multiplier of ghost block alpha
 #define BorderDim 0.5f ///< Multiplier of border alpha
