@@ -23,7 +23,9 @@ void* game(void* arg)
 		playUpdate();
 
 		rendererFrameBegin();
+		rendererHdrBegin();
 		playDraw();
+		rendererHdrEnd();
 		rendererFrameEnd();
 	}
 

@@ -49,6 +49,16 @@ void rendererFrameBegin(void);
 void rendererFrameEnd(void);
 
 /**
+ * Switch to an HDR framebuffer, for rendering with higher precision.
+ */
+void rendererHdrBegin(void);
+
+/**
+ * Draw the HDR image to the screen, smearing values above 1.0 as bloom.
+ */
+void rendererHdrEnd(void);
+
+/**
  * Disable color write, so that only the depth buffer is updated. Useful as a
  * transparency pre-pass.
  */

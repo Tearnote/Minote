@@ -17,6 +17,15 @@
 #include "time.h"
 #include "log.h"
 
+/// Semantic rename of OpenGL texture object ID
+typedef GLuint Texture;
+
+/// Semantic rename of OpenGL framebuffer object ID
+typedef GLuint Framebuffer;
+
+/// Semantic rename of OpenGL renderbuffer object ID
+typedef GLuint Renderbuffer;
+
 /// Start of the clipping plane, in world distance units
 #define ProjectionNear 0.1f
 
@@ -64,6 +73,9 @@ static const GLchar* ProgramPhongFragSrc = (GLchar[]){
 
 static bool initialized = false;
 static size2i viewportSize = {0}; ///< in pixels
+static Framebuffer hdrFb = 0;
+static Texture hdrFbColor = 0;
+static Renderbuffer hdrFbDepth = 0;
 static mat4x4 projection = {0}; ///< perspective transform
 static mat4x4 camera = {0}; ///< view transform
 static point3f lightPosition = {0}; ///< in world space
@@ -88,7 +100,7 @@ static void rendererSync(void)
 
 /**
  * Resize the rendering viewport, preferably to window size. Recreates the
- * matrices as needed.
+ * matrices and framebuffers as needed.
  * @param size New viewport size in pixels
  */
 static void rendererResize(size2i size)
@@ -98,9 +110,19 @@ static void rendererResize(size2i size)
 	assert(size.y > 0);
 	viewportSize.x = size.x;
 	viewportSize.y = size.y;
+
+	// Matrices
 	glViewport(0, 0, size.x, size.y);
 	mat4x4_perspective(projection, radf(45.0f),
 		(float)size.x / (float)size.y, ProjectionNear, ProjectionFar);
+
+	// Framebuffers
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, hdrFbColor);
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA16F,
+		size.x, size.y, GL_TRUE);
+	glBindRenderbuffer(GL_RENDERBUFFER, hdrFbDepth);
+	glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH_COMPONENT,
+		size.x, size.y);
 }
 
 void rendererInit(void)
@@ -125,6 +147,31 @@ void rendererInit(void)
 	glEnable(GL_FRAMEBUFFER_SRGB);
 	glEnable(GL_MULTISAMPLE);
 
+	// Create framebuffers
+	glGenFramebuffers(1, &hdrFb);
+	glGenTextures(1, &hdrFbColor);
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, hdrFbColor);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER,
+		GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER,
+		GL_LINEAR);
+	glGenRenderbuffers(1, &hdrFbDepth);
+
+	// Set up matrices and framebuffer textures
+	rendererResize(windowGetSize());
+
+	// Put framebuffers together
+	glBindFramebuffer(GL_FRAMEBUFFER, hdrFb);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+		GL_TEXTURE_2D_MULTISAMPLE, hdrFbColor, 0);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+		GL_RENDERBUFFER, hdrFbDepth);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		logCrit(applog, u8"Failed to create a HDR framebuffer");
+		exit(EXIT_FAILURE);
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 	// Create built-in shaders
 	flat = programCreate(ProgramFlat,
 		ProgramFlatVertName, ProgramFlatVertSrc,
@@ -144,9 +191,6 @@ void rendererInit(void)
 	phong->diffuse = programUniform(phong, u8"diffuse");
 	phong->specular = programUniform(phong, u8"specular");
 	phong->shine = programUniform(phong, u8"shine");
-
-	// Set up matrices
-	rendererResize(windowGetSize());
 
 	// Set up the camera and light globals
 	vec3 eye = {-4.0f, 12.0f, 32.0f};
@@ -185,12 +229,30 @@ void rendererInit(void)
 void rendererCleanup(void)
 {
 	if (!initialized) return;
-	modelDestroy(sync);
-	sync = null;
-	programDestroy(phong);
-	phong = null;
-	programDestroy(flat);
-	flat = null;
+	if (sync) {
+		modelDestroy(sync);
+		sync = null;
+	}
+	if (phong) {
+		programDestroy(phong);
+		phong = null;
+	}
+	if (flat) {
+		programDestroy(flat);
+		flat = null;
+	}
+	if (hdrFbDepth) {
+		glDeleteRenderbuffers(1, &hdrFbDepth);
+		hdrFbDepth = 0;
+	}
+	if (hdrFbColor) {
+		glDeleteTextures(1, &hdrFbColor);
+		hdrFbColor = 0;
+	}
+	if (hdrFb) {
+		glDeleteFramebuffers(1, &hdrFb);
+		hdrFb = 0;
+	}
 	windowContextDeactivate();
 	logDebug(applog, u8"Destroyed renderer for window \"%s\"",
 		windowGetTitle());
@@ -230,6 +292,21 @@ void rendererFrameEnd(void)
 	assert(initialized);
 	windowFlip();
 	rendererSync();
+}
+
+void rendererHdrBegin(void)
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, hdrFb);
+}
+
+void rendererHdrEnd(void)
+{
+	// Resolve the MSAA image
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	glBlitFramebuffer(0, 0, viewportSize.x, viewportSize.y,
+		0, 0, viewportSize.x, viewportSize.y,
+		GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void rendererDepthOnlyBegin(void)
@@ -360,6 +437,7 @@ static void modelDrawFlat(ModelFlat* m, size_t instances,
 	assert(m->tints);
 	assert(m->transforms);
 	assert(transforms);
+	if (!instances) return;
 
 	glBindVertexArray(m->vao);
 	programUse(flat);
@@ -416,6 +494,7 @@ static void modelDrawPhong(ModelPhong* m, size_t instances,
 	assert(m->tints);
 	assert(m->transforms);
 	assert(transforms);
+	if (!instances) return;
 
 	glBindVertexArray(m->vao);
 	programUse(phong);
