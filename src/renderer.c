@@ -108,13 +108,10 @@ static const GLchar* ProgramBlurFragSrc = (GLchar[]){
 
 static bool initialized = false;
 
-static Framebuffer renderFb = 0; ///< Main world render destination. MSAA, HDR
+static Framebuffer renderFb = 0; ///< Main world render destination
 static Texture renderFbColor = 0;
 static Renderbuffer renderFbDepth = 0;
-static Framebuffer resolveFb = 0; ///< Final resolved render. HDR
-static Texture resolveFbColor = 0;
-static Framebuffer bloomFb[BloomPasses] = {
-	0}; ///< Intermediate bloom results. HDR
+static Framebuffer bloomFb[BloomPasses] = {0}; ///< Intermediate bloom results
 static Texture bloomFbColor[BloomPasses] = {0};
 
 static size2i viewportSize = {0}; ///< in pixels
@@ -162,15 +159,12 @@ static void rendererResize(size2i size)
 		(float)size.x / (float)size.y, ProjectionNear, ProjectionFar);
 
 	// Framebuffers
-	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderFbColor);
-	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA16F,
-		size.x, size.y, GL_TRUE);
-	glBindRenderbuffer(GL_RENDERBUFFER, renderFbDepth);
-	glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH_COMPONENT,
-		size.x, size.y);
-	glBindTexture(GL_TEXTURE_2D, resolveFbColor);
+	glBindTexture(GL_TEXTURE_2D, renderFbColor);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F,
 		size.x, size.y, 0, GL_BGRA, GL_UNSIGNED_BYTE, null);
+	glBindRenderbuffer(GL_RENDERBUFFER, renderFbDepth);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT,
+		size.x, size.y);
 	for (size_t i = 0; i < BloomPasses; i += 1) {
 		glBindTexture(GL_TEXTURE_2D, bloomFbColor[i]);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F,
@@ -198,23 +192,16 @@ void rendererInit(void)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_FRAMEBUFFER_SRGB);
-	glEnable(GL_MULTISAMPLE);
 
 	// Create framebuffers
 	glGenFramebuffers(1, &renderFb);
 	glGenTextures(1, &renderFbColor);
-	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderFbColor);
-	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER,
+	glBindTexture(GL_TEXTURE_2D, renderFbColor);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
 		GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER,
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
 		GL_LINEAR);
 	glGenRenderbuffers(1, &renderFbDepth);
-
-	glGenFramebuffers(1, &resolveFb);
-	glGenTextures(1, &resolveFbColor);
-	glBindTexture(GL_TEXTURE_2D, resolveFbColor);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	glGenFramebuffers(BloomPasses, bloomFb);
 	glGenTextures(BloomPasses, bloomFbColor);
@@ -232,19 +219,11 @@ void rendererInit(void)
 	// Put framebuffers together
 	glBindFramebuffer(GL_FRAMEBUFFER, renderFb);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-		GL_TEXTURE_2D_MULTISAMPLE, renderFbColor, 0);
+		GL_TEXTURE_2D, renderFbColor, 0);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
 		GL_RENDERBUFFER, renderFbDepth);
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		logCrit(applog, u8"Failed to create the HDR render framebuffer");
-		exit(EXIT_FAILURE);
-	}
-
-	glBindFramebuffer(GL_FRAMEBUFFER, resolveFb);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-		GL_TEXTURE_2D, resolveFbColor, 0);
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		logCrit(applog, u8"Failed to create the MSAA resolve framebuffer");
 		exit(EXIT_FAILURE);
 	}
 
@@ -359,14 +338,6 @@ void rendererCleanup(void)
 		glDeleteFramebuffers(BloomPasses, bloomFb);
 		arrayClear(bloomFb);
 	}
-	if (resolveFbColor) {
-		glDeleteTextures(1, &resolveFbColor);
-		resolveFbColor = 0;
-	}
-	if (resolveFb) {
-		glDeleteFramebuffers(1, &resolveFb);
-		resolveFb = 0;
-	}
 	if (renderFbDepth) {
 		glDeleteRenderbuffers(1, &renderFbDepth);
 		renderFbDepth = 0;
@@ -429,18 +400,12 @@ void rendererHdrEnd(void)
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
 
-	// Resolve the MSAA image
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, resolveFb);
-	glBlitFramebuffer(0, 0, viewportSize.x, viewportSize.y,
-		0, 0, viewportSize.x, viewportSize.y,
-		GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
 	// Prepare the image for bloom
 	glBindFramebuffer(GL_FRAMEBUFFER, bloomFb[0]);
 	glViewport(0, 0, viewportSize.x >> 1, viewportSize.y >> 1);
 	programUse(threshold);
 	glActiveTexture(threshold->image);
-	glBindTexture(GL_TEXTURE_2D, resolveFbColor);
+	glBindTexture(GL_TEXTURE_2D, renderFbColor);
 	glUniform1f(threshold->threshold, 1.0f);
 	glUniform1f(threshold->softKnee, 0.25f);
 	glUniform1f(threshold->strength, 1.0f);
@@ -465,7 +430,7 @@ void rendererHdrEnd(void)
 	}
 
 	// Draw the render, and the final result on top on it
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, resolveFb);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, renderFb);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	glViewport(0, 0, viewportSize.x, viewportSize.y);
 	glBlitFramebuffer(0, 0, viewportSize.x, viewportSize.y,
