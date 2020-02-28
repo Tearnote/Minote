@@ -133,6 +133,19 @@ Uniform _programUniform(ProgramBase* program, const char* uniform)
 	return result;
 }
 
+TextureUnit
+_programSampler(ProgramBase* program, const char* sampler, TextureUnit unit)
+{
+	assert(program);
+	assert(sampler);
+	Uniform uniform = programUniform(program, sampler);
+	if (uniform != -1) {
+		programUse(program);
+		glUniform1i(uniform, unit);
+	}
+	return unit;
+}
+
 void _programUse(ProgramBase* program)
 {
 	assert(program);

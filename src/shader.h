@@ -15,6 +15,9 @@ typedef GLuint Program;
 /// Semantic rename of OpenGL uniform location
 typedef GLint Uniform;
 
+/// Semantic rename of OpenGL texture unit, for sampler uniforms
+typedef GLenum TextureUnit;
+
 /**
  * Base struct of Program type. To be a valid Program type usable with below
  * functions, a struct needs to have ::ProgramBase as its first element.
@@ -57,6 +60,17 @@ typedef struct ProgramBase {
     (_programUniform((ProgramBase*)(program), (uniform)))
 
 /**
+ * Set a sampler uniform to a specified texture unit. If it fails, logs
+ * a warning.
+ * @param program The Program object
+ * @param sampler String literal of the sampler uniform to set
+ * @param unit Texture unit to set @p sampler to
+ * @return Value of @p unit
+ */
+#define programSampler(program, sampler, unit) \
+    (_programSampler((ProgramBase*)(program), (sampler), (unit)))
+
+/**
  * Activate a Program for rendering. The same Program stays active for any
  * number of draw calls until changed with another programUse().
  * @param program The Program object
@@ -73,6 +87,9 @@ void* _programCreate(size_t size, const char* vertName, const char* vertSrc,
 void _programDestroy(ProgramBase* program);
 
 Uniform _programUniform(ProgramBase* program, const char* uniform);
+
+TextureUnit
+_programSampler(ProgramBase* program, const char* sampler, TextureUnit unit);
 
 void _programUse(ProgramBase* program);
 
