@@ -64,11 +64,17 @@ typedef struct ProgramThreshold {
 	Uniform strength;
 } ProgramThreshold;
 
-/// Box blur filter type
-typedef struct ProgramBlur {
+/// Basic blit function type
+typedef struct ProgramBlit {
 	ProgramBase base;
 	TextureUnit image;
-} ProgramBlur;
+} ProgramBlit;
+
+typedef struct ProgramDelinearize {
+	ProgramBase base;
+	TextureUnit image;
+	Uniform gamma;
+} ProgramDelinearize;
 
 static const char* ProgramFlatVertName = u8"flat.vert";
 static const GLchar* ProgramFlatVertSrc = (GLchar[]){
@@ -97,13 +103,22 @@ static const GLchar* ProgramThresholdFragSrc = (GLchar[]){
 #include "threshold.frag"
 	, '\0'};
 
-static const char* ProgramBlurVertName = u8"blur.vert";
-static const GLchar* ProgramBlurVertSrc = (GLchar[]){
-#include "blur.vert"
+static const char* ProgramBlitVertName = u8"blit.vert";
+static const GLchar* ProgramBlitVertSrc = (GLchar[]){
+#include "blit.vert"
 	, '\0'};
-static const char* ProgramBlurFragName = u8"blur.frag";
-static const GLchar* ProgramBlurFragSrc = (GLchar[]){
-#include "blur.frag"
+static const char* ProgramBlitFragName = u8"blit.frag";
+static const GLchar* ProgramBlitFragSrc = (GLchar[]){
+#include "blit.frag"
+	, '\0'};
+
+static const char* ProgramDelinearizeVertName = u8"delinearize.vert";
+static const GLchar* ProgramDelinearizeVertSrc = (GLchar[]){
+#include "delinearize.vert"
+	, '\0'};
+static const char* ProgramDelinearizeFragName = u8"delinearize.frag";
+static const GLchar* ProgramDelinearizeFragSrc = (GLchar[]){
+#include "delinearize.frag"
 	, '\0'};
 
 static bool initialized = false;
@@ -125,7 +140,8 @@ static Model* sync = null; ///< Invisible model used to prevent frame buffering
 static ProgramFlat* flat = null;
 static ProgramPhong* phong = null;
 static ProgramThreshold* threshold = null;
-static ProgramBlur* blur = null;
+static ProgramBlit* blit = null;
+static ProgramDelinearize* delinearize = null;
 
 /**
  * Prevent the driver from buffering commands. Call this after windowFlip()
@@ -191,7 +207,6 @@ void rendererInit(void)
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_FRAMEBUFFER_SRGB);
 
 	// Create framebuffers
 	glGenFramebuffers(1, &renderFb);
@@ -267,11 +282,17 @@ void rendererInit(void)
 	threshold->threshold = programUniform(threshold, u8"threshold");
 	threshold->softKnee = programUniform(threshold, u8"softKnee");
 	threshold->strength = programUniform(threshold, u8"strength");
+
+	blit = programCreate(ProgramBlit,
+		ProgramBlitVertName, ProgramBlitVertSrc,
+		ProgramBlitFragName, ProgramBlitFragSrc);
+	blit->image = programSampler(blit, u8"image", GL_TEXTURE0);
 	
-	blur = programCreate(ProgramBlur,
-		ProgramBlurVertName, ProgramBlurVertSrc,
-		ProgramBlurFragName, ProgramBlurFragSrc);
-	blur->image = programSampler(blur, u8"image", GL_TEXTURE0);
+	delinearize = programCreate(ProgramDelinearize,
+		ProgramDelinearizeVertName, ProgramDelinearizeVertSrc,
+		ProgramDelinearizeFragName, ProgramDelinearizeFragSrc);
+	delinearize->image = programSampler(delinearize, u8"image", GL_TEXTURE0);
+	delinearize->gamma = programUniform(delinearize, u8"gamma");
 
 	// Set up the camera and light globals
 	vec3 eye = {-4.0f, 12.0f, 32.0f};
@@ -314,9 +335,13 @@ void rendererCleanup(void)
 		modelDestroy(sync);
 		sync = null;
 	}
-	if (blur) {
-		programDestroy(blur);
-		blur = null;
+	if (delinearize) {
+		programDestroy(delinearize);
+		delinearize = null;
+	}
+	if (blit) {
+		programDestroy(blit);
+		blit = null;
 	}
 	if (threshold) {
 		programDestroy(threshold);
@@ -412,8 +437,8 @@ void rendererHdrEnd(void)
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	// Blur the bloom image
-	programUse(blur);
-	glActiveTexture(blur->image);
+	programUse(blit);
+	glActiveTexture(blit->image);
 	for (size_t i = 0; i < BloomPasses - 1; i += 1) {
 		glBindFramebuffer(GL_FRAMEBUFFER, bloomFb[i + 1]);
 		glViewport(0, 0, viewportSize.x >> (i + 2), viewportSize.y >> (i + 2));
@@ -429,16 +454,21 @@ void rendererHdrEnd(void)
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
 
-	// Draw the render, and the final result on top on it
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, renderFb);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	// Draw the bloom on top of the render
+	glBindFramebuffer(GL_FRAMEBUFFER, renderFb);
 	glViewport(0, 0, viewportSize.x, viewportSize.y);
-	glBlitFramebuffer(0, 0, viewportSize.x, viewportSize.y,
-		0, 0, viewportSize.x, viewportSize.y,
-		GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	glBindTexture(GL_TEXTURE_2D, bloomFbColor[0]);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
+	// Blit the final image
+	programUse(delinearize);
+	glDisable(GL_BLEND);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindTexture(GL_TEXTURE_2D, renderFb);
+	glUniform1f(delinearize->gamma, 2.2f);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_DEPTH_TEST);
 }

@@ -92,7 +92,7 @@ static void windowScaleCallback(GLFWwindow* w, float xScale, float yScale)
 	assert(initialized);
 	assert(xScale);
 	viewportScale = xScale;
-	logDebug(applog, "Window \"%s\" DPI scaling changed to %f",
+	logDebug(applog, u8"Window \"%s\" DPI scaling changed to %f",
 		windowTitle, xScale);
 }
 
@@ -111,7 +111,6 @@ void windowInit(const char* title, size2i size, bool fullscreen)
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif // __APPLE__
 	glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE); // DPI aware
-	glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE); // Linear gamma
 	glfwWindowHint(GLFW_SAMPLES, 4); // 4xMSAA
 	if (fullscreen) {
 		GLFWmonitor* monitor = glfwGetPrimaryMonitor();

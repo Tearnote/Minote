@@ -51,8 +51,10 @@ set(GLSL_SOURCES
         src/glsl/phong.frag.glsl
         src/glsl/threshold.vert.glsl
         src/glsl/threshold.frag.glsl
-        src/glsl/blur.vert.glsl
-        src/glsl/blur.frag.glsl)
+        src/glsl/blit.vert.glsl
+        src/glsl/blit.frag.glsl
+        src/glsl/delinearize.vert.glsl
+        src/glsl/delinearize.frag.glsl)
 
 foreach (GLSL_PATH ${GLSL_SOURCES})
     get_filename_component(GLSL_FILENAME ${GLSL_PATH} NAME_WLE)

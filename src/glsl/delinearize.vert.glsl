@@ -1,15 +1,14 @@
 /**
- * Blur vertex shader
+ * Delinearize vertex shader
  * @file
- * A box blur pass. Execute multiple times with an output texture 2x smaller
- * than the input in both dimensions.
+ * Blits while converting from linear to sRGB. Generates its own vertices,
+ * just draw 3 vertices with no buffers attached.
  */
 
 #version 330 core
 
 out vec2 fTexCoords;
 
-// Hardcoded fullscreen triangle. Call with 3 vertices.
 void main()
 {
     float x = -1.0 + float((gl_VertexID & 1) << 2);
