@@ -4,11 +4,121 @@
  * @file
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 #include <errno.h>
+#include <ctype.h>
+#include "../util.h"
+
+static char dir[256] = {'\0'};
+
+// https://stackoverflow.com/a/122974
+char *trim(char *str)
+{
+	size_t len = 0;
+	char *frontp = str;
+	char *endp = NULL;
+
+	if( str == NULL ) { return NULL; }
+	if( str[0] == '\0' ) { return str; }
+
+	len = strlen(str);
+	endp = str + len;
+
+	/* Move the front and back pointers to address the first non-whitespace
+	 * characters from each end.
+	 */
+	while( isspace((unsigned char) *frontp) ) { ++frontp; }
+	if( endp != frontp )
+	{
+		while( isspace((unsigned char) *(--endp)) && endp != frontp ) {}
+	}
+
+	if( frontp != str && endp == frontp )
+		*str = '\0';
+	else if( str + len - 1 != endp )
+		*(endp + 1) = '\0';
+
+	/* Shift the string so that it starts at str so that if it's dynamically
+	 * allocated, we can still free it on the returned pointer.  Note the reuse
+	 * of endp to mean the front of the string buffer now.
+	 */
+	endp = str;
+	if( frontp != str )
+	{
+		while( *frontp ) { *endp++ = *frontp++; }
+		*endp = '\0';
+	}
+
+	return str;
+}
+
+void fileProcess(char* filename, FILE* output)
+{
+	FILE* input = null;
+	input = fopen(filename, "r");
+	if (!input) {
+		fprintf(stderr, "Could not open %s for reading: %s\n",
+			filename, strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+
+	char line[256] = {'\0'};
+	while (fgets(line, 256, input)) {
+		if (line[strlen(line) - 1] != '\n') {
+			fprintf(stderr, "Line longer than 256 chars, aborting\n");
+			exit(EXIT_FAILURE);
+		}
+		trim(line);
+		if (strncmp(line, "#include", strlen("#include")) == 0 &&
+		    !isalnum(line[strlen("#include")]) &&
+			line[strlen("#include")] != '_') {
+			// Is an #include directive
+			char includeFile[256] = {'\0'};
+			if (!sscanf(line, "#include \"%s", includeFile)) {
+				fprintf(stderr, "Syntax error in #include line: %s", line);
+				exit(EXIT_FAILURE);
+			}
+			if (includeFile[strlen(includeFile) - 1] != '"') {
+				fprintf(stderr, "Syntax error in #include line: %s", line);
+				exit(EXIT_FAILURE);
+			}
+			includeFile[strlen(includeFile) - 1] = '\0';
+
+			char includePath[256] = {'\0'};
+			sprintf(includePath, "%s/%s", dir, includeFile);
+
+			fileProcess(includePath, output);
+		} else {
+			// Is a normal line
+			size_t chCount = 0;
+			for (size_t i = 0; i < strlen(line); i += 1) {
+				// Go to a new line after 8 chars
+				if (chCount == 8) {
+					fprintf(output, "\n");
+					chCount = 0;
+				}
+				chCount += 1;
+
+				// Do the thing
+				fprintf(output, "0x%02x, ", (unsigned char)line[i]);
+			}
+			fprintf(output, "0x%02x,\n", '\n');
+		}
+	}
+
+	fclose(input);
+}
+
+void dirname(char* path, char* dst)
+{
+	char* slash = strrchr(path, '/');
+	if (!slash) return;
+	ptrdiff_t slashIndex = slash - path;
+	strncpy(dst, path, slashIndex);
+}
 
 int main(int argc, char* argv[])
 {
@@ -18,15 +128,7 @@ int main(int argc, char* argv[])
 		exit(EXIT_SUCCESS);
 	}
 
-	FILE* input = NULL;
-	FILE* output = NULL;
-
-	input = fopen(argv[1], "r");
-	if (!input) {
-		fprintf(stderr, "Could not open %s for reading: %s\n",
-				argv[1], strerror(errno));
-		exit(EXIT_FAILURE);
-	}
+	FILE* output = null;
 	output = fopen(argv[2], "w");
 	if (!output) {
 		fprintf(stderr, "Could not open %s for writing: %s\n",
@@ -34,27 +136,9 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	int ch = 0;
-	bool first = true;
-	int chCount = 0;
-	while ((ch = fgetc(input)) != EOF) {
-		// Print comma if needed
-		if (first)
-			first = false;
-		else
-			fprintf(output, ", ");
+	dirname(argv[1], dir);
 
-		// Go to a new line after 8 chars
-		if (chCount == 8) {
-			fprintf(output, "\n");
-			chCount = 0;
-		}
-		chCount += 1;
-
-		// Do the thing
-		fprintf(output, "0x%02x", ch);
-	}
+	fileProcess(argv[1], output);
 
 	fclose(output);
-	fclose(input);
 }

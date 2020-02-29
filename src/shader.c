@@ -141,7 +141,7 @@ _programSampler(ProgramBase* program, const char* sampler, TextureUnit unit)
 	Uniform uniform = programUniform(program, sampler);
 	if (uniform != -1) {
 		programUse(program);
-		glUniform1i(uniform, unit);
+		glUniform1i(uniform, unit - GL_TEXTURE0);
 	}
 	return unit;
 }

@@ -54,7 +54,13 @@ set(GLSL_SOURCES
         src/glsl/blit.vert.glsl
         src/glsl/blit.frag.glsl
         src/glsl/delinearize.vert.glsl
-        src/glsl/delinearize.frag.glsl)
+        src/glsl/delinearize.frag.glsl
+        src/glsl/smaaEdge.vert.glsl
+        src/glsl/smaaEdge.frag.glsl
+        src/glsl/smaaBlend.vert.glsl
+        src/glsl/smaaBlend.frag.glsl
+        src/glsl/smaaNeighbor.vert.glsl
+        src/glsl/smaaNeighbor.frag.glsl)
 
 foreach (GLSL_PATH ${GLSL_SOURCES})
     get_filename_component(GLSL_FILENAME ${GLSL_PATH} NAME_WLE)
@@ -77,7 +83,8 @@ set(C_INTERNALLIBS
         lib/glad/glad.h lib/glad/glad.c lib/glad/KHR/khrplatform.h
         lib/linmath/linmath.h
         lib/pcg/pcg_basic.h lib/pcg/pcg_basic.c
-        lib/aheasing/easing.h lib/aheasing/easing.c)
+        lib/aheasing/easing.h lib/aheasing/easing.c
+        lib/smaa/AreaTex.h lib/smaa/SearchTex.h)
 
 set(C_SOURCES
         src/main.h src/main.c
