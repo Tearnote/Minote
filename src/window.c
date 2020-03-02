@@ -111,7 +111,7 @@ void windowInit(const char* title, size2i size, bool fullscreen)
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif // __APPLE__
 	glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE); // DPI aware
-	glfwWindowHint(GLFW_SAMPLES, 4); // 4xMSAA
+	glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE);
 	if (fullscreen) {
 		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 		const GLFWvidmode* mode = glfwGetVideoMode(monitor);

@@ -49,18 +49,18 @@ set(GLSL_SOURCES
         src/glsl/flat.frag.glsl
         src/glsl/phong.vert.glsl
         src/glsl/phong.frag.glsl
-        src/glsl/threshold.vert.glsl
-        src/glsl/threshold.frag.glsl
-        src/glsl/blit.vert.glsl
-        src/glsl/blit.frag.glsl
-        src/glsl/delinearize.vert.glsl
-        src/glsl/delinearize.frag.glsl
+        src/glsl/smaaSeparate.vert.glsl
+        src/glsl/smaaSeparate.frag.glsl
         src/glsl/smaaEdge.vert.glsl
         src/glsl/smaaEdge.frag.glsl
         src/glsl/smaaBlend.vert.glsl
         src/glsl/smaaBlend.frag.glsl
         src/glsl/smaaNeighbor.vert.glsl
-        src/glsl/smaaNeighbor.frag.glsl)
+        src/glsl/smaaNeighbor.frag.glsl
+        src/glsl/blit.vert.glsl
+        src/glsl/blit.frag.glsl
+        src/glsl/threshold.vert.glsl
+        src/glsl/threshold.frag.glsl)
 
 foreach (GLSL_PATH ${GLSL_SOURCES})
     get_filename_component(GLSL_FILENAME ${GLSL_PATH} NAME_WLE)
