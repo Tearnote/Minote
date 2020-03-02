@@ -261,8 +261,8 @@ static void rendererResize(size2i size)
 
 	for (size_t i = 0; i < BloomPasses; i += 1) {
 		glBindTexture(GL_TEXTURE_2D, bloomFbColor[i]);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F,
-			size.x >> (i + 1), size.y >> (i + 1), 0, GL_RGBA, GL_UNSIGNED_BYTE,
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F,
+			size.x >> (i + 1), size.y >> (i + 1), 0, GL_RGB, GL_UNSIGNED_BYTE,
 			null);
 	}
 }

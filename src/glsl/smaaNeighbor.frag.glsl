@@ -17,13 +17,9 @@ uniform vec4 screenSize;
 uniform float alpha;
 
 #define SMAA_RT_METRICS screenSize
-#define SMAA_GLSL_3 1
-
 #define SMAA_INCLUDE_VS 0
 #define SMAA_INCLUDE_PS 1
-
-#define SMAA_PRESET_ULTRA
-#include "../../lib/smaa/smaa.h"
+#include "smaa.h"
 
 void main()
 {

@@ -12,13 +12,9 @@ out vec4 fOffset[3];
 uniform vec4 screenSize;
 
 #define SMAA_RT_METRICS screenSize
-#define SMAA_GLSL_3 1
-
 #define SMAA_INCLUDE_VS 1
 #define SMAA_INCLUDE_PS 0
-
-#define SMAA_PRESET_ULTRA
-#include "../../lib/smaa/smaa.h"
+#include "smaa.h"
 #include "util.h"
 
 void main()

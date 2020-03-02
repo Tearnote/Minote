@@ -515,7 +515,8 @@ void pureInit(void)
 	tet.frame = -1;
 	tet.ready = 3 * 50;
 	tet.field = fieldCreate((size2i){FieldWidth, FieldHeight});
-	tet.rng = rngCreate((uint64_t)time(null));
+	tet.rng = rngCreate((uint64_t)0);
+//	tet.rng = rngCreate((uint64_t)time(null));
 	tet.player.level = -1;
 	tet.player.autoshiftDelay = AutoshiftRepeat; // Starts out pre-charged
 	tet.player.spawnDelay = SpawnDelay; // Start instantly

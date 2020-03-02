@@ -15,13 +15,9 @@ uniform sampler2DMS image;
 uniform vec4 screenSize;
 
 #define SMAA_RT_METRICS screenSize
-#define SMAA_GLSL_3 1
-
 #define SMAA_INCLUDE_VS 0
 #define SMAA_INCLUDE_PS 1
-
-#define SMAA_PRESET_ULTRA
-#include "../../lib/smaa/smaa.h"
+#include "smaa.h"
 
 void main()
 {
