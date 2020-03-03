@@ -11,8 +11,10 @@ in vec4 fOffset;
 
 out vec4 outColor;
 
-uniform sampler2D image;
-uniform sampler2D blend;
+uniform sampler2D image1;
+uniform sampler2D image2;
+uniform sampler2D blend1;
+uniform sampler2D blend2;
 uniform vec4 screenSize;
 uniform float alpha;
 
@@ -23,6 +25,7 @@ uniform float alpha;
 
 void main()
 {
-    outColor = SMAANeighborhoodBlendingPS(fTexCoords, fOffset, image, blend);
-    outColor *= alpha;
+    vec4 color1 = SMAANeighborhoodBlendingPS(fTexCoords, fOffset, image1, blend1);
+    vec4 color2 = SMAANeighborhoodBlendingPS(fTexCoords, fOffset, image2, blend2);
+    outColor = lerp(color1, color2, 0.5);
 }

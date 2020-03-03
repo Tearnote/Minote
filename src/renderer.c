@@ -71,7 +71,8 @@ typedef struct ProgramSmaaEdge {
 
 typedef struct ProgramSmaaBlend {
 	ProgramBase base;
-	TextureUnit edges;
+	TextureUnit edges1;
+	TextureUnit edges2;
 	TextureUnit area;
 	TextureUnit search;
 	Uniform screenSize;
@@ -79,10 +80,11 @@ typedef struct ProgramSmaaBlend {
 
 typedef struct ProgramSmaaNeighbor {
 	ProgramBase base;
-	TextureUnit image;
-	TextureUnit blend;
+	TextureUnit image1;
+	TextureUnit image2;
+	TextureUnit blend1;
+	TextureUnit blend2;
 	Uniform screenSize;
-	Uniform alpha;
 } ProgramSmaaNeighbor;
 
 /// Basic blit function type
@@ -182,7 +184,7 @@ static Framebuffer smaaSeparateFb = 0;
 static Texture smaaSeparateFbColor[2] = {0};
 static Framebuffer smaaEdgeFb[2] = {0};
 static Texture smaaEdgeFbColor[2] = {0};
-static Framebuffer smaaBlendFb[2] = {0};
+static Framebuffer smaaBlendFb = 0;
 static Texture smaaBlendFbColor[2] = {0};
 static Texture smaaArea = 0;
 static Texture smaaSearch = 0;
@@ -323,7 +325,7 @@ void rendererInit(void)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	}
 
-	glGenFramebuffers(2, smaaBlendFb);
+	glGenFramebuffers(1, &smaaBlendFb);
 	glGenTextures(2, smaaBlendFbColor);
 	for (size_t i = 0; i < 2; i += 1) {
 		glBindTexture(GL_TEXTURE_2D, smaaBlendFbColor[i]);
@@ -356,6 +358,26 @@ void rendererInit(void)
 		logCrit(applog, u8"Failed to create the HDR render framebuffer");
 		exit(EXIT_FAILURE);
 	}
+	// Verify that multisampling has the expected subsample layout
+	GLfloat sampleLocations[4] = {0};
+	glGetMultisamplefv(GL_SAMPLE_POSITION, 0, sampleLocations);
+	glGetMultisamplefv(GL_SAMPLE_POSITION, 1, sampleLocations + 2);
+	if (sampleLocations[0] != 0.75f ||
+		sampleLocations[1] != 0.75f ||
+		sampleLocations[2] != 0.25f ||
+		sampleLocations[3] != 0.25f) {
+		logWarn(applog, "MSAA 2x subsample locations are not as expected:");
+		logWarn(applog, "    Subsample #0: (%f, %f), expected (0.75, 0.75)",
+			sampleLocations[0], sampleLocations[1]);
+		logWarn(applog, "    Subsample #1: (%f, %f), expected (0.25, 0.25)",
+			sampleLocations[2], sampleLocations[3]);
+#ifdef NDEBUG
+		logWarn(applog, "  Graphics will look ugly.");
+#else //NDEBUG
+		logCrit(applog, "Aborting, please tell the developer that runtime subsample detection is needed.");
+		exit(EXIT_FAILURE);
+#endif //NDEBUG
+	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, smaaSeparateFb);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
@@ -379,15 +401,16 @@ void rendererInit(void)
 		}
 	}
 
-	for (size_t i = 0; i < 2; i += 1) {
-		glBindFramebuffer(GL_FRAMEBUFFER, smaaBlendFb[i]);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-			GL_TEXTURE_2D, smaaBlendFbColor[i], 0);
-		if (glCheckFramebufferStatus(GL_FRAMEBUFFER)
-			!= GL_FRAMEBUFFER_COMPLETE) {
-			logCrit(applog, u8"Failed to create the SMAA blend framebuffer #%zu", i);
-			exit(EXIT_FAILURE);
-		}
+	glBindFramebuffer(GL_FRAMEBUFFER, smaaBlendFb);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+		GL_TEXTURE_2D, smaaBlendFbColor[0], 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,
+		GL_TEXTURE_2D, smaaBlendFbColor[1], 0);
+	glDrawBuffers(2, (GLuint[]){GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1});
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER)
+		!= GL_FRAMEBUFFER_COMPLETE) {
+		logCrit(applog, u8"Failed to create the SMAA blend framebuffer");
+		exit(EXIT_FAILURE);
 	}
 
 	for (size_t i = 0; i < BloomPasses; i += 1) {
@@ -437,18 +460,20 @@ void rendererInit(void)
 	smaaBlend = programCreate(ProgramSmaaBlend,
 		ProgramSmaaBlendVertName, ProgramSmaaBlendVertSrc,
 		ProgramSmaaBlendFragName, ProgramSmaaBlendFragSrc);
-	smaaBlend->edges = programSampler(smaaBlend, u8"edges", GL_TEXTURE0);
-	smaaBlend->area = programSampler(smaaBlend, u8"area", GL_TEXTURE1);
-	smaaBlend->search = programSampler(smaaBlend, u8"search", GL_TEXTURE2);
+	smaaBlend->edges1 = programSampler(smaaBlend, u8"edges1", GL_TEXTURE0);
+	smaaBlend->edges2 = programSampler(smaaBlend, u8"edges2", GL_TEXTURE1);
+	smaaBlend->area = programSampler(smaaBlend, u8"area", GL_TEXTURE2);
+	smaaBlend->search = programSampler(smaaBlend, u8"search", GL_TEXTURE3);
 	smaaBlend->screenSize = programUniform(smaaBlend, u8"screenSize");
 
 	smaaNeighbor = programCreate(ProgramSmaaNeighbor,
 		ProgramSmaaNeighborVertName, ProgramSmaaNeighborVertSrc,
 		ProgramSmaaNeighborFragName, ProgramSmaaNeighborFragSrc);
-	smaaNeighbor->image = programSampler(smaaNeighbor, u8"image", GL_TEXTURE0);
-	smaaNeighbor->blend = programSampler(smaaNeighbor, u8"blend", GL_TEXTURE1);
+	smaaNeighbor->image1 = programSampler(smaaNeighbor, u8"image1", GL_TEXTURE0);
+	smaaNeighbor->image2 = programSampler(smaaNeighbor, u8"image2", GL_TEXTURE1);
+	smaaNeighbor->blend1 = programSampler(smaaNeighbor, u8"blend1", GL_TEXTURE2);
+	smaaNeighbor->blend2 = programSampler(smaaNeighbor, u8"blend2", GL_TEXTURE3);
 	smaaNeighbor->screenSize = programUniform(smaaNeighbor, u8"screenSize");
-	smaaNeighbor->alpha = programUniform(smaaNeighbor, u8"alpha");
 
 	blit = programCreate(ProgramBlit,
 		ProgramBlitVertName, ProgramBlitVertSrc,
@@ -585,9 +610,9 @@ void rendererCleanup(void)
 		glDeleteTextures(2, smaaBlendFbColor);
 		arrayClear(smaaBlendFbColor);
 	}
-	if (smaaBlendFb[0]) {
-		glDeleteFramebuffers(2, smaaBlendFb);
-		arrayClear(smaaBlendFb);
+	if (smaaBlendFb) {
+		glDeleteFramebuffers(1, &smaaBlendFb);
+		smaaBlendFb = 0;
 	}
 	if (smaaEdgeFbColor[0]) {
 		glDeleteTextures(2, smaaEdgeFbColor);
@@ -728,37 +753,38 @@ void rendererHdrEnd(void)
 
 	// SMAA blending weight calculation pass
 	programUse(smaaBlend);
-	for (size_t i = 0; i < 2; i += 1) {
-		glBindFramebuffer(GL_FRAMEBUFFER, smaaBlendFb[i]);
-		glClear(GL_COLOR_BUFFER_BIT);
-		glActiveTexture(smaaBlend->edges);
-		glBindTexture(GL_TEXTURE_2D, smaaEdgeFbColor[i]);
-		glActiveTexture(smaaBlend->area);
-		glBindTexture(GL_TEXTURE_2D, smaaArea);
-		glActiveTexture(smaaBlend->search);
-		glBindTexture(GL_TEXTURE_2D, smaaSearch);
-		glUniform4f(smaaBlend->screenSize,
-			1.0 / (float)viewportSize.x, 1.0 / (float)viewportSize.y,
-			viewportSize.x, viewportSize.y);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-	}
+	glBindFramebuffer(GL_FRAMEBUFFER, smaaBlendFb);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glActiveTexture(smaaBlend->edges1);
+	glBindTexture(GL_TEXTURE_2D, smaaEdgeFbColor[0]);
+	glActiveTexture(smaaBlend->edges2);
+	glBindTexture(GL_TEXTURE_2D, smaaEdgeFbColor[1]);
+	glActiveTexture(smaaBlend->area);
+	glBindTexture(GL_TEXTURE_2D, smaaArea);
+	glActiveTexture(smaaBlend->search);
+	glBindTexture(GL_TEXTURE_2D, smaaSearch);
+	glUniform4f(smaaBlend->screenSize,
+		1.0 / (float)viewportSize.x, 1.0 / (float)viewportSize.y,
+		viewportSize.x, viewportSize.y);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	// SMAA neighbor blending pass
-	glEnable(GL_BLEND);
 	programUse(smaaNeighbor);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	for (size_t i = 0; i < 2; i += 1) {
-		glActiveTexture(smaaNeighbor->image);
-		glBindTexture(GL_TEXTURE_2D, smaaSeparateFbColor[i]);
-		glActiveTexture(smaaNeighbor->blend);
-		glBindTexture(GL_TEXTURE_2D, smaaBlendFbColor[i]);
-		glUniform4f(smaaNeighbor->screenSize,
-			1.0 / (float)viewportSize.x, 1.0 / (float)viewportSize.y,
-			viewportSize.x, viewportSize.y);
-		glUniform1f(smaaNeighbor->alpha, 1.0f - 0.5f * i);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-	}
+	glActiveTexture(smaaNeighbor->image1);
+	glBindTexture(GL_TEXTURE_2D, smaaSeparateFbColor[0]);
+	glActiveTexture(smaaNeighbor->image2);
+	glBindTexture(GL_TEXTURE_2D, smaaSeparateFbColor[1]);
+	glActiveTexture(smaaNeighbor->blend1);
+	glBindTexture(GL_TEXTURE_2D, smaaBlendFbColor[0]);
+	glActiveTexture(smaaNeighbor->blend2);
+	glBindTexture(GL_TEXTURE_2D, smaaBlendFbColor[1]);
+	glUniform4f(smaaNeighbor->screenSize,
+		1.0 / (float)viewportSize.x, 1.0 / (float)viewportSize.y,
+		viewportSize.x, viewportSize.y);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 
+	glEnable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST);
 }
 
