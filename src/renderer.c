@@ -243,7 +243,7 @@ static void rendererResize(size2i size)
 
 	// Framebuffers
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderFbColor);
-	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 2, GL_RGBA16F,
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 2, GL_RGB16F,
 		size.x, size.y, GL_TRUE);
 	glBindRenderbuffer(GL_RENDERBUFFER, renderFbDepth);
 	glRenderbufferStorageMultisample(GL_RENDERBUFFER, 2, GL_DEPTH_COMPONENT,
@@ -251,8 +251,8 @@ static void rendererResize(size2i size)
 
 	for (size_t i = 0; i < 2; i += 1) {
 	glBindTexture(GL_TEXTURE_2D, smaaSeparateFbColor[i]);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F,
-		size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, null);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F,
+		size.x, size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, null);
 		glBindTexture(GL_TEXTURE_2D, smaaEdgeFbColor[i]);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
 			size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, null);
@@ -501,7 +501,7 @@ void rendererInit(void)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8,
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RG_RGTC2,
 		AREATEX_WIDTH, AREATEX_HEIGHT, 0,
 		GL_RG, GL_UNSIGNED_BYTE, areaTexBytesFlipped);
 
@@ -517,7 +517,7 @@ void rendererInit(void)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R8,
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RED_RGTC1,
 		SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0,
 		GL_RED, GL_UNSIGNED_BYTE, searchTexBytesFlipped);
 
