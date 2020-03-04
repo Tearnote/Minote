@@ -8,7 +8,7 @@
 
 out vec2 fTexCoords;
 
-#include "util.h"
+#include "util.glslh"
 
 void main()
 {

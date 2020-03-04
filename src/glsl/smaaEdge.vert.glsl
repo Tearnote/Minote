@@ -14,8 +14,8 @@ uniform vec4 screenSize;
 #define SMAA_RT_METRICS screenSize
 #define SMAA_INCLUDE_VS 1
 #define SMAA_INCLUDE_PS 0
-#include "smaa.h"
-#include "util.h"
+#include "smaaParams.glslh"
+#include "util.glslh"
 
 void main()
 {

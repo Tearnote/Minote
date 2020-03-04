@@ -22,14 +22,9 @@
 
 #define BloomPasses 6
 
-/// Semantic rename of OpenGL texture object ID
-typedef GLuint Texture;
-
-/// Semantic rename of OpenGL framebuffer object ID
-typedef GLuint Framebuffer;
-
-/// Semantic rename of OpenGL renderbuffer object ID
-typedef GLuint Renderbuffer;
+typedef GLuint Texture; ///< OpenGL texture object ID
+typedef GLuint Framebuffer; ///< OpenGL framebuffer object ID
+typedef GLuint Renderbuffer; ///< OpenGL renderbuffer object ID
 
 /// Start of the clipping plane, in world distance units
 #define ProjectionNear 0.1f
@@ -255,7 +250,7 @@ static void rendererResize(size2i size)
 
 	for (size_t i = 0; i < 2; i += 1) {
 	glBindTexture(GL_TEXTURE_2D, smaaSeparateFbColor[i]);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F,
 		size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, null);
 		glBindTexture(GL_TEXTURE_2D, smaaEdgeFbColor[i]);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
