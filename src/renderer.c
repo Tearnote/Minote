@@ -183,6 +183,7 @@ static Renderbuffer renderFbDepth = 0;
 static Framebuffer smaaSeparateFb = 0;
 static Texture smaaSeparateFbColor[2] = {0};
 static Framebuffer smaaEdgeFb[2] = {0};
+static Renderbuffer smaaEdgeFbStencil = 0;
 static Texture smaaEdgeFbColor[2] = {0};
 static Framebuffer smaaBlendFb = 0;
 static Texture smaaBlendFbColor[2] = {0};
@@ -248,11 +249,14 @@ static void rendererResize(size2i size)
 	glBindRenderbuffer(GL_RENDERBUFFER, renderFbDepth);
 	glRenderbufferStorageMultisample(GL_RENDERBUFFER, 2, GL_DEPTH_COMPONENT,
 		size.x, size.y);
+	glBindRenderbuffer(GL_RENDERBUFFER, smaaEdgeFbStencil);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
+		size.x, size.y);
 
 	for (size_t i = 0; i < 2; i += 1) {
 	glBindTexture(GL_TEXTURE_2D, smaaSeparateFbColor[i]);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F,
-		size.x, size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, null);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
+		size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, null);
 		glBindTexture(GL_TEXTURE_2D, smaaEdgeFbColor[i]);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
 			size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, null);
@@ -317,6 +321,7 @@ void rendererInit(void)
 
 	glGenFramebuffers(2, smaaEdgeFb);
 	glGenTextures(2, smaaEdgeFbColor);
+	glGenRenderbuffers(1, &smaaEdgeFbStencil);
 	for (size_t i = 0; i < 2; i += 1) {
 		glBindTexture(GL_TEXTURE_2D, smaaEdgeFbColor[i]);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -374,7 +379,7 @@ void rendererInit(void)
 #ifdef NDEBUG
 		logWarn(applog, "  Graphics will look ugly.");
 #else //NDEBUG
-		logCrit(applog, "Aborting, please tell the developer that runtime subsample detection is needed.");
+		logCrit(applog, "Aborting, please tell the developer that runtime subsample detection is needed");
 		exit(EXIT_FAILURE);
 #endif //NDEBUG
 	}
@@ -394,6 +399,8 @@ void rendererInit(void)
 		glBindFramebuffer(GL_FRAMEBUFFER, smaaEdgeFb[i]);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
 			GL_TEXTURE_2D, smaaEdgeFbColor[i], 0);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+			GL_RENDERBUFFER, smaaEdgeFbStencil);
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER)
 			!= GL_FRAMEBUFFER_COMPLETE) {
 			logCrit(applog, u8"Failed to create the SMAA edge framebuffer #%zu", i);
@@ -406,6 +413,8 @@ void rendererInit(void)
 		GL_TEXTURE_2D, smaaBlendFbColor[0], 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,
 		GL_TEXTURE_2D, smaaBlendFbColor[1], 0);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+		GL_RENDERBUFFER, smaaEdgeFbStencil);
 	glDrawBuffers(2, (GLuint[]){GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1});
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER)
 		!= GL_FRAMEBUFFER_COMPLETE) {
@@ -614,6 +623,10 @@ void rendererCleanup(void)
 		glDeleteFramebuffers(1, &smaaBlendFb);
 		smaaBlendFb = 0;
 	}
+	if (smaaEdgeFbStencil) {
+		glDeleteRenderbuffers(1, &smaaEdgeFbStencil);
+		smaaEdgeFbStencil = 0;
+	}
 	if (smaaEdgeFbColor[0]) {
 		glDeleteTextures(2, smaaEdgeFbColor);
 		arrayClear(smaaEdgeFbColor);
@@ -691,7 +704,7 @@ void rendererHdrEnd(void)
 {
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 /*
 	// Prepare the image for bloom
 	glBindFramebuffer(GL_FRAMEBUFFER, bloomFb[0]);
@@ -739,10 +752,14 @@ void rendererHdrEnd(void)
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	// SMAA edge detection pass
+	glEnable(GL_STENCIL_TEST);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 	programUse(smaaEdge);
 	for (size_t i = 0; i < 2; i += 1) {
 		glBindFramebuffer(GL_FRAMEBUFFER, smaaEdgeFb[i]);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glStencilMask(0xFF);
+		glClear(GL_COLOR_BUFFER_BIT | (i? 0 : GL_STENCIL_BUFFER_BIT));
 		glActiveTexture(smaaEdge->image);
 		glBindTexture(GL_TEXTURE_2D, smaaSeparateFbColor[i]);
 		glUniform4f(smaaEdge->screenSize,
@@ -754,6 +771,8 @@ void rendererHdrEnd(void)
 	// SMAA blending weight calculation pass
 	programUse(smaaBlend);
 	glBindFramebuffer(GL_FRAMEBUFFER, smaaBlendFb);
+	glStencilFunc(GL_EQUAL, 1, 0xFF);
+	glStencilMask(0x00);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glActiveTexture(smaaBlend->edges1);
 	glBindTexture(GL_TEXTURE_2D, smaaEdgeFbColor[0]);
@@ -767,6 +786,7 @@ void rendererHdrEnd(void)
 		1.0 / (float)viewportSize.x, 1.0 / (float)viewportSize.y,
 		viewportSize.x, viewportSize.y);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
+	glDisable(GL_STENCIL_TEST);
 
 	// SMAA neighbor blending pass
 	programUse(smaaNeighbor);

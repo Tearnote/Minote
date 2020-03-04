@@ -1,1 +1,2 @@
-Before opt: 11ms
+Use one texture array instead of 6 intermediate textures
+Try merging via instances instead of duplication
