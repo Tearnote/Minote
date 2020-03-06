@@ -286,7 +286,6 @@ void rendererInit(void)
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_BLEND);
-	glEnable(GL_FRAMEBUFFER_SRGB);
 	glEnable(GL_MULTISAMPLE);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -526,7 +525,7 @@ void rendererInit(void)
 		GL_RED, GL_UNSIGNED_BYTE, searchTexBytesFlipped);
 
 	// Set up the camera and light globals
-	vec3 eye = {-4.0f, 12.0f, 32.0f};
+	vec3 eye = {0.0f, 12.0f, 32.0f};
 	vec3 center = {0.0f, 12.0f, 0.0f};
 	vec3 up = {0.0f, 1.0f, 0.0f};
 	mat4x4_look_at(camera, eye, center, up);
@@ -671,7 +670,7 @@ void rendererFrameBegin(void)
 	if (viewportSize.x != windowSize.x || viewportSize.y != windowSize.y)
 		rendererResize(windowSize);
 
-	vec3 eye = {4.0f, 12.0f, 32.0f};
+	vec3 eye = {0.0f, 12.0f, 32.0f};
 	vec3 center = {0.0f, 12.0f, 0.0f};
 	vec3 up = {0.0f, 1.0f, 0.0f};
 	mat4x4_look_at(camera, eye, center, up);

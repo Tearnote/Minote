@@ -20,7 +20,6 @@ uniform vec4 screenSize;
 void main()
 {
     vec2 pos = triangleVertex(gl_VertexID, fTexCoords);
-    fTexCoords = flipTexCoord(fTexCoords);
 
     fOffset[0] = vec4(0.0, 0.0, 0.0, 0.0);
     fOffset[1] = vec4(0.0, 0.0, 0.0, 0.0);

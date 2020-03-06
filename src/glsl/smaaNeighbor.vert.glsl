@@ -20,7 +20,6 @@ uniform vec4 screenSize;
 void main()
 {
     vec2 pos = triangleVertex(gl_VertexID, fTexCoords);
-    fTexCoords = flipTexCoord(fTexCoords);
 
     fOffset = vec4(0.0, 0.0, 0.0, 0.0);
     SMAANeighborhoodBlendingVS(fTexCoords, fOffset);
