@@ -25,8 +25,13 @@ void playCleanup(void);
 void playUpdate(void);
 
 /**
- * Draw the play layer to the screen.
+ * Draw the play layer's geometry - scene, blocks and other bits.
  */
-void playDraw(void);
+void playDrawGeometry(void);
+
+/**
+ * Draw the play layer's text - mostly the HUD.
+ */
+void playDrawText(void);
 
 #endif //MINOTE_PLAY_H

@@ -680,22 +680,14 @@ void rendererFrameBegin(void)
 	lightColor.r = 1.0f;
 	lightColor.g = 1.0f;
 	lightColor.b = 1.0f;
+	glBindFramebuffer(GL_FRAMEBUFFER, renderFb);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
 }
 
 void rendererFrameEnd(void)
 {
 	assert(initialized);
-	windowFlip();
-	rendererSync();
-}
-
-void rendererHdrBegin(void)
-{
-	glBindFramebuffer(GL_FRAMEBUFFER, renderFb);
-}
-
-void rendererHdrEnd(void)
-{
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -798,8 +790,9 @@ void rendererHdrEnd(void)
 		viewportSize.x, viewportSize.y);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	glEnable(GL_BLEND);
-	glEnable(GL_DEPTH_TEST);
+	// Finish the frame
+	windowFlip();
+	rendererSync();
 }
 
 void rendererDepthOnlyBegin(void)

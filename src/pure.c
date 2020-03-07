@@ -1048,10 +1048,9 @@ static void pureDrawBorder(void)
 	darrayClear(borderTransforms);
 }
 
-void pureDraw(void)
+void pureDrawGeometry(void)
 {
 	assert(initialized);
-
 	rendererClear((color3){0.010f, 0.276f, 0.685f}); //TODO make into layer
 	pureDrawScene();
 	pureQueueField();
@@ -1060,4 +1059,9 @@ void pureDraw(void)
 	pureQueuePreview();
 	pureDrawQueuedBlocks();
 	pureDrawBorder();
+}
+
+void pureDrawText(void)
+{
+	// Nothing here yet!
 }
