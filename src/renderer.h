@@ -45,7 +45,8 @@ void rendererFrameBegin(void);
 
 /**
  * Switch from the MSAA framebuffer to regular, applying the chosen AA method
- * in the process.
+ * in the process. The new framebuffer has no depth or stencil, but is perfect
+ * for applying post-processing effects before the final flip.
  */
 void rendererResolveAA(void);
 

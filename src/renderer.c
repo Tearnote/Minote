@@ -171,9 +171,11 @@ static const GLchar* ProgramThresholdFragSrc = (GLchar[]){
 
 static bool initialized = false;
 
-static Framebuffer renderFb = 0; ///< Main world render destination
-static Texture renderFbColor = 0;
-static Renderbuffer renderFbDepth = 0;
+static Framebuffer renderFbMS = 0; ///< Main render destination, multisampled
+static Texture renderFbMSColor = 0;
+static Renderbuffer renderFbMSDepth = 0;
+static Framebuffer renderFbSS = 0; ///< Resolved render, for post-processing
+static Texture renderFbSSColor = 0;
 
 static Framebuffer smaaSeparateFb = 0;
 static Texture smaaSeparateFbColor[2] = {0};
@@ -238,12 +240,16 @@ static void rendererResize(size2i size)
 		(float)size.x / (float)size.y, ProjectionNear, ProjectionFar);
 
 	// Framebuffers
-	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderFbColor);
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderFbMSColor);
 	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 2, GL_RGB16F,
 		size.x, size.y, GL_TRUE);
-	glBindRenderbuffer(GL_RENDERBUFFER, renderFbDepth);
+	glBindRenderbuffer(GL_RENDERBUFFER, renderFbMSDepth);
 	glRenderbufferStorageMultisample(GL_RENDERBUFFER, 2, GL_DEPTH_COMPONENT,
 		size.x, size.y);
+	glBindTexture(GL_TEXTURE_2D, renderFbSSColor);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F,
+		size.x, size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, null);
+
 	glBindRenderbuffer(GL_RENDERBUFFER, smaaEdgeFbStencil);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
 		size.x, size.y);
@@ -251,7 +257,7 @@ static void rendererResize(size2i size)
 	for (size_t i = 0; i < 2; i += 1) {
 	glBindTexture(GL_TEXTURE_2D, smaaSeparateFbColor[i]);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F,
-		size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, null);
+		size.x, size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, null);
 		glBindTexture(GL_TEXTURE_2D, smaaEdgeFbColor[i]);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
 			size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, null);
@@ -290,9 +296,9 @@ void rendererInit(void)
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	// Create framebuffers
-	glGenFramebuffers(1, &renderFb);
-	glGenTextures(1, &renderFbColor);
-	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderFbColor);
+	glGenFramebuffers(1, &renderFbMS);
+	glGenTextures(1, &renderFbMSColor);
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderFbMSColor);
 	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER,
 		GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER,
@@ -301,7 +307,15 @@ void rendererInit(void)
 		GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T,
 		GL_CLAMP_TO_EDGE);
-	glGenRenderbuffers(1, &renderFbDepth);
+	glGenRenderbuffers(1, &renderFbMSDepth);
+
+	glGenFramebuffers(1, &renderFbSS);
+	glGenTextures(1, &renderFbSSColor);
+	glBindTexture(GL_TEXTURE_2D, renderFbSSColor);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	glGenFramebuffers(1, &smaaSeparateFb);
 	glGenTextures(2, smaaSeparateFbColor);
@@ -348,13 +362,13 @@ void rendererInit(void)
 	rendererResize(windowGetSize());
 
 	// Put framebuffers together
-	glBindFramebuffer(GL_FRAMEBUFFER, renderFb);
+	glBindFramebuffer(GL_FRAMEBUFFER, renderFbMS);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-		GL_TEXTURE_2D_MULTISAMPLE, renderFbColor, 0);
+		GL_TEXTURE_2D_MULTISAMPLE, renderFbMSColor, 0);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-		GL_RENDERBUFFER, renderFbDepth);
+		GL_RENDERBUFFER, renderFbMSDepth);
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		logCrit(applog, u8"Failed to create the HDR render framebuffer");
+		logCrit(applog, u8"Failed to create the render framebuffer");
 		exit(EXIT_FAILURE);
 	}
 	// Verify that multisampling has the expected subsample layout
@@ -376,6 +390,14 @@ void rendererInit(void)
 		logCrit(applog, "Aborting, please tell the developer that runtime subsample detection is needed");
 		exit(EXIT_FAILURE);
 #endif //NDEBUG
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, renderFbSS);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+		GL_TEXTURE_2D, renderFbSSColor, 0);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		logCrit(applog, u8"Failed to create the post-processing framebuffer");
+		exit(EXIT_FAILURE);
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, smaaSeparateFb);
@@ -637,17 +659,25 @@ void rendererCleanup(void)
 		glDeleteFramebuffers(1, &smaaSeparateFb);
 		smaaSeparateFb = 0;
 	}
-	if (renderFbDepth) {
-		glDeleteRenderbuffers(1, &renderFbDepth);
-		renderFbDepth = 0;
+	if (renderFbSSColor) {
+		glDeleteTextures(1, &renderFbSSColor);
+		renderFbSSColor = 0;
 	}
-	if (renderFbColor) {
-		glDeleteTextures(1, &renderFbColor);
-		renderFbColor = 0;
+	if (renderFbSS) {
+		glDeleteFramebuffers(1, &renderFbSS);
+		renderFbSS = 0;
 	}
-	if (renderFb) {
-		glDeleteFramebuffers(1, &renderFb);
-		renderFb = 0;
+	if (renderFbMSDepth) {
+		glDeleteRenderbuffers(1, &renderFbMSDepth);
+		renderFbMSDepth = 0;
+	}
+	if (renderFbMSColor) {
+		glDeleteTextures(1, &renderFbMSColor);
+		renderFbMSColor = 0;
+	}
+	if (renderFbMS) {
+		glDeleteFramebuffers(1, &renderFbMS);
+		renderFbMS = 0;
 	}
 	windowContextDeactivate();
 	logDebug(applog, u8"Destroyed renderer for window \"%s\"",
@@ -680,7 +710,7 @@ void rendererFrameBegin(void)
 	lightColor.r = 1.0f;
 	lightColor.g = 1.0f;
 	lightColor.b = 1.0f;
-	glBindFramebuffer(GL_FRAMEBUFFER, renderFb);
+	glBindFramebuffer(GL_FRAMEBUFFER, renderFbMS);
 }
 
 void rendererResolveAA(void)
@@ -694,7 +724,7 @@ void rendererResolveAA(void)
 	programUse(smaaSeparate);
 	glBindFramebuffer(GL_FRAMEBUFFER, smaaSeparateFb);
 	glActiveTexture(smaaSeparate->image);
-	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderFbColor);
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderFbMSColor);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	// SMAA edge detection pass
@@ -736,7 +766,7 @@ void rendererResolveAA(void)
 
 	// SMAA neighbor blending pass
 	programUse(smaaNeighbor);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, renderFbSS);
 	glActiveTexture(smaaNeighbor->image1);
 	glBindTexture(GL_TEXTURE_2D, smaaSeparateFbColor[0]);
 	glActiveTexture(smaaNeighbor->image2);
@@ -763,7 +793,7 @@ void rendererFrameEnd(void)
 	glViewport(0, 0, viewportSize.x >> 1, viewportSize.y >> 1);
 	programUse(threshold);
 	glActiveTexture(threshold->image);
-	glBindTexture(GL_TEXTURE_2D, renderFbColor);
+	glBindTexture(GL_TEXTURE_2D, renderFbMSColor);
 	glUniform1f(threshold->threshold, 1.0f);
 	glUniform1f(threshold->softKnee, 0.25f);
 	glUniform1f(threshold->strength, 1.0f);
@@ -790,14 +820,18 @@ void rendererFrameEnd(void)
 	}
 
 	// Draw the bloom on top of the render
-	glBindFramebuffer(GL_FRAMEBUFFER, renderFb);
+	glBindFramebuffer(GL_FRAMEBUFFER, renderFbMS);
 	glViewport(0, 0, viewportSize.x, viewportSize.y);
 	glActiveTexture(blit->image);
 	glBindTexture(GL_TEXTURE_2D, bloomFbColor[0]);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 */
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	glBlitFramebuffer(0, 0, viewportSize.x, viewportSize.y,
+		0, 0, viewportSize.x, viewportSize.y,
+		GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-	// Finish the frame
+	// Present the frame
 	windowFlip();
 	rendererSync();
 }
