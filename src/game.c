@@ -56,7 +56,7 @@ static void gameDraw(void)
 	rendererFrameBegin();
 //	backgroundDraw();
 	gameDrawGeometry();
-//	aaResolve();
+	rendererResolveAA();
 	gameDrawText();
 //	postDraw();
 	rendererFrameEnd();

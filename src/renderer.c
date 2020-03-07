@@ -681,55 +681,15 @@ void rendererFrameBegin(void)
 	lightColor.g = 1.0f;
 	lightColor.b = 1.0f;
 	glBindFramebuffer(GL_FRAMEBUFFER, renderFb);
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
 }
 
-void rendererFrameEnd(void)
+void rendererResolveAA(void)
 {
 	assert(initialized);
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-/*
-	// Prepare the image for bloom
-	glBindFramebuffer(GL_FRAMEBUFFER, bloomFb[0]);
-	glViewport(0, 0, viewportSize.x >> 1, viewportSize.y >> 1);
-	programUse(threshold);
-	glActiveTexture(threshold->image);
-	glBindTexture(GL_TEXTURE_2D, renderFbColor);
-	glUniform1f(threshold->threshold, 1.0f);
-	glUniform1f(threshold->softKnee, 0.25f);
-	glUniform1f(threshold->strength, 1.0f);
-	glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	// Blur the bloom image
-	programUse(blit);
-	glActiveTexture(blit->image);
-	for (size_t i = 0; i < BloomPasses - 1; i += 1) {
-		glBindFramebuffer(GL_FRAMEBUFFER, bloomFb[i + 1]);
-		glViewport(0, 0, viewportSize.x >> (i + 2), viewportSize.y >> (i + 2));
-		glActiveTexture(blit->image);
-		glBindTexture(GL_TEXTURE_2D, bloomFbColor[i]);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-	}
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_ONE, GL_ONE);
-	for (size_t i = BloomPasses - 2; i < BloomPasses; i -= 1) {
-		glBindFramebuffer(GL_FRAMEBUFFER, bloomFb[i]);
-		glViewport(0, 0, viewportSize.x >> (i + 1), viewportSize.y >> (i + 1));
-		glActiveTexture(blit->image);
-		glBindTexture(GL_TEXTURE_2D, bloomFbColor[i + 1]);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-	}
-
-	// Draw the bloom on top of the render
-	glBindFramebuffer(GL_FRAMEBUFFER, renderFb);
-	glViewport(0, 0, viewportSize.x, viewportSize.y);
-	glActiveTexture(blit->image);
-	glBindTexture(GL_TEXTURE_2D, bloomFbColor[0]);
-	glDrawArrays(GL_TRIANGLES, 0, 3);
-*/
 	// SMAA sample separation pass
 	programUse(smaaSeparate);
 	glBindFramebuffer(GL_FRAMEBUFFER, smaaSeparateFb);
@@ -789,6 +749,53 @@ void rendererFrameEnd(void)
 		1.0 / (float)viewportSize.x, 1.0 / (float)viewportSize.y,
 		viewportSize.x, viewportSize.y);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+}
+
+void rendererFrameEnd(void)
+{
+	assert(initialized);
+/*
+	// Prepare the image for bloom
+	glBindFramebuffer(GL_FRAMEBUFFER, bloomFb[0]);
+	glViewport(0, 0, viewportSize.x >> 1, viewportSize.y >> 1);
+	programUse(threshold);
+	glActiveTexture(threshold->image);
+	glBindTexture(GL_TEXTURE_2D, renderFbColor);
+	glUniform1f(threshold->threshold, 1.0f);
+	glUniform1f(threshold->softKnee, 0.25f);
+	glUniform1f(threshold->strength, 1.0f);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	// Blur the bloom image
+	programUse(blit);
+	glActiveTexture(blit->image);
+	for (size_t i = 0; i < BloomPasses - 1; i += 1) {
+		glBindFramebuffer(GL_FRAMEBUFFER, bloomFb[i + 1]);
+		glViewport(0, 0, viewportSize.x >> (i + 2), viewportSize.y >> (i + 2));
+		glActiveTexture(blit->image);
+		glBindTexture(GL_TEXTURE_2D, bloomFbColor[i]);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+	}
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_ONE, GL_ONE);
+	for (size_t i = BloomPasses - 2; i < BloomPasses; i -= 1) {
+		glBindFramebuffer(GL_FRAMEBUFFER, bloomFb[i]);
+		glViewport(0, 0, viewportSize.x >> (i + 1), viewportSize.y >> (i + 1));
+		glActiveTexture(blit->image);
+		glBindTexture(GL_TEXTURE_2D, bloomFbColor[i + 1]);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+	}
+
+	// Draw the bloom on top of the render
+	glBindFramebuffer(GL_FRAMEBUFFER, renderFb);
+	glViewport(0, 0, viewportSize.x, viewportSize.y);
+	glActiveTexture(blit->image);
+	glBindTexture(GL_TEXTURE_2D, bloomFbColor[0]);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+*/
 
 	// Finish the frame
 	windowFlip();

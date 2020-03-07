@@ -37,10 +37,17 @@ void rendererCleanup(void);
 void rendererClear(color3 color);
 
 /**
- * Prepare for rendering a new frame. You should call rendererClear() afterwards
- * to initialize the framebuffer to a known state.
+ * Prepare for rendering a new frame. A framebuffer with MSAA is bound. You
+ * should call rendererClear() afterwards to initialize the framebuffer
+ * to a known state.
  */
 void rendererFrameBegin(void);
+
+/**
+ * Switch from the MSAA framebuffer to regular, applying the chosen AA method
+ * in the process.
+ */
+void rendererResolveAA(void);
 
 /**
  * Present the rendered image to the screen. This call blocks until the
