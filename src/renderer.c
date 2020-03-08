@@ -86,6 +86,7 @@ typedef struct ProgramSmaaNeighbor {
 typedef struct ProgramBlit {
 	ProgramBase base;
 	TextureUnit image;
+	Uniform layers;
 } ProgramBlit;
 
 /// Bloom threshold filter type
@@ -187,8 +188,8 @@ static Texture smaaBlendFbColor[2] = {0};
 static Texture smaaArea = 0;
 static Texture smaaSearch = 0;
 
-static Framebuffer bloomFb[BloomPasses] = {0}; ///< Intermediate bloom results
-static Texture bloomFbColor[BloomPasses] = {0};
+static Framebuffer bloomFb = 0; ///< Intermediate bloom result
+static Texture bloomFbColor = 0; ///< has #BloomPasses mipmaps
 
 static size2i viewportSize = {0}; ///< in pixels
 static mat4x4 projection = {0}; ///< perspective transform
@@ -266,12 +267,11 @@ static void rendererResize(size2i size)
 			size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, null);
 	}
 
-	for (size_t i = 0; i < BloomPasses; i += 1) {
-		glBindTexture(GL_TEXTURE_2D, bloomFbColor[i]);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F,
-			size.x >> (i + 1), size.y >> (i + 1), 0, GL_RGB, GL_UNSIGNED_BYTE,
-			null);
-	}
+	glBindTexture(GL_TEXTURE_2D, bloomFbColor);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F,
+		size.x >> 1, size.y >> 1, 0, GL_RGB, GL_UNSIGNED_BYTE,
+		null);
+	glGenerateMipmap(GL_TEXTURE_2D);
 }
 
 void rendererInit(void)
@@ -291,8 +291,9 @@ void rendererInit(void)
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_CULL_FACE);
-	glEnable(GL_BLEND);
 	glEnable(GL_MULTISAMPLE);
+	glEnable(GL_FRAMEBUFFER_SRGB);
+	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	// Create framebuffers
@@ -348,15 +349,13 @@ void rendererInit(void)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	}
 
-	glGenFramebuffers(BloomPasses, bloomFb);
-	glGenTextures(BloomPasses, bloomFbColor);
-	for (size_t i = 0; i < BloomPasses; i += 1) {
-		glBindTexture(GL_TEXTURE_2D, bloomFbColor[i]);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	}
+	glGenFramebuffers(1, &bloomFb);
+	glGenTextures(1, &bloomFbColor);
+	glBindTexture(GL_TEXTURE_2D, bloomFbColor);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Set up matrices and framebuffer textures
 	rendererResize(windowGetSize());
@@ -438,15 +437,13 @@ void rendererInit(void)
 		exit(EXIT_FAILURE);
 	}
 
-	for (size_t i = 0; i < BloomPasses; i += 1) {
-		glBindFramebuffer(GL_FRAMEBUFFER, bloomFb[i]);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-			GL_TEXTURE_2D, bloomFbColor[i], 0);
-		if (glCheckFramebufferStatus(GL_FRAMEBUFFER)
-			!= GL_FRAMEBUFFER_COMPLETE) {
-			logCrit(applog, u8"Failed to create the bloom framebuffer #%zu", i);
-			exit(EXIT_FAILURE);
-		}
+	glBindFramebuffer(GL_FRAMEBUFFER, bloomFb);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+		GL_TEXTURE_2D, bloomFbColor, 0);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER)
+		!= GL_FRAMEBUFFER_COMPLETE) {
+		logCrit(applog, u8"Failed to create the bloom framebuffer");
+		exit(EXIT_FAILURE);
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -504,6 +501,7 @@ void rendererInit(void)
 		ProgramBlitVertName, ProgramBlitVertSrc,
 		ProgramBlitFragName, ProgramBlitFragSrc);
 	blit->image = programSampler(blit, u8"image", GL_TEXTURE0);
+	blit->layers = programUniform(blit, u8"layers");
 
 	threshold = programCreate(ProgramThreshold,
 		ProgramThresholdVertName, ProgramThresholdVertSrc,
@@ -623,13 +621,13 @@ void rendererCleanup(void)
 		programDestroy(flat);
 		flat = null;
 	}
-	if (bloomFbColor[0]) {
-		glDeleteTextures(BloomPasses, bloomFbColor);
-		arrayClear(bloomFbColor);
+	if (bloomFbColor) {
+		glDeleteTextures(1, &bloomFbColor);
+		bloomFbColor = 0;
 	}
-	if (bloomFb[0]) {
-		glDeleteFramebuffers(BloomPasses, bloomFb);
-		arrayClear(bloomFb);
+	if (bloomFb) {
+		glDeleteFramebuffers(1, &bloomFb);
+		bloomFb = 0;
 	}
 	if (smaaBlendFbColor[0]) {
 		glDeleteTextures(2, smaaBlendFbColor);
@@ -787,45 +785,36 @@ void rendererResolveAA(void)
 void rendererFrameEnd(void)
 {
 	assert(initialized);
-/*
+
 	// Prepare the image for bloom
-	glBindFramebuffer(GL_FRAMEBUFFER, bloomFb[0]);
+	glDisable(GL_BLEND);
+	glBindFramebuffer(GL_FRAMEBUFFER, bloomFb);
 	glViewport(0, 0, viewportSize.x >> 1, viewportSize.y >> 1);
 	programUse(threshold);
 	glActiveTexture(threshold->image);
-	glBindTexture(GL_TEXTURE_2D, renderFbMSColor);
+	glBindTexture(GL_TEXTURE_2D, renderFbSSColor);
 	glUniform1f(threshold->threshold, 1.0f);
 	glUniform1f(threshold->softKnee, 0.25f);
 	glUniform1f(threshold->strength, 1.0f);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	// Blur the bloom image
-	programUse(blit);
-	glActiveTexture(blit->image);
-	for (size_t i = 0; i < BloomPasses - 1; i += 1) {
-		glBindFramebuffer(GL_FRAMEBUFFER, bloomFb[i + 1]);
-		glViewport(0, 0, viewportSize.x >> (i + 2), viewportSize.y >> (i + 2));
-		glActiveTexture(blit->image);
-		glBindTexture(GL_TEXTURE_2D, bloomFbColor[i]);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-	}
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_ONE, GL_ONE);
-	for (size_t i = BloomPasses - 2; i < BloomPasses; i -= 1) {
-		glBindFramebuffer(GL_FRAMEBUFFER, bloomFb[i]);
-		glViewport(0, 0, viewportSize.x >> (i + 1), viewportSize.y >> (i + 1));
-		glActiveTexture(blit->image);
-		glBindTexture(GL_TEXTURE_2D, bloomFbColor[i + 1]);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-	}
+	glBindTexture(GL_TEXTURE_2D, bloomFbColor);
+	glGenerateMipmap(GL_TEXTURE_2D);
 
 	// Draw the bloom on top of the render
-	glBindFramebuffer(GL_FRAMEBUFFER, renderFbMS);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_ONE, GL_ONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, renderFbSS);
 	glViewport(0, 0, viewportSize.x, viewportSize.y);
+	programUse(blit);
 	glActiveTexture(blit->image);
-	glBindTexture(GL_TEXTURE_2D, bloomFbColor[0]);
+	glBindTexture(GL_TEXTURE_2D, bloomFbColor);
+	glUniform1i(blit->layers, BloomPasses);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
-*/
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	// Blit the final image to the screen
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	glBlitFramebuffer(0, 0, viewportSize.x, viewportSize.y,
 		0, 0, viewportSize.x, viewportSize.y,

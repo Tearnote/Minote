@@ -12,8 +12,12 @@ in vec2 fTexCoords;
 out vec4 outColor;
 
 uniform sampler2D image;
+uniform int layers;
 
 void main()
 {
-    outColor = texture(image, fTexCoords);
+	vec4 bloom = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+	for (int i = 0; i < layers; i++)
+		bloom += textureLod(image, fTexCoords, float(i));
+    outColor = bloom;
 }
