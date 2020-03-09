@@ -86,6 +86,7 @@ typedef struct ProgramSmaaNeighbor {
 typedef struct ProgramBlit {
 	ProgramBase base;
 	TextureUnit image;
+	Uniform boost;
 } ProgramBlit;
 
 /// Bloom threshold filter type
@@ -96,6 +97,13 @@ typedef struct ProgramThreshold {
 	Uniform softKnee;
 	Uniform strength;
 } ProgramThreshold;
+
+typedef struct ProgramBoxBlur {
+	ProgramBase base;
+	TextureUnit image;
+	Uniform step;
+	Uniform imageTexel;
+} ProgramBoxBlur;
 
 static const char* ProgramFlatVertName = u8"flat.vert";
 static const GLchar* ProgramFlatVertSrc = (GLchar[]){
@@ -169,6 +177,15 @@ static const GLchar* ProgramThresholdFragSrc = (GLchar[]){
 #include "threshold.frag"
 	'\0'};
 
+static const char* ProgramBoxBlurVertName = u8"boxBlur.vert";
+static const GLchar* ProgramBoxBlurVertSrc = (GLchar[]){
+#include "boxBlur.vert"
+	'\0'};
+static const char* ProgramBoxBlurFragName = u8"boxBlur.frag";
+static const GLchar* ProgramBoxBlurFragSrc = (GLchar[]){
+#include "boxBlur.frag"
+	'\0'};
+
 static bool initialized = false;
 
 static Framebuffer renderFbMS = 0; ///< Main render destination, multisampled
@@ -207,6 +224,7 @@ static ProgramSmaaBlend* smaaBlend = null;
 static ProgramSmaaNeighbor* smaaNeighbor = null;
 static ProgramBlit* blit = null;
 static ProgramThreshold* threshold = null;
+static ProgramBoxBlur* boxBlur = null;
 
 /**
  * Prevent the driver from buffering commands. Call this after windowFlip()
@@ -505,6 +523,7 @@ void rendererInit(void)
 		ProgramBlitVertName, ProgramBlitVertSrc,
 		ProgramBlitFragName, ProgramBlitFragSrc);
 	blit->image = programSampler(blit, u8"image", GL_TEXTURE0);
+	blit->boost = programUniform(blit, u8"boost");
 
 	threshold = programCreate(ProgramThreshold,
 		ProgramThresholdVertName, ProgramThresholdVertSrc,
@@ -513,6 +532,13 @@ void rendererInit(void)
 	threshold->threshold = programUniform(threshold, u8"threshold");
 	threshold->softKnee = programUniform(threshold, u8"softKnee");
 	threshold->strength = programUniform(threshold, u8"strength");
+	
+	boxBlur = programCreate(ProgramBoxBlur,
+		ProgramBoxBlurVertName, ProgramBoxBlurVertSrc,
+		ProgramBoxBlurFragName, ProgramBoxBlurFragSrc);
+	boxBlur->image = programSampler(boxBlur, u8"image", GL_TEXTURE0);
+	boxBlur->step = programUniform(boxBlur, u8"step");
+	boxBlur->imageTexel = programUniform(boxBlur, u8"imageTexel");
 
 	// Load lookup textures
 	unsigned char areaTexBytesFlipped[AREATEX_SIZE] = {0};
@@ -595,6 +621,10 @@ void rendererCleanup(void)
 	if (smaaArea) {
 		glDeleteTextures(1, &smaaArea);
 		smaaArea = null;
+	}
+	if (boxBlur) {
+		programDestroy(boxBlur);
+		boxBlur = null;
 	}
 	if (threshold) {
 		programDestroy(threshold);
@@ -739,6 +769,8 @@ void rendererResolveAA(void)
 		glClear(GL_COLOR_BUFFER_BIT | (i? 0 : GL_STENCIL_BUFFER_BIT));
 		glActiveTexture(smaaEdge->image);
 		glBindTexture(GL_TEXTURE_2D, smaaSeparateFbColor[i]);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glUniform4f(smaaEdge->screenSize,
 			1.0 / (float)viewportSize.x, 1.0 / (float)viewportSize.y,
 			viewportSize.x, viewportSize.y);
@@ -770,8 +802,12 @@ void rendererResolveAA(void)
 	glBindFramebuffer(GL_FRAMEBUFFER, renderFbSS);
 	glActiveTexture(smaaNeighbor->image1);
 	glBindTexture(GL_TEXTURE_2D, smaaSeparateFbColor[0]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glActiveTexture(smaaNeighbor->image2);
 	glBindTexture(GL_TEXTURE_2D, smaaSeparateFbColor[1]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glActiveTexture(smaaNeighbor->blend1);
 	glBindTexture(GL_TEXTURE_2D, smaaBlendFbColor[0]);
 	glActiveTexture(smaaNeighbor->blend2);
@@ -803,13 +839,16 @@ void rendererFrameEnd(void)
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	// Blur the bloom image
-	programUse(blit);
-	glActiveTexture(blit->image);
+	programUse(boxBlur);
 	for (size_t i = 0; i < BloomPasses - 1; i += 1) {
 		glBindFramebuffer(GL_FRAMEBUFFER, bloomFb[i + 1]);
 		glViewport(0, 0, viewportSize.x >> (i + 2), viewportSize.y >> (i + 2));
-		glActiveTexture(blit->image);
+		glActiveTexture(boxBlur->image);
 		glBindTexture(GL_TEXTURE_2D, bloomFbColor[i]);
+		glUniform1f(boxBlur->step, 1.0f);
+		glUniform2f(boxBlur->imageTexel,
+			1.0 / (float)(viewportSize.x >> (i + 1)),
+			1.0 / (float)(viewportSize.y >> (i + 1)));
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
 	glEnable(GL_BLEND);
@@ -817,17 +856,24 @@ void rendererFrameEnd(void)
 	for (size_t i = BloomPasses - 2; i < BloomPasses; i -= 1) {
 		glBindFramebuffer(GL_FRAMEBUFFER, bloomFb[i]);
 		glViewport(0, 0, viewportSize.x >> (i + 1), viewportSize.y >> (i + 1));
-		glActiveTexture(blit->image);
+		glActiveTexture(boxBlur->image);
 		glBindTexture(GL_TEXTURE_2D, bloomFbColor[i + 1]);
+		glUniform1f(boxBlur->step, 0.5f);
+		glUniform2f(boxBlur->imageTexel,
+			1.0 / (float)(viewportSize.x >> (i + 2)),
+			1.0 / (float)(viewportSize.y >> (i + 2)));
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
 
 	// Draw the bloom on top of the render
+	programUse(blit);
 	glBindFramebuffer(GL_FRAMEBUFFER, renderFbSS);
 	glViewport(0, 0, viewportSize.x, viewportSize.y);
 	glActiveTexture(blit->image);
 	glBindTexture(GL_TEXTURE_2D, bloomFbColor[0]);
+	glUniform1f(blit->boost, 2.0f);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
+
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_DEPTH_TEST);
 

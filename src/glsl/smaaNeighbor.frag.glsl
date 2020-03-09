@@ -28,8 +28,5 @@ void main()
 {
     vec4 color1 = SMAANeighborhoodBlendingPS(fTexCoords, fOffset, image1, blend1);
     vec4 color2 = SMAANeighborhoodBlendingPS(fTexCoords, fOffset, image2, blend2);
-    color1.rgb = srgbEncode(color1.rgb);
-    color2.rgb = srgbEncode(color2.rgb);
     outColor = mix(color1, color2, 0.5);
-//    outColor.rgb = srgbEncode(outColor.rgb);
 }
