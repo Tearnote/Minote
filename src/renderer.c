@@ -291,9 +291,10 @@ void rendererInit(void)
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_CULL_FACE);
-	glEnable(GL_BLEND);
 	glEnable(GL_MULTISAMPLE);
+	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_FRAMEBUFFER_SRGB);
 
 	// Create framebuffers
 	glGenFramebuffers(1, &renderFbMS);
@@ -787,13 +788,15 @@ void rendererResolveAA(void)
 void rendererFrameEnd(void)
 {
 	assert(initialized);
-/*
+
 	// Prepare the image for bloom
+	glDisable(GL_BLEND);
+	glDisable(GL_DEPTH_TEST);
 	glBindFramebuffer(GL_FRAMEBUFFER, bloomFb[0]);
 	glViewport(0, 0, viewportSize.x >> 1, viewportSize.y >> 1);
 	programUse(threshold);
 	glActiveTexture(threshold->image);
-	glBindTexture(GL_TEXTURE_2D, renderFbMSColor);
+	glBindTexture(GL_TEXTURE_2D, renderFbSSColor);
 	glUniform1f(threshold->threshold, 1.0f);
 	glUniform1f(threshold->softKnee, 0.25f);
 	glUniform1f(threshold->strength, 1.0f);
@@ -820,12 +823,14 @@ void rendererFrameEnd(void)
 	}
 
 	// Draw the bloom on top of the render
-	glBindFramebuffer(GL_FRAMEBUFFER, renderFbMS);
+	glBindFramebuffer(GL_FRAMEBUFFER, renderFbSS);
 	glViewport(0, 0, viewportSize.x, viewportSize.y);
 	glActiveTexture(blit->image);
 	glBindTexture(GL_TEXTURE_2D, bloomFbColor[0]);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
-*/
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_DEPTH_TEST);
+
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	glBlitFramebuffer(0, 0, viewportSize.x, viewportSize.y,
 		0, 0, viewportSize.x, viewportSize.y,
