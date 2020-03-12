@@ -28,13 +28,8 @@ void pureCleanup(void);
 void pureAdvance(darray* inputs);
 
 /**
- * Draw the pure sublayer's geometry - scene, blocks and other bits.
+ * Draw the pure sublayer to the screen.
  */
-void pureDrawGeometry(void);
-
-/**
- * Draw the pure sublayer's text - mostly the HUD.
- */
-void pureDrawText(void);
+void pureDraw(void);
 
 #endif //MINOTE_PURE_H

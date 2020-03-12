@@ -76,14 +76,8 @@ void playUpdate(void)
 	}
 }
 
-void playDrawGeometry(void)
+void playDraw(void)
 {
 	assert(initialized);
-	pureDrawGeometry();
-}
-
-void playDrawText(void)
-{
-	assert(initialized);
-	pureDrawText();
+	pureDraw();
 }

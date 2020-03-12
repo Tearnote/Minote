@@ -10,64 +10,35 @@
 #include "mapper.h"
 #include "util.h"
 #include "play.h"
+#include "aa.h"
 
-/**
- * Initialize all systems and layers of the game.
- */
 static void gameInit(void)
 {
 	mapperInit();
 	rendererInit();
+	aaInit(AAComplex);
 	playInit();
 }
 
-/**
- * Update all systems and layers in order. The inactive ones will return
- * immediately.
- */
 static void gameUpdate(void)
 {
 	mapperUpdate();
 	playUpdate();
 }
 
-/**
- * Draw all shapes on the screen. Only these will be antialiased.
- */
-static void gameDrawGeometry(void)
-{
-	playDrawGeometry();
-}
-
-/**
- * Draw all text. This comes after antialiasing, because text comes with its
- * own AA.
- */
-static void gameDrawText(void)
-{
-	playDrawText();
-}
-
-/**
- * Draw a full frame. This will block until vsync.
- */
 static void gameDraw(void)
 {
 	rendererFrameBegin();
-//	backgroundDraw();
-	gameDrawGeometry();
-	gameDrawText();
-	rendererResolveAA();
-//	postDraw();
+	aaBegin();
+	playDraw();
+	aaEnd();
 	rendererFrameEnd();
 }
 
-/**
- * Cleanup all layers and systems, in reverse order.
- */
 static void gameCleanup(void)
 {
 	playCleanup();
+	aaCleanup();
 	rendererCleanup();
 	mapperCleanup();
 }

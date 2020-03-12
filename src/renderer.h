@@ -30,6 +30,12 @@ void rendererInit(void);
 void rendererCleanup(void);
 
 /**
+ * Bind the main render framebuffer. Use this if you changed from the default
+ * framebuffer and want to draw to the screen again.
+ */
+void rendererBindMainFb(void);
+
+/**
  * Clear all buffers to a specified color. This color is also used for Phong
  * ambient reflection.
  * @param color Color to clear with
@@ -42,13 +48,6 @@ void rendererClear(color3 color);
  * to a known state.
  */
 void rendererFrameBegin(void);
-
-/**
- * Switch from the MSAA framebuffer to regular, applying the chosen AA method
- * in the process. The new framebuffer has no depth or stencil, but is perfect
- * for applying post-processing effects before the final flip.
- */
-void rendererResolveAA(void);
 
 /**
  * Present the rendered image to the screen. This call blocks until the
