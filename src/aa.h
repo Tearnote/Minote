@@ -27,7 +27,7 @@ void aaInit(AAMode mode);
 
 /**
  * Cleanup the antialiasing system. No aa function can be used until aaInit()
- * is called again.
+ * is called again. Must be called before rendererCleanup().
  */
 void aaCleanup(void);
 
