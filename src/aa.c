@@ -389,6 +389,7 @@ void aaSwitch(AAMode type)
 
 void aaBegin(void)
 {
+	aaResize(windowGetSize());
 	glBindFramebuffer(GL_FRAMEBUFFER, msaaFb);
 }
 
