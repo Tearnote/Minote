@@ -14,7 +14,6 @@
 #include "linmath/linmath.h"
 #include "window.h"
 #include "opengl.h"
-#include "shader.h"
 #include "util.h"
 #include "time.h"
 #include "log.h"
@@ -118,11 +117,11 @@ static const GLchar* ProgramBoxBlurFragSrc = (GLchar[]){
 
 static bool initialized = false;
 
-static Framebuffer renderFb = 0;
-static Texture renderFbColor = 0;
-static Renderbuffer renderFbDepthStencil = 0;
-static Framebuffer bloomFb[BloomPasses] = {0}; ///< Intermediate bloom results
-static Texture bloomFbColor[BloomPasses] = {0};
+static Framebuffer* renderFb = null;
+static Texture* renderFbColor = null;
+static Renderbuffer* renderFbDepthStencil = null;
+static Framebuffer* bloomFb[BloomPasses] = {null}; ///< Intermediate bloom results
+static Texture* bloomFbColor[BloomPasses] = {null};
 
 static size2i viewportSize = {0}; ///< in pixels
 static mat4x4 projection = {0}; ///< perspective transform
@@ -171,18 +170,15 @@ static void rendererResize(size2i size)
 		(float)size.x / (float)size.y, ProjectionNear, ProjectionFar);
 
 	// Framebuffers
-	glBindTexture(GL_TEXTURE_2D, renderFbColor);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F,
-		size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, null);
-	glBindRenderbuffer(GL_RENDERBUFFER, renderFbDepthStencil);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
-		size.x, size.y);
+	textureStorage(renderFbColor, size, GL_RGBA16F);
+	renderbufferStorage(renderFbDepthStencil, size, GL_DEPTH24_STENCIL8);
 
 	for (size_t i = 0; i < BloomPasses; i += 1) {
-		glBindTexture(GL_TEXTURE_2D, bloomFbColor[i]);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F,
-			size.x >> (i + 1), size.y >> (i + 1), 0, GL_RGB, GL_UNSIGNED_BYTE,
-			null);
+		size2i layerSize = {
+			size.x >> (i + 1),
+			size.y >> (i + 1)
+		};
+		textureStorage(bloomFbColor[i], layerSize, GL_RGBA16F);
 	}
 }
 
@@ -209,51 +205,35 @@ void rendererInit(void)
 	glEnable(GL_FRAMEBUFFER_SRGB);
 
 	// Create framebuffers
-	glGenFramebuffers(1, &renderFb);
-	glGenTextures(1, &renderFbColor);
-	glBindTexture(GL_TEXTURE_2D, renderFbColor);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glGenRenderbuffers(1, &renderFbDepthStencil);
+	renderFb = framebufferCreate();
+	renderFbColor = textureCreate();
+	renderFbDepthStencil = renderbufferCreate();
 
-	glGenFramebuffers(BloomPasses, bloomFb);
-	glGenTextures(BloomPasses, bloomFbColor);
 	for (size_t i = 0; i < BloomPasses; i += 1) {
-		glBindTexture(GL_TEXTURE_2D, bloomFbColor[i]);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		bloomFb[i] = framebufferCreate();
+		bloomFbColor[i] = textureCreate();
 	}
 
 	// Set up matrices and framebuffer textures
 	rendererResize(windowGetSize());
 
 	// Put framebuffers together
-	glBindFramebuffer(GL_FRAMEBUFFER, renderFb);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-		GL_TEXTURE_2D, renderFbColor, 0);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
-		GL_RENDERBUFFER, renderFbDepthStencil);
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+	framebufferTexture(renderFb, renderFbColor, GL_COLOR_ATTACHMENT0);
+	framebufferRenderbuffer(renderFb, renderFbDepthStencil, GL_DEPTH_STENCIL_ATTACHMENT);
+	if (!framebufferCheck(renderFb)) {
 		logCrit(applog, u8"Failed to create the rendering framebuffer");
 		exit(EXIT_FAILURE);
 	}
 
 	for (size_t i = 0; i < BloomPasses; i += 1) {
-		glBindFramebuffer(GL_FRAMEBUFFER, bloomFb[i]);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-			GL_TEXTURE_2D, bloomFbColor[i], 0);
-		if (glCheckFramebufferStatus(GL_FRAMEBUFFER)
-			!= GL_FRAMEBUFFER_COMPLETE) {
+		framebufferTexture(bloomFb[i], bloomFbColor[i], GL_COLOR_ATTACHMENT0);
+		if (!framebufferCheck(bloomFb[i])) {
 			logCrit(applog, u8"Failed to create the bloom framebuffer #%zu", i);
 			exit(EXIT_FAILURE);
 		}
 	}
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	rendererUseMainFb();
 
 	// Create built-in shaders
 	flat = programCreate(ProgramFlat,
@@ -333,59 +313,39 @@ void rendererInit(void)
 void rendererCleanup(void)
 {
 	if (!initialized) return;
-	if (sync) {
-		modelDestroy(sync);
-		sync = null;
+	modelDestroy(sync);
+	sync = null;
+	programDestroy(boxBlur);
+	boxBlur = null;
+	programDestroy(threshold);
+	threshold = null;
+	programDestroy(blit);
+	blit = null;
+	programDestroy(phong);
+	phong = null;
+	programDestroy(flat);
+	flat = null;
+	for (size_t i = BloomPasses - 1; i < BloomPasses; i -= 1) {
+		textureDestroy(bloomFbColor[i]);
+		bloomFbColor[i] = null;
+		framebufferDestroy(bloomFb[i]);
+		bloomFb[i] = null;
 	}
-	if (boxBlur) {
-		programDestroy(boxBlur);
-		boxBlur = null;
-	}
-	if (threshold) {
-		programDestroy(threshold);
-		threshold = null;
-	}
-	if (blit) {
-		programDestroy(blit);
-		blit = null;
-	}
-	if (phong) {
-		programDestroy(phong);
-		phong = null;
-	}
-	if (flat) {
-		programDestroy(flat);
-		flat = null;
-	}
-	if (bloomFbColor[0]) {
-		glDeleteTextures(BloomPasses, bloomFbColor);
-		arrayClear(bloomFbColor);
-	}
-	if (bloomFb[0]) {
-		glDeleteFramebuffers(BloomPasses, bloomFb);
-		arrayClear(bloomFb);
-	}
-	if (renderFbDepthStencil) {
-		glDeleteRenderbuffers(1, &renderFbDepthStencil);
-		renderFbDepthStencil = 0;
-	}
-	if (renderFbColor) {
-		glDeleteTextures(1, &renderFbColor);
-		renderFbColor = 0;
-	}
-	if (renderFb) {
-		glDeleteFramebuffers(1, &renderFb);
-		renderFb = 0;
-	}
+	renderbufferDestroy(renderFbDepthStencil);
+	renderFbDepthStencil = null;
+	textureDestroy(renderFbColor);
+	renderFbColor = null;
+	framebufferDestroy(renderFb);
+	renderFb = null;
 	windowContextDeactivate();
 	logDebug(applog, u8"Destroyed renderer for window \"%s\"",
 		windowGetTitle());
 	initialized = false;
 }
 
-void rendererBindMainFb(void)
+void rendererUseMainFb(void)
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, renderFb);
+	framebufferUse(renderFb);
 }
 
 void rendererClear(color3 color)
@@ -413,7 +373,7 @@ void rendererFrameBegin(void)
 	lightColor.r = 1.0f;
 	lightColor.g = 1.0f;
 	lightColor.b = 1.0f;
-	glBindFramebuffer(GL_FRAMEBUFFER, renderFb);
+	framebufferUse(renderFb);
 }
 
 void rendererFrameEnd(void)
@@ -423,11 +383,10 @@ void rendererFrameEnd(void)
 	// Prepare the image for bloom
 	glDisable(GL_BLEND);
 	glDisable(GL_DEPTH_TEST);
-	glBindFramebuffer(GL_FRAMEBUFFER, bloomFb[0]);
+	framebufferUse(bloomFb[0]);
 	glViewport(0, 0, viewportSize.x >> 1, viewportSize.y >> 1);
 	programUse(threshold);
-	glActiveTexture(threshold->image);
-	glBindTexture(GL_TEXTURE_2D, renderFbColor);
+	textureUse(renderFbColor, threshold->image);
 	glUniform1f(threshold->threshold, 1.0f);
 	glUniform1f(threshold->softKnee, 0.25f);
 	glUniform1f(threshold->strength, 1.0f);
@@ -436,10 +395,9 @@ void rendererFrameEnd(void)
 	// Blur the bloom image
 	programUse(boxBlur);
 	for (size_t i = 0; i < BloomPasses - 1; i += 1) {
-		glBindFramebuffer(GL_FRAMEBUFFER, bloomFb[i + 1]);
+		framebufferUse(bloomFb[i + 1]);
 		glViewport(0, 0, viewportSize.x >> (i + 2), viewportSize.y >> (i + 2));
-		glActiveTexture(boxBlur->image);
-		glBindTexture(GL_TEXTURE_2D, bloomFbColor[i]);
+		textureUse(bloomFbColor[i], boxBlur->image);
 		glUniform1f(boxBlur->step, 1.0f);
 		glUniform2f(boxBlur->imageTexel,
 			1.0 / (float)(viewportSize.x >> (i + 1)),
@@ -449,10 +407,9 @@ void rendererFrameEnd(void)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_ONE, GL_ONE);
 	for (size_t i = BloomPasses - 2; i < BloomPasses; i -= 1) {
-		glBindFramebuffer(GL_FRAMEBUFFER, bloomFb[i]);
+		framebufferUse(bloomFb[i]);
 		glViewport(0, 0, viewportSize.x >> (i + 1), viewportSize.y >> (i + 1));
-		glActiveTexture(boxBlur->image);
-		glBindTexture(GL_TEXTURE_2D, bloomFbColor[i + 1]);
+		textureUse(bloomFbColor[i + 1], boxBlur->image);
 		glUniform1f(boxBlur->step, 0.5f);
 		glUniform2f(boxBlur->imageTexel,
 			1.0 / (float)(viewportSize.x >> (i + 2)),
@@ -462,10 +419,9 @@ void rendererFrameEnd(void)
 
 	// Draw the bloom on top of the render
 	programUse(blit);
-	glBindFramebuffer(GL_FRAMEBUFFER, renderFb);
+	framebufferUse(renderFb);
 	glViewport(0, 0, viewportSize.x, viewportSize.y);
-	glActiveTexture(blit->image);
-	glBindTexture(GL_TEXTURE_2D, bloomFbColor[0]);
+	textureUse(bloomFbColor[0], blit->image);
 	glUniform1f(blit->boost, 2.0f);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
@@ -884,7 +840,7 @@ Model* modelCreatePhong(const char* name,
 
 void modelDestroy(Model* m)
 {
-	assert(m);
+	if (!m) return;
 	assert(m->type > ModelTypeNone && m->type < ModelTypeSize);
 	switch (m->type) {
 	case ModelTypeFlat:

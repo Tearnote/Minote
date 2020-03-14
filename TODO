@@ -1,2 +1,1 @@
-Use one texture array instead of 6 intermediate textures
-Try merging via instances instead of duplication
+Make sure no destroy function can fail

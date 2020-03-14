@@ -25,13 +25,6 @@ if(WIN32)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
 endif()
 
-# External library settings
-if(WIN32)
-    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-    set(BUILD_SHARED_LIBS OFF)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
-endif()
-
 # External library dependencies
 find_package(PkgConfig REQUIRED)
 pkg_search_module(GLFW REQUIRED glfw3)
@@ -100,13 +93,13 @@ set(C_SOURCES
         src/system.h src/system.c
         src/time.h src/time.c
         src/renderer.h src/renderer.c
-        src/shader.h src/shader.c
         src/darray.h src/darray.c
         src/play.h src/play.c
         src/mino.h src/mino.c
         src/mapper.h src/mapper.c
-        src/pure.h src/pure.c
-        src/puretables.h src/aa.c src/aa.h src/opengl.c src/opengl.h)
+        src/pure.h src/pure.c src/puretables.h
+        src/aa.h src/aa.c
+        src/opengl.h src/opengl.c)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD
@@ -117,9 +110,7 @@ add_custom_command(TARGET Minote POST_BUILD
         ${CMAKE_SOURCE_DIR}/conf ${PROJECT_BINARY_DIR}/conf)
 target_compile_options(Minote PRIVATE
         $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
-        -Wall -Wextra -pedantic-errors>
-        $<$<CXX_COMPILER_ID:MSVC>:
-        /W4>)
+        -Wall -Wextra -pedantic-errors>)
 
 add_dependencies(Minote Preprocess_shaders)
 add_dependencies(Preprocess_shaders Preshade)

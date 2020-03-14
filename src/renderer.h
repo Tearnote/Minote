@@ -33,7 +33,7 @@ void rendererCleanup(void);
  * Bind the main render framebuffer. Use this if you changed from the default
  * framebuffer and want to draw to the screen again.
  */
-void rendererBindMainFb(void);
+void rendererUseMainFb(void);
 
 /**
  * Clear all buffers to a specified color. This color is also used for Phong
