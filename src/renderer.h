@@ -9,6 +9,7 @@
 #include <stddef.h>
 #include "linmath/linmath.h"
 #include "basetypes.h"
+#include "opengl.h"
 
 /// Convenient 4x4 matrix for when you want to perform no transform
 #define IdentityMatrix ((mat4x4){{1.0f, 0.0f, 0.0f, 0.0f}, \
@@ -30,10 +31,19 @@ void rendererInit(void);
 void rendererCleanup(void);
 
 /**
- * Bind the main render framebuffer. Use this if you changed from the default
- * framebuffer and want to draw to the screen again.
+ * Return the main render ::Framebuffer. Use this if you changed from the default
+ * framebuffer and want to draw to the screen again. Do not destroy or make any
+ * changes to this ::Framebuffer.
+ * @return The ::Framebuffer object for main rendering
  */
-void rendererUseMainFb(void);
+Framebuffer* rendererFramebuffer(void);
+
+/**
+ * Return the main render ::Texture. Use this to sample what has been drawn
+ * so far. Do not destroy or make any changes to this ::Texture.
+ * @return The ::Texture object for main rendering
+ */
+Texture* rendererTexture(void);
 
 /**
  * Clear all buffers to a specified color. This color is also used for Phong
@@ -65,6 +75,15 @@ void rendererDepthOnlyBegin(void);
  * Re-enable color write, ending the depth pre-pass.
  */
 void rendererDepthOnlyEnd(void);
+
+/**
+ * Draws a ::Texture on top of the current framebuffer. Uses whatever blending
+ * and other options are currently active, making it useful for more purposes
+ * than built-in blitting.
+ * @param src The ::Texture object
+ * @param boost Color multiplier
+ */
+void rendererBlit(Texture* t, GLfloat boost);
 
 ////////////////////////////////////////////////////////////////////////////////
 

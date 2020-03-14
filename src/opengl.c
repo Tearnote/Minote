@@ -214,7 +214,8 @@ void framebufferTextureMS(Framebuffer* f, TextureMS* t, GLenum attachment)
 	assert(f);
 	assert(t);
 	framebufferUse(f);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D_MULTISAMPLE, t->id, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment,
+		GL_TEXTURE_2D_MULTISAMPLE, t->id, 0);
 }
 
 void framebufferRenderbuffer(Framebuffer* f, Renderbuffer* r, GLenum attachment)
@@ -222,15 +223,18 @@ void framebufferRenderbuffer(Framebuffer* f, Renderbuffer* r, GLenum attachment)
 	assert(f);
 	assert(r);
 	framebufferUse(f);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, r->id);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER,
+		r->id);
 }
 
-void framebufferRenderbufferMS(Framebuffer* f, RenderbufferMS* r, GLenum attachment)
+void
+framebufferRenderbufferMS(Framebuffer* f, RenderbufferMS* r, GLenum attachment)
 {
 	assert(f);
 	assert(r);
 	framebufferUse(f);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, r->id);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER,
+		r->id);
 }
 
 void framebufferBuffers(Framebuffer* f, GLsizei count)

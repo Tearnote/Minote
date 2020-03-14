@@ -99,7 +99,7 @@ set(C_SOURCES
         src/mapper.h src/mapper.c
         src/pure.h src/pure.c src/puretables.h
         src/aa.h src/aa.c
-        src/opengl.h src/opengl.c)
+        src/opengl.h src/opengl.c src/bloom.c src/bloom.h)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD

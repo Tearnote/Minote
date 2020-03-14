@@ -154,6 +154,7 @@ void aaInit(AAMode type)
 		exit(EXIT_FAILURE);
 	}
 	// Verify that multisampling has the expected subsample layout
+	framebufferUse(msaaFb);
 	GLfloat sampleLocations[4] = {0};
 	glGetMultisamplefv(GL_SAMPLE_POSITION, 0, sampleLocations);
 	glGetMultisamplefv(GL_SAMPLE_POSITION, 1, sampleLocations + 2);
@@ -169,7 +170,8 @@ void aaInit(AAMode type)
 #ifdef NDEBUG
 		logWarn(applog, "  Graphics will look ugly.");
 #else //NDEBUG
-		logCrit(applog, "Aborting, please tell the developer that runtime subsample detection is needed");
+		logCrit(applog,
+			"Aborting, please tell the developer that runtime subsample detection is needed");
 		exit(EXIT_FAILURE);
 #endif //NDEBUG
 	}
@@ -190,7 +192,8 @@ void aaInit(AAMode type)
 		framebufferRenderbuffer(smaaEdgeFb[i], smaaEdgeFbDepthStencil,
 			GL_DEPTH_STENCIL_ATTACHMENT);
 		if (!framebufferCheck(smaaEdgeFb[i])) {
-			logCrit(applog, u8"Failed to create the SMAA edge framebuffer #%zu", i);
+			logCrit(applog, u8"Failed to create the SMAA edge framebuffer #%zu",
+				i);
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -205,7 +208,7 @@ void aaInit(AAMode type)
 		exit(EXIT_FAILURE);
 	}
 
-	rendererUseMainFb();
+	framebufferUse(rendererFramebuffer());
 
 	// Create shaders
 	smaaSeparate = programCreate(ProgramSmaaSeparate,
@@ -231,10 +234,14 @@ void aaInit(AAMode type)
 	smaaNeighbor = programCreate(ProgramSmaaNeighbor,
 		ProgramSmaaNeighborVertName, ProgramSmaaNeighborVertSrc,
 		ProgramSmaaNeighborFragName, ProgramSmaaNeighborFragSrc);
-	smaaNeighbor->image1 = programSampler(smaaNeighbor, u8"image1", GL_TEXTURE0);
-	smaaNeighbor->image2 = programSampler(smaaNeighbor, u8"image2", GL_TEXTURE1);
-	smaaNeighbor->blend1 = programSampler(smaaNeighbor, u8"blend1", GL_TEXTURE2);
-	smaaNeighbor->blend2 = programSampler(smaaNeighbor, u8"blend2", GL_TEXTURE3);
+	smaaNeighbor->image1 = programSampler(smaaNeighbor, u8"image1",
+		GL_TEXTURE0);
+	smaaNeighbor->image2 = programSampler(smaaNeighbor, u8"image2",
+		GL_TEXTURE1);
+	smaaNeighbor->blend1 = programSampler(smaaNeighbor, u8"blend1",
+		GL_TEXTURE2);
+	smaaNeighbor->blend2 = programSampler(smaaNeighbor, u8"blend2",
+		GL_TEXTURE3);
 	smaaNeighbor->screenSize = programUniform(smaaNeighbor, u8"screenSize");
 
 	// Load lookup textures
@@ -256,7 +263,8 @@ void aaInit(AAMode type)
 
 	smaaSearch = textureCreate();
 	textureFilter(smaaSearch, GL_NEAREST);
-	textureStorage(smaaSearch, (size2i){SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT}, GL_RG8);
+	textureStorage(smaaSearch, (size2i){SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT},
+		GL_RG8);
 	textureData(smaaSearch, searchTexBytesFlipped, GL_RED, GL_UNSIGNED_BYTE);
 }
 
@@ -323,7 +331,7 @@ void aaEnd(void)
 		framebufferUse(smaaEdgeFb[i]);
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
 		glStencilMask(0xFF);
-		glClear(GL_COLOR_BUFFER_BIT | (i? 0 : GL_STENCIL_BUFFER_BIT));
+		glClear(GL_COLOR_BUFFER_BIT | (i ? 0 : GL_STENCIL_BUFFER_BIT));
 		textureUse(smaaSeparateFbColor[i], smaaEdge->image);
 		textureFilter(smaaSeparateFbColor[i], GL_NEAREST);
 		glUniform4f(smaaEdge->screenSize,
@@ -350,7 +358,7 @@ void aaEnd(void)
 
 	// SMAA neighbor blending pass
 	programUse(smaaNeighbor);
-	rendererUseMainFb();
+	framebufferUse(rendererFramebuffer());
 	textureUse(smaaSeparateFbColor[0], smaaNeighbor->image1);
 	textureFilter(smaaSeparateFbColor[0], GL_LINEAR);
 	textureUse(smaaSeparateFbColor[1], smaaNeighbor->image2);
