@@ -35,7 +35,7 @@ queue* queueCreate(size_t elementSize, size_t maxElements)
 
 void queueDestroy(queue* q)
 {
-	assert(q);
+	if (!q) return;
 	free(q->data);
 	q->data = null;
 	free(q);

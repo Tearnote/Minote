@@ -44,7 +44,7 @@ Rng* rngCreate(uint64_t seed)
 
 void rngDestroy(Rng* r)
 {
-	assert(r);
+	if (!r) return;
 	free(r);
 }
 

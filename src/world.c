@@ -24,6 +24,7 @@ static color3 lightColor = {0};
 static color3 ambientColor = {0};
 
 static size2i currentSize = {0};
+static bool initialized = false;
 
 /**
  * Ensure that matrices match the current size of the screen. This can be run
@@ -45,6 +46,7 @@ static void worldResize(size2i size)
 
 void worldInit(void)
 {
+	if (initialized) return;
 	vec3 eye = {0.0f, 12.0f, 32.0f};
 	vec3 center = {0.0f, 12.0f, 0.0f};
 	vec3 up = {0.0f, 1.0f, 0.0f};
@@ -58,11 +60,13 @@ void worldInit(void)
 	ambientColor.r = 1.0f;
 	ambientColor.g = 1.0f;
 	ambientColor.b = 1.0f;
+	initialized = true;
 }
 
 void worldCleanup(void)
 {
-	// Nothing to see here.
+	if (!initialized) return;
+	initialized = false;
 }
 
 void worldUpdate(void)

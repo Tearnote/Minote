@@ -95,6 +95,8 @@ void modelCleanup(void)
 	phong = null;
 	programDestroy(flat);
 	flat = null;
+
+	initialized = false;
 }
 
 /// Type tag for the Model object

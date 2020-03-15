@@ -55,6 +55,7 @@ static ProgramThreshold* threshold = null;
 static ProgramBoxBlur* boxBlur = null;
 
 static size2i currentSize = {0};
+static bool initialized = false;
 
 /**
  * Ensure that AA framebuffers are the correct size in relation to the screen.
@@ -80,6 +81,8 @@ static void bloomResize(size2i size)
 
 void bloomInit(void)
 {
+	if (initialized) return;
+
 	for (size_t i = 0; i < BloomPasses; i += 1) {
 		bloomFb[i] = framebufferCreate();
 		bloomFbColor[i] = textureCreate();
@@ -109,10 +112,14 @@ void bloomInit(void)
 	boxBlur->image = programSampler(boxBlur, u8"image", GL_TEXTURE0);
 	boxBlur->step = programUniform(boxBlur, u8"step");
 	boxBlur->imageTexel = programUniform(boxBlur, u8"imageTexel");
+
+	initialized = true;
 }
 
 void bloomCleanup(void)
 {
+	if (!initialized) return;
+
 	programDestroy(boxBlur);
 	boxBlur = null;
 	programDestroy(threshold);
@@ -123,10 +130,14 @@ void bloomCleanup(void)
 		framebufferDestroy(bloomFb[i]);
 		bloomFb[i] = null;
 	}
+
+	initialized = false;
 }
 
 void bloomApply(void)
 {
+	assert(initialized);
+
 	// Prepare the image for bloom
 	glDisable(GL_BLEND);
 	glDisable(GL_DEPTH_TEST);

@@ -102,6 +102,8 @@ static ProgramSmaaNeighbor* smaaNeighbor = null;
 static AAMode current = AANone;
 static size2i currentSize = {0};
 
+static bool initialized = false;
+
 /**
  * Ensure that AA framebuffers are of the same size as the screen. This can be
  * run every frame with the current size of the screen.
@@ -128,6 +130,8 @@ static void aaResize(size2i size)
 
 void aaInit(AAMode type)
 {
+	if (initialized) return;
+
 	msaaFb = framebufferCreate();
 	msaaFbColor = textureMSCreate();
 	msaaFbDepthStencil = renderbufferMSCreate();
@@ -266,10 +270,13 @@ void aaInit(AAMode type)
 	textureStorage(smaaSearch, (size2i){SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT},
 		GL_RG8);
 	textureData(smaaSearch, searchTexBytesFlipped, GL_RED, GL_UNSIGNED_BYTE);
+
+	initialized = true;
 }
 
 void aaCleanup(void)
 {
+	if (!initialized) return;
 	framebufferDestroy(msaaFb);
 	msaaFb = null;
 	textureMSDestroy(msaaFbColor);
@@ -298,21 +305,25 @@ void aaCleanup(void)
 	smaaArea = null;
 	textureDestroy(smaaSearch);
 	smaaSearch = null;
+
+	initialized = false;
 }
 
 void aaSwitch(AAMode type)
 {
-	;
+	assert(initialized);
 }
 
 void aaBegin(void)
 {
+	assert(initialized);
 	aaResize(windowGetSize());
 	framebufferUse(msaaFb);
 }
 
 void aaEnd(void)
 {
+	assert(initialized);
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);

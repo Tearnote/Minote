@@ -32,7 +32,7 @@ darray* darrayCreate(size_t elementSize)
 
 void darrayDestroy(darray* d)
 {
-	assert(d);
+	if (!d) return;
 	free(d->data);
 	d->data = null;
 	free(d);

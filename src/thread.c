@@ -25,7 +25,7 @@ thread* threadCreate(void* func(void*), void* arg)
 
 void threadDestroy(thread* t)
 {
-	assert(t);
+	if (!t) return;
 	pthread_join(*t, null);
 	free(t);
 	t = null;
@@ -44,7 +44,7 @@ mutex* mutexCreate(void)
 
 void mutexDestroy(mutex* m)
 {
-	assert(m);
+	if (!m) return;
 	int error = pthread_mutex_destroy(m);
 	if (error) {
 		fprintf(stderr, u8"Could not destroy mutex: %s", strerror(error));
