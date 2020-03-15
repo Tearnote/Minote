@@ -144,7 +144,6 @@ typedef struct ModelPhong {
  */
 static void modelDestroyFlat(ModelFlat* m)
 {
-	assert(initialized);
 	assert(m);
 	glDeleteVertexArrays(1, &m->vao);
 	m->vao = 0;
@@ -168,7 +167,6 @@ static void modelDestroyFlat(ModelFlat* m)
  */
 static void modelDestroyPhong(ModelPhong* m)
 {
-	assert(initialized);
 	assert(m);
 	glDeleteVertexArrays(1, &m->vao);
 	m->vao = 0;
@@ -316,7 +314,6 @@ static void modelDrawPhong(ModelPhong* m, size_t instances,
 static void modelGenerateNormals(size_t numVertices,
 	VertexPhong vertices[numVertices], point3f normalData[numVertices])
 {
-	assert(initialized);
 	assert(numVertices);
 	assert(vertices);
 	assert(normalData);
@@ -353,7 +350,6 @@ static void modelGenerateNormals(size_t numVertices,
 Model* modelCreateFlat(const char* name,
 	size_t numVertices, VertexFlat vertices[])
 {
-	assert(initialized);
 	assert(name);
 	assert(numVertices);
 	assert(vertices);
@@ -410,7 +406,6 @@ Model* modelCreateFlat(const char* name,
 Model* modelCreatePhong(const char* name,
 	size_t numVertices, VertexPhong vertices[], MaterialPhong material)
 {
-	assert(initialized);
 	assert(name);
 	assert(numVertices);
 	assert(vertices);

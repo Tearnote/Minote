@@ -37,12 +37,13 @@ typedef struct Model Model;
 
 /**
  * Initialize the model rendering system. Must be called after rendererInit().
+ * This is only required for drawing models, not creation or destruction.
  */
 void modelInit(void);
 
 /**
- * Cleanup the model rendering system. No model functions can be used until
- * modelInit() is called again.
+ * Cleanup the model rendering system. No model drawing functions can be used
+ * until modelInit() is called again.
  */
 void modelCleanup(void);
 
