@@ -11,6 +11,8 @@
 #include "puretables.h"
 #include "renderer.h"
 #include "mapper.h"
+#include "model.h"
+#include "world.h"
 #include "mino.h"
 #include "util.h"
 #include "log.h"
@@ -951,11 +953,11 @@ static void pureDrawQueuedBlocks(void)
 		darrayData(blockTransformsOpaque));
 	darrayClear(blockTintsOpaque);
 	darrayClear(blockTransformsOpaque);
-	rendererDepthOnlyBegin();
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Depth prepass start
 	modelDraw(block, darraySize(blockTransformsAlpha),
 		darrayData(blockTintsAlpha), null,
 		darrayData(blockTransformsAlpha));
-	rendererDepthOnlyEnd();
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE); // Depth prepass end
 	modelDraw(block, darraySize(blockTransformsAlpha),
 		darrayData(blockTintsAlpha), null,
 		darrayData(blockTransformsAlpha));
@@ -1052,7 +1054,9 @@ void pureDraw(void)
 {
 	assert(initialized);
 
-	rendererClear((color3){0.010f, 0.276f, 0.685f}); //TODO make into layer
+	glClearColor(0.010f, 0.276f, 0.685f, 1.0f); //TODO make into layer
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	worldSetAmbientColor((color3){0.010f, 0.276f, 0.685f});
 	pureDrawScene();
 	pureQueueField();
 	pureQueuePlayer();

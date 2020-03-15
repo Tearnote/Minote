@@ -9,6 +9,8 @@
 #include "window.h"
 #include "mapper.h"
 #include "bloom.h"
+#include "world.h"
+#include "model.h"
 #include "util.h"
 #include "play.h"
 #include "aa.h"
@@ -17,15 +19,29 @@ static void gameInit(void)
 {
 	mapperInit();
 	rendererInit();
+	modelInit();
 	bloomInit();
 	aaInit(AAComplex);
+	worldInit();
 	playInit();
+}
+
+static void gameCleanup(void)
+{
+	playCleanup();
+	worldCleanup();
+	aaCleanup();
+	bloomCleanup();
+	modelCleanup();
+	rendererCleanup();
+	mapperCleanup();
 }
 
 static void gameUpdate(void)
 {
 	mapperUpdate();
 	playUpdate();
+	worldUpdate();
 }
 
 static void gameDraw(void)
@@ -36,15 +52,6 @@ static void gameDraw(void)
 	aaEnd();
 	bloomApply();
 	rendererFrameEnd();
-}
-
-static void gameCleanup(void)
-{
-	playCleanup();
-	aaCleanup();
-	bloomCleanup();
-	rendererCleanup();
-	mapperCleanup();
 }
 
 void* game(void* arg)

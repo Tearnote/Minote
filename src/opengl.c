@@ -14,6 +14,35 @@ struct Texture {
 	size2i size;
 };
 
+struct TextureMS {
+	GLuint id;
+	size2i size;
+	GLsizei samples;
+};
+
+struct Renderbuffer {
+	GLuint id;
+	size2i size;
+};
+
+struct RenderbufferMS {
+	GLuint id;
+	size2i size;
+	GLsizei samples;
+};
+
+struct Framebuffer {
+	GLuint id;
+	size2i size;
+	GLsizei samples;
+};
+
+/// OpenGL shader object ID
+typedef GLuint Shader;
+
+GLuint boundFb = 0;
+GLuint boundProgram = 0;
+
 Texture* textureCreate(void)
 {
 	Texture* t = alloc(sizeof(*t));
@@ -73,12 +102,6 @@ void textureUse(Texture* t, TextureUnit unit)
 	glBindTexture(GL_TEXTURE_2D, t->id);
 }
 
-struct TextureMS {
-	GLuint id;
-	size2i size;
-	GLsizei samples;
-};
-
 TextureMS* textureMSCreate(void)
 {
 	TextureMS* t = alloc(sizeof(*t));
@@ -115,11 +138,6 @@ void textureMSUse(TextureMS* t, TextureUnit unit)
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t->id);
 }
 
-struct Renderbuffer {
-	GLuint id;
-	size2i size;
-};
-
 Renderbuffer* renderbufferCreate(void)
 {
 	Renderbuffer* r = alloc(sizeof(*r));
@@ -142,12 +160,6 @@ void renderbufferStorage(Renderbuffer* r, size2i size, GLenum format)
 	glBindRenderbuffer(GL_RENDERBUFFER, r->id);
 	glRenderbufferStorage(GL_RENDERBUFFER, format, size.x, size.y);
 }
-
-struct RenderbufferMS {
-	GLuint id;
-	size2i size;
-	GLsizei samples;
-};
 
 RenderbufferMS* renderbufferMSCreate(void)
 {
@@ -177,14 +189,6 @@ void renderbufferMSStorage(RenderbufferMS* r, size2i size, GLenum format,
 	r->size.y = size.y;
 	r->samples = samples;
 }
-
-GLuint boundFb = 0;
-
-struct Framebuffer {
-	GLuint id;
-	size2i size;
-	GLsizei samples;
-};
 
 Framebuffer* framebufferCreate(void)
 {
@@ -263,9 +267,6 @@ void framebufferUse(Framebuffer* f)
 	glBindFramebuffer(GL_FRAMEBUFFER, f->id);
 	boundFb = f->id;
 }
-
-/// OpenGL shader object ID
-typedef GLuint Shader;
 
 /**
  * Create an OpenGL shader object. The shader is compiled and ready for linking.
@@ -389,5 +390,7 @@ _programSampler(ProgramBase* program, const char* sampler, TextureUnit unit)
 void _programUse(ProgramBase* program)
 {
 	assert(program);
+	if (program->id == boundProgram) return;
 	glUseProgram(program->id);
+	boundProgram = program->id;
 }
