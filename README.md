@@ -27,8 +27,12 @@ Public Domain.
 [`SDL_GameControllerDB`](https://github.com/gabomdq/SDL_GameControllerDB)
 retrieved on 2019-09-05, used under zlib license.
 
-[`PCG PRNG`](http://www.pcg-random.org/) Minimal C 0.9, used under Apache
+[`PCG PRNG`](https://www.pcg-random.org/) Minimal C 0.9, used under Apache
 license.
 
 [`AHEasing`](https://github.com/warrenm/AHEasing) retrieved on 2020-02-21, used
 under WTFPL.
+
+[`SMAA (OpenGL port)`](https://github.com/turol/smaaDemo) retrieved on
+2020-02-29, used under MIT license.
+[Original version.](https://www.iryoku.com/smaa/)
