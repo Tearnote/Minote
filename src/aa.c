@@ -36,10 +36,8 @@ typedef struct ProgramSmaaBlend {
 
 typedef struct ProgramSmaaNeighbor {
 	ProgramBase base;
-	TextureUnit image1;
-	TextureUnit image2;
-	TextureUnit blend1;
-	TextureUnit blend2;
+	TextureUnit image;
+	TextureUnit blend;
 	Uniform alpha;
 	Uniform screenSize;
 } ProgramSmaaNeighbor;
@@ -265,14 +263,11 @@ void aaInit(AAMode mode)
 		smaaNeighbor = programCreate(ProgramSmaaNeighbor,
 			ProgramSmaaNeighborVertName, ProgramSmaaNeighborVertSrc,
 			ProgramSmaaNeighborFragName, ProgramSmaaNeighborFragSrc);
-		smaaNeighbor->image1 = programSampler(smaaNeighbor, u8"image1",
+		smaaNeighbor->image = programSampler(smaaNeighbor, u8"image",
 			GL_TEXTURE0);
-		smaaNeighbor->image2 = programSampler(smaaNeighbor, u8"image2",
-			GL_TEXTURE1);
-		smaaNeighbor->blend1 = programSampler(smaaNeighbor, u8"blend1",
+		smaaNeighbor->blend = programSampler(smaaNeighbor, u8"blend",
 			GL_TEXTURE2);
-		smaaNeighbor->blend2 = programSampler(smaaNeighbor, u8"blend2",
-			GL_TEXTURE3);
+		smaaNeighbor->alpha = programUniform(smaaNeighbor, u8"alpha");
 		smaaNeighbor->screenSize = programUniform(smaaNeighbor, u8"screenSize");
 
 		// Load lookup textures
@@ -444,9 +439,10 @@ void aaEnd(void)
 		// SMAA neighbor blending pass
 		programUse(smaaNeighbor);
 		framebufferUse(rendererFramebuffer());
-		textureUse(rendererTexture(), smaaNeighbor->image1);
+		textureUse(rendererTexture(), smaaNeighbor->image);
 		textureFilter(rendererTexture(), GL_LINEAR);
-		textureUse(smaaBlendFbColor, smaaNeighbor->blend1);
+		textureUse(smaaBlendFbColor, smaaNeighbor->blend);
+		glUniform1f(smaaNeighbor->alpha, 1.0f);
 		glUniform4f(smaaNeighbor->screenSize,
 			1.0 / (float)currentSize.x, 1.0 / (float)currentSize.y,
 			currentSize.x, currentSize.y);
@@ -520,19 +516,23 @@ void aaEnd(void)
 		// SMAA neighbor blending pass
 		programUse(smaaNeighbor);
 		framebufferUse(rendererFramebuffer());
-		textureUse(smaaSeparateFbColor, smaaNeighbor->image1);
+		textureUse(smaaSeparateFbColor, smaaNeighbor->image);
 		textureFilter(smaaSeparateFbColor, GL_LINEAR);
-		textureUse(smaaSeparateFbColor2, smaaNeighbor->image2);
-		textureFilter(smaaSeparateFbColor2, GL_LINEAR);
-		textureUse(smaaBlendFbColor, smaaNeighbor->blend1);
-		textureUse(smaaBlendFbColor2, smaaNeighbor->blend2);
+		textureUse(smaaBlendFbColor, smaaNeighbor->blend);
+		glUniform1f(smaaNeighbor->alpha, 1.0f);
 		glUniform4f(smaaNeighbor->screenSize,
 			1.0 / (float)currentSize.x, 1.0 / (float)currentSize.y,
 			currentSize.x, currentSize.y);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
-		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_BLEND);
+		textureUse(smaaSeparateFbColor2, smaaNeighbor->image);
+		textureFilter(smaaSeparateFbColor2, GL_LINEAR);
+		textureUse(smaaBlendFbColor2, smaaNeighbor->blend);
+		glUniform1f(smaaNeighbor->alpha, 0.5f);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+
+		glEnable(GL_DEPTH_TEST);
 	}
 
 	if (currentMode == AASimple || currentMode == AAExtreme) {

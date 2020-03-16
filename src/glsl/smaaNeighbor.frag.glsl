@@ -11,10 +11,9 @@ in vec4 fOffset;
 
 out vec4 outColor;
 
-uniform sampler2D image1;
-uniform sampler2D image2;
-uniform sampler2D blend1;
-uniform sampler2D blend2;
+uniform sampler2D image;
+uniform sampler2D blend;
+uniform float alpha;
 uniform vec4 screenSize;
 
 #define SMAA_RT_METRICS screenSize
@@ -25,7 +24,6 @@ uniform vec4 screenSize;
 
 void main()
 {
-    vec4 color1 = SMAANeighborhoodBlendingPS(fTexCoords, fOffset, image1, blend1);
-    vec4 color2 = SMAANeighborhoodBlendingPS(fTexCoords, fOffset, image2, blend2);
-    outColor = mix(color1, color2, 0.5);
+    vec4 color = SMAANeighborhoodBlendingPS(fTexCoords, fOffset, image, blend);
+    outColor = vec4(color.rgb, color.a * alpha);
 }
