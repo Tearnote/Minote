@@ -345,33 +345,51 @@ void aaCleanup(void)
 	renderbufferMSDestroy(msaaFbDepthStencil);
 	msaaFbDepthStencil = null;
 
-	framebufferDestroy(smaaSeparateFb);
-	smaaSeparateFb = null;
-	framebufferDestroy(smaaBlendFb);
-	smaaBlendFb = null;
-	framebufferDestroy(smaaEdgeFb2);
-	smaaEdgeFb2 = null;
-	textureDestroy(smaaBlendFbColor2);
-	smaaBlendFbColor2 = null;
-	textureDestroy(smaaEdgeFbColor2);
-	smaaEdgeFbColor2 = null;
-	textureDestroy(smaaSeparateFbColor2);
-	smaaSeparateFbColor2 = null;
 	framebufferDestroy(smaaEdgeFb);
 	smaaEdgeFb = null;
-	textureDestroy(smaaBlendFbColor);
-	smaaBlendFbColor = null;
 	textureDestroy(smaaEdgeFbColor);
 	smaaEdgeFbColor = null;
-	textureDestroy(smaaSeparateFbColor);
-	smaaSeparateFbColor = null;
 	renderbufferDestroy(smaaEdgeFbDepthStencil);
 	smaaEdgeFbDepthStencil = null;
-
+	framebufferDestroy(smaaBlendFb);
+	smaaBlendFb = null;
+	textureDestroy(smaaBlendFbColor);
+	smaaBlendFbColor = null;
+	
 	textureDestroy(smaaArea);
 	smaaArea = null;
 	textureDestroy(smaaSearch);
 	smaaSearch = null;
+	
+	programDestroy(smaaEdge);
+	smaaEdge = null;
+	programDestroy(smaaBlend);
+	smaaBlend = null;
+	programDestroy(smaaNeighbor);
+	smaaNeighbor = null;
+	
+	framebufferDestroy(smaaSeparateFb);
+	smaaSeparateFb = null;
+	textureDestroy(smaaSeparateFbColor);
+	smaaSeparateFbColor = null;
+	textureDestroy(smaaSeparateFbColor2);
+	smaaSeparateFbColor2 = null;
+	framebufferDestroy(smaaEdgeFb2);
+	smaaEdgeFb2 = null;
+	textureDestroy(smaaEdgeFbColor2);
+	smaaEdgeFbColor2 = null;
+	renderbufferDestroy(smaaEdgeFbDepthStencil2);
+	smaaEdgeFbDepthStencil2 = null;
+	framebufferDestroy(smaaBlendFb2);
+	smaaBlendFb2 = null;
+	textureDestroy(smaaBlendFbColor2);
+	smaaBlendFbColor2 = null;
+
+	programDestroy(smaaSeparate);
+	smaaSeparate = null;
+
+	currentSize.x = 0;
+	currentSize.y = 0;
 
 	initialized = false;
 }
@@ -379,6 +397,7 @@ void aaCleanup(void)
 void aaSwitch(AAMode mode)
 {
 	assert(initialized);
+	if (mode == currentMode) return;
 	aaCleanup();
 	aaInit(mode);
 }

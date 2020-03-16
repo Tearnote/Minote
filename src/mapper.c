@@ -12,6 +12,7 @@
 #include "queue.h"
 #include "util.h"
 #include "log.h"
+#include "aa.h"
 
 /// Queue holding collectedInputs ready to be retrieved
 static queue* inputs = null;
@@ -53,6 +54,17 @@ static InputType rawKeyToType(int key)
 		return InputStart;
 	case GLFW_KEY_ESCAPE:
 		return InputQuit;
+
+	case GLFW_KEY_0:
+		aaSwitch(AANone); return InputNone;
+	case GLFW_KEY_1:
+		aaSwitch(AAFast); return InputNone;
+	case GLFW_KEY_2:
+		aaSwitch(AASimple); return InputNone;
+	case GLFW_KEY_3:
+		aaSwitch(AAComplex); return InputNone;
+	case GLFW_KEY_4:
+		aaSwitch(AAExtreme); return InputNone;
 	default:
 		return InputNone;
 	}
