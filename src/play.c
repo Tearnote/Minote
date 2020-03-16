@@ -14,10 +14,6 @@
 #include "pure.h"
 #include "log.h"
 
-/// Frequency of game logic updates, simulated by semi-threading, in Hz
-#define UpdateFrequency 59.84
-/// Inverse of #UpdateFrequency, in ::nsec
-#define UpdateTick (secToNsec(1) / UpdateFrequency)
 /// Timestamp of the next game logic update
 static nsec nextUpdate = 0;
 
@@ -31,7 +27,7 @@ void playInit(void)
 	if (initialized) return;
 
 	collectedInputs = darrayCreate(sizeof(Input));
-	nextUpdate = getTime() + UpdateTick;
+	nextUpdate = getTime() + PureUpdateTick;
 	pureInit();
 
 	initialized = true;
@@ -72,7 +68,7 @@ void playUpdate(void)
 
 		pureAdvance(collectedInputs);
 		darrayClear(collectedInputs);
-		nextUpdate += UpdateTick;
+		nextUpdate += PureUpdateTick;
 	}
 }
 

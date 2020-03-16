@@ -47,7 +47,7 @@ static void worldResize(size2i size)
 void worldInit(void)
 {
 	if (initialized) return;
-	vec3 eye = {4.0f, 12.0f, 32.0f};
+	vec3 eye = {0.0f, 12.0f, 32.0f};
 	vec3 center = {0.0f, 12.0f, 0.0f};
 	vec3 up = {0.0f, 1.0f, 0.0f};
 	mat4x4_look_at(camera, eye, center, up);

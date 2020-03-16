@@ -9,6 +9,11 @@
 
 #include "darray.h"
 
+/// Frequency of game logic updates, simulated by semi-threading, in Hz
+#define PureUpdateFrequency 59.84
+/// Inverse of #PureUpdateFrequency, in ::nsec
+#define PureUpdateTick (secToNsec(1) / PureUpdateFrequency)
+
 /**
  * Initialize the pure sublayer. Needs to be called before the layer can be
  * used.

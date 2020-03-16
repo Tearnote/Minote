@@ -55,6 +55,7 @@ static InputType rawKeyToType(int key)
 	case GLFW_KEY_ESCAPE:
 		return InputQuit;
 
+	//TODO remove
 	case GLFW_KEY_0:
 		aaSwitch(AANone); return InputNone;
 	case GLFW_KEY_1:

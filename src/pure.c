@@ -15,6 +15,7 @@
 #include "world.h"
 #include "mino.h"
 #include "util.h"
+#include "ease.h"
 #include "log.h"
 
 #define FieldWidth 10u ///< Width of #field
@@ -123,13 +124,22 @@ static Model* scene = null;
 
 static Model* block = null;
 static darray* blockTintsOpaque = null;
+static darray* blockHighlightsOpaque = null;
 static darray* blockTransformsOpaque = null;
 static darray* blockTintsAlpha = null;
+static darray* blockHighlightsAlpha = null;
 static darray* blockTransformsAlpha = null;
 
 static Model* border = null;
 static darray* borderTints = null;
 static darray* borderTransforms = null;
+
+static Ease lockFlash = {
+	.from = 1.0f,
+	.to = 0.0f,
+	.length = 8 * PureUpdateTick,
+	.type = EaseLinear
+};
 
 static bool initialized = false;
 
@@ -505,6 +515,7 @@ static void lock(void)
 	piece* playerPiece = getPiece(tet.player.type, tet.player.rotation);
 	fieldStampPiece(tet.field, playerPiece, tet.player.pos, tet.player.type);
 	tet.player.state = PlayerSpawn;
+	easeRestart(&lockFlash);
 }
 
 void pureInit(void)
@@ -533,8 +544,10 @@ void pureInit(void)
 #include "meshes/block.mesh"
 	);
 	blockTintsOpaque = darrayCreate(sizeof(color4));
+	blockHighlightsOpaque = darrayCreate(sizeof(color4));
 	blockTransformsOpaque = darrayCreate(sizeof(mat4x4));
 	blockTintsAlpha = darrayCreate(sizeof(color4));
+	blockHighlightsAlpha = darrayCreate(sizeof(color4));
 	blockTransformsAlpha = darrayCreate(sizeof(mat4x4));
 	border = modelCreateFlat(u8"border",
 #include "meshes/border.mesh"
@@ -549,50 +562,32 @@ void pureInit(void)
 void pureCleanup(void)
 {
 	if (!initialized) return;
-	if (borderTransforms) {
-		darrayDestroy(borderTransforms);
-		borderTransforms = null;
-	}
-	if (borderTints) {
-		darrayDestroy(borderTints);
-		borderTints = null;
-	}
-	if (border) {
-		modelDestroy(border);
-		border = null;
-	}
-	if (blockTransformsAlpha) {
-		darrayDestroy(blockTransformsAlpha);
-		blockTransformsAlpha = null;
-	}
-	if (blockTintsAlpha) {
-		darrayDestroy(blockTintsAlpha);
-		blockTintsAlpha = null;
-	}
-	if (blockTransformsOpaque) {
-		darrayDestroy(blockTransformsOpaque);
-		blockTransformsOpaque = null;
-	}
-	if (blockTintsOpaque) {
-		darrayDestroy(blockTintsOpaque);
-		blockTintsOpaque = null;
-	}
-	if (block) {
-		modelDestroy(block);
-		block = null;
-	}
-	if (scene) {
-		modelDestroy(scene);
-		scene = null;
-	}
-	if (tet.rng) {
-		rngDestroy(tet.rng);
-		tet.rng = null;
-	}
-	if (tet.field) {
-		fieldDestroy(tet.field);
-		tet.field = null;
-	}
+	darrayDestroy(borderTransforms);
+	borderTransforms = null;
+	darrayDestroy(borderTints);
+	borderTints = null;
+	modelDestroy(border);
+	border = null;
+	darrayDestroy(blockTransformsAlpha);
+	blockTransformsAlpha = null;
+	darrayDestroy(blockHighlightsAlpha);
+	blockHighlightsAlpha = null;
+	darrayDestroy(blockTintsAlpha);
+	blockTintsAlpha = null;
+	darrayDestroy(blockTransformsOpaque);
+	blockTransformsOpaque = null;
+	darrayDestroy(blockHighlightsOpaque);
+	blockHighlightsOpaque = null;
+	darrayDestroy(blockTintsOpaque);
+	blockTintsOpaque = null;
+	modelDestroy(block);
+	block = null;
+	modelDestroy(scene);
+	scene = null;
+	rngDestroy(tet.rng);
+	tet.rng = null;
+	fieldDestroy(tet.field);
+	tet.field = null;
 	initialized = false;
 	logDebug(applog, u8"Pure sublayer cleaned up");
 }
@@ -828,6 +823,9 @@ static void pureDrawScene(void)
  */
 static void pureQueueField(void)
 {
+	// A bit out of place here, but no need to get this more than once
+	piece* playerPiece = getPiece(tet.player.type, tet.player.rotation);
+
 	for (size_t i = 0; i < FieldWidth * FieldHeight; i += 1) {
 		int x = i % FieldWidth;
 		int y = i / FieldWidth;
@@ -835,12 +833,15 @@ static void pureQueueField(void)
 		if (type == MinoNone) continue;
 
 		color4* tint = null;
+		color4* highlight = null;
 		mat4x4* transform = null;
 		if (minoColor(type).a == 1.0) {
 			tint = darrayProduce(blockTintsOpaque);
+			highlight = darrayProduce(blockHighlightsOpaque);
 			transform = darrayProduce(blockTransformsOpaque);
 		} else {
 			tint = darrayProduce(blockTintsAlpha);
+			highlight = darrayProduce(blockHighlightsAlpha);
 			transform = darrayProduce(blockTransformsAlpha);
 		}
 
@@ -850,6 +851,23 @@ static void pureQueueField(void)
 		tint->b *= FieldDim;
 		if (y >= FieldHeightVisible)
 			tint->a *= ExtraRowDim;
+
+		bool playerCell = false;
+		for (size_t j = 0; j < MinosPerPiece; j += 1) {
+			int px = (*playerPiece)[j].x + tet.player.pos.x;
+			int py = (*playerPiece)[j].y + tet.player.pos.y;
+			if (x == px && y == py) {
+				playerCell = true;
+				break;
+			}
+		}
+		if (playerCell) {
+			float flash = easeApply(&lockFlash);
+			color4Copy(*highlight, ((color4){1.0f, 1.0f, 1.0f, flash}));
+		} else {
+			color4Copy(*highlight, Color4Clear);
+		}
+
 		mat4x4_translate(*transform, x - (signed)(FieldWidth / 2), y, 0.0f);
 	}
 }
@@ -869,16 +887,20 @@ static void pureQueuePlayer(void)
 		float y = (*playerPiece)[i].y + tet.player.pos.y;
 
 		color4* tint = null;
+		color4* highlight = null;
 		mat4x4* transform = null;
 		if (minoColor(tet.player.type).a == 1.0) {
 			tint = darrayProduce(blockTintsOpaque);
+			highlight = darrayProduce(blockHighlightsOpaque);
 			transform = darrayProduce(blockTransformsOpaque);
 		} else {
 			tint = darrayProduce(blockTintsAlpha);
+			highlight = darrayProduce(blockHighlightsAlpha);
 			transform = darrayProduce(blockTransformsAlpha);
 		}
 
 		color4Copy(*tint, minoColor(tet.player.type));
+		color4Copy(*highlight, Color4Clear);
 		mat4x4_translate(*transform, x - (signed)(FieldWidth / 2), y, 0.0f);
 	}
 }
@@ -906,10 +928,12 @@ static void pureQueueGhost(void)
 		float y = (*playerPiece)[i].y + ghostPos.y;
 
 		color4* tint = darrayProduce(blockTintsAlpha);
+		color4* highlight = darrayProduce(blockHighlightsAlpha);
 		mat4x4* transform = darrayProduce(blockTransformsAlpha);
 
 		color4Copy(*tint, minoColor(tet.player.type));
 		tint->a *= GhostDim;
+		color4Copy(*highlight, Color4Clear);
 		mat4x4_translate(*transform, x - (signed)(FieldWidth / 2), y, 0.0f);
 	}
 }
@@ -929,16 +953,20 @@ static void pureQueuePreview(void)
 			y -= 1;
 
 		color4* tint = null;
+		color4* highlight = null;
 		mat4x4* transform = null;
 		if (minoColor(tet.player.preview).a == 1.0) {
 			tint = darrayProduce(blockTintsOpaque);
+			highlight = darrayProduce(blockHighlightsOpaque);
 			transform = darrayProduce(blockTransformsOpaque);
 		} else {
 			tint = darrayProduce(blockTintsAlpha);
+			highlight = darrayProduce(blockHighlightsAlpha);
 			transform = darrayProduce(blockTransformsAlpha);
 		}
 
 		color4Copy(*tint, minoColor(tet.player.preview));
+		color4Copy(*highlight, Color4Clear);
 		mat4x4_translate(*transform, x, y, 0.0f);
 	}
 }
@@ -949,23 +977,28 @@ static void pureQueuePreview(void)
 static void pureDrawQueuedBlocks(void)
 {
 	modelDraw(block, darraySize(blockTransformsOpaque),
-		darrayData(blockTintsOpaque), null,
+		darrayData(blockTintsOpaque),
+		darrayData(blockHighlightsOpaque),
 		darrayData(blockTransformsOpaque));
 	darrayClear(blockTintsOpaque);
+	darrayClear(blockHighlightsOpaque);
 	darrayClear(blockTransformsOpaque);
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Depth prepass start
 	modelDraw(block, darraySize(blockTransformsAlpha),
-		darrayData(blockTintsAlpha), null,
+		darrayData(blockTintsAlpha),
+		darrayData(blockHighlightsAlpha),
 		darrayData(blockTransformsAlpha));
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE); // Depth prepass end
 	modelDraw(block, darraySize(blockTransformsAlpha),
-		darrayData(blockTintsAlpha), null,
+		darrayData(blockTintsAlpha),
+		darrayData(blockHighlightsAlpha),
 		darrayData(blockTransformsAlpha));
 	darrayClear(blockTintsAlpha);
+	darrayClear(blockHighlightsAlpha);
 	darrayClear(blockTransformsAlpha);
 }
 
-static void borderQueue(point3f pos, size3f size, color4 color)
+static void pureBorderQueue(point3f pos, size3f size, color4 color)
 {
 	color4* tint = darrayProduce(borderTints);
 	mat4x4* transform = darrayProduce(borderTransforms);
@@ -995,50 +1028,50 @@ static void pureDrawBorder(void)
 
 		// Left
 		if (!fieldGet(tet.field, (point2i){x - 1, y}))
-			borderQueue((point3f){tx, ty + 0.125f, 0.0f},
+			pureBorderQueue((point3f){tx, ty + 0.125f, 0.0f},
 				(size3f){0.125f, 0.75f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Right
 		if (!fieldGet(tet.field, (point2i){x + 1, y}))
-			borderQueue((point3f){tx + 0.875f, ty + 0.125f, 0.0f},
+			pureBorderQueue((point3f){tx + 0.875f, ty + 0.125f, 0.0f},
 				(size3f){0.125f, 0.75f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Down
 		if (!fieldGet(tet.field, (point2i){x, y - 1}))
-			borderQueue((point3f){tx + 0.125f, ty, 0.0f},
+			pureBorderQueue((point3f){tx + 0.125f, ty, 0.0f},
 				(size3f){0.75f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Up
 		if (!fieldGet(tet.field, (point2i){x, y + 1}))
-			borderQueue((point3f){tx + 0.125f, ty + 0.875f, 0.0f},
+			pureBorderQueue((point3f){tx + 0.125f, ty + 0.875f, 0.0f},
 				(size3f){0.75f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Down Left
 		if (!fieldGet(tet.field, (point2i){x - 1, y - 1})
 			|| !fieldGet(tet.field, (point2i){x - 1, y})
 			|| !fieldGet(tet.field, (point2i){x, y - 1}))
-			borderQueue((point3f){tx, ty, 0.0f},
+			pureBorderQueue((point3f){tx, ty, 0.0f},
 				(size3f){0.125f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Down Right
 		if (!fieldGet(tet.field, (point2i){x + 1, y - 1})
 			|| !fieldGet(tet.field, (point2i){x + 1, y})
 			|| !fieldGet(tet.field, (point2i){x, y - 1}))
-			borderQueue((point3f){tx + 0.875f, ty, 0.0f},
+			pureBorderQueue((point3f){tx + 0.875f, ty, 0.0f},
 				(size3f){0.125f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Up Left
 		if (!fieldGet(tet.field, (point2i){x - 1, y + 1})
 			|| !fieldGet(tet.field, (point2i){x - 1, y})
 			|| !fieldGet(tet.field, (point2i){x, y + 1}))
-			borderQueue((point3f){tx, ty + 0.875f, 0.0f},
+			pureBorderQueue((point3f){tx, ty + 0.875f, 0.0f},
 				(size3f){0.125f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Up Right
 		if (!fieldGet(tet.field, (point2i){x + 1, y + 1})
 			|| !fieldGet(tet.field, (point2i){x + 1, y})
 			|| !fieldGet(tet.field, (point2i){x, y + 1}))
-			borderQueue((point3f){tx + 0.875f, ty + 0.875f, 0.0f},
+			pureBorderQueue((point3f){tx + 0.875f, ty + 0.875f, 0.0f},
 				(size3f){0.125f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 	}
