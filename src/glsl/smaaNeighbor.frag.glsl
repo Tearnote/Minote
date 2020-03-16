@@ -16,7 +16,6 @@ uniform sampler2D image2;
 uniform sampler2D blend1;
 uniform sampler2D blend2;
 uniform vec4 screenSize;
-uniform float alpha;
 
 #define SMAA_RT_METRICS screenSize
 #define SMAA_INCLUDE_VS 0

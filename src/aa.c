@@ -27,10 +27,10 @@ typedef struct ProgramSmaaEdge {
 
 typedef struct ProgramSmaaBlend {
 	ProgramBase base;
-	TextureUnit edges1;
-	TextureUnit edges2;
+	TextureUnit edges;
 	TextureUnit area;
 	TextureUnit search;
+	Uniform subsampleIndices;
 	Uniform screenSize;
 } ProgramSmaaBlend;
 
@@ -40,6 +40,7 @@ typedef struct ProgramSmaaNeighbor {
 	TextureUnit image2;
 	TextureUnit blend1;
 	TextureUnit blend2;
+	Uniform alpha;
 	Uniform screenSize;
 } ProgramSmaaNeighbor;
 
@@ -86,10 +87,10 @@ static RenderbufferMS* msaaFbDepthStencil = null;
 
 // AAFast, AAComplex
 static Framebuffer* smaaEdgeFb = null;
-static Framebuffer* smaaBlendFb = null;
 static Texture* smaaEdgeFbColor = null;
-static Texture* smaaBlendFbColor = null;
 static Renderbuffer* smaaEdgeFbDepthStencil = null;
+static Framebuffer* smaaBlendFb = null;
+static Texture* smaaBlendFbColor = null;
 
 static Texture* smaaArea = null;
 static Texture* smaaSearch = null;
@@ -104,6 +105,8 @@ static Texture* smaaSeparateFbColor = null;
 static Texture* smaaSeparateFbColor2 = null;
 static Framebuffer* smaaEdgeFb2 = null;
 static Texture* smaaEdgeFbColor2 = null;
+static Renderbuffer* smaaEdgeFbDepthStencil2 = null;
+static Framebuffer* smaaBlendFb2 = null;
 static Texture* smaaBlendFbColor2 = null;
 
 static ProgramSmaaSeparate* smaaSeparate = null;
@@ -139,6 +142,8 @@ static void aaResize(size2i size)
 		textureStorage(smaaSeparateFbColor, size, GL_RGBA16F);
 	if (smaaEdgeFbColor)
 		textureStorage(smaaEdgeFbColor, size, GL_RGBA8);
+	if (smaaEdgeFbDepthStencil)
+		renderbufferStorage(smaaEdgeFbDepthStencil, size, GL_DEPTH24_STENCIL8);
 	if (smaaBlendFbColor)
 		textureStorage(smaaBlendFbColor, size, GL_RGBA8);
 
@@ -146,11 +151,10 @@ static void aaResize(size2i size)
 		textureStorage(smaaSeparateFbColor2, size, GL_RGBA16F);
 	if (smaaEdgeFbColor2)
 		textureStorage(smaaEdgeFbColor2, size, GL_RGBA8);
+	if (smaaEdgeFbDepthStencil2)
+		renderbufferStorage(smaaEdgeFbDepthStencil2, size, GL_DEPTH24_STENCIL8);
 	if (smaaBlendFbColor2)
 		textureStorage(smaaBlendFbColor2, size, GL_RGBA8);
-
-	if (smaaEdgeFbDepthStencil)
-		renderbufferStorage(smaaEdgeFbDepthStencil, size, GL_DEPTH24_STENCIL8);
 }
 
 void aaInit(AAMode mode)
@@ -179,6 +183,8 @@ void aaInit(AAMode mode)
 		smaaSeparateFbColor2 = textureCreate();
 		smaaEdgeFb2 = framebufferCreate();
 		smaaEdgeFbColor2 = textureCreate();
+		smaaEdgeFbDepthStencil2 = renderbufferCreate();
+		smaaBlendFb2 = framebufferCreate();
 		smaaBlendFbColor2 = textureCreate();
 	}
 
@@ -236,11 +242,6 @@ void aaInit(AAMode mode)
 		framebufferTexture(smaaBlendFb, smaaBlendFbColor, GL_COLOR_ATTACHMENT0);
 		framebufferRenderbuffer(smaaBlendFb, smaaEdgeFbDepthStencil,
 			GL_DEPTH_STENCIL_ATTACHMENT);
-		if (mode == AAComplex) {
-			framebufferTexture(smaaBlendFb, smaaBlendFbColor2,
-				GL_COLOR_ATTACHMENT1);
-			framebufferBuffers(smaaBlendFb, 2);
-		}
 		if (!framebufferCheck(smaaBlendFb)) {
 			logCrit(applog, u8"Failed to create the SMAA blend framebuffer");
 			exit(EXIT_FAILURE);
@@ -255,10 +256,10 @@ void aaInit(AAMode mode)
 		smaaBlend = programCreate(ProgramSmaaBlend,
 			ProgramSmaaBlendVertName, ProgramSmaaBlendVertSrc,
 			ProgramSmaaBlendFragName, ProgramSmaaBlendFragSrc);
-		smaaBlend->edges1 = programSampler(smaaBlend, u8"edges1", GL_TEXTURE0);
-		smaaBlend->edges2 = programSampler(smaaBlend, u8"edges2", GL_TEXTURE1);
-		smaaBlend->area = programSampler(smaaBlend, u8"area", GL_TEXTURE2);
-		smaaBlend->search = programSampler(smaaBlend, u8"search", GL_TEXTURE3);
+		smaaBlend->edges = programSampler(smaaBlend, u8"edges", GL_TEXTURE0);
+		smaaBlend->area = programSampler(smaaBlend, u8"area", GL_TEXTURE1);
+		smaaBlend->search = programSampler(smaaBlend, u8"search", GL_TEXTURE2);
+		smaaBlend->subsampleIndices = programUniform(smaaBlend, u8"subsampleIndices");
 		smaaBlend->screenSize = programUniform(smaaBlend, u8"screenSize");
 
 		smaaNeighbor = programCreate(ProgramSmaaNeighbor,
@@ -312,10 +313,18 @@ void aaInit(AAMode mode)
 		}
 
 		framebufferTexture(smaaEdgeFb2, smaaEdgeFbColor2, GL_COLOR_ATTACHMENT0);
-		framebufferRenderbuffer(smaaEdgeFb2, smaaEdgeFbDepthStencil,
+		framebufferRenderbuffer(smaaEdgeFb2, smaaEdgeFbDepthStencil2,
 			GL_DEPTH_STENCIL_ATTACHMENT);
 		if (!framebufferCheck(smaaEdgeFb2)) {
 			logCrit(applog, u8"Failed to create the SMAA edge framebuffer");
+			exit(EXIT_FAILURE);
+		}
+
+		framebufferTexture(smaaBlendFb2, smaaBlendFbColor2, GL_COLOR_ATTACHMENT0);
+		framebufferRenderbuffer(smaaBlendFb2, smaaEdgeFbDepthStencil2,
+			GL_DEPTH_STENCIL_ATTACHMENT);
+		if (!framebufferCheck(smaaBlendFb2)) {
+			logCrit(applog, u8"Failed to create the SMAA blend framebuffer");
 			exit(EXIT_FAILURE);
 		}
 
@@ -421,9 +430,11 @@ void aaEnd(void)
 		glStencilFunc(GL_EQUAL, 1, 0xFF);
 		glStencilMask(0x00);
 		glClear(GL_COLOR_BUFFER_BIT);
-		textureUse(smaaEdgeFbColor, smaaBlend->edges1);
+		textureUse(smaaEdgeFbColor, smaaBlend->edges);
 		textureUse(smaaArea, smaaBlend->area);
 		textureUse(smaaSearch, smaaBlend->search);
+		glUniform4f(smaaBlend->subsampleIndices,
+			0.0f, 0.0f, 0.0f, 0.0f);
 		glUniform4f(smaaBlend->screenSize,
 			1.0 / (float)currentSize.x, 1.0 / (float)currentSize.y,
 			currentSize.x, currentSize.y);
@@ -472,7 +483,7 @@ void aaEnd(void)
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		framebufferUse(smaaEdgeFb2);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		textureUse(smaaSeparateFbColor2, smaaEdge->image);
 		textureFilter(smaaSeparateFbColor2, GL_NEAREST);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -483,10 +494,23 @@ void aaEnd(void)
 		glStencilFunc(GL_EQUAL, 1, 0xFF);
 		glStencilMask(0x00);
 		glClear(GL_COLOR_BUFFER_BIT);
-		textureUse(smaaEdgeFbColor, smaaBlend->edges1);
-		textureUse(smaaEdgeFbColor2, smaaBlend->edges2);
+		textureUse(smaaEdgeFbColor, smaaBlend->edges);
 		textureUse(smaaArea, smaaBlend->area);
 		textureUse(smaaSearch, smaaBlend->search);
+		glUniform4f(smaaBlend->subsampleIndices,
+			1.0f, 2.0f, 2.0f, 0.0f);
+		glUniform4f(smaaBlend->screenSize,
+			1.0 / (float)currentSize.x, 1.0 / (float)currentSize.y,
+			currentSize.x, currentSize.y);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+
+		framebufferUse(smaaBlendFb2);
+		glClear(GL_COLOR_BUFFER_BIT);
+		textureUse(smaaEdgeFbColor2, smaaBlend->edges);
+		textureUse(smaaArea, smaaBlend->area);
+		textureUse(smaaSearch, smaaBlend->search);
+		glUniform4f(smaaBlend->subsampleIndices,
+			2.0f, 1.0f, 1.0f, 0.0f);
 		glUniform4f(smaaBlend->screenSize,
 			1.0 / (float)currentSize.x, 1.0 / (float)currentSize.y,
 			currentSize.x, currentSize.y);
