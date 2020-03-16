@@ -137,6 +137,7 @@ void bloomCleanup(void)
 void bloomApply(void)
 {
 	assert(initialized);
+	bloomResize(windowGetSize());
 
 	// Prepare the image for bloom
 	glDisable(GL_BLEND);
