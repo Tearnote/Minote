@@ -267,6 +267,20 @@ bool framebufferCheck(Framebuffer* f);
 void framebufferUse(Framebuffer* f);
 
 /**
+ * Copy a contents of a ::Framebuffer to the screen (backbuffer).
+ * @param f The ::Framebuffer object
+ */
+void framebufferToScreen(Framebuffer* f);
+
+/**
+ * Copy the contents of one ::Framebuffer to another. Performs MSAA resolve.
+ * @param src The source ::Framebuffer object
+ * @param dst The destination ::Framebuffer object
+ * @param size Size of the area to copy, in pixels
+ */
+void framebufferBlit(Framebuffer* src, Framebuffer* dst, size2i size);
+
+/**
  * Base struct of ::Program type. To be a valid ::Program type usable with below
  * functions, a struct needs to have ::ProgramBase as its first element.
  */

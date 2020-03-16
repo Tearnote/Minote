@@ -189,12 +189,7 @@ void rendererFrameEnd(void)
 {
 	assert(initialized);
 
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-	glBlitFramebuffer(0, 0, viewportSize.x, viewportSize.y,
-		0, 0, viewportSize.x, viewportSize.y,
-		GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
-	// Present the frame
+	framebufferToScreen(renderFb);
 	windowFlip();
 	rendererSync();
 }

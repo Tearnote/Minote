@@ -6,6 +6,7 @@
 #include "opengl.h"
 
 #include <assert.h>
+#include "window.h"
 #include "util.h"
 #include "log.h"
 
@@ -266,6 +267,32 @@ void framebufferUse(Framebuffer* f)
 	if (boundFb == f->id) return;
 	glBindFramebuffer(GL_FRAMEBUFFER, f->id);
 	boundFb = f->id;
+}
+
+void framebufferToScreen(Framebuffer* f)
+{
+	assert(f);
+	framebufferUse(f);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	boundFb = 0;
+
+	size2i screenSize = windowGetSize();
+	glBlitFramebuffer(0, 0, screenSize.x, screenSize.y,
+		0, 0, screenSize.x, screenSize.y,
+		GL_COLOR_BUFFER_BIT, GL_NEAREST);
+}
+
+void framebufferBlit(Framebuffer* src, Framebuffer* dst, size2i size)
+{
+	assert(src);
+	assert(dst);
+	assert(size.x > 0);
+	assert(size.y > 0);
+	framebufferUse(dst);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, src->id);
+	glBlitFramebuffer(0, 0, size.x, size.y,
+		0, 0, size.x, size.y,
+		GL_COLOR_BUFFER_BIT, GL_NEAREST);
 }
 
 /**
