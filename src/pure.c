@@ -39,14 +39,6 @@
 #define ClearDelay 41 ///< Frames between line clear and thump
 #define SpawnDelay 30 ///< Frames between lock/thumb and new piece spawn
 
-#define FieldHeightVisible 20u ///< Number of bottom rows the player can see
-#define PreviewX -2.0f ///< X offset of preview piece
-#define PreviewY 21.0f ///< Y offset of preview piece
-#define FieldDim 0.3f ///< Multiplier of field block color
-#define ExtraRowDim 0.25f ///< Multiplier of field block alpha above the scene
-#define GhostDim 0.2f ///< Multiplier of ghost block alpha
-#define BorderDim 0.5f ///< Multiplier of border alpha
-
 /// State of player piece FSM
 typedef enum PlayerState {
 	PlayerNone, ///< zero value
@@ -134,10 +126,28 @@ static Model* border = null;
 static darray* borderTints = null;
 static darray* borderTransforms = null;
 
+////////////////////////////////////////////////////////////////////////////////
+
+#define FieldHeightVisible 20u ///< Number of bottom rows the player can see
+#define PreviewX -2.0f ///< X offset of preview piece
+#define PreviewY 21.0f ///< Y offset of preview piece
+#define FieldDim 0.3f ///< Multiplier of field block color
+#define ExtraRowDim 0.25f ///< Multiplier of field block alpha above the scene
+#define GhostDim 0.2f ///< Multiplier of ghost block alpha
+#define BorderDim 0.5f ///< Multiplier of border alpha
+#define LockFlashBrightness 1.2f ///< Color value of lock flash highlight
+
 static Ease lockFlash = {
 	.from = 1.0f,
 	.to = 0.0f,
 	.length = 8 * PureUpdateTick,
+	.type = EaseLinear
+};
+
+static Ease lockDim = {
+	.from = 1.0f,
+	.to = 0.4f,
+	.length = LockDelay * PureUpdateTick,
 	.type = EaseLinear
 };
 
@@ -863,7 +873,7 @@ static void pureQueueField(void)
 		}
 		if (playerCell) {
 			float flash = easeApply(&lockFlash);
-			color4Copy(*highlight, ((color4){1.0f, 1.0f, 1.0f, flash}));
+			color4Copy(*highlight, ((color4){LockFlashBrightness, LockFlashBrightness, LockFlashBrightness, flash}));
 		} else {
 			color4Copy(*highlight, Color4Clear);
 		}
@@ -900,6 +910,14 @@ static void pureQueuePlayer(void)
 		}
 
 		color4Copy(*tint, minoColor(tet.player.type));
+		if (!canDrop()) {
+			easeRestart(&lockDim);
+			lockDim.start -= tet.player.lockDelay * PureUpdateTick;
+			float dim = easeApply(&lockDim);
+			tint->r *= dim;
+			tint->g *= dim;
+			tint->b *= dim;
+		}
 		color4Copy(*highlight, Color4Clear);
 		mat4x4_translate(*transform, x - (signed)(FieldWidth / 2), y, 0.0f);
 	}
