@@ -151,6 +151,16 @@ static Ease lockDim = {
 	.type = EaseLinear
 };
 
+#define comboHighlight(combo) \
+    (1.1f + 0.025f * (combo))
+
+static Ease comboFade = {
+	.from = comboHighlight(1),
+	.to = comboHighlight(1),
+	.length = 24 * PureUpdateTick,
+	.type = EaseOutQuadratic
+};
+
 static bool initialized = false;
 
 /**
@@ -391,6 +401,9 @@ static void addScore(int lines)
 	score += tet.player.dropBonus;
 	score *= lines;
 	tet.combo += 2 * lines - 2;
+	comboFade.from = easeApply(&comboFade);
+	comboFade.to = comboHighlight(tet.combo);
+	easeRestart(&comboFade);
 	score *= tet.combo;
 	if (fieldIsEmpty(tet.field))
 		score *= 4; // Bravo bonus
@@ -725,6 +738,9 @@ static void pureUpdateClear(void)
 			updateGrade();
 		} else { // Piece locked without a clear
 			tet.combo = 1;
+			comboFade.from = easeApply(&comboFade);
+			comboFade.to = comboHighlight(tet.combo);
+			easeRestart(&comboFade);
 		}
 	}
 
@@ -825,7 +841,8 @@ void pureAdvance(darray* inputs)
  */
 static void pureDrawScene(void)
 {
-	modelDraw(scene, 1, (color4[]){Color4White}, null, &IdentityMatrix);
+	float boost = easeApply(&comboFade);
+	modelDraw(scene, 1, (color4[]){boost, boost, boost, 1.0f}, null, &IdentityMatrix);
 }
 
 /**
