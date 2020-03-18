@@ -112,7 +112,10 @@ typedef struct Tetrion {
 /// Full state of the mode
 static Tetrion tet = {0};
 
+////////////////////////////////////////////////////////////////////////////////
+
 static Model* scene = null;
+static Model* guide = null;
 
 static Model* block = null;
 static darray* blockTintsOpaque = null;
@@ -126,8 +129,6 @@ static Model* border = null;
 static darray* borderTints = null;
 static darray* borderTransforms = null;
 
-////////////////////////////////////////////////////////////////////////////////
-
 #define FieldHeightVisible 20u ///< Number of bottom rows the player can see
 #define PreviewX -2.0f ///< X offset of preview piece
 #define PreviewY 21.0f ///< Y offset of preview piece
@@ -137,6 +138,7 @@ static darray* borderTransforms = null;
 #define BorderDim 0.5f ///< Multiplier of border alpha
 #define LockFlashBrightness 1.2f ///< Color value of lock flash highlight
 
+/// Player piece animation after the piece locks
 static Ease lockFlash = {
 	.from = 1.0f,
 	.to = 0.0f,
@@ -144,6 +146,7 @@ static Ease lockFlash = {
 	.type = EaseLinear
 };
 
+/// Player piece animation as the lock delay ticks down
 static Ease lockDim = {
 	.from = 1.0f,
 	.to = 0.4f,
@@ -151,9 +154,11 @@ static Ease lockDim = {
 	.type = EaseLinear
 };
 
+/// Convert combo to highlight multiplier
 #define comboHighlight(combo) \
     (1.1f + 0.025f * (combo))
 
+/// Animation of the scene when combo counter changes
 static Ease comboFade = {
 	.from = comboHighlight(1),
 	.to = comboHighlight(1),
@@ -563,6 +568,9 @@ void pureInit(void)
 	scene = modelCreateFlat(u8"scene",
 #include "meshes/scene.mesh"
 	);
+	guide = modelCreateFlat(u8"scene",
+#include "meshes/guide.mesh"
+	);
 	block = modelCreatePhong(u8"block",
 #include "meshes/block.mesh"
 	);
@@ -605,6 +613,8 @@ void pureCleanup(void)
 	blockTintsOpaque = null;
 	modelDestroy(block);
 	block = null;
+	modelDestroy(guide);
+	guide = null;
 	modelDestroy(scene);
 	scene = null;
 	rngDestroy(tet.rng);
@@ -842,7 +852,15 @@ void pureAdvance(darray* inputs)
 static void pureDrawScene(void)
 {
 	float boost = easeApply(&comboFade);
-	modelDraw(scene, 1, (color4[]){boost, boost, boost, 1.0f}, null, &IdentityMatrix);
+	modelDraw(scene, 1, (color4[]){{boost, boost, boost, 1.0f}}, null, &IdentityMatrix);
+}
+
+/**
+ * Draw the guide model, helping a beginner player keep track of columns.
+ */
+static void pureDrawGuide(void)
+{
+	modelDraw(guide, 1, (color4[]){Color4White}, null, &IdentityMatrix);
 }
 
 /**
@@ -1126,6 +1144,7 @@ void pureDraw(void)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	worldSetAmbientColor((color3){0.010f, 0.276f, 0.685f});
 	pureDrawScene();
+	pureDrawGuide();
 	pureQueueField();
 	pureQueuePlayer();
 	pureQueueGhost();
