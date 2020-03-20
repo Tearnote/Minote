@@ -7,6 +7,7 @@
 #define MINOTE_OPENGL_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include "glad/glad.h"
 #include "basetypes.h"
 
