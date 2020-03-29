@@ -10,6 +10,7 @@
 #include <time.h>
 #include "puretables.h"
 #include "renderer.h"
+#include "effects.h"
 #include "mapper.h"
 #include "model.h"
 #include "world.h"
@@ -111,6 +112,8 @@ typedef struct Tetrion {
 
 /// Full state of the mode
 static Tetrion tet = {0};
+
+void effectClear(int row, int power);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -386,6 +389,10 @@ static int checkClears(void)
 			continue;
 		count += 1;
 		tet.linesCleared[y] = true;
+	}
+	for (int y = 0; y < FieldHeight; y += 1) {
+		if (!tet.linesCleared[y]) continue;
+		effectClear(y, count);
 		fieldClearRow(tet.field, y);
 	}
 	return count;
@@ -844,6 +851,19 @@ void pureAdvance(darray* inputs)
 	pureUpdateGravity();
 	pureUpdateLocking();
 	pureUpdateWin();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Create some pretty particle effects on line clear. Call this before the row
+ * is actually cleared.
+ * @param row Height of the cleared row
+ * @param power 
+ */
+void effectClear(int row, int power)
+{
+	;
 }
 
 /**

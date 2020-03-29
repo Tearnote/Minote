@@ -6,6 +6,7 @@
 #include "game.h"
 
 #include "renderer.h"
+#include "effects.h"
 #include "window.h"
 #include "mapper.h"
 #include "bloom.h"
@@ -24,10 +25,12 @@ static void gameInit(void)
 	aaInit(AAComplex);
 	worldInit();
 	playInit();
+	effectsInit();
 }
 
 static void gameCleanup(void)
 {
+	effectsCleanup();
 	playCleanup();
 	worldCleanup();
 	aaCleanup();
@@ -42,6 +45,7 @@ static void gameUpdate(void)
 	mapperUpdate();
 	playUpdate();
 	worldUpdate();
+	effectsUpdate();
 }
 
 static void gameDraw(void)
@@ -49,6 +53,7 @@ static void gameDraw(void)
 	rendererFrameBegin();
 	aaBegin();
 	playDraw();
+	effectsDraw();
 	aaEnd();
 	bloomApply();
 	rendererFrameEnd();
