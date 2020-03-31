@@ -263,7 +263,7 @@ bool framebufferCheck(Framebuffer* f);
 /**
  * Bind a ::Framebuffer, so that all future draw calls write into the attached
  * objects instead of the screen.
- * @param f The ::Framebuffer object
+ * @param f The ::Framebuffer object, or #null for the backbuffer
  */
 void framebufferUse(Framebuffer* f);
 

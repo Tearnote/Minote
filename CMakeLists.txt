@@ -52,6 +52,8 @@ set(GLSL_SOURCES
         src/glsl/smaaNeighbor.frag.glsl
         src/glsl/blit.vert.glsl
         src/glsl/blit.frag.glsl
+        src/glsl/delinearize.vert.glsl
+        src/glsl/delinearize.frag.glsl
         src/glsl/threshold.vert.glsl
         src/glsl/threshold.frag.glsl
         src/glsl/boxBlur.vert.glsl

@@ -26,6 +26,12 @@ typedef struct ProgramBlit {
 	Uniform boost;
 } ProgramBlit;
 
+/// Internal gamma correction shader
+typedef struct ProgramDelinearize {
+	ProgramBase base;
+	TextureUnit image;
+} ProgramDelinearize;
+
 static const char* ProgramBlitVertName = u8"blit.vert";
 static const GLchar* ProgramBlitVertSrc = (GLchar[]){
 #include "blit.vert"
@@ -33,6 +39,15 @@ static const GLchar* ProgramBlitVertSrc = (GLchar[]){
 static const char* ProgramBlitFragName = u8"blit.frag";
 static const GLchar* ProgramBlitFragSrc = (GLchar[]){
 #include "blit.frag"
+	'\0'};
+
+static const char* ProgramDelinearizeVertName = u8"delinearize.vert";
+static const GLchar* ProgramDelinearizeVertSrc = (GLchar[]){
+#include "delinearize.vert"
+	'\0'};
+static const char* ProgramDelinearizeFragName = u8"delinearize.frag";
+static const GLchar* ProgramDelinearizeFragSrc = (GLchar[]){
+#include "delinearize.frag"
 	'\0'};
 
 static bool initialized = false;
@@ -46,6 +61,7 @@ static size2i viewportSize = {0}; ///< in pixels
 static Model* sync = null; ///< Invisible model used to prevent frame buffering
 
 static ProgramBlit* blit = null;
+static ProgramDelinearize* delinearize = null;
 
 /**
  * Prevent the driver from buffering commands. Call this after windowFlip()
@@ -93,7 +109,7 @@ static void rendererResize(size2i size)
 	viewportSize.x = size.x;
 	viewportSize.y = size.y;
 
-	textureStorage(renderFbColor, size, GL_RGBA16F);
+	textureStorage(renderFbColor, size, GL_RGB16F);
 	renderbufferStorage(renderFbDepthStencil, size, GL_DEPTH24_STENCIL8);
 }
 
@@ -117,7 +133,6 @@ void rendererInit(void)
 	glEnable(GL_MULTISAMPLE);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_FRAMEBUFFER_SRGB);
 
 	// Create framebuffers
 	renderFb = framebufferCreate();
@@ -145,6 +160,11 @@ void rendererInit(void)
 	blit->image = programSampler(blit, u8"image", GL_TEXTURE0);
 	blit->boost = programUniform(blit, u8"boost");
 
+	delinearize = programCreate(ProgramDelinearize,
+		ProgramDelinearizeVertName, ProgramDelinearizeVertSrc,
+		ProgramDelinearizeFragName, ProgramDelinearizeFragSrc);
+	delinearize->image = programSampler(delinearize, u8"image", GL_TEXTURE0);
+
 	logDebug(applog, u8"Created renderer for window \"%s\"", windowGetTitle());
 }
 
@@ -153,6 +173,8 @@ void rendererCleanup(void)
 	if (!initialized) return;
 	modelDestroy(sync);
 	sync = null;
+	programDestroy(delinearize);
+	delinearize = null;
 	programDestroy(blit);
 	blit = null;
 	renderbufferDestroy(renderFbDepthStencil);
@@ -189,9 +211,14 @@ void rendererFrameEnd(void)
 {
 	assert(initialized);
 
-	framebufferToScreen(renderFb);
+	glDisable(GL_BLEND);
+	framebufferUse(null);
+	programUse(delinearize);
+	textureUse(renderFbColor, delinearize->image);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 	windowFlip();
 	rendererSync();
+	glEnable(GL_BLEND);
 }
 
 void rendererDepthOnlyBegin(void)
@@ -206,6 +233,7 @@ void rendererDepthOnlyEnd(void)
 
 void rendererBlit(Texture* t, GLfloat boost)
 {
+	assert(t);
 	programUse(blit);
 	textureUse(t, blit->image);
 	glUniform1f(blit->boost, boost);

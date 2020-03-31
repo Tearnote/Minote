@@ -263,10 +263,11 @@ bool framebufferCheck(Framebuffer* f)
 
 void framebufferUse(Framebuffer* f)
 {
-	assert(f);
-	if (boundFb == f->id) return;
-	glBindFramebuffer(GL_FRAMEBUFFER, f->id);
-	boundFb = f->id;
+	GLuint target = 0;
+	if (f) target = f->id;
+	if (boundFb == target) return;
+	glBindFramebuffer(GL_FRAMEBUFFER, target);
+	boundFb = target;
 }
 
 void framebufferToScreen(Framebuffer* f)

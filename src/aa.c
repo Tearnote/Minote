@@ -467,8 +467,8 @@ void aaEnd(void)
 			currentSize.x, currentSize.y);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
-		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_BLEND);
+		glEnable(GL_DEPTH_TEST);
 	}
 
 	if (currentMode == AAComplex) {
