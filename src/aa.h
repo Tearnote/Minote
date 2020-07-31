@@ -12,9 +12,8 @@
 typedef enum AAMode {
 	AANone, ///< zero value
 	AAFast, ///< SMAA 1x
-	AASimple, ///< MSAA 4x
-	AAComplex, ///< SMAA S2x
-	AAExtreme, ///< MSAA 16x
+	AAMulti, ///< MSAA 4x
+	AADist, ///< DEAA http://iryoku.com/aacourse/downloads/10-Distance-to-edge-AA-(DEAA).pdf
 	AASize ///< terminator
 } AAMode;
 

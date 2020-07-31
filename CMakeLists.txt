@@ -42,8 +42,6 @@ set(GLSL_SOURCES
         src/glsl/flat.frag.glsl
         src/glsl/phong.vert.glsl
         src/glsl/phong.frag.glsl
-        src/glsl/smaaSeparate.vert.glsl
-        src/glsl/smaaSeparate.frag.glsl
         src/glsl/smaaEdge.vert.glsl
         src/glsl/smaaEdge.frag.glsl
         src/glsl/smaaBlend.vert.glsl

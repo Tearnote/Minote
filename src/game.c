@@ -22,7 +22,7 @@ static void gameInit(void)
 	rendererInit();
 	modelInit();
 	bloomInit();
-	aaInit(AAComplex);
+	aaInit(AAMulti);
 	worldInit();
 	playInit();
 	effectsInit();
