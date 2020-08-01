@@ -288,7 +288,6 @@ void framebufferBlit(Framebuffer* src, Framebuffer* dst, size2i size);
 typedef struct ProgramBase {
 	Program id;
 	const char* vertName; ///< Filename of the vertex shader for reference
-	const char* geomName; ///< Filename of the geometry shader for reference
 	const char* fragName; ///< Filename of the fragment shader for reference
 } ProgramBase;
 
@@ -302,26 +301,8 @@ typedef struct ProgramBase {
  * @param fragSrc GLSL source of the fragment shader
  * @return Newly created Program. Must be destroyed with #programDestroy()
  */
-#define programCreate(type, vertName, vertSrc, fragName, fragSrc)    \
-    ((type*)_programCreateGeom(sizeof(type), (vertName), (vertSrc),  \
-                                             null, null,             \
-                                             (fragName), (fragSrc)))
-
-/**
- * Create a new ::Program of specified valid type. Shaders are compiled, linked
- * and ready for use.
- * @param type A struct type with ::ProgramBase as its first element
- * @param vertName Name of the vertex shader
- * @param vertSrc GLSL source of the vertex shader
- * @param geomName Name of the geometry shader
- * @param geomSrc GLSL source of the geometry shader
- * @param fragName Name of the fragment shader
- * @param fragSrc GLSL source of the fragment shader
- * @return Newly created Program. Must be destroyed with #programDestroy()
- */
-#define programCreateGeom(type, vertName, vertSrc, geomName, geomSrc, fragName, fragSrc) \
-    ((type*)_programCreateGeom(sizeof(type), (vertName), (vertSrc),                      \
-                                         (geomName), (geomSrc),                          \
+#define programCreate(type, vertName, vertSrc, fragName, fragSrc) \
+    ((type*)_programCreate(sizeof(type), (vertName), (vertSrc),   \
                                          (fragName), (fragSrc)))
 
 /**
@@ -363,8 +344,8 @@ typedef struct ProgramBase {
 ////////////////////////////////////////////////////////////////////////////////
 // Implementation details
 
-void* _programCreateGeom(size_t size, const char* vertName, const char* vertSrc,
-	const char* geomName, const char* geomSrc, const char* fragName, const char* fragSrc);
+void* _programCreate(size_t size, const char* vertName, const char* vertSrc,
+	const char* fragName, const char* fragSrc);
 
 void _programDestroy(ProgramBase* program);
 

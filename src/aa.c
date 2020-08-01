@@ -37,12 +37,6 @@ typedef struct ProgramSmaaNeighbor {
 	Uniform screenSize;
 } ProgramSmaaNeighbor;
 
-typedef struct ProgramGbaaResolve {
-	ProgramBase base;
-	TextureUnit image;
-	TextureUnit geometry;
-} ProgramGbaaResolve;
-
 static const char* ProgramSmaaEdgeVertName = u8"smaaEdge.vert";
 static const GLchar* ProgramSmaaEdgeVertSrc = (GLchar[]){
 #include "smaaEdge.vert"
@@ -89,12 +83,6 @@ static ProgramSmaaEdge* smaaEdge = null;
 static ProgramSmaaBlend* smaaBlend = null;
 static ProgramSmaaNeighbor* smaaNeighbor = null;
 
-//AADist
-static Framebuffer* gbaaFb = null;
-static Texture* gbaaFbColor = null;
-static Renderbuffer* gbaaFbDepthStencil = null;
-static Texture* gbaaFbGeometry = null;
-
 static AAMode currentMode = AANone;
 static size2i currentSize = {0};
 
@@ -127,13 +115,6 @@ static void aaResize(size2i size)
 		renderbufferStorage(smaaEdgeFbDepthStencil, size, GL_DEPTH24_STENCIL8);
 	if (smaaBlendFbColor)
 		textureStorage(smaaBlendFbColor, size, GL_RGBA8);
-
-	if (gbaaFbColor)
-		textureStorage(gbaaFbColor, size, GL_RGBA16F);
-	if (gbaaFbDepthStencil)
-		renderbufferStorage(gbaaFbDepthStencil, size, GL_DEPTH24_STENCIL8);
-	if (gbaaFbGeometry)
-		textureStorage(gbaaFbGeometry, size, GL_RG16F);
 }
 
 void aaInit(AAMode mode)
@@ -154,13 +135,6 @@ void aaInit(AAMode mode)
 		smaaEdgeFbColor = textureCreate();
 		smaaBlendFbColor = textureCreate();
 		smaaEdgeFbDepthStencil = renderbufferCreate();
-	}
-
-	if (mode == AADist) {
-		gbaaFb = framebufferCreate();
-		gbaaFbColor = textureCreate();
-		gbaaFbDepthStencil = renderbufferCreate();
-		gbaaFbGeometry = textureCreate();
 	}
 
 	// Set up framebuffer textures
@@ -245,18 +219,6 @@ void aaInit(AAMode mode)
 			GL_UNSIGNED_BYTE);
 	}
 
-	if (mode == AADist) {
-		framebufferBuffers(gbaaFb, 2);
-		framebufferTexture(gbaaFb, gbaaFbColor, GL_COLOR_ATTACHMENT0);
-		framebufferTexture(gbaaFb, gbaaFbGeometry, GL_COLOR_ATTACHMENT1);
-		framebufferRenderbuffer(gbaaFb, gbaaFbDepthStencil,
-			GL_DEPTH_STENCIL_ATTACHMENT);
-		if (!framebufferCheck(gbaaFb)) {
-			logCrit(applog, u8"Failed to create the GBAA framebuffer");
-			exit(EXIT_FAILURE);
-		}
-	}
-
 	framebufferUse(rendererFramebuffer());
 
 	initialized = true;
@@ -295,15 +257,6 @@ void aaCleanup(void)
 	programDestroy(smaaNeighbor);
 	smaaNeighbor = null;
 
-	framebufferDestroy(gbaaFb);
-	gbaaFb = null;
-	textureDestroy(gbaaFbColor);
-	gbaaFbColor = null;
-	renderbufferDestroy(gbaaFbDepthStencil);
-	gbaaFbDepthStencil = null;
-	textureDestroy(gbaaFbGeometry);
-	gbaaFbGeometry = null;
-
 	currentSize.x = 0;
 	currentSize.y = 0;
 
@@ -321,12 +274,10 @@ void aaSwitch(AAMode mode)
 void aaBegin(void)
 {
 	assert(initialized);
-	if (currentMode == AANone) return;
+	if (currentMode == AANone || currentMode == AADist) return;
 	aaResize(windowGetSize());
 	if (currentMode == AAMulti)
 		framebufferUse(msaaFb);
-	if (currentMode == AADist)
-		framebufferUse(gbaaFb);
 }
 
 void aaEnd(void)
@@ -389,9 +340,5 @@ void aaEnd(void)
 
 	if (currentMode == AAMulti) {
 		framebufferBlit(msaaFb, rendererFramebuffer(), currentSize);
-	}
-
-	if (currentMode == AADist) {
-		framebufferBlit(gbaaFb, rendererFramebuffer(), currentSize);
 	}
 }

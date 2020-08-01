@@ -56,11 +56,6 @@ static const GLchar* ProgramPhongFragSrc = (GLchar[]){
 #include "phong.frag"
 	'\0'};
 
-static const char* ProgramDistGeomName = u8"dist.geom";
-static const GLchar* ProgramDistGeomSrc = (GLchar[]){
-#include "dist.geom"
-	'\0'};
-
 static ProgramFlat* flat = null;
 static ProgramPhong* phong = null;
 
@@ -70,9 +65,8 @@ void modelInit(void)
 {
 	if (initialized) return;
 
-	flat = programCreateGeom(ProgramFlat,
+	flat = programCreate(ProgramFlat,
 		ProgramFlatVertName, ProgramFlatVertSrc,
-		ProgramDistGeomName, ProgramDistGeomSrc,
 		ProgramFlatFragName, ProgramFlatFragSrc);
 	flat->projection = programUniform(flat, u8"projection");
 	flat->camera = programUniform(flat, u8"camera");
