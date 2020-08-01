@@ -61,9 +61,11 @@ static InputType rawKeyToType(int key)
 	case GLFW_KEY_1:
 		aaSwitch(AAFast); return InputNone;
 	case GLFW_KEY_2:
-		aaSwitch(AAMulti); return InputNone;
+		aaSwitch(AASimple); return InputNone;
 	case GLFW_KEY_3:
-		aaSwitch(AADist); return InputNone;
+		aaSwitch(AAComplex); return InputNone;
+	case GLFW_KEY_4:
+		aaSwitch(AAExtreme); return InputNone;
 	default:
 		return InputNone;
 	}
