@@ -307,7 +307,7 @@ static Shader shaderCreate(const char* name, const char* source, GLenum type)
 {
 	assert(name);
 	assert(source);
-	assert(type == GL_VERTEX_SHADER || type == GL_FRAGMENT_SHADER);
+	assert(type == GL_VERTEX_SHADER || type == GL_FRAGMENT_SHADER || type == GL_GEOMETRY_SHADER);
 	Shader shader = glCreateShader(type);
 	glShaderSource(shader, 1, &source, null);
 	glCompileShader(shader);
@@ -322,7 +322,9 @@ static Shader shaderCreate(const char* name, const char* source, GLenum type)
 	}
 	assert(shader);
 	logDebug(applog, u8"Compiled %s shader %s",
-		type == GL_VERTEX_SHADER ? u8"vertex" : u8"fragment", name);
+		type == GL_VERTEX_SHADER ? u8"vertex" :
+		type == GL_FRAGMENT_SHADER ? u8"fragment" :
+		u8"geometry", name);
 	return shader;
 }
 
@@ -336,8 +338,8 @@ static void shaderDestroy(Shader shader)
 	glDeleteShader(shader);
 }
 
-void* _programCreate(size_t size, const char* vertName, const char* vertSrc,
-	const char* fragName, const char* fragSrc)
+void* _programCreateGeom(size_t size, const char* vertName, const char* vertSrc,
+	const char* geomName, const char* geomSrc, const char* fragName, const char* fragSrc)
 {
 	assert(size);
 	assert(vertName);
@@ -347,18 +349,29 @@ void* _programCreate(size_t size, const char* vertName, const char* vertSrc,
 	// Overallocating memory so that it fits in the user's provided struct type
 	ProgramBase* result = alloc(size);
 	result->vertName = vertName;
+	result->geomName = geomName;
 	result->fragName = fragName;
 	Shader vert = shaderCreate(vertName, vertSrc, GL_VERTEX_SHADER);
 	if (vert == 0)
 		return result;
+	Shader geom = 0;
+	if (geomName) {
+		geom = shaderCreate(geomName, geomSrc, GL_GEOMETRY_SHADER);
+		if (geom == 0) {
+			shaderDestroy(vert);
+			return result;
+		}
+	}
 	Shader frag = shaderCreate(fragName, fragSrc, GL_FRAGMENT_SHADER);
 	if (frag == 0) {
-		shaderDestroy(vert); // Proper cleanup, how fancy
+		shaderDestroy(geom);
+		shaderDestroy(vert);
 		return result;
 	}
 
 	result->id = glCreateProgram();
 	glAttachShader(result->id, vert);
+	if (geom) glAttachShader(result->id, geom);
 	glAttachShader(result->id, frag);
 	glLinkProgram(result->id);
 	GLint linkStatus = 0;
@@ -373,9 +386,14 @@ void* _programCreate(size_t size, const char* vertName, const char* vertSrc,
 	}
 	shaderDestroy(frag);
 	frag = 0;
+	shaderDestroy(geom);
+	geom = 0;
 	shaderDestroy(vert);
 	vert = 0;
-	logDebug(applog, u8"Linked shader program %s+%s", vertName, fragName);
+	if (geom)
+		logDebug(applog, u8"Linked shader program %s+%s+%s", vertName, geomName, fragName);
+	else
+		logDebug(applog, u8"Linked shader program %s+%s", vertName, fragName);
 	return result;
 }
 

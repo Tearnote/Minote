@@ -55,7 +55,6 @@ static void cleanup(void)
  */
 int main(int argc, char* argv[argc + 1])
 {
-	atexit(cleanup);
 	init();
 
 	thread* gameThread = threadCreate(game, null);
@@ -76,5 +75,7 @@ int main(int argc, char* argv[argc + 1])
 
 	threadDestroy(gameThread);
 	gameThread = null;
+
+	cleanup();
 	return EXIT_SUCCESS;
 }
