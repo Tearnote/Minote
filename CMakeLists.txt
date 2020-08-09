@@ -99,13 +99,17 @@ set(C_SOURCES
         src/play.h src/play.c
         src/mino.h src/mino.c
         src/mapper.h src/mapper.c
-        src/pure.h src/pure.c src/puretables.h
+        src/pure.h src/pure.c
+        src/puretables.h src/puretables.c
         src/aa.h src/aa.c
         src/opengl.h src/opengl.c
         src/bloom.h src/bloom.c
         src/model.h src/model.c
         src/world.h src/world.c
-        src/ease.h src/ease.c src/effects.c src/effects.h)
+        src/ease.h src/ease.c
+        src/effects.h src/effects.c
+        src/mrs.h src/mrs.c
+        src/mrstables.h src/mrstables.c)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD

@@ -1,14 +1,14 @@
 /**
- * Implementation of pure.h
+ * Implementation of mrs.h
  * @file
  */
 
-#include "pure.h"
+#include "mrs.h"
 
 #include <assert.h>
 #include <stdint.h>
 #include <time.h>
-#include "puretables.h"
+#include "mrstables.h"
 #include "renderer.h"
 #include "effects.h"
 #include "mapper.h"
@@ -19,19 +19,15 @@
 #include "log.h"
 
 #define FieldWidth 10u ///< Width of #field
-#define FieldHeight 22u ///< Height of #field
+#define FieldHeight 23u ///< Height of #field
 
 #define SpawnX 3 ///< X position of player piece spawn
-#define SpawnY 18 ///< Y position of player piece spawn
+#define SpawnY 17 ///< Y position of player piece spawn
 #define SubGrid 256 ///< Number of subpixels per cell, used for gravity
 
 #define HistorySize 4 ///< Number of past pieces to remember for rng bias
 #define MaxRerolls 4 ///< Number of times the rng avoids pieces from history
 
-#define ClockFrequency 60.0 ///< Rate of the ingame timer (slightly off-sync)
-#define ClockTick (secToNsec(1) / ClockFrequency) ///< Duration of a timer tick
-
-#define SoftDrop 256 ///< Speed of gravity while holding down, in subgrids
 #define AutoshiftCharge 16 ///< Frames direction has to be held before autoshift
 #define AutoshiftRepeat 1 ///< Frames between autoshifts
 #define LockDelay 30 ///< Frames a piece can spend on the stack before locking
@@ -54,14 +50,13 @@ typedef struct Player {
 	bool inputMapRaw[InputSize]; ///< Unfiltered input state
 	bool inputMap[InputSize]; ///< Filtered input state
 	bool inputMapPrev[InputSize]; ///< #inputMap of the previous frame
-	InputType lastDirection; ///< None, Left or Right - used to improve kb play
+	InputType lastDirection; ///< None, Left or Right
 
 	PlayerState state;
 	mino type; ///< Current player piece
 	mino preview; ///< Next player piece
-	mino history[HistorySize]; ///< Past player pieces
 	spin rotation; ///< ::spin of current piece
-	point2i pos; ///< Position of current piece
+	MrsPoint pos; ///< Position of current piece
 	int ySub; ///< Y subgrid of current piece
 
 	int autoshiftDirection; ///< Autoshift state: -1 left, 1 right, 0 none
@@ -70,9 +65,10 @@ typedef struct Player {
 	int lockDelay;
 	int clearDelay;
 	int spawnDelay;
+	int gravity;
 
-	int level;
-	int dropBonus; ///< Accumulated soft drop bonus score
+	darray* sixBag;
+	darray* sevenBag;
 } Player;
 
 /// State of tetrion FSM
@@ -84,14 +80,6 @@ typedef enum TetrionState {
 	TetrionSize ///< terminator
 } TetrionState;
 
-/// State of a grade requirement
-typedef enum ReqStatus {
-	ReqNone, ///< not tested yet
-	ReqPassed, ///< success
-	ReqFailed, ///< failure
-	ReqSize ///< terminator
-} ReqStatus;
-
 /// A play's logical state
 typedef struct Tetrion {
 	TetrionState state;
@@ -102,17 +90,10 @@ typedef struct Tetrion {
 	bool linesCleared[FieldHeight]; ///< Storage for line clears pending a thump
 	Player player;
 	Rng* rng;
-
-	int score;
-	int combo; ///< Holdover combo from previous piece
-	int grade;
-	ReqStatus reqs[countof(PureRequirements)]; ///< Max grade requirements
 } Tetrion;
 
 /// Full state of the mode
 static Tetrion tet = {0};
-
-static void effectClear(int row, int power);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -144,7 +125,7 @@ static darray* borderTransforms = null;
 static Ease lockFlash = {
 	.from = 1.0f,
 	.to = 0.0f,
-	.length = 8 * PureUpdateTick,
+	.length = 8 * MrsUpdateTick,
 	.type = EaseLinear
 };
 
@@ -152,7 +133,7 @@ static Ease lockFlash = {
 static Ease lockDim = {
 	.from = 1.0f,
 	.to = 0.4f,
-	.length = LockDelay * PureUpdateTick,
+	.length = LockDelay * MrsUpdateTick,
 	.type = EaseLinear
 };
 
@@ -164,7 +145,7 @@ static Ease lockDim = {
 static Ease comboFade = {
 	.from = comboHighlight(1),
 	.to = comboHighlight(1),
-	.length = 24 * PureUpdateTick,
+	.length = 24 * MrsUpdateTick,
 	.type = EaseOutQuadratic
 };
 
@@ -187,50 +168,135 @@ static bool initialized = false;
     (tet.player.inputMap[(type)])
 
 /**
+ * Offset the #target ::MrsPoint by the #source value.
+ * @param target point being added to
+ * @param source offset being added
+ */
+static void mrsPointAdd(MrsPoint* target, MrsPoint source)
+{
+	target->x += source.x;
+	target->y += source.y;
+	if (source.xHalf) {
+		if (!target->xHalf) {
+			target->xHalf = true;
+		} else {
+			target->xHalf = false;
+			target->x += 1;
+		}
+	}
+	if (source.yHalf) {
+		if (!target->yHalf) {
+			target->yHalf = true;
+		} else {
+			target->yHalf = false;
+			target->y += 1;
+		}
+	}
+}
+
+/**
+ * Check if a piece overlaps the field, taking into account MRS half-offset.
+ * @return true if there is overlap, false if not
+ */
+static bool isOverlap(piece* p, MrsPoint pos)
+{
+	point2i integerPos = *(point2i*)&pos;
+	
+	if (pieceOverlapsField(p, integerPos, tet.field)) return true;
+	
+	if (pos.xHalf) {
+		integerPos.x += 1;
+		if (pieceOverlapsField(p, integerPos, tet.field)) return true;
+		integerPos.x -= 1;
+	}
+	
+	if (pos.yHalf) {
+		integerPos.y += 1;
+		if (pieceOverlapsField(p, integerPos, tet.field)) return true;
+		integerPos.y -= 1;
+	}
+
+	if (pos.xHalf && pos.yHalf) {
+		integerPos.x += 1;
+		integerPos.y += 1;
+		if (pieceOverlapsField(p, integerPos, tet.field)) return true;
+	}
+
+	return false;
+}
+
+/**
+ * Try to kick the player piece into a legal position without changing
+ * its height.
+ * @return true if player piece already legal or successfully kicked, false if
+ * no kick was possible
+ */
+static bool tryHorizontalKicks(void)
+{
+	piece* playerPiece = mrsGetPiece(tet.player.type, tet.player.rotation);
+	MrsPoint original = tet.player.pos;
+
+	// Original position
+	if (!isOverlap(playerPiece, original)) return true;
+
+	// Set up the preferred direction
+	MrsPoint offset = {0};
+	offset.xHalf = true;
+	if (tet.player.lastDirection == InputLeft)
+		offset.x = -1;
+
+	// Check kicks in preferred direction
+	for (size_t i = 0; i < 3; i += 1) {
+		mrsPointAdd(&tet.player.pos, offset);
+		if (!isOverlap(playerPiece, tet.player.pos)) return true;
+	}
+	tet.player.pos.x = original.x;
+	tet.player.pos.xHalf = original.xHalf;
+
+	// Check kicks in opposite direction
+	if (offset.x == 0)
+		offset.x = -1;
+	else
+		offset.x = 0;
+
+	for (size_t i = 0; i < 3; i += 1) {
+		mrsPointAdd(&tet.player.pos, offset);
+		if (!isOverlap(playerPiece, tet.player.pos)) return true;
+	}
+	tet.player.pos.x = original.x;
+	tet.player.pos.xHalf = original.xHalf;
+
+	return false;
+}
+
+/**
  * Try to kick the player piece into a legal position.
  * @return true if player piece already legal or successfully kicked, false if
  * no kick was possible
  */
 static bool tryKicks(void)
 {
-	static int preference = 1;
-	piece* playerPiece = pureGetPiece(tet.player.type, tet.player.rotation);
-	if (!pieceOverlapsField(playerPiece, tet.player.pos, tet.field))
-		return true; // Original position
+	piece* playerPiece = mrsGetPiece(tet.player.type, tet.player.rotation);
 
-	if (tet.player.state == PlayerSpawned)
-		return false; // If this is IRS, don't attempt kicks
-	if (tet.player.type == MinoI)
-		return false; // I doesn't kick
+	// Original position
+	if (!isOverlap(playerPiece, tet.player.pos)) return true;
 
-	// The annoying special treatment of LTJ middle column
-	if (tet.player.rotation % 2 == 1 && // Vertical orientation only
-		(tet.player.type == MinoL ||
-			tet.player.type == MinoT ||
-			tet.player.type == MinoJ)) {
-		for (size_t i = 0; i < MinosPerPiece; i += 1) {
-			point2i fieldPos = {
-				.x = tet.player.pos.x + (*playerPiece)[i].x,
-				.y = tet.player.pos.y + (*playerPiece)[i].y
-			};
-			if (fieldGet(tet.field, fieldPos)) {
-				if ((*playerPiece)[i].x == CenterColumn)
-					return false;
-				else // We hit the exception to the middle column rule
-					break;
-			}
-		}
+	// If this is IRS, don't attempt kicks
+	if (tet.player.state == PlayerSpawned) return false;
+
+	if (tet.player.pos.yHalf) {
+		// We try half a grid lower
+		tet.player.pos.yHalf = false;
+		if(tryHorizontalKicks()) return true;
+		// And again half a grid higher
+		tet.player.pos.y += 1;
+		if(tryHorizontalKicks()) return true;
+		// Failed, restore original position
+		tet.player.pos.y -= 1;
+		tet.player.pos.yHalf = true;
+		return false;
 	}
-
-	// Now that every exception is filtered out, we can actually do it
-	tet.player.pos.x += preference;
-	if (!pieceOverlapsField(playerPiece, tet.player.pos, tet.field))
-		return true; // 1 to the right
-	tet.player.pos.x -= preference * 2;
-	if (!pieceOverlapsField(playerPiece, tet.player.pos, tet.field))
-		return true; // 1 to the left
-	tet.player.pos.x += preference;
-	return false; // Failure, returned to original position
+	return tryHorizontalKicks();
 }
 
 /**
@@ -241,13 +307,59 @@ static bool tryKicks(void)
 static void rotate(int direction)
 {
 	assert(direction == 1 || direction == -1);
+
 	spin prevRotation = tet.player.rotation;
+	MrsPoint prevPos = tet.player.pos;
+
 	if (direction == 1)
 		spinClockwise(&tet.player.rotation);
 	else
 		spinCounterClockwise(&tet.player.rotation);
-	if (!tryKicks())
+
+	MrsPoint prevOffset = mrsGetPieceOffset(tet.player.type, prevRotation);
+	MrsPoint newOffset = mrsGetPieceOffset(tet.player.type, tet.player.rotation);
+	tet.player.pos.x += newOffset.x - prevOffset.x;
+	tet.player.pos.y += newOffset.y - prevOffset.y;
+	if (!prevOffset.xHalf && newOffset.xHalf) { // Move half to the right
+		if (tet.player.pos.xHalf) {
+			tet.player.pos.x += 1;
+			tet.player.pos.xHalf = false;
+		} else {
+			tet.player.pos.xHalf = true;
+		}
+	}
+	if (prevOffset.xHalf && !newOffset.xHalf) { // Move half to the left
+		if (tet.player.pos.xHalf) {
+			tet.player.pos.xHalf = false;
+		} else {
+			tet.player.pos.x -= 1;
+			tet.player.pos.xHalf = true;
+		}
+	}
+	if (!prevOffset.yHalf && newOffset.yHalf) { // Move half up
+		if (tet.player.pos.yHalf) {
+			tet.player.pos.y += 1;
+			tet.player.pos.yHalf = false;
+		} else {
+			tet.player.pos.yHalf = true;
+		}
+	}
+	if (prevOffset.yHalf && !newOffset.yHalf) { // Move half down
+		if (tet.player.pos.yHalf) {
+			tet.player.pos.yHalf = false;
+		} else {
+			tet.player.pos.y -= 1;
+			tet.player.pos.yHalf = true;
+		}
+	}
+
+	if (!tryKicks()) {
 		tet.player.rotation = prevRotation;
+		tet.player.pos.x = prevPos.x;
+		tet.player.pos.y = prevPos.y;
+		tet.player.pos.xHalf = prevPos.xHalf;
+		tet.player.pos.yHalf = prevPos.yHalf;
+	}
 }
 
 /**
@@ -257,86 +369,54 @@ static void rotate(int direction)
 static void shift(int direction)
 {
 	assert(direction == 1 || direction == -1);
+
+	// Remove any half-grid offset
+	if (tet.player.pos.xHalf) {
+		tet.player.pos.xHalf = false;
+		if (direction == 1)
+			tet.player.pos.x += 1;
+		return;
+	}
+
 	tet.player.pos.x += direction;
-	piece* playerPiece = pureGetPiece(tet.player.type, tet.player.rotation);
-	if (pieceOverlapsField(playerPiece, tet.player.pos, tet.field)) {
+	piece* playerPiece = mrsGetPiece(tet.player.type, tet.player.rotation);
+	if (isOverlap(playerPiece, tet.player.pos)) {
 		tet.player.pos.x -= direction;
 	}
 }
 
 /**
- * Return a random new piece type, taking into account history bias and other
- * restrictions.
+ * Return a random new piece type using the broken7bag system.
  * @return Picked piece type
  */
 static mino randomPiece(void)
 {
-	bool first = false;
-	if (tet.player.history[0] == MinoNone) { // History empty, initialize
-		first = true;
-		for (int i = 0; i < HistorySize; i += 1)
-			tet.player.history[i] = MinoZ;
-	}
-
-	mino result = MinoNone;
-	for (int i = 0; i < MaxRerolls; i += 1) {
-		result = rngInt(tet.rng, MinoGarbage - 1) + 1;
-		while (first && // Unfair first piece prevention
-			(result == MinoS ||
-				result == MinoZ ||
-				result == MinoO))
-			result = rngInt(tet.rng, MinoGarbage - 1) + 1;
-
-		// If piece in history, reroll
-		bool valid = true;
-		for (int j = 0; j < HistorySize; j += 1) {
-			if (result == tet.player.history[j])
-				valid = false;
+	// Refill 7bag
+	if (!darraySize(tet.player.sevenBag)) {
+		for (mino m = MinoNone + 1; m < MinoGarbage; m += 1) {
+			mino* new = darrayProduce(tet.player.sevenBag);
+			*new = m;
 		}
-		if (valid)
-			break;
 	}
 
-	// Rotate history
-	for (int i = HistorySize - 2; i >= 0; i -= 1) {
-		tet.player.history[i + 1] = tet.player.history[i];
+	// Refill 6bag using 7bag
+	if (!darraySize(tet.player.sixBag)) {
+		size_t index = rngInt(tet.rng, darraySize(tet.player.sevenBag));
+		mino chosen = *(mino*)darrayGet(tet.player.sevenBag, index);
+		darrayRemove(tet.player.sevenBag, index);
+
+		for (mino m = MinoNone + 1; m < MinoGarbage; m += 1) {
+			if (m == chosen) continue;
+			mino* new = darrayProduce(tet.player.sixBag);
+			*new = m;
+		}
 	}
-	tet.player.history[0] = result;
-	return result;
-}
 
-/**
- * Return the next upcoming levelstop for a given level.
- * @param level
- * @return Next levelstop value, or the final levelstop
- */
-static int getLevelstop(int level)
-{
-	int result = (level / 100 + 1) * 100;
-	if (result >= 1000)
-		result = 999;
-	return result;
-}
-
-/**
- * Increase the level counter after a clear or piece spawn.
- * @param count Number of levels to add
- * @param strong true to break past levelstop, false to get stopped
- */
-static void addLevels(int count, bool strong)
-{
-	int levelstop = getLevelstop(tet.player.level);
-	tet.player.level += count;
-	if (!strong && tet.player.level >= levelstop)
-		tet.player.level = levelstop - 1;
-}
-
-/**
- * Stop the round.
- */
-static void gameOver(void)
-{
-	tet.state = TetrionOutro;
+	// Pick random piece from 6bag
+	size_t index = rngInt(tet.rng, darraySize(tet.player.sixBag));
+	mino chosen = *(mino*)darrayGet(tet.player.sixBag, index);
+	darrayRemove(tet.player.sixBag, index);
+	return chosen;
 }
 
 /**
@@ -344,6 +424,7 @@ static void gameOver(void)
  */
 static void spawnPiece(void)
 {
+
 	tet.player.state = PlayerSpawned; // Some moves restricted on first frame
 	tet.player.pos.x = SpawnX;
 	tet.player.pos.y = SpawnY;
@@ -352,14 +433,17 @@ static void spawnPiece(void)
 	tet.player.type = tet.player.preview;
 	tet.player.preview = randomPiece();
 
-	if (tet.player.type == MinoI)
-		tet.player.pos.y -= 1; // I starts lower than other pieces
 	tet.player.ySub = 0;
 	tet.player.lockDelay = 0;
 	tet.player.spawnDelay = 0;
 	tet.player.clearDelay = 0;
 	tet.player.rotation = SpinNone;
-	tet.player.dropBonus = 0;
+
+	MrsPoint offset = mrsGetPieceOffset(tet.player.type, tet.player.rotation);
+	tet.player.pos.x += offset.x;
+	tet.player.pos.xHalf += offset.xHalf;
+	tet.player.pos.y += offset.y;
+	tet.player.pos.yHalf += offset.yHalf;
 
 	// IRS
 	if (inputHeld(InputButton2)) {
@@ -369,11 +453,9 @@ static void spawnPiece(void)
 			rotate(1);
 	}
 
-	addLevels(1, false);
-
-	piece* playerPiece = pureGetPiece(tet.player.type, tet.player.rotation);
-	if (pieceOverlapsField(playerPiece, tet.player.pos, tet.field))
-		gameOver();
+	// Increase gravity
+	int level = tet.player.gravity / 64 + 1;
+	tet.player.gravity += level;
 }
 
 /**
@@ -391,94 +473,9 @@ static int checkClears(void)
 	}
 	for (int y = 0; y < FieldHeight; y += 1) {
 		if (!tet.linesCleared[y]) continue;
-		effectClear(y, count);
 		fieldClearRow(tet.field, y);
 	}
 	return count;
-}
-
-/**
- * Award score for a line clear. Takes into account state and various bonuses.
- * @param lines Number of lines cleared
- */
-static void addScore(int lines)
-{
-	int score;
-	score = tet.player.level + lines;
-	int remainder = score % 4;
-	score /= 4;
-	if (remainder)
-		score += 1;
-	score += tet.player.dropBonus;
-	score *= lines;
-	tet.combo += 2 * lines - 2;
-	comboFade.from = easeApply(&comboFade);
-	comboFade.to = comboHighlight(tet.combo);
-	easeRestart(&comboFade);
-	score *= tet.combo;
-	if (fieldIsEmpty(tet.field))
-		score *= 4; // Bravo bonus
-
-	tet.score += score;
-}
-
-/**
- * Return time value of the visible clock. This is intentionally out of sync
- * with real playtime.
- * @param frame Frames since ready = 0
- * @return Time since ready = 0
- */
-static nsec getClock(int frame)
-{
-	return frame * ClockTick;
-}
-
-/**
- * Check all requirements and update their status.
- */
-static void updateRequirements(void)
-{
-	assert(countof(tet.reqs) == countof(PureRequirements));
-	for (size_t i = 0; i < countof(tet.reqs); i += 1) {
-		if (tet.reqs[i])
-			continue; // Only check each treshold once, when reached
-		if (tet.player.level < PureRequirements[i].level)
-			return; // PureThreshold not reached yet
-		if (tet.score >= PureRequirements[i].score &&
-			getClock(tet.frame) <= PureRequirements[i].time)
-			tet.reqs[i] = ReqPassed;
-		else
-			tet.reqs[i] = ReqFailed;
-	}
-}
-
-/**
- * Check whether player is qualified to obtain max grade.
- * @return true if qualified, flase if at least one requirement is failed
- * or not tested yet
- */
-static bool requirementsMet(void)
-{
-	for (size_t i = 0; i < countof(tet.reqs); i += 1) {
-		if (tet.reqs[i] != ReqPassed)
-			return false;
-	}
-	return true;
-}
-
-/**
- * Set grade to the highest one the player is qualified for.
- */
-static void updateGrade(void)
-{
-	for (size_t i = 0; i < countof(PureGrades); i += 1) {
-		if (tet.score < PureGrades[i])
-			return;
-		if (i == countof(PureGrades) - 1 &&
-			(!requirementsMet() || tet.player.level < 999))
-			return; // Final grade, requirements not met
-		tet.grade = i;
-	}
 }
 
 /**
@@ -495,33 +492,22 @@ static void thump(void)
 }
 
 /**
- * Return the gravity that applies at a specific level.
- * @param level
- * @return Gravity speed in subgrids
- */
-static int getGravity(int level)
-{
-	int result = 0;
-	for (int i = 0; i < countof(PureThresholds); i += 1) {
-		if (level < PureThresholds[i].level)
-			break;
-		result = PureThresholds[i].gravity;
-	}
-	return result;
-}
-
-/**
  * Check whether the player piece could move down one cell without overlapping
  * the field.
  * @return true if no overlap, false if overlap
  */
 static bool canDrop(void)
 {
-	piece* playerPiece = pureGetPiece(tet.player.type, tet.player.rotation);
-	return !pieceOverlapsField(playerPiece, (point2i){
+	// Half-grid offset guarantees that this is possible
+	if (tet.player.pos.yHalf) return true;
+
+	piece* playerPiece = mrsGetPiece(tet.player.type, tet.player.rotation);
+	return !isOverlap(playerPiece, (MrsPoint){
 		.x = tet.player.pos.x,
-		.y = tet.player.pos.y - 1
-	}, tet.field);
+		.y = tet.player.pos.y - 1,
+		.xHalf = tet.player.pos.xHalf,
+		.yHalf = false
+	});
 }
 
 /**
@@ -534,9 +520,10 @@ static void drop(void)
 		return;
 
 	tet.player.lockDelay = 0;
-	tet.player.pos.y -= 1;
-	if (inputHeld(InputDown))
-		tet.player.dropBonus += 1;
+	if (tet.player.pos.yHalf)
+		tet.player.pos.yHalf = 0;
+	else
+		tet.player.pos.y -= 1;
 }
 
 /**
@@ -544,28 +531,52 @@ static void drop(void)
  */
 static void lock(void)
 {
-	if (inputHeld(InputDown))
-		tet.player.dropBonus += 1; // Lock frame can also increase this
-	piece* playerPiece = pureGetPiece(tet.player.type, tet.player.rotation);
-	fieldStampPiece(tet.field, playerPiece, tet.player.pos, tet.player.type);
+	piece* playerPiece = mrsGetPiece(tet.player.type, tet.player.rotation);
+
+	// Need to get rid of the offset cleanly
+	while (tet.player.pos.xHalf) {
+		tet.player.pos.xHalf = false;
+
+		bool leftDrop = canDrop();
+		tet.player.pos.x += 1;
+		bool rightDrop = canDrop();
+		tet.player.pos.x -= 1;
+
+		if (!leftDrop && rightDrop)
+			continue;
+		if (leftDrop && !rightDrop) {
+			tet.player.pos.x += 1;
+			continue;
+		}
+		if (!leftDrop && !rightDrop) {
+			if (tet.player.lastDirection == InputRight)
+				tet.player.pos.x += 1;
+			continue;
+		}
+		logDebug(applog, "Piece being locked in midair - not supposed to happen!");
+	}
+
+	fieldStampPiece(tet.field, playerPiece, *(point2i*)&tet.player.pos, tet.player.type);
 	tet.player.state = PlayerSpawn;
 	easeRestart(&lockFlash);
 }
 
-void pureInit(void)
+void mrsInit(void)
 {
 	if (initialized) return;
 
 	// Logic init
 	structClear(tet);
-	tet.combo = 1;
 	tet.frame = -1;
 	tet.ready = 3 * 50;
 	tet.field = fieldCreate((size2i){FieldWidth, FieldHeight});
 	tet.rng = rngCreate((uint64_t)time(null));
-	tet.player.level = -1;
 	tet.player.autoshiftDelay = AutoshiftRepeat; // Starts out pre-charged
 	tet.player.spawnDelay = SpawnDelay; // Start instantly
+	tet.player.gravity = 3;
+
+	tet.player.sixBag = darrayCreate(sizeof(mino));
+	tet.player.sevenBag = darrayCreate(sizeof(mino));
 	tet.player.preview = randomPiece();
 
 	tet.state = TetrionReady;
@@ -593,10 +604,10 @@ void pureInit(void)
 	borderTransforms = darrayCreate(sizeof(mat4x4));
 
 	initialized = true;
-	logDebug(applog, u8"Pure sublayer initialized");
+	logDebug(applog, u8"Mrs sublayer initialized");
 }
 
-void pureCleanup(void)
+void mrsCleanup(void)
 {
 	if (!initialized) return;
 	darrayDestroy(borderTransforms);
@@ -623,19 +634,23 @@ void pureCleanup(void)
 	guide = null;
 	modelDestroy(scene);
 	scene = null;
+	darrayDestroy(tet.player.sevenBag);
+	tet.player.sevenBag = null;
+	darrayDestroy(tet.player.sixBag);
+	tet.player.sixBag = null;
 	rngDestroy(tet.rng);
 	tet.rng = null;
 	fieldDestroy(tet.field);
 	tet.field = null;
 	initialized = false;
-	logDebug(applog, u8"Pure sublayer cleaned up");
+	logDebug(applog, u8"Mrs sublayer cleaned up");
 }
 
 /**
  * Populate and rotate the input arrays for press and hold detection.
  * @param inputs List of this frame's new inputs
  */
-static void pureUpdateInputs(darray* inputs)
+static void mrsUpdateInputs(darray* inputs)
 {
 	assert(inputs);
 
@@ -670,7 +685,7 @@ static void pureUpdateInputs(darray* inputs)
 /**
  * Check for state triggers and progress through states.
  */
-static void pureUpdateState(void)
+static void mrsUpdateState(void)
 {
 	if (tet.state == TetrionReady) {
 		tet.ready -= 1;
@@ -686,7 +701,7 @@ static void pureUpdateState(void)
 /**
  * Spin the player piece.
  */
-static void pureUpdateRotation(void)
+static void mrsUpdateRotation(void)
 {
 	if (tet.player.state != PlayerActive)
 		return;
@@ -699,7 +714,7 @@ static void pureUpdateRotation(void)
 /**
  * Shift the player piece, either through a direct press or autoshift.
  */
-static void pureUpdateShift(void)
+static void mrsUpdateShift(void)
 {
 	// Check requested movement direction
 	int shiftDirection = 0;
@@ -739,7 +754,7 @@ static void pureUpdateShift(void)
 /**
  * Check for cleared lines, handle and progress clears.
  */
-static void pureUpdateClear(void)
+static void mrsUpdateClear(void)
 {
 	// Line clear check is delayed by the clear offset
 	if (tet.player.state == PlayerSpawn &&
@@ -748,15 +763,6 @@ static void pureUpdateClear(void)
 		if (clearedCount) {
 			tet.player.state = PlayerClear;
 			tet.player.clearDelay = 0;
-			addScore(clearedCount);
-			addLevels(clearedCount, true);
-			updateRequirements();
-			updateGrade();
-		} else { // Piece locked without a clear
-			tet.combo = 1;
-			comboFade.from = easeApply(&comboFade);
-			comboFade.to = comboHighlight(tet.combo);
-			easeRestart(&comboFade);
 		}
 	}
 
@@ -773,7 +779,7 @@ static void pureUpdateClear(void)
 /**
  * Spawn a new piece if needed.
  */
-static void pureUpdateSpawn(void)
+static void mrsUpdateSpawn(void)
 {
 	if (tet.state != TetrionPlaying)
 		return; // Do not spawn during countdown or gameover
@@ -787,21 +793,21 @@ static void pureUpdateSpawn(void)
 /**
  * Move player piece down through gravity or manual dropping.
  */
-static void pureUpdateGravity(void)
+static void mrsUpdateGravity(void)
 {
 	if (tet.state == TetrionOutro)
 		return; // Prevent zombie blocks
 	if (tet.player.state != PlayerSpawned && tet.player.state != PlayerActive)
 		return;
 
-	int gravity = getGravity(tet.player.level);
+	int remainingGravity = tet.player.gravity;
 	if (tet.player.state == PlayerActive) {
-		if (inputHeld(InputDown) && gravity < SoftDrop)
-			gravity = SoftDrop;
+		if (inputHeld(InputDown) || inputHeld(InputUp))
+			remainingGravity = FieldHeight * SubGrid;
 	}
 
 	if (canDrop()) // Queue up the gravity drops
-		tet.player.ySub += gravity;
+		tet.player.ySub += remainingGravity;
 	else
 		tet.player.ySub = 0;
 
@@ -809,12 +815,18 @@ static void pureUpdateGravity(void)
 		drop();
 		tet.player.ySub -= SubGrid;
 	}
+
+	// Hard drop
+	if (tet.player.state == PlayerActive) {
+		if (inputHeld(InputDown))
+			lock();
+	}
 }
 
 /**
  * Lock player piece by lock delay expiry or manual lock.
  */
-static void pureUpdateLocking(void)
+static void mrsUpdateLocking(void)
 {
 	if (tet.player.state != PlayerActive || tet.state != TetrionPlaying)
 		return;
@@ -827,48 +839,27 @@ static void pureUpdateLocking(void)
 		lock();
 }
 
-/**
- * Win the game. Try to get this function called while playing.
- */
-static void pureUpdateWin(void)
-{
-	if (tet.player.level >= 999)
-		gameOver();
-}
-
-void pureAdvance(darray* inputs)
+void mrsAdvance(darray* inputs)
 {
 	assert(inputs);
 	assert(initialized);
 
-	pureUpdateInputs(inputs);
-	pureUpdateState();
-	pureUpdateRotation();
-	pureUpdateShift();
-	pureUpdateClear();
-	pureUpdateSpawn();
-	pureUpdateGravity();
-	pureUpdateLocking();
-	pureUpdateWin();
+	mrsUpdateInputs(inputs);
+	mrsUpdateState();
+	mrsUpdateRotation();
+	mrsUpdateShift();
+	mrsUpdateClear();
+	mrsUpdateSpawn();
+	mrsUpdateGravity();
+	mrsUpdateLocking();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
- * Create some pretty particle effects on line clear. Call this before the row
- * is actually cleared.
- * @param row Height of the cleared row
- * @param power 
- */
-static void effectClear(int row, int power)
-{
-	;
-}
-
-/**
  * Draw the scene model, which visually wraps the tetrion field.
  */
-static void pureDrawScene(void)
+static void mrsDrawScene(void)
 {
 	float boost = easeApply(&comboFade);
 	modelDraw(scene, 1, (color4[]){{boost, boost, boost, 1.0f}}, null, &IdentityMatrix);
@@ -877,7 +868,7 @@ static void pureDrawScene(void)
 /**
  * Draw the guide model, helping a beginner player keep track of columns.
  */
-static void pureDrawGuide(void)
+static void mrsDrawGuide(void)
 {
 	modelDraw(guide, 1, (color4[]){Color4White}, null, &IdentityMatrix);
 }
@@ -885,10 +876,10 @@ static void pureDrawGuide(void)
 /**
  * Queue the contents of the tetrion field.
  */
-static void pureQueueField(void)
+static void mrsQueueField(void)
 {
 	// A bit out of place here, but no need to get this more than once
-	piece* playerPiece = pureGetPiece(tet.player.type, tet.player.rotation);
+	piece* playerPiece = mrsGetPiece(tet.player.type, tet.player.rotation);
 
 	for (size_t i = 0; i < FieldWidth * FieldHeight; i += 1) {
 		int x = i % FieldWidth;
@@ -939,16 +930,18 @@ static void pureQueueField(void)
 /**
  * Queue the player piece on top of the field.
  */
-static void pureQueuePlayer(void)
+static void mrsQueuePlayer(void)
 {
 	if (tet.player.state != PlayerActive &&
 		tet.player.state != PlayerSpawned)
 		return;
 
-	piece* playerPiece = pureGetPiece(tet.player.type, tet.player.rotation);
+	piece* playerPiece = mrsGetPiece(tet.player.type, tet.player.rotation);
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
 		float x = (*playerPiece)[i].x + tet.player.pos.x;
 		float y = (*playerPiece)[i].y + tet.player.pos.y;
+		x += tet.player.pos.xHalf? 0.5f : 0.0f;
+		y += tet.player.pos.yHalf? 0.5f : 0.0f;
 
 		color4* tint = null;
 		color4* highlight = null;
@@ -966,7 +959,7 @@ static void pureQueuePlayer(void)
 		color4Copy(*tint, minoColor(tet.player.type));
 		if (!canDrop()) {
 			easeRestart(&lockDim);
-			lockDim.start -= tet.player.lockDelay * PureUpdateTick;
+			lockDim.start -= tet.player.lockDelay * MrsUpdateTick;
 			float dim = easeApply(&lockDim);
 			tint->r *= dim;
 			tint->g *= dim;
@@ -980,24 +973,23 @@ static void pureQueuePlayer(void)
 /**
  * Queue the ghost piece, if it should be visible.
  */
-static void pureQueueGhost(void)
+static void mrsQueueGhost(void)
 {
-	if (tet.player.level >= 100) return;
 	if (tet.player.state != PlayerActive &&
 		tet.player.state != PlayerSpawned)
 		return;
 
-	piece* playerPiece = pureGetPiece(tet.player.type, tet.player.rotation);
-	point2i ghostPos = tet.player.pos;
-	while (!pieceOverlapsField(playerPiece, (point2i){
-		ghostPos.x,
-		ghostPos.y - 1
-	}, tet.field))
+	piece* playerPiece = mrsGetPiece(tet.player.type, tet.player.rotation);
+	MrsPoint ghostPos = tet.player.pos;
+	ghostPos.yHalf = false;
+	while (!isOverlap(playerPiece, ghostPos))
 		ghostPos.y -= 1; // Drop down as much as possible
+	ghostPos.y += 1; // Revert the last failure
 
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
 		float x = (*playerPiece)[i].x + ghostPos.x;
 		float y = (*playerPiece)[i].y + ghostPos.y;
+		x += tet.player.pos.xHalf? 0.5f : 0.0f;
 
 		color4* tint = darrayProduce(blockTintsAlpha);
 		color4* highlight = darrayProduce(blockHighlightsAlpha);
@@ -1013,16 +1005,17 @@ static void pureQueueGhost(void)
 /**
  * Queue the preview piece on top of the field.
  */
-static void pureQueuePreview(void)
+static void mrsQueuePreview(void)
 {
 	if (tet.player.preview == MinoNone)
 		return;
-	piece* previewPiece = pureGetPiece(tet.player.preview, SpinNone);
+	piece* previewPiece = mrsGetPiece(tet.player.preview, SpinNone);
+	MrsPoint previewOffset = mrsGetPieceOffset(tet.player.preview, SpinNone);
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
-		float x = (*previewPiece)[i].x + PreviewX;
-		float y = (*previewPiece)[i].y + PreviewY;
-		if (tet.player.preview == MinoI)
-			y -= 1;
+		float x = (*previewPiece)[i].x + PreviewX + previewOffset.x;
+		float y = (*previewPiece)[i].y + PreviewY + previewOffset.y;
+		x += previewOffset.xHalf? 0.5f : 0.0f;
+		y += previewOffset.yHalf? 0.5f : 0.0f;
 
 		color4* tint = null;
 		color4* highlight = null;
@@ -1046,7 +1039,7 @@ static void pureQueuePreview(void)
 /**
  * Draw all queued blocks with alpha pre-pass.
  */
-static void pureDrawQueuedBlocks(void)
+static void mrsDrawQueuedBlocks(void)
 {
 	modelDraw(block, darraySize(blockTransformsOpaque),
 		darrayData(blockTintsOpaque),
@@ -1070,7 +1063,7 @@ static void pureDrawQueuedBlocks(void)
 	darrayClear(blockTransformsAlpha);
 }
 
-static void pureBorderQueue(point3f pos, size3f size, color4 color)
+static void mrsBorderQueue(point3f pos, size3f size, color4 color)
 {
 	color4* tint = darrayProduce(borderTints);
 	mat4x4* transform = darrayProduce(borderTransforms);
@@ -1083,7 +1076,7 @@ static void pureBorderQueue(point3f pos, size3f size, color4 color)
 /**
  * Draw the border around the contour of field blocks.
  */
-static void pureDrawBorder(void)
+static void mrsDrawBorder(void)
 {
 	for (size_t i = 0; i < FieldWidth * FieldHeight; i += 1) {
 		int x = i % FieldWidth;
@@ -1100,50 +1093,50 @@ static void pureDrawBorder(void)
 
 		// Left
 		if (!fieldGet(tet.field, (point2i){x - 1, y}))
-			pureBorderQueue((point3f){tx, ty + 0.125f, 0.0f},
+			mrsBorderQueue((point3f){tx, ty + 0.125f, 0.0f},
 				(size3f){0.125f, 0.75f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Right
 		if (!fieldGet(tet.field, (point2i){x + 1, y}))
-			pureBorderQueue((point3f){tx + 0.875f, ty + 0.125f, 0.0f},
+			mrsBorderQueue((point3f){tx + 0.875f, ty + 0.125f, 0.0f},
 				(size3f){0.125f, 0.75f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Down
 		if (!fieldGet(tet.field, (point2i){x, y - 1}))
-			pureBorderQueue((point3f){tx + 0.125f, ty, 0.0f},
+			mrsBorderQueue((point3f){tx + 0.125f, ty, 0.0f},
 				(size3f){0.75f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Up
 		if (!fieldGet(tet.field, (point2i){x, y + 1}))
-			pureBorderQueue((point3f){tx + 0.125f, ty + 0.875f, 0.0f},
+			mrsBorderQueue((point3f){tx + 0.125f, ty + 0.875f, 0.0f},
 				(size3f){0.75f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Down Left
 		if (!fieldGet(tet.field, (point2i){x - 1, y - 1})
 			|| !fieldGet(tet.field, (point2i){x - 1, y})
 			|| !fieldGet(tet.field, (point2i){x, y - 1}))
-			pureBorderQueue((point3f){tx, ty, 0.0f},
+			mrsBorderQueue((point3f){tx, ty, 0.0f},
 				(size3f){0.125f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Down Right
 		if (!fieldGet(tet.field, (point2i){x + 1, y - 1})
 			|| !fieldGet(tet.field, (point2i){x + 1, y})
 			|| !fieldGet(tet.field, (point2i){x, y - 1}))
-			pureBorderQueue((point3f){tx + 0.875f, ty, 0.0f},
+			mrsBorderQueue((point3f){tx + 0.875f, ty, 0.0f},
 				(size3f){0.125f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Up Left
 		if (!fieldGet(tet.field, (point2i){x - 1, y + 1})
 			|| !fieldGet(tet.field, (point2i){x - 1, y})
 			|| !fieldGet(tet.field, (point2i){x, y + 1}))
-			pureBorderQueue((point3f){tx, ty + 0.875f, 0.0f},
+			mrsBorderQueue((point3f){tx, ty + 0.875f, 0.0f},
 				(size3f){0.125f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Up Right
 		if (!fieldGet(tet.field, (point2i){x + 1, y + 1})
 			|| !fieldGet(tet.field, (point2i){x + 1, y})
 			|| !fieldGet(tet.field, (point2i){x, y + 1}))
-			pureBorderQueue((point3f){tx + 0.875f, ty + 0.875f, 0.0f},
+			mrsBorderQueue((point3f){tx + 0.875f, ty + 0.875f, 0.0f},
 				(size3f){0.125f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 	}
@@ -1155,19 +1148,19 @@ static void pureDrawBorder(void)
 	darrayClear(borderTransforms);
 }
 
-void pureDraw(void)
+void mrsDraw(void)
 {
 	assert(initialized);
 
 	glClearColor(0.010f, 0.276f, 0.685f, 1.0f); //TODO make into layer
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	worldSetAmbientColor((color3){0.010f, 0.276f, 0.685f});
-	pureDrawScene();
-	pureDrawGuide();
-	pureQueueField();
-	pureQueuePlayer();
-	pureQueueGhost();
-	pureQueuePreview();
-	pureDrawQueuedBlocks();
-	pureDrawBorder();
+	mrsDrawScene();
+	mrsDrawGuide();
+	mrsQueueField();
+	mrsQueuePlayer();
+	mrsQueueGhost();
+	mrsQueuePreview();
+	mrsDrawQueuedBlocks();
+	mrsDrawBorder();
 }

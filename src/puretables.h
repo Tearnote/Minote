@@ -6,6 +6,7 @@
 #ifndef MINOTE_PURETABLES_H
 #define MINOTE_PURETABLES_H
 
+#include "mino.h"
 #include "time.h"
 
 /// Defines a level at which some physics change
@@ -87,5 +88,13 @@ typedef struct PureRequirement {
     120000,                  \
     126000                   \
 })
+
+/**
+ * Query the rotation system for a specific piece.
+ * @param type Type of the piece, between MinoNone and MinoGarbage (exclusive)
+ * @param rotation Spin of the piece
+ * @return Read-only piece data
+ */
+piece* pureGetPiece(mino type, spin rotation);
 
 #endif //MINOTE_PURETABLES_H

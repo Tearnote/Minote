@@ -11,7 +11,8 @@
 #include "darray.h"
 #include "util.h"
 #include "time.h"
-#include "pure.h"
+//#include "pure.h"
+#include "mrs.h"
 #include "log.h"
 
 /// Timestamp of the next game logic update
@@ -27,8 +28,10 @@ void playInit(void)
 	if (initialized) return;
 
 	collectedInputs = darrayCreate(sizeof(Input));
-	nextUpdate = getTime() + PureUpdateTick;
-	pureInit();
+//	nextUpdate = getTime() + PureUpdateTick;
+	nextUpdate = getTime() + MrsUpdateTick;
+//	pureInit();
+	mrsInit();
 
 	initialized = true;
 	logDebug(applog, u8"Play layer initialized");
@@ -38,7 +41,8 @@ void playCleanup(void)
 {
 	if (!initialized) return;
 
-	pureCleanup();
+//	pureCleanup();
+	mrsCleanup();
 	if (collectedInputs) {
 		darrayDestroy(collectedInputs);
 		collectedInputs = null;
@@ -66,14 +70,17 @@ void playUpdate(void)
 				windowClose();
 		}
 
-		pureAdvance(collectedInputs);
+//		pureAdvance(collectedInputs);
+		mrsAdvance(collectedInputs);
 		darrayClear(collectedInputs);
-		nextUpdate += PureUpdateTick;
+//		nextUpdate += PureUpdateTick;
+		nextUpdate += MrsUpdateTick;
 	}
 }
 
 void playDraw(void)
 {
 	assert(initialized);
-	pureDraw();
+//	pureDraw();
+	mrsDraw();
 }

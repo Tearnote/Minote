@@ -22,7 +22,7 @@ typedef enum mino {
 	MinoT, ///< cyan
 	MinoJ, ///< blue
 	MinoS, ///< purple
-	MinoGarbage, ///< mino from any source other than player piece
+	MinoGarbage, ///< mino from any source other than player piece. Follows the last normal mino
 	MinoSize ///< terminator
 } mino;
 
@@ -52,14 +52,6 @@ void spinClockwise(spin* val);
  * @param val Address of the ::spin to alter
  */
 void spinCounterClockwise(spin* val);
-
-/**
- * Query the rotation system for a specific piece.
- * @param type Type of the piece, between MinoNone and MinoGarbage (exclusive)
- * @param rotation Spin of the piece
- * @return Read-only piece data
- */
-piece* getPiece(mino type, spin rotation);
 
 /**
  * Return the canonical color of a ::mino.

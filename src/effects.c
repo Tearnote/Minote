@@ -24,6 +24,7 @@ void effectsDraw(void)
 {
 	;
 }
+
 void effectsSwirl(point3f position, size_t count, EffectSwirl* params)
 {
 	;

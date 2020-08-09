@@ -40,6 +40,15 @@ void darrayDestroy(darray* d);
 void* darrayProduce(darray* d);
 
 /**
+ * Remove an element at a given index. Other elements are shifted to fill
+ * the gap, which makes this an O(n) operation that should be avoided
+ * for any large arrays.
+ * @param d The ::darray object
+ * @param index Index of the element to remove
+ */
+void darrayRemove(darray* d, size_t index);
+
+/**
  * Provide the raw data pointer of the ::darray. It can be treated as an array
  * of darraySize() elements.
  * @param d The ::darray object

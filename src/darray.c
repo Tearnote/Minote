@@ -53,6 +53,18 @@ void* darrayProduce(darray* d)
 	return darrayGet(d, d->count - 1);
 }
 
+void darrayRemove(darray* d, size_t index)
+{
+	assert(d);
+	assert(index < d->count);
+	if (index < d->count - 1) {
+		memmove(d->data + index * d->elementSize,
+			d->data + (index + 1) * d->elementSize,
+			(d->count - index - 1) * d->elementSize);
+	}
+	d->count -= 1;
+}
+
 void* darrayData(darray* d)
 {
 	assert(d);

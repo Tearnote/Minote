@@ -51,7 +51,7 @@ void rngDestroy(Rng* r)
 uint32_t rngInt(Rng* r, uint32_t bound)
 {
 	assert(r);
-	assert(bound >= 2);
+	assert(bound >= 1);
 	return pcg32_boundedrand_r(r, bound);
 }
 
