@@ -1,14 +1,14 @@
 /**
- * Implementation of pure.h
+ * Implementation of purers.h
  * @file
  */
 
-#include "pure.h"
+#include "purers.h"
 
 #include <assert.h>
 #include <stdint.h>
 #include <time.h>
-#include "puretables.h"
+#include "purerstables.h"
 #include "renderer.h"
 #include "effects.h"
 #include "mapper.h"
@@ -106,7 +106,7 @@ typedef struct Tetrion {
 	int score;
 	int combo; ///< Holdover combo from previous piece
 	int grade;
-	ReqStatus reqs[countof(PureRequirements)]; ///< Max grade requirements
+	ReqStatus reqs[countof(PurersRequirements)]; ///< Max grade requirements
 } Tetrion;
 
 /// Full state of the mode
@@ -144,7 +144,7 @@ static darray* borderTransforms = null;
 static Ease lockFlash = {
 	.from = 1.0f,
 	.to = 0.0f,
-	.length = 8 * PureUpdateTick,
+	.length = 8 * PurersUpdateTick,
 	.type = EaseLinear
 };
 
@@ -152,7 +152,7 @@ static Ease lockFlash = {
 static Ease lockDim = {
 	.from = 1.0f,
 	.to = 0.4f,
-	.length = LockDelay * PureUpdateTick,
+	.length = LockDelay * PurersUpdateTick,
 	.type = EaseLinear
 };
 
@@ -164,7 +164,7 @@ static Ease lockDim = {
 static Ease comboFade = {
 	.from = comboHighlight(1),
 	.to = comboHighlight(1),
-	.length = 24 * PureUpdateTick,
+	.length = 24 * PurersUpdateTick,
 	.type = EaseOutQuadratic
 };
 
@@ -194,7 +194,7 @@ static bool initialized = false;
 static bool tryKicks(void)
 {
 	static int preference = 1;
-	piece* playerPiece = pureGetPiece(tet.player.type, tet.player.rotation);
+	piece* playerPiece = purersGetPiece(tet.player.type, tet.player.rotation);
 	if (!pieceOverlapsField(playerPiece, tet.player.pos, tet.field))
 		return true; // Original position
 
@@ -258,7 +258,7 @@ static void shift(int direction)
 {
 	assert(direction == 1 || direction == -1);
 	tet.player.pos.x += direction;
-	piece* playerPiece = pureGetPiece(tet.player.type, tet.player.rotation);
+	piece* playerPiece = purersGetPiece(tet.player.type, tet.player.rotation);
 	if (pieceOverlapsField(playerPiece, tet.player.pos, tet.field)) {
 		tet.player.pos.x -= direction;
 	}
@@ -371,7 +371,7 @@ static void spawnPiece(void)
 
 	addLevels(1, false);
 
-	piece* playerPiece = pureGetPiece(tet.player.type, tet.player.rotation);
+	piece* playerPiece = purersGetPiece(tet.player.type, tet.player.rotation);
 	if (pieceOverlapsField(playerPiece, tet.player.pos, tet.field))
 		gameOver();
 }
@@ -438,14 +438,14 @@ static nsec getClock(int frame)
  */
 static void updateRequirements(void)
 {
-	assert(countof(tet.reqs) == countof(PureRequirements));
+	assert(countof(tet.reqs) == countof(PurersRequirements));
 	for (size_t i = 0; i < countof(tet.reqs); i += 1) {
 		if (tet.reqs[i])
 			continue; // Only check each treshold once, when reached
-		if (tet.player.level < PureRequirements[i].level)
-			return; // PureThreshold not reached yet
-		if (tet.score >= PureRequirements[i].score &&
-			getClock(tet.frame) <= PureRequirements[i].time)
+		if (tet.player.level < PurersRequirements[i].level)
+			return; // PurersThreshold not reached yet
+		if (tet.score >= PurersRequirements[i].score &&
+			getClock(tet.frame) <= PurersRequirements[i].time)
 			tet.reqs[i] = ReqPassed;
 		else
 			tet.reqs[i] = ReqFailed;
@@ -471,10 +471,10 @@ static bool requirementsMet(void)
  */
 static void updateGrade(void)
 {
-	for (size_t i = 0; i < countof(PureGrades); i += 1) {
-		if (tet.score < PureGrades[i])
+	for (size_t i = 0; i < countof(PurersGrades); i += 1) {
+		if (tet.score < PurersGrades[i])
 			return;
-		if (i == countof(PureGrades) - 1 &&
+		if (i == countof(PurersGrades) - 1 &&
 			(!requirementsMet() || tet.player.level < 999))
 			return; // Final grade, requirements not met
 		tet.grade = i;
@@ -502,10 +502,10 @@ static void thump(void)
 static int getGravity(int level)
 {
 	int result = 0;
-	for (int i = 0; i < countof(PureThresholds); i += 1) {
-		if (level < PureThresholds[i].level)
+	for (int i = 0; i < countof(PurersThresholds); i += 1) {
+		if (level < PurersThresholds[i].level)
 			break;
-		result = PureThresholds[i].gravity;
+		result = PurersThresholds[i].gravity;
 	}
 	return result;
 }
@@ -517,7 +517,7 @@ static int getGravity(int level)
  */
 static bool canDrop(void)
 {
-	piece* playerPiece = pureGetPiece(tet.player.type, tet.player.rotation);
+	piece* playerPiece = purersGetPiece(tet.player.type, tet.player.rotation);
 	return !pieceOverlapsField(playerPiece, (point2i){
 		.x = tet.player.pos.x,
 		.y = tet.player.pos.y - 1
@@ -546,13 +546,13 @@ static void lock(void)
 {
 	if (inputHeld(InputDown))
 		tet.player.dropBonus += 1; // Lock frame can also increase this
-	piece* playerPiece = pureGetPiece(tet.player.type, tet.player.rotation);
+	piece* playerPiece = purersGetPiece(tet.player.type, tet.player.rotation);
 	fieldStampPiece(tet.field, playerPiece, tet.player.pos, tet.player.type);
 	tet.player.state = PlayerSpawn;
 	easeRestart(&lockFlash);
 }
 
-void pureInit(void)
+void purersInit(void)
 {
 	if (initialized) return;
 
@@ -593,10 +593,10 @@ void pureInit(void)
 	borderTransforms = darrayCreate(sizeof(mat4x4));
 
 	initialized = true;
-	logDebug(applog, u8"Pure sublayer initialized");
+	logDebug(applog, u8"Purers sublayer initialized");
 }
 
-void pureCleanup(void)
+void purersCleanup(void)
 {
 	if (!initialized) return;
 	darrayDestroy(borderTransforms);
@@ -628,14 +628,14 @@ void pureCleanup(void)
 	fieldDestroy(tet.field);
 	tet.field = null;
 	initialized = false;
-	logDebug(applog, u8"Pure sublayer cleaned up");
+	logDebug(applog, u8"Purers sublayer cleaned up");
 }
 
 /**
  * Populate and rotate the input arrays for press and hold detection.
  * @param inputs List of this frame's new inputs
  */
-static void pureUpdateInputs(darray* inputs)
+static void purersUpdateInputs(darray* inputs)
 {
 	assert(inputs);
 
@@ -670,7 +670,7 @@ static void pureUpdateInputs(darray* inputs)
 /**
  * Check for state triggers and progress through states.
  */
-static void pureUpdateState(void)
+static void purersUpdateState(void)
 {
 	if (tet.state == TetrionReady) {
 		tet.ready -= 1;
@@ -686,7 +686,7 @@ static void pureUpdateState(void)
 /**
  * Spin the player piece.
  */
-static void pureUpdateRotation(void)
+static void purersUpdateRotation(void)
 {
 	if (tet.player.state != PlayerActive)
 		return;
@@ -699,7 +699,7 @@ static void pureUpdateRotation(void)
 /**
  * Shift the player piece, either through a direct press or autoshift.
  */
-static void pureUpdateShift(void)
+static void purersUpdateShift(void)
 {
 	// Check requested movement direction
 	int shiftDirection = 0;
@@ -739,7 +739,7 @@ static void pureUpdateShift(void)
 /**
  * Check for cleared lines, handle and progress clears.
  */
-static void pureUpdateClear(void)
+static void purersUpdateClear(void)
 {
 	// Line clear check is delayed by the clear offset
 	if (tet.player.state == PlayerSpawn &&
@@ -773,7 +773,7 @@ static void pureUpdateClear(void)
 /**
  * Spawn a new piece if needed.
  */
-static void pureUpdateSpawn(void)
+static void purersUpdateSpawn(void)
 {
 	if (tet.state != TetrionPlaying)
 		return; // Do not spawn during countdown or gameover
@@ -787,7 +787,7 @@ static void pureUpdateSpawn(void)
 /**
  * Move player piece down through gravity or manual dropping.
  */
-static void pureUpdateGravity(void)
+static void purersUpdateGravity(void)
 {
 	if (tet.state == TetrionOutro)
 		return; // Prevent zombie blocks
@@ -814,7 +814,7 @@ static void pureUpdateGravity(void)
 /**
  * Lock player piece by lock delay expiry or manual lock.
  */
-static void pureUpdateLocking(void)
+static void purersUpdateLocking(void)
 {
 	if (tet.player.state != PlayerActive || tet.state != TetrionPlaying)
 		return;
@@ -830,26 +830,26 @@ static void pureUpdateLocking(void)
 /**
  * Win the game. Try to get this function called while playing.
  */
-static void pureUpdateWin(void)
+static void purersUpdateWin(void)
 {
 	if (tet.player.level >= 999)
 		gameOver();
 }
 
-void pureAdvance(darray* inputs)
+void purersAdvance(darray* inputs)
 {
 	assert(inputs);
 	assert(initialized);
 
-	pureUpdateInputs(inputs);
-	pureUpdateState();
-	pureUpdateRotation();
-	pureUpdateShift();
-	pureUpdateClear();
-	pureUpdateSpawn();
-	pureUpdateGravity();
-	pureUpdateLocking();
-	pureUpdateWin();
+	purersUpdateInputs(inputs);
+	purersUpdateState();
+	purersUpdateRotation();
+	purersUpdateShift();
+	purersUpdateClear();
+	purersUpdateSpawn();
+	purersUpdateGravity();
+	purersUpdateLocking();
+	purersUpdateWin();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -868,7 +868,7 @@ static void effectClear(int row, int power)
 /**
  * Draw the scene model, which visually wraps the tetrion field.
  */
-static void pureDrawScene(void)
+static void purersDrawScene(void)
 {
 	float boost = easeApply(&comboFade);
 	modelDraw(scene, 1, (color4[]){{boost, boost, boost, 1.0f}}, null, &IdentityMatrix);
@@ -877,7 +877,7 @@ static void pureDrawScene(void)
 /**
  * Draw the guide model, helping a beginner player keep track of columns.
  */
-static void pureDrawGuide(void)
+static void purersDrawGuide(void)
 {
 	modelDraw(guide, 1, (color4[]){Color4White}, null, &IdentityMatrix);
 }
@@ -885,10 +885,10 @@ static void pureDrawGuide(void)
 /**
  * Queue the contents of the tetrion field.
  */
-static void pureQueueField(void)
+static void purersQueueField(void)
 {
 	// A bit out of place here, but no need to get this more than once
-	piece* playerPiece = pureGetPiece(tet.player.type, tet.player.rotation);
+	piece* playerPiece = purersGetPiece(tet.player.type, tet.player.rotation);
 
 	for (size_t i = 0; i < FieldWidth * FieldHeight; i += 1) {
 		int x = i % FieldWidth;
@@ -939,13 +939,13 @@ static void pureQueueField(void)
 /**
  * Queue the player piece on top of the field.
  */
-static void pureQueuePlayer(void)
+static void purersQueuePlayer(void)
 {
 	if (tet.player.state != PlayerActive &&
 		tet.player.state != PlayerSpawned)
 		return;
 
-	piece* playerPiece = pureGetPiece(tet.player.type, tet.player.rotation);
+	piece* playerPiece = purersGetPiece(tet.player.type, tet.player.rotation);
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
 		float x = (*playerPiece)[i].x + tet.player.pos.x;
 		float y = (*playerPiece)[i].y + tet.player.pos.y;
@@ -966,7 +966,7 @@ static void pureQueuePlayer(void)
 		color4Copy(*tint, minoColor(tet.player.type));
 		if (!canDrop()) {
 			easeRestart(&lockDim);
-			lockDim.start -= tet.player.lockDelay * PureUpdateTick;
+			lockDim.start -= tet.player.lockDelay * PurersUpdateTick;
 			float dim = easeApply(&lockDim);
 			tint->r *= dim;
 			tint->g *= dim;
@@ -980,14 +980,14 @@ static void pureQueuePlayer(void)
 /**
  * Queue the ghost piece, if it should be visible.
  */
-static void pureQueueGhost(void)
+static void purersQueueGhost(void)
 {
 	if (tet.player.level >= 100) return;
 	if (tet.player.state != PlayerActive &&
 		tet.player.state != PlayerSpawned)
 		return;
 
-	piece* playerPiece = pureGetPiece(tet.player.type, tet.player.rotation);
+	piece* playerPiece = purersGetPiece(tet.player.type, tet.player.rotation);
 	point2i ghostPos = tet.player.pos;
 	while (!pieceOverlapsField(playerPiece, (point2i){
 		ghostPos.x,
@@ -1013,11 +1013,11 @@ static void pureQueueGhost(void)
 /**
  * Queue the preview piece on top of the field.
  */
-static void pureQueuePreview(void)
+static void purersQueuePreview(void)
 {
 	if (tet.player.preview == MinoNone)
 		return;
-	piece* previewPiece = pureGetPiece(tet.player.preview, SpinNone);
+	piece* previewPiece = purersGetPiece(tet.player.preview, SpinNone);
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
 		float x = (*previewPiece)[i].x + PreviewX;
 		float y = (*previewPiece)[i].y + PreviewY;
@@ -1046,7 +1046,7 @@ static void pureQueuePreview(void)
 /**
  * Draw all queued blocks with alpha pre-pass.
  */
-static void pureDrawQueuedBlocks(void)
+static void purersDrawQueuedBlocks(void)
 {
 	modelDraw(block, darraySize(blockTransformsOpaque),
 		darrayData(blockTintsOpaque),
@@ -1070,7 +1070,7 @@ static void pureDrawQueuedBlocks(void)
 	darrayClear(blockTransformsAlpha);
 }
 
-static void pureBorderQueue(point3f pos, size3f size, color4 color)
+static void purersBorderQueue(point3f pos, size3f size, color4 color)
 {
 	color4* tint = darrayProduce(borderTints);
 	mat4x4* transform = darrayProduce(borderTransforms);
@@ -1083,7 +1083,7 @@ static void pureBorderQueue(point3f pos, size3f size, color4 color)
 /**
  * Draw the border around the contour of field blocks.
  */
-static void pureDrawBorder(void)
+static void purersDrawBorder(void)
 {
 	for (size_t i = 0; i < FieldWidth * FieldHeight; i += 1) {
 		int x = i % FieldWidth;
@@ -1100,50 +1100,50 @@ static void pureDrawBorder(void)
 
 		// Left
 		if (!fieldGet(tet.field, (point2i){x - 1, y}))
-			pureBorderQueue((point3f){tx, ty + 0.125f, 0.0f},
+			purersBorderQueue((point3f){tx, ty + 0.125f, 0.0f},
 				(size3f){0.125f, 0.75f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Right
 		if (!fieldGet(tet.field, (point2i){x + 1, y}))
-			pureBorderQueue((point3f){tx + 0.875f, ty + 0.125f, 0.0f},
+			purersBorderQueue((point3f){tx + 0.875f, ty + 0.125f, 0.0f},
 				(size3f){0.125f, 0.75f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Down
 		if (!fieldGet(tet.field, (point2i){x, y - 1}))
-			pureBorderQueue((point3f){tx + 0.125f, ty, 0.0f},
+			purersBorderQueue((point3f){tx + 0.125f, ty, 0.0f},
 				(size3f){0.75f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Up
 		if (!fieldGet(tet.field, (point2i){x, y + 1}))
-			pureBorderQueue((point3f){tx + 0.125f, ty + 0.875f, 0.0f},
+			purersBorderQueue((point3f){tx + 0.125f, ty + 0.875f, 0.0f},
 				(size3f){0.75f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Down Left
 		if (!fieldGet(tet.field, (point2i){x - 1, y - 1})
 			|| !fieldGet(tet.field, (point2i){x - 1, y})
 			|| !fieldGet(tet.field, (point2i){x, y - 1}))
-			pureBorderQueue((point3f){tx, ty, 0.0f},
+			purersBorderQueue((point3f){tx, ty, 0.0f},
 				(size3f){0.125f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Down Right
 		if (!fieldGet(tet.field, (point2i){x + 1, y - 1})
 			|| !fieldGet(tet.field, (point2i){x + 1, y})
 			|| !fieldGet(tet.field, (point2i){x, y - 1}))
-			pureBorderQueue((point3f){tx + 0.875f, ty, 0.0f},
+			purersBorderQueue((point3f){tx + 0.875f, ty, 0.0f},
 				(size3f){0.125f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Up Left
 		if (!fieldGet(tet.field, (point2i){x - 1, y + 1})
 			|| !fieldGet(tet.field, (point2i){x - 1, y})
 			|| !fieldGet(tet.field, (point2i){x, y + 1}))
-			pureBorderQueue((point3f){tx, ty + 0.875f, 0.0f},
+			purersBorderQueue((point3f){tx, ty + 0.875f, 0.0f},
 				(size3f){0.125f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Up Right
 		if (!fieldGet(tet.field, (point2i){x + 1, y + 1})
 			|| !fieldGet(tet.field, (point2i){x + 1, y})
 			|| !fieldGet(tet.field, (point2i){x, y + 1}))
-			pureBorderQueue((point3f){tx + 0.875f, ty + 0.875f, 0.0f},
+			purersBorderQueue((point3f){tx + 0.875f, ty + 0.875f, 0.0f},
 				(size3f){0.125f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 	}
@@ -1155,19 +1155,19 @@ static void pureDrawBorder(void)
 	darrayClear(borderTransforms);
 }
 
-void pureDraw(void)
+void purersDraw(void)
 {
 	assert(initialized);
 
 	glClearColor(0.010f, 0.276f, 0.685f, 1.0f); //TODO make into layer
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	worldSetAmbientColor((color3){0.010f, 0.276f, 0.685f});
-	pureDrawScene();
-	pureDrawGuide();
-	pureQueueField();
-	pureQueuePlayer();
-	pureQueueGhost();
-	pureQueuePreview();
-	pureDrawQueuedBlocks();
-	pureDrawBorder();
+	purersDrawScene();
+	purersDrawGuide();
+	purersQueueField();
+	purersQueuePlayer();
+	purersQueueGhost();
+	purersQueuePreview();
+	purersDrawQueuedBlocks();
+	purersDrawBorder();
 }

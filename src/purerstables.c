@@ -1,13 +1,13 @@
 /**
- * Implementation of puretables.h
+ * Implementation of purerstables.h
  * @file
  */
  
-#include "puretables.h"
+#include "purerstables.h"
 
 #include "mino.h"
 
-static piece PureRotationSystem[MinoGarbage][SpinSize] = {
+static piece PurersRotationSystem[MinoGarbage][SpinSize] = {
 	{}, /* MinoNone */
 	{ /* MinoI */
 		{
@@ -137,7 +137,7 @@ static piece PureRotationSystem[MinoGarbage][SpinSize] = {
 	}
 };
 
-piece* pureGetPiece(mino type, spin rotation)
+piece* purersGetPiece(mino type, spin rotation)
 {
-	return &PureRotationSystem[type][rotation];
+	return &PurersRotationSystem[type][rotation];
 }

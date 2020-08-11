@@ -1,22 +1,22 @@
 /**
- * Various table data for the pure sublayer
+ * Various table data for the purers sublayer
  * @file
  */
 
-#ifndef MINOTE_PURETABLES_H
-#define MINOTE_PURETABLES_H
+#ifndef MINOTE_PURERSTABLES_H
+#define MINOTE_PURERSTABLES_H
 
 #include "mino.h"
 #include "time.h"
 
 /// Defines a level at which some physics change
-typedef struct PureThreshold {
+typedef struct PurersThreshold {
 	int level;
 	int gravity;
-} PureThreshold;
+} PurersThreshold;
 
-/// List of thresholds for pure gamemode
-#define PureThresholds ((PureThreshold[]){ \
+/// List of thresholds for purers gamemode
+#define PurersThresholds ((PurersThreshold[]){ \
     { .level = 0, .gravity = 4 },          \
     { .level = 30, .gravity = 6 },         \
     { .level = 35, .gravity = 8 },         \
@@ -53,21 +53,21 @@ typedef struct PureThreshold {
  * Defines a level at which certain requirements have to be met in order
  * to quality for the highest rank.
  */
-typedef struct PureRequirement {
+typedef struct PurersRequirement {
 	int level;
 	int score;
 	nsec time;
-} PureRequirement;
+} PurersRequirement;
 
-/// List of requirements to get the top rank in pure gamemode
-#define PureRequirements ((PureRequirement[]){                        \
+/// List of requirements to get the top rank in purers gamemode
+#define PurersRequirements ((PurersRequirement[]){                        \
     { .level = 300, .score = 12000,  .time = secToNsec(4 * 60 + 15)}, \
     { .level = 500, .score = 40000,  .time = secToNsec(7 * 60)},      \
     { .level = 999, .score = 126000, .time = secToNsec(13 * 60 + 30)} \
 })
 
-/// List of score requirements for each rank of pure gamemode
-#define PureGrades ((int[]){ \
+/// List of score requirements for each rank of purers gamemode
+#define PurersGrades ((int[]){ \
     0,                       \
     400,                     \
     800,                     \
@@ -95,6 +95,6 @@ typedef struct PureRequirement {
  * @param rotation Spin of the piece
  * @return Read-only piece data
  */
-piece* pureGetPiece(mino type, spin rotation);
+piece* purersGetPiece(mino type, spin rotation);
 
-#endif //MINOTE_PURETABLES_H
+#endif //MINOTE_PURERSTABLES_H

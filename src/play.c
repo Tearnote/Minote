@@ -11,7 +11,6 @@
 #include "darray.h"
 #include "util.h"
 #include "time.h"
-//#include "pure.h"
 #include "mrs.h"
 #include "log.h"
 
@@ -28,9 +27,7 @@ void playInit(void)
 	if (initialized) return;
 
 	collectedInputs = darrayCreate(sizeof(Input));
-//	nextUpdate = getTime() + PureUpdateTick;
 	nextUpdate = getTime() + MrsUpdateTick;
-//	pureInit();
 	mrsInit();
 
 	initialized = true;
@@ -41,7 +38,6 @@ void playCleanup(void)
 {
 	if (!initialized) return;
 
-//	pureCleanup();
 	mrsCleanup();
 	if (collectedInputs) {
 		darrayDestroy(collectedInputs);
@@ -70,10 +66,8 @@ void playUpdate(void)
 				windowClose();
 		}
 
-//		pureAdvance(collectedInputs);
 		mrsAdvance(collectedInputs);
 		darrayClear(collectedInputs);
-//		nextUpdate += PureUpdateTick;
 		nextUpdate += MrsUpdateTick;
 	}
 }
@@ -81,6 +75,5 @@ void playUpdate(void)
 void playDraw(void)
 {
 	assert(initialized);
-//	pureDraw();
 	mrsDraw();
 }

@@ -1,7 +1,8 @@
 /**
  * Sublayer: play -> mrs
  * @file
- * The original Minote rotation system.
+ * Original rotation system, with the goal of retaining depth while being
+ * more intuitive to newcomers.
  */
 
 #ifndef MINOTE_MRS_H
@@ -11,7 +12,7 @@
 
 /// Frequency of game logic updates, simulated by semi-threading, in Hz
 #define MrsUpdateFrequency 60.0
-/// Inverse of #PureUpdateFrequency, in ::nsec
+/// Inverse of #MrsUpdateFrequency, in ::nsec
 #define MrsUpdateTick (secToNsec(1) / MrsUpdateFrequency)
 
 /**
