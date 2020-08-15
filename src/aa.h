@@ -14,7 +14,7 @@ typedef enum AAMode {
 	AAFast, ///< SMAA 1x
 	AASimple, ///< MSAA 4x
 	AAComplex, ///< SMAA S2x
-	AAExtreme, ///< MSAA 16x
+	AAExtreme, ///< MSAA 8x
 	AASize ///< terminator
 } AAMode;
 

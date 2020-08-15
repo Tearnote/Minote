@@ -35,6 +35,15 @@ typedef GLint Uniform;
 /// OpenGL texture unit. This is used as part of a struct containing ::ProgramBase.
 typedef GLenum TextureUnit;
 
+/// OpenGL vertex buffer object ID
+typedef GLuint VertexBuffer;
+
+/// OpenGL vertex array object ID
+typedef GLuint VertexArray;
+
+/// OpenGL element array object ID
+typedef GLuint ElementArray;
+
 /**
  * Create a new ::Texture instance. Please note that this object cannot be used
  * for drawing or sampling until storage is allocated with textureStorage().

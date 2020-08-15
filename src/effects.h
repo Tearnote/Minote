@@ -14,7 +14,6 @@ typedef struct EffectSwirl {
 	// params
 } EffectSwirl;
 
-
 /**
  * Initialize the effects layer. This must be called before any other effects
  * functions.

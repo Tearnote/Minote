@@ -61,4 +61,20 @@ void rendererFrameEnd(void);
  */
 void rendererBlit(Texture* t, GLfloat boost);
 
+/**
+ * Retrieves the current status of the synchronization feature, which prevents
+ * more than one frame from being buffered in the GPU driver. This reduces video
+ * latency at the cost of performance.
+ * @return true for sync enabled, false for disabled
+ */
+bool rendererGetSync(void);
+
+/**
+ * Sets the status of the synchronization feature, which prevents more than one
+ * frame from being buffered in the GPU driver. Reduces video latency
+ * at the cost of performance.
+ * @param enabled true for sync enabled, false for disabled
+ */
+void rendererSetSync(bool enabled);
+
 #endif //MINOTE_RENDERER_H

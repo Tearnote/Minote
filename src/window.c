@@ -12,6 +12,7 @@
 #include "thread.h"
 #include "system.h"
 #include "queue.h"
+#include "debug.h"
 #include "util.h"
 #include "log.h"
 
@@ -25,7 +26,6 @@ static atomic bool windowOpen; ///< false if window should be closed, true other
 static atomic size_t viewportWidth; ///< in pixels
 static atomic size_t viewportHeight; ///< in pixels
 static atomic float viewportScale; ///< DPI scaling of the window, where 1.0 is "normal"
-
 /**
  * Function to run on each keypress event. The key event is added to the queue.
  * @param w Unused
@@ -132,7 +132,9 @@ void windowInit(const char* title, size2i size, bool fullscreen)
 	}
 	initialized = true;
 
+#ifndef MINOTE_DEBUG
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+#endif //MINOTE_DEBUG
 	inputs = queueCreate(sizeof(KeyInput), 64);
 	glfwSetKeyCallback(window, keyCallback);
 	glfwSetWindowCloseCallback(window, windowCloseCallback);
@@ -242,4 +244,10 @@ void windowInputClear(void)
 	mutexLock(inputsMutex);
 	queueClear(inputs);
 	mutexUnlock(inputsMutex);
+}
+
+GLFWwindow* getRawWindow(void)
+{
+	assert(window);
+	return window;
 }

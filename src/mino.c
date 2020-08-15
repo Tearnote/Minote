@@ -17,7 +17,7 @@ static const color4 MinoColors[MinoSize] = {
 	[MinoT] = {0.0f, 1.0f, 1.0f, 1.0f},
 	[MinoJ] = {0.0f, 0.0f, 1.0f, 1.0f},
 	[MinoS] = {1.0f, 0.0f, 1.0f, 1.0f},
-	[MinoGarbage] = {0.2f, 0.2f, 0.2f, 1.0f}
+	[MinoGarbage] = {.22f, .22f, .22f, 1.0f}
 };
 
 void spinClockwise(spin* val)

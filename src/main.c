@@ -9,6 +9,7 @@
 #include "thread.h"
 #include "window.h"
 #include "system.h"
+#include "debug.h"
 #include "util.h"
 #include "game.h"
 #include "time.h"
@@ -33,6 +34,9 @@ static void init(void)
 
 	systemInit();
 	windowInit(AppName u8" " AppVersion, (size2i){1280, 720}, false);
+#ifdef MINOTE_DEBUG
+	debugInputSetup();
+#endif //MINOTE_DEBUG
 }
 
 /**

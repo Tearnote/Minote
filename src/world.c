@@ -18,6 +18,7 @@
 #define ProjectionFar 100.0f
 
 static mat4x4 projection = {0}; ///< perspective transform
+static mat4x4 screenProjection = {0}; ///< screenspace transform
 static mat4x4 camera = {0}; ///< view transform
 static point3f lightPosition = {0}; ///< in world space
 static color3 lightColor = {0};
@@ -42,6 +43,7 @@ static void worldResize(size2i size)
 	glViewport(0, 0, size.x, size.y);
 	mat4x4_perspective(projection, radf(45.0f),
 		(float)size.x / (float)size.y, ProjectionNear, ProjectionFar);
+	mat4x4_ortho(screenProjection, 0.0f, size.x, size.y, 0.0f, 1.0f, -1.0f);
 }
 
 void worldInit(void)
@@ -82,6 +84,11 @@ void worldSetAmbientColor(color3 color)
 vec4* worldProjection(void)
 {
 	return projection;
+}
+
+vec4* worldScreenProjection(void)
+{
+	return screenProjection;
 }
 
 vec4* worldCamera(void)

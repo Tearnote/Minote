@@ -126,4 +126,12 @@ bool windowInputPeek(KeyInput* input);
  */
 void windowInputClear(void);
 
+typedef struct GLFWwindow GLFWwindow;
+/**
+ * Return a handle to the GLFW window. Use this very carefully, because most
+ * GLFW functions are not thread-safe.
+ * @return GLFW window pointer
+ */
+GLFWwindow* getRawWindow(void);
+
 #endif //MINOTE_WINDOW_H

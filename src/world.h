@@ -35,6 +35,8 @@ void worldSetAmbientColor(color3 color);
 
 vec4* worldProjection(void);
 
+vec4* worldScreenProjection(void);
+
 vec4* worldCamera(void);
 
 point3f worldLightPosition(void);

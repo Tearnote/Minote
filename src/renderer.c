@@ -63,6 +63,8 @@ static Model* sync = null; ///< Invisible model used to prevent frame buffering
 static ProgramBlit* blit = null;
 static ProgramDelinearize* delinearize = null;
 
+static bool syncEnabled = true;
+
 /**
  * Prevent the driver from buffering commands. Call this after windowFlip()
  * to minimize video latency.
@@ -217,7 +219,8 @@ void rendererFrameEnd(void)
 	textureUse(renderFbColor, delinearize->image);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 	windowFlip();
-	rendererSync();
+	if (syncEnabled)
+		rendererSync();
 	glEnable(GL_BLEND);
 }
 
@@ -238,4 +241,15 @@ void rendererBlit(Texture* t, GLfloat boost)
 	textureUse(t, blit->image);
 	glUniform1f(blit->boost, boost);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
+}
+
+bool rendererGetSync(void)
+{
+	return syncEnabled;
+}
+
+void rendererSetSync(bool enabled)
+{
+	syncEnabled = enabled;
+	logDebug(applog, "%s renderer sync", enabled? "Enabling": "Disabling");
 }

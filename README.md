@@ -36,3 +36,6 @@ under WTFPL.
 [`SMAA (OpenGL port)`](https://github.com/turol/smaaDemo) retrieved on
 2020-02-29, used under MIT license.
 [Original version.](https://www.iryoku.com/smaa/)
+
+[`Nuklear`](https://github.com/Immediate-Mode-UI/Nuklear) retrieved on
+2020-08-13, used under dual MIT license / Public Domain.

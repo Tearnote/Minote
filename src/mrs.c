@@ -12,6 +12,7 @@
 #include "renderer.h"
 #include "effects.h"
 #include "mapper.h"
+#include "debug.h"
 #include "model.h"
 #include "world.h"
 #include "util.h"
@@ -95,6 +96,10 @@ typedef struct Tetrion {
 
 /// Full state of the mode
 static Tetrion tet = {0};
+
+// Debug switches
+static int debugPauseSpawn = 0; // Boolean, int for compatibility
+static int debugInfLock = 0; // Boolean, int for compatibility
 
 static void effectClear(int row, int power);
 
@@ -362,6 +367,7 @@ static void spawnPiece(void)
 		gameOver();
 
 	// Increase gravity
+	if (tet.player.gravity >= 20 * SubGrid) return;
 	int level = tet.player.gravity / 64 + 1;
 	tet.player.gravity += level;
 }
@@ -665,7 +671,7 @@ static void mrsUpdateClear(void)
  */
 static void mrsUpdateSpawn(void)
 {
-	if (tet.state != TetrionPlaying)
+	if (tet.state != TetrionPlaying || debugPauseSpawn)
 		return; // Do not spawn during countdown or gameover
 	if (tet.player.state == PlayerSpawn || tet.player.state == PlayerNone) {
 		tet.player.spawnDelay += 1;
@@ -683,9 +689,6 @@ static void mrsUpdateGravity(void)
 		return; // Prevent zombie blocks
 	if (tet.player.state != PlayerSpawned && tet.player.state != PlayerActive)
 		return;
-
-	if (inputHeld(InputButton4))
-		tet.player.gravity = SubGrid * 20;
 
 	int remainingGravity = tet.player.gravity;
 	if (tet.player.state == PlayerActive) {
@@ -720,7 +723,8 @@ static void mrsUpdateLocking(void)
 	if (canDrop())
 		return;
 
-	tet.player.lockDelay += 1;
+	if (!debugInfLock)
+		tet.player.lockDelay += 1;
 	// Two sources of locking: lock delay expired, manlock
 	if (tet.player.lockDelay > LockDelay || inputHeld(InputDown))
 		lock();
@@ -1055,13 +1059,54 @@ static void mrsDrawBorder(void)
 	darrayClear(borderTransforms);
 }
 
+void mrsDebug(void)
+{
+	if (nk_begin(nkCtx(), "MRS debug", nk_rect(30, 30, 200, 180),
+		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_NO_SCROLLBAR)) {
+		nk_layout_row_dynamic(nkCtx(), 0, 2);
+		nk_labelf(nkCtx(), NK_TEXT_CENTERED, "Gravity: %d.%02x",
+			tet.player.gravity / SubGrid, tet.player.gravity % SubGrid);
+		nk_slider_int(nkCtx(), 4, &tet.player.gravity, SubGrid * 20, 4);
+		nk_layout_row_dynamic(nkCtx(), 0, 1);
+		nk_checkbox_label(nkCtx(), "Pause spawning", &debugPauseSpawn);
+		nk_checkbox_label(nkCtx(), "Infinite lock delay", &debugInfLock);
+		if (nk_button_label(nkCtx(), "Restart game")) {
+			mrsCleanup();
+			mrsInit();
+		}
+	}
+	nk_end(nkCtx());
+
+	if (nk_begin(nkCtx(), "MRS playfield", nk_rect(30, 250, 200, 440),
+		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_NO_SCROLLBAR)) {
+		nk_layout_row_dynamic(nkCtx(), 16, 10);
+		for (int y = FieldHeightVisible - 1; y >= 0; y -= 1) {
+			for (int x = 0; x < FieldWidth; x += 1) {
+				mino cell = fieldGet(tet.field, (point2i){x, y});
+				color4 cellColor = minoColor(cell);
+				if (nk_button_color(nkCtx(), nk_rgba(
+					cellColor.r * 255.0f,
+					cellColor.g * 255.0f,
+					cellColor.b * 255.0f,
+					cellColor.a * 255.0f))) {
+					if (cell)
+						fieldSet(tet.field, (point2i){x, y}, MinoNone);
+					else
+						fieldSet(tet.field, (point2i){x, y}, MinoGarbage);
+				}
+			}
+		}
+	}
+	nk_end(nkCtx());
+}
+
 void mrsDraw(void)
 {
 	assert(initialized);
 
-	glClearColor(0.010f, 0.276f, 0.685f, 1.0f); //TODO make into layer
+	glClearColor(0.0185f, 0.029f, 0.0944f, 1.0f); //TODO make into layer
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-	worldSetAmbientColor((color3){0.010f, 0.276f, 0.685f});
+	worldSetAmbientColor((color3){0.0185f, 0.029f, 0.0944f});
 	mrsDrawScene();
 	mrsDrawGuide();
 	mrsQueueField();
@@ -1070,4 +1115,7 @@ void mrsDraw(void)
 	mrsQueuePreview();
 	mrsDrawQueuedBlocks();
 	mrsDrawBorder();
+#ifdef MINOTE_DEBUG
+	mrsDebug();
+#endif //MINOTE_DEBUG
 }

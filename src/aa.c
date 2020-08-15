@@ -128,7 +128,7 @@ static void aaResize(size2i size)
 	currentSize.y = size.y;
 
 	size_t msaaSamples = (currentMode == AASimple) ? 4 :
-	                     (currentMode == AAExtreme) ? 16 : 2;
+	                     (currentMode == AAExtreme) ? 8 : 2;
 
 	if (msaaFbColor)
 		textureMSStorage(msaaFbColor, size, GL_RGBA16F, msaaSamples);
@@ -333,6 +333,7 @@ void aaInit(AAMode mode)
 	framebufferUse(rendererFramebuffer());
 
 	initialized = true;
+	logDebug(applog, "Initialized AA mode %d", mode);
 }
 
 void aaCleanup(void)
@@ -392,6 +393,7 @@ void aaCleanup(void)
 	currentSize.y = 0;
 
 	initialized = false;
+	logDebug(applog, "Cleaned up AA mode %d", currentMode);
 }
 
 void aaSwitch(AAMode mode)

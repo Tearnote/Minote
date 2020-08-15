@@ -38,26 +38,17 @@ add_executable(Preshade src/tools/preshade.c)
 # Preprocess shaders
 include_directories(${PROJECT_BINARY_DIR}/glsl)
 set(GLSL_SOURCES
-        src/glsl/flat.vert.glsl
-        src/glsl/flat.frag.glsl
-        src/glsl/phong.vert.glsl
-        src/glsl/phong.frag.glsl
-        src/glsl/smaaSeparate.vert.glsl
-        src/glsl/smaaSeparate.frag.glsl
-        src/glsl/smaaEdge.vert.glsl
-        src/glsl/smaaEdge.frag.glsl
-        src/glsl/smaaBlend.vert.glsl
-        src/glsl/smaaBlend.frag.glsl
-        src/glsl/smaaNeighbor.vert.glsl
-        src/glsl/smaaNeighbor.frag.glsl
-        src/glsl/blit.vert.glsl
-        src/glsl/blit.frag.glsl
-        src/glsl/delinearize.vert.glsl
-        src/glsl/delinearize.frag.glsl
-        src/glsl/threshold.vert.glsl
-        src/glsl/threshold.frag.glsl
-        src/glsl/boxBlur.vert.glsl
-        src/glsl/boxBlur.frag.glsl)
+        src/glsl/flat.vert.glsl src/glsl/flat.frag.glsl
+        src/glsl/phong.vert.glsl src/glsl/phong.frag.glsl
+        src/glsl/smaaSeparate.vert.glsl src/glsl/smaaSeparate.frag.glsl
+        src/glsl/smaaEdge.vert.glsl src/glsl/smaaEdge.frag.glsl
+        src/glsl/smaaBlend.vert.glsl src/glsl/smaaBlend.frag.glsl
+        src/glsl/smaaNeighbor.vert.glsl src/glsl/smaaNeighbor.frag.glsl
+        src/glsl/blit.vert.glsl src/glsl/blit.frag.glsl
+        src/glsl/delinearize.vert.glsl src/glsl/delinearize.frag.glsl
+        src/glsl/threshold.vert.glsl src/glsl/threshold.frag.glsl
+        src/glsl/boxBlur.vert.glsl src/glsl/boxBlur.frag.glsl
+        src/glsl/nuklear.vert.glsl src/glsl/nuklear.frag.glsl)
 
 foreach (GLSL_PATH ${GLSL_SOURCES})
     get_filename_component(GLSL_FILENAME ${GLSL_PATH} NAME_WLE)
@@ -81,7 +72,8 @@ set(C_INTERNALLIBS
         lib/linmath/linmath.h
         lib/pcg/pcg_basic.h lib/pcg/pcg_basic.c
         lib/aheasing/easing.h lib/aheasing/easing.c
-        lib/smaa/AreaTex.h lib/smaa/SearchTex.h)
+        lib/smaa/AreaTex.h lib/smaa/SearchTex.h
+        lib/nuklear/nuklear.h)
 
 set(C_SOURCES
         src/main.h src/main.c
@@ -111,7 +103,7 @@ set(C_SOURCES
         src/model.h src/model.c
         src/world.h src/world.c
         src/ease.h src/ease.c
-        src/effects.h src/effects.c)
+        src/effects.h src/effects.c src/debug.c src/debug.h)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD

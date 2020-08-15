@@ -11,12 +11,6 @@
 #include "util.h"
 #include "log.h"
 
-/// OpenGL vertex buffer object ID
-typedef GLuint VertexBuffer;
-
-/// OpenGL vertex array object ID
-typedef GLuint VertexArray;
-
 /// Flat shading type
 typedef struct ProgramFlat {
 	ProgramBase base;
