@@ -37,7 +37,7 @@ typedef struct Ease {
 	float from; ///< initial value
 	float to; ///< final value
 	nsec start; ///< time of starting the ease
-	nsec length; ///< length of time that the ease will take to finish
+	nsec duration; ///< length of time that the ease will take to finish
 	EaseType type; ///< easing function to use during the ease
 } Ease;
 

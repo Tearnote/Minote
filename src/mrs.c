@@ -147,7 +147,7 @@ static darray* borderTransforms = null;
 static Ease lockFlash = {
 	.from = 1.0f,
 	.to = 0.0f,
-	.length = 8 * MrsUpdateTick,
+	.duration = 8 * MrsUpdateTick,
 	.type = EaseLinear
 };
 
@@ -155,7 +155,7 @@ static Ease lockFlash = {
 static Ease lockDim = {
 	.from = 1.0f,
 	.to = 0.4f,
-	.length = LockDelay * MrsUpdateTick,
+	.duration = LockDelay * MrsUpdateTick,
 	.type = EaseLinear
 };
 
@@ -163,12 +163,15 @@ static Ease lockDim = {
 static Ease comboFade = {
 	.from = 1.1f,
 	.to = 1.1f,
-	.length = 24 * MrsUpdateTick,
+	.duration = 24 * MrsUpdateTick,
 	.type = EaseOutQuadratic
 };
 
 static ParticleParams particlesClear = {
-	.color = {0.0f, 0.0f, 0.0f, 1.0f}
+	.color = {0.0f, 0.0f, 0.0f, 1.0f},
+	.durationMin = secToNsec(0),
+	.durationMax = secToNsec(2),
+	.ease = EaseOutExponential
 };
 
 static void genParticlesClear(int row, int power);
@@ -251,15 +254,15 @@ static void rotate(int direction)
 
 	// Apply crawl offsets to I,S,Z
 	if (tet.player.type == MinoI ||
-	    tet.player.type == MinoS ||
-	    tet.player.type == MinoZ) {
+		tet.player.type == MinoS ||
+		tet.player.type == MinoZ) {
 		if (direction == -1 &&
-		    (prevRotation == Spin90 ||
-		    prevRotation == Spin270))
-		    tet.player.pos.x += 1;
+			(prevRotation == Spin90 ||
+				prevRotation == Spin270))
+			tet.player.pos.x += 1;
 		if (direction == 1 &&
 			(prevRotation == SpinNone ||
-			prevRotation == Spin180)) {
+				prevRotation == Spin180)) {
 			tet.player.pos.x -= 1;
 		}
 	}
@@ -757,11 +760,21 @@ void mrsAdvance(darray* inputs)
 static void genParticlesClear(int row, int power)
 {
 	for (int x = 0; x < FieldWidth; x += 1) {
-		for (int y = 0; y < 8; y += 1) {
-			color4 cellColor = minoColor(fieldGet(tet.field, (point2i){x, y}));
+		for (int ySub = 0; ySub < 8; ySub += 1) {
+			color4 cellColor = minoColor(fieldGet(tet.field, (point2i){x, row}));
 			color4Copy(particlesClear.color, cellColor);
-			particlesGenerate((point3f){x, row + 0.125f * y, 0.0f}, power,
-				&particlesClear);
+			if (power == 4) {
+				particlesClear.durationMin = secToNsec(1);
+				particlesClear.ease = EaseInOutExponential;
+			} else {
+				particlesClear.durationMin = secToNsec(0);
+				particlesClear.ease = EaseOutExponential;
+			}
+			particlesGenerate((point3f){
+					(float)x - (float)FieldWidth / 2,
+					(float)row + 0.0625f + 0.125f * (float)ySub,
+					0.0f},
+				power, &particlesClear);
 		}
 	}
 }
@@ -1061,7 +1074,8 @@ static void mrsDrawBorder(void)
 void mrsDebug(void)
 {
 	if (nk_begin(nkCtx(), "MRS debug", nk_rect(30, 30, 200, 180),
-		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_NO_SCROLLBAR)) {
+		NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_MINIMIZABLE
+			| NK_WINDOW_NO_SCROLLBAR)) {
 		nk_layout_row_dynamic(nkCtx(), 0, 2);
 		nk_labelf(nkCtx(), NK_TEXT_CENTERED, "Gravity: %d.%02x",
 			tet.player.gravity / SubGrid, tet.player.gravity % SubGrid);
@@ -1077,7 +1091,8 @@ void mrsDebug(void)
 	nk_end(nkCtx());
 
 	if (nk_begin(nkCtx(), "MRS playfield", nk_rect(30, 250, 200, 440),
-		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_NO_SCROLLBAR)) {
+		NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_MINIMIZABLE
+			| NK_WINDOW_NO_SCROLLBAR)) {
 		nk_layout_row_dynamic(nkCtx(), 16, 10);
 		for (int y = FieldHeightVisible - 1; y >= 0; y -= 1) {
 			for (int x = 0; x < FieldWidth; x += 1) {

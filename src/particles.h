@@ -8,10 +8,15 @@
 
 #include <stddef.h>
 #include "basetypes.h"
+#include "time.h"
+#include "ease.h"
 
 /// Details of a particle effect
 typedef struct ParticleParams {
-	color4 color;
+	color4 color; ///< Tint of every particle
+	nsec durationMin; ///< Smallest possible duration
+	nsec durationMax; ///< Largest possible duration
+	EaseType ease; ///< Overall easing profile of the particles' path
 } ParticleParams;
 
 /**
@@ -27,12 +32,12 @@ void particlesInit(void);
 void particlesCleanup(void);
 
 /**
- * Update active particles to advance their state and remove expired ones.
+ * Update active particles to remove expired ones.
  */
 void particlesUpdate(void);
 
 /**
- * Draw all active particles to the screen.
+ * Draw all active particles to the screen at their current position.
  */
 void particlesDraw(void);
 

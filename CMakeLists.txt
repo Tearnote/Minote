@@ -91,10 +91,6 @@ set(C_SOURCES
         src/play.h src/play.c
         src/mino.h src/mino.c
         src/mapper.h src/mapper.c
-        src/purers.h src/purers.c
-        src/purerstables.h src/purerstables.c
-        src/halfrs.h src/halfrs.c
-        src/halfrstables.h src/halfrstables.c
         src/mrs.h src/mrs.c
         src/mrstables.h src/mrstables.c
         src/aa.h src/aa.c

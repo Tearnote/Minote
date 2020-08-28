@@ -31,11 +31,11 @@ float easeApply(Ease *e)
 	nsec time = getTime();
 	if (e->start >= time)
 		return e->from;
-	if (e->start + e->length <= time)
+	if (e->start + e->duration <= time)
 		return e->to;
 
 	nsec elapsed = time - e->start;
-	float progress = (double)elapsed / (double) e->length;
+	float progress = (double)elapsed / (double) e->duration;
 	progress = easeFunctions[e->type](progress);
 
 	float span = e->to - e->from;
