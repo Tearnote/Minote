@@ -10,7 +10,7 @@
 #include <time.h>
 #include "halfrstables.h"
 #include "renderer.h"
-#include "effects.h"
+#include "particles.h"
 #include "mapper.h"
 #include "model.h"
 #include "world.h"

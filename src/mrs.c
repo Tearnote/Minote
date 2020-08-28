@@ -10,7 +10,7 @@
 #include <time.h>
 #include "mrstables.h"
 #include "renderer.h"
-#include "effects.h"
+#include "particles.h"
 #include "mapper.h"
 #include "debug.h"
 #include "model.h"
@@ -90,8 +90,6 @@ typedef struct Tetrion {
 	bool linesCleared[FieldHeight]; ///< Storage for line clears pending a thump
 	Player player;
 	Rng* rng;
-
-	int combo; ///< Holdover combo from previous piece
 } Tetrion;
 
 /// Full state of the mode
@@ -101,7 +99,23 @@ static Tetrion tet = {0};
 static int debugPauseSpawn = 0; // Boolean, int for compatibility
 static int debugInfLock = 0; // Boolean, int for compatibility
 
-static void effectClear(int row, int power);
+static bool initialized = false;
+
+/**
+ * Test whether an input has been pressed just now.
+ * @param type ::InputType to test
+ * @return true if just pressed, false otherwise
+ */
+#define inputPressed(type) \
+    (tet.player.inputMap[(type)] && !tet.player.inputMapPrev[(type)])
+
+/**
+ * Test whether an input is pressed during this frame.
+ * @param type ::InputType to test
+ * @return true if pressed, false if not pressed
+ */
+#define inputHeld(type) \
+    (tet.player.inputMap[(type)])
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -145,35 +159,19 @@ static Ease lockDim = {
 	.type = EaseLinear
 };
 
-/// Convert combo to highlight multiplier
-#define comboHighlight(combo) \
-    (1.1f + 0.025f * (combo))
-
 /// Animation of the scene when combo counter changes
 static Ease comboFade = {
-	.from = comboHighlight(1),
-	.to = comboHighlight(1),
+	.from = 1.1f,
+	.to = 1.1f,
 	.length = 24 * MrsUpdateTick,
 	.type = EaseOutQuadratic
 };
 
-static bool initialized = false;
+static ParticleParams particlesClear = {
+	.color = {0.0f, 0.0f, 0.0f, 1.0f}
+};
 
-/**
- * Test whether an input has been pressed just now.
- * @param type ::InputType to test
- * @return true if just pressed, false otherwise
- */
-#define inputPressed(type) \
-    (tet.player.inputMap[(type)] && !tet.player.inputMapPrev[(type)])
-
-/**
- * Test whether an input is pressed during this frame.
- * @param type ::InputType to test
- * @return true if pressed, false if not pressed
- */
-#define inputHeld(type) \
-    (tet.player.inputMap[(type)])
+static void genParticlesClear(int row, int power);
 
 /**
  * Try to kick the player piece into a legal position.
@@ -387,7 +385,7 @@ static int checkClears(void)
 	}
 	for (int y = 0; y < FieldHeight; y += 1) {
 		if (!tet.linesCleared[y]) continue;
-		effectClear(y, count);
+		genParticlesClear(y, count);
 		fieldClearRow(tet.field, y);
 	}
 	return count;
@@ -455,7 +453,6 @@ void mrsInit(void)
 
 	// Logic init
 	structClear(tet);
-	tet.combo = 1;
 	tet.frame = -1;
 	tet.ready = 3 * 50;
 	tet.field = fieldCreate((size2i){FieldWidth, FieldHeight});
@@ -648,11 +645,6 @@ static void mrsUpdateClear(void)
 		if (clearedCount) {
 			tet.player.state = PlayerClear;
 			tet.player.clearDelay = 0;
-		} else { // Piece locked without a clear
-			tet.combo = 1;
-			comboFade.from = easeApply(&comboFade);
-			comboFade.to = comboHighlight(tet.combo);
-			easeRestart(&comboFade);
 		}
 	}
 
@@ -762,9 +754,16 @@ void mrsAdvance(darray* inputs)
  * @param row Height of the cleared row
  * @param power 
  */
-static void effectClear(int row, int power)
+static void genParticlesClear(int row, int power)
 {
-	;
+	for (int x = 0; x < FieldWidth; x += 1) {
+		for (int y = 0; y < 8; y += 1) {
+			color4 cellColor = minoColor(fieldGet(tet.field, (point2i){x, y}));
+			color4Copy(particlesClear.color, cellColor);
+			particlesGenerate((point3f){x, row + 0.125f * y, 0.0f}, power,
+				&particlesClear);
+		}
+	}
 }
 
 /**

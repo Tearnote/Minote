@@ -65,6 +65,18 @@ void darrayRemove(darray* d, size_t index)
 	d->count -= 1;
 }
 
+void darrayRemoveSwap(darray* d, size_t index)
+{
+	assert(d);
+	assert(index < d->count);
+	if (index < d->count - 1) {
+		memcpy(d->data + index * d->elementSize,
+			d->data + (d->count - 1) * d->elementSize,
+			d->elementSize);
+	}
+	d->count -= 1;
+}
+
 void* darrayData(darray* d)
 {
 	assert(d);

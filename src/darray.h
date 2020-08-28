@@ -49,6 +49,15 @@ void* darrayProduce(darray* d);
 void darrayRemove(darray* d, size_t index);
 
 /**
+ * Remove an element at a given index, and put the last element in its place.
+ * This removal is an O(1) operation, at the cost of changing the ordering
+ * of remaining elements.
+ * @param d The ::darray object
+ * @param indexIndex of the element to remove
+ */
+void darrayRemoveSwap(darray* d, size_t index);
+
+/**
  * Provide the raw data pointer of the ::darray. It can be treated as an array
  * of darraySize() elements.
  * @param d The ::darray object

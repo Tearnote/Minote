@@ -6,7 +6,7 @@
 #include "game.h"
 
 #include "renderer.h"
-#include "effects.h"
+#include "particles.h"
 #include "window.h"
 #include "mapper.h"
 #include "bloom.h"
@@ -29,12 +29,12 @@ static void gameInit(void)
 	debugInit();
 #endif //MINOTE_DEBUG
 	playInit();
-	effectsInit();
+	particlesInit();
 }
 
 static void gameCleanup(void)
 {
-	effectsCleanup();
+	particlesCleanup();
 	playCleanup();
 #ifdef MINOTE_DEBUG
 	debugCleanup();
@@ -90,7 +90,7 @@ static void gameUpdate(void)
 #endif //MINOTE_DEBUG
 	playUpdate();
 	worldUpdate();
-	effectsUpdate();
+	particlesUpdate();
 }
 
 static void gameDraw(void)
@@ -98,7 +98,7 @@ static void gameDraw(void)
 	rendererFrameBegin();
 	aaBegin();
 	playDraw();
-	effectsDraw();
+	particlesDraw();
 	aaEnd();
 	bloomApply();
 #ifdef MINOTE_DEBUG

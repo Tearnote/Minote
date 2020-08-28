@@ -103,7 +103,8 @@ set(C_SOURCES
         src/model.h src/model.c
         src/world.h src/world.c
         src/ease.h src/ease.c
-        src/effects.h src/effects.c src/debug.c src/debug.h)
+        src/particles.h src/particles.c
+        src/debug.h src/debug.c)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD
