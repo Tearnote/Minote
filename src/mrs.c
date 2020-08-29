@@ -172,10 +172,22 @@ static ParticleParams particlesClear = {
 	.durationMax = secToNsec(2),
 	.radius = 64.0f,
 	.power = 5.0f,
+	.directionVert = 0,
+	.ease = EaseOutExponential
+};
+
+static ParticleParams particlesThump = {
+	.color = {0.5f, 0.5f, 0.5f, 1.0f},
+	.durationMin = secToNsec(1)/2,
+	.durationMax = secToNsec(1),
+	.radius = 8.0f,
+	.power = 2.0f,
+	.directionVert = 1,
 	.ease = EaseOutExponential
 };
 
 static void genParticlesClear(int row, int power);
+static void genParticlesThump(int row);
 
 /**
  * Try to kick the player piece into a legal position.
@@ -405,6 +417,7 @@ static void thump(void)
 			continue; // Drop only above cleared lines
 		fieldDropRow(tet.field, y);
 		tet.linesCleared[y] = false;
+		genParticlesThump(y);
 	}
 }
 
@@ -756,13 +769,14 @@ void mrsAdvance(darray* inputs)
  * Create some pretty particle effects on line clear. Call this before the row
  * is actually cleared.
  * @param row Height of the cleared row
- * @param power 
+ * @param power Number of lines cleared, which affects the strength
  */
 static void genParticlesClear(int row, int power)
 {
 	for (int x = 0; x < FieldWidth; x += 1) {
 		for (int ySub = 0; ySub < 8; ySub += 1) {
-			color4 cellColor = minoColor(fieldGet(tet.field, (point2i){x, row}));
+			color4 cellColor = minoColor(
+				fieldGet(tet.field, (point2i){x, row}));
 			color4Copy(particlesClear.color, cellColor);
 			particlesClear.color.r *= 2.0f;
 			particlesClear.color.g *= 2.0f;
@@ -784,6 +798,23 @@ static void genParticlesClear(int row, int power)
 	}
 }
 
+/**
+ * Create a dust cloud effect on blocks that have fallen on top of other blocks.
+ * Use after the relevant fieldDropRow() was called.
+ * @param row Position of the row that was cleared
+ */
+static void genParticlesThump(int row)
+{
+	for (int x = 0; x < FieldWidth; x += 1) {
+		if (fieldGet(tet.field, (point2i){x, row})
+			&& fieldGet(tet.field, (point2i){x, row - 1}))
+		particlesGenerate((point3f){
+			(float)x - (float)FieldWidth / 2,
+			(float)row,
+			0.0f
+		}, 8, &particlesThump);
+	}
+}
 /**
  * Draw the scene model, which visually wraps the tetrion field.
  */

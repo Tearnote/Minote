@@ -165,9 +165,13 @@ void particlesGenerate(point3f position, size_t count, ParticleParams* params)
 			* (double)(params->durationMax - params->durationMin);
 		newParticle->ease = params->ease;
 		newParticle->radius = rngFloat(rng);
-		newParticle->radius = ExponentialEaseInOut(newParticle->radius);
-		newParticle->radius *= 2.0f;
-		newParticle->radius -= 1.0f;
+		newParticle->radius = QuarticEaseOut(newParticle->radius);
+		newParticle->radius /= 4.0f;
+		newParticle->radius *= 3.0f;
+		newParticle->radius += 0.25f;
+		if (params->directionVert == -1
+			|| (params->directionVert == 0 && rngInt(rng, 2)))
+			newParticle->radius *= -1.0f;
 		newParticle->radius *= params->radius;
 		newParticle->spins = rngFloat(rng);
 		newParticle->spins = QuadraticEaseOut(newParticle->spins);

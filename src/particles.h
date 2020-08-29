@@ -18,6 +18,7 @@ typedef struct ParticleParams {
 	nsec durationMax; ///< Largest possible duration
 	float radius; ///< Maximum size of the particles' spiral path
 	float power; ///< Relative maximum speed of the particles
+	int directionVert; ///< 1 for up, -1 for down, 0 for random
 	EaseType ease; ///< Overall easing profile of the particles' path
 } ParticleParams;
 
