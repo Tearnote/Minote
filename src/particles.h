@@ -16,6 +16,8 @@ typedef struct ParticleParams {
 	color4 color; ///< Tint of every particle
 	nsec durationMin; ///< Smallest possible duration
 	nsec durationMax; ///< Largest possible duration
+	float radius; ///< Maximum size of the particles' spiral path
+	float power; ///< Relative maximum speed of the particles
 	EaseType ease; ///< Overall easing profile of the particles' path
 } ParticleParams;
 

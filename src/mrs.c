@@ -26,9 +26,8 @@
 #define SpawnY 18 ///< Y position of player piece spawn
 #define SubGrid 256 ///< Number of subpixels per cell, used for gravity
 
-#define StartingTokens 12 ///< Number of tokens that each piece starts with
+#define StartingTokens 9 ///< Number of tokens that each piece starts with
 
-#define SoftDrop 256 ///< Speed of gravity while holding down, in subgrids
 #define AutoshiftCharge 16 ///< Frames direction has to be held before autoshift
 #define AutoshiftRepeat 1 ///< Frames between autoshifts
 #define LockDelay 30 ///< Frames a piece can spend on the stack before locking
@@ -171,6 +170,8 @@ static ParticleParams particlesClear = {
 	.color = {0.0f, 0.0f, 0.0f, 1.0f},
 	.durationMin = secToNsec(0),
 	.durationMax = secToNsec(2),
+	.radius = 64.0f,
+	.power = 5.0f,
 	.ease = EaseOutExponential
 };
 
@@ -763,6 +764,9 @@ static void genParticlesClear(int row, int power)
 		for (int ySub = 0; ySub < 8; ySub += 1) {
 			color4 cellColor = minoColor(fieldGet(tet.field, (point2i){x, row}));
 			color4Copy(particlesClear.color, cellColor);
+			particlesClear.color.r *= 2.0f;
+			particlesClear.color.g *= 2.0f;
+			particlesClear.color.b *= 2.0f;
 			if (power == 4) {
 				particlesClear.durationMin = secToNsec(1);
 				particlesClear.ease = EaseInOutExponential;
@@ -770,6 +774,7 @@ static void genParticlesClear(int row, int power)
 				particlesClear.durationMin = secToNsec(0);
 				particlesClear.ease = EaseOutExponential;
 			}
+			particlesClear.power = 5.0f * power;
 			particlesGenerate((point3f){
 					(float)x - (float)FieldWidth / 2,
 					(float)row + 0.0625f + 0.125f * (float)ySub,
