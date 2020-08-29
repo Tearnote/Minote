@@ -127,6 +127,7 @@ void particlesDraw(void)
 			float fadeout = progress - ShimmerFade;
 			fadeout *= 1.0f / (1.0f - ShimmerFade);
 			fadeout = 1.0f - fadeout;
+			fadeout = CubicEaseIn(fadeout);
 			tint->a *= fadeout;
 		}
 

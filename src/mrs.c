@@ -26,7 +26,7 @@
 #define SpawnY 18 ///< Y position of player piece spawn
 #define SubGrid 256 ///< Number of subpixels per cell, used for gravity
 
-#define StartingTokens 9 ///< Number of tokens that each piece starts with
+#define StartingTokens 8 ///< Number of tokens that each piece starts with
 
 #define AutoshiftCharge 16 ///< Frames direction has to be held before autoshift
 #define AutoshiftRepeat 1 ///< Frames between autoshifts
@@ -141,6 +141,7 @@ static darray* borderTransforms = null;
 #define GhostDim 0.2f ///< Multiplier of ghost block alpha
 #define BorderDim 0.5f ///< Multiplier of border alpha
 #define LockFlashBrightness 1.2f ///< Color value of lock flash highlight
+#define ParticlesClearBoost 1.4f ///< Intensity multiplier for line clear effect
 
 /// Player piece animation after the piece locks
 static Ease lockFlash = {
@@ -176,10 +177,20 @@ static ParticleParams particlesClear = {
 	.ease = EaseOutExponential
 };
 
+static ParticleParams particlesClear4 = {
+	.color = {0.0f, 0.0f, 0.0f, 1.0f},
+	.durationMin = secToNsec(0.6),
+	.durationMax = secToNsec(1.8),
+	.radius = 64.0f,
+	.power = 20.0f,
+	.directionVert = 0,
+	.ease = EaseInOutExponential
+};
+
 static ParticleParams particlesThump = {
-	.color = {0.5f, 0.5f, 0.5f, 1.0f},
-	.durationMin = secToNsec(1)/2,
-	.durationMax = secToNsec(1),
+	.color = {0.6f, 0.6f, 0.6f, 1.0f},
+	.durationMin = secToNsec(0.4),
+	.durationMax = secToNsec(0.8),
 	.radius = 8.0f,
 	.power = 2.0f,
 	.directionVert = 1,
@@ -188,6 +199,7 @@ static ParticleParams particlesThump = {
 
 static void genParticlesClear(int row, int power);
 static void genParticlesThump(int row);
+static void genParticlesDrop(void);
 
 /**
  * Try to kick the player piece into a legal position.
@@ -451,6 +463,8 @@ static void drop(void)
 		tet.player.lockDelay = 0;
 		tet.player.yLowest = tet.player.pos.y;
 	}
+
+	genParticlesDrop();
 }
 
 /**
@@ -775,25 +789,20 @@ static void genParticlesClear(int row, int power)
 {
 	for (int x = 0; x < FieldWidth; x += 1) {
 		for (int ySub = 0; ySub < 8; ySub += 1) {
+			ParticleParams* params = (power != 4) ? &particlesClear
+			                                      : &particlesClear4;
 			color4 cellColor = minoColor(
 				fieldGet(tet.field, (point2i){x, row}));
-			color4Copy(particlesClear.color, cellColor);
-			particlesClear.color.r *= 2.0f;
-			particlesClear.color.g *= 2.0f;
-			particlesClear.color.b *= 2.0f;
-			if (power == 4) {
-				particlesClear.durationMin = secToNsec(1);
-				particlesClear.ease = EaseInOutExponential;
-			} else {
-				particlesClear.durationMin = secToNsec(0);
-				particlesClear.ease = EaseOutExponential;
-			}
-			particlesClear.power = 5.0f * power;
+			color4Copy(params->color, cellColor);
+			params->color.r *= ParticlesClearBoost;
+			params->color.g *= ParticlesClearBoost;
+			params->color.b *= ParticlesClearBoost;
+			params->power = 5.0f * power;
 			particlesGenerate((point3f){
 					(float)x - (float)FieldWidth / 2,
 					(float)row + 0.0625f + 0.125f * (float)ySub,
 					0.0f},
-				power, &particlesClear);
+				power, params);
 		}
 	}
 }
@@ -808,13 +817,33 @@ static void genParticlesThump(int row)
 	for (int x = 0; x < FieldWidth; x += 1) {
 		if (fieldGet(tet.field, (point2i){x, row})
 			&& fieldGet(tet.field, (point2i){x, row - 1}))
-		particlesGenerate((point3f){
-			(float)x - (float)FieldWidth / 2,
-			(float)row,
-			0.0f
-		}, 8, &particlesThump);
+			particlesGenerate((point3f){
+				(float)x - (float)FieldWidth / 2,
+				(float)row,
+				0.0f
+			}, 8, &particlesThump);
 	}
 }
+
+/**
+ * Create a dust cloud effect under the player piece. Use after drop().
+ */
+static void genParticlesDrop(void)
+{
+	piece* playerPiece = mrsGetPiece(tet.player.type, tet.player.rotation);
+	for (size_t i = 0; i < MinosPerPiece; i += 1) {
+		int x = tet.player.pos.x + (*playerPiece)[i].x;
+		int y = tet.player.pos.y + (*playerPiece)[i].y;
+		if (fieldGet(tet.field, (point2i){x, y - 1})) {
+			particlesGenerate((point3f){
+				(float)x - (float)FieldWidth / 2,
+				(float)y,
+				0.0f
+			}, 8, &particlesThump);
+		}
+	}
+}
+
 /**
  * Draw the scene model, which visually wraps the tetrion field.
  */
