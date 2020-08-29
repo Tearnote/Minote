@@ -23,7 +23,7 @@ static void gameInit(void)
 	rendererInit();
 	modelInit();
 	bloomInit();
-	aaInit(AAComplex);
+	aaInit(AAExtreme);
 	worldInit();
 #ifdef MINOTE_DEBUG
 	debugInit();
@@ -49,7 +49,7 @@ static void gameCleanup(void)
 
 static void gameDebug(void)
 {
-	static AAMode aa = AAComplex;
+	static AAMode aa = AAExtreme;
 	if (nk_begin(nkCtx(), "Settings", nk_rect(1070, 30, 180, 220),
 		NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_NO_SCROLLBAR)) {
 		nk_layout_row_dynamic(nkCtx(), 20, 1);
