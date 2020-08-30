@@ -9,13 +9,12 @@
 #include <stdint.h>
 #include <time.h>
 #include "mrstables.h"
-#include "renderer.h"
 #include "particles.h"
+#include "renderer.h"
 #include "mapper.h"
 #include "debug.h"
 #include "model.h"
 #include "world.h"
-#include "tween.h"
 #include "util.h"
 #include "log.h"
 
@@ -26,7 +25,7 @@
 #define SpawnY 18 ///< Y position of player piece spawn
 #define SubGrid 256 ///< Number of subpixels per cell, used for gravity
 
-#define StartingTokens 8 ///< Number of tokens that each piece starts with
+#define StartingTokens 6 ///< Number of tokens that each piece starts with
 
 #define AutoshiftCharge 16 ///< Frames direction has to be held before autoshift
 #define AutoshiftRepeat 1 ///< Frames between autoshifts
@@ -165,6 +164,13 @@ static Tween comboFade = {
 	.to = 1.1f,
 	.duration = 24 * MrsUpdateTick,
 	.type = EaseOutQuadratic
+};
+
+static Tween clearFall = {
+	.from = 0.0f,
+	.to = 1.0f,
+	.duration = ClearDelay * MrsUpdateTick,
+	.type = EaseInExponential
 };
 
 static ParticleParams particlesClear = {
@@ -440,11 +446,14 @@ static int checkClears(void)
 		count += 1;
 		tet.linesCleared[y] = true;
 	}
+
 	for (int y = 0; y < FieldHeight; y += 1) {
 		if (!tet.linesCleared[y]) continue;
 		genParticlesClear(y, count);
 		fieldClearRow(tet.field, y);
 	}
+
+	if (count) tweenRestart(&clearFall);
 	return count;
 }
 
@@ -929,9 +938,19 @@ static void mrsQueueField(void)
 	// A bit out of place here, but no need to get this more than once
 	piece* playerPiece = mrsGetPiece(tet.player.type, tet.player.rotation);
 
+	int linesCleared = 0;
+	float fallProgress = tweenApply(&clearFall);
+
 	for (size_t i = 0; i < FieldWidth * FieldHeight; i += 1) {
 		int x = i % FieldWidth;
 		int y = i / FieldWidth;
+
+		if (tet.linesCleared[y]) {
+			linesCleared += 1;
+			i += FieldWidth - 1;
+			continue;
+		}
+
 		mino type = fieldGet(tet.field, (point2i){x, y});
 		if (type == MinoNone) continue;
 
@@ -973,7 +992,10 @@ static void mrsQueueField(void)
 			color4Copy(*highlight, Color4Clear);
 		}
 
-		mat4x4_translate(*transform, x - (signed)(FieldWidth / 2), y, 0.0f);
+		float fx = (float)x;
+		float fy = (float)y - (float)linesCleared * fallProgress;
+
+		mat4x4_translate(*transform, fx - (signed)(FieldWidth / 2), fy, 0.0f);
 	}
 }
 
@@ -1110,7 +1132,7 @@ static void mrsDrawQueuedBlocks(void)
 	darrayClear(blockTransformsAlpha);
 }
 
-static void mrsBorderQueue(point3f pos, size3f size, color4 color)
+static void mrsQueueBorder(point3f pos, size3f size, color4 color)
 {
 	color4* tint = darrayProduce(borderTints);
 	mat4x4* transform = darrayProduce(borderTransforms);
@@ -1125,65 +1147,74 @@ static void mrsBorderQueue(point3f pos, size3f size, color4 color)
  */
 static void mrsDrawBorder(void)
 {
+	int linesCleared = 0;
+	float fallProgress = tweenApply(&clearFall);
+
 	for (size_t i = 0; i < FieldWidth * FieldHeight; i += 1) {
 		int x = i % FieldWidth;
 		int y = i / FieldWidth;
 
+		if (tet.linesCleared[y]) {
+			linesCleared += 1;
+			i += FieldWidth - 1;
+			continue;
+		}
+
 		if (!fieldGet(tet.field, (point2i){x, y})) continue;
 
 		// Coords transformed to world space
-		float tx = x - (signed)(FieldWidth / 2);
-		float ty = y;
+		float tx = (float)x - (signed)(FieldWidth / 2);
+		float ty = (float)y - (float)linesCleared * fallProgress;
 		float alpha = BorderDim;
 		if (y >= FieldHeightVisible)
 			alpha *= ExtraRowDim;
 
 		// Left
 		if (!fieldGet(tet.field, (point2i){x - 1, y}))
-			mrsBorderQueue((point3f){tx, ty + 0.125f, 0.0f},
+			mrsQueueBorder((point3f){tx, ty + 0.125f, 0.0f},
 				(size3f){0.125f, 0.75f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Right
 		if (!fieldGet(tet.field, (point2i){x + 1, y}))
-			mrsBorderQueue((point3f){tx + 0.875f, ty + 0.125f, 0.0f},
+			mrsQueueBorder((point3f){tx + 0.875f, ty + 0.125f, 0.0f},
 				(size3f){0.125f, 0.75f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Down
 		if (!fieldGet(tet.field, (point2i){x, y - 1}))
-			mrsBorderQueue((point3f){tx + 0.125f, ty, 0.0f},
+			mrsQueueBorder((point3f){tx + 0.125f, ty, 0.0f},
 				(size3f){0.75f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Up
 		if (!fieldGet(tet.field, (point2i){x, y + 1}))
-			mrsBorderQueue((point3f){tx + 0.125f, ty + 0.875f, 0.0f},
+			mrsQueueBorder((point3f){tx + 0.125f, ty + 0.875f, 0.0f},
 				(size3f){0.75f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Down Left
 		if (!fieldGet(tet.field, (point2i){x - 1, y - 1})
 			|| !fieldGet(tet.field, (point2i){x - 1, y})
 			|| !fieldGet(tet.field, (point2i){x, y - 1}))
-			mrsBorderQueue((point3f){tx, ty, 0.0f},
+			mrsQueueBorder((point3f){tx, ty, 0.0f},
 				(size3f){0.125f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Down Right
 		if (!fieldGet(tet.field, (point2i){x + 1, y - 1})
 			|| !fieldGet(tet.field, (point2i){x + 1, y})
 			|| !fieldGet(tet.field, (point2i){x, y - 1}))
-			mrsBorderQueue((point3f){tx + 0.875f, ty, 0.0f},
+			mrsQueueBorder((point3f){tx + 0.875f, ty, 0.0f},
 				(size3f){0.125f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Up Left
 		if (!fieldGet(tet.field, (point2i){x - 1, y + 1})
 			|| !fieldGet(tet.field, (point2i){x - 1, y})
 			|| !fieldGet(tet.field, (point2i){x, y + 1}))
-			mrsBorderQueue((point3f){tx, ty + 0.875f, 0.0f},
+			mrsQueueBorder((point3f){tx, ty + 0.875f, 0.0f},
 				(size3f){0.125f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Up Right
 		if (!fieldGet(tet.field, (point2i){x + 1, y + 1})
 			|| !fieldGet(tet.field, (point2i){x + 1, y})
 			|| !fieldGet(tet.field, (point2i){x, y + 1}))
-			mrsBorderQueue((point3f){tx + 0.875f, ty + 0.875f, 0.0f},
+			mrsQueueBorder((point3f){tx + 0.875f, ty + 0.875f, 0.0f},
 				(size3f){0.125f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 	}
