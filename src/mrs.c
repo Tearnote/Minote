@@ -168,38 +168,64 @@ static Ease comboFade = {
 };
 
 static ParticleParams particlesClear = {
-	.color = {0.0f, 0.0f, 0.0f, 1.0f},
+	.color = {0.0f, 0.0f, 0.0f, 1.0f}, // runtime
 	.durationMin = secToNsec(0),
 	.durationMax = secToNsec(2),
 	.radius = 64.0f,
-	.power = 5.0f,
+	.power = 5.0f, // runtime
 	.directionVert = 0,
+	.directionHorz = 0,
 	.ease = EaseOutExponential
 };
 
 static ParticleParams particlesClear4 = {
-	.color = {0.0f, 0.0f, 0.0f, 1.0f},
+	.color = {0.0f, 0.0f, 0.0f, 1.0f}, // runtime
 	.durationMin = secToNsec(0.6),
 	.durationMax = secToNsec(1.8),
 	.radius = 64.0f,
 	.power = 20.0f,
 	.directionVert = 0,
+	.directionHorz = 0,
 	.ease = EaseInOutExponential
 };
 
 static ParticleParams particlesThump = {
-	.color = {0.6f, 0.6f, 0.6f, 1.0f},
+	.color = {0.6f, 0.6f, 0.6f, 0.8f},
 	.durationMin = secToNsec(0.4),
 	.durationMax = secToNsec(0.8),
 	.radius = 8.0f,
 	.power = 2.0f,
 	.directionVert = 1,
+	.directionHorz = 0,
+	.ease = EaseOutExponential
+};
+
+static ParticleParams particlesSlide = {
+	.color = {0.0f, 0.4f, 2.0f, 1.0f},
+	.durationMin = secToNsec(0.25),
+	.durationMax = secToNsec(0.5),
+	.radius = 8.0f,
+	.power = 2.0f,
+	.directionVert = 1,
+	.directionHorz = 0, // runtime
+	.ease = EaseOutExponential
+};
+
+static ParticleParams particlesSlideFast = {
+	.color = {2.0f, 0.4f, 0.0f, 1.0f},
+	.durationMin = secToNsec(0.25),
+	.durationMax = secToNsec(0.5),
+	.radius = 8.0f,
+	.power = 2.0f,
+	.directionVert = 1,
+	.directionHorz = 0, // runtime
 	.ease = EaseOutExponential
 };
 
 static void genParticlesClear(int row, int power);
 static void genParticlesThump(int row);
 static void genParticlesDrop(void);
+static void genParticlesSlide(int direction, bool fast);
 
 /**
  * Try to kick the player piece into a legal position.
@@ -310,6 +336,9 @@ static void shift(int direction)
 	piece* playerPiece = mrsGetPiece(tet.player.type, tet.player.rotation);
 	if (pieceOverlapsField(playerPiece, tet.player.pos, tet.field)) {
 		tet.player.pos.x -= direction;
+	} else {
+		genParticlesSlide(direction,
+			(tet.player.autoshiftCharge == AutoshiftCharge));
 	}
 }
 
@@ -464,7 +493,12 @@ static void drop(void)
 		tet.player.yLowest = tet.player.pos.y;
 	}
 
-	genParticlesDrop();
+	if (inputHeld(InputLeft))
+		genParticlesSlide(-1, (tet.player.autoshiftCharge == AutoshiftCharge));
+	else if (inputHeld(InputRight))
+		genParticlesSlide(1, (tet.player.autoshiftCharge == AutoshiftCharge));
+	else
+		genParticlesDrop();
 }
 
 /**
@@ -840,6 +874,31 @@ static void genParticlesDrop(void)
 				(float)y,
 				0.0f
 			}, 8, &particlesThump);
+		}
+	}
+}
+
+/**
+ * Create a friction effect under the player piece as it moves sideways.
+ * Use after shift().
+ * @param direction Most recently performed shift. -1 for left, 1 for right
+ * @param fast true if DAS shift, false if manual
+ */
+static void genParticlesSlide(int direction, bool fast)
+{
+	ParticleParams* params = fast? &particlesSlideFast : &particlesSlide;
+	params->directionHorz = direction;
+
+	piece* playerPiece = mrsGetPiece(tet.player.type, tet.player.rotation);
+	for (size_t i = 0; i < MinosPerPiece; i += 1) {
+		int x = tet.player.pos.x + (*playerPiece)[i].x;
+		int y = tet.player.pos.y + (*playerPiece)[i].y;
+		if (fieldGet(tet.field, (point2i){x, y - 1})) {
+			particlesGenerate((point3f){
+				(float)x - (float)FieldWidth / 2,
+				(float)y,
+				0.0f
+			}, 8, params);
 		}
 	}
 }

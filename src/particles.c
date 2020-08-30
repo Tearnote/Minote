@@ -160,7 +160,10 @@ void particlesGenerate(point3f position, size_t count, ParticleParams* params)
 		Particle* newParticle = darrayProduce(particles);
 		structCopy(newParticle->origin, position);
 		color4Copy(newParticle->color, params->color);
-		newParticle->direction = (int)rngInt(rng, 2) * 2 - 1;
+		if (params->directionHorz != 0)
+			newParticle->direction = params->directionHorz;
+		else
+			newParticle->direction = (int)rngInt(rng, 2) * 2 - 1;
 		newParticle->start = getTime();
 		newParticle->duration = params->durationMin + rngFloat(rng)
 			* (double)(params->durationMax - params->durationMin);
