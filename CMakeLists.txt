@@ -98,7 +98,7 @@ set(C_SOURCES
         src/bloom.h src/bloom.c
         src/model.h src/model.c
         src/world.h src/world.c
-        src/ease.h src/ease.c
+        src/tween.h src/tween.c
         src/particles.h src/particles.c
         src/debug.h src/debug.c)
 

@@ -1,9 +1,9 @@
 /**
- * Implementation of ease.h
+ * Implementation of tween.h
  * @file
  */
 
-#include "ease.h"
+#include "tween.h"
 
 #include <assert.h>
 #include "aheasing/easing.h"
@@ -25,25 +25,25 @@ static AHEasingFunction easeFunctions[EaseSize] = {
 	BounceEaseIn, BounceEaseOut, BounceEaseInOut
 };
 
-float easeApply(Ease *e)
+float tweenApply(Tween* t)
 {
-	assert(e);
+	assert(t);
 	nsec time = getTime();
-	if (e->start >= time)
-		return e->from;
-	if (e->start + e->duration <= time)
-		return e->to;
+	if (t->start >= time)
+		return t->from;
+	if (t->start + t->duration <= time)
+		return t->to;
 
-	nsec elapsed = time - e->start;
-	float progress = (double)elapsed / (double) e->duration;
-	progress = easeFunctions[e->type](progress);
+	nsec elapsed = time - t->start;
+	float progress = (double)elapsed / (double) t->duration;
+	progress = easeFunctions[t->type](progress);
 
-	float span = e->to - e->from;
-	return e->from + span * progress;
+	float span = t->to - t->from;
+	return t->from + span * progress;
 }
 
-void easeRestart(Ease *e)
+void tweenRestart(Tween* t)
 {
-	assert(e);
-	e->start = getTime();
+	assert(t);
+	t->start = getTime();
 }

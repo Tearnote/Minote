@@ -9,7 +9,7 @@
 #include <stddef.h>
 #include "basetypes.h"
 #include "time.h"
-#include "ease.h"
+#include "tween.h"
 
 /// Details of a particle effect
 typedef struct ParticleParams {

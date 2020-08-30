@@ -3,8 +3,8 @@
  * @file
  */
 
-#ifndef MINOTE_EASE_H
-#define MINOTE_EASE_H
+#ifndef MINOTE_TWEEN_H
+#define MINOTE_TWEEN_H
 
 #include "time.h"
 
@@ -29,32 +29,32 @@ typedef enum EaseType {
 } EaseType;
 
 /**
- * Description of an easing instance. To use this with below functions,
+ * Description of a tween instance. To use this with below functions,
  * you need to fill in most of the fields manually. However, helper functions
  * exist to reuse the same instance repeatedly.
  */
-typedef struct Ease {
+typedef struct Tween {
 	float from; ///< initial value
 	float to; ///< final value
-	nsec start; ///< time of starting the ease
-	nsec duration; ///< length of time that the ease will take to finish
-	EaseType type; ///< easing function to use during the ease
-} Ease;
+	nsec start; ///< time of starting the tween
+	nsec duration; ///< length of time that the tween will take to finish
+	EaseType type; ///< easing function to use during the tween
+} Tween;
 
 /**
- * Calculate the current value of an ::Ease. It is safe to call this outside
+ * Calculate the current value of a ::Tween. It is safe to call this outside
  * of the specified time range, both before and after - the value will
  * be clamped.
- * @param e The ::Ease data
+ * @param t The ::Tween data
  * @return Calculated value
  */
-float easeApply(Ease *e);
+float tweenApply(Tween* t);
 
 /**
- * Move an ::Ease's starting position to current time, replaying a configured
+ * Move a ::Tween's starting position to current time, replaying a configured
  * instance.
- * @param e The ::Ease data
+ * @param t The ::Tween data
  */
-void easeRestart(Ease *e);
+void tweenRestart(Tween* t);
 
-#endif //MINOTE_EASE_H
+#endif //MINOTE_TWEEN_H

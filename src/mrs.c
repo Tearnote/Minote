@@ -15,8 +15,8 @@
 #include "debug.h"
 #include "model.h"
 #include "world.h"
+#include "tween.h"
 #include "util.h"
-#include "ease.h"
 #include "log.h"
 
 #define FieldWidth 10u ///< Width of #field
@@ -144,7 +144,7 @@ static darray* borderTransforms = null;
 #define ParticlesClearBoost 1.4f ///< Intensity multiplier for line clear effect
 
 /// Player piece animation after the piece locks
-static Ease lockFlash = {
+static Tween lockFlash = {
 	.from = 1.0f,
 	.to = 0.0f,
 	.duration = 8 * MrsUpdateTick,
@@ -152,7 +152,7 @@ static Ease lockFlash = {
 };
 
 /// Player piece animation as the lock delay ticks down
-static Ease lockDim = {
+static Tween lockDim = {
 	.from = 1.0f,
 	.to = 0.4f,
 	.duration = LockDelay * MrsUpdateTick,
@@ -160,7 +160,7 @@ static Ease lockDim = {
 };
 
 /// Animation of the scene when combo counter changes
-static Ease comboFade = {
+static Tween comboFade = {
 	.from = 1.1f,
 	.to = 1.1f,
 	.duration = 24 * MrsUpdateTick,
@@ -509,7 +509,7 @@ static void lock(void)
 	piece* playerPiece = mrsGetPiece(tet.player.type, tet.player.rotation);
 	fieldStampPiece(tet.field, playerPiece, tet.player.pos, tet.player.type);
 	tet.player.state = PlayerSpawn;
-	easeRestart(&lockFlash);
+	tweenRestart(&lockFlash);
 }
 
 void mrsInit(void)
@@ -908,7 +908,7 @@ static void genParticlesSlide(int direction, bool fast)
  */
 static void mrsDrawScene(void)
 {
-	float boost = easeApply(&comboFade);
+	float boost = tweenApply(&comboFade);
 	modelDraw(scene, 1, (color4[]){{boost, boost, boost, 1.0f}}, null,
 		&IdentityMatrix);
 }
@@ -965,7 +965,7 @@ static void mrsQueueField(void)
 			}
 		}
 		if (playerCell) {
-			float flash = easeApply(&lockFlash);
+			float flash = tweenApply(&lockFlash);
 			color4Copy(*highlight,
 				((color4){LockFlashBrightness, LockFlashBrightness,
 				          LockFlashBrightness, flash}));
@@ -1006,9 +1006,9 @@ static void mrsQueuePlayer(void)
 
 		color4Copy(*tint, minoColor(tet.player.type));
 		if (!canDrop()) {
-			easeRestart(&lockDim);
+			tweenRestart(&lockDim);
 			lockDim.start -= tet.player.lockDelay * MrsUpdateTick;
-			float dim = easeApply(&lockDim);
+			float dim = tweenApply(&lockDim);
 			tint->r *= dim;
 			tint->g *= dim;
 			tint->b *= dim;

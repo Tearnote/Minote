@@ -99,7 +99,7 @@ void particlesDraw(void)
 	for (size_t i = 0; i < numParticles; i += 1) {
 		Particle* current = darrayGet(particles, i);
 
-		float progress = easeApply(&(Ease){
+		float progress = tweenApply(&(Tween){
 			.from = 0.0f,
 			.to = 1.0f,
 			.start = current->start,
