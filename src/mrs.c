@@ -184,17 +184,6 @@ static ParticleParams particlesClear = {
 	.ease = EaseOutExponential
 };
 
-static ParticleParams particlesClear4 = {
-	.color = {0.0f, 0.0f, 0.0f, 1.0f}, // runtime
-	.durationMin = secToNsec(0.6),
-	.durationMax = secToNsec(1.8),
-	.radius = 64.0f,
-	.power = 20.0f,
-	.directionVert = 0,
-	.directionHorz = 0,
-	.ease = EaseInOutExponential
-};
-
 static ParticleParams particlesThump = {
 	.color = {0.6f, 0.6f, 0.6f, 0.8f},
 	.durationMin = secToNsec(0.4),
@@ -835,20 +824,18 @@ static void genParticlesClear(int row, int power)
 {
 	for (int x = 0; x < FieldWidth; x += 1) {
 		for (int ySub = 0; ySub < 8; ySub += 1) {
-			ParticleParams* params = (power != 4) ? &particlesClear
-			                                      : &particlesClear4;
 			color4 cellColor = minoColor(
 				fieldGet(tet.field, (point2i){x, row}));
-			color4Copy(params->color, cellColor);
-			params->color.r *= ParticlesClearBoost;
-			params->color.g *= ParticlesClearBoost;
-			params->color.b *= ParticlesClearBoost;
-			params->power = 5.0f * power;
+			color4Copy(particlesClear.color, cellColor);
+			particlesClear.color.r *= ParticlesClearBoost;
+			particlesClear.color.g *= ParticlesClearBoost;
+			particlesClear.color.b *= ParticlesClearBoost;
+			particlesClear.power = 5.0f * power;
 			particlesGenerate((point3f){
 					(float)x - (float)FieldWidth / 2,
 					(float)row + 0.0625f + 0.125f * (float)ySub,
 					0.0f},
-				power, params);
+				power, &particlesClear);
 		}
 	}
 }
