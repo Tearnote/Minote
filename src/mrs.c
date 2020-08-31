@@ -31,7 +31,7 @@
 #define AutoshiftRepeat 1 ///< Frames between autoshifts
 #define LockDelay 30 ///< Frames a piece can spend on the stack before locking
 #define ClearOffset 4 ///< Frames between piece lock and line clear
-#define ClearDelay 41 ///< Frames between line clear and thump
+#define ClearDelay 30 ///< Frames between line clear and thump
 #define SpawnDelay 30 ///< Frames between lock/thumb and new piece spawn
 
 /// State of player piece FSM
@@ -170,7 +170,7 @@ static Tween clearFall = {
 	.from = 0.0f,
 	.to = 1.0f,
 	.duration = ClearDelay * MrsUpdateTick,
-	.type = EaseInExponential
+	.type = EaseInCubic
 };
 
 static ParticleParams particlesClear = {
@@ -462,12 +462,15 @@ static int checkClears(void)
  */
 static void thump(void)
 {
-	for (int y = FieldHeight - 1; y >= 0; y -= 1) {
-		if (!tet.linesCleared[y])
+	int offset = 0;
+	for (int y = 0; y < FieldHeight; y += 1) {
+		if (!tet.linesCleared[y + offset])
 			continue; // Drop only above cleared lines
 		fieldDropRow(tet.field, y);
-		tet.linesCleared[y] = false;
+		tet.linesCleared[y + offset] = false;
 		genParticlesThump(y);
+		y -= 1;
+		offset += 1;
 	}
 }
 
