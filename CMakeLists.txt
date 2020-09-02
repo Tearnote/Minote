@@ -108,9 +108,6 @@ add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 add_custom_command(TARGET Minote POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/assets/ttf ${PROJECT_BINARY_DIR}/ttf)
-add_custom_command(TARGET Minote POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/conf ${PROJECT_BINARY_DIR}/conf)
 target_compile_options(Minote PRIVATE
         $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
         -Wall -Wextra -pedantic-errors>)

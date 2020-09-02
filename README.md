@@ -24,9 +24,6 @@ Public Domain.
 [`linmath.h`](https://github.com/datenwolf/linmath.h) retrieved on
 2020-01-01, used under WTFPL.
 
-[`SDL_GameControllerDB`](https://github.com/gabomdq/SDL_GameControllerDB)
-retrieved on 2019-09-05, used under zlib license.
-
 [`PCG PRNG`](https://www.pcg-random.org/) Minimal C 0.9, used under Apache
 license.
 
