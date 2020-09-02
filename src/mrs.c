@@ -176,20 +176,24 @@ static Tween clearFall = {
 static ParticleParams particlesClear = {
 	.color = {0.0f, 0.0f, 0.0f, 1.0f}, // runtime
 	.durationMin = secToNsec(0),
-	.durationMax = secToNsec(2),
-	.radius = 64.0f,
-	.power = 5.0f, // runtime
+	.durationMax = secToNsec(1.5),
+	.distanceMin = 3.2f, // runtime
+	.distanceMax = 6.4f, // runtime
+	.spinMin = 0.001f,
+	.spinMax = 0.3f,
 	.directionVert = 0,
 	.directionHorz = 0,
-	.ease = EaseOutExponential
+	.ease = EaseOutQuartic
 };
 
 static ParticleParams particlesThump = {
 	.color = {0.6f, 0.6f, 0.6f, 0.8f},
 	.durationMin = secToNsec(0.4),
 	.durationMax = secToNsec(0.8),
-	.radius = 8.0f,
-	.power = 2.0f,
+	.distanceMin = 0.2f,
+	.distanceMax = 1.2f,
+	.spinMin = 0.4f,
+	.spinMax = 1.6f,
 	.directionVert = 1,
 	.directionHorz = 0,
 	.ease = EaseOutExponential
@@ -197,10 +201,12 @@ static ParticleParams particlesThump = {
 
 static ParticleParams particlesSlide = {
 	.color = {0.0f, 0.4f, 2.0f, 1.0f},
-	.durationMin = secToNsec(0.25),
-	.durationMax = secToNsec(0.5),
-	.radius = 8.0f,
-	.power = 2.0f,
+	.durationMin = secToNsec(0.3),
+	.durationMax = secToNsec(0.6),
+	.distanceMin = 0.2f,
+	.distanceMax = 1.4f,
+	.spinMin = 0.4f,
+	.spinMax = 1.2f,
 	.directionVert = 1,
 	.directionHorz = 0, // runtime
 	.ease = EaseOutExponential
@@ -210,8 +216,10 @@ static ParticleParams particlesSlideFast = {
 	.color = {2.0f, 0.4f, 0.0f, 1.0f},
 	.durationMin = secToNsec(0.25),
 	.durationMax = secToNsec(0.5),
-	.radius = 8.0f,
-	.power = 2.0f,
+	.distanceMin = 0.4f,
+	.distanceMax = 2.0f,
+	.spinMin = 0.4f,
+	.spinMax = 1.2f,
 	.directionVert = 1,
 	.directionHorz = 0, // runtime
 	.ease = EaseOutExponential
@@ -332,8 +340,10 @@ static void shift(int direction)
 	if (pieceOverlapsField(playerPiece, tet.player.pos, tet.field)) {
 		tet.player.pos.x -= direction;
 	} else {
+		tet.player.pos.x -= direction;
 		genParticlesSlide(direction,
 			(tet.player.autoshiftCharge == AutoshiftCharge));
+		tet.player.pos.x += direction;
 	}
 }
 
@@ -830,7 +840,8 @@ static void genParticlesClear(int row, int power)
 			particlesClear.color.r *= ParticlesClearBoost;
 			particlesClear.color.g *= ParticlesClearBoost;
 			particlesClear.color.b *= ParticlesClearBoost;
-			particlesClear.power = 5.0f * power;
+			particlesClear.distanceMin = 3.2f * power;
+			particlesClear.distanceMax = particlesClear.distanceMin * 2.0f;
 			particlesGenerate((point3f){
 					(float)x - (float)FieldWidth / 2,
 					(float)row + 0.0625f + 0.125f * (float)ySub,

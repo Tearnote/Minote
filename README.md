@@ -39,3 +39,6 @@ under WTFPL.
 
 [`Nuklear`](https://github.com/Immediate-Mode-UI/Nuklear) retrieved on
 2020-08-13, used under dual MIT license / Public Domain.
+
+[`Cephes Mathematical Library`](https://www.netlib.org/cephes) retrieved on
+2020-09-02, used under permissive terms.

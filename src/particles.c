@@ -8,7 +8,8 @@
 #include <stdbool.h>
 #include <assert.h>
 #include <time.h>
-#include <aheasing/easing.h>
+#include "aheasing/easing.h"
+#include "cephes/protos.h"
 #include "darray.h"
 #include "model.h"
 #include "util.h"
@@ -23,11 +24,12 @@
 typedef struct Particle {
 	point3f origin; ///< Starting point
 	color4 color; ///< Individual tint
-	int direction; ///< -1 for left, 1 for right
+	int vert; ///< -1 for down, 1 for up
+	int horz; ///< -1 for left, 1 for right
 	nsec start; ///< Timestamp of spawning
 	nsec duration; ///< Total lifetime
-	float radius; ///< Size of the spiral path of the particle
-	float spins; ///< Number of times the spiral path goes around
+	float distance; ///< Total distance travelled from origin
+	float spin; ///< Rate at which the particle turns
 	EaseType ease; ///< Easing profile of the particle progress
 } Particle;
 
@@ -93,11 +95,14 @@ void particlesDraw(void)
 {
 	assert(initialized);
 
+	double fresnelConst = sqrt(4.0 / M_TAU);
+
 	size_t numParticles = darraySize(particles);
 	if (!numParticles) return;
 
 	for (size_t i = 0; i < numParticles; i += 1) {
 		Particle* current = darrayGet(particles, i);
+		assert(current->spin > 0.0f);
 
 		float progress = tweenApply(&(Tween){
 			.from = 0.0f,
@@ -108,16 +113,27 @@ void particlesDraw(void)
 		});
 		assert(progress >= 0.0f && progress <= 1.0f);
 
-		bool flip = (current->direction == -1);
-		float angle = progress * current->spins - radf(90.0f);
-		float x = cosf(angle) * current->radius;
-		if (flip) x = x * -1.0f + 1.0f;
+		double x;
+		double y;
+		assert(current->spin > 0.0f);
+		float distance = progress * current->distance * current->spin;
+		fresnl(distance * fresnelConst, &y, &x);
+		x = x / fresnelConst / current->spin;
+		y = y / fresnelConst / current->spin;
+		if (current->horz == -1)
+			x *= -1.0;
+		else
+			x += 1.0;
+		if (current->vert == -1)
+			y *= -1.0;
 		x += current->origin.x;
-		float y =
-			current->origin.y + current->radius + sinf(angle) * current->radius;
+		y += current->origin.y;
 
-		angle -= radf(90.0f);
-		if (flip) angle = radf(180.0f) - angle;
+		float angle = distance * distance;
+		if (current->horz == -1)
+			angle = radf(180.0f) - angle;
+		if (current->vert == -1)
+			angle *= -1.0f;
 
 		color4* tint = darrayProduce(particleTints);
 		color4Copy(*tint, current->color);
@@ -156,30 +172,33 @@ void particlesGenerate(point3f position, size_t count, ParticleParams* params)
 	assert(initialized);
 	assert(count);
 	assert(params);
+
 	for (size_t i = 0; i < count; i += 1) {
 		Particle* newParticle = darrayProduce(particles);
 		structCopy(newParticle->origin, position);
 		color4Copy(newParticle->color, params->color);
-		if (params->directionHorz != 0)
-			newParticle->direction = params->directionHorz;
-		else
-			newParticle->direction = (int)rngInt(rng, 2) * 2 - 1;
+
 		newParticle->start = getTime();
 		newParticle->duration = params->durationMin + rngFloat(rng)
 			* (double)(params->durationMax - params->durationMin);
 		newParticle->ease = params->ease;
-		newParticle->radius = rngFloat(rng);
-		newParticle->radius = QuarticEaseOut(newParticle->radius);
-		newParticle->radius /= 4.0f;
-		newParticle->radius *= 3.0f;
-		newParticle->radius += 0.25f;
-		if (params->directionVert == -1
-			|| (params->directionVert == 0 && rngInt(rng, 2)))
-			newParticle->radius *= -1.0f;
-		newParticle->radius *= params->radius;
-		newParticle->spins = rngFloat(rng);
-		newParticle->spins = QuadraticEaseOut(newParticle->spins);
-		newParticle->spins *= params->power;
-		newParticle->spins /= fabsf(newParticle->radius);
+
+		if (params->directionHorz != 0)
+			newParticle->horz = params->directionHorz;
+		else
+			newParticle->horz = (int)rngInt(rng, 2) * 2 - 1;
+		if (params->directionVert != 0)
+			newParticle->vert = params->directionVert;
+		else
+			newParticle->vert = (int)rngInt(rng, 2) * 2 - 1;
+
+		newParticle->distance = rngFloat(rng);
+		newParticle->distance *= params->distanceMax - params->distanceMin;
+		newParticle->distance += params->distanceMin;
+
+		newParticle->spin = rngFloat(rng);
+		newParticle->spin = QuarticEaseIn(newParticle->spin);
+		newParticle->spin *= params->spinMax - params->spinMin;
+		newParticle->spin += params->spinMin;
 	}
 }

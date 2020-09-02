@@ -16,8 +16,10 @@ typedef struct ParticleParams {
 	color4 color; ///< Tint of every particle
 	nsec durationMin; ///< Smallest possible duration
 	nsec durationMax; ///< Largest possible duration
-	float radius; ///< Maximum size of the particles' spiral path
-	float power; ///< Relative maximum speed of the particles
+	float distanceMin; ///< Smallest distance travelled
+	float distanceMax; ///< Largest distance travelled
+	float spinMin; ///< Smallest rate of turning
+	float spinMax; ///< Largest rate of turning
 	int directionVert; ///< 1 for up, -1 for down, 0 for random
 	int directionHorz; ///< 1 for right, -1 for left, 0 for random
 	EaseType ease; ///< Overall easing profile of the particles' path

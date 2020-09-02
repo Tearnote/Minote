@@ -73,7 +73,9 @@ set(C_INTERNALLIBS
         lib/pcg/pcg_basic.h lib/pcg/pcg_basic.c
         lib/aheasing/easing.h lib/aheasing/easing.c
         lib/smaa/AreaTex.h lib/smaa/SearchTex.h
-        lib/nuklear/nuklear.h)
+        lib/nuklear/nuklear.h
+        lib/cephes/protos.h lib/cephes/mconf.h
+        lib/cephes/const.c lib/cephes/polevl.c lib/cephes/fresnl.c)
 
 set(C_SOURCES
         src/main.h src/main.c
