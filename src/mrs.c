@@ -638,6 +638,12 @@ static void mrsUpdateInputs(darray* inputs)
 		if (tet.player.lastDirection == InputRight)
 			tet.player.inputMap[InputLeft] = false;
 	}
+
+	// Update last direction
+	if (inputHeld(InputLeft))
+		tet.player.lastDirection = InputLeft;
+	else if (inputHeld(InputRight))
+		tet.player.lastDirection = InputRight;
 }
 
 /**
