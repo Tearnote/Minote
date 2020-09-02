@@ -29,10 +29,10 @@
 
 #define AutoshiftCharge 16 ///< Frames direction has to be held before autoshift
 #define AutoshiftRepeat 1 ///< Frames between autoshifts
-#define LockDelay 30 ///< Frames a piece can spend on the stack before locking
-#define ClearOffset 4 ///< Frames between piece lock and line clear
+#define LockDelay 40 ///< Frames a piece can spend on the stack before locking
+#define ClearOffset 5 ///< Frames between piece lock and line clear
 #define ClearDelay 30 ///< Frames between line clear and thump
-#define SpawnDelay 30 ///< Frames between lock/thumb and new piece spawn
+#define SpawnDelay 30 ///< Frames between lock/thump and new piece spawn
 
 /// State of player piece FSM
 typedef enum PlayerState {
@@ -153,9 +153,9 @@ static Tween lockFlash = {
 /// Player piece animation as the lock delay ticks down
 static Tween lockDim = {
 	.from = 1.0f,
-	.to = 0.4f,
+	.to = 0.1f,
 	.duration = LockDelay * MrsUpdateTick,
-	.type = EaseLinear
+	.type = EaseInQuadratic
 };
 
 /// Animation of the scene when combo counter changes
@@ -500,7 +500,7 @@ static void drop(void)
 
 	// Reset lock delay if piece dropped lower than ever
 	if (tet.player.pos.y < tet.player.yLowest) {
-		tet.player.lockDelay = 0;
+		tet.player.lockDelay /= 2;
 		tet.player.yLowest = tet.player.pos.y;
 	}
 
