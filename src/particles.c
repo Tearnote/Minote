@@ -81,7 +81,7 @@ void particlesUpdate(void)
 {
 	assert(initialized);
 
-	size_t numParticles = darraySize(particles);
+	size_t numParticles = particles->count;
 	nsec currentTime = getTime();
 
 	for (size_t i = numParticles - 1; i < numParticles; i -= 1) {
@@ -97,7 +97,7 @@ void particlesDraw(void)
 
 	double fresnelConst = sqrt(4.0 / M_TAU);
 
-	size_t numParticles = darraySize(particles);
+	size_t numParticles = particles->count;
 	if (!numParticles) return;
 
 	for (size_t i = 0; i < numParticles; i += 1) {
@@ -155,13 +155,13 @@ void particlesDraw(void)
 		mat4x4_scale_aniso(*transform, rotated, 1.0f - progress, 1.0f, 1.0f);
 	}
 
-	numParticles = darraySize(particleTransforms);
-	assert(darraySize(particleTints) == darraySize(particleTransforms));
+	numParticles = particleTransforms->count;
+	assert(particleTints->count == particleTransforms->count);
 
 	modelDraw(particle, numParticles,
-		darrayData(particleTints),
+		(color4*)particleTints->data,
 		null,
-		darrayData(particleTransforms));
+		(mat4x4*)particleTransforms->data);
 
 	darrayClear(particleTints);
 	darrayClear(particleTransforms);

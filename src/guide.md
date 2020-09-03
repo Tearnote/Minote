@@ -17,8 +17,8 @@
 - Init and cleanup functions must be tolerant to being called twice or in wrong
   order. Cleanup must never fail
 - Typedef structs and enums
-  - Hide struct implementation in `.c` file when possible and provide
-    documented interfaces to query the members instead
+  - Do not hide their definitions, document member access instead of using
+    accessor functions
 - Naming guideline:
   - Functions, arguments, variables and fundamental types are camelCase
   - Object types and constants are TitleCase

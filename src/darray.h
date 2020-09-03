@@ -3,16 +3,26 @@
  * @file
  * Simple stretchable tightly packed array. If the underlying storage is full,
  * it is reallocated to 2x current size. All functions in this interface are
- * O(1).
+ * O(1) unless specified otherwise.
  */
 
 #ifndef MINOTE_DARRAY_H
 #define MINOTE_DARRAY_H
 
-#include <stddef.h>
+#include <stdint.h>
 
-/// Opaque dynamic array. You can obtain an instance with darrayCreate().
-typedef struct darray darray;
+/**
+ * Dynamic array type. You can obtain an instance with darrayCreate().
+ * All fields are read-only.
+ * The #data field can be freely accessed as an array of #count elements
+ * of #capacity size.
+ */
+typedef struct darray {
+	uint8_t* data; ///< Dynamically reallocated array for storing elements
+	size_t elementSize; ///< in bytes
+	int count; ///< Number of elements currently in #data
+	int capacity; ///< Number of elements that can fit in #data without resizing
+} darray;
 
 /**
  * Create a new ::darray instance.
@@ -58,14 +68,6 @@ void darrayRemove(darray* d, size_t index);
 void darrayRemoveSwap(darray* d, size_t index);
 
 /**
- * Provide the raw data pointer of the ::darray. It can be treated as an array
- * of darraySize() elements.
- * @param d The ::darray object
- * @return Pointer to the internal element array
- */
-void* darrayData(darray* d);
-
-/**
  * Return a ::darray element from a given index.
  * @param d The ::darray object
  * @param index Index of the element to return. Must be smaller than the current
@@ -80,13 +82,5 @@ void* darrayGet(darray* d, size_t index);
  * @param d The ::darray object
  */
 void darrayClear(darray* d);
-
-/**
- * Return the current size of a ::darray as a count of elements produced since
- * creation or the last clear.
- * @param d The ::darray object
- * @return Count of produced elements
- */
-size_t darraySize(darray* d);
 
 #endif //MINOTE_DARRAY_H

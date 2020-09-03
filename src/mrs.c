@@ -614,7 +614,7 @@ static void mrsUpdateInputs(darray* inputs)
 
 	// Update raw inputs
 	if (tet.state != TetrionOutro) {
-		for (size_t i = 0; i < darraySize(inputs); i += 1) {
+		for (size_t i = 0; i < inputs->count; i += 1) {
 			Input* in = darrayGet(inputs, i);
 			assert(in->type < InputSize);
 			tet.player.inputMapRaw[in->type] = in->state;
@@ -1117,23 +1117,23 @@ static void mrsQueuePreview(void)
  */
 static void mrsDrawQueuedBlocks(void)
 {
-	modelDraw(block, darraySize(blockTransformsOpaque),
-		darrayData(blockTintsOpaque),
-		darrayData(blockHighlightsOpaque),
-		darrayData(blockTransformsOpaque));
+	modelDraw(block, blockTransformsOpaque->count,
+		(color4*)blockTintsOpaque->data,
+		(color4*)blockHighlightsOpaque->data,
+		(mat4x4*)blockTransformsOpaque->data);
 	darrayClear(blockTintsOpaque);
 	darrayClear(blockHighlightsOpaque);
 	darrayClear(blockTransformsOpaque);
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Depth prepass start
-	modelDraw(block, darraySize(blockTransformsAlpha),
-		darrayData(blockTintsAlpha),
-		darrayData(blockHighlightsAlpha),
-		darrayData(blockTransformsAlpha));
+	modelDraw(block, blockTransformsAlpha->count,
+		(color4*)blockTintsAlpha->data,
+		(color4*)blockHighlightsAlpha->data,
+		(mat4x4*)blockTransformsAlpha->data);
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE); // Depth prepass end
-	modelDraw(block, darraySize(blockTransformsAlpha),
-		darrayData(blockTintsAlpha),
-		darrayData(blockHighlightsAlpha),
-		darrayData(blockTransformsAlpha));
+	modelDraw(block, blockTransformsAlpha->count,
+		(color4*)blockTintsAlpha->data,
+		(color4*)blockHighlightsAlpha->data,
+		(mat4x4*)blockTransformsAlpha->data);
 	darrayClear(blockTintsAlpha);
 	darrayClear(blockHighlightsAlpha);
 	darrayClear(blockTransformsAlpha);
@@ -1226,9 +1226,8 @@ static void mrsDrawBorder(void)
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 	}
 
-	modelDraw(border, darraySize(borderTransforms),
-		darrayData(borderTints), null,
-		darrayData(borderTransforms));
+	modelDraw(border, borderTransforms->count,
+		(color4*)borderTints->data, null, (mat4x4*)borderTransforms->data);
 	darrayClear(borderTints);
 	darrayClear(borderTransforms);
 }

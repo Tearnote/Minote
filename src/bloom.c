@@ -8,7 +8,6 @@
 #include <assert.h>
 #include "glad/glad.h"
 #include "renderer.h"
-#include "opengl.h"
 #include "window.h"
 #include "util.h"
 #include "log.h"

@@ -8,9 +8,8 @@
 #include <assert.h>
 #include "smaa/AreaTex.h"
 #include "smaa/SearchTex.h"
-#include "basetypes.h"
-#include "window.h"
 #include "renderer.h"
+#include "window.h"
 #include "util.h"
 #include "log.h"
 

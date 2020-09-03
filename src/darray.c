@@ -7,18 +7,10 @@
 
 #include <assert.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <string.h>
 #include "util.h"
 
 #define StartingSize 8
-
-typedef struct darray {
-	uint8_t* data; ///< Dynamically reallocated array for storing elements
-	size_t elementSize; ///< in bytes
-	int count; ///< Number of elements currently in #data
-	int capacity; ///< Number of elements that can fit in #data without resizing
-} darray;
 
 darray* darrayCreate(size_t elementSize)
 {
@@ -77,12 +69,6 @@ void darrayRemoveSwap(darray* d, size_t index)
 	d->count -= 1;
 }
 
-void* darrayData(darray* d)
-{
-	assert(d);
-	return d->data;
-}
-
 void* darrayGet(darray* d, size_t index)
 {
 	assert(d);
@@ -94,10 +80,4 @@ void darrayClear(darray* d)
 {
 	assert(d);
 	d->count = 0;
-}
-
-size_t darraySize(darray* d)
-{
-	assert(d);
-	return d->count;
 }

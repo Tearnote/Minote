@@ -5,10 +5,9 @@
 
 #include "basetypes.h"
 
-#include <tgmath.h>
-
-#include <assert.h>
 #include <stdalign.h>
+#include <tgmath.h>
+#include <assert.h>
 static_assert(alignof(int) <= sizeof(int), u8"int structs not usable with OpenGL");
 static_assert(alignof(float) <= sizeof(float), u8"float structs not usable with OpenGL");
 
