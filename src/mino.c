@@ -44,11 +44,6 @@ color4 minoColor(mino type)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct Field {
-	mino* grid;
-	size2i size;
-};
-
 Field* fieldCreate(size2i size)
 {
 	assert(size.x > 0 && size.y > 0);

@@ -8,6 +8,7 @@
 
 #include "linmath/linmath.h"
 #include "basetypes.h"
+#include "opengl.h"
 
 /// Convenient 4x4 matrix for when you want to perform no transform
 #define IdentityMatrix ((mat4x4){{1.0f, 0.0f, 0.0f, 0.0f}, \
@@ -32,8 +33,44 @@ typedef struct MaterialPhong {
 	float shine; ///< Smoothness of surface (inverse of specular highlight size)
 } MaterialPhong;
 
-/// Drawable object. You can obtain an instance with one of modelCreate*().
-typedef struct Model Model;
+/// Type tag for the Model object
+typedef enum ModelType {
+	ModelTypeNone, ///< zero value
+	ModelTypeFlat, ///< ::ModelFlat
+	ModelTypePhong, ///< ::ModelPhong
+	ModelTypeSize ///< terminator
+} ModelType;
+
+/// Base type for a Model. Contains all attributes common to every model type.
+typedef struct Model {
+	ModelType type; ///< Correct type to cast the Model to
+	const char* name; ///< Human-readable name for reference
+} Model;
+typedef Model ModelBase;
+
+/// Model type with flat shading. Each instance can be tinted.
+typedef struct ModelFlat {
+	ModelBase base;
+	size_t numVertices;
+	VertexBuffer vertices; ///< VBO with model vertex data
+	VertexBuffer tints; ///< VBO for storing per-draw tint colors
+	VertexBuffer highlights; ///< VBO for storing per-draw color highlight colors
+	VertexBuffer transforms; ///< VBO for storing per-draw model matrices
+	VertexArray vao;
+} ModelFlat;
+
+/// Model type with Phong shading. Makes use of light source and material data.
+typedef struct ModelPhong {
+	ModelBase base;
+	size_t numVertices;
+	VertexBuffer vertices; ///< VBO with model vertex data
+	VertexBuffer normals; ///< VBO with model normals, generated from vertices
+	VertexBuffer tints; ///< VBO for storing per-draw tint colors
+	VertexBuffer highlights; ///< VBO for storing per-draw color highlight colors
+	VertexBuffer transforms; ///< VBO for storing per-draw model matrices
+	VertexArray vao;
+	MaterialPhong material;
+} ModelPhong;
 
 /**
  * Initialize the model rendering system. Must be called after rendererInit().
@@ -56,7 +93,7 @@ void modelCleanup(void);
  * @return Newly created ::Model. Must be destroyed with modelDestroy()
  */
 Model* modelCreateFlat(const char* name,
-	size_t numVertices, VertexFlat vertices[]);
+	size_t numVertices, VertexFlat vertices[numVertices]);
 
 /**
  * Create a ::Model instance with Phong shading. The provided mesh is uploaded
@@ -68,7 +105,8 @@ Model* modelCreateFlat(const char* name,
  * @return Newly created ::Model. Must be destroyed with modelDestroy()
  */
 Model* modelCreatePhong(const char* name,
-	size_t numVertices, VertexPhong vertices[], MaterialPhong material);
+	size_t numVertices, VertexPhong vertices[numVertices],
+	MaterialPhong material);
 
 /**
  * Destroy a ::Model instance. All referenced GPU resources are freed. The

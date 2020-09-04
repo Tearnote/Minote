@@ -1,5 +1,5 @@
 /**
- * Converter of raw collectedInputs into player collectedInputs
+ * Converter of raw inputs into player inputs
  * @file
  */
 
@@ -17,7 +17,7 @@ typedef enum InputType {
 	InputSize ///< terminator
 } InputType;
 
-/// A logical input converted from raw device collectedInputs via mappings
+/// A logical input converted from raw device inputs via mappings
 typedef struct Input {
 	InputType type;
 	bool state; ///< true if press, false if release
@@ -37,7 +37,7 @@ void mapperInit(void);
 void mapperCleanup(void);
 
 /**
- * Process all pending collectedInputs from the window and insert them into the player
+ * Process all pending inputs from the window and insert them into the player
  * event queue.
  */
 void mapperUpdate(void);
@@ -51,7 +51,7 @@ bool mapperDequeue(Input* input);
 
 /**
  * Return the ::Input from the front of the mapper's queue without
- * removing it. If there are no collectedInputs left, nothing happens.
+ * removing it. If there are no inputs left, nothing happens.
  * @param[out] element Address to rewrite with the peeked input
  * @return true if successful, false if no collectedInputs left
  */

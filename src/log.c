@@ -11,7 +11,6 @@
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
-#include <errno.h>
 #include <time.h>
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN

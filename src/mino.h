@@ -36,7 +36,6 @@ typedef enum spin {
 } spin;
 
 #define MinosPerPiece 4
-#define CenterColumn 1 ///< Used in kick exception rules
 
 /// Shape of a player piece at a specific ::spin
 typedef point2i piece[MinosPerPiece];
@@ -62,8 +61,12 @@ color4 minoColor(mino type);
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Opaque playfield grid. You can obtain an instance with fieldCreate().
-typedef struct Field Field;
+/// Playfield grid. You can obtain an instance with fieldCreate().
+/// All fields are read-only.
+typedef struct Field {
+	mino* grid; ///< Dynamically allocated field contents
+	size2i size; ///< Dimensions of the field
+} Field;
 
 /**
  * Create a new ::Field instance.

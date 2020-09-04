@@ -247,7 +247,7 @@ void debugDraw(void)
 	programUse(nuklear);
 	textureUse(nuklearTexture, nuklear->atlas);
 	glUniformMatrix4fv(nuklear->projection, 1, GL_FALSE,
-		*worldScreenProjection());
+		*worldScreenProjection);
 	glBindVertexArray(nuklearVao);
 
 	glBindBuffer(GL_ARRAY_BUFFER, nuklearVbo);

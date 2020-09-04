@@ -5,8 +5,8 @@
 
 #include "game.h"
 
-#include "renderer.h"
 #include "particles.h"
+#include "renderer.h"
 #include "window.h"
 #include "mapper.h"
 #include "bloom.h"

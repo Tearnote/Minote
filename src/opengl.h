@@ -12,19 +12,42 @@
 #include "basetypes.h"
 
 /// OpenGL texture. You can obtain an instance with textureCreate().
-typedef struct Texture Texture;
+/// All fields read-only.
+typedef struct Texture {
+	GLuint id;
+	size2i size;
+} Texture;
 
 /// OpenGL multisample texture. You can obtain an instance with textureMSCreate().
-typedef struct TextureMS TextureMS;
+/// All fields read-only.
+typedef struct TextureMS {
+	GLuint id;
+	size2i size;
+	GLsizei samples;
+} TextureMS;
 
 /// OpenGL renderbuffer. You can obtain an instance with renderbufferCreate().
-typedef struct Renderbuffer Renderbuffer;
+/// All fields read-only.
+typedef struct Renderbuffer {
+	GLuint id;
+	size2i size;
+} Renderbuffer;
 
 /// OpenGL multisample renderbuffer. You can obtain an instance with renderbufferMSCreate().
-typedef struct RenderbufferMS RenderbufferMS;
+/// All fields read-only.
+typedef struct RenderbufferMS {
+	GLuint id;
+	size2i size;
+	GLsizei samples;
+} RenderbufferMS;
 
 /// OpenGL framebuffer. You can obtain an instance with framebufferCreate().
-typedef struct Framebuffer Framebuffer;
+/// All fields read-only.
+typedef struct Framebuffer {
+	GLuint id;
+	size2i size;
+	GLsizei samples;
+} Framebuffer;
 
 /// OpenGL shader program. You can obtain an instance with programCreate().
 typedef GLuint Program;

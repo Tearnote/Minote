@@ -10,10 +10,17 @@
 #define MINOTE_QUEUE_H
 
 #include <stdbool.h>
-#include <stddef.h>
+#include <stdint.h>
 
 /// Opaque queue container. You can obtain an instance with queueCreate().
-typedef struct queue queue;
+/// All fields read-only.
+typedef struct queue {
+	uint8_t* data; ///< Dynamically allocated array for storing elements
+	size_t elementSize; ///< in bytes
+	size_t capacity; ///< Size of #data as a count of elements
+	size_t head; ///< Index of the first empty space to enqueue into
+	size_t tail; ///< Index of the next element to dequeue
+} queue;
 
 /**
  * Create a new ::queue instance.

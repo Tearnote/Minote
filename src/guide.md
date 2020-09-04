@@ -17,8 +17,9 @@
 - Init and cleanup functions must be tolerant to being called twice or in wrong
   order. Cleanup must never fail
 - Typedef structs and enums
-  - Do not hide their definitions, document member access instead of using
-    accessor functions
+  - Do not hide their definitions. Document member access instead of using
+    accessor functions, unless there is a good reason such as providing
+    thread-safety
 - Naming guideline:
   - Functions, arguments, variables and fundamental types are camelCase
   - Object types and constants are TitleCase

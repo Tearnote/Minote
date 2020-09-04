@@ -11,15 +11,10 @@
 #include "mrstables.h"
 #include "particles.h"
 #include "renderer.h"
-#include "mapper.h"
 #include "debug.h"
 #include "model.h"
 #include "world.h"
-#include "util.h"
 #include "log.h"
-
-#define FieldWidth 10u ///< Width of #field
-#define FieldHeight 22u ///< Height of #field
 
 #define SpawnX 3 ///< X position of player piece spawn
 #define SpawnY 18 ///< Y position of player piece spawn
@@ -34,70 +29,13 @@
 #define ClearDelay 30 ///< Frames between line clear and thump
 #define SpawnDelay 30 ///< Frames between lock/thump and new piece spawn
 
-/// State of player piece FSM
-typedef enum PlayerState {
-	PlayerNone, ///< zero value
-	PlayerSpawned, ///< the frame of piece spawn
-	PlayerActive, ///< piece can be controlled
-	PlayerClear, ///< line has been cleared
-	PlayerSpawn, ///< waiting to spawn a new piece
-	PlayerSize ///< terminator
-} PlayerState;
-
-/// A player-controlled active piece
-typedef struct Player {
-	bool inputMapRaw[InputSize]; ///< Unfiltered input state
-	bool inputMap[InputSize]; ///< Filtered input state
-	bool inputMapPrev[InputSize]; ///< #inputMap of the previous frame
-	InputType lastDirection; ///< None, Left or Right
-
-	PlayerState state;
-	mino type; ///< Current player piece
-	mino preview; ///< Next player piece
-	int tokens[MinoGarbage - 1]; ///< Past player pieces
-	spin rotation; ///< ::spin of current piece
-	point2i pos; ///< Position of current piece
-	int ySub; ///< Y subgrid of current piece
-	int yLowest; ///< The bottommost row reached by current piece
-
-	int autoshiftDirection; ///< Autoshift state: -1 left, 1 right, 0 none
-	int autoshiftCharge;
-	int autoshiftDelay;
-	int lockDelay;
-	int clearDelay;
-	int spawnDelay;
-	int gravity;
-} Player;
-
-/// State of tetrion FSM
-typedef enum TetrionState {
-	TetrionNone, ///< zero value
-	TetrionReady, ///< intro
-	TetrionPlaying, ///< gameplay
-	TetrionOutro, ///< outro
-	TetrionSize ///< terminator
-} TetrionState;
-
-/// A play's logical state
-typedef struct Tetrion {
-	TetrionState state;
-	int ready; ///< Countdown timer
-	int frame; ///< Frame counter since #ready = 0
-
-	Field* field;
-	bool linesCleared[FieldHeight]; ///< Storage for line clears pending a thump
-	Player player;
-	Rng* rng;
-} Tetrion;
-
-/// Full state of the mode
-static Tetrion tet = {0};
-
 // Debug switches
 static int debugPauseSpawn = 0; // Boolean, int for compatibility
 static int debugInfLock = 0; // Boolean, int for compatibility
 
 static bool initialized = false;
+
+Tetrion mrsTet = {0};
 
 /**
  * Test whether an input has been pressed just now.
@@ -105,7 +43,7 @@ static bool initialized = false;
  * @return true if just pressed, false otherwise
  */
 #define inputPressed(type) \
-    (tet.player.inputMap[(type)] && !tet.player.inputMapPrev[(type)])
+    (mrsTet.player.inputMap[(type)] && !mrsTet.player.inputMapPrev[(type)])
 
 /**
  * Test whether an input is pressed during this frame.
@@ -113,7 +51,7 @@ static bool initialized = false;
  * @return true if pressed, false if not pressed
  */
 #define inputHeld(type) \
-    (tet.player.inputMap[(type)])
+    (mrsTet.player.inputMap[(type)])
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -238,54 +176,54 @@ static void genParticlesSlide(int direction, bool fast);
  */
 static bool tryKicks(spin prevRotation)
 {
-	piece* playerPiece = mrsGetPiece(tet.player.type, tet.player.rotation);
-	if (!pieceOverlapsField(playerPiece, tet.player.pos, tet.field))
+	piece* playerPiece = mrsGetPiece(mrsTet.player.type, mrsTet.player.rotation);
+	if (!pieceOverlapsField(playerPiece, mrsTet.player.pos, mrsTet.field))
 		return true; // Original position
 
-	if (tet.player.state == PlayerSpawned)
+	if (mrsTet.player.state == PlayerSpawned)
 		return false; // If this is IRS, don't attempt kicks
-	if (tet.player.type == MinoI)
+	if (mrsTet.player.type == MinoI)
 		return false; // I doesn't kick
 
 	// L/J/T floorkick
-	if ((tet.player.type == MinoL ||
-		tet.player.type == MinoJ ||
-		tet.player.type == MinoT) &&
+	if ((mrsTet.player.type == MinoL ||
+		mrsTet.player.type == MinoJ ||
+		mrsTet.player.type == MinoT) &&
 		prevRotation == Spin180) {
-		tet.player.pos.y += 1;
-		if (!pieceOverlapsField(playerPiece, tet.player.pos, tet.field))
+		mrsTet.player.pos.y += 1;
+		if (!pieceOverlapsField(playerPiece, mrsTet.player.pos, mrsTet.field))
 			return true; // 1 to the right
-		tet.player.pos.y -= 1;
+		mrsTet.player.pos.y -= 1;
 	}
 
 	// Now that every exception is filtered out, we can try the default kicks
-	int preference = tet.player.lastDirection == InputRight ? 1 : -1;
+	int preference = mrsTet.player.lastDirection == InputRight ? 1 : -1;
 
 	// Down
-	tet.player.pos.y -= 1;
-	if (!pieceOverlapsField(playerPiece, tet.player.pos, tet.field))
+	mrsTet.player.pos.y -= 1;
+	if (!pieceOverlapsField(playerPiece, mrsTet.player.pos, mrsTet.field))
 		return true; // 1 to the right
-	tet.player.pos.y += 1;
+	mrsTet.player.pos.y += 1;
 
 	// Left/right
-	tet.player.pos.x += preference;
-	if (!pieceOverlapsField(playerPiece, tet.player.pos, tet.field))
+	mrsTet.player.pos.x += preference;
+	if (!pieceOverlapsField(playerPiece, mrsTet.player.pos, mrsTet.field))
 		return true; // 1 to the right
-	tet.player.pos.x -= preference * 2;
-	if (!pieceOverlapsField(playerPiece, tet.player.pos, tet.field))
+	mrsTet.player.pos.x -= preference * 2;
+	if (!pieceOverlapsField(playerPiece, mrsTet.player.pos, mrsTet.field))
 		return true; // 1 to the left
-	tet.player.pos.x += preference;
+	mrsTet.player.pos.x += preference;
 
 	// Down+left/right
-	tet.player.pos.y -= 1;
-	tet.player.pos.x += preference;
-	if (!pieceOverlapsField(playerPiece, tet.player.pos, tet.field))
+	mrsTet.player.pos.y -= 1;
+	mrsTet.player.pos.x += preference;
+	if (!pieceOverlapsField(playerPiece, mrsTet.player.pos, mrsTet.field))
 		return true; // 1 to the right
-	tet.player.pos.x -= preference * 2;
-	if (!pieceOverlapsField(playerPiece, tet.player.pos, tet.field))
+	mrsTet.player.pos.x -= preference * 2;
+	if (!pieceOverlapsField(playerPiece, mrsTet.player.pos, mrsTet.field))
 		return true; // 1 to the left
-	tet.player.pos.x += preference;
-	tet.player.pos.y += 1;
+	mrsTet.player.pos.x += preference;
+	mrsTet.player.pos.y += 1;
 
 	return false; // Failure, returned to original position
 }
@@ -298,33 +236,33 @@ static bool tryKicks(spin prevRotation)
 static void rotate(int direction)
 {
 	assert(direction == 1 || direction == -1);
-	spin prevRotation = tet.player.rotation;
-	point2i prevPosition = tet.player.pos;
+	spin prevRotation = mrsTet.player.rotation;
+	point2i prevPosition = mrsTet.player.pos;
 
 	if (direction == 1)
-		spinClockwise(&tet.player.rotation);
+		spinClockwise(&mrsTet.player.rotation);
 	else
-		spinCounterClockwise(&tet.player.rotation);
+		spinCounterClockwise(&mrsTet.player.rotation);
 
 	// Apply crawl offsets to I,S,Z
-	if (tet.player.type == MinoI ||
-		tet.player.type == MinoS ||
-		tet.player.type == MinoZ) {
+	if (mrsTet.player.type == MinoI ||
+		mrsTet.player.type == MinoS ||
+		mrsTet.player.type == MinoZ) {
 		if (direction == -1 &&
 			(prevRotation == Spin90 ||
 				prevRotation == Spin270))
-			tet.player.pos.x += 1;
+			mrsTet.player.pos.x += 1;
 		if (direction == 1 &&
 			(prevRotation == SpinNone ||
 				prevRotation == Spin180)) {
-			tet.player.pos.x -= 1;
+			mrsTet.player.pos.x -= 1;
 		}
 	}
 
 	if (!tryKicks(prevRotation)) {
-		tet.player.rotation = prevRotation;
-		tet.player.pos.x = prevPosition.x;
-		tet.player.pos.y = prevPosition.y;
+		mrsTet.player.rotation = prevRotation;
+		mrsTet.player.pos.x = prevPosition.x;
+		mrsTet.player.pos.y = prevPosition.y;
 	}
 }
 
@@ -335,15 +273,15 @@ static void rotate(int direction)
 static void shift(int direction)
 {
 	assert(direction == 1 || direction == -1);
-	tet.player.pos.x += direction;
-	piece* playerPiece = mrsGetPiece(tet.player.type, tet.player.rotation);
-	if (pieceOverlapsField(playerPiece, tet.player.pos, tet.field)) {
-		tet.player.pos.x -= direction;
+	mrsTet.player.pos.x += direction;
+	piece* playerPiece = mrsGetPiece(mrsTet.player.type, mrsTet.player.rotation);
+	if (pieceOverlapsField(playerPiece, mrsTet.player.pos, mrsTet.field)) {
+		mrsTet.player.pos.x -= direction;
 	} else {
-		tet.player.pos.x -= direction;
+		mrsTet.player.pos.x -= direction;
 		genParticlesSlide(direction,
-			(tet.player.autoshiftCharge == AutoshiftCharge));
-		tet.player.pos.x += direction;
+			(mrsTet.player.autoshiftCharge == AutoshiftCharge));
+		mrsTet.player.pos.x += direction;
 	}
 }
 
@@ -355,16 +293,16 @@ static mino randomPiece(void)
 {
 	// Count the number of tokens
 	size_t tokenTotal = 0;
-	for (size_t i = 0; i < countof(tet.player.tokens); i += 1)
-		if (tet.player.tokens[i] > 0) tokenTotal += tet.player.tokens[i];
+	for (size_t i = 0; i < countof(mrsTet.player.tokens); i += 1)
+		if (mrsTet.player.tokens[i] > 0) tokenTotal += mrsTet.player.tokens[i];
 	assert(tokenTotal);
 
 	// Create and fill the token list
 	int tokenList[tokenTotal];
 	size_t tokenListIndex = 0;
-	for (size_t i = 0; i < countof(tet.player.tokens); i += 1) {
-		if (tet.player.tokens[i] <= 0) continue;
-		for (size_t j = 0; j < tet.player.tokens[i]; j += 1) {
+	for (size_t i = 0; i < countof(mrsTet.player.tokens); i += 1) {
+		if (mrsTet.player.tokens[i] <= 0) continue;
+		for (size_t j = 0; j < mrsTet.player.tokens[i]; j += 1) {
 			assert(tokenListIndex < tokenTotal);
 			tokenList[tokenListIndex] = i;
 			tokenListIndex += 1;
@@ -373,12 +311,12 @@ static mino randomPiece(void)
 	assert(tokenListIndex == tokenTotal);
 
 	// Pick a random token from the list and update the token distribution
-	int picked = tokenList[rngInt(tet.rng, tokenTotal)];
-	for (size_t i = 0; i < countof(tet.player.tokens); i += 1) {
+	int picked = tokenList[rngInt(mrsTet.rng, tokenTotal)];
+	for (size_t i = 0; i < countof(mrsTet.player.tokens); i += 1) {
 		if (i == picked)
-			tet.player.tokens[i] -= countof(tet.player.tokens) - 1;
+			mrsTet.player.tokens[i] -= countof(mrsTet.player.tokens) - 1;
 		else
-			tet.player.tokens[i] += 1;
+			mrsTet.player.tokens[i] += 1;
 	}
 
 	return picked + MinoNone + 1;
@@ -389,7 +327,7 @@ static mino randomPiece(void)
  */
 static void gameOver(void)
 {
-	tet.state = TetrionOutro;
+	mrsTet.state = TetrionOutro;
 }
 
 /**
@@ -397,22 +335,22 @@ static void gameOver(void)
  */
 static void spawnPiece(void)
 {
-	tet.player.state = PlayerSpawned; // Some moves restricted on first frame
-	tet.player.pos.x = SpawnX;
-	tet.player.pos.y = SpawnY;
-	tet.player.yLowest = tet.player.pos.y;
+	mrsTet.player.state = PlayerSpawned; // Some moves restricted on first frame
+	mrsTet.player.pos.x = SpawnX;
+	mrsTet.player.pos.y = SpawnY;
+	mrsTet.player.yLowest = mrsTet.player.pos.y;
 
 	// Picking the next piece
-	tet.player.type = tet.player.preview;
-	tet.player.preview = randomPiece();
+	mrsTet.player.type = mrsTet.player.preview;
+	mrsTet.player.preview = randomPiece();
 
-	if (tet.player.type == MinoI)
-		tet.player.pos.y -= 1; // I starts lower than other pieces
-	tet.player.ySub = 0;
-	tet.player.lockDelay = 0;
-	tet.player.spawnDelay = 0;
-	tet.player.clearDelay = 0;
-	tet.player.rotation = SpinNone;
+	if (mrsTet.player.type == MinoI)
+		mrsTet.player.pos.y -= 1; // I starts lower than other pieces
+	mrsTet.player.ySub = 0;
+	mrsTet.player.lockDelay = 0;
+	mrsTet.player.spawnDelay = 0;
+	mrsTet.player.clearDelay = 0;
+	mrsTet.player.rotation = SpinNone;
 
 	// IRS
 	if (inputHeld(InputButton2)) {
@@ -422,14 +360,14 @@ static void spawnPiece(void)
 			rotate(1);
 	}
 
-	piece* playerPiece = mrsGetPiece(tet.player.type, tet.player.rotation);
-	if (pieceOverlapsField(playerPiece, tet.player.pos, tet.field))
+	piece* playerPiece = mrsGetPiece(mrsTet.player.type, mrsTet.player.rotation);
+	if (pieceOverlapsField(playerPiece, mrsTet.player.pos, mrsTet.field))
 		gameOver();
 
 	// Increase gravity
-	if (tet.player.gravity >= 20 * SubGrid) return;
-	int level = tet.player.gravity / 64 + 1;
-	tet.player.gravity += level;
+	if (mrsTet.player.gravity >= 20 * SubGrid) return;
+	int level = mrsTet.player.gravity / 64 + 1;
+	mrsTet.player.gravity += level;
 }
 
 /**
@@ -440,16 +378,16 @@ static int checkClears(void)
 {
 	int count = 0;
 	for (int y = 0; y < FieldHeight; y += 1) {
-		if (!fieldIsRowFull(tet.field, y))
+		if (!fieldIsRowFull(mrsTet.field, y))
 			continue;
 		count += 1;
-		tet.linesCleared[y] = true;
+		mrsTet.linesCleared[y] = true;
 	}
 
 	for (int y = 0; y < FieldHeight; y += 1) {
-		if (!tet.linesCleared[y]) continue;
+		if (!mrsTet.linesCleared[y]) continue;
 		genParticlesClear(y, count);
-		fieldClearRow(tet.field, y);
+		fieldClearRow(mrsTet.field, y);
 	}
 
 	if (count) tweenRestart(&clearFall);
@@ -463,10 +401,10 @@ static void thump(void)
 {
 	int offset = 0;
 	for (int y = 0; y < FieldHeight; y += 1) {
-		if (!tet.linesCleared[y + offset])
+		if (!mrsTet.linesCleared[y + offset])
 			continue; // Drop only above cleared lines
-		fieldDropRow(tet.field, y);
-		tet.linesCleared[y + offset] = false;
+		fieldDropRow(mrsTet.field, y);
+		mrsTet.linesCleared[y + offset] = false;
 		genParticlesThump(y);
 		y -= 1;
 		offset += 1;
@@ -480,11 +418,11 @@ static void thump(void)
  */
 static bool canDrop(void)
 {
-	piece* playerPiece = mrsGetPiece(tet.player.type, tet.player.rotation);
+	piece* playerPiece = mrsGetPiece(mrsTet.player.type, mrsTet.player.rotation);
 	return !pieceOverlapsField(playerPiece, (point2i){
-		.x = tet.player.pos.x,
-		.y = tet.player.pos.y - 1
-	}, tet.field);
+		.x = mrsTet.player.pos.x,
+		.y = mrsTet.player.pos.y - 1
+	}, mrsTet.field);
 }
 
 /**
@@ -496,18 +434,18 @@ static void drop(void)
 	if (!canDrop())
 		return;
 
-	tet.player.pos.y -= 1;
+	mrsTet.player.pos.y -= 1;
 
 	// Reset lock delay if piece dropped lower than ever
-	if (tet.player.pos.y < tet.player.yLowest) {
-		tet.player.lockDelay /= 2;
-		tet.player.yLowest = tet.player.pos.y;
+	if (mrsTet.player.pos.y < mrsTet.player.yLowest) {
+		mrsTet.player.lockDelay /= 2;
+		mrsTet.player.yLowest = mrsTet.player.pos.y;
 	}
 
 	if (inputHeld(InputLeft))
-		genParticlesSlide(-1, (tet.player.autoshiftCharge == AutoshiftCharge));
+		genParticlesSlide(-1, (mrsTet.player.autoshiftCharge == AutoshiftCharge));
 	else if (inputHeld(InputRight))
-		genParticlesSlide(1, (tet.player.autoshiftCharge == AutoshiftCharge));
+		genParticlesSlide(1, (mrsTet.player.autoshiftCharge == AutoshiftCharge));
 	else
 		genParticlesDrop();
 }
@@ -517,9 +455,9 @@ static void drop(void)
  */
 static void lock(void)
 {
-	piece* playerPiece = mrsGetPiece(tet.player.type, tet.player.rotation);
-	fieldStampPiece(tet.field, playerPiece, tet.player.pos, tet.player.type);
-	tet.player.state = PlayerSpawn;
+	piece* playerPiece = mrsGetPiece(mrsTet.player.type, mrsTet.player.rotation);
+	fieldStampPiece(mrsTet.field, playerPiece, mrsTet.player.pos, mrsTet.player.type);
+	mrsTet.player.state = PlayerSpawn;
 	tweenRestart(&lockFlash);
 }
 
@@ -528,20 +466,20 @@ void mrsInit(void)
 	if (initialized) return;
 
 	// Logic init
-	structClear(tet);
-	tet.frame = -1;
-	tet.ready = 3 * 50;
-	tet.field = fieldCreate((size2i){FieldWidth, FieldHeight});
-	tet.player.autoshiftDelay = AutoshiftRepeat; // Starts out pre-charged
-	tet.player.spawnDelay = SpawnDelay; // Start instantly
-	tet.player.gravity = 3;
+	structClear(mrsTet);
+	mrsTet.frame = -1;
+	mrsTet.ready = 3 * 50;
+	mrsTet.field = fieldCreate((size2i){FieldWidth, FieldHeight});
+	mrsTet.player.autoshiftDelay = AutoshiftRepeat; // Starts out pre-charged
+	mrsTet.player.spawnDelay = SpawnDelay; // Start instantly
+	mrsTet.player.gravity = 3;
 
-	tet.rng = rngCreate((uint64_t)time(null));
-	for (size_t i = 0; i < countof(tet.player.tokens); i += 1)
-		tet.player.tokens[i] = StartingTokens;
-	tet.player.preview = randomPiece();
+	mrsTet.rng = rngCreate((uint64_t)time(null));
+	for (size_t i = 0; i < countof(mrsTet.player.tokens); i += 1)
+		mrsTet.player.tokens[i] = StartingTokens;
+	mrsTet.player.preview = randomPiece();
 
-	tet.state = TetrionReady;
+	mrsTet.state = TetrionReady;
 
 	// Render init
 	scene = modelCreateFlat(u8"scene",
@@ -596,10 +534,10 @@ void mrsCleanup(void)
 	guide = null;
 	modelDestroy(scene);
 	scene = null;
-	rngDestroy(tet.rng);
-	tet.rng = null;
-	fieldDestroy(tet.field);
-	tet.field = null;
+	rngDestroy(mrsTet.rng);
+	mrsTet.rng = null;
+	fieldDestroy(mrsTet.field);
+	mrsTet.field = null;
 	initialized = false;
 	logDebug(applog, u8"Mrs sublayer cleaned up");
 }
@@ -613,37 +551,37 @@ static void mrsUpdateInputs(darray* inputs)
 	assert(inputs);
 
 	// Update raw inputs
-	if (tet.state != TetrionOutro) {
+	if (mrsTet.state != TetrionOutro) {
 		for (size_t i = 0; i < inputs->count; i += 1) {
 			Input* in = darrayGet(inputs, i);
 			assert(in->type < InputSize);
-			tet.player.inputMapRaw[in->type] = in->state;
+			mrsTet.player.inputMapRaw[in->type] = in->state;
 		}
 	} else { // Force-release everything on gameover
-		arrayClear(tet.player.inputMapRaw);
+		arrayClear(mrsTet.player.inputMapRaw);
 	}
 
 	// Rotate the input arrays
-	arrayCopy(tet.player.inputMapPrev, tet.player.inputMap);
-	arrayCopy(tet.player.inputMap, tet.player.inputMapRaw);
+	arrayCopy(mrsTet.player.inputMapPrev, mrsTet.player.inputMap);
+	arrayCopy(mrsTet.player.inputMap, mrsTet.player.inputMapRaw);
 
 	// Filter conflicting inputs
-	if (tet.player.inputMap[InputDown] || tet.player.inputMap[InputUp]) {
-		tet.player.inputMap[InputLeft] = false;
-		tet.player.inputMap[InputRight] = false;
+	if (mrsTet.player.inputMap[InputDown] || mrsTet.player.inputMap[InputUp]) {
+		mrsTet.player.inputMap[InputLeft] = false;
+		mrsTet.player.inputMap[InputRight] = false;
 	}
-	if (tet.player.inputMap[InputLeft] && tet.player.inputMap[InputRight]) {
-		if (tet.player.lastDirection == InputLeft)
-			tet.player.inputMap[InputRight] = false;
-		if (tet.player.lastDirection == InputRight)
-			tet.player.inputMap[InputLeft] = false;
+	if (mrsTet.player.inputMap[InputLeft] && mrsTet.player.inputMap[InputRight]) {
+		if (mrsTet.player.lastDirection == InputLeft)
+			mrsTet.player.inputMap[InputRight] = false;
+		if (mrsTet.player.lastDirection == InputRight)
+			mrsTet.player.inputMap[InputLeft] = false;
 	}
 
 	// Update last direction
 	if (inputHeld(InputLeft))
-		tet.player.lastDirection = InputLeft;
+		mrsTet.player.lastDirection = InputLeft;
 	else if (inputHeld(InputRight))
-		tet.player.lastDirection = InputRight;
+		mrsTet.player.lastDirection = InputRight;
 }
 
 /**
@@ -651,15 +589,15 @@ static void mrsUpdateInputs(darray* inputs)
  */
 static void mrsUpdateState(void)
 {
-	if (tet.state == TetrionReady) {
-		tet.ready -= 1;
-		if (tet.ready == 0)
-			tet.state = TetrionPlaying;
-	} else if (tet.state == TetrionPlaying) {
-		tet.frame += 1;
+	if (mrsTet.state == TetrionReady) {
+		mrsTet.ready -= 1;
+		if (mrsTet.ready == 0)
+			mrsTet.state = TetrionPlaying;
+	} else if (mrsTet.state == TetrionPlaying) {
+		mrsTet.frame += 1;
 	}
-	if (tet.player.state == PlayerSpawned)
-		tet.player.state = PlayerActive;
+	if (mrsTet.player.state == PlayerSpawned)
+		mrsTet.player.state = PlayerActive;
 }
 
 /**
@@ -667,7 +605,7 @@ static void mrsUpdateState(void)
  */
 static void mrsUpdateRotation(void)
 {
-	if (tet.player.state != PlayerActive)
+	if (mrsTet.player.state != PlayerActive)
 		return;
 	if (inputPressed(InputButton2))
 		rotate(-1);
@@ -689,28 +627,28 @@ static void mrsUpdateShift(void)
 
 	// If not moving or moving in the opposite direction of ongoing DAS,
 	// reset DAS and shift instantly
-	if (!shiftDirection || shiftDirection != tet.player.autoshiftDirection) {
-		tet.player.autoshiftDirection = shiftDirection;
-		tet.player.autoshiftCharge = 0;
-		tet.player.autoshiftDelay = AutoshiftRepeat; // Starts out pre-charged
-		if (shiftDirection && tet.player.state == PlayerActive)
+	if (!shiftDirection || shiftDirection != mrsTet.player.autoshiftDirection) {
+		mrsTet.player.autoshiftDirection = shiftDirection;
+		mrsTet.player.autoshiftCharge = 0;
+		mrsTet.player.autoshiftDelay = AutoshiftRepeat; // Starts out pre-charged
+		if (shiftDirection && mrsTet.player.state == PlayerActive)
 			shift(shiftDirection);
 	}
 
 	// If moving, advance and apply DAS
 	if (!shiftDirection)
 		return;
-	if (tet.player.autoshiftCharge < AutoshiftCharge)
-		tet.player.autoshiftCharge += 1;
-	if (tet.player.autoshiftCharge == AutoshiftCharge) {
-		if (tet.player.autoshiftDelay < AutoshiftRepeat)
-			tet.player.autoshiftDelay += 1;
+	if (mrsTet.player.autoshiftCharge < AutoshiftCharge)
+		mrsTet.player.autoshiftCharge += 1;
+	if (mrsTet.player.autoshiftCharge == AutoshiftCharge) {
+		if (mrsTet.player.autoshiftDelay < AutoshiftRepeat)
+			mrsTet.player.autoshiftDelay += 1;
 
 		// If during ARE, keep the DAS charged
-		if (tet.player.autoshiftDelay >= AutoshiftRepeat
-			&& tet.player.state == PlayerActive) {
-			tet.player.autoshiftDelay = 0;
-			shift(tet.player.autoshiftDirection);
+		if (mrsTet.player.autoshiftDelay >= AutoshiftRepeat
+			&& mrsTet.player.state == PlayerActive) {
+			mrsTet.player.autoshiftDelay = 0;
+			shift(mrsTet.player.autoshiftDirection);
 		}
 	}
 }
@@ -721,21 +659,21 @@ static void mrsUpdateShift(void)
 static void mrsUpdateClear(void)
 {
 	// Line clear check is delayed by the clear offset
-	if (tet.player.state == PlayerSpawn &&
-		tet.player.spawnDelay + 1 == ClearOffset) {
+	if (mrsTet.player.state == PlayerSpawn &&
+		mrsTet.player.spawnDelay + 1 == ClearOffset) {
 		int clearedCount = checkClears();
 		if (clearedCount) {
-			tet.player.state = PlayerClear;
-			tet.player.clearDelay = 0;
+			mrsTet.player.state = PlayerClear;
+			mrsTet.player.clearDelay = 0;
 		}
 	}
 
 	// Advance counter, switch back to spawn delay if elapsed
-	if (tet.player.state == PlayerClear) {
-		tet.player.clearDelay += 1;
-		if (tet.player.clearDelay > ClearDelay) {
+	if (mrsTet.player.state == PlayerClear) {
+		mrsTet.player.clearDelay += 1;
+		if (mrsTet.player.clearDelay > ClearDelay) {
 			thump();
-			tet.player.state = PlayerSpawn;
+			mrsTet.player.state = PlayerSpawn;
 		}
 	}
 }
@@ -745,11 +683,11 @@ static void mrsUpdateClear(void)
  */
 static void mrsUpdateSpawn(void)
 {
-	if (tet.state != TetrionPlaying || debugPauseSpawn)
+	if (mrsTet.state != TetrionPlaying || debugPauseSpawn)
 		return; // Do not spawn during countdown or gameover
-	if (tet.player.state == PlayerSpawn || tet.player.state == PlayerNone) {
-		tet.player.spawnDelay += 1;
-		if (tet.player.spawnDelay >= SpawnDelay)
+	if (mrsTet.player.state == PlayerSpawn || mrsTet.player.state == PlayerNone) {
+		mrsTet.player.spawnDelay += 1;
+		if (mrsTet.player.spawnDelay >= SpawnDelay)
 			spawnPiece();
 	}
 }
@@ -759,29 +697,29 @@ static void mrsUpdateSpawn(void)
  */
 static void mrsUpdateGravity(void)
 {
-	if (tet.state == TetrionOutro)
+	if (mrsTet.state == TetrionOutro)
 		return; // Prevent zombie blocks
-	if (tet.player.state != PlayerSpawned && tet.player.state != PlayerActive)
+	if (mrsTet.player.state != PlayerSpawned && mrsTet.player.state != PlayerActive)
 		return;
 
-	int remainingGravity = tet.player.gravity;
-	if (tet.player.state == PlayerActive) {
+	int remainingGravity = mrsTet.player.gravity;
+	if (mrsTet.player.state == PlayerActive) {
 		if (inputHeld(InputDown) || inputHeld(InputUp))
 			remainingGravity = FieldHeight * SubGrid;
 	}
 
 	if (canDrop()) // Queue up the gravity drops
-		tet.player.ySub += remainingGravity;
+		mrsTet.player.ySub += remainingGravity;
 	else
-		tet.player.ySub = 0;
+		mrsTet.player.ySub = 0;
 
-	while (tet.player.ySub >= SubGrid) { // Drop until queue empty
+	while (mrsTet.player.ySub >= SubGrid) { // Drop until queue empty
 		drop();
-		tet.player.ySub -= SubGrid;
+		mrsTet.player.ySub -= SubGrid;
 	}
 
 	// Hard drop
-	if (tet.player.state == PlayerActive) {
+	if (mrsTet.player.state == PlayerActive) {
 		if (inputHeld(InputDown))
 			lock();
 	}
@@ -792,15 +730,15 @@ static void mrsUpdateGravity(void)
  */
 static void mrsUpdateLocking(void)
 {
-	if (tet.player.state != PlayerActive || tet.state != TetrionPlaying)
+	if (mrsTet.player.state != PlayerActive || mrsTet.state != TetrionPlaying)
 		return;
 	if (canDrop())
 		return;
 
 	if (!debugInfLock)
-		tet.player.lockDelay += 1;
+		mrsTet.player.lockDelay += 1;
 	// Two sources of locking: lock delay expired, manlock
-	if (tet.player.lockDelay > LockDelay || inputHeld(InputDown))
+	if (mrsTet.player.lockDelay > LockDelay || inputHeld(InputDown))
 		lock();
 }
 
@@ -841,7 +779,7 @@ static void genParticlesClear(int row, int power)
 	for (int x = 0; x < FieldWidth; x += 1) {
 		for (int ySub = 0; ySub < 8; ySub += 1) {
 			color4 cellColor = minoColor(
-				fieldGet(tet.field, (point2i){x, row}));
+				fieldGet(mrsTet.field, (point2i){x, row}));
 			color4Copy(particlesClear.color, cellColor);
 			particlesClear.color.r *= ParticlesClearBoost;
 			particlesClear.color.g *= ParticlesClearBoost;
@@ -865,8 +803,8 @@ static void genParticlesClear(int row, int power)
 static void genParticlesThump(int row)
 {
 	for (int x = 0; x < FieldWidth; x += 1) {
-		if (fieldGet(tet.field, (point2i){x, row})
-			&& fieldGet(tet.field, (point2i){x, row - 1}))
+		if (fieldGet(mrsTet.field, (point2i){x, row})
+			&& fieldGet(mrsTet.field, (point2i){x, row - 1}))
 			particlesGenerate((point3f){
 				(float)x - (float)FieldWidth / 2,
 				(float)row,
@@ -880,11 +818,11 @@ static void genParticlesThump(int row)
  */
 static void genParticlesDrop(void)
 {
-	piece* playerPiece = mrsGetPiece(tet.player.type, tet.player.rotation);
+	piece* playerPiece = mrsGetPiece(mrsTet.player.type, mrsTet.player.rotation);
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
-		int x = tet.player.pos.x + (*playerPiece)[i].x;
-		int y = tet.player.pos.y + (*playerPiece)[i].y;
-		if (fieldGet(tet.field, (point2i){x, y - 1})) {
+		int x = mrsTet.player.pos.x + (*playerPiece)[i].x;
+		int y = mrsTet.player.pos.y + (*playerPiece)[i].y;
+		if (fieldGet(mrsTet.field, (point2i){x, y - 1})) {
 			particlesGenerate((point3f){
 				(float)x - (float)FieldWidth / 2,
 				(float)y,
@@ -905,11 +843,11 @@ static void genParticlesSlide(int direction, bool fast)
 	ParticleParams* params = fast? &particlesSlideFast : &particlesSlide;
 	params->directionHorz = direction;
 
-	piece* playerPiece = mrsGetPiece(tet.player.type, tet.player.rotation);
+	piece* playerPiece = mrsGetPiece(mrsTet.player.type, mrsTet.player.rotation);
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
-		int x = tet.player.pos.x + (*playerPiece)[i].x;
-		int y = tet.player.pos.y + (*playerPiece)[i].y;
-		if (fieldGet(tet.field, (point2i){x, y - 1})) {
+		int x = mrsTet.player.pos.x + (*playerPiece)[i].x;
+		int y = mrsTet.player.pos.y + (*playerPiece)[i].y;
+		if (fieldGet(mrsTet.field, (point2i){x, y - 1})) {
 			particlesGenerate((point3f){
 				(float)x - (float)FieldWidth / 2,
 				(float)y,
@@ -943,7 +881,7 @@ static void mrsDrawGuide(void)
 static void mrsQueueField(void)
 {
 	// A bit out of place here, but no need to get this more than once
-	piece* playerPiece = mrsGetPiece(tet.player.type, tet.player.rotation);
+	piece* playerPiece = mrsGetPiece(mrsTet.player.type, mrsTet.player.rotation);
 
 	int linesCleared = 0;
 	float fallProgress = tweenApply(&clearFall);
@@ -952,13 +890,13 @@ static void mrsQueueField(void)
 		int x = i % FieldWidth;
 		int y = i / FieldWidth;
 
-		if (tet.linesCleared[y]) {
+		if (mrsTet.linesCleared[y]) {
 			linesCleared += 1;
 			i += FieldWidth - 1;
 			continue;
 		}
 
-		mino type = fieldGet(tet.field, (point2i){x, y});
+		mino type = fieldGet(mrsTet.field, (point2i){x, y});
 		if (type == MinoNone) continue;
 
 		color4* tint = null;
@@ -983,8 +921,8 @@ static void mrsQueueField(void)
 
 		bool playerCell = false;
 		for (size_t j = 0; j < MinosPerPiece; j += 1) {
-			int px = (*playerPiece)[j].x + tet.player.pos.x;
-			int py = (*playerPiece)[j].y + tet.player.pos.y;
+			int px = (*playerPiece)[j].x + mrsTet.player.pos.x;
+			int py = (*playerPiece)[j].y + mrsTet.player.pos.y;
 			if (x == px && y == py) {
 				playerCell = true;
 				break;
@@ -1011,19 +949,19 @@ static void mrsQueueField(void)
  */
 static void mrsQueuePlayer(void)
 {
-	if (tet.player.state != PlayerActive &&
-		tet.player.state != PlayerSpawned)
+	if (mrsTet.player.state != PlayerActive &&
+		mrsTet.player.state != PlayerSpawned)
 		return;
 
-	piece* playerPiece = mrsGetPiece(tet.player.type, tet.player.rotation);
+	piece* playerPiece = mrsGetPiece(mrsTet.player.type, mrsTet.player.rotation);
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
-		float x = (*playerPiece)[i].x + tet.player.pos.x;
-		float y = (*playerPiece)[i].y + tet.player.pos.y;
+		float x = (*playerPiece)[i].x + mrsTet.player.pos.x;
+		float y = (*playerPiece)[i].y + mrsTet.player.pos.y;
 
 		color4* tint = null;
 		color4* highlight = null;
 		mat4x4* transform = null;
-		if (minoColor(tet.player.type).a == 1.0) {
+		if (minoColor(mrsTet.player.type).a == 1.0) {
 			tint = darrayProduce(blockTintsOpaque);
 			highlight = darrayProduce(blockHighlightsOpaque);
 			transform = darrayProduce(blockTransformsOpaque);
@@ -1033,10 +971,10 @@ static void mrsQueuePlayer(void)
 			transform = darrayProduce(blockTransformsAlpha);
 		}
 
-		color4Copy(*tint, minoColor(tet.player.type));
+		color4Copy(*tint, minoColor(mrsTet.player.type));
 		if (!canDrop()) {
 			tweenRestart(&lockDim);
-			lockDim.start -= tet.player.lockDelay * MrsUpdateTick;
+			lockDim.start -= mrsTet.player.lockDelay * MrsUpdateTick;
 			float dim = tweenApply(&lockDim);
 			tint->r *= dim;
 			tint->g *= dim;
@@ -1052,16 +990,16 @@ static void mrsQueuePlayer(void)
  */
 static void mrsQueueGhost(void)
 {
-	if (tet.player.state != PlayerActive &&
-		tet.player.state != PlayerSpawned)
+	if (mrsTet.player.state != PlayerActive &&
+		mrsTet.player.state != PlayerSpawned)
 		return;
 
-	piece* playerPiece = mrsGetPiece(tet.player.type, tet.player.rotation);
-	point2i ghostPos = tet.player.pos;
+	piece* playerPiece = mrsGetPiece(mrsTet.player.type, mrsTet.player.rotation);
+	point2i ghostPos = mrsTet.player.pos;
 	while (!pieceOverlapsField(playerPiece, (point2i){
 		ghostPos.x,
 		ghostPos.y - 1
-	}, tet.field))
+	}, mrsTet.field))
 		ghostPos.y -= 1; // Drop down as much as possible
 
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
@@ -1072,7 +1010,7 @@ static void mrsQueueGhost(void)
 		color4* highlight = darrayProduce(blockHighlightsAlpha);
 		mat4x4* transform = darrayProduce(blockTransformsAlpha);
 
-		color4Copy(*tint, minoColor(tet.player.type));
+		color4Copy(*tint, minoColor(mrsTet.player.type));
 		tint->a *= GhostDim;
 		color4Copy(*highlight, Color4Clear);
 		mat4x4_translate(*transform, x - (signed)(FieldWidth / 2), y, 0.0f);
@@ -1084,19 +1022,19 @@ static void mrsQueueGhost(void)
  */
 static void mrsQueuePreview(void)
 {
-	if (tet.player.preview == MinoNone)
+	if (mrsTet.player.preview == MinoNone)
 		return;
-	piece* previewPiece = mrsGetPiece(tet.player.preview, SpinNone);
+	piece* previewPiece = mrsGetPiece(mrsTet.player.preview, SpinNone);
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
 		float x = (*previewPiece)[i].x + PreviewX;
 		float y = (*previewPiece)[i].y + PreviewY;
-		if (tet.player.preview == MinoI)
+		if (mrsTet.player.preview == MinoI)
 			y -= 1;
 
 		color4* tint = null;
 		color4* highlight = null;
 		mat4x4* transform = null;
-		if (minoColor(tet.player.preview).a == 1.0) {
+		if (minoColor(mrsTet.player.preview).a == 1.0) {
 			tint = darrayProduce(blockTintsOpaque);
 			highlight = darrayProduce(blockHighlightsOpaque);
 			transform = darrayProduce(blockTransformsOpaque);
@@ -1106,7 +1044,7 @@ static void mrsQueuePreview(void)
 			transform = darrayProduce(blockTransformsAlpha);
 		}
 
-		color4Copy(*tint, minoColor(tet.player.preview));
+		color4Copy(*tint, minoColor(mrsTet.player.preview));
 		color4Copy(*highlight, Color4Clear);
 		mat4x4_translate(*transform, x, y, 0.0f);
 	}
@@ -1161,13 +1099,13 @@ static void mrsDrawBorder(void)
 		int x = i % FieldWidth;
 		int y = i / FieldWidth;
 
-		if (tet.linesCleared[y]) {
+		if (mrsTet.linesCleared[y]) {
 			linesCleared += 1;
 			i += FieldWidth - 1;
 			continue;
 		}
 
-		if (!fieldGet(tet.field, (point2i){x, y})) continue;
+		if (!fieldGet(mrsTet.field, (point2i){x, y})) continue;
 
 		// Coords transformed to world space
 		float tx = (float)x - (signed)(FieldWidth / 2);
@@ -1177,50 +1115,50 @@ static void mrsDrawBorder(void)
 			alpha *= ExtraRowDim;
 
 		// Left
-		if (!fieldGet(tet.field, (point2i){x - 1, y}))
+		if (!fieldGet(mrsTet.field, (point2i){x - 1, y}))
 			mrsQueueBorder((point3f){tx, ty + 0.125f, 0.0f},
 				(size3f){0.125f, 0.75f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Right
-		if (!fieldGet(tet.field, (point2i){x + 1, y}))
+		if (!fieldGet(mrsTet.field, (point2i){x + 1, y}))
 			mrsQueueBorder((point3f){tx + 0.875f, ty + 0.125f, 0.0f},
 				(size3f){0.125f, 0.75f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Down
-		if (!fieldGet(tet.field, (point2i){x, y - 1}))
+		if (!fieldGet(mrsTet.field, (point2i){x, y - 1}))
 			mrsQueueBorder((point3f){tx + 0.125f, ty, 0.0f},
 				(size3f){0.75f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Up
-		if (!fieldGet(tet.field, (point2i){x, y + 1}))
+		if (!fieldGet(mrsTet.field, (point2i){x, y + 1}))
 			mrsQueueBorder((point3f){tx + 0.125f, ty + 0.875f, 0.0f},
 				(size3f){0.75f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Down Left
-		if (!fieldGet(tet.field, (point2i){x - 1, y - 1})
-			|| !fieldGet(tet.field, (point2i){x - 1, y})
-			|| !fieldGet(tet.field, (point2i){x, y - 1}))
+		if (!fieldGet(mrsTet.field, (point2i){x - 1, y - 1})
+			|| !fieldGet(mrsTet.field, (point2i){x - 1, y})
+			|| !fieldGet(mrsTet.field, (point2i){x, y - 1}))
 			mrsQueueBorder((point3f){tx, ty, 0.0f},
 				(size3f){0.125f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Down Right
-		if (!fieldGet(tet.field, (point2i){x + 1, y - 1})
-			|| !fieldGet(tet.field, (point2i){x + 1, y})
-			|| !fieldGet(tet.field, (point2i){x, y - 1}))
+		if (!fieldGet(mrsTet.field, (point2i){x + 1, y - 1})
+			|| !fieldGet(mrsTet.field, (point2i){x + 1, y})
+			|| !fieldGet(mrsTet.field, (point2i){x, y - 1}))
 			mrsQueueBorder((point3f){tx + 0.875f, ty, 0.0f},
 				(size3f){0.125f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Up Left
-		if (!fieldGet(tet.field, (point2i){x - 1, y + 1})
-			|| !fieldGet(tet.field, (point2i){x - 1, y})
-			|| !fieldGet(tet.field, (point2i){x, y + 1}))
+		if (!fieldGet(mrsTet.field, (point2i){x - 1, y + 1})
+			|| !fieldGet(mrsTet.field, (point2i){x - 1, y})
+			|| !fieldGet(mrsTet.field, (point2i){x, y + 1}))
 			mrsQueueBorder((point3f){tx, ty + 0.875f, 0.0f},
 				(size3f){0.125f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Up Right
-		if (!fieldGet(tet.field, (point2i){x + 1, y + 1})
-			|| !fieldGet(tet.field, (point2i){x + 1, y})
-			|| !fieldGet(tet.field, (point2i){x, y + 1}))
+		if (!fieldGet(mrsTet.field, (point2i){x + 1, y + 1})
+			|| !fieldGet(mrsTet.field, (point2i){x + 1, y})
+			|| !fieldGet(mrsTet.field, (point2i){x, y + 1}))
 			mrsQueueBorder((point3f){tx + 0.875f, ty + 0.875f, 0.0f},
 				(size3f){0.125f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
@@ -1239,8 +1177,8 @@ void mrsDebug(void)
 			| NK_WINDOW_NO_SCROLLBAR)) {
 		nk_layout_row_dynamic(nkCtx(), 0, 2);
 		nk_labelf(nkCtx(), NK_TEXT_CENTERED, "Gravity: %d.%02x",
-			tet.player.gravity / SubGrid, tet.player.gravity % SubGrid);
-		nk_slider_int(nkCtx(), 4, &tet.player.gravity, SubGrid * 20, 4);
+			mrsTet.player.gravity / SubGrid, mrsTet.player.gravity % SubGrid);
+		nk_slider_int(nkCtx(), 4, &mrsTet.player.gravity, SubGrid * 20, 4);
 		nk_layout_row_dynamic(nkCtx(), 0, 1);
 		nk_checkbox_label(nkCtx(), "Pause spawning", &debugPauseSpawn);
 		nk_checkbox_label(nkCtx(), "Infinite lock delay", &debugInfLock);
@@ -1257,7 +1195,7 @@ void mrsDebug(void)
 		nk_layout_row_dynamic(nkCtx(), 16, 10);
 		for (int y = FieldHeightVisible - 1; y >= 0; y -= 1) {
 			for (int x = 0; x < FieldWidth; x += 1) {
-				mino cell = fieldGet(tet.field, (point2i){x, y});
+				mino cell = fieldGet(mrsTet.field, (point2i){x, y});
 				color4 cellColor = minoColor(cell);
 				if (nk_button_color(nkCtx(), nk_rgba(
 					cellColor.r * 255.0f,
@@ -1265,9 +1203,9 @@ void mrsDebug(void)
 					cellColor.b * 255.0f,
 					cellColor.a * 255.0f))) {
 					if (cell)
-						fieldSet(tet.field, (point2i){x, y}, MinoNone);
+						fieldSet(mrsTet.field, (point2i){x, y}, MinoNone);
 					else
-						fieldSet(tet.field, (point2i){x, y}, MinoGarbage);
+						fieldSet(mrsTet.field, (point2i){x, y}, MinoGarbage);
 				}
 			}
 		}
@@ -1281,7 +1219,7 @@ void mrsDraw(void)
 
 	glClearColor(0.0185f, 0.029f, 0.0944f, 1.0f); //TODO make into layer
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-	worldSetAmbientColor((color3){0.0185f, 0.029f, 0.0944f});
+	worldAmbientColor = (color3){0.0185f, 0.029f, 0.0944f};
 	mrsDrawScene();
 	mrsDrawGuide();
 	mrsQueueField();

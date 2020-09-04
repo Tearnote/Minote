@@ -17,12 +17,12 @@
 /// End of the clipping plane (draw distance), in world distance units
 #define ProjectionFar 100.0f
 
-static mat4x4 projection = {0}; ///< perspective transform
-static mat4x4 screenProjection = {0}; ///< screenspace transform
-static mat4x4 camera = {0}; ///< view transform
-static point3f lightPosition = {0}; ///< in world space
-static color3 lightColor = {0};
-static color3 ambientColor = {0};
+mat4x4 worldProjection = {0}; ///< perspective transform
+mat4x4 worldScreenProjection = {0}; ///< screenspace transform
+mat4x4 worldCamera = {0}; ///< view transform
+point3f worldLightPosition = {0}; ///< in world space
+color3 worldLightColor = {0};
+color3 worldAmbientColor = {0};
 
 static size2i currentSize = {0};
 static bool initialized = false;
@@ -41,9 +41,9 @@ static void worldResize(size2i size)
 	currentSize.y = size.y;
 
 	glViewport(0, 0, size.x, size.y);
-	mat4x4_perspective(projection, radf(45.0f),
+	mat4x4_perspective(worldProjection, radf(45.0f),
 		(float)size.x / (float)size.y, ProjectionNear, ProjectionFar);
-	mat4x4_ortho(screenProjection, 0.0f, size.x, size.y, 0.0f, 1.0f, -1.0f);
+	mat4x4_ortho(worldScreenProjection, 0.0f, size.x, size.y, 0.0f, 1.0f, -1.0f);
 }
 
 void worldInit(void)
@@ -52,16 +52,16 @@ void worldInit(void)
 	vec3 eye = {0.0f, 12.0f, 32.0f};
 	vec3 center = {0.0f, 12.0f, 0.0f};
 	vec3 up = {0.0f, 1.0f, 0.0f};
-	mat4x4_look_at(camera, eye, center, up);
-	lightPosition.x = -8.0f;
-	lightPosition.y = 32.0f;
-	lightPosition.z = 16.0f;
-	lightColor.r = 1.0f;
-	lightColor.g = 1.0f;
-	lightColor.b = 1.0f;
-	ambientColor.r = 1.0f;
-	ambientColor.g = 1.0f;
-	ambientColor.b = 1.0f;
+	mat4x4_look_at(worldCamera, eye, center, up);
+	worldLightPosition.x = -8.0f;
+	worldLightPosition.y = 32.0f;
+	worldLightPosition.z = 16.0f;
+	worldLightColor.r = 1.0f;
+	worldLightColor.g = 1.0f;
+	worldLightColor.b = 1.0f;
+	worldAmbientColor.r = 1.0f;
+	worldAmbientColor.g = 1.0f;
+	worldAmbientColor.b = 1.0f;
 	initialized = true;
 }
 
@@ -74,39 +74,4 @@ void worldCleanup(void)
 void worldUpdate(void)
 {
 	worldResize(windowGetSize());
-}
-
-void worldSetAmbientColor(color3 color)
-{
-	color3Copy(ambientColor, color);
-}
-
-vec4* worldProjection(void)
-{
-	return projection;
-}
-
-vec4* worldScreenProjection(void)
-{
-	return screenProjection;
-}
-
-vec4* worldCamera(void)
-{
-	return camera;
-}
-
-point3f worldLightPosition(void)
-{
-	return lightPosition;
-}
-
-color3 worldLightColor(void)
-{
-	return lightColor;
-}
-
-color3 worldAmbientColor(void)
-{
-	return ambientColor;
 }

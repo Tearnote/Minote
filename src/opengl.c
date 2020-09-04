@@ -10,34 +10,6 @@
 #include "util.h"
 #include "log.h"
 
-struct Texture {
-	GLuint id;
-	size2i size;
-};
-
-struct TextureMS {
-	GLuint id;
-	size2i size;
-	GLsizei samples;
-};
-
-struct Renderbuffer {
-	GLuint id;
-	size2i size;
-};
-
-struct RenderbufferMS {
-	GLuint id;
-	size2i size;
-	GLsizei samples;
-};
-
-struct Framebuffer {
-	GLuint id;
-	size2i size;
-	GLsizei samples;
-};
-
 /// OpenGL shader object ID
 typedef GLuint Shader;
 

@@ -224,16 +224,6 @@ void rendererFrameEnd(void)
 	glEnable(GL_BLEND);
 }
 
-void rendererDepthOnlyBegin(void)
-{
-	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-}
-
-void rendererDepthOnlyEnd(void)
-{
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-}
-
 void rendererBlit(Texture* t, GLfloat boost)
 {
 	assert(t);

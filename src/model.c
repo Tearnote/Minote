@@ -6,7 +6,6 @@
 #include "model.h"
 
 #include <assert.h>
-#include "opengl.h"
 #include "world.h"
 #include "util.h"
 #include "log.h"
@@ -92,44 +91,6 @@ void modelCleanup(void)
 
 	initialized = false;
 }
-
-/// Type tag for the Model object
-typedef enum ModelType {
-	ModelTypeNone, ///< zero value
-	ModelTypeFlat, ///< ::ModelFlat
-	ModelTypePhong, ///< ::ModelPhong
-	ModelTypeSize ///< terminator
-} ModelType;
-
-/// Base type for a Model. Contains all attributes common to every model type.
-typedef struct Model {
-	ModelType type; ///< Correct type to cast the Model to
-	const char* name; ///< Human-readable name for reference
-} ModelBase;
-
-/// Model type with flat shading. Each instance can be tinted.
-typedef struct ModelFlat {
-	ModelBase base;
-	size_t numVertices;
-	VertexBuffer vertices; ///< VBO with model vertex data
-	VertexBuffer tints; ///< VBO for storing per-draw tint colors
-	VertexBuffer highlights; ///< VBO for storing per-draw color highlight colors
-	VertexBuffer transforms; ///< VBO for storing per-draw model matrices
-	VertexArray vao;
-} ModelFlat;
-
-/// Model type with Phong shading. Makes use of light source and material data.
-typedef struct ModelPhong {
-	ModelBase base;
-	size_t numVertices;
-	VertexBuffer vertices; ///< VBO with model vertex data
-	VertexBuffer normals; ///< VBO with model normals, generated from vertices
-	VertexBuffer tints; ///< VBO for storing per-draw tint colors
-	VertexBuffer highlights; ///< VBO for storing per-draw color highlight colors
-	VertexBuffer transforms; ///< VBO for storing per-draw model matrices
-	VertexArray vao;
-	MaterialPhong material;
-} ModelPhong;
 
 /**
  * Destroy a ::ModelFlat instance. All referenced GPU resources are freed. The
@@ -230,8 +191,8 @@ static void modelDrawFlat(ModelFlat* m, size_t instances,
 	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, null,
 		GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4x4) * instances, transforms);
-	glUniformMatrix4fv(flat->projection, 1, GL_FALSE, *worldProjection());
-	glUniformMatrix4fv(flat->camera, 1, GL_FALSE, *worldCamera());
+	glUniformMatrix4fv(flat->projection, 1, GL_FALSE, *worldProjection);
+	glUniformMatrix4fv(flat->camera, 1, GL_FALSE, *worldCamera);
 	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numVertices, instances);
 }
 
@@ -287,11 +248,11 @@ static void modelDrawPhong(ModelPhong* m, size_t instances,
 	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, null,
 		GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4x4) * instances, transforms);
-	glUniformMatrix4fv(phong->projection, 1, GL_FALSE, *worldProjection());
-	glUniformMatrix4fv(phong->camera, 1, GL_FALSE, *worldCamera());
-	glUniform3fv(phong->lightPosition, 1, worldLightPosition().arr);
-	glUniform3fv(phong->lightColor, 1, worldLightColor().arr);
-	glUniform3fv(phong->ambientColor, 1, worldAmbientColor().arr);
+	glUniformMatrix4fv(phong->projection, 1, GL_FALSE, *worldProjection);
+	glUniformMatrix4fv(phong->camera, 1, GL_FALSE, *worldCamera);
+	glUniform3fv(phong->lightPosition, 1, worldLightPosition.arr);
+	glUniform3fv(phong->lightColor, 1, worldLightColor.arr);
+	glUniform3fv(phong->ambientColor, 1, worldAmbientColor.arr);
 	glUniform1f(phong->ambient, m->material.ambient);
 	glUniform1f(phong->diffuse, m->material.diffuse);
 	glUniform1f(phong->specular, m->material.specular);
@@ -342,7 +303,7 @@ static void modelGenerateNormals(size_t numVertices,
 }
 
 Model* modelCreateFlat(const char* name,
-	size_t numVertices, VertexFlat vertices[])
+	size_t numVertices, VertexFlat vertices[numVertices])
 {
 	assert(name);
 	assert(numVertices);
@@ -398,7 +359,8 @@ Model* modelCreateFlat(const char* name,
 }
 
 Model* modelCreatePhong(const char* name,
-	size_t numVertices, VertexPhong vertices[], MaterialPhong material)
+	size_t numVertices, VertexPhong vertices[numVertices],
+	MaterialPhong material)
 {
 	assert(name);
 	assert(numVertices);
