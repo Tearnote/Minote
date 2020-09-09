@@ -47,7 +47,8 @@ Tetrion mrsTet = {0};
  */
 static bool tryKicks(spin prevRotation)
 {
-	piece* playerPiece = mrsGetPiece(mrsTet.player.type, mrsTet.player.rotation);
+	piece* playerPiece = mrsGetPiece(mrsTet.player.type,
+		mrsTet.player.rotation);
 	if (!pieceOverlapsField(playerPiece, mrsTet.player.pos, mrsTet.field))
 		return true; // Original position
 
@@ -145,7 +146,8 @@ static void shift(int direction)
 {
 	assert(direction == 1 || direction == -1);
 	mrsTet.player.pos.x += direction;
-	piece* playerPiece = mrsGetPiece(mrsTet.player.type, mrsTet.player.rotation);
+	piece* playerPiece = mrsGetPiece(mrsTet.player.type,
+		mrsTet.player.rotation);
 	if (pieceOverlapsField(playerPiece, mrsTet.player.pos, mrsTet.field)) {
 		mrsTet.player.pos.x -= direction;
 	} else {
@@ -231,7 +233,8 @@ static void spawnPiece(void)
 			rotate(1);
 	}
 
-	piece* playerPiece = mrsGetPiece(mrsTet.player.type, mrsTet.player.rotation);
+	piece* playerPiece = mrsGetPiece(mrsTet.player.type,
+		mrsTet.player.rotation);
 	if (pieceOverlapsField(playerPiece, mrsTet.player.pos, mrsTet.field))
 		gameOver();
 
@@ -288,7 +291,8 @@ static void thump(void)
  */
 static bool canDrop(void)
 {
-	piece* playerPiece = mrsGetPiece(mrsTet.player.type, mrsTet.player.rotation);
+	piece* playerPiece = mrsGetPiece(mrsTet.player.type,
+		mrsTet.player.rotation);
 	return !pieceOverlapsField(playerPiece, (point2i){
 		.x = mrsTet.player.pos.x,
 		.y = mrsTet.player.pos.y - 1
@@ -327,8 +331,10 @@ static void drop(void)
  */
 static void lock(void)
 {
-	piece* playerPiece = mrsGetPiece(mrsTet.player.type, mrsTet.player.rotation);
-	fieldStampPiece(mrsTet.field, playerPiece, mrsTet.player.pos, mrsTet.player.type);
+	piece* playerPiece = mrsGetPiece(mrsTet.player.type,
+		mrsTet.player.rotation);
+	fieldStampPiece(mrsTet.field, playerPiece, mrsTet.player.pos,
+		mrsTet.player.type);
 	mrsTet.player.state = PlayerSpawn;
 	mrsEffectLock();
 }
@@ -349,7 +355,12 @@ void mrsInit(void)
 	mrsTet.rng = rngCreate((uint64_t)time(null));
 	for (size_t i = 0; i < countof(mrsTet.player.tokens); i += 1)
 		mrsTet.player.tokens[i] = MrsStartingTokens;
-	mrsTet.player.preview = randomPiece();
+	do {
+		mrsTet.player.preview = randomPiece();
+	}
+	while (mrsTet.player.preview == MinoO
+		|| mrsTet.player.preview == MinoS
+		|| mrsTet.player.preview == MinoZ);
 
 	mrsTet.state = TetrionReady;
 
@@ -401,7 +412,8 @@ static void mrsUpdateInputs(darray* inputs)
 		mrsTet.player.inputMap[InputLeft] = false;
 		mrsTet.player.inputMap[InputRight] = false;
 	}
-	if (mrsTet.player.inputMap[InputLeft] && mrsTet.player.inputMap[InputRight]) {
+	if (mrsTet.player.inputMap[InputLeft]
+		&& mrsTet.player.inputMap[InputRight]) {
 		if (mrsTet.player.lastDirection == InputLeft)
 			mrsTet.player.inputMap[InputRight] = false;
 		if (mrsTet.player.lastDirection == InputRight)
@@ -516,7 +528,8 @@ static void mrsUpdateSpawn(void)
 {
 	if (mrsTet.state != TetrionPlaying || mrsDebugPauseSpawn)
 		return; // Do not spawn during countdown or gameover
-	if (mrsTet.player.state == PlayerSpawn || mrsTet.player.state == PlayerNone) {
+	if (mrsTet.player.state == PlayerSpawn
+		|| mrsTet.player.state == PlayerNone) {
 		mrsTet.player.spawnDelay += 1;
 		if (mrsTet.player.spawnDelay >= MrsSpawnDelay)
 			spawnPiece();
@@ -530,7 +543,8 @@ static void mrsUpdateGravity(void)
 {
 	if (mrsTet.state == TetrionOutro)
 		return; // Prevent zombie blocks
-	if (mrsTet.player.state != PlayerSpawned && mrsTet.player.state != PlayerActive)
+	if (mrsTet.player.state != PlayerSpawned
+		&& mrsTet.player.state != PlayerActive)
 		return;
 
 	int remainingGravity = mrsTet.player.gravity;
