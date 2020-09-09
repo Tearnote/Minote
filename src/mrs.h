@@ -8,6 +8,7 @@
 #ifndef MINOTE_MRS_H
 #define MINOTE_MRS_H
 
+#include "mrsdraw.h"
 #include "darray.h"
 #include "mapper.h"
 #include "mino.h"
@@ -80,6 +81,10 @@ typedef struct Tetrion {
 /// Current state of the mode. Read-only.
 extern Tetrion mrsTet;
 
+// Debug switches
+extern int mrsDebugPauseSpawn; // Boolean, int for compatibility
+extern int mrsDebugInfLock; // Boolean, int for compatibility
+
 /**
  * Initialize the mrs sublayer. Needs to be called before the layer can be
  * used.
@@ -87,7 +92,7 @@ extern Tetrion mrsTet;
 void mrsInit(void);
 
 /**
- * Clean up the mrs sublayer. Play functions cannot be used until playInit() is
+ * Clean up the mrs sublayer. Play functions cannot be used until mrsInit() is
  * called again.
  */
 void mrsCleanup(void);
@@ -97,10 +102,5 @@ void mrsCleanup(void);
  * @param in List of ::Input events that happened during the frame
  */
 void mrsAdvance(darray* inputs);
-
-/**
- * Draw the mrs sublayer to the screen.
- */
-void mrsDraw(void);
 
 #endif //MINOTE_MRS_H

@@ -1,13 +1,11 @@
 /**
- * Implementation of mrstables.h
+ * Implementation of mrsdef.h
  * @file
  */
  
-#include "mrstables.h"
+#include "mrsdef.h"
 
-#include "mino.h"
-
-static piece MrsRotationSystem[MinoGarbage][SpinSize] = {
+static piece MrsPieces[MinoGarbage][SpinSize] = {
 	{}, /* MinoNone */
 	{ /* MinoI */
 		{
@@ -139,5 +137,5 @@ static piece MrsRotationSystem[MinoGarbage][SpinSize] = {
 
 piece* mrsGetPiece(mino type, spin rotation)
 {
-	return &MrsRotationSystem[type][rotation];
+	return &MrsPieces[type][rotation];
 }

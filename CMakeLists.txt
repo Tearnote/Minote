@@ -94,7 +94,8 @@ set(C_SOURCES
         src/mino.h src/mino.c
         src/mapper.h src/mapper.c
         src/mrs.h src/mrs.c
-        src/mrstables.h src/mrstables.c
+        src/mrsdef.h src/mrsdef.c
+        src/mrsdraw.h src/mrsdraw.c
         src/aa.h src/aa.c
         src/opengl.h src/opengl.c
         src/bloom.h src/bloom.c
