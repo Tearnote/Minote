@@ -8,12 +8,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <time.h>
-#include "particles.h"
-#include "renderer.h"
 #include "mrsdef.h"
-#include "debug.h"
-#include "model.h"
-#include "world.h"
 #include "log.h"
 
 int mrsDebugPauseSpawn = 0;
