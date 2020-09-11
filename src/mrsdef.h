@@ -16,12 +16,12 @@
 
 #define MrsStartingTokens 6 ///< Number of tokens that each piece starts with
 
-#define MrsAutoshiftCharge 16 ///< Frames direction has to be held before autoshift
+#define MrsAutoshiftCharge 12 ///< Frames direction has to be held before autoshift
 #define MrsAutoshiftRepeat 1 ///< Frames between autoshifts
 #define MrsLockDelay 40 ///< Frames a piece can spend on the stack before locking
 #define MrsClearOffset 5 ///< Frames between piece lock and line clear
 #define MrsClearDelay 30 ///< Frames between line clear and thump
-#define MrsSpawnDelay 30 ///< Frames between lock/thump and new piece spawn
+#define MrsSpawnDelay 24 ///< Frames between lock/thump and new piece spawn
 
 // Graphics defs
 
