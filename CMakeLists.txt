@@ -34,6 +34,7 @@ include_directories(${GLFW_INCLUDE_DIRS})
 
 # Build the preprocessors
 add_executable(Preshade src/tools/preshade.c)
+add_subdirectory(lib/msdf-atlas-gen)
 
 # Preprocess shaders
 include_directories(${PROJECT_BINARY_DIR}/glsl)
@@ -62,8 +63,31 @@ foreach (GLSL_PATH ${GLSL_SOURCES})
     list(APPEND GLSL_OUTPUTS ${GLSL_OUTPUT})
 endforeach (GLSL_PATH)
 
-add_custom_target(Preprocess_shaders
-        DEPENDS ${GLSL_OUTPUTS})
+add_custom_target(Preprocess_shaders DEPENDS ${GLSL_OUTPUTS})
+add_dependencies(Preprocess_shaders Preshade)
+
+#Preprocess fonts
+set(FONT_SOURCES
+        fonts/Jost-500-Medium.otf)
+
+foreach (FONT_PATH ${FONT_SOURCES})
+    get_filename_component(FONT_DIR ${FONT_PATH} DIRECTORY)
+    get_filename_component(FONT_FILENAME ${FONT_PATH} NAME)
+    get_filename_component(FONT_NAME ${FONT_PATH} NAME_WLE)
+    set(FONT_OUTPUT ${PROJECT_BINARY_DIR}/fonts/${FONT_NAME})
+    add_custom_command(
+            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+            OUTPUT ${FONT_OUTPUT}.png ${FONT_OUTPUT}.csv
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/fonts/"
+            COMMAND msdf-atlas-gen -font ${FONT_PATH} -charset "${FONT_DIR}/${FONT_NAME}.txt" -imageout ${FONT_OUTPUT}.png -csv ${FONT_OUTPUT}.csv
+            COMMAND ${CMAKE_COMMAND} -E copy ${FONT_PATH} "${PROJECT_BINARY_DIR}/fonts/${FONT_FILENAME}"
+            DEPENDS ${FONT_PATH}
+            VERBATIM)
+    list(APPEND FONT_OUTPUTS ${FONT_OUTPUT}.png ${FONT_OUTPUT}.csv)
+endforeach (FONT_PATH)
+
+add_custom_target(Preprocess_fonts DEPENDS ${FONT_OUTPUTS})
+add_dependencies(Preprocess_fonts msdf-atlas-gen)
 
 # Build the game
 include_directories(lib)
@@ -106,15 +130,12 @@ set(C_SOURCES
         src/debug.h src/debug.c)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
-add_custom_command(TARGET Minote POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/assets/ttf ${PROJECT_BINARY_DIR}/ttf)
 target_compile_options(Minote PRIVATE
         $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
         -Wall -Wextra -pedantic-errors>)
 
 add_dependencies(Minote Preprocess_shaders)
-add_dependencies(Preprocess_shaders Preshade)
+add_dependencies(Minote Preprocess_fonts)
 
 # Linker settings
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
