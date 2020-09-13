@@ -30,14 +30,14 @@ find_package(PkgConfig REQUIRED)
 pkg_search_module(GLFW REQUIRED glfw3)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
-include_directories(${GLFW_INCLUDE_DIRS})
 
 # Build the preprocessors
 add_executable(Preshade src/tools/preshade.c)
+target_include_directories(Preshade PRIVATE lib)
+
 add_subdirectory(lib/msdf-atlas-gen)
 
 # Preprocess shaders
-include_directories(${PROJECT_BINARY_DIR}/glsl)
 set(GLSL_SOURCES
         src/glsl/flat.vert.glsl src/glsl/flat.frag.glsl
         src/glsl/phong.vert.glsl src/glsl/phong.frag.glsl
@@ -90,7 +90,6 @@ add_custom_target(Preprocess_fonts DEPENDS ${FONT_OUTPUTS})
 add_dependencies(Preprocess_fonts msdf-atlas-gen)
 
 # Build the game
-include_directories(lib)
 set(C_INTERNALLIBS
         lib/glad/glad.h lib/glad/glad.c lib/glad/KHR/khrplatform.h
         lib/linmath/linmath.h
@@ -136,6 +135,10 @@ target_compile_options(Minote PRIVATE
 
 add_dependencies(Minote Preprocess_shaders)
 add_dependencies(Minote Preprocess_fonts)
+
+target_include_directories(Minote PRIVATE ${PROJECT_BINARY_DIR}/glsl)
+target_include_directories(Minote PRIVATE lib)
+target_include_directories(Minote PRIVATE ${GLFW_INCLUDE_DIRS})
 
 # Linker settings
 if(CMAKE_BUILD_TYPE STREQUAL "Release")

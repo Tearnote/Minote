@@ -12,7 +12,6 @@ add_compile_definitions(MSDF_ATLAS_STANDALONE)
 
 find_package(PkgConfig REQUIRED)
 pkg_search_module(FREETYPE REQUIRED freetype2)
-include_directories(${FREETYPE_INCLUDE_DIRS})
 find_package(Threads REQUIRED)
 
 set(CXX_SOURCES
@@ -60,8 +59,6 @@ set(CXX_SOURCES
 	msdf-atlas-gen/Workload.cpp
 	msdf-atlas-gen/Workload.h)
 
-include_directories("msdfgen")
-include_directories("msdfgen/include")
 set(CXX_DEP_SOURCES
 	msdfgen/core/arithmetics.hpp
 	msdfgen/core/Bitmap.h
@@ -114,5 +111,10 @@ set(CXX_DEP_SOURCES
 	msdfgen/ext/save-png.h)
 
 add_executable(msdf-atlas-gen ${CXX_SOURCES} ${CXX_DEP_SOURCES})
+
+target_include_directories(msdf-atlas-gen PRIVATE ${FREETYPE_INCLUDE_DIRS})
+target_include_directories(msdf-atlas-gen PRIVATE "msdfgen")
+target_include_directories(msdf-atlas-gen PRIVATE "msdfgen/include")
+
 target_link_libraries(msdf-atlas-gen ${FREETYPE_STATIC_LIBRARIES} -lfreetype)
 target_link_libraries(msdf-atlas-gen Threads::Threads)
