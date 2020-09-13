@@ -28,6 +28,8 @@ endif()
 # External library dependencies
 find_package(PkgConfig REQUIRED)
 pkg_search_module(GLFW REQUIRED glfw3)
+pkg_search_module(FREETYPE REQUIRED freetype2)
+pkg_search_module(HARFBUZZ REQUIRED harfbuzz)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 
@@ -79,7 +81,7 @@ foreach (FONT_PATH ${FONT_SOURCES})
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
             OUTPUT ${FONT_OUTPUT}.png ${FONT_OUTPUT}.csv
             COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/fonts/"
-            COMMAND msdf-atlas-gen -font ${FONT_PATH} -charset "${FONT_DIR}/${FONT_NAME}.txt" -imageout ${FONT_OUTPUT}.png -csv ${FONT_OUTPUT}.csv
+            COMMAND msdf-atlas-gen -font ${FONT_PATH} -charset "${FONT_DIR}/${FONT_NAME}.txt" -imageout ${FONT_OUTPUT}.png -csv ${FONT_OUTPUT}.csv -json ${FONT_OUTPUT}.json
             COMMAND ${CMAKE_COMMAND} -E copy ${FONT_PATH} "${PROJECT_BINARY_DIR}/fonts/${FONT_FILENAME}"
             DEPENDS ${FONT_PATH}
             VERBATIM)
@@ -126,7 +128,9 @@ set(C_SOURCES
         src/world.h src/world.c
         src/tween.h src/tween.c
         src/particles.h src/particles.c
-        src/debug.h src/debug.c)
+        src/debug.h src/debug.c
+        src/fontlist.h
+        src/font.h src/font.c)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 target_compile_options(Minote PRIVATE
@@ -139,6 +143,8 @@ add_dependencies(Minote Preprocess_fonts)
 target_include_directories(Minote PRIVATE ${PROJECT_BINARY_DIR}/glsl)
 target_include_directories(Minote PRIVATE lib)
 target_include_directories(Minote PRIVATE ${GLFW_INCLUDE_DIRS})
+target_include_directories(Minote PRIVATE ${HARFBUZZ_INCLUDE_DIRS})
+target_include_directories(Minote PRIVATE ${FREETYPE_INCLUDE_DIRS})
 
 # Linker settings
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -153,7 +159,10 @@ endif()
 
 # Link the game
 target_link_libraries(Minote ${GLFW_STATIC_LIBRARIES})
+target_link_libraries(Minote ${HARFBUZZ_STATIC_LIBRARIES})
+target_link_libraries(Minote ${FREETYPE_STATIC_LIBRARIES})
 if(WIN32)
+    target_link_libraries(Minote stdc++) # libgraphite2 bug https://github.com/msys2/MINGW-packages/issues/1877
     target_link_libraries(Minote winmm)
 endif()
 target_link_libraries(Minote ${CMAKE_DL_LIBS})

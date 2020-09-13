@@ -15,12 +15,14 @@
 #include "model.h"
 #include "util.h"
 #include "play.h"
+#include "font.h"
 #include "aa.h"
 
 static void gameInit(void)
 {
 	mapperInit();
 	rendererInit();
+	fontInit();
 	modelInit();
 	bloomInit();
 	aaInit(AAExtreme);
@@ -43,6 +45,7 @@ static void gameCleanup(void)
 	aaCleanup();
 	bloomCleanup();
 	modelCleanup();
+	fontCleanup();
 	rendererCleanup();
 	mapperCleanup();
 }
