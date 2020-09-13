@@ -100,7 +100,8 @@ set(C_INTERNALLIBS
         lib/smaa/AreaTex.h lib/smaa/SearchTex.h
         lib/nuklear/nuklear.h
         lib/cephes/protos.h lib/cephes/mconf.h
-        lib/cephes/const.c lib/cephes/polevl.c lib/cephes/fresnl.c)
+        lib/cephes/const.c lib/cephes/polevl.c lib/cephes/fresnl.c
+        lib/stb/stb_image.h lib/stb/stb_image.c)
 
 set(C_SOURCES
         src/main.h src/main.c

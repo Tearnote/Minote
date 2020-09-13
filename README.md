@@ -15,7 +15,8 @@ cmake --build .
 ```
 
 ### External libraries
-Requires [`GLFW`](https://www.glfw.org/) 3.3.
+Requires [`GLFW`](https://www.glfw.org/) 3.3 and
+[`HarfBuzz`](http://harfbuzz.org/).
 
 ### Included libraries
 [`glad`](https://glad.dav1d.de/) loader generated on 2019-05-06, in
@@ -39,3 +40,9 @@ under WTFPL.
 
 [`Cephes Mathematical Library`](https://www.netlib.org/cephes) retrieved on
 2020-09-02, used under permissive terms.
+
+[`msdf-atlas-gen`](https://github.com/Chlumsky/msdf-atlas-gen) retrieved on
+2020-09-12, license pending.
+
+[`stb_image.h`](https://github.com/nothings/stb/blob/master/stb_image.h)
+retrieved on 2020-09-13, in Public Domain.

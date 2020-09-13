@@ -6,6 +6,7 @@
 #include "main.h"
 
 #include <stdlib.h>
+#include <locale.h>
 #include "thread.h"
 #include "window.h"
 #include "system.h"
@@ -20,6 +21,7 @@
  */
 static void init(void)
 {
+	setlocale(LC_ALL, "C"); // Fix stdio issues with float parsing and others
 	logInit();
 	logEnableConsole(applog);
 #ifdef NDEBUG

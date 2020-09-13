@@ -12,6 +12,7 @@
 #include "darray.h"
 
 typedef struct FontAtlasChar {
+	float advance;
 	float charLeft;
 	float charBottom;
 	float charRight;
