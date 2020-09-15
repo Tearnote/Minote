@@ -16,6 +16,7 @@
 #include "util.h"
 #include "play.h"
 #include "font.h"
+#include "text.h"
 #include "aa.h"
 
 static void gameInit(void)
@@ -23,6 +24,7 @@ static void gameInit(void)
 	mapperInit();
 	rendererInit();
 	fontInit();
+	textInit();
 	modelInit();
 	bloomInit();
 	aaInit(AAExtreme);
@@ -45,6 +47,7 @@ static void gameCleanup(void)
 	aaCleanup();
 	bloomCleanup();
 	modelCleanup();
+	textCleanup();
 	fontCleanup();
 	rendererCleanup();
 	mapperCleanup();
@@ -103,6 +106,19 @@ static void gameDraw(void)
 	playDraw();
 	particlesDraw();
 	aaEnd();
+	textQueue(FontJost, 0.4f, (point3f){7.0f, 11.0f, 0.0f}, Color4Black,
+		u8"Almost before we knew it, we had left the ground.");
+	textQueue(FontJost, 0.6f, (point3f){8.0f, 8.8f, 0.2f}, Color4Black,
+		u8"Almost before we knew it, we had left the ground.");
+	textQueue(FontJost, 1.0f, (point3f){11.0f, 8.5f, 0.0f}, Color4White,
+		u8"%s %s!", u8"Hello", u8"world");
+	textQueue(FontJost, 3.0f, (point3f){6.5f, 6.0f, 0.0f}, Color4Black,
+		u8"Serious text.");
+	textQueue(FontJost, 8.0f, (point3f){6.0f, -0.5f, 0.0f}, (color4){0.3f, 0.3f, 0.3f, 1.0f},
+		u8"Żółć");
+	glDisable(GL_DEPTH_TEST);
+	textDraw();
+	glEnable(GL_DEPTH_TEST);
 	bloomApply();
 #ifdef MINOTE_DEBUG
 	debugDraw();

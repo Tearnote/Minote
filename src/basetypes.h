@@ -58,6 +58,17 @@ typedef union point3f {
 /// A floating-point 3D size. Members should not be negative.
 typedef point3f size3f;
 
+/// A standard 4-element vector type
+typedef union point4f {
+	struct {
+		float x;
+		float y;
+		float z;
+		float w;
+	};
+	float arr[4];
+} point4f;
+
 /// An RGB color triple. Values higher than 1.0 represent HDR.
 typedef union color3 {
 	struct {
@@ -81,6 +92,9 @@ typedef union color4 {
 
 /// White color convenience constant
 #define Color4White ((color4){1.0f, 1.0f, 1.0f, 1.0f})
+
+/// Black color convenience constant
+#define Color4Black ((color4){0.0f, 0.0f, 0.0f, 1.0f})
 
 /// Fully transparent color convenience constant
 #define Color4Clear ((color4){1.0f, 1.0f, 1.0f, 0.0f})

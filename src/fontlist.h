@@ -8,14 +8,12 @@
 
 #define FONT_DIR u8"fonts"
 
-typedef enum Fonts {
-	FontNone,
+typedef enum FontType {
 	FontJost,
 	FontSize
-} Fonts;
+} FontType;
 
 #define FontList ((const char*[FontSize]){ \
-    [FontNone] = u8"",                     \
     [FontJost] = u8"Jost-500-Medium"       \
 })
 

@@ -29,7 +29,7 @@ void fontInit(void)
 		return;
 	}
 
-	for (size_t i = FontNone + 1; i < FontSize; i += 1) {
+	for (size_t i = 0; i < FontSize; i += 1) {
 
 		// Load the font file into a Harfbuzz font
 		char fontPath[256] = "";
@@ -41,7 +41,7 @@ void fontInit(void)
 				FontList[i], fontPath, err);
 			goto cleanup;
 		}
-		err = FT_Set_Char_Size(ftFace, 0, 1000, 0, 0);
+		err = FT_Set_Char_Size(ftFace, 0, 1024, 0, 0);
 		if (err) {
 			logError(applog, "Failed to set font %s char size: error %d",
 				FontList[i], err);
@@ -56,6 +56,7 @@ void fontInit(void)
 		snprintf(atlasPath, 256, "%s/%s.png", FONT_DIR, FontList[i]);
 		size2i size = {0};
 		int channels = 0;
+		stbi_set_flip_vertically_on_load(true);
 		unsigned char* atlasData = stbi_load(atlasPath, &size.x, &size.y, &channels, 0);
 		if (!atlasData) {
 			logError(applog, "Failed to load the font atlas (%s) for font %s",
@@ -125,16 +126,14 @@ void fontCleanup(void)
 {
 	if (!initialized) return;
 
-	for (size_t i = FontNone + 1; i < FontSize; i += 1) {
+	for (size_t i = 0; i < FontSize; i += 1) {
 		if (!fonts[i].hbFont && !fonts[i].atlas && !fonts[i].metrics)
 			continue;
 
 		hb_font_destroy(fonts[i].hbFont);
 		fonts[i].hbFont = null;
-
 		textureDestroy(fonts[i].atlas);
 		fonts[i].atlas = null;
-
 		darrayDestroy(fonts[i].metrics);
 		fonts[i].metrics = null;
 

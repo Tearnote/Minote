@@ -51,7 +51,8 @@ set(GLSL_SOURCES
         src/glsl/delinearize.vert.glsl src/glsl/delinearize.frag.glsl
         src/glsl/threshold.vert.glsl src/glsl/threshold.frag.glsl
         src/glsl/boxBlur.vert.glsl src/glsl/boxBlur.frag.glsl
-        src/glsl/nuklear.vert.glsl src/glsl/nuklear.frag.glsl)
+        src/glsl/nuklear.vert.glsl src/glsl/nuklear.frag.glsl
+        src/glsl/msdf.vert.glsl src/glsl/msdf.frag.glsl)
 
 foreach (GLSL_PATH ${GLSL_SOURCES})
     get_filename_component(GLSL_FILENAME ${GLSL_PATH} NAME_WLE)
@@ -81,7 +82,7 @@ foreach (FONT_PATH ${FONT_SOURCES})
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
             OUTPUT ${FONT_OUTPUT}.png ${FONT_OUTPUT}.csv
             COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/fonts/"
-            COMMAND msdf-atlas-gen -font ${FONT_PATH} -charset "${FONT_DIR}/${FONT_NAME}.txt" -imageout ${FONT_OUTPUT}.png -csv ${FONT_OUTPUT}.csv -json ${FONT_OUTPUT}.json
+            COMMAND msdf-atlas-gen -font ${FONT_PATH} -pxrange 4 -charset "${FONT_DIR}/${FONT_NAME}.txt" -imageout ${FONT_OUTPUT}.png -csv ${FONT_OUTPUT}.csv -json ${FONT_OUTPUT}.json
             COMMAND ${CMAKE_COMMAND} -E copy ${FONT_PATH} "${PROJECT_BINARY_DIR}/fonts/${FONT_FILENAME}"
             DEPENDS ${FONT_PATH}
             VERBATIM)
@@ -131,7 +132,7 @@ set(C_SOURCES
         src/particles.h src/particles.c
         src/debug.h src/debug.c
         src/fontlist.h
-        src/font.h src/font.c)
+        src/font.h src/font.c src/text.c src/text.h)
 
 add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
 target_compile_options(Minote PRIVATE

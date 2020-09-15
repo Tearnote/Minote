@@ -42,7 +42,7 @@ under WTFPL.
 2020-09-02, used under permissive terms.
 
 [`msdf-atlas-gen`](https://github.com/Chlumsky/msdf-atlas-gen) retrieved on
-2020-09-12, license pending.
+2020-09-12, used under MIT license.
 
 [`stb_image.h`](https://github.com/nothings/stb/blob/master/stb_image.h)
 retrieved on 2020-09-13, in Public Domain.
