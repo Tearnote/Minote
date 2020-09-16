@@ -19,6 +19,7 @@
 
 typedef struct ProgramMsdf {
 	ProgramBase base;
+	TextureUnit transforms;
 	TextureUnit atlas;
 	Uniform camera;
 	Uniform projection;
@@ -29,7 +30,7 @@ typedef struct GlyphMsdf {
 	size2f size;
 	point4f texBounds;
 	color4 color;
-	mat4x4 transform;
+	int transformIndex;
 } GlyphMsdf;
 
 static const char* ProgramMsdfVertName = u8"msdf.vert";
@@ -45,10 +46,12 @@ static ProgramMsdf* msdf = null;
 static VertexArray msdfVao[FontSize] = {0};
 static VertexBuffer msdfGlyphsVbo[FontSize] = {0};
 static darray* msdfGlyphs[FontSize] = {0};
+static BufferTextureStorage msdfTransformsStorage[FontSize] = {0};
+static BufferTexture msdfTransformsTex[FontSize] = {0};
+static darray* msdfTransforms[FontSize] = {0};
 
 static bool initialized = false;
 
-#include <GLFW/glfw3.h>
 static void textQueueV(FontType font, float size, point3f pos, point3f dir, point3f up,
 	color4 color, const char* fmt, va_list args)
 {
@@ -68,13 +71,13 @@ static void textQueueV(FontType font, float size, point3f pos, point3f dir, poin
 	hb_shape(fonts[font].hbFont, text, null, 0);
 
 	// Construct the string transform
+	mat4x4* transform = darrayProduce(msdfTransforms[font]);
 	mat4x4 translate = {0};
 	mat4x4 rotate = {0};
-	mat4x4 transform = {0};
 	mat4x4_translate(translate, pos.x, pos.y, 0.0f);
 //	mat4x4_rotate_Z(rotate, translate, 0.0);
 	mat4x4_rotate_Z(rotate, translate, pos.z);
-	mat4x4_scale_aniso(transform, rotate, size, size, size);
+	mat4x4_scale_aniso(*transform, rotate, size, size, size);
 
 	// Iterate over glyphs
 	unsigned glyphCount = 0;
@@ -102,7 +105,7 @@ static void textQueueV(FontType font, float size, point3f pos, point3f dir, poin
 		glyph->texBounds.z = atlasChar->atlasRight / (float)fonts[font].atlas->size.x;
 		glyph->texBounds.w = atlasChar->atlasTop / (float)fonts[font].atlas->size.y;
 		color4Copy(glyph->color, color);
-		mat4x4_dup(glyph->transform, transform);
+		glyph->transformIndex = msdfTransforms[font]->count - 1;
 
 		// Advance position
 		cursor.x += xAdvance;
@@ -118,12 +121,14 @@ void textInit(void)
 		ProgramMsdfVertName, ProgramMsdfVertSrc,
 		ProgramMsdfFragName, ProgramMsdfFragSrc);
 	msdf->atlas = programSampler(msdf, u8"atlas", GL_TEXTURE0);
+	msdf->transforms = programSampler(msdf, u8"transforms", GL_TEXTURE1);
 	msdf->projection = programUniform(msdf, u8"projection");
 	msdf->camera = programUniform(msdf, u8"camera");
 
 	glGenBuffers(FontSize, msdfGlyphsVbo);
-
 	glGenVertexArrays(FontSize, msdfVao);
+	glGenBuffers(FontSize, msdfTransformsStorage);
+	glGenTextures(FontSize, msdfTransformsTex);
 
 	for (size_t i = 0; i < FontSize; i += 1) {
 		glBindVertexArray(msdfVao[i]);
@@ -150,23 +155,16 @@ void textInit(void)
 		glVertexAttribDivisor(3, 1);
 
 		glEnableVertexAttribArray(4);
-		glEnableVertexAttribArray(5);
-		glEnableVertexAttribArray(6);
-		glEnableVertexAttribArray(7);
-		glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(GlyphMsdf),
-			(void*)offsetof(GlyphMsdf, transform));
-		glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(GlyphMsdf),
-			(void*)(offsetof(GlyphMsdf, transform) + sizeof(vec4)));
-		glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(GlyphMsdf),
-			(void*)(offsetof(GlyphMsdf, transform) + (sizeof(vec4) * 2)));
-		glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(GlyphMsdf),
-			(void*)(offsetof(GlyphMsdf, transform) + (sizeof(vec4) * 3)));
+		glVertexAttribPointer(4, 1, GL_INT, GL_FALSE, sizeof(GlyphMsdf),
+			(void*)offsetof(GlyphMsdf, transformIndex));
 		glVertexAttribDivisor(4, 1);
-		glVertexAttribDivisor(5, 1);
-		glVertexAttribDivisor(6, 1);
-		glVertexAttribDivisor(7, 1);
 
 		msdfGlyphs[i] = darrayCreate(sizeof(GlyphMsdf));
+
+		glBindTexture(GL_TEXTURE_BUFFER, msdfTransformsTex[i]);
+		glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, msdfTransformsStorage[i]);
+
+		msdfTransforms[i] = darrayCreate(sizeof(mat4x4));
 
 		logDebug(applog, "Initialized font %s", FontList[i]);
 	}
@@ -179,10 +177,14 @@ void textCleanup(void)
 	if (!initialized) return;
 
 	for (size_t i = 0; i < FontSize; i += 1) {
+		darrayDestroy(msdfTransforms[i]);
+		msdfTransforms[i] = null;
 		darrayDestroy(msdfGlyphs[i]);
 		msdfGlyphs[i] = null;
 	}
 
+	glDeleteTextures(FontSize, msdfTransformsTex);
+	glDeleteBuffers(FontSize, msdfTransformsStorage);
 	glDeleteBuffers(FontSize, msdfGlyphsVbo);
 	arrayClear(msdfGlyphsVbo);
 	glDeleteVertexArrays(FontSize, msdfVao);
@@ -233,13 +235,21 @@ void textDraw(void)
 		glBufferData(GL_ARRAY_BUFFER, glyphsSize, null, GL_STREAM_DRAW);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, glyphsSize, msdfGlyphs[i]->data);
 
+		size_t transformsSize = sizeof(mat4x4) * msdfTransforms[i]->count;
+		glBindBuffer(GL_TEXTURE_BUFFER, msdfTransformsStorage[i]);
+		glBufferData(GL_TEXTURE_BUFFER, transformsSize, null, GL_STREAM_DRAW);
+		glBufferSubData(GL_TEXTURE_BUFFER, 0, transformsSize, msdfTransforms[i]->data);
+
 		glBindVertexArray(msdfVao[i]);
 		programUse(msdf);
 		textureUse(fonts[i].atlas, msdf->atlas);
+		glActiveTexture(msdf->transforms);
+		glBindTexture(GL_TEXTURE_BUFFER, msdfTransformsTex[i]);
 		glUniformMatrix4fv(msdf->projection, 1, GL_FALSE, *worldProjection);
 		glUniformMatrix4fv(msdf->camera, 1, GL_FALSE, *worldCamera);
 		glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, instances);
 
 		darrayClear(msdfGlyphs[i]);
+		darrayClear(msdfTransforms[i]);
 	}
 }

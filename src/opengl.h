@@ -67,6 +67,12 @@ typedef GLuint VertexArray;
 /// OpenGL element array object ID
 typedef GLuint ElementArray;
 
+/// OpenGL buffer texture object ID
+typedef GLuint BufferTexture;
+
+/// OpenGL buffer object, for use with buffer textures
+typedef GLuint BufferTextureStorage;
+
 /**
  * Create a new ::Texture instance. Please note that this object cannot be used
  * for drawing or sampling until storage is allocated with textureStorage().
