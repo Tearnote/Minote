@@ -247,7 +247,7 @@ static void mrsQueuePlayer(void)
 		}
 
 		color4Copy(*tint, minoColor(mrsTet.player.type));
-		if (/*!canDrop()*/false) {
+		if (mrsTet.player.lockDelay != 0) {
 			tweenRestart(&lockDim);
 			lockDim.start -= mrsTet.player.lockDelay * MrsUpdateTick;
 			float dim = tweenApply(&lockDim);
