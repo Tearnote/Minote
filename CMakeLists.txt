@@ -82,7 +82,7 @@ foreach (FONT_PATH ${FONT_SOURCES})
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
             OUTPUT ${FONT_OUTPUT}.png ${FONT_OUTPUT}.csv
             COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/fonts/"
-            COMMAND msdf-atlas-gen -font ${FONT_PATH} -pxrange 4 -charset "${FONT_DIR}/${FONT_NAME}.txt" -imageout ${FONT_OUTPUT}.png -csv ${FONT_OUTPUT}.csv -json ${FONT_OUTPUT}.json
+            COMMAND msdf-atlas-gen -font ${FONT_PATH} -pxrange 4 -charset "${FONT_DIR}/${FONT_NAME}.txt" -imageout ${FONT_OUTPUT}.png -csv ${FONT_OUTPUT}.csv
             COMMAND ${CMAKE_COMMAND} -E copy ${FONT_PATH} "${PROJECT_BINARY_DIR}/fonts/${FONT_FILENAME}"
             DEPENDS ${FONT_PATH}
             VERBATIM)
