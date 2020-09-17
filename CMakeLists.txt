@@ -161,6 +161,12 @@ endif()
 
 # Link the game
 target_link_libraries(Minote ${GLFW_STATIC_LIBRARIES})
+
+# https://github.com/google/brotli/issues/795
+list(TRANSFORM HARFBUZZ_STATIC_LIBRARIES REPLACE "brotlidec" "brotlidec-static")
+list(TRANSFORM FREETYPE_STATIC_LIBRARIES REPLACE "brotlidec" "brotlidec-static")
+list(TRANSFORM HARFBUZZ_STATIC_LIBRARIES REPLACE "brotlicommon" "brotlicommon-static")
+list(TRANSFORM FREETYPE_STATIC_LIBRARIES REPLACE "brotlicommon" "brotlicommon-static")
 target_link_libraries(Minote ${HARFBUZZ_STATIC_LIBRARIES})
 target_link_libraries(Minote ${FREETYPE_STATIC_LIBRARIES})
 if(WIN32)

@@ -20,26 +20,22 @@ float median(float r, float g, float b) {
 
 void main()
 {
-    /*float pxRange = 4.0;
-
-    vec2 msdfUnit = pxRange / vec2(textureSize(atlas, 0));
-    vec3 s = texture(atlas, fTexCoords).rgb;
-    float sigDist = median(s.r, s.g, s.b) - 0.5;
-    sigDist *= dot(msdfUnit, 0.5 / fwidth(fTexCoords));
-    float opacity = clamp(sigDist + 0.5, 0.0, 1.0);
-
-    outColor = vec4(fColor.rgb, smoothstep(0.0, fColor.a, opacity));*/
-
-    float pxRange = 4.0;
+    float pxRange = 4.0; //TODO make uniform
 
     vec3 s = texture(atlas, fTexCoords).rgb;
     float distance = (median(s.r, s.g, s.b) - 0.5) * pxRange;
+    vec2 dxDist = vec2(dFdx(distance), dFdy(distance));
+    if (all(equal(vec2(0.0),dxDist)))
+        discard; // Avoid normalizing a zero vector
+    vec2 gradDist = normalize(dxDist);
+
     vec2 uv = fTexCoords * textureSize(atlas, 0);
-    vec2 grad_dist = normalize(vec2(dFdx(distance), dFdy(distance)));
     vec2 Jdx = dFdx(uv);
     vec2 Jdy = dFdy(uv);
-    vec2 grad = vec2(grad_dist.x * Jdx.x + grad_dist.y*Jdy.x, grad_dist.x * Jdx.y + grad_dist.y*Jdy.y);
-    float afwidth = 0.7071*length(grad);
+
+    vec2 grad = vec2(gradDist.x * Jdx.x + gradDist.y * Jdy.x,
+                     gradDist.x * Jdx.y + gradDist.y * Jdy.y);
+    float afwidth = 0.7071 * length(grad);
     float coverage = 1.0 - smoothstep(afwidth, -afwidth, distance);
 
     outColor = vec4(fColor.rgb, smoothstep(0.0, fColor.a, coverage));

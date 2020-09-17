@@ -116,5 +116,8 @@ target_include_directories(msdf-atlas-gen PRIVATE ${FREETYPE_INCLUDE_DIRS})
 target_include_directories(msdf-atlas-gen PRIVATE "msdfgen")
 target_include_directories(msdf-atlas-gen PRIVATE "msdfgen/include")
 
+# https://github.com/google/brotli/issues/795
+list(TRANSFORM FREETYPE_STATIC_LIBRARIES REPLACE "brotlidec" "brotlidec-static")
+list(TRANSFORM FREETYPE_STATIC_LIBRARIES REPLACE "brotlicommon" "brotlicommon-static")
 target_link_libraries(msdf-atlas-gen ${FREETYPE_STATIC_LIBRARIES} -lfreetype)
 target_link_libraries(msdf-atlas-gen Threads::Threads)
