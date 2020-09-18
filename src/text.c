@@ -155,12 +155,14 @@ void textInit(void)
 		glVertexAttribDivisor(3, 1);
 
 		glEnableVertexAttribArray(4);
-		glVertexAttribPointer(4, 1, GL_INT, GL_FALSE, sizeof(GlyphMsdf),
+		glVertexAttribIPointer(4, 1, GL_INT, sizeof(GlyphMsdf),
 			(void*)offsetof(GlyphMsdf, transformIndex));
 		glVertexAttribDivisor(4, 1);
 
 		msdfGlyphs[i] = darrayCreate(sizeof(GlyphMsdf));
 
+		glBindBuffer(GL_TEXTURE_BUFFER, msdfTransformsStorage[i]);
+		glBufferData(GL_TEXTURE_BUFFER, 0, null, GL_STREAM_DRAW);
 		glBindTexture(GL_TEXTURE_BUFFER, msdfTransformsTex[i]);
 		glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, msdfTransformsStorage[i]);
 
