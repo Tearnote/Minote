@@ -72,12 +72,13 @@ static void textQueueV(FontType font, float size, point3f pos, point3f dir, poin
 
 	// Construct the string transform
 	mat4x4* transform = darrayProduce(msdfTransforms[font]);
-	mat4x4 translate = {0};
-	mat4x4 rotate = {0};
-	mat4x4_translate(translate, pos.x, pos.y, 0.0f);
-//	mat4x4_rotate_Z(rotate, translate, 0.0);
-	mat4x4_rotate_Z(rotate, translate, pos.z);
-	mat4x4_scale_aniso(*transform, rotate, size, size, size);
+	vec3 eye = {0};
+	vec3_sub(eye, pos.arr, dir.arr);
+	mat4x4 lookat = {0};
+	mat4x4 inverted = {0};
+	mat4x4_look_at(lookat, pos.arr, eye, up.arr);
+	mat4x4_invert(inverted, lookat);
+	mat4x4_scale_aniso(*transform, inverted, size, size, size);
 
 	// Iterate over glyphs
 	unsigned glyphCount = 0;

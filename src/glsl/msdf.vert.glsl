@@ -29,7 +29,8 @@ void main()
     transform[3] = texelFetch(transforms, iTransformIndex * 4 + 3);
 
     vec2 vertex = vec2(gl_VertexID % 2, gl_VertexID / 2);
-    vec4 position = vec4(vertex * iSize + iPosition, 0.0, 1.0);
+    vec2 stringVertex = vertex * iSize + iPosition;
+    vec4 position = vec4(0.0, stringVertex.y, stringVertex.x, 1.0);
 
     gl_Position = projection * camera * transform * position;
     fColor = iColor;

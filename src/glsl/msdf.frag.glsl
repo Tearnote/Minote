@@ -37,6 +37,11 @@ void main()
                      gradDist.x * Jdx.y + gradDist.y * Jdy.y);
     float afwidth = 0.7071 * length(grad);
     float coverage = 1.0 - smoothstep(afwidth, -afwidth, distance);
+    // This is how to do outline
+    /*float borderThickness = 0.25;
+    float highCoverage = 1.0 - smoothstep(afwidth, -afwidth, distance + borderThickness);
+    float lowCoverage = smoothstep(afwidth, -afwidth, distance - borderThickness);
+    float coverage = min(highCoverage, lowCoverage);*/
 
-    outColor = vec4(fColor.rgb, smoothstep(0.0, fColor.a, coverage));
+    outColor = vec4(fColor.rgb, mix(0.0, fColor.a, coverage));
 }
