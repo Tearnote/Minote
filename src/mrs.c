@@ -34,12 +34,10 @@ Tetrion mrsTet = {0};
 #define inputHeld(type) \
     (mrsTet.player.inputMap[(type)])
 
-static piece* getPiece(mino type, spin rotation)
+static void updateShape(void)
 {
-	static piece result = {0};
-	arrayCopy(result, MrsPieces[type]);
-	pieceRotate(result, rotation);
-	return &result;
+	arrayCopy(mrsTet.player.shape, MrsPieces[mrsTet.player.type]);
+	pieceRotate(mrsTet.player.shape, mrsTet.player.rotation);
 }
 
 /**
@@ -50,8 +48,7 @@ static piece* getPiece(mino type, spin rotation)
  */
 static bool tryKicks(spin prevRotation)
 {
-	piece* playerPiece = getPiece(mrsTet.player.type, mrsTet.player.rotation);
-	if (!pieceOverlapsField(playerPiece, mrsTet.player.pos, mrsTet.field))
+	if (!pieceOverlapsField(&mrsTet.player.shape, mrsTet.player.pos, mrsTet.field))
 		return true; // Original position
 
 	if (mrsTet.player.state == PlayerSpawned)
@@ -65,7 +62,7 @@ static bool tryKicks(spin prevRotation)
 		mrsTet.player.type == MinoT) &&
 		prevRotation == Spin180) {
 		mrsTet.player.pos.y += 1;
-		if (!pieceOverlapsField(playerPiece, mrsTet.player.pos, mrsTet.field))
+		if (!pieceOverlapsField(&mrsTet.player.shape, mrsTet.player.pos, mrsTet.field))
 			return true; // 1 to the right
 		mrsTet.player.pos.y -= 1;
 	}
@@ -75,26 +72,26 @@ static bool tryKicks(spin prevRotation)
 
 	// Down
 	mrsTet.player.pos.y -= 1;
-	if (!pieceOverlapsField(playerPiece, mrsTet.player.pos, mrsTet.field))
+	if (!pieceOverlapsField(&mrsTet.player.shape, mrsTet.player.pos, mrsTet.field))
 		return true; // 1 to the right
 	mrsTet.player.pos.y += 1;
 
 	// Left/right
 	mrsTet.player.pos.x += preference;
-	if (!pieceOverlapsField(playerPiece, mrsTet.player.pos, mrsTet.field))
+	if (!pieceOverlapsField(&mrsTet.player.shape, mrsTet.player.pos, mrsTet.field))
 		return true; // 1 to the right
 	mrsTet.player.pos.x -= preference * 2;
-	if (!pieceOverlapsField(playerPiece, mrsTet.player.pos, mrsTet.field))
+	if (!pieceOverlapsField(&mrsTet.player.shape, mrsTet.player.pos, mrsTet.field))
 		return true; // 1 to the left
 	mrsTet.player.pos.x += preference;
 
 	// Down+left/right
 	mrsTet.player.pos.y -= 1;
 	mrsTet.player.pos.x += preference;
-	if (!pieceOverlapsField(playerPiece, mrsTet.player.pos, mrsTet.field))
+	if (!pieceOverlapsField(&mrsTet.player.shape, mrsTet.player.pos, mrsTet.field))
 		return true; // 1 to the right
 	mrsTet.player.pos.x -= preference * 2;
-	if (!pieceOverlapsField(playerPiece, mrsTet.player.pos, mrsTet.field))
+	if (!pieceOverlapsField(&mrsTet.player.shape, mrsTet.player.pos, mrsTet.field))
 		return true; // 1 to the left
 	mrsTet.player.pos.x += preference;
 	mrsTet.player.pos.y += 1;
@@ -120,6 +117,7 @@ static void rotate(int direction)
 		spinClockwise(&mrsTet.player.rotation);
 	else
 		spinCounterClockwise(&mrsTet.player.rotation);
+	updateShape();
 
 	// Apply crawl offsets to I
 	if (mrsTet.player.type == MinoI) {
@@ -166,6 +164,7 @@ static void rotate(int direction)
 		mrsTet.player.rotation = prevRotation;
 		mrsTet.player.pos.x = prevPosition.x;
 		mrsTet.player.pos.y = prevPosition.y;
+		updateShape();
 	}
 }
 
@@ -177,8 +176,7 @@ static void shift(int direction)
 {
 	assert(direction == 1 || direction == -1);
 	mrsTet.player.pos.x += direction;
-	piece* playerPiece = getPiece(mrsTet.player.type, mrsTet.player.rotation);
-	if (pieceOverlapsField(playerPiece, mrsTet.player.pos, mrsTet.field)) {
+	if (pieceOverlapsField(&mrsTet.player.shape, mrsTet.player.pos, mrsTet.field)) {
 		mrsTet.player.pos.x -= direction;
 	} else {
 		mrsTet.player.pos.x -= direction;
@@ -253,6 +251,8 @@ static void spawnPiece(void)
 	mrsTet.player.clearDelay = 0;
 	mrsTet.player.rotation = SpinNone;
 
+	updateShape();
+
 	// IRS
 	if (inputHeld(InputButton2)) {
 		rotate(1);
@@ -261,8 +261,7 @@ static void spawnPiece(void)
 			rotate(-1);
 	}
 
-	piece* playerPiece = getPiece(mrsTet.player.type, mrsTet.player.rotation);
-	if (pieceOverlapsField(playerPiece, mrsTet.player.pos, mrsTet.field))
+	if (pieceOverlapsField(&mrsTet.player.shape, mrsTet.player.pos, mrsTet.field))
 		gameOver();
 
 	// Increase gravity
@@ -318,8 +317,7 @@ static void thump(void)
  */
 static bool canDrop(void)
 {
-	piece* playerPiece = getPiece(mrsTet.player.type, mrsTet.player.rotation);
-	return !pieceOverlapsField(playerPiece, (point2i){
+	return !pieceOverlapsField(&mrsTet.player.shape, (point2i){
 		.x = mrsTet.player.pos.x,
 		.y = mrsTet.player.pos.y - 1
 	}, mrsTet.field);
@@ -357,8 +355,7 @@ static void drop(void)
  */
 static void lock(void)
 {
-	piece* playerPiece = getPiece(mrsTet.player.type, mrsTet.player.rotation);
-	fieldStampPiece(mrsTet.field, playerPiece, mrsTet.player.pos,
+	fieldStampPiece(mrsTet.field, &mrsTet.player.shape, mrsTet.player.pos,
 		mrsTet.player.type);
 	mrsTet.player.state = PlayerSpawn;
 	mrsEffectLock();
@@ -572,8 +569,7 @@ static void mrsUpdateGravity(void)
 		&& mrsTet.player.state != PlayerActive)
 		return;
 
-//	int remainingGravity = mrsTet.player.gravity;
-	int remainingGravity = 0;
+	int remainingGravity = mrsTet.player.gravity;
 	if (mrsTet.player.state == PlayerActive) {
 		if (inputHeld(InputDown) || inputHeld(InputUp))
 			remainingGravity = FieldHeight * MrsSubGrid;

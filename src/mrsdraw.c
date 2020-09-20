@@ -114,23 +114,14 @@ static ParticleParams particlesSlideFast = {
 	.ease = EaseOutExponential
 };
 
-static piece* getPiece(mino type, spin rotation)
-{
-	static piece result = {0};
-	arrayCopy(result, MrsPieces[type]);
-	pieceRotate(result, rotation);
-	return &result;
-}
-
 /**
  * Create a dust cloud effect under the player piece.
  */
 static void mrsEffectDrop(void)
 {
-	piece* playerPiece = getPiece(mrsTet.player.type, mrsTet.player.rotation);
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
-		int x = mrsTet.player.pos.x + (*playerPiece)[i].x;
-		int y = mrsTet.player.pos.y + (*playerPiece)[i].y;
+		int x = mrsTet.player.pos.x + mrsTet.player.shape[i].x;
+		int y = mrsTet.player.pos.y + mrsTet.player.shape[i].y;
 		if (fieldGet(mrsTet.field, (point2i){x, y - 1})) {
 			particlesGenerate((point3f){
 				(float)x - (float)FieldWidth / 2,
@@ -164,9 +155,6 @@ static void mrsDrawGuide(void)
  */
 static void mrsQueueField(void)
 {
-	// A bit out of place here, but no need to get this more than once
-	piece* playerPiece = getPiece(mrsTet.player.type, mrsTet.player.rotation);
-
 	int linesCleared = 0;
 	float fallProgress = tweenApply(&clearFall);
 
@@ -205,8 +193,8 @@ static void mrsQueueField(void)
 
 		bool playerCell = false;
 		for (size_t j = 0; j < MinosPerPiece; j += 1) {
-			int px = (*playerPiece)[j].x + mrsTet.player.pos.x;
-			int py = (*playerPiece)[j].y + mrsTet.player.pos.y;
+			int px = mrsTet.player.shape[j].x + mrsTet.player.pos.x;
+			int py = mrsTet.player.shape[j].y + mrsTet.player.pos.y;
 			if (x == px && y == py) {
 				playerCell = true;
 				break;
@@ -236,10 +224,9 @@ static void mrsQueuePlayer(void)
 		mrsTet.player.state != PlayerSpawned)
 		return;
 
-	piece* playerPiece = getPiece(mrsTet.player.type, mrsTet.player.rotation);
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
-		float x = (*playerPiece)[i].x + mrsTet.player.pos.x;
-		float y = (*playerPiece)[i].y + mrsTet.player.pos.y;
+		float x = mrsTet.player.shape[i].x + mrsTet.player.pos.x;
+		float y = mrsTet.player.shape[i].y + mrsTet.player.pos.y;
 
 		color4* tint = null;
 		color4* highlight = null;
@@ -277,17 +264,16 @@ static void mrsQueueGhost(void)
 		mrsTet.player.state != PlayerSpawned)
 		return;
 
-	piece* playerPiece = getPiece(mrsTet.player.type, mrsTet.player.rotation);
 	point2i ghostPos = mrsTet.player.pos;
-	while (!pieceOverlapsField(playerPiece, (point2i){
+	while (!pieceOverlapsField(&mrsTet.player.shape, (point2i){
 		ghostPos.x,
 		ghostPos.y - 1
 	}, mrsTet.field))
 		ghostPos.y -= 1; // Drop down as much as possible
 
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
-		float x = (*playerPiece)[i].x + ghostPos.x;
-		float y = (*playerPiece)[i].y + ghostPos.y;
+		float x = mrsTet.player.shape[i].x + ghostPos.x;
+		float y = mrsTet.player.shape[i].y + ghostPos.y;
 
 		color4* tint = darrayProduce(blockTintsAlpha);
 		color4* highlight = darrayProduce(blockHighlightsAlpha);
@@ -307,10 +293,11 @@ static void mrsQueuePreview(void)
 {
 	if (mrsTet.player.preview == MinoNone)
 		return;
-	piece* previewPiece = getPiece(mrsTet.player.preview, SpinNone);
+	piece previewPiece = {0};
+	arrayCopy(previewPiece, MrsPieces[mrsTet.player.preview]);
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
-		float x = (*previewPiece)[i].x + MrsPreviewX;
-		float y = (*previewPiece)[i].y + MrsPreviewY;
+		float x = previewPiece[i].x + MrsPreviewX;
+		float y = previewPiece[i].y + MrsPreviewY;
 		if (mrsTet.player.preview == MinoI)
 			y -= 1;
 
@@ -634,10 +621,9 @@ void mrsEffectSlide(int direction, bool fast)
 	ParticleParams* params = fast? &particlesSlideFast : &particlesSlide;
 	params->directionHorz = direction;
 
-	piece* playerPiece = getPiece(mrsTet.player.type, mrsTet.player.rotation);
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
-		int x = mrsTet.player.pos.x + (*playerPiece)[i].x;
-		int y = mrsTet.player.pos.y + (*playerPiece)[i].y;
+		int x = mrsTet.player.pos.x + mrsTet.player.shape[i].x;
+		int y = mrsTet.player.pos.y + mrsTet.player.shape[i].y;
 		if (fieldGet(mrsTet.field, (point2i){x, y - 1})) {
 			particlesGenerate((point3f){
 				(float)x - (float)FieldWidth / 2,

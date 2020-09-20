@@ -41,9 +41,10 @@ typedef struct Player {
 
 	PlayerState state;
 	mino type; ///< Current player piece
+	spin rotation; ///< ::spin of current piece
+	piece shape; ///< Cached piece data
 	mino preview; ///< Next player piece
 	int tokens[MinoGarbage - 1]; ///< Past player pieces
-	spin rotation; ///< ::spin of current piece
 	point2i pos; ///< Position of current piece
 	int ySub; ///< Y subgrid of current piece
 	int yLowest; ///< The bottommost row reached by current piece
