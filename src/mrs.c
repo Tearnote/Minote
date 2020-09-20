@@ -110,9 +110,6 @@ static void rotate(int direction)
 	spin prevRotation = mrsTet.player.rotation;
 	point2i prevPosition = mrsTet.player.pos;
 
-	if (mrsTet.player.type == MinoO)
-		return;
-
 	if (direction == 1)
 		spinClockwise(&mrsTet.player.rotation);
 	else
@@ -150,6 +147,7 @@ static void rotate(int direction)
 			mrsTet.player.pos.y += 1;
 		if (prevRotation == Spin270 && mrsTet.player.rotation == SpinNone)
 			mrsTet.player.pos.x -= 1;
+
 		if (prevRotation == SpinNone && mrsTet.player.rotation == Spin270)
 			mrsTet.player.pos.x += 1;
 		if (prevRotation == Spin270 && mrsTet.player.rotation == Spin180)
@@ -158,6 +156,27 @@ static void rotate(int direction)
 			mrsTet.player.pos.y += 1;
 		if (prevRotation == Spin90 && mrsTet.player.rotation == SpinNone)
 			mrsTet.player.pos.x += 1;
+	}
+
+	// Keep O in place
+	if (mrsTet.player.type == MinoO) {
+		if (prevRotation == SpinNone && mrsTet.player.rotation == Spin90)
+			mrsTet.player.pos.y -= 1;
+		if (prevRotation == Spin90 && mrsTet.player.rotation == Spin180)
+			mrsTet.player.pos.x += 1;
+		if (prevRotation == Spin180 && mrsTet.player.rotation == Spin270)
+			mrsTet.player.pos.y += 1;
+		if (prevRotation == Spin270 && mrsTet.player.rotation == SpinNone)
+			mrsTet.player.pos.x -= 1;
+
+		if (prevRotation == SpinNone && mrsTet.player.rotation == Spin270)
+			mrsTet.player.pos.x += 1;
+		if (prevRotation == Spin270 && mrsTet.player.rotation == Spin180)
+			mrsTet.player.pos.y -= 1;
+		if (prevRotation == Spin180 && mrsTet.player.rotation == Spin90)
+			mrsTet.player.pos.x -= 1;
+		if (prevRotation == Spin90 && mrsTet.player.rotation == SpinNone)
+			mrsTet.player.pos.y += 1;
 	}
 
 	if (!tryKicks(prevRotation)) {
