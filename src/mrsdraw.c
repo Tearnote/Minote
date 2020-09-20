@@ -114,12 +114,20 @@ static ParticleParams particlesSlideFast = {
 	.ease = EaseOutExponential
 };
 
+static piece* getPiece(mino type, spin rotation)
+{
+	static piece result = {0};
+	arrayCopy(result, MrsPieces[type]);
+	pieceRotate(result, rotation);
+	return &result;
+}
+
 /**
  * Create a dust cloud effect under the player piece.
  */
 static void mrsEffectDrop(void)
 {
-	piece* playerPiece = mrsGetPiece(mrsTet.player.type, mrsTet.player.rotation);
+	piece* playerPiece = getPiece(mrsTet.player.type, mrsTet.player.rotation);
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
 		int x = mrsTet.player.pos.x + (*playerPiece)[i].x;
 		int y = mrsTet.player.pos.y + (*playerPiece)[i].y;
@@ -157,7 +165,7 @@ static void mrsDrawGuide(void)
 static void mrsQueueField(void)
 {
 	// A bit out of place here, but no need to get this more than once
-	piece* playerPiece = mrsGetPiece(mrsTet.player.type, mrsTet.player.rotation);
+	piece* playerPiece = getPiece(mrsTet.player.type, mrsTet.player.rotation);
 
 	int linesCleared = 0;
 	float fallProgress = tweenApply(&clearFall);
@@ -228,7 +236,7 @@ static void mrsQueuePlayer(void)
 		mrsTet.player.state != PlayerSpawned)
 		return;
 
-	piece* playerPiece = mrsGetPiece(mrsTet.player.type, mrsTet.player.rotation);
+	piece* playerPiece = getPiece(mrsTet.player.type, mrsTet.player.rotation);
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
 		float x = (*playerPiece)[i].x + mrsTet.player.pos.x;
 		float y = (*playerPiece)[i].y + mrsTet.player.pos.y;
@@ -269,7 +277,7 @@ static void mrsQueueGhost(void)
 		mrsTet.player.state != PlayerSpawned)
 		return;
 
-	piece* playerPiece = mrsGetPiece(mrsTet.player.type, mrsTet.player.rotation);
+	piece* playerPiece = getPiece(mrsTet.player.type, mrsTet.player.rotation);
 	point2i ghostPos = mrsTet.player.pos;
 	while (!pieceOverlapsField(playerPiece, (point2i){
 		ghostPos.x,
@@ -299,7 +307,7 @@ static void mrsQueuePreview(void)
 {
 	if (mrsTet.player.preview == MinoNone)
 		return;
-	piece* previewPiece = mrsGetPiece(mrsTet.player.preview, SpinNone);
+	piece* previewPiece = getPiece(mrsTet.player.preview, SpinNone);
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
 		float x = (*previewPiece)[i].x + MrsPreviewX;
 		float y = (*previewPiece)[i].y + MrsPreviewY;
@@ -626,7 +634,7 @@ void mrsEffectSlide(int direction, bool fast)
 	ParticleParams* params = fast? &particlesSlideFast : &particlesSlide;
 	params->directionHorz = direction;
 
-	piece* playerPiece = mrsGetPiece(mrsTet.player.type, mrsTet.player.rotation);
+	piece* playerPiece = getPiece(mrsTet.player.type, mrsTet.player.rotation);
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
 		int x = mrsTet.player.pos.x + (*playerPiece)[i].x;
 		int y = mrsTet.player.pos.y + (*playerPiece)[i].y;

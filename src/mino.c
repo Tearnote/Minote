@@ -42,6 +42,22 @@ color4 minoColor(mino type)
 	return MinoColors[type];
 }
 
+void pieceRotate(piece p, spin rotation)
+{
+	assert(p);
+	assert(rotation < SpinSize);
+
+	for (int i = 0; i < rotation; i += 1) { // Repeat as many times as rotations
+		for (size_t j = 0; j < MinosPerPiece; j += 1) { // Rotate each mino
+			point2i newPos = {
+				.x = -p[j].y,
+				.y = p[j].x
+			};
+			structCopy(p[j], newPos);
+		}
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 Field* fieldCreate(size2i size)

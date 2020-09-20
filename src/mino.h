@@ -59,6 +59,13 @@ void spinCounterClockwise(spin* val);
  */
 color4 minoColor(mino type);
 
+/**
+ * Rotate a piece by a specified rotation.
+ * @param[in,out] p Piece to be rotated in-place
+ * @param rotation Rotation to perform
+ */
+void pieceRotate(piece p, spin rotation);
+
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Playfield grid. You can obtain an instance with fieldCreate().

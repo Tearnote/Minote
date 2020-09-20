@@ -10,8 +10,8 @@
 
 // Logic defs
 
-#define MrsSpawnX 3 ///< X position of player piece spawn
-#define MrsSpawnY 18 ///< Y position of player piece spawn
+#define MrsSpawnX 4 ///< X position of player piece spawn
+#define MrsSpawnY 19 ///< Y position of player piece spawn
 #define MrsSubGrid 256 ///< Number of subpixels per cell, used for gravity
 
 #define MrsStartingTokens 6 ///< Number of tokens that each piece starts with
@@ -26,8 +26,8 @@
 // Graphics defs
 
 #define MrsFieldHeightVisible 20u ///< Number of bottom rows the player can see
-#define MrsPreviewX -2.0f ///< X offset of preview piece
-#define MrsPreviewY 21.0f ///< Y offset of preview piece
+#define MrsPreviewX -1.0f ///< X offset of preview piece
+#define MrsPreviewY 22.0f ///< Y offset of preview piece
 #define MrsFieldDim 0.3f ///< Multiplier of field block color
 #define MrsExtraRowDim 0.25f ///< Multiplier of field block alpha above the scene
 #define MrsGhostDim 0.2f ///< Multiplier of ghost block alpha
@@ -35,12 +35,7 @@
 #define MrsLockFlashBrightness 1.2f ///< Color value of lock flash highlight
 #define MrsParticlesClearBoost 1.4f ///< Intensity multiplier for line clear effect
 
-/**
- * Query the mrs for a specific piece.
- * @param type Type of the piece, between MinoNone and MinoGarbage (exclusive)
- * @param rotation Spin of the piece
- * @return Read-only piece data
- */
-piece* mrsGetPiece(mino type, spin rotation);
+/// Shapes of pieces in their starting rotation
+extern piece MrsPieces[MinoGarbage];
 
 #endif //MINOTE_MRSDEF_H
