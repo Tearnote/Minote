@@ -5,10 +5,20 @@
 
 #include "util.h"
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
 #include <math.h>
+
+int mod(int num, int div)
+{
+	bool negative = num < 0;
+	if (negative) num = -num;
+	int result = num % div;
+	if (negative) result = div - result;
+	return result % div;
+}
 
 void* alloc(size_t bytes)
 {

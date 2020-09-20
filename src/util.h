@@ -31,6 +31,9 @@
 #define radf(x) \
     ((x) * M_TAU / 360.0)
 
+/// True modulo operation (as opposed to remainder, which is "%" in C.)
+int mod(int num, int div);
+
 /// PCG PRNG object. You can obtain an instance with rngCreate().
 typedef pcg32_random_t Rng;
 

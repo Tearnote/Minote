@@ -26,6 +26,11 @@ void mrsDrawCleanup(void);
 void mrsDraw(void);
 
 /**
+ * Reset a newly spawned piece's draw data. Call right after spawning.
+ */
+void mrsEffectSpawn(void);
+
+/**
  * Flash the player piece - call as soon as it has locked, after stamping.
  */
 void mrsEffectLock(void);

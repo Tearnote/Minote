@@ -31,6 +31,35 @@ static darray* borderTransforms = null;
 
 static bool initialized = false;
 
+/// Last player position as seen by the drawing system
+static point2i lastPlayerPos = {0, 0};
+
+/// Last number of player piece 90-degree turns as seen by the drawing system
+static int lastPlayerRotation = 0;
+
+/// Tweening of player piece position
+static Tween playerPosX = {
+	.from = 0.0f,
+	.to = 0.0f,
+	.duration = 3 * MrsUpdateTick,
+	.type = EaseOutExponential
+};
+
+static Tween playerPosY = {
+	.from = 0.0f,
+	.to = 0.0f,
+	.duration = 3 * MrsUpdateTick,
+	.type = EaseOutExponential
+};
+
+/// Tweening of player piece rotation
+static Tween playerRotation = {
+	.from = 0.0f,
+	.to = 0.0f,
+	.duration = 3 * MrsUpdateTick,
+	.type = EaseOutExponential
+};
+
 /// Player piece animation after the piece locks
 static Tween lockFlash = {
 	.from = 1.0f,
@@ -55,6 +84,7 @@ static Tween comboFade = {
 	.type = EaseOutQuadratic
 };
 
+/// Thump animation of a falling stack
 static Tween clearFall = {
 	.from = 0.0f,
 	.to = 1.0f,
@@ -62,6 +92,7 @@ static Tween clearFall = {
 	.type = EaseInCubic
 };
 
+/// Sparks released on line clear
 static ParticleParams particlesClear = {
 	.color = {0.0f, 0.0f, 0.0f, 1.0f}, // runtime
 	.durationMin = secToNsec(0),
@@ -75,6 +106,8 @@ static ParticleParams particlesClear = {
 	.ease = EaseOutQuartic
 };
 
+/// Cloud of dust caused by a player piece falling on the stack
+/// or finishing line clear thump
 static ParticleParams particlesThump = {
 	.color = {0.6f, 0.6f, 0.6f, 0.8f},
 	.durationMin = secToNsec(0.4),
@@ -88,6 +121,7 @@ static ParticleParams particlesThump = {
 	.ease = EaseOutExponential
 };
 
+/// Sparks of a player piece being shifted across the playfield
 static ParticleParams particlesSlide = {
 	.color = {0.0f, 0.4f, 2.0f, 1.0f},
 	.durationMin = secToNsec(0.3),
@@ -101,6 +135,7 @@ static ParticleParams particlesSlide = {
 	.ease = EaseOutExponential
 };
 
+/// Sparks of a player piece being DASed across the playfield
 static ParticleParams particlesSlideFast = {
 	.color = {2.0f, 0.4f, 0.0f, 1.0f},
 	.durationMin = secToNsec(0.25),
@@ -220,6 +255,47 @@ static void mrsQueueField(void)
  */
 static void mrsQueuePlayer(void)
 {
+	// Tween the player position
+	if (mrsTet.player.pos.x != lastPlayerPos.x) {
+		playerPosX.from = tweenApply(&playerPosX);
+		playerPosX.to = mrsTet.player.pos.x;
+		if (mrsTet.player.autoshiftCharge == MrsAutoshiftCharge) {
+			playerPosX.duration = 1 * MrsUpdateTick;
+			playerPosX.type = EaseLinear;
+		} else {
+			playerPosX.duration = 3 * MrsUpdateTick;
+			playerPosX.type = EaseOutExponential;
+		}
+		tweenRestart(&playerPosX);
+		lastPlayerPos.x = mrsTet.player.pos.x;
+	}
+	if (mrsTet.player.pos.y != lastPlayerPos.y) {
+		playerPosY.from = tweenApply(&playerPosY);
+		playerPosY.to = mrsTet.player.pos.y;
+		if (lastPlayerPos.y - mrsTet.player.pos.y > 1
+		|| lastPlayerPos.y - mrsTet.player.pos.y < 0) {
+			playerPosY.duration = 3 * MrsUpdateTick;
+			playerPosY.type = EaseOutExponential;
+		} else {
+			playerPosY.duration = MrsUpdateTick * MrsSubGrid / mrsTet.player.gravity;
+			playerPosY.type = EaseLinear;
+		}
+		tweenRestart(&playerPosY);
+		lastPlayerPos.y = mrsTet.player.pos.y;
+	}
+
+	// Tween the player rotation
+	if (mrsTet.player.rotation != mod(lastPlayerRotation, SpinSize)) {
+		int delta = mrsTet.player.rotation - mod(lastPlayerRotation, SpinSize);
+		if (delta == 3) delta -= 4;
+		if (delta == -3) delta += 4;
+		playerRotation.from = tweenApply(&playerRotation);
+		lastPlayerRotation += delta;
+		playerRotation.to = lastPlayerRotation;
+		tweenRestart(&playerRotation);
+	}
+
+	// Stop if no drawing needed
 	if (mrsTet.player.state != PlayerActive &&
 		mrsTet.player.state != PlayerSpawned)
 		return;
@@ -229,16 +305,18 @@ static void mrsQueuePlayer(void)
 	arrayCopy(player, MrsPieces[mrsTet.player.type]);
 
 	// Get piece transform (piece position and rotation)
-	mat4x4 playerTranslation = {0};
-	mat4x4 playerRotation = {0};
-	mat4x4 playerRotationTemp = {0};
-	mat4x4 playerTransform = {0};
-	mat4x4_translate(playerTranslation,
-		mrsTet.player.pos.x - (signed)(FieldWidth / 2), mrsTet.player.pos.y, 0.0f);
-	mat4x4_translate(playerRotationTemp, 0.5f, 0.5f, 0.0f);
-	mat4x4_rotate_Z(playerRotation, playerRotationTemp, radf(mrsTet.player.rotation * 90));
-	mat4x4_translate_in_place(playerRotation, -0.5f, -0.5f, 0.0f);
-	mat4x4_mul(playerTransform, playerTranslation, playerRotation);
+	mat4x4 pieceTranslation = {0};
+	mat4x4 pieceRotation = {0};
+	mat4x4 pieceRotationTemp = {0};
+	mat4x4 pieceTransform = {0};
+	mat4x4_translate(pieceTranslation,
+		tweenApply(&playerPosX) - (signed)(FieldWidth / 2),
+		tweenApply(&playerPosY), 0.0f);
+	mat4x4_translate(pieceRotationTemp, 0.5f, 0.5f, 0.0f);
+	mat4x4_rotate_Z(pieceRotation, pieceRotationTemp,
+		tweenApply(&playerRotation) * radf(90));
+	mat4x4_translate_in_place(pieceRotation, -0.5f, -0.5f, 0.0f);
+	mat4x4_mul(pieceTransform, pieceTranslation, pieceRotation);
 
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
 		// Get mino transform (offset from piece origin)
@@ -270,7 +348,7 @@ static void mrsQueuePlayer(void)
 			tint->b *= dim;
 		}
 		color4Copy(*highlight, Color4Clear);
-		mat4x4_mul(*transform, playerTransform, minoTransform);
+		mat4x4_mul(*transform, pieceTransform, minoTransform);
 	}
 }
 
@@ -282,7 +360,7 @@ static void mrsQueueGhost(void)
 	if (mrsTet.player.state != PlayerActive &&
 		mrsTet.player.state != PlayerSpawned)
 		return;
-	if (mrsTet.player.gravity >= 20 * MrsSubGrid)
+	if (mrsTet.player.gravity >= MrsSubGrid || mrsTet.player.lockDelay)
 		return;
 
 	point2i ghostPos = mrsTet.player.pos;
@@ -468,7 +546,8 @@ static void mrsDebug(void)
 			| NK_WINDOW_NO_SCROLLBAR)) {
 		nk_layout_row_dynamic(nkCtx(), 0, 2);
 		nk_labelf(nkCtx(), NK_TEXT_CENTERED, "Gravity: %d.%02x",
-			mrsTet.player.gravity / MrsSubGrid, mrsTet.player.gravity % MrsSubGrid);
+			mrsTet.player.gravity / MrsSubGrid,
+			mrsTet.player.gravity % MrsSubGrid);
 		nk_slider_int(nkCtx(), 4, &mrsTet.player.gravity, MrsSubGrid * 20, 4);
 		nk_layout_row_dynamic(nkCtx(), 0, 1);
 		nk_checkbox_label(nkCtx(), "Pause spawning", &mrsDebugPauseSpawn);
@@ -586,6 +665,23 @@ void mrsDraw(void)
 #endif //MINOTE_DEBUG
 }
 
+void mrsEffectSpawn(void)
+{
+	structCopy(lastPlayerPos, mrsTet.player.pos);
+	lastPlayerRotation = mrsTet.player.rotation;
+	playerPosX.from = lastPlayerPos.x;
+	playerPosX.to = lastPlayerPos.x;
+	playerPosY.from = lastPlayerPos.y + 1;
+	playerPosY.to = lastPlayerPos.y;
+	playerPosY.duration = MrsUpdateTick * MrsSubGrid / mrsTet.player.gravity;
+	playerPosY.type = EaseLinear;
+	playerRotation.from = lastPlayerRotation;
+	playerRotation.to = lastPlayerRotation;
+	tweenRestart(&playerPosX);
+	tweenRestart(&playerPosY);
+	tweenRestart(&playerRotation);
+}
+
 void mrsEffectLock(void)
 {
 	tweenRestart(&lockFlash);
@@ -630,16 +726,18 @@ void mrsEffectThump(int row)
 void mrsEffectLand(int direction)
 {
 	if (direction == -1)
-		mrsEffectSlide(-1, (mrsTet.player.autoshiftCharge == MrsAutoshiftCharge));
+		mrsEffectSlide(-1,
+			(mrsTet.player.autoshiftCharge == MrsAutoshiftCharge));
 	else if (direction == 1)
-		mrsEffectSlide(1, (mrsTet.player.autoshiftCharge == MrsAutoshiftCharge));
+		mrsEffectSlide(1,
+			(mrsTet.player.autoshiftCharge == MrsAutoshiftCharge));
 	else
 		mrsEffectDrop();
 }
 
 void mrsEffectSlide(int direction, bool fast)
 {
-	ParticleParams* params = fast? &particlesSlideFast : &particlesSlide;
+	ParticleParams* params = fast ? &particlesSlideFast : &particlesSlide;
 	params->directionHorz = direction;
 
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {

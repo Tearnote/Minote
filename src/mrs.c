@@ -265,9 +265,12 @@ static void spawnPiece(void)
 		gameOver();
 
 	// Increase gravity
-	if (mrsTet.player.gravity >= 20 * MrsSubGrid) return;
-	int level = mrsTet.player.gravity / 64 + 1;
-	mrsTet.player.gravity += level;
+	if (mrsTet.player.gravity < 20 * MrsSubGrid) {
+		int level = mrsTet.player.gravity / 64 + 1;
+		mrsTet.player.gravity += level;
+	}
+
+	mrsEffectSpawn();
 }
 
 /**
