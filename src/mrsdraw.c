@@ -224,10 +224,28 @@ static void mrsQueuePlayer(void)
 		mrsTet.player.state != PlayerSpawned)
 		return;
 
-	for (size_t i = 0; i < MinosPerPiece; i += 1) {
-		float x = mrsTet.player.shape[i].x + mrsTet.player.pos.x;
-		float y = mrsTet.player.shape[i].y + mrsTet.player.pos.y;
+	// Get player piece shape (not rotated)
+	piece player = {0};
+	arrayCopy(player, MrsPieces[mrsTet.player.type]);
 
+	// Get piece transform (piece position and rotation)
+	mat4x4 playerTranslation = {0};
+	mat4x4 playerRotation = {0};
+	mat4x4 playerRotationTemp = {0};
+	mat4x4 playerTransform = {0};
+	mat4x4_translate(playerTranslation,
+		mrsTet.player.pos.x - (signed)(FieldWidth / 2), mrsTet.player.pos.y, 0.0f);
+	mat4x4_translate(playerRotationTemp, 0.5f, 0.5f, 0.0f);
+	mat4x4_rotate_Z(playerRotation, playerRotationTemp, radf(mrsTet.player.rotation * 90));
+	mat4x4_translate_in_place(playerRotation, -0.5f, -0.5f, 0.0f);
+	mat4x4_mul(playerTransform, playerTranslation, playerRotation);
+
+	for (size_t i = 0; i < MinosPerPiece; i += 1) {
+		// Get mino transform (offset from piece origin)
+		mat4x4 minoTransform = {0};
+		mat4x4_translate(minoTransform, player[i].x, player[i].y, 0.0f);
+
+		// Queue up next mino
 		color4* tint = null;
 		color4* highlight = null;
 		mat4x4* transform = null;
@@ -241,6 +259,7 @@ static void mrsQueuePlayer(void)
 			transform = darrayProduce(blockTransformsAlpha);
 		}
 
+		// Insert calculated values
 		color4Copy(*tint, minoColor(mrsTet.player.type));
 		if (mrsTet.player.lockDelay != 0) {
 			tweenRestart(&lockDim);
@@ -251,7 +270,7 @@ static void mrsQueuePlayer(void)
 			tint->b *= dim;
 		}
 		color4Copy(*highlight, Color4Clear);
-		mat4x4_translate(*transform, x - (signed)(FieldWidth / 2), y, 0.0f);
+		mat4x4_mul(*transform, playerTransform, minoTransform);
 	}
 }
 
@@ -262,6 +281,8 @@ static void mrsQueueGhost(void)
 {
 	if (mrsTet.player.state != PlayerActive &&
 		mrsTet.player.state != PlayerSpawned)
+		return;
+	if (mrsTet.player.gravity >= 20 * MrsSubGrid)
 		return;
 
 	point2i ghostPos = mrsTet.player.pos;
