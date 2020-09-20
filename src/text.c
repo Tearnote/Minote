@@ -17,20 +17,22 @@
 #include "font.h"
 #include "log.h"
 
+/// Shader type for MSDF drawing
 typedef struct ProgramMsdf {
 	ProgramBase base;
-	TextureUnit transforms;
-	TextureUnit atlas;
+	TextureUnit transforms; ///< Buffer texture containing per-string transforms
+	TextureUnit atlas; ///< Font atlas
 	Uniform camera;
 	Uniform projection;
 } ProgramMsdf;
 
+/// Single glyph instance for the MSDF shader
 typedef struct GlyphMsdf {
-	point2f position;
-	size2f size;
-	point4f texBounds;
-	color4 color;
-	int transformIndex;
+	point2f position; ///< Glyph offset in the string (lower left)
+	size2f size; ///< Size of the glyph
+	point4f texBounds; ///< AABB of the atlas UVs
+	color4 color; ///< Glyph color
+	int transformIndex; ///< Index of the string transform from the "transforms" buffer texture
 } GlyphMsdf;
 
 static const char* ProgramMsdfVertName = u8"msdf.vert";
@@ -90,7 +92,7 @@ static void textQueueV(FontType font, float size, point3f pos, point3f dir, poin
 
 		// Calculate glyph information
 		size_t id = glyphInfo[i].codepoint;
-		FontAtlasChar* atlasChar = darrayGet(fonts[font].metrics, id);
+		FontAtlasGlyph* atlasChar = darrayGet(fonts[font].metrics, id);
 		float xOffset = glyphPos[i].x_offset / 1024.0f;
 		float yOffset = glyphPos[i].y_offset / 1024.0f;
 		float xAdvance = glyphPos[i].x_advance / 1024.0f;

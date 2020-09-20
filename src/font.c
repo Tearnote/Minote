@@ -81,11 +81,11 @@ void fontInit(void)
 			goto cleanup;
 		}
 
-		fonts[i].metrics = darrayCreate(sizeof(FontAtlasChar));
+		fonts[i].metrics = darrayCreate(sizeof(FontAtlasGlyph));
 		darrayProduce(fonts[i].metrics); // Empty first element
 		while (true) {
 			int index = 0;
-			FontAtlasChar atlasChar = {0};
+			FontAtlasGlyph atlasChar = {0};
 			int parsed = fscanf(metricsFile, "%d,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
 				&index, &atlasChar.advance, &atlasChar.charLeft,
 				&atlasChar.charBottom, &atlasChar.charRight, &atlasChar.charTop,
@@ -95,7 +95,7 @@ void fontInit(void)
 				break;
 			assert(index == fonts[i].metrics->count);
 
-			FontAtlasChar* nextChar = darrayProduce(fonts[i].metrics);
+			FontAtlasGlyph* nextChar = darrayProduce(fonts[i].metrics);
 			structCopy(*nextChar, atlasChar);
 		}
 		fclose(metricsFile);

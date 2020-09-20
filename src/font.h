@@ -11,18 +11,20 @@
 #include "opengl.h"
 #include "darray.h"
 
-typedef struct FontAtlasChar {
-	float advance;
-	float charLeft;
-	float charBottom;
-	float charRight;
-	float charTop;
-	float atlasLeft;
-	float atlasBottom;
-	float atlasRight;
-	float atlasTop;
-} FontAtlasChar;
+/// Single glyph of a font alas
+typedef struct FontAtlasGlyph {
+	float advance; ///< x advance. Unused, HarfBuzz provides advance
+	float charLeft; ///< left boundary of glyph from origin
+	float charBottom; ///< bottom boundary of glyph from origin
+	float charRight; ///< right boundary of glyph from origin
+	float charTop; ///< top boundary of glyph from origin
+	float atlasLeft; ///< left boundary of glyph in the atlas
+	float atlasBottom; ///< bottom boundary of glyph in the atlas
+	float atlasRight; ///< right boundary of glyph in the atlas
+	float atlasTop; ///< top boundary of glyph in the atlas
+} FontAtlasGlyph;
 
+/// Complete loaded font with atlas, ready for rendering with
 typedef struct Font {
 	Texture* atlas; ///< Uploaded texture holding the atlas of MSDF renders
 	darray* metrics; ///< Array of FontAtlasChar for drawing from the atlas
