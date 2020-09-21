@@ -272,14 +272,6 @@ static void mrsQueuePlayer(void)
 	if (mrsTet.player.pos.y != lastPlayerPos.y) {
 		playerPosY.from = tweenApply(&playerPosY);
 		playerPosY.to = mrsTet.player.pos.y;
-		if (lastPlayerPos.y - mrsTet.player.pos.y > 1
-		|| lastPlayerPos.y - mrsTet.player.pos.y < 0) {
-			playerPosY.duration = 3 * MrsUpdateTick;
-			playerPosY.type = EaseOutExponential;
-		} else {
-			playerPosY.duration = MrsUpdateTick * MrsSubGrid / mrsTet.player.gravity;
-			playerPosY.type = EaseLinear;
-		}
 		tweenRestart(&playerPosY);
 		lastPlayerPos.y = mrsTet.player.pos.y;
 	}
@@ -673,8 +665,6 @@ void mrsEffectSpawn(void)
 	playerPosX.to = lastPlayerPos.x;
 	playerPosY.from = lastPlayerPos.y + 1;
 	playerPosY.to = lastPlayerPos.y;
-	playerPosY.duration = MrsUpdateTick * MrsSubGrid / mrsTet.player.gravity;
-	playerPosY.type = EaseLinear;
 	playerRotation.from = lastPlayerRotation;
 	playerRotation.to = lastPlayerRotation;
 	tweenRestart(&playerPosX);
