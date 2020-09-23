@@ -352,8 +352,11 @@ static void mrsQueueGhost(void)
 	if (mrsTet.player.state != PlayerActive &&
 		mrsTet.player.state != PlayerSpawned)
 		return;
-	if (mrsTet.player.gravity >= MrsSubGrid || mrsTet.player.lockDelay)
-		return;
+	if (mrsTet.player.gravity >= MrsSubGrid)
+		return; // Don't show if the game is too fast for it to help
+	if (mrsTet.player.lockDelay
+		&& (getTime() >= playerPosY.start + playerPosY.duration))
+		return; // Don't show if player is on the ground
 
 	point2i ghostPos = mrsTet.player.pos;
 	while (!pieceOverlapsField(&mrsTet.player.shape, (point2i){
