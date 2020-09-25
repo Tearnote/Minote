@@ -4,20 +4,17 @@
  * @file
  */
 
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <cstdio>
-#include <cerrno>
 #include <cctype>
-#include "../util.hpp"
-
-static char dir[256]{'\0'};
 
 // https://stackoverflow.com/a/122974
-char* trim(char* str)
+auto trim(char* str) -> char*
 {
-	if (str == nullptr) { return nullptr; }
-	if (str[0] == '\0') { return str; }
+	if (!str) { return nullptr; }
+	if (!str[0]) { return str; }
 
 	size_t len{std::strlen(str)};
 	char* frontp{str};
@@ -25,9 +22,9 @@ char* trim(char* str)
 
 	/* Move the front and back pointers to address the first non-whitespace
 	 * characters from each end. */
-	while (std::isspace((unsigned char)*frontp)) { ++frontp; }
+	while (std::isspace(static_cast<unsigned char>(*frontp))) { ++frontp; }
 	if (endp != frontp)
-		while (std::isspace((unsigned char)*(--endp)) && endp != frontp) {}
+		while (std::isspace(static_cast<unsigned char>(*(--endp))) && endp != frontp) {}
 
 	if (frontp != str && endp == frontp)
 		*str = '\0';
@@ -47,7 +44,7 @@ char* trim(char* str)
 	return str;
 }
 
-void fileProcess(const char* const filename, FILE* output)
+void fileProcess(char const* const filename, char const* const basedir, FILE* const output)
 {
 	std::FILE* input{std::fopen(filename, "r")};
 	if (!input) {
@@ -56,7 +53,7 @@ void fileProcess(const char* const filename, FILE* output)
 		std::exit(EXIT_FAILURE);
 	}
 
-	char line[256]{'\0'};
+	char line[256]{""};
 	while (std::fgets(line, 256, input)) {
 		if (line[std::strlen(line) - 1] != '\n') {
 			std::fprintf(stderr, "Line longer than 256 chars, aborting\n");
@@ -67,7 +64,7 @@ void fileProcess(const char* const filename, FILE* output)
 			!std::isalnum(line[std::strlen("#include")]) &&
 			line[std::strlen("#include")] != '_') {
 			// Is an #include directive
-			char includeFile[256]{'\0'};
+			char includeFile[256]{""};
 			if (!std::sscanf(line, "#include \"%s", includeFile)) {
 				std::fprintf(stderr, "Syntax error in #include line: %s", line);
 				std::exit(EXIT_FAILURE);
@@ -78,10 +75,10 @@ void fileProcess(const char* const filename, FILE* output)
 			}
 			includeFile[std::strlen(includeFile) - 1] = '\0';
 
-			char includePath[256]{'\0'};
-			std::sprintf(includePath, "%s/%s", dir, includeFile);
+			char includePath[256]{""};
+			std::snprintf(includePath, 256, "%s/%s", basedir, includeFile);
 
-			fileProcess(includePath, output);
+			fileProcess(includePath, basedir, output);
 		} else {
 			// Is a normal line
 			std::size_t chCount = 0;
@@ -103,15 +100,15 @@ void fileProcess(const char* const filename, FILE* output)
 	std::fclose(input);
 }
 
-void dirname(char* path, char* dst)
+void dirname(char* path, std::size_t dstsize, char* dst)
 {
-	char* slash{std::strrchr(path, '/')};
-	if (!slash) return;
-	ptrdiff_t slashIndex{slash - path};
-	std::strncpy(dst, path, slashIndex);
+	char* slashPtr{std::strrchr(path, '/')};
+	if (!slashPtr) return;
+	std::ptrdiff_t slashIndex{slashPtr - path};
+	std::strncpy(dst, path, std::min(static_cast<std::size_t>(slashIndex), dstsize));
 }
 
-int main(int argc, char* argv[])
+auto main(int argc, char* argv[]) -> int
 {
 	if (argc != 3) {
 		std::puts("preshade - preprocesses shaders so that they can be included in the source");
@@ -126,9 +123,10 @@ int main(int argc, char* argv[])
 		std::exit(EXIT_FAILURE);
 	}
 
-	dirname(argv[1], dir);
+	char basedir[256]{'\0'};
+	dirname(argv[1], 256, basedir);
 
-	fileProcess(argv[1], output);
+	fileProcess(argv[1], basedir, output);
 
 	std::fclose(output);
 }

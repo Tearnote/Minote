@@ -134,7 +134,8 @@ set(CXX_SOURCES
         src/particles.hpp src/particles.cpp
         src/debug.hpp src/debug.cpp
         src/fontlist.hpp
-        src/font.hpp src/font.cpp src/text.cpp src/text.hpp)
+        src/font.hpp src/font.cpp
+        src/text.hpp src/text.cpp)
 
 add_executable(Minote ${CXX_SOURCES} ${C_INTERNALLIBS})
 target_compile_options(Minote PRIVATE
