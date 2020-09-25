@@ -1,4 +1,5 @@
-60, (VertexFlat[]){
+inline size_t guideMeshSize = 60;
+inline VertexFlat guideMesh[] = {
 /////////////////////////////////////////////
 // Column 1 guide
 	{
@@ -269,4 +270,4 @@
 		.pos = {4.0f, 20.0f, -0.99f},
 		.color = {1.0f, 1.0f, 1.0f, 0.0f}
 	},
-}
+};

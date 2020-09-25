@@ -1,4 +1,5 @@
-42, (VertexFlat[]){
+inline size_t sceneMeshSize = 42;
+inline VertexFlat sceneMesh[] = {
 /////////////////////////////////////////////
 // Backplane
 	{
@@ -188,4 +189,4 @@
 		.pos = {5.2f, 20.1f, 0.2f},
 		.color = {1.0f, 1.0f, 1.0f, 1.0f}
 	},
-}
+};

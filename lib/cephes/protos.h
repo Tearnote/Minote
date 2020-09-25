@@ -4,6 +4,12 @@
  *
  *   Created: Fri Mar 31 19:17:33 1995
  */
+#ifndef CEPHES_PROTOS_H
+#define CEPHES_PROTOS_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 /* extern double acosh ( double x );
 extern int airy ( double, double *, double *, double *, double * );
 extern double asin ( double );
@@ -180,3 +186,8 @@ extern double poleva ( double a[], int na, double x ); */
 extern void polsqt ( double pol[], double ans[], int nn );
 extern void polsin ( double x[], double y[], int nn );
 extern void polcos ( double x[], double y[], int nn ); */
+#ifdef __cplusplus
+}
+#endif
+
+#endif

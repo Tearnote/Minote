@@ -2,19 +2,24 @@
 cmake_minimum_required(VERSION 3.15)
 project(Minote VERSION 0.0
         DESCRIPTION "Modern action puzzle game"
-        LANGUAGES C)
+        LANGUAGES C CXX)
 
 # Build settings
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED)
 set(CMAKE_C_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED)
+set(CMAKE_CXX_EXTENSIONS OFF)
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif()
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -s -ffunction-sections -Wl,--gc-sections")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s -ffunction-sections -Wl,--gc-sections")
     if(WIN32)
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mwindows")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mwindows")
     endif()
 endif()
 
@@ -30,11 +35,9 @@ find_package(PkgConfig REQUIRED)
 pkg_search_module(GLFW REQUIRED glfw3)
 pkg_search_module(FREETYPE REQUIRED freetype2)
 pkg_search_module(HARFBUZZ REQUIRED harfbuzz)
-set(THREADS_PREFER_PTHREAD_FLAG TRUE)
-find_package(Threads REQUIRED)
 
 # Build the preprocessors
-add_executable(Preshade src/tools/preshade.c)
+add_executable(Preshade src/tools/preshade.cpp)
 target_include_directories(Preshade PRIVATE lib)
 
 add_subdirectory(lib/msdf-atlas-gen)
@@ -104,40 +107,39 @@ set(C_INTERNALLIBS
         lib/cephes/const.c lib/cephes/polevl.c lib/cephes/fresnl.c
         lib/stb/stb_image.h lib/stb/stb_image.c)
 
-set(C_SOURCES
-        src/main.h src/main.c
-        src/log.h src/log.c
-        src/util.h src/util.c
-        src/window.h src/window.c
-        src/basetypes.h src/basetypes.c
-        src/queue.h src/queue.c
-        src/game.h src/game.c
-        src/thread.h src/thread.c
-        src/system.h src/system.c
-        src/time.h src/time.c
-        src/renderer.h src/renderer.c
-        src/darray.h src/darray.c
-        src/play.h src/play.c
-        src/mino.h src/mino.c
-        src/mapper.h src/mapper.c
-        src/mrs.h src/mrs.c
-        src/mrsdef.h src/mrsdef.c
-        src/mrsdraw.h src/mrsdraw.c
-        src/aa.h src/aa.c
-        src/opengl.h src/opengl.c
-        src/bloom.h src/bloom.c
-        src/model.h src/model.c
-        src/world.h src/world.c
-        src/tween.h src/tween.c
-        src/particles.h src/particles.c
-        src/debug.h src/debug.c
-        src/fontlist.h
-        src/font.h src/font.c src/text.c src/text.h)
+set(CXX_SOURCES
+        src/main.hpp src/main.cpp
+        src/log.hpp src/log.cpp
+        src/util.hpp src/util.cpp
+        src/window.hpp src/window.cpp
+        src/basetypes.hpp src/basetypes.cpp
+        src/queue.hpp src/queue.cpp
+        src/game.hpp src/game.cpp
+        src/system.hpp src/system.cpp
+        src/time.hpp src/time.cpp
+        src/renderer.hpp src/renderer.cpp
+        src/darray.hpp src/darray.cpp
+        src/play.hpp src/play.cpp
+        src/mino.hpp src/mino.cpp
+        src/mapper.hpp src/mapper.cpp
+        src/mrs.hpp src/mrs.cpp
+        src/mrsdef.hpp src/mrsdef.cpp
+        src/mrsdraw.hpp src/mrsdraw.cpp
+        src/aa.hpp src/aa.cpp
+        src/opengl.hpp src/opengl.cpp
+        src/bloom.hpp src/bloom.cpp
+        src/model.hpp src/model.cpp
+        src/world.hpp src/world.cpp
+        src/tween.hpp src/tween.cpp
+        src/particles.hpp src/particles.cpp
+        src/debug.hpp src/debug.cpp
+        src/fontlist.hpp
+        src/font.hpp src/font.cpp src/text.cpp src/text.hpp)
 
-add_executable(Minote ${C_SOURCES} ${C_INTERNALLIBS})
+add_executable(Minote ${CXX_SOURCES} ${C_INTERNALLIBS})
 target_compile_options(Minote PRIVATE
         $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
-        -Wall -Wextra -pedantic-errors>)
+        -Wall -Wextra>)
 
 add_dependencies(Minote Preprocess_shaders)
 add_dependencies(Minote Preprocess_fonts)
@@ -170,9 +172,5 @@ list(TRANSFORM FREETYPE_STATIC_LIBRARIES REPLACE "brotlicommon" "brotlicommon-st
 target_link_libraries(Minote ${HARFBUZZ_STATIC_LIBRARIES})
 target_link_libraries(Minote ${FREETYPE_STATIC_LIBRARIES})
 if(WIN32)
-    target_link_libraries(Minote stdc++) # libgraphite2 bug https://github.com/msys2/MINGW-packages/issues/1877
     target_link_libraries(Minote winmm)
 endif()
-target_link_libraries(Minote ${CMAKE_DL_LIBS})
-target_link_libraries(Minote Threads::Threads)
-target_link_libraries(Minote m)

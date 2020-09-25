@@ -1,4 +1,5 @@
-54, (VertexPhong[]){
+inline size_t blockMeshSize = 54;
+inline VertexPhong blockMesh[] = {
 /////////////////////////////////////////////
 // Top wall
     {
@@ -242,10 +243,10 @@
         .pos = {0.875f, 0.875f, 0.0f},
         .color = {0.9f, 0.9f, 0.9f, 1.0f}
     },
-},
-(MaterialPhong){
+};
+inline MaterialPhong blockMeshMat = {
     .ambient = 0.2f,
     .diffuse = 0.9f,
     .specular = 0.4f,
     .shine = 24.0f
-}
+};
