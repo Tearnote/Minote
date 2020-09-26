@@ -81,28 +81,12 @@ double rngFloat(Rng* r);
     memset((arr), 0, sizeof((arr)))
 
 /**
- * Clear a struct, setting all bytes to 0.
- * @param sct Struct instance argument
- */
-#define structClear(sct) \
-    memset(&(sct), 0, sizeof((sct)))
-
-/**
  * Copy the contents of one array into another array of the same or bigger size.
  * @param dst Destination of the copy
  * @param src Source of the copy
  */
 #define arrayCopy(dst, src) \
     memcpy((dst), (src), sizeof((dst)))
-
-/**
- * Copy the contents of one struct instance into another instance of the same
- * struct.
- * @param dst Destination of the copy
- * @param src Source of the copy
- */
-#define structCopy(dst, src) \
-    memcpy(&(dst), &(src), sizeof((dst)))
 
 /**
  * Error-checking wrapper for calloc(). Clears memory to 0 and terminates

@@ -53,7 +53,7 @@ void pieceRotate(piece p, spin rotation)
 				-p[j].y,
 				p[j].x
 			};
-			structCopy(p[j], newPos);
+			p[j] = newPos;
 		}
 	}
 }

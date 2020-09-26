@@ -225,7 +225,7 @@ static void mrsQueueField(void)
 				blockTransformsAlpha));
 		}
 
-		color4Copy(*tint, minoColor(type));
+		*tint = minoColor(type);
 		tint->r *= MrsFieldDim;
 		tint->g *= MrsFieldDim;
 		tint->b *= MrsFieldDim;
@@ -243,11 +243,10 @@ static void mrsQueueField(void)
 		}
 		if (playerCell) {
 			float flash = tweenApply(&lockFlash);
-			color4Copy(*highlight,
-				((color4){MrsLockFlashBrightness, MrsLockFlashBrightness,
-				          MrsLockFlashBrightness, flash}));
+			*highlight = ((color4){MrsLockFlashBrightness, MrsLockFlashBrightness,
+				          MrsLockFlashBrightness, flash});
 		} else {
-			color4Copy(*highlight, Color4Clear);
+			*highlight = Color4Clear;
 		}
 
 		float fx = (float)x;
@@ -340,7 +339,7 @@ static void mrsQueuePlayer(void)
 		}
 
 		// Insert calculated values
-		color4Copy(*tint, minoColor(mrsTet.player.type));
+		*tint = minoColor(mrsTet.player.type);
 		if (mrsTet.player.lockDelay != 0) {
 			tweenRestart(&lockDim);
 			lockDim.start -= mrsTet.player.lockDelay * MrsUpdateTick;
@@ -349,7 +348,7 @@ static void mrsQueuePlayer(void)
 			tint->g *= dim;
 			tint->b *= dim;
 		}
-		color4Copy(*highlight, Color4Clear);
+		*highlight = Color4Clear;
 		mat4x4_mul(*transform, pieceTransform, minoTransform);
 	}
 }
@@ -385,9 +384,9 @@ static void mrsQueueGhost(void)
 		mat4x4* transform = static_cast<mat4x4*>(darrayProduce(
 			blockTransformsAlpha));
 
-		color4Copy(*tint, minoColor(mrsTet.player.type));
+		*tint = minoColor(mrsTet.player.type);
 		tint->a *= MrsGhostDim;
-		color4Copy(*highlight, Color4Clear);
+		*highlight = Color4Clear;
 		mat4x4_translate(*transform, x - (signed)(FieldWidth / 2), y, 0.0f);
 	}
 }
@@ -424,8 +423,8 @@ static void mrsQueuePreview(void)
 				blockTransformsAlpha));
 		}
 
-		color4Copy(*tint, minoColor(mrsTet.player.preview));
-		color4Copy(*highlight, Color4Clear);
+		*tint = minoColor(mrsTet.player.preview);
+		*highlight = Color4Clear;
 		mat4x4_translate(*transform, x, y, 0.0f);
 	}
 }
@@ -461,7 +460,7 @@ static void mrsQueueBorder(point3f pos, size3f size, color4 color)
 {
 	color4* tint = static_cast<color4*>(darrayProduce(borderTints));
 	mat4x4* transform = static_cast<mat4x4*>(darrayProduce(borderTransforms));
-	color4Copy(*tint, color);
+	*tint = color;
 	mat4x4_identity(*transform);
 	mat4x4_translate_in_place(*transform, pos.x, pos.y, pos.z);
 	mat4x4_scale_aniso(*transform, *transform, size.x, size.y, size.z);
@@ -674,7 +673,7 @@ void mrsDraw(void)
 
 void mrsEffectSpawn(void)
 {
-	structCopy(lastPlayerPos, mrsTet.player.pos);
+	lastPlayerPos = mrsTet.player.pos;
 	lastPlayerRotation = mrsTet.player.rotation;
 	playerPosX.from = lastPlayerPos.x;
 	playerPosX.to = lastPlayerPos.x;
@@ -698,7 +697,7 @@ void mrsEffectClear(int row, int power)
 		for (int ySub = 0; ySub < 8; ySub += 1) {
 			color4 cellColor = minoColor(
 				fieldGet(mrsTet.field, (point2i){x, row}));
-			color4Copy(particlesClear.color, cellColor);
+			particlesClear.color = cellColor;
 			particlesClear.color.r *= MrsParticlesClearBoost;
 			particlesClear.color.g *= MrsParticlesClearBoost;
 			particlesClear.color.b *= MrsParticlesClearBoost;

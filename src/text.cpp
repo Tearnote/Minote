@@ -76,10 +76,12 @@ static void textQueueV(FontType font, float size, point3f pos, point3f dir, poin
 	mat4x4* transform = static_cast<mat4x4*>(darrayProduce(
 		msdfTransforms[font]));
 	vec3 eye = {0};
-	vec3_sub(eye, pos.arr, dir.arr);
+	vec3_sub(eye, reinterpret_cast<float const*>(&pos),
+		reinterpret_cast<float const*>(&dir));
 	mat4x4 lookat = {0};
 	mat4x4 inverted = {0};
-	mat4x4_look_at(lookat, pos.arr, eye, up.arr);
+	mat4x4_look_at(lookat, reinterpret_cast<float*>(&pos), eye,
+		reinterpret_cast<float*>(&up));
 	mat4x4_invert(inverted, lookat);
 	mat4x4_scale_aniso(*transform, inverted, size, size, size);
 
@@ -110,7 +112,7 @@ static void textQueueV(FontType font, float size, point3f pos, point3f dir, poin
 		glyph->texBounds.y = atlasChar->atlasBottom / (float)fonts[font].atlas->size.y;
 		glyph->texBounds.z = atlasChar->atlasRight / (float)fonts[font].atlas->size.x;
 		glyph->texBounds.w = atlasChar->atlasTop / (float)fonts[font].atlas->size.y;
-		color4Copy(glyph->color, color);
+		glyph->color = color;
 		glyph->transformIndex = msdfTransforms[font]->count - 1;
 
 		// Advance position

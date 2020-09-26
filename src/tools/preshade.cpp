@@ -24,7 +24,8 @@ auto trim(char* str) -> char*
 	 * characters from each end. */
 	while (std::isspace(static_cast<unsigned char>(*frontp))) { ++frontp; }
 	if (endp != frontp)
-		while (std::isspace(static_cast<unsigned char>(*(--endp))) && endp != frontp) {}
+		while (std::isspace(static_cast<unsigned char>(*(--endp)))
+			&& endp != frontp) {}
 
 	if (frontp != str && endp == frontp)
 		*str = '\0';
@@ -44,7 +45,8 @@ auto trim(char* str) -> char*
 	return str;
 }
 
-void fileProcess(char const* const filename, char const* const basedir, FILE* const output)
+void fileProcess(const char* const filename, const char* const basedir,
+	FILE* const output)
 {
 	std::FILE* input{std::fopen(filename, "r")};
 	if (!input) {
@@ -91,7 +93,8 @@ void fileProcess(char const* const filename, char const* const basedir, FILE* co
 				chCount += 1;
 
 				// Do the thing
-				std::fprintf(output, "0x%02hhx, ", static_cast<unsigned char>(line[i]));
+				std::fprintf(output, "0x%02hhx, ",
+					static_cast<unsigned char>(line[i]));
 			}
 			std::fprintf(output, "0x%02x,\n", '\n');
 		}
@@ -100,12 +103,13 @@ void fileProcess(char const* const filename, char const* const basedir, FILE* co
 	std::fclose(input);
 }
 
-void dirname(char* path, std::size_t dstsize, char* dst)
+void dirname(const char* const path, const std::size_t dstsize, char* const dst)
 {
 	char* slashPtr{std::strrchr(path, '/')};
 	if (!slashPtr) return;
 	std::ptrdiff_t slashIndex{slashPtr - path};
-	std::strncpy(dst, path, std::min(static_cast<std::size_t>(slashIndex), dstsize));
+	std::strncpy(dst, path,
+		std::min(static_cast<std::size_t>(slashIndex), dstsize));
 }
 
 auto main(int argc, char* argv[]) -> int

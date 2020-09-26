@@ -98,7 +98,7 @@ void fontInit(void)
 
 			FontAtlasGlyph* nextChar = static_cast<FontAtlasGlyph*>(darrayProduce(
 				fonts[i].metrics));
-			structCopy(*nextChar, atlasChar);
+			*nextChar = atlasChar;
 		}
 		fclose(metricsFile);
 		metricsFile = null;

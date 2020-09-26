@@ -3,11 +3,11 @@
  * @file
  */
 
-#ifndef MINOTE_MAIN_H
-#define MINOTE_MAIN_H
+#pragma once
 
-#define AppName "Minote"
+namespace minote {
 
-#define AppVersion "0.0"
+constexpr char AppName[]{"Minote"};
+constexpr char AppVersion[]{"0.0"};
 
-#endif //MINOTE_MAIN_H
+}

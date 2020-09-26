@@ -137,7 +137,7 @@ void particlesDraw(void)
 			angle *= -1.0f;
 
 		color4* tint = static_cast<color4*>(darrayProduce(particleTints));
-		color4Copy(*tint, current->color);
+		*tint = current->color;
 
 		// Shimmer mitigation
 		if (progress > ShimmerFade) {
@@ -178,8 +178,8 @@ void particlesGenerate(point3f position, size_t count, ParticleParams* params)
 	for (size_t i = 0; i < count; i += 1) {
 		Particle* newParticle = static_cast<Particle*>(darrayProduce(
 			particles));
-		structCopy(newParticle->origin, position);
-		color4Copy(newParticle->color, params->color);
+		newParticle->origin = position;
+		newParticle->color = params->color;
 
 		newParticle->start = getTime();
 		newParticle->duration = params->durationMin + rngFloat(rng)

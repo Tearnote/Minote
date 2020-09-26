@@ -250,9 +250,9 @@ static void modelDrawPhong(ModelPhong* m, size_t instances,
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4x4) * instances, transforms);
 	glUniformMatrix4fv(phong->projection, 1, GL_FALSE, *worldProjection);
 	glUniformMatrix4fv(phong->camera, 1, GL_FALSE, *worldCamera);
-	glUniform3fv(phong->lightPosition, 1, worldLightPosition.arr);
-	glUniform3fv(phong->lightColor, 1, worldLightColor.arr);
-	glUniform3fv(phong->ambientColor, 1, worldAmbientColor.arr);
+	glUniform3fv(phong->lightPosition, 1, reinterpret_cast<GLfloat*>(&worldLightPosition));
+	glUniform3fv(phong->lightColor, 1, reinterpret_cast<GLfloat*>(&worldLightColor));
+	glUniform3fv(phong->ambientColor, 1, reinterpret_cast<GLfloat*>(&worldAmbientColor));
 	glUniform1f(phong->ambient, m->material.ambient);
 	glUniform1f(phong->diffuse, m->material.diffuse);
 	glUniform1f(phong->specular, m->material.specular);
@@ -368,7 +368,7 @@ Model* modelCreatePhong(const char* name,
 	ModelPhong* m = static_cast<ModelPhong*>(alloc(sizeof(*m)));
 	m->base.type = ModelTypePhong;
 	m->base.name = name;
-	structCopy(m->material, material);
+	m->material = material;
 
 	m->numVertices = numVertices;
 	glGenBuffers(1, &m->vertices);

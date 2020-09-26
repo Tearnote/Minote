@@ -388,7 +388,7 @@ void mrsInit(void)
 	if (initialized) return;
 
 	// Logic init
-	structClear(mrsTet);
+	mrsTet = {};
 	mrsTet.frame = -1;
 	mrsTet.ready = 3 * 50;
 	mrsTet.field = fieldCreate((size2i){FieldWidth, FieldHeight});
