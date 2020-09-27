@@ -12,9 +12,11 @@
 #include <cstring>
 #include "pcg/pcg_basic.h"
 
-/// Concept of an enum type
 template<typename T>
 concept EnumType = std::is_enum_v<T>;
+
+template<typename T>
+concept FloatingType = std::is_floating_point_v<T>;
 
 /// Conversion of scoped enum to the underlying type, using the unary + operator
 template<EnumType T>
@@ -23,18 +25,23 @@ constexpr auto operator+(T e) {
 }
 
 /**
- * A better replacement for M_PI.
+ * A more correct replacement for pi.
  * @see https://tauday.com/
  */
-#define M_TAU 6.28318530717958647693
+template<FloatingType T>
+constexpr T Tau_v{6.283185307179586476925286766559005768L};
 
-/**
- * Macro to convert degrees to radians.
- * @param x Angle in degrees
- * @return Angle in radians
- */
-#define radf(x) \
-    ((x) * M_TAU / 360.0)
+constexpr double Tau{Tau_v<double>};
+
+ /**
+  * Macro to convert degrees to radians.
+  * @param angle Angle in degrees
+  * @return Angle in radians
+  */
+template<FloatingType T>
+constexpr auto rad(T angle) {
+	return angle * Tau_v<T> / static_cast<T>(360.0);
+}
 
 /// True modulo operation (as opposed to remainder, which is "%" in C.)
 int mod(int num, int div);

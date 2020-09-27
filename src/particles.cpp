@@ -95,7 +95,7 @@ void particlesDraw(void)
 {
 	assert(initialized);
 
-	double fresnelConst = sqrt(4.0 / M_TAU);
+	double fresnelConst = sqrt(4.0 / Tau);
 
 	size_t numParticles = particles->count;
 	if (!numParticles) return;
@@ -132,7 +132,7 @@ void particlesDraw(void)
 
 		float angle = distance * distance;
 		if (current->horz == -1)
-			angle = radf(180.0f) - angle;
+			angle = rad(180.0f) - angle;
 		if (current->vert == -1)
 			angle *= -1.0f;
 

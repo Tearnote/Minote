@@ -313,7 +313,7 @@ static void mrsQueuePlayer(void)
 		tweenApply(&playerPosY), 0.0f);
 	mat4x4_translate(pieceRotationTemp, 0.5f, 0.5f, 0.0f);
 	mat4x4_rotate_Z(pieceRotation, pieceRotationTemp,
-		tweenApply(&playerRotation) * radf(90));
+		tweenApply(&playerRotation) * rad(90.0f));
 	mat4x4_translate_in_place(pieceRotation, -0.5f, -0.5f, 0.0f);
 	mat4x4_mul(pieceTransform, pieceTranslation, pieceRotation);
 

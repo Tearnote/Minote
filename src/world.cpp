@@ -41,7 +41,7 @@ static void worldResize(size2i size)
 	currentSize.y = size.y;
 
 	glViewport(0, 0, size.x, size.y);
-	mat4x4_perspective(worldProjection, radf(45.0f),
+	mat4x4_perspective(worldProjection, rad(45.0f),
 		(float)size.x / (float)size.y, ProjectionNear, ProjectionFar);
 	mat4x4_ortho(worldScreenProjection, 0.0f, size.x, size.y, 0.0f, 1.0f, -1.0f);
 }
