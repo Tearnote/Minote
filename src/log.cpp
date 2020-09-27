@@ -5,6 +5,7 @@
 
 #include "log.hpp"
 
+#include <algorithm>
 #include <cstdarg>
 #include <cstring>
 #include <cassert>
@@ -19,41 +20,26 @@ static constexpr char logLevelStrings[][+Log::Level::Size]{
 	"", "TRACE", "DEBUG", " INFO", " WARN", "ERROR", " CRIT"
 };
 
-/**
- * Write a log message to a specified output. Attaches a timestamp and formats
- * the log level.
- * @param file The output file
- * @param level Message level
- * @param fmt Format string in printf syntax
- * @param ap List of arguments to print
- */
-static void logTo(FILE* const file, const Log::Level level,
-	const char* const fmt, va_list& ap)
-{
-	const auto printTimestamp{[=]() {
-		const auto now{std::time(nullptr)};
-		// Copy-initialized to minimize chance of thread safety issues
-		const auto localnow{*std::localtime(&now)};
-		return std::fprintf(file, "%02d:%02d:%02d [%s] ",
-			localnow.tm_hour, localnow.tm_min, localnow.tm_sec,
-			logLevelStrings[+level]) < 0;
-	}};
-	const auto printMessage{[=]() {
-		return std::vfprintf(file, fmt, ap) < 0;
-	}};
-	const auto printNewline{[=]() {
-		return std::fputc('\n', file) == EOF;
-	}};
+static constexpr std::size_t MaxMessageLen{2048};
 
-	if (printTimestamp() || printMessage() || printNewline()) {
+/**
+ * Write a preformatted log message to a specified output.
+ * @param file The output file
+ * @param msg Preformatted message, with a newline at the end
+ */
+static void logTo(FILE* const file, const char msg[])
+{
+	assert(msg);
+
+	if (std::fputs(msg, file) == EOF) {
 		std::perror("Failed to write into logfile");
 		errno = 0;
 	}
 }
 
 /**
- * The actual log message handling function. Performs level filtering and
- * output selection.
+ * The actual log message handling function. Performs level filtering,
+ * formatting and output selection.
  * @param log The ::Log object
  * @param level Message level
  * @param fmt Format string in printf syntax
@@ -63,27 +49,52 @@ static void logPrio(Log& log, const Log::Level level,
 	const char* const fmt, va_list& ap)
 {
 	assert(fmt);
-	assert(ap);
 	using Level = Log::Level;
 
 	if (level < log.level)
 		return;
+	if (!log.console && !log.file)
+		return;
 
+	char msg[MaxMessageLen]{};
+
+	// Insert timestamp and level
+	const auto now{std::time(nullptr)};
+	// Copy-initialize to minimize chance of thread safety issues
+	const auto localnow{*std::localtime(&now)};
+	std::snprintf(msg, MaxMessageLen, "%02d:%02d:%02d [%s] ",
+		localnow.tm_hour, localnow.tm_min, localnow.tm_sec,
+		logLevelStrings[+level]);
+
+	// Insert formatted message
+	const auto timestampLen{std::strlen(msg)};
+	std::vsnprintf(msg + timestampLen, MaxMessageLen - timestampLen, fmt, ap);
+
+	// Append a newline
+	msg[std::min(std::strlen(msg), MaxMessageLen - 2)] = '\n';
+
+	// Print constructed message to all enabled targets
 	if (log.console) {
-		FILE* const output{[=]() {
-			if (level >= Level::Warn)
-				return stderr;
-			else
-				return stdout;
-		}()};
-		va_list apcopy{};
-		va_copy(apcopy, ap);
-		logTo(output, level, fmt, apcopy);
+		if (level >= Level::Warn) {
+			// Ensure previously written messages are not interleaved
+			std::fflush(stdout);
+			logTo(stderr, msg);
+			// Ensure message is written, in case the application crashes
+			std::fflush(stderr);
+		} else {
+			logTo(stdout, msg);
+		}
 	}
+
 	if (log.file) {
-		va_list apcopy{};
-		va_copy(apcopy, ap);
-		logTo(log.file, level, fmt, apcopy);
+		logTo(log.file, msg);
+		// Ensure message is written, in case the application crashes
+		if (level >= Level::Warn) {
+			if (std::fflush(log.file) == EOF) {
+				std::perror("Failed to write into logfile");
+				errno = 0;
+			}
+		}
 	}
 }
 
