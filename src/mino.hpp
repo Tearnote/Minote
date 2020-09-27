@@ -27,7 +27,7 @@ typedef enum mino {
 } mino;
 
 /// Orthogonal rotation, increasing counterclockwise
-typedef enum spin {
+typedef enum spin: int {
 	SpinNone, ///< 0 degrees
 	Spin90,
 	Spin180,

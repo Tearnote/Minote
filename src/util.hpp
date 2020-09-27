@@ -1,5 +1,5 @@
 /**
- * Useful functions and macros to compliment the standard library
+ * Useful objects, functions and constants to compliment the standard library
  * @file
  */
 
@@ -18,6 +18,9 @@ concept EnumType = std::is_enum_v<T>;
 template<typename T>
 concept FloatingType = std::is_floating_point_v<T>;
 
+template<typename T>
+concept IntegralType = std::is_integral_v<T>;
+
 /// Conversion of scoped enum to the underlying type, using the unary + operator
 template<EnumType T>
 constexpr auto operator+(T e) {
@@ -34,17 +37,22 @@ constexpr T Tau_v{6.283185307179586476925286766559005768L};
 constexpr double Tau{Tau_v<double>};
 
  /**
-  * Macro to convert degrees to radians.
+  * Convert degrees to radians.
   * @param angle Angle in degrees
   * @return Angle in radians
   */
 template<FloatingType T>
-constexpr auto rad(T angle) {
+constexpr auto rad(T angle)
+{
 	return angle * Tau_v<T> / static_cast<T>(360.0);
 }
 
 /// True modulo operation (as opposed to remainder, which is "%" in C.)
-int mod(int num, int div);
+template<IntegralType T>
+constexpr auto mod(T num, T div)
+{
+	return num % div + (num % div < 0) * div;
+}
 
 /// PCG PRNG object. You can obtain an instance with rngCreate().
 typedef pcg32_random_t Rng;

@@ -284,8 +284,8 @@ static void mrsQueuePlayer(void)
 	}
 
 	// Tween the player rotation
-	if (mrsTet.player.rotation != mod(lastPlayerRotation, SpinSize)) {
-		int delta = mrsTet.player.rotation - mod(lastPlayerRotation, SpinSize);
+	if (mrsTet.player.rotation != mod(lastPlayerRotation, +SpinSize)) {
+		int delta = mrsTet.player.rotation - mod(lastPlayerRotation, +SpinSize);
 		if (delta == 3) delta -= 4;
 		if (delta == -3) delta += 4;
 		playerRotation.from = tweenApply(&playerRotation);
