@@ -13,7 +13,7 @@
 #include "mrs.hpp"
 #include "log.hpp"
 
-using minote::log::L;
+using minote::L;
 
 /// Timestamp of the next game logic update
 static nsec nextUpdate = 0;

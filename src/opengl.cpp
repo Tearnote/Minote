@@ -10,7 +10,8 @@
 #include "util.hpp"
 #include "log.hpp"
 
-using minote::log::L;
+using minote::L;
+using minote::allocate;
 
 /// OpenGL shader object ID
 typedef GLuint Shader;

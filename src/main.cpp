@@ -18,8 +18,7 @@
 #include "game.hpp"
 #include "log.hpp"
 
-using namespace minote;
-using namespace minote::log;
+using namespace minote; // Because we can't namespace main()
 
 /**
  * Entry point function. Initializes systems and spawns other threads. Itself

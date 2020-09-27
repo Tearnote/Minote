@@ -14,7 +14,9 @@
 #include "mrs.hpp"
 #include "log.hpp"
 
-using minote::log::L;
+using minote::L;
+using minote::mod;
+using minote::rad;
 
 static Model* scene = nullptr;
 static Model* guide = nullptr;

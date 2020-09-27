@@ -14,6 +14,10 @@
 #include "model.hpp"
 #include "util.hpp"
 
+using minote::Rng;
+using minote::Tau;
+using minote::rad;
+
 /// Progress level after which a particle begins to fade out
 #define ShimmerFade 0.9f
 

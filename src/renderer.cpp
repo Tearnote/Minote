@@ -19,7 +19,7 @@
 #include "time.hpp"
 #include "log.hpp"
 
-using minote::log::L;
+using minote::L;
 
 /// Basic blit function type
 typedef struct ProgramBlit {

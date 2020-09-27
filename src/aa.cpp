@@ -13,7 +13,7 @@
 #include "util.hpp"
 #include "log.hpp"
 
-using minote::log::L;
+using minote::L;
 
 typedef struct ProgramSmaaSeparate {
 	ProgramBase base;

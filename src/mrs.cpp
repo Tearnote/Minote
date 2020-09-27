@@ -11,7 +11,7 @@
 #include "mrsdef.hpp"
 #include "log.hpp"
 
-using minote::log::L;
+using minote::L;
 
 int mrsDebugPauseSpawn = 0;
 int mrsDebugInfLock = 0;

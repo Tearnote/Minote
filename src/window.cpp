@@ -17,7 +17,7 @@
 #include "util.hpp"
 #include "log.hpp"
 
-using minote::log::L;
+using minote::L;
 
 static bool initialized = false;
 static GLFWwindow* window; ///< Underlying GLFWwindow object

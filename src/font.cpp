@@ -11,7 +11,7 @@
 #include "util.hpp"
 #include "log.hpp"
 
-using minote::log::L;
+using minote::L;
 
 Font fonts[FontSize] = {0};
 

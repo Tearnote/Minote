@@ -11,6 +11,8 @@
 #include <string.h>
 #include "util.hpp"
 
+using minote::allocate;
+
 queue* queueCreate(size_t elementSize, size_t maxElements)
 {
 	assert(elementSize);
@@ -21,7 +23,7 @@ queue* queueCreate(size_t elementSize, size_t maxElements)
 	// confusion between empty and full states
 	q->capacity = maxElements + 1;
 	q->elementSize = elementSize;
-	q->data = allocate<uint8_t>(q->elementSize * q->capacity);
+	q->data = minote::allocate<uint8_t>(q->elementSize * q->capacity);
 	return q;
 }
 

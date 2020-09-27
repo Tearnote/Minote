@@ -17,7 +17,7 @@
 #include "font.hpp"
 #include "log.hpp"
 
-using minote::log::L;
+using minote::L;
 
 /// Shader type for MSDF drawing
 typedef struct ProgramMsdf {

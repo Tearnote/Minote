@@ -12,7 +12,7 @@
 #include "util.hpp"
 #include "log.hpp"
 
-using minote::log::L;
+using minote::L;
 
 #define BloomPasses 6
 

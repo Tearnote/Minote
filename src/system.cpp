@@ -15,7 +15,7 @@
 #include <GLFW/glfw3.h>
 #include "log.hpp"
 
-using minote::log::L;
+using minote::L;
 
 static bool initialized = false;
 

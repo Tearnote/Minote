@@ -8,7 +8,7 @@
 
 #include <cstdio>
 
-namespace minote::log {
+namespace minote {
 
 struct Log {
 

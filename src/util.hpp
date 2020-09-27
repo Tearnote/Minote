@@ -14,6 +14,8 @@
 #include <cmath>
 #include "pcg/pcg_basic.h"
 
+namespace minote {
+
 template<typename T>
 concept EnumType = std::is_enum_v<T>;
 
@@ -162,4 +164,6 @@ void reallocate(T*& buffer, const std::size_t newCount)
 		std::exit(EXIT_FAILURE);
 	}
 	buffer = result;
+}
+
 }

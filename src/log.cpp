@@ -13,7 +13,7 @@
 #include <ctime>
 #include "util.hpp"
 
-namespace minote::log {
+namespace minote {
 
 /// Mapping from Log::Level to string name
 static constexpr char logLevelStrings[][+Log::Level::Size]{

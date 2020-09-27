@@ -10,6 +10,9 @@
 #include <string.h>
 #include "util.hpp"
 
+using minote::allocate;
+using minote::reallocate;
+
 #define StartingSize 8
 
 darray* darrayCreate(size_t elementSize)
