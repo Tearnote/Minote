@@ -34,7 +34,7 @@ typedef struct Particle {
 } Particle;
 
 static darray* particles = nullptr;
-static Rng* rng = nullptr;
+static Rng rng{};
 
 static Model* particle = nullptr;
 static darray* particleTints = nullptr;
@@ -48,7 +48,7 @@ void particlesInit(void)
 	if (initialized) return;
 
 	particles = darrayCreate(sizeof(Particle));
-	rng = rngCreate((uint64_t)time(nullptr));
+	rng.seed((uint64_t)time(nullptr));
 
 	particle = modelCreateFlat("particle", particleMeshSize, particleMesh);
 	particleTints = darrayCreate(sizeof(color4));
@@ -68,8 +68,6 @@ void particlesCleanup(void)
 	modelDestroy(particle);
 	particle = nullptr;
 
-	rngDestroy(rng);
-	rng = nullptr;
 	darrayDestroy(particles);
 	particles = nullptr;
 
@@ -182,24 +180,24 @@ void particlesGenerate(point3f position, size_t count, ParticleParams* params)
 		newParticle->color = params->color;
 
 		newParticle->start = getTime();
-		newParticle->duration = params->durationMin + rngFloat(rng)
+		newParticle->duration = params->durationMin + rng.randFloat()
 			* (double)(params->durationMax - params->durationMin);
 		newParticle->ease = params->ease;
 
 		if (params->directionHorz != 0)
 			newParticle->horz = params->directionHorz;
 		else
-			newParticle->horz = (int)rngInt(rng, 2) * 2 - 1;
+			newParticle->horz = (int)rng.randInt(2) * 2 - 1;
 		if (params->directionVert != 0)
 			newParticle->vert = params->directionVert;
 		else
-			newParticle->vert = (int)rngInt(rng, 2) * 2 - 1;
+			newParticle->vert = (int)rng.randInt(2) * 2 - 1;
 
-		newParticle->distance = rngFloat(rng);
+		newParticle->distance = rng.randFloat();
 		newParticle->distance *= params->distanceMax - params->distanceMin;
 		newParticle->distance += params->distanceMin;
 
-		newParticle->spin = rngFloat(rng);
+		newParticle->spin = rng.randFloat();
 		newParticle->spin = QuarticEaseIn(newParticle->spin);
 		newParticle->spin *= params->spinMax - params->spinMin;
 		newParticle->spin += params->spinMin;

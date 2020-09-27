@@ -233,7 +233,7 @@ static mino randomPiece(void)
 	assert(tokenListIndex == tokenTotal);
 
 	// Pick a random token from the list and update the token distribution
-	int picked = tokenList[rngInt(mrsTet.rng, tokenTotal)];
+	int picked = tokenList[mrsTet.rng.randInt(tokenTotal)];
 	for (size_t i = 0; i < countof(mrsTet.player.tokens); i += 1) {
 		if (i == picked)
 			mrsTet.player.tokens[i] -= countof(mrsTet.player.tokens) - 1;
@@ -398,7 +398,7 @@ void mrsInit(void)
 	mrsTet.player.spawnDelay = MrsSpawnDelay; // Start instantly
 	mrsTet.player.gravity = 3;
 
-	mrsTet.rng = rngCreate((uint64_t)time(nullptr));
+	mrsTet.rng.seed((uint64_t)time(nullptr));
 	for (size_t i = 0; i < countof(mrsTet.player.tokens); i += 1)
 		mrsTet.player.tokens[i] = MrsStartingTokens;
 	do {
@@ -421,8 +421,6 @@ void mrsCleanup(void)
 	if (!initialized) return;
 
 	mrsDrawCleanup();
-	rngDestroy(mrsTet.rng);
-	mrsTet.rng = nullptr;
 	fieldDestroy(mrsTet.field);
 	mrsTet.field = nullptr;
 

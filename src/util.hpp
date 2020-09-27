@@ -3,13 +3,14 @@
  * @file
  */
 
-#ifndef MINOTE_UTIL_H
-#define MINOTE_UTIL_H
+#pragma once
 
 #include <type_traits>
+#include <cassert>
 #include <cstddef>
 #include <cstdlib> // Provide free()
 #include <cstring>
+#include <cmath>
 #include "pcg/pcg_basic.h"
 
 template<typename T>
@@ -47,46 +48,57 @@ constexpr auto rad(T angle)
 	return angle * Tau_v<T> / static_cast<T>(360.0);
 }
 
-/// True modulo operation (as opposed to remainder, which is "%" in C.)
+/**
+ * True modulo operation (as opposed to remainder, which is operator% in C++.)
+ * @param num Value
+ * @param div Modulo divisor
+ * @return Result of modulo (always positive)
+ */
 template<IntegralType T>
 constexpr auto mod(T num, T div)
 {
 	return num % div + (num % div < 0) * div;
 }
 
-/// PCG PRNG object. You can obtain an instance with rngCreate().
-typedef pcg32_random_t Rng;
+/// Encapsulation of a PCG pseudorandom number generator
+struct Rng {
 
-/**
- * Create a new ::Rng instance.
- * @param seed Initializer value. Using the same seed guarantees the same values
- * @return Newly created ::Rng. Must be destroyed with rngDestroy()
- */
-Rng* rngCreate(uint64_t seed);
+	/// Internal state of the RNG. The .inc field must always be odd.
+	pcg32_random_t state{0, 1};
 
-/**
- * Destroy a ::Rng instance. The destroyed object cannot be used anymore and
- * the pointer becomes invalid.
- * @param r The ::Rng object
- */
-void rngDestroy(Rng* r);
+	/**
+	 * Seed the generator with a given value. The generated sequence will always
+	 * be the same for any given seed.
+	 * @param seed Any 64-bit integer to be used as RNG seed
+	 */
+	void seed(uint64_t seed)
+	{
+		pcg32_srandom_r(&state, seed, 'M'*'i'+'n'*'o'+'t'*'e');
+	}
 
-/**
- * Return a random positive integer, up to a bound (exclusive). ::Rng state
- * is advanced by one step.
- * @param r The ::Rng object
- * @param bound The return value will be smaller than this argument
- * @return A random integer
- */
-uint32_t rngInt(Rng* r, uint32_t bound);
+	/**
+	 * Return a random positive integer, up to a bound (exclusive). RNG state
+     * is advanced by one step.
+	 * @param bound The return value will be smaller than this argument
+	 * @return A random integer
+	 */
+	auto randInt(uint32_t bound) -> uint32_t
+	{
+		assert(bound >= 1);
+		return pcg32_boundedrand_r(&state, bound);
+	}
 
-/**
- * Return a random floating-point value between 0.0 (inclusive) and 1.0
- * (exclusive). ::Rng state is advanced by one step.
- * @param r The ::Rng object
- * @return A random floating-point number
- */
-double rngFloat(Rng* r);
+	/**
+	 * Return a random floating-point value between 0.0 (inclusive) and 1.0
+     * (exclusive). RNG state is advanced by one step.
+	 * @return A random floating-point number
+	 */
+	auto randFloat()
+	{
+		return std::ldexp(pcg32_random_r(&state), -32);
+	}
+
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -127,5 +139,3 @@ void* alloc(size_t bytes);
  * immediately overwritten by this pointer
  */
 void* ralloc(void* buffer, size_t newSize);
-
-#endif //MINOTE_UTIL_H

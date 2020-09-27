@@ -76,7 +76,7 @@ typedef struct Tetrion {
 	Field* field;
 	bool linesCleared[FieldHeight]; ///< Storage for line clears pending a thump
 	Player player;
-	Rng* rng;
+	Rng rng;
 } Tetrion;
 
 /// Current state of the mode. Read-only.
