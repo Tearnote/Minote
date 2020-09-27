@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <cstdlib> // Provide free()
 #include <cstring>
+#include <cstdio>
 #include <cmath>
 #include "pcg/pcg_basic.h"
 
@@ -102,15 +103,20 @@ struct Rng {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+/**
+ * Return the number of elements of an array. It must not be decayed to
+ * a pointer, or this information is lost.
+ * @param x Array argument
+ */
 #define countof(x) \
-    ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
+    ((sizeof(x)/sizeof(0[x])) / ((std::size_t)(!(sizeof(x) % sizeof(0[x])))))
 
 /**
  * Clear an array, setting all bytes to 0.
  * @param arr Array argument
  */
 #define arrayClear(arr) \
-    memset((arr), 0, sizeof((arr)))
+    std::memset((arr), 0, sizeof((arr)))
 
 /**
  * Copy the contents of one array into another array of the same or bigger size.
@@ -118,24 +124,42 @@ struct Rng {
  * @param src Source of the copy
  */
 #define arrayCopy(dst, src) \
-    memcpy((dst), (src), sizeof((dst)))
+    std::memcpy((dst), (src), sizeof((dst)))
 
 /**
- * Error-checking wrapper for calloc(). Clears memory to 0 and terminates
- * execution on error.
- * @param bytes Number of bytes to allocate, at least 1
+ * Error-checking and type-safe malloc() wrapper. Clears all allocated memory
+ * to 0.
+ * @param count Number of elements to allocate memory for
  * @return Pointer to allocated memory
  */
-void* alloc(size_t bytes);
+template<typename T>
+auto allocate(const std::size_t count = 1) -> T*
+{
+	assert(count);
+	auto* const result{static_cast<T*>(std::calloc(count, sizeof(T)))};
+	if (!result) {
+		std::perror("Could not allocate memory");
+		std::exit(EXIT_FAILURE);
+	}
+	return result;
+}
 
 /**
- * Error-checking wrapper for realloc(). Terminates execution on error, but
- * if the buffer is grown the additional space is not cleared to 0 - this should
- * be done manually to keep all data in a defined state.
- * @param buffer Pointer to previously allocated memory. Becomes undefined after
- * this call
- * @param newSize Target size to resize @a buffer to, in bytes
- * @return Pointer to the resized buffer. The old value of @a buffer should be
- * immediately overwritten by this pointer
+ * Error-checking and type-safe realloc() wrapper. The buffer changes size
+ * in-place, and the pointer might change in the process. If the buffer
+ * is grown, the additional space is not cleared to 0 - this should be done
+ * manually to keep all data in a defined state.
+ * @param[inout] buffer Pointer to previously allocated memory
+ * @param newSize New number of elements to allocate memory for
  */
-void* ralloc(void* buffer, size_t newSize);
+template<typename T>
+void reallocate(T*& buffer, const std::size_t newCount)
+{
+	assert(newCount);
+	auto* const result{static_cast<T*>(std::realloc(buffer, sizeof(T) * newCount))};
+	if (!result) {
+		std::perror("Could not allocate memory");
+		std::exit(EXIT_FAILURE);
+	}
+	buffer = result;
+}

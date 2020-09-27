@@ -16,12 +16,12 @@ queue* queueCreate(size_t elementSize, size_t maxElements)
 	assert(elementSize);
 	assert(maxElements);
 	assert(elementSize <= SIZE_MAX / (maxElements + 1)); // Overflow check
-	queue* q = static_cast<queue*>(alloc(sizeof(*q)));
+	auto* q = allocate<queue>();
 	// In the implementation at least 1 element needs to be free, to prevent
 	// confusion between empty and full states
 	q->capacity = maxElements + 1;
 	q->elementSize = elementSize;
-	q->data = static_cast<uint8_t*>(alloc(q->elementSize * q->capacity));
+	q->data = allocate<uint8_t>(q->elementSize * q->capacity);
 	return q;
 }
 

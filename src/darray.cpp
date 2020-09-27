@@ -15,9 +15,9 @@
 darray* darrayCreate(size_t elementSize)
 {
 	assert(elementSize);
-	darray* d = static_cast<darray*>(alloc(sizeof(*d)));
+	auto* d = allocate<darray>();
 	d->elementSize = elementSize;
-	d->data = static_cast<uint8_t*>(alloc(StartingSize * elementSize));
+	d->data = allocate<uint8_t>(StartingSize * elementSize);
 	d->capacity = StartingSize;
 	return d;
 }
@@ -36,7 +36,7 @@ void* darrayProduce(darray* d)
 	assert(d);
 	if (d->count == d->capacity) {
 		size_t oldSize = d->capacity * d->elementSize;
-		d->data = static_cast<uint8_t*>(ralloc(d->data, oldSize * 2));
+		reallocate(d->data, oldSize * 2);
 		memset(d->data + oldSize, 0, oldSize);
 		d->capacity *= 2;
 	}

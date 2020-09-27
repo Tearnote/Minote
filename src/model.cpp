@@ -310,7 +310,7 @@ Model* modelCreateFlat(const char* name,
 	assert(name);
 	assert(numVertices);
 	assert(vertices);
-	ModelFlat* m = static_cast<ModelFlat*>(alloc(sizeof(*m)));
+	auto* m = allocate<ModelFlat>();
 	m->base.type = ModelTypeFlat;
 	m->base.name = name;
 	m->numVertices = numVertices;
@@ -367,7 +367,7 @@ Model* modelCreatePhong(const char* name,
 	assert(name);
 	assert(numVertices);
 	assert(vertices);
-	ModelPhong* m = static_cast<ModelPhong*>(alloc(sizeof(*m)));
+	auto* m = allocate<ModelPhong>();
 	m->base.type = ModelTypePhong;
 	m->base.name = name;
 	m->material = material;

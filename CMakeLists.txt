@@ -110,7 +110,7 @@ set(C_INTERNALLIBS
 set(CXX_SOURCES
         src/main.hpp src/main.cpp
         src/log.hpp src/log.cpp
-        src/util.hpp src/util.cpp
+        src/util.hpp
         src/window.hpp src/window.cpp
         src/basetypes.hpp src/basetypes.cpp
         src/queue.hpp src/queue.cpp

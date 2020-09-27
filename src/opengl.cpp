@@ -20,7 +20,7 @@ GLuint boundProgram = 0;
 
 Texture* textureCreate(void)
 {
-	Texture* t = static_cast<Texture*>(alloc(sizeof(*t)));
+	auto* t = allocate<Texture>();
 	glGenTextures(1, &t->id);
 	assert(t->id);
 	glBindTexture(GL_TEXTURE_2D, t->id);
@@ -79,7 +79,7 @@ void textureUse(Texture* t, TextureUnit unit)
 
 TextureMS* textureMSCreate(void)
 {
-	TextureMS* t = static_cast<TextureMS*>(alloc(sizeof(*t)));
+	auto* t = allocate<TextureMS>();
 	glGenTextures(1, &t->id);
 	assert(t->id);
 	return t;
@@ -115,7 +115,7 @@ void textureMSUse(TextureMS* t, TextureUnit unit)
 
 Renderbuffer* renderbufferCreate(void)
 {
-	Renderbuffer* r = static_cast<Renderbuffer*>(alloc(sizeof(*r)));
+	auto* r = allocate<Renderbuffer>();
 	glGenRenderbuffers(1, &r->id);
 	return r;
 }
@@ -138,7 +138,7 @@ void renderbufferStorage(Renderbuffer* r, size2i size, GLenum format)
 
 RenderbufferMS* renderbufferMSCreate(void)
 {
-	RenderbufferMS* r = static_cast<RenderbufferMS*>(alloc(sizeof(*r)));
+	auto* r = allocate<RenderbufferMS>();
 	glGenRenderbuffers(1, &r->id);
 	return r;
 }
@@ -167,7 +167,7 @@ void renderbufferMSStorage(RenderbufferMS* r, size2i size, GLenum format,
 
 Framebuffer* framebufferCreate(void)
 {
-	Framebuffer* f = static_cast<Framebuffer*>(alloc(sizeof(*f)));
+	auto* f = allocate<Framebuffer>();
 	glGenFramebuffers(1, &f->id);
 	assert(f->id);
 	return f;
@@ -319,7 +319,7 @@ void* _programCreate(size_t size, const char* vertName, const char* vertSrc,
 	assert(fragName);
 	assert(fragSrc);
 	// Overallocating memory so that it fits in the user's provided struct type
-	ProgramBase* result = static_cast<ProgramBase*>(alloc(size));
+	auto* result = reinterpret_cast<ProgramBase*>(allocate<uint8_t>(size));
 	result->vertName = vertName;
 	result->fragName = fragName;
 	Shader vert = shaderCreate(vertName, vertSrc, GL_VERTEX_SHADER);

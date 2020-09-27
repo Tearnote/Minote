@@ -63,10 +63,10 @@ void pieceRotate(piece p, spin rotation)
 Field* fieldCreate(size2i size)
 {
 	assert(size.x > 0 && size.y > 0);
-	Field* result = static_cast<Field*>(alloc(sizeof(*result)));
+	auto* result = allocate<Field>();
 	result->size.x = size.x;
 	result->size.y = size.y;
-	result->grid = static_cast<mino*>(alloc(sizeof(mino) * size.x * size.y));
+	result->grid = allocate<mino>(size.x * size.y);
 	return result;
 }
 
