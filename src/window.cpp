@@ -17,6 +17,8 @@
 #include "util.hpp"
 #include "log.hpp"
 
+using minote::log::L;
+
 static bool initialized = false;
 static GLFWwindow* window; ///< Underlying GLFWwindow object
 static const char* windowTitle; ///< Window title from the title bar
@@ -44,7 +46,7 @@ keyCallback(GLFWwindow* w, int key, int scancode, int action, int mods)
 	KeyInput input = {.key = key, .action = action, .timestamp = getTime()};
 	inputsMutex.lock();
 	if (!queueEnqueue(inputs, &input))
-		logWarn(applog, "Window input queue is full, key #%d %s dropped",
+		L.warn("Window input queue is full, key #%d %s dropped",
 			key, action == GLFW_PRESS ? "press" : "release");
 	inputsMutex.unlock();
 }
@@ -75,7 +77,7 @@ static void framebufferResizeCallback(GLFWwindow* w, int width, int height)
 	assert(height);
 	viewportWidth = width;
 	viewportHeight = height;
-	logDebug(applog, "Window \"%s\" resized to %dx%d",
+	L.debug("Window \"%s\" resized to %dx%d",
 		windowTitle, width, height);
 }
 
@@ -93,7 +95,7 @@ static void windowScaleCallback(GLFWwindow* w, float xScale, float yScale)
 	assert(initialized);
 	assert(xScale);
 	viewportScale = xScale;
-	logDebug(applog, "Window \"%s\" DPI scaling changed to %f",
+	L.debug("Window \"%s\" DPI scaling changed to %f",
 		windowTitle, xScale);
 }
 
@@ -126,7 +128,7 @@ void windowInit(const char* title, size2i size, bool fullscreen)
 		window = glfwCreateWindow(size.x, size.y, title, null, null);
 	}
 	if (!window) {
-		logCrit(applog, "Failed to create window \"%s\": %s", title,
+		L.crit("Failed to create window \"%s\": %s", title,
 			systemError());
 		exit(EXIT_FAILURE);
 	}
@@ -148,7 +150,7 @@ void windowInit(const char* title, size2i size, bool fullscreen)
 	framebufferResizeCallback(window, width, height);
 	glfwGetWindowContentScale(window, &scale, null);
 	windowScaleCallback(window, scale, 0);
-	logInfo(applog, "Window \"%s\" created at %dx%d *%f%s",
+	L.info("Window \"%s\" created at %dx%d *%f%s",
 		title, width, height, scale, fullscreen ? " fullscreen" : "");
 }
 
@@ -159,7 +161,7 @@ void windowCleanup(void)
 	inputs = null;
 	glfwDestroyWindow(window);
 	window = null;
-	logDebug(applog, "Window \"%s\" destroyed", windowTitle);
+	L.debug("Window \"%s\" destroyed", windowTitle);
 	windowTitle = null;
 	initialized = false;
 }

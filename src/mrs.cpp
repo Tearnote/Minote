@@ -11,6 +11,8 @@
 #include "mrsdef.hpp"
 #include "log.hpp"
 
+using minote::log::L;
+
 int mrsDebugPauseSpawn = 0;
 int mrsDebugInfLock = 0;
 
@@ -411,7 +413,7 @@ void mrsInit(void)
 	mrsDrawInit();
 
 	initialized = true;
-	logDebug(applog, "Mrs initialized");
+	L.debug("Mrs initialized");
 }
 
 void mrsCleanup(void)
@@ -425,7 +427,7 @@ void mrsCleanup(void)
 	mrsTet.field = null;
 
 	initialized = false;
-	logDebug(applog, "Mrs cleaned up");
+	L.debug("Mrs cleaned up");
 }
 
 /**

@@ -10,9 +10,10 @@
 #include "mapper.hpp"
 #include "darray.hpp"
 #include "util.hpp"
-#include "time.hpp"
 #include "mrs.hpp"
 #include "log.hpp"
+
+using minote::log::L;
 
 /// Timestamp of the next game logic update
 static nsec nextUpdate = 0;
@@ -31,7 +32,7 @@ void playInit(void)
 	mrsInit();
 
 	initialized = true;
-	logDebug(applog, "Play layer initialized");
+	L.debug("Play layer initialized");
 }
 
 void playCleanup(void)
@@ -45,7 +46,7 @@ void playCleanup(void)
 	}
 
 	initialized = false;
-	logDebug(applog, "Play layer cleaned up");
+	L.debug("Play layer cleaned up");
 }
 
 void playUpdate(void)

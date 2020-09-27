@@ -15,23 +15,24 @@
 #include <GLFW/glfw3.h>
 #include "log.hpp"
 
+using minote::log::L;
+
 static bool initialized = false;
 
 void systemInit(void)
 {
 	if (initialized) return;
-	assert(applog);
 	if (glfwInit() == GLFW_FALSE) {
-		logCrit(applog, "Failed to initialize GLFW: %s", systemError());
+		L.crit("Failed to initialize GLFW: %s", systemError());
 		exit(EXIT_FAILURE);
 	}
 #ifdef _WIN32
 	if (timeBeginPeriod(1) != TIMERR_NOERROR) {
-		logCrit(applog, "Failed to initialize Windows timer");
+		L.crit("Failed to initialize Windows timer");
 		exit(EXIT_FAILURE);
 	}
 #endif //_WIN32
-	logDebug(applog, "GLFW initialized");
+	L.debug("GLFW initialized");
 	initialized = true;
 }
 
@@ -42,7 +43,7 @@ void systemCleanup(void)
 	timeEndPeriod(1);
 #endif //_WIN32
 	glfwTerminate();
-	if (applog) logDebug(applog, "GLFW cleaned up");
+	L.debug("GLFW cleaned up");
 	initialized = false;
 }
 

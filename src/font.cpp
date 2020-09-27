@@ -11,6 +11,8 @@
 #include "util.hpp"
 #include "log.hpp"
 
+using minote::log::L;
+
 Font fonts[FontSize] = {0};
 
 static FT_Library freetype = null;
@@ -25,7 +27,7 @@ void fontInit(void)
 
 	err = FT_Init_FreeType(&freetype);
 	if (err) {
-		logError(applog, "Failed to initialize Freetype: error %d", err);
+		L.error("Failed to initialize Freetype: error %d", err);
 		return;
 	}
 
@@ -36,13 +38,13 @@ void fontInit(void)
 		FT_Face ftFace = null;
 		err = FT_New_Face(freetype, fontPath, 0, &ftFace);
 		if (err) {
-			logError(applog, "Failed to open font %s (%s) with FreeType: error %d",
+			L.error("Failed to open font %s (%s) with FreeType: error %d",
 				FontList[i], fontPath, err);
 			goto cleanup;
 		}
 		err = FT_Set_Char_Size(ftFace, 0, 1024, 0, 0);
 		if (err) {
-			logError(applog, "Failed to set font %s char size: error %d",
+			L.error("Failed to set font %s char size: error %d",
 				FontList[i], err);
 			goto cleanup;
 		}
@@ -59,7 +61,7 @@ void fontInit(void)
 		unsigned char* atlasData;
 		atlasData = stbi_load(atlasPath, &size.x, &size.y, &channels, 0);
 		if (!atlasData) {
-			logError(applog, "Failed to load the font atlas (%s) for font %s",
+			L.error("Failed to load the font atlas (%s) for font %s",
 				atlasPath, FontList[i]);
 			goto cleanup;
 		}
@@ -77,7 +79,7 @@ void fontInit(void)
 		FILE* metricsFile;
 		metricsFile = fopen(metricsPath, "r");
 		if (!metricsFile) {
-			logError(applog, "Failed to load font atlas metrics (%s) for font %s",
+			L.error("Failed to load font atlas metrics (%s) for font %s",
 				metricsPath, FontList[i]);
 			goto cleanup;
 		}
@@ -103,7 +105,7 @@ void fontInit(void)
 		fclose(metricsFile);
 		metricsFile = null;
 
-		logInfo(applog, "Loaded font %s", FontList[i]);
+		L.info("Loaded font %s", FontList[i]);
 		continue;
 
 cleanup: // In case any stage failed, clean up all other stages
@@ -139,7 +141,7 @@ void fontCleanup(void)
 		darrayDestroy(fonts[i].metrics);
 		fonts[i].metrics = null;
 
-		logInfo(applog, "Unloaded font %s", FontList[i]);
+		L.info("Unloaded font %s", FontList[i]);
 	}
 
 	if (freetype) {

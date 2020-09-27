@@ -17,6 +17,8 @@
 #include "font.hpp"
 #include "log.hpp"
 
+using minote::log::L;
+
 /// Shader type for MSDF drawing
 typedef struct ProgramMsdf {
 	ProgramBase base;
@@ -176,7 +178,7 @@ void textInit(void)
 
 		msdfTransforms[i] = darrayCreate(sizeof(mat4x4));
 
-		logDebug(applog, "Initialized font %s", FontList[i]);
+		L.debug("Initialized font %s", FontList[i]);
 	}
 
 	initialized = true;
@@ -203,7 +205,7 @@ void textCleanup(void)
 	programDestroy(msdf);
 	msdf = null;
 
-	logDebug(applog, "Fonts cleaned up");
+	L.debug("Fonts cleaned up");
 	initialized = false;
 }
 

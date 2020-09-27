@@ -10,6 +10,8 @@
 #include "util.hpp"
 #include "log.hpp"
 
+using minote::log::L;
+
 /// OpenGL shader object ID
 typedef GLuint Shader;
 
@@ -288,12 +290,12 @@ static Shader shaderCreate(const char* name, const char* source, GLenum type)
 	if (compileStatus == GL_FALSE) {
 		GLchar infoLog[512];
 		glGetShaderInfoLog(shader, 512, null, infoLog);
-		logError(applog, "Failed to compile shader %s: %s", name, infoLog);
+		L.error("Failed to compile shader %s: %s", name, infoLog);
 		glDeleteShader(shader);
 		return 0;
 	}
 	assert(shader);
-	logDebug(applog, "Compiled %s shader %s",
+	L.debug("Compiled %s shader %s",
 		type == GL_VERTEX_SHADER ? "vertex" : "fragment", name);
 	return shader;
 }
@@ -338,7 +340,7 @@ void* _programCreate(size_t size, const char* vertName, const char* vertSrc,
 	if (linkStatus == GL_FALSE) {
 		GLchar infoLog[512];
 		glGetProgramInfoLog(result->id, 512, null, infoLog);
-		logError(applog, "Failed to link shader program %s+%s: %s",
+		L.error("Failed to link shader program %s+%s: %s",
 			vertName, fragName, infoLog);
 		glDeleteProgram(result->id);
 		result->id = 0;
@@ -347,7 +349,7 @@ void* _programCreate(size_t size, const char* vertName, const char* vertSrc,
 	frag = 0;
 	shaderDestroy(vert);
 	vert = 0;
-	logDebug(applog, "Linked shader program %s+%s", vertName, fragName);
+	L.debug("Linked shader program %s+%s", vertName, fragName);
 	return result;
 }
 
@@ -356,7 +358,7 @@ void _programDestroy(ProgramBase* program)
 	if (!program) return;
 	glDeleteProgram(program->id);
 	program->id = 0;
-	logDebug(applog, "Destroyed shader program %s+%s",
+	L.debug("Destroyed shader program %s+%s",
 		program->vertName, program->fragName);
 	free(program);
 	program = null;
@@ -368,8 +370,7 @@ Uniform _programUniform(ProgramBase* program, const char* uniform)
 	assert(uniform);
 	Uniform result = glGetUniformLocation(program->id, uniform);
 	if (result == -1)
-		logWarn(applog,
-			"\"%s\" uniform not available in shader program %s+%s",
+		L.warn("\"%s\" uniform not available in shader program %s+%s",
 			uniform, program->vertName, program->fragName);
 	return result;
 }

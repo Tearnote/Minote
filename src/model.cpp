@@ -10,6 +10,8 @@
 #include "util.hpp"
 #include "log.hpp"
 
+using minote::log::L;
+
 /// Flat shading type
 typedef struct ProgramFlat {
 	ProgramBase base;
@@ -110,7 +112,7 @@ static void modelDestroyFlat(ModelFlat* m)
 	m->tints = 0;
 	glDeleteBuffers(1, &m->vertices);
 	m->vertices = 0;
-	logDebug(applog, "Model %s destroyed", m->base.name);
+	L.debug("Model %s destroyed", m->base.name);
 	free(m);
 	m = null;
 }
@@ -135,7 +137,7 @@ static void modelDestroyPhong(ModelPhong* m)
 	m->normals = 0;
 	glDeleteBuffers(1, &m->vertices);
 	m->vertices = 0;
-	logDebug(applog, "Model %s destroyed", m->base.name);
+	L.debug("Model %s destroyed", m->base.name);
 	free(m);
 	m = null;
 }
@@ -354,7 +356,7 @@ Model* modelCreateFlat(const char* name,
 	glVertexAttribDivisor(5, 1);
 	glVertexAttribDivisor(6, 1);
 	glVertexAttribDivisor(7, 1);
-	logDebug(applog, "Model %s created", m->base.name);
+	L.debug("Model %s created", m->base.name);
 	return (Model*)m;
 }
 
@@ -428,7 +430,7 @@ Model* modelCreatePhong(const char* name,
 	glVertexAttribDivisor(7, 1);
 	glVertexAttribDivisor(8, 1);
 
-	logDebug(applog, "Model %s created", m->base.name);
+	L.debug("Model %s created", m->base.name);
 	return (Model*)m;
 }
 

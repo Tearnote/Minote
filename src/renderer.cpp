@@ -19,6 +19,8 @@
 #include "time.hpp"
 #include "log.hpp"
 
+using minote::log::L;
+
 /// Basic blit function type
 typedef struct ProgramBlit {
 	ProgramBase base;
@@ -123,7 +125,7 @@ void rendererInit(void)
 	// Pick up the OpenGL context
 	windowContextActivate();
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-		logCrit(applog, "Failed to initialize OpenGL");
+		L.crit("Failed to initialize OpenGL");
 		exit(EXIT_FAILURE);
 	}
 	initialized = true;
@@ -150,7 +152,7 @@ void rendererInit(void)
 	framebufferRenderbuffer(renderFb, renderFbDepthStencil,
 		GL_DEPTH_STENCIL_ATTACHMENT);
 	if (!framebufferCheck(renderFb)) {
-		logCrit(applog, "Failed to create the rendering framebuffer");
+		L.crit("Failed to create the rendering framebuffer");
 		exit(EXIT_FAILURE);
 	}
 
@@ -168,7 +170,7 @@ void rendererInit(void)
 		ProgramDelinearizeFragName, ProgramDelinearizeFragSrc);
 	delinearize->image = programSampler(delinearize, "image", GL_TEXTURE0);
 
-	logDebug(applog, "Created renderer for window \"%s\"", windowGetTitle());
+	L.debug("Created renderer for window \"%s\"", windowGetTitle());
 }
 
 void rendererCleanup(void)
@@ -187,7 +189,7 @@ void rendererCleanup(void)
 	framebufferDestroy(renderFb);
 	renderFb = null;
 	windowContextDeactivate();
-	logDebug(applog, "Destroyed renderer for window \"%s\"",
+	L.debug("Destroyed renderer for window \"%s\"",
 		windowGetTitle());
 	initialized = false;
 }
@@ -242,5 +244,5 @@ bool rendererGetSync(void)
 void rendererSetSync(bool enabled)
 {
 	syncEnabled = enabled;
-	logDebug(applog, "%s renderer sync", enabled? "Enabling": "Disabling");
+	L.debug("%s renderer sync", enabled? "Enabling": "Disabling");
 }

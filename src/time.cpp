@@ -33,6 +33,6 @@ void sleepFor(nsec duration)
 	spec.tv_nsec = (long)(duration % secToNsec(1));
 	spec.tv_sec = (long)(duration / secToNsec(1));
 	if (nanosleep(&spec, null) == -1)
-		logDebug(applog, "Sleep was interrupted: %s", strerror(errno));
+		L.debug("Sleep was interrupted: %s", strerror(errno));
 #endif //_WIN32
 }

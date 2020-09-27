@@ -18,6 +18,8 @@
 #include "util.hpp"
 #include "log.hpp"
 
+using minote::log::L;
+
 #define NUKLEAR_VBO_SIZE 1024 * 1024
 #define NUKLEAR_EBO_SIZE 256 * 1024
 
@@ -186,7 +188,7 @@ void debugInit(void)
 
 	nuklearEnabled = true;
 	initialized = true;
-	logDebug(applog, "Debug layer initialized");
+	L.debug("Debug layer initialized");
 }
 
 void debugCleanup(void)
@@ -208,7 +210,7 @@ void debugCleanup(void)
 	nk_free(&nkContext);
 
 	initialized = false;
-	logDebug(applog, "Debug layer cleaned up");
+	L.debug("Debug layer cleaned up");
 }
 
 void debugUpdate(void)

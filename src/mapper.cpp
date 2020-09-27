@@ -12,7 +12,8 @@
 #include "queue.hpp"
 #include "util.hpp"
 #include "log.hpp"
-#include "aa.hpp"
+
+using minote::log::L;
 
 /// Queue holding collectedInputs ready to be retrieved
 static queue* inputs = null;
@@ -105,7 +106,7 @@ void mapperUpdate(void)
 			.timestamp = key.timestamp
 		};
 		if(!queueEnqueue(inputs, &newInput))
-			logWarn(applog, "Mapper queue full, input dropped");
+			L.warn("Mapper queue full, input dropped");
 	}
 }
 

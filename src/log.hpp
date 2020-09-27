@@ -4,150 +4,112 @@
  * Supports log levels and multiple output targets per logger.
  */
 
-#ifndef MINOTE_LOG_H
-#define MINOTE_LOG_H
+#pragma once
 
-/// Opaque logger. You can obtain an instance with logCreate().
-typedef struct Log Log;
+#include <cstdio>
 
-/// in ascending order of severity
-typedef enum LogLevel {
-	LogNone, ///< zero value
-	LogTrace, ///< logTrace()
-	LogDebug, ///< logDebug()
-	LogInfo, ///< logInfo()
-	LogWarn, ///< logWarn()
-	LogError, ///< logError()
-	LogCrit, ///< logCrit()
-	LogSize ///< terminator
-} LogLevel;
+namespace minote::log {
 
-/// Global logger to use by general facilities
-extern Log* applog;
+struct Log {
 
-/**
- * Initialize the log system and the ::applog instance. Needs to be called
- * before any other log functions.
- */
-void logInit(void);
+	/// Logging level, in order of increasing importance
+	enum struct Level {
+		None, ///< zero value
+		Trace, ///< trace()
+		Debug, ///< debug()
+		Info, ///< info()
+		Warn, ///< warn()
+		Error, ///< error()
+		Crit, ///< crit()
+		Size ///< terminator
+	};
 
-/**
- * Destroy ::applog and clean up the log system. All created logs need to be
- * destroyed before calling this function. No log function can be used until
- * logInit() is called again.
- */
-void logCleanup(void);
+	/// Messages with level lower than this will be ignored
+	Level level{Level::None};
 
-/**
- * Create a ::Log instance with log level #LogInfo and all targets disabled.
- * @return The newly created ::Log. Needs to be destroyed with logDestroy()
- */
-Log* logCreate(void);
+	/// If true, messages are printed to stdout/stderr
+	bool console{false};
 
-/**
- * Destroy a ::Log instance. All enabled targets are flushed. The destroyed
- * object cannot be used anymore and the pointer becomes invalid.
- * @param l The ::Log object to destroy
- */
-void logDestroy(Log* l);
+	/// File handle to write messages into, or nullptr for disabled file logging
+	FILE* file{nullptr};
 
-/**
- * Enable the console log target. Messages at level #LogInfo and below will be
- * printed to stdout, messages at level #LogWarn and above will be printed to
- * stderr.
- * @param l The ::Log object
- */
-void logEnableConsole(Log* l);
+	~Log();
 
-/**
- * Enable the file log target. The destination file is cleared. If the file
- * could not be opened, console is enabled instead and a #LogWarn message is
- * printed. Does nothing if file logging is already enabled.
- * @param l The ::Log object
- * @param filepath Path to the log file to open for writing
- */
-void logEnableFile(Log* l, const char* filepath);
+	/**
+	 * Enable logging to a file. Remember to call disableFile() when finished,
+	 * so that the file can be closed properly.
+	 * @param filepath Path to the logfile. File does not have to already exist
+	 */
+	void enableFile(const char* filepath);
 
-/**
- * Disable the console log target.
- * @param l The ::Log object
- */
-void logDisableConsole(Log* l);
+	/**
+	 * Disable logging to a file, cleanly closing the currently open logfile.
+	 */
+	void disableFile();
 
-/**
- * Disable the file log target. The associated file is flushed and closed.
- * @param l The ::Log object
- */
-void logDisableFile(Log* l);
+	/**
+	 * Log a Trace level message. Meant for "printf debugging", do not leave any
+	 * trace() calls in committed code.
+	 * Example: pos.x = 3, pos.y = 7
+	 * @param fmt Format string in printf syntax
+	 * @param ... String interpolation arguments
+	 */
+	[[gnu::format(printf, 2, 3)]]
+	void trace(const char* fmt, ...);
 
-/**
- * Change the log level of a ::Log object. Messages below this severity will
- * be ignored.
- * @param l The ::Log object
- * @param level The least severe message level to display
- */
-void logSetLevel(Log* l, LogLevel level);
+	/**
+	 * Log a Debug level message. Meant for diagnostic information
+	 * that only makes sense to a developer.
+	 * Example: Shader compilation successful
+	 * @param fmt Format string in printf syntax
+	 * @param ... String interpolation arguments
+	 */
+	[[gnu::format(printf, 2, 3)]]
+	void debug(const char* fmt, ...);
 
-/**
- * %Log a message at Trace level to all enabled targets. This level is for
- * active debugging purposes only and no logTrace() should be present in
- * shipped code.
- * @param l The ::Log object
- * @param fmt Format string in printf syntax
- * @param ... Any number of arguments to print
- * @remark This function is thread-safe.
- */
-void logTrace(Log* l, const char* fmt, ...);
+	/**
+	 * Log an Info level message. Meant for information that is understandable
+	 * by an inquisitive end user.
+	 * Example: Player settings saved to database
+	 * @param fmt Format string in printf syntax
+	 * @param ... String interpolation arguments
+	 */
+	[[gnu::format(printf, 2, 3)]]
+	void info(const char* fmt, ...);
 
-/**
- * %Log a message at Debug level to all enabled targets. This level is for
- * messages that aid a developer trying to diagnose a problem.
- * @param l The ::Log object
- * @param fmt Format string in printf syntax
- * @param ... Any number of arguments to print
- * @remark This function is thread-safe.
- */
-void logDebug(Log* l, const char* fmt, ...);
+	/**
+	 * Log a Warn level message. Meant for failures that cause a subsystem
+	 * to run in a limited capacity.
+	 * Example: Could not load texture
+	 * @param fmt Format string in printf syntax
+	 * @param ... String interpolation arguments
+	 */
+	[[gnu::format(printf, 2, 3)]]
+	void warn(const char* fmt, ...);
 
-/**
- * %Log a message at Info level to all enabled targets. This level is for
- * lifecycle information that makes sense to an end user.
- * @param l The ::Log object
- * @param fmt Format string in printf syntax
- * @param ... Any number of arguments to print
- * @remark This function is thread-safe.
- */
-void logInfo(Log* l, const char* fmt, ...);
+	/**
+	 * Log an Error level message. Meant for failures that a subsystem cannot
+	 * recover from.
+	 * Example: Could not find any audio device
+	 * @param fmt Format string in printf syntax
+	 * @param ... String interpolation arguments
+	 */
+	[[gnu::format(printf, 2, 3)]]
+	void error(const char* fmt, ...);
 
-/**
- * %Log a message at Warn level to all enabled targets. This level is for
- * degradation in functionality (for example, failed to open an audio device).
- * @param l The ::Log object
- * @param fmt Format string in printf syntax
- * @param ... Any number of arguments to print
- * @remark This function is thread-safe.
- */
-void logWarn(Log* l, const char* fmt, ...);
+	/**
+	 * Log a Crit level message. Meant for failures that the entire application
+	 * cannot recover from.
+	 * Example: Failed to initialize OpenGL
+	 * @param fmt Format string in printf syntax
+	 * @param ... String interpolation arguments
+	 */
+	[[gnu::format(printf, 2, 3)]]
+	void crit(const char* fmt, ...);
 
-/**
- * %Log a message at Error level to all enabled targets. This level is for
- * complete loss of functionality (for example, could not enter replay mode).
- * @param l The ::Log object
- * @param fmt Format string in printf syntax
- * @param ... Any number of arguments to print
- * @remark This function is thread-safe.
- */
-void logError(Log* l, const char* fmt, ...);
+};
 
-/**
- * %Log a message at Crit level to all enabled targets. This level is for
- * situations that cannot be recovered from and execution needs to be aborted.
- * Call logDestroy() before aborting to make sure the message is written.
- * @param l The ::Log object
- * @param fmt Format string in printf syntax
- * @param ... Any number of arguments to print
- * @remark This function is thread-safe.
- */
-void logCrit(Log* l, const char* fmt, ...);
+/// Global logger available for convenience
+inline Log L{};
 
-#endif //MINOTE_LOG_H
+}

@@ -6,10 +6,21 @@
 #ifndef MINOTE_UTIL_H
 #define MINOTE_UTIL_H
 
+#include <type_traits>
 #include <stddef.h>
 #include <stdlib.h> // Provide free()
 #include <string.h>
 #include "pcg/pcg_basic.h"
+
+/// Concept of an enum type
+template<typename T>
+concept EnumType = std::is_enum_v<T>;
+
+/// Conversion of scoped enum to the underlying type using the unary + operator
+template<EnumType T>
+constexpr auto operator+(T e) {
+	return static_cast<std::underlying_type_t<T>>(e);
+}
 
 /**
  * A better replacement for NULL.

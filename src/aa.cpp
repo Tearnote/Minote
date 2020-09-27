@@ -13,6 +13,8 @@
 #include "util.hpp"
 #include "log.hpp"
 
+using minote::log::L;
+
 typedef struct ProgramSmaaSeparate {
 	ProgramBase base;
 	TextureUnit image;
@@ -194,7 +196,7 @@ void aaInit(AAMode mode)
 		framebufferRenderbufferMS(msaaFb, msaaFbDepthStencil,
 			GL_DEPTH_STENCIL_ATTACHMENT);
 		if (!framebufferCheck(msaaFb)) {
-			logCrit(applog, "Failed to create the render framebuffer");
+			L.crit("Failed to create the render framebuffer");
 			exit(EXIT_FAILURE);
 		}
 
@@ -208,19 +210,15 @@ void aaInit(AAMode mode)
 				sampleLocations[1] != 0.75f ||
 				sampleLocations[2] != 0.25f ||
 				sampleLocations[3] != 0.25f) {
-				logWarn(applog,
-					"MSAA 2x subsample locations are not as expected:");
-				logWarn(applog,
-					"    Subsample #0: (%f, %f), expected (0.75, 0.75)",
+				L.warn("MSAA 2x subsample locations are not as expected:");
+				L.warn("    Subsample #0: (%f, %f), expected (0.75, 0.75)",
 					sampleLocations[0], sampleLocations[1]);
-				logWarn(applog,
-					"    Subsample #1: (%f, %f), expected (0.25, 0.25)",
+				L.warn("    Subsample #1: (%f, %f), expected (0.25, 0.25)",
 					sampleLocations[2], sampleLocations[3]);
 #ifdef NDEBUG
-				logWarn(applog, "  Graphics will look ugly.");
+				L.warn("  Graphics will look ugly.");
 #else //NDEBUG
-				logCrit(applog,
-					"Aborting, please tell the developer that runtime subsample detection is needed");
+				L.crit("Aborting, please tell the developer that runtime subsample detection is needed");
 				exit(EXIT_FAILURE);
 #endif //NDEBUG
 			}
@@ -232,7 +230,7 @@ void aaInit(AAMode mode)
 		framebufferRenderbuffer(smaaEdgeFb, smaaEdgeFbDepthStencil,
 			GL_DEPTH_STENCIL_ATTACHMENT);
 		if (!framebufferCheck(smaaEdgeFb)) {
-			logCrit(applog, "Failed to create the SMAA edge framebuffer");
+			L.crit("Failed to create the SMAA edge framebuffer");
 			exit(EXIT_FAILURE);
 		}
 
@@ -240,7 +238,7 @@ void aaInit(AAMode mode)
 		framebufferRenderbuffer(smaaBlendFb, smaaEdgeFbDepthStencil,
 			GL_DEPTH_STENCIL_ATTACHMENT);
 		if (!framebufferCheck(smaaBlendFb)) {
-			logCrit(applog, "Failed to create the SMAA blend framebuffer");
+			L.crit("Failed to create the SMAA blend framebuffer");
 			exit(EXIT_FAILURE);
 		}
 
@@ -302,7 +300,7 @@ void aaInit(AAMode mode)
 			GL_COLOR_ATTACHMENT1);
 		framebufferBuffers(smaaSeparateFb, 2);
 		if (!framebufferCheck(smaaSeparateFb)) {
-			logCrit(applog, "Failed to create the SMAA separate framebuffer");
+			L.crit("Failed to create the SMAA separate framebuffer");
 			exit(EXIT_FAILURE);
 		}
 
@@ -310,7 +308,7 @@ void aaInit(AAMode mode)
 		framebufferRenderbuffer(smaaEdgeFb2, smaaEdgeFbDepthStencil2,
 			GL_DEPTH_STENCIL_ATTACHMENT);
 		if (!framebufferCheck(smaaEdgeFb2)) {
-			logCrit(applog, "Failed to create the SMAA edge framebuffer");
+			L.crit("Failed to create the SMAA edge framebuffer");
 			exit(EXIT_FAILURE);
 		}
 
@@ -318,7 +316,7 @@ void aaInit(AAMode mode)
 		framebufferRenderbuffer(smaaBlendFb2, smaaEdgeFbDepthStencil2,
 			GL_DEPTH_STENCIL_ATTACHMENT);
 		if (!framebufferCheck(smaaBlendFb2)) {
-			logCrit(applog, "Failed to create the SMAA blend framebuffer");
+			L.crit("Failed to create the SMAA blend framebuffer");
 			exit(EXIT_FAILURE);
 		}
 
@@ -332,7 +330,7 @@ void aaInit(AAMode mode)
 	framebufferUse(rendererFramebuffer());
 
 	initialized = true;
-	logDebug(applog, "Initialized AA mode %d", mode);
+	L.debug("Initialized AA mode %d", mode);
 }
 
 void aaCleanup(void)
@@ -392,7 +390,7 @@ void aaCleanup(void)
 	currentSize.y = 0;
 
 	initialized = false;
-	logDebug(applog, "Cleaned up AA mode %d", currentMode);
+	L.debug("Cleaned up AA mode %d", currentMode);
 }
 
 void aaSwitch(AAMode mode)

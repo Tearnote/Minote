@@ -14,6 +14,8 @@
 #include "mrs.hpp"
 #include "log.hpp"
 
+using minote::log::L;
+
 static Model* scene = null;
 static Model* guide = null;
 
@@ -615,7 +617,7 @@ void mrsDrawInit(void)
 	borderTransforms = darrayCreate(sizeof(mat4x4));
 
 	initialized = true;
-	logDebug(applog, "Mrs draw initialized");
+	L.debug("Mrs draw initialized");
 }
 
 void mrsDrawCleanup(void)
@@ -648,7 +650,7 @@ void mrsDrawCleanup(void)
 	scene = null;
 
 	initialized = false;
-	logDebug(applog, "Mrs draw cleaned up");
+	L.debug("Mrs draw cleaned up");
 }
 
 void mrsDraw(void)

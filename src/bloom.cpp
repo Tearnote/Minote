@@ -12,6 +12,8 @@
 #include "util.hpp"
 #include "log.hpp"
 
+using minote::log::L;
+
 #define BloomPasses 6
 
 /// Bloom threshold filter type
@@ -92,7 +94,7 @@ void bloomInit(void)
 	for (size_t i = 0; i < BloomPasses; i += 1) {
 		framebufferTexture(bloomFb[i], bloomFbColor[i], GL_COLOR_ATTACHMENT0);
 		if (!framebufferCheck(bloomFb[i])) {
-			logCrit(applog, "Failed to create the bloom framebuffer #%zu", i);
+			L.crit("Failed to create the bloom framebuffer #%zu", i);
 			exit(EXIT_FAILURE);
 		}
 	}

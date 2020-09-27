@@ -5,36 +5,19 @@
 
 #include "log.hpp"
 
-#include <stdbool.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <assert.h>
-#include <stdio.h>
-#include <time.h>
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#else //_WIN32
-#include <locale.h>
-#endif //_WIN32
+#include <cstdarg>
+#include <cstring>
+#include <cassert>
+#include <cstdio>
+#include <ctime>
 #include "util.hpp"
 
-static const char* levelStrings[LogSize] = {
-	"", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRIT"
+namespace minote::log {
+
+/// Mapping from Log::Level to string name
+static constexpr char logLevelStrings[][+Log::Level::Size]{
+	"", "TRACE", "DEBUG", " INFO", " WARN", "ERROR", " CRIT"
 };
-
-struct Log {
-	LogLevel level; ///< Messages with lower level than this will be ignored
-	bool consoleEnabled; ///< If true, messages are printed to stdout/stderr
-	bool fileEnabled; ///< If true, messages are printed to #file
-	FILE* file; ///< File handle to write messages into. Is null if #fileEnabled is false
-	const char* filepath; ///< The string used to open #file. Is null if #fileEnabled is false
-};
-
-static bool initialized = false;
-
-Log* applog = null;
 
 /**
  * Write a log message to a specified output. Attaches a timestamp and formats
@@ -44,29 +27,26 @@ Log* applog = null;
  * @param fmt Format string in printf syntax
  * @param ap List of arguments to print
  */
-static void logTo(FILE* file, LogLevel level, const char* fmt, va_list* ap)
+static void logTo(FILE* const file, const Log::Level level,
+	const char* const fmt, va_list& ap)
 {
-	time_t epochtime = time(null);
-	struct tm* timeinfo = localtime(&epochtime);
-	int result = fprintf(file, "%02d:%02d:%02d [%s] ",
-		timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec,
-		levelStrings[level]);
-	if (result < 0) {
-		perror("Failed to write into log file");
-		errno = 0;
-	}
-	// A copy of va_list is needed in case this is executed more than once per
-	// log function call
-	va_list apCopy;
-	va_copy(apCopy, *ap);
-	result = vfprintf(file, fmt, apCopy);
-	if (result < 0) {
-		perror("Failed to write into log file");
-		errno = 0;
-	}
-	result = fputc('\n', file);
-	if (result == EOF) {
-		perror("Failed to write into log file");
+	const auto printTimestamp{[=]() {
+		const auto now{std::time(nullptr)};
+		// Copy-initialized to minimize chance of thread safety issues
+		const auto localnow{*std::localtime(&now)};
+		return std::fprintf(file, "%02d:%02d:%02d [%s] ",
+			localnow.tm_hour, localnow.tm_min, localnow.tm_sec,
+			logLevelStrings[+level]) < 0;
+	}};
+	const auto printMessage{[=]() {
+		return std::vfprintf(file, fmt, ap) < 0;
+	}};
+	const auto printNewline{[=]() {
+		return std::fputc('\n', file) == EOF;
+	}};
+
+	if (printTimestamp() || printMessage() || printNewline()) {
+		std::perror("Failed to write into logfile");
 		errno = 0;
 	}
 }
@@ -74,178 +54,133 @@ static void logTo(FILE* file, LogLevel level, const char* fmt, va_list* ap)
 /**
  * The actual log message handling function. Performs level filtering and
  * output selection.
- * @param l The ::Log object
+ * @param log The ::Log object
  * @param level Message level
  * @param fmt Format string in printf syntax
  * @param ap List of arguments to print
  */
-static void logPrio(Log* l, LogLevel level, const char* fmt, va_list* ap)
+static void logPrio(Log& log, const Log::Level level,
+	const char* const fmt, va_list& ap)
 {
-	assert(initialized);
-	assert(l);
-	assert(level > LogNone && level < LogSize);
 	assert(fmt);
-	if (level < l->level) return;
-	if (l->consoleEnabled) {
-		FILE* output = (level >= LogWarn ? stderr : stdout);
-		logTo(output, level, fmt, ap);
+	assert(ap);
+	using Level = Log::Level;
+
+	if (level < log.level)
+		return;
+
+	if (log.console) {
+		FILE* const output{[=]() {
+			if (level >= Level::Warn)
+				return stderr;
+			else
+				return stdout;
+		}()};
+		va_list apcopy{};
+		va_copy(apcopy, ap);
+		logTo(output, level, fmt, apcopy);
 	}
-	if (l->fileEnabled)
-		logTo(l->file, level, fmt, ap);
-}
-
-void logInit(void)
-{
-	if (initialized) return;
-#ifdef _WIN32
-	SetConsoleOutputCP(65001); // Set Windows cmd output encoding to UTF-8
-#else //_WIN32
-	setlocale(LC_ALL, ""); // Switch from C locale to system locale
-#endif //_WIN32
-	initialized = true;
-	if (!applog)
-		applog = logCreate();
-}
-
-void logCleanup(void)
-{
-	if (!initialized) return;
-	if (applog) {
-		logDestroy(applog);
-		applog = null;
+	if (log.file) {
+		va_list apcopy{};
+		va_copy(apcopy, ap);
+		logTo(log.file, level, fmt, apcopy);
 	}
-	initialized = false;
 }
 
-Log* logCreate(void)
+Log::~Log()
 {
-	assert(initialized);
-	Log* l = static_cast<Log*>(alloc(sizeof(*l)));
-	l->level = LogInfo;
-	return l;
+	if (!file)
+		return;
+
+	console = true;
+	warn("Logfile was not closed on object destruction");
 }
 
-void logDestroy(Log* l)
+void Log::enableFile(const char* const filepath)
 {
-	assert(initialized);
-	assert(l);
-	if (l->fileEnabled)
-		logDisableFile(l);
-	free(l);
-}
-
-void logEnableConsole(Log* l)
-{
-	assert(initialized);
-	assert(l);
-	l->consoleEnabled = true;
-}
-
-void logEnableFile(Log* l, const char* filepath)
-{
-	assert(initialized);
-	assert(l);
 	assert(filepath);
-	if (l->fileEnabled) return;
-	l->file = fopen(filepath, "w");
-	if (!l->file) {
-		bool consoleEnabled = l->consoleEnabled;
-		logEnableConsole(l);
-		logError(l, "Failed to open %s for writing: %s",
-			filepath, strerror(errno));
-		errno = 0;
-		if (!consoleEnabled)
-			logDisableConsole(l);
-	} else {
-		l->fileEnabled = true;
-		l->filepath = filepath;
+	if (file) {
+		warn("Not opening logfile %s: already logging to a file", filepath);
+		return;
 	}
-	assert(l->fileEnabled == (l->file != null));
-	assert(l->fileEnabled == (l->filepath != null));
+
+	file = std::fopen(filepath, "w");
+	if (file)
+		return;
+
+	// Handle error by forcibly printing it to console
+	const auto consolePrev = console;
+	console = true;
+	error("Failed to open logfile %s for writing: %s",
+		filepath, std::strerror(errno));
+	errno = 0;
+	console = consolePrev;
 }
 
-void logDisableConsole(Log* l)
+void Log::disableFile()
 {
-	assert(initialized);
-	assert(l);
-	l->consoleEnabled = false;
+	if (!file)
+		return;
+
+	const auto result = fclose(file);
+	file = nullptr;
+	if (!result)
+		return;
+
+	// Handle error by forcibly printing it to console
+	const auto consolePrev = console;
+	console = true;
+	error("Failed to flush logfile: %s", std::strerror(errno));
+	errno = 0;
+	console = consolePrev;
 }
 
-void logDisableFile(Log* l)
+void Log::trace(const char* const fmt, ...)
 {
-	assert(initialized);
-	assert(l);
-	if (!l->fileEnabled) return;
-	int result = 0;
-	result = fclose(l->file);
-	l->file = null;
-	if (result) {
-		bool consoleEnabled = l->consoleEnabled;
-		logEnableConsole(l);
-		logError(l, "Failed to flush %s: %s",
-			l->filepath, strerror(errno));
-		errno = 0;
-		if (!consoleEnabled)
-			logDisableConsole(l);
-	}
-	l->filepath = null;
-	l->fileEnabled = false;
-	assert(l->fileEnabled == (l->file != null));
-	assert(l->fileEnabled == (l->filepath != null));
-}
-
-void logSetLevel(Log* l, LogLevel level)
-{
-	assert(initialized);
-	assert(l);
-	assert(level > LogNone && level < LogSize);
-	l->level = level;
-}
-
-void logTrace(Log* l, const char* fmt, ...)
-{
-	va_list ap;
+	va_list ap{};
 	va_start(ap, fmt);
-	logPrio(l, LogTrace, fmt, &ap);
+	logPrio(*this, Level::Trace, fmt, ap);
 	va_end(ap);
 }
 
-void logDebug(Log* l, const char* fmt, ...)
+void Log::debug(const char* const fmt, ...)
 {
-	va_list ap;
+	va_list ap{};
 	va_start(ap, fmt);
-	logPrio(l, LogDebug, fmt, &ap);
+	logPrio(*this, Level::Debug, fmt, ap);
 	va_end(ap);
 }
 
-void logInfo(Log* l, const char* fmt, ...)
+void Log::info(const char* const fmt, ...)
 {
-	va_list ap;
+	va_list ap{};
 	va_start(ap, fmt);
-	logPrio(l, LogInfo, fmt, &ap);
+	logPrio(*this, Level::Info, fmt, ap);
 	va_end(ap);
 }
 
-void logWarn(Log* l, const char* fmt, ...)
+void Log::warn(const char* const fmt, ...)
 {
-	va_list ap;
+	va_list ap{};
 	va_start(ap, fmt);
-	logPrio(l, LogWarn, fmt, &ap);
+	logPrio(*this, Level::Warn, fmt, ap);
 	va_end(ap);
 }
 
-void logError(Log* l, const char* fmt, ...)
+void Log::error(const char* const fmt, ...)
 {
-	va_list ap;
+	va_list ap{};
 	va_start(ap, fmt);
-	logPrio(l, LogError, fmt, &ap);
+	logPrio(*this, Level::Error, fmt, ap);
 	va_end(ap);
 }
 
-void logCrit(Log* l, const char* fmt, ...)
+void Log::crit(const char* const fmt, ...)
 {
-	va_list ap;
+	va_list ap{};
 	va_start(ap, fmt);
-	logPrio(l, LogCrit, fmt, &ap);
+	logPrio(*this, Level::Crit, fmt, ap);
 	va_end(ap);
+}
+
 }
