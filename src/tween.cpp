@@ -11,7 +11,7 @@
 
 /// Map of ::EaseType values to matching functions
 static AHEasingFunction easeFunctions[EaseSize] = {
-	null,
+	nullptr,
 	LinearInterpolation,
 	QuadraticEaseIn, QuadraticEaseOut, QuadraticEaseInOut,
 	CubicEaseIn, CubicEaseOut, CubicEaseInOut,

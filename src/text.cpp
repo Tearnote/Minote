@@ -46,7 +46,7 @@ static const GLchar* ProgramMsdfFragSrc = (GLchar[]){
 #include "msdf.frag"
 	'\0'};
 
-static ProgramMsdf* msdf = null;
+static ProgramMsdf* msdf = nullptr;
 static VertexArray msdfVao[FontSize] = {0};
 static VertexBuffer msdfGlyphsVbo[FontSize] = {0};
 static darray* msdfGlyphs[FontSize] = {0};
@@ -62,7 +62,7 @@ static void textQueueV(FontType font, float size, point3f pos, point3f dir, poin
 	// Costruct the formatted string
 	va_list argsCopy;
 	va_copy(argsCopy, args);
-	size_t stringSize = vsnprintf(null, 0, fmt, args) + 1;
+	size_t stringSize = vsnprintf(nullptr, 0, fmt, args) + 1;
 	char string[stringSize];
 	vsnprintf(string, stringSize, fmt, argsCopy);
 
@@ -72,7 +72,7 @@ static void textQueueV(FontType font, float size, point3f pos, point3f dir, poin
 	hb_buffer_set_direction(text, HB_DIRECTION_LTR);
 	hb_buffer_set_script(text, HB_SCRIPT_LATIN);
 	hb_buffer_set_language(text, hb_language_from_string("en", -1));
-	hb_shape(fonts[font].hbFont, text, null, 0);
+	hb_shape(fonts[font].hbFont, text, nullptr, 0);
 
 	// Construct the string transform
 	mat4x4* transform = static_cast<mat4x4*>(darrayProduce(
@@ -172,7 +172,7 @@ void textInit(void)
 		msdfGlyphs[i] = darrayCreate(sizeof(GlyphMsdf));
 
 		glBindBuffer(GL_TEXTURE_BUFFER, msdfTransformsStorage[i]);
-		glBufferData(GL_TEXTURE_BUFFER, 0, null, GL_STREAM_DRAW);
+		glBufferData(GL_TEXTURE_BUFFER, 0, nullptr, GL_STREAM_DRAW);
 		glBindTexture(GL_TEXTURE_BUFFER, msdfTransformsTex[i]);
 		glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, msdfTransformsStorage[i]);
 
@@ -190,9 +190,9 @@ void textCleanup(void)
 
 	for (size_t i = 0; i < FontSize; i += 1) {
 		darrayDestroy(msdfTransforms[i]);
-		msdfTransforms[i] = null;
+		msdfTransforms[i] = nullptr;
 		darrayDestroy(msdfGlyphs[i]);
-		msdfGlyphs[i] = null;
+		msdfGlyphs[i] = nullptr;
 	}
 
 	glDeleteTextures(FontSize, msdfTransformsTex);
@@ -203,7 +203,7 @@ void textCleanup(void)
 	arrayClear(msdfVao);
 
 	programDestroy(msdf);
-	msdf = null;
+	msdf = nullptr;
 
 	L.debug("Fonts cleaned up");
 	initialized = false;
@@ -244,12 +244,12 @@ void textDraw(void)
 
 		size_t glyphsSize = sizeof(GlyphMsdf) * msdfGlyphs[i]->count;
 		glBindBuffer(GL_ARRAY_BUFFER, msdfGlyphsVbo[i]);
-		glBufferData(GL_ARRAY_BUFFER, glyphsSize, null, GL_STREAM_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, glyphsSize, nullptr, GL_STREAM_DRAW);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, glyphsSize, msdfGlyphs[i]->data);
 
 		size_t transformsSize = sizeof(mat4x4) * msdfTransforms[i]->count;
 		glBindBuffer(GL_TEXTURE_BUFFER, msdfTransformsStorage[i]);
-		glBufferData(GL_TEXTURE_BUFFER, transformsSize, null, GL_STREAM_DRAW);
+		glBufferData(GL_TEXTURE_BUFFER, transformsSize, nullptr, GL_STREAM_DRAW);
 		glBufferSubData(GL_TEXTURE_BUFFER, 0, transformsSize, msdfTransforms[i]->data);
 
 		glBindVertexArray(msdfVao[i]);

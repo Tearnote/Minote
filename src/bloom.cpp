@@ -50,10 +50,10 @@ static const GLchar* ProgramBoxBlurFragSrc = (GLchar[]){
 #include "boxBlur.frag"
 	'\0'};
 
-static Framebuffer* bloomFb[BloomPasses] = {null};
-static Texture* bloomFbColor[BloomPasses] = {null};
-static ProgramThreshold* threshold = null;
-static ProgramBoxBlur* boxBlur = null;
+static Framebuffer* bloomFb[BloomPasses] = {nullptr};
+static Texture* bloomFbColor[BloomPasses] = {nullptr};
+static ProgramThreshold* threshold = nullptr;
+static ProgramBoxBlur* boxBlur = nullptr;
 
 static size2i currentSize = {0};
 static bool initialized = false;
@@ -122,14 +122,14 @@ void bloomCleanup(void)
 	if (!initialized) return;
 
 	programDestroy(boxBlur);
-	boxBlur = null;
+	boxBlur = nullptr;
 	programDestroy(threshold);
-	threshold = null;
+	threshold = nullptr;
 	for (size_t i = BloomPasses - 1; i < BloomPasses; i -= 1) {
 		textureDestroy(bloomFbColor[i]);
-		bloomFbColor[i] = null;
+		bloomFbColor[i] = nullptr;
 		framebufferDestroy(bloomFb[i]);
-		bloomFb[i] = null;
+		bloomFb[i] = nullptr;
 	}
 
 	initialized = false;

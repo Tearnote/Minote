@@ -26,9 +26,9 @@ void darrayDestroy(darray* d)
 {
 	if (!d) return;
 	free(d->data);
-	d->data = null;
+	d->data = nullptr;
 	free(d);
-	d = null;
+	d = nullptr;
 }
 
 void* darrayProduce(darray* d)

@@ -51,8 +51,8 @@ static const GLchar* ProgramPhongFragSrc = (GLchar[]){
 #include "phong.frag"
 	'\0'};
 
-static ProgramFlat* flat = null;
-static ProgramPhong* phong = null;
+static ProgramFlat* flat = nullptr;
+static ProgramPhong* phong = nullptr;
 
 static bool initialized = false;
 
@@ -87,9 +87,9 @@ void modelCleanup(void)
 	if (!initialized) return;
 
 	programDestroy(phong);
-	phong = null;
+	phong = nullptr;
 	programDestroy(flat);
-	flat = null;
+	flat = nullptr;
 
 	initialized = false;
 }
@@ -114,7 +114,7 @@ static void modelDestroyFlat(ModelFlat* m)
 	m->vertices = 0;
 	L.debug("Model %s destroyed", m->base.name);
 	free(m);
-	m = null;
+	m = nullptr;
 }
 
 /**
@@ -139,7 +139,7 @@ static void modelDestroyPhong(ModelPhong* m)
 	m->vertices = 0;
 	L.debug("Model %s destroyed", m->base.name);
 	free(m);
-	m = null;
+	m = nullptr;
 }
 
 /**
@@ -171,7 +171,7 @@ static void modelDrawFlat(ModelFlat* m, size_t instances,
 	if (tints) {
 		glEnableVertexAttribArray(2);
 		glBindBuffer(GL_ARRAY_BUFFER, m->tints);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(color4) * instances, null,
+		glBufferData(GL_ARRAY_BUFFER, sizeof(color4) * instances, nullptr,
 			GL_STREAM_DRAW);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(color4) * instances, tints);
 	} else {
@@ -181,7 +181,7 @@ static void modelDrawFlat(ModelFlat* m, size_t instances,
 	if (highlights) {
 		glEnableVertexAttribArray(3);
 		glBindBuffer(GL_ARRAY_BUFFER, m->highlights);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(color4) * instances, null,
+		glBufferData(GL_ARRAY_BUFFER, sizeof(color4) * instances, nullptr,
 			GL_STREAM_DRAW);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(color4) * instances,
 			highlights);
@@ -190,7 +190,7 @@ static void modelDrawFlat(ModelFlat* m, size_t instances,
 		glVertexAttrib4f(3, 0.0f, 0.0f, 0.0f, 0.0f);
 	}
 	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, null,
+	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, nullptr,
 		GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4x4) * instances, transforms);
 	glUniformMatrix4fv(flat->projection, 1, GL_FALSE, *worldProjection);
@@ -228,7 +228,7 @@ static void modelDrawPhong(ModelPhong* m, size_t instances,
 	if (tints) {
 		glEnableVertexAttribArray(3);
 		glBindBuffer(GL_ARRAY_BUFFER, m->tints);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(color4) * instances, null,
+		glBufferData(GL_ARRAY_BUFFER, sizeof(color4) * instances, nullptr,
 			GL_STREAM_DRAW);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(color4) * instances, tints);
 	} else {
@@ -238,7 +238,7 @@ static void modelDrawPhong(ModelPhong* m, size_t instances,
 	if (highlights) {
 		glEnableVertexAttribArray(4);
 		glBindBuffer(GL_ARRAY_BUFFER, m->highlights);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(color4) * instances, null,
+		glBufferData(GL_ARRAY_BUFFER, sizeof(color4) * instances, nullptr,
 			GL_STREAM_DRAW);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(color4) * instances,
 			highlights);
@@ -247,7 +247,7 @@ static void modelDrawPhong(ModelPhong* m, size_t instances,
 		glVertexAttrib4f(4, 0.0f, 0.0f, 0.0f, 0.0f);
 	}
 	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, null,
+	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, nullptr,
 		GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4x4) * instances, transforms);
 	glUniformMatrix4fv(phong->projection, 1, GL_FALSE, *worldProjection);

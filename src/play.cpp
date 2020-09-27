@@ -19,7 +19,7 @@ using minote::log::L;
 static nsec nextUpdate = 0;
 
 /// List of collectedInputs for the next logic frame to process
-static darray* collectedInputs = null;
+static darray* collectedInputs = nullptr;
 
 static bool initialized = false;
 
@@ -42,7 +42,7 @@ void playCleanup(void)
 	mrsCleanup();
 	if (collectedInputs) {
 		darrayDestroy(collectedInputs);
-		collectedInputs = null;
+		collectedInputs = nullptr;
 	}
 
 	initialized = false;

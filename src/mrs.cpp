@@ -398,7 +398,7 @@ void mrsInit(void)
 	mrsTet.player.spawnDelay = MrsSpawnDelay; // Start instantly
 	mrsTet.player.gravity = 3;
 
-	mrsTet.rng = rngCreate((uint64_t)time(null));
+	mrsTet.rng = rngCreate((uint64_t)time(nullptr));
 	for (size_t i = 0; i < countof(mrsTet.player.tokens); i += 1)
 		mrsTet.player.tokens[i] = MrsStartingTokens;
 	do {
@@ -422,9 +422,9 @@ void mrsCleanup(void)
 
 	mrsDrawCleanup();
 	rngDestroy(mrsTet.rng);
-	mrsTet.rng = null;
+	mrsTet.rng = nullptr;
 	fieldDestroy(mrsTet.field);
-	mrsTet.field = null;
+	mrsTet.field = nullptr;
 
 	initialized = false;
 	L.debug("Mrs cleaned up");

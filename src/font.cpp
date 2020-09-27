@@ -15,7 +15,7 @@ using minote::log::L;
 
 Font fonts[FontSize] = {0};
 
-static FT_Library freetype = null;
+static FT_Library freetype = nullptr;
 static bool initialized = false;
 
 void fontInit(void)
@@ -35,7 +35,7 @@ void fontInit(void)
 		// Load the font file into a Harfbuzz font
 		char fontPath[256] = "";
 		snprintf(fontPath, 256, "%s/%s.otf", FONT_DIR, FontList[i]);
-		FT_Face ftFace = null;
+		FT_Face ftFace = nullptr;
 		err = FT_New_Face(freetype, fontPath, 0, &ftFace);
 		if (err) {
 			L.error("Failed to open font %s (%s) with FreeType: error %d",
@@ -50,7 +50,7 @@ void fontInit(void)
 		}
 		fonts[i].hbFont = hb_ft_font_create_referenced(ftFace);
 		FT_Done_Face(ftFace);
-		ftFace = null;
+		ftFace = nullptr;
 
 		// Load the atlas into a texture
 		char atlasPath[256];
@@ -71,7 +71,7 @@ void fontInit(void)
 		textureStorage(fonts[i].atlas, size, GL_RGBA8);
 		textureData(fonts[i].atlas, atlasData, GL_RGB, GL_UNSIGNED_BYTE);
 		stbi_image_free(atlasData);
-		atlasData = null;
+		atlasData = nullptr;
 
 		// Parse the csv atlas metrics
 		char metricsPath[256];
@@ -103,7 +103,7 @@ void fontInit(void)
 			*nextChar = atlasChar;
 		}
 		fclose(metricsFile);
-		metricsFile = null;
+		metricsFile = nullptr;
 
 		L.info("Loaded font %s", FontList[i]);
 		continue;
@@ -111,15 +111,15 @@ void fontInit(void)
 cleanup: // In case any stage failed, clean up all other stages
 		if (fonts[i].hbFont) {
 			hb_font_destroy(fonts[i].hbFont);
-			fonts[i].hbFont = null;
+			fonts[i].hbFont = nullptr;
 		}
 		if (fonts[i].atlas) {
 			textureDestroy(fonts[i].atlas);
-			fonts[i].atlas = null;
+			fonts[i].atlas = nullptr;
 		}
 		if (fonts[i].metrics) {
 			darrayDestroy(fonts[i].metrics);
-			fonts[i].metrics = null;
+			fonts[i].metrics = nullptr;
 		}
 	}
 
@@ -135,18 +135,18 @@ void fontCleanup(void)
 			continue;
 
 		hb_font_destroy(fonts[i].hbFont);
-		fonts[i].hbFont = null;
+		fonts[i].hbFont = nullptr;
 		textureDestroy(fonts[i].atlas);
-		fonts[i].atlas = null;
+		fonts[i].atlas = nullptr;
 		darrayDestroy(fonts[i].metrics);
-		fonts[i].metrics = null;
+		fonts[i].metrics = nullptr;
 
 		L.info("Unloaded font %s", FontList[i]);
 	}
 
 	if (freetype) {
 		FT_Done_FreeType(freetype);
-		freetype = null;
+		freetype = nullptr;
 	}
 
 	initialized = false;

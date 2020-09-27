@@ -80,35 +80,35 @@ static const GLchar* ProgramSmaaNeighborFragSrc = (GLchar[]){
 	'\0'};
 
 // AASimple, AAComplex, AAExtreme
-static Framebuffer* msaaFb = null;
-static TextureMS* msaaFbColor = null;
-static RenderbufferMS* msaaFbDepthStencil = null;
+static Framebuffer* msaaFb = nullptr;
+static TextureMS* msaaFbColor = nullptr;
+static RenderbufferMS* msaaFbDepthStencil = nullptr;
 
 // AAFast, AAComplex
-static Framebuffer* smaaEdgeFb = null;
-static Texture* smaaEdgeFbColor = null;
-static Renderbuffer* smaaEdgeFbDepthStencil = null;
-static Framebuffer* smaaBlendFb = null;
-static Texture* smaaBlendFbColor = null;
+static Framebuffer* smaaEdgeFb = nullptr;
+static Texture* smaaEdgeFbColor = nullptr;
+static Renderbuffer* smaaEdgeFbDepthStencil = nullptr;
+static Framebuffer* smaaBlendFb = nullptr;
+static Texture* smaaBlendFbColor = nullptr;
 
-static Texture* smaaArea = null;
-static Texture* smaaSearch = null;
+static Texture* smaaArea = nullptr;
+static Texture* smaaSearch = nullptr;
 
-static ProgramSmaaEdge* smaaEdge = null;
-static ProgramSmaaBlend* smaaBlend = null;
-static ProgramSmaaNeighbor* smaaNeighbor = null;
+static ProgramSmaaEdge* smaaEdge = nullptr;
+static ProgramSmaaBlend* smaaBlend = nullptr;
+static ProgramSmaaNeighbor* smaaNeighbor = nullptr;
 
 // AAComplex
-static Framebuffer* smaaSeparateFb = null;
-static Texture* smaaSeparateFbColor = null;
-static Texture* smaaSeparateFbColor2 = null;
-static Framebuffer* smaaEdgeFb2 = null;
-static Texture* smaaEdgeFbColor2 = null;
-static Renderbuffer* smaaEdgeFbDepthStencil2 = null;
-static Framebuffer* smaaBlendFb2 = null;
-static Texture* smaaBlendFbColor2 = null;
+static Framebuffer* smaaSeparateFb = nullptr;
+static Texture* smaaSeparateFbColor = nullptr;
+static Texture* smaaSeparateFbColor2 = nullptr;
+static Framebuffer* smaaEdgeFb2 = nullptr;
+static Texture* smaaEdgeFbColor2 = nullptr;
+static Renderbuffer* smaaEdgeFbDepthStencil2 = nullptr;
+static Framebuffer* smaaBlendFb2 = nullptr;
+static Texture* smaaBlendFbColor2 = nullptr;
 
-static ProgramSmaaSeparate* smaaSeparate = null;
+static ProgramSmaaSeparate* smaaSeparate = nullptr;
 
 static AAMode currentMode = AANone;
 static size2i currentSize = {0};
@@ -337,54 +337,54 @@ void aaCleanup(void)
 {
 	if (!initialized) return;
 	framebufferDestroy(msaaFb);
-	msaaFb = null;
+	msaaFb = nullptr;
 	textureMSDestroy(msaaFbColor);
-	msaaFbColor = null;
+	msaaFbColor = nullptr;
 	renderbufferMSDestroy(msaaFbDepthStencil);
-	msaaFbDepthStencil = null;
+	msaaFbDepthStencil = nullptr;
 
 	framebufferDestroy(smaaEdgeFb);
-	smaaEdgeFb = null;
+	smaaEdgeFb = nullptr;
 	textureDestroy(smaaEdgeFbColor);
-	smaaEdgeFbColor = null;
+	smaaEdgeFbColor = nullptr;
 	renderbufferDestroy(smaaEdgeFbDepthStencil);
-	smaaEdgeFbDepthStencil = null;
+	smaaEdgeFbDepthStencil = nullptr;
 	framebufferDestroy(smaaBlendFb);
-	smaaBlendFb = null;
+	smaaBlendFb = nullptr;
 	textureDestroy(smaaBlendFbColor);
-	smaaBlendFbColor = null;
+	smaaBlendFbColor = nullptr;
 	
 	textureDestroy(smaaArea);
-	smaaArea = null;
+	smaaArea = nullptr;
 	textureDestroy(smaaSearch);
-	smaaSearch = null;
+	smaaSearch = nullptr;
 	
 	programDestroy(smaaEdge);
-	smaaEdge = null;
+	smaaEdge = nullptr;
 	programDestroy(smaaBlend);
-	smaaBlend = null;
+	smaaBlend = nullptr;
 	programDestroy(smaaNeighbor);
-	smaaNeighbor = null;
+	smaaNeighbor = nullptr;
 	
 	framebufferDestroy(smaaSeparateFb);
-	smaaSeparateFb = null;
+	smaaSeparateFb = nullptr;
 	textureDestroy(smaaSeparateFbColor);
-	smaaSeparateFbColor = null;
+	smaaSeparateFbColor = nullptr;
 	textureDestroy(smaaSeparateFbColor2);
-	smaaSeparateFbColor2 = null;
+	smaaSeparateFbColor2 = nullptr;
 	framebufferDestroy(smaaEdgeFb2);
-	smaaEdgeFb2 = null;
+	smaaEdgeFb2 = nullptr;
 	textureDestroy(smaaEdgeFbColor2);
-	smaaEdgeFbColor2 = null;
+	smaaEdgeFbColor2 = nullptr;
 	renderbufferDestroy(smaaEdgeFbDepthStencil2);
-	smaaEdgeFbDepthStencil2 = null;
+	smaaEdgeFbDepthStencil2 = nullptr;
 	framebufferDestroy(smaaBlendFb2);
-	smaaBlendFb2 = null;
+	smaaBlendFb2 = nullptr;
 	textureDestroy(smaaBlendFbColor2);
-	smaaBlendFbColor2 = null;
+	smaaBlendFbColor2 = nullptr;
 
 	programDestroy(smaaSeparate);
-	smaaSeparate = null;
+	smaaSeparate = nullptr;
 
 	currentSize.x = 0;
 	currentSize.y = 0;

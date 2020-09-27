@@ -54,16 +54,16 @@ static const GLchar* ProgramDelinearizeFragSrc = (GLchar[]){
 
 static bool initialized = false;
 
-static Framebuffer* renderFb = null;
-static Texture* renderFbColor = null;
-static Renderbuffer* renderFbDepthStencil = null;
+static Framebuffer* renderFb = nullptr;
+static Texture* renderFbColor = nullptr;
+static Renderbuffer* renderFbDepthStencil = nullptr;
 
 static size2i viewportSize = {}; ///< in pixels
 
-static Model* sync = null; ///< Invisible model used to prevent frame buffering
+static Model* sync = nullptr; ///< Invisible model used to prevent frame buffering
 
-static ProgramBlit* blit = null;
-static ProgramDelinearize* delinearize = null;
+static ProgramBlit* blit = nullptr;
+static ProgramDelinearize* delinearize = nullptr;
 
 static bool syncEnabled = true;
 
@@ -95,7 +95,7 @@ static void rendererSync(void)
 		sync = modelCreateFlat("sync", 3, syncMesh);
 	}
 
-	modelDraw(sync, 1, null, null, &IdentityMatrix);
+	modelDraw(sync, 1, nullptr, nullptr, &IdentityMatrix);
 	GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 	glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, secToNsec(0.1));
 }
@@ -177,17 +177,17 @@ void rendererCleanup(void)
 {
 	if (!initialized) return;
 	modelDestroy(sync);
-	sync = null;
+	sync = nullptr;
 	programDestroy(delinearize);
-	delinearize = null;
+	delinearize = nullptr;
 	programDestroy(blit);
-	blit = null;
+	blit = nullptr;
 	renderbufferDestroy(renderFbDepthStencil);
-	renderFbDepthStencil = null;
+	renderFbDepthStencil = nullptr;
 	textureDestroy(renderFbColor);
-	renderFbColor = null;
+	renderFbColor = nullptr;
 	framebufferDestroy(renderFb);
-	renderFb = null;
+	renderFb = nullptr;
 	windowContextDeactivate();
 	L.debug("Destroyed renderer for window \"%s\"",
 		windowGetTitle());
@@ -217,7 +217,7 @@ void rendererFrameEnd(void)
 	assert(initialized);
 
 	glDisable(GL_BLEND);
-	framebufferUse(null);
+	framebufferUse(nullptr);
 	programUse(delinearize);
 	textureUse(renderFbColor, delinearize->image);
 	glDrawArrays(GL_TRIANGLES, 0, 3);

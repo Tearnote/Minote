@@ -16,13 +16,7 @@
 
 // Define this symbol to be able to change the config or include implementation
 #ifndef MINOTE_NO_NUKLEAR_INCLUDE
-#ifdef null
-#undef null
 #include "nuklear/nuklear.h"
-#define null 0
-#else //null
-#include "nuklear/nuklear.h"
-#endif //null
 #endif //MINOTE_NO_NUKLEAR_INCLUDE
 
 /// Wrap all usage of this header and Nuklear within `#ifdef MINOTE_DEBUG`.

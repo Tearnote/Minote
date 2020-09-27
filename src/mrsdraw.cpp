@@ -16,20 +16,20 @@
 
 using minote::log::L;
 
-static Model* scene = null;
-static Model* guide = null;
+static Model* scene = nullptr;
+static Model* guide = nullptr;
 
-static Model* block = null;
-static darray* blockTintsOpaque = null;
-static darray* blockHighlightsOpaque = null;
-static darray* blockTransformsOpaque = null;
-static darray* blockTintsAlpha = null;
-static darray* blockHighlightsAlpha = null;
-static darray* blockTransformsAlpha = null;
+static Model* block = nullptr;
+static darray* blockTintsOpaque = nullptr;
+static darray* blockHighlightsOpaque = nullptr;
+static darray* blockTransformsOpaque = nullptr;
+static darray* blockTintsAlpha = nullptr;
+static darray* blockHighlightsAlpha = nullptr;
+static darray* blockTransformsAlpha = nullptr;
 
-static Model* border = null;
-static darray* borderTints = null;
-static darray* borderTransforms = null;
+static Model* border = nullptr;
+static darray* borderTints = nullptr;
+static darray* borderTransforms = nullptr;
 
 static bool initialized = false;
 
@@ -176,7 +176,7 @@ static void mrsDrawScene(void)
 {
 	float boost = tweenApply(&comboFade);
 	color4 boostColor[] = {{boost, boost, boost, 1.0f}};
-	modelDraw(scene, 1, boostColor, null,
+	modelDraw(scene, 1, boostColor, nullptr,
 		&IdentityMatrix);
 }
 
@@ -186,7 +186,7 @@ static void mrsDrawScene(void)
 static void mrsDrawGuide(void)
 {
 	color4 white[]{{1.0f, 1.0f, 1.0f, 1.0f}};
-	modelDraw(guide, 1, white, null, &IdentityMatrix);
+	modelDraw(guide, 1, white, nullptr, &IdentityMatrix);
 }
 
 /**
@@ -210,9 +210,9 @@ static void mrsQueueField(void)
 		mino type = fieldGet(mrsTet.field, (point2i){x, y});
 		if (type == MinoNone) continue;
 
-		color4* tint = null;
-		color4* highlight = null;
-		mat4x4* transform = null;
+		color4* tint = nullptr;
+		color4* highlight = nullptr;
+		mat4x4* transform = nullptr;
 		if (minoColor(type).a == 1.0) {
 			tint = static_cast<color4*>(darrayProduce(blockTintsOpaque));
 			highlight = static_cast<color4*>(darrayProduce(
@@ -323,9 +323,9 @@ static void mrsQueuePlayer(void)
 		mat4x4_translate(minoTransform, player[i].x, player[i].y, 0.0f);
 
 		// Queue up next mino
-		color4* tint = null;
-		color4* highlight = null;
-		mat4x4* transform = null;
+		color4* tint = nullptr;
+		color4* highlight = nullptr;
+		mat4x4* transform = nullptr;
 		if (minoColor(mrsTet.player.type).a == 1.0) {
 			tint = static_cast<color4*>(darrayProduce(blockTintsOpaque));
 			highlight = static_cast<color4*>(darrayProduce(
@@ -408,9 +408,9 @@ static void mrsQueuePreview(void)
 		if (mrsTet.player.preview == MinoI)
 			y -= 1;
 
-		color4* tint = null;
-		color4* highlight = null;
-		mat4x4* transform = null;
+		color4* tint = nullptr;
+		color4* highlight = nullptr;
+		mat4x4* transform = nullptr;
 		if (minoColor(mrsTet.player.preview).a == 1.0) {
 			tint = static_cast<color4*>(darrayProduce(blockTintsOpaque));
 			highlight = static_cast<color4*>(darrayProduce(
@@ -546,7 +546,7 @@ static void mrsDrawBorder(void)
 	}
 
 	modelDraw(border, borderTransforms->count,
-		(color4*)borderTints->data, null, (mat4x4*)borderTransforms->data);
+		(color4*)borderTints->data, nullptr, (mat4x4*)borderTransforms->data);
 	darrayClear(borderTints);
 	darrayClear(borderTransforms);
 }
@@ -625,29 +625,29 @@ void mrsDrawCleanup(void)
 	if (!initialized) return;
 
 	darrayDestroy(borderTransforms);
-	borderTransforms = null;
+	borderTransforms = nullptr;
 	darrayDestroy(borderTints);
-	borderTints = null;
+	borderTints = nullptr;
 	modelDestroy(border);
-	border = null;
+	border = nullptr;
 	darrayDestroy(blockTransformsAlpha);
-	blockTransformsAlpha = null;
+	blockTransformsAlpha = nullptr;
 	darrayDestroy(blockHighlightsAlpha);
-	blockHighlightsAlpha = null;
+	blockHighlightsAlpha = nullptr;
 	darrayDestroy(blockTintsAlpha);
-	blockTintsAlpha = null;
+	blockTintsAlpha = nullptr;
 	darrayDestroy(blockTransformsOpaque);
-	blockTransformsOpaque = null;
+	blockTransformsOpaque = nullptr;
 	darrayDestroy(blockHighlightsOpaque);
-	blockHighlightsOpaque = null;
+	blockHighlightsOpaque = nullptr;
 	darrayDestroy(blockTintsOpaque);
-	blockTintsOpaque = null;
+	blockTintsOpaque = nullptr;
 	modelDestroy(block);
-	block = null;
+	block = nullptr;
 	modelDestroy(guide);
-	guide = null;
+	guide = nullptr;
 	modelDestroy(scene);
-	scene = null;
+	scene = nullptr;
 
 	initialized = false;
 	L.debug("Mrs draw cleaned up");

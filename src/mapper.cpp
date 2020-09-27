@@ -16,7 +16,7 @@
 using minote::log::L;
 
 /// Queue holding collectedInputs ready to be retrieved
-static queue* inputs = null;
+static queue* inputs = nullptr;
 
 static bool initialized = false;
 
@@ -86,7 +86,7 @@ void mapperCleanup(void)
 	if (!initialized) return;
 	if (inputs) {
 		queueDestroy(inputs);
-		inputs = null;
+		inputs = nullptr;
 	}
 	initialized = false;
 }

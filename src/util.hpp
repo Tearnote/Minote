@@ -7,26 +7,20 @@
 #define MINOTE_UTIL_H
 
 #include <type_traits>
-#include <stddef.h>
-#include <stdlib.h> // Provide free()
-#include <string.h>
+#include <cstddef>
+#include <cstdlib> // Provide free()
+#include <cstring>
 #include "pcg/pcg_basic.h"
 
 /// Concept of an enum type
 template<typename T>
 concept EnumType = std::is_enum_v<T>;
 
-/// Conversion of scoped enum to the underlying type using the unary + operator
+/// Conversion of scoped enum to the underlying type, using the unary + operator
 template<EnumType T>
 constexpr auto operator+(T e) {
 	return static_cast<std::underlying_type_t<T>>(e);
 }
-
-/**
- * A better replacement for NULL.
- * @see https://gustedt.wordpress.com/2010/11/07/dont-use-null/
- */
-#define null 0
 
 /**
  * A better replacement for M_PI.

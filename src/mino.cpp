@@ -74,9 +74,9 @@ void fieldDestroy(Field* f)
 {
 	assert(f);
 	free(f->grid);
-	f->grid = null;
+	f->grid = nullptr;
 	free(f);
-	f = null;
+	f = nullptr;
 }
 
 void fieldSet(Field* f, point2i place, mino value)

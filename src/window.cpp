@@ -123,9 +123,9 @@ void windowInit(const char* title, size2i size, bool fullscreen)
 		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 		window = glfwCreateWindow(mode->width, mode->height, title, monitor,
-			null);
+			nullptr);
 	} else {
-		window = glfwCreateWindow(size.x, size.y, title, null, null);
+		window = glfwCreateWindow(size.x, size.y, title, nullptr, nullptr);
 	}
 	if (!window) {
 		L.crit("Failed to create window \"%s\": %s", title,
@@ -148,7 +148,7 @@ void windowInit(const char* title, size2i size, bool fullscreen)
 	float scale = 0.0f;
 	glfwGetFramebufferSize(window, &width, &height);
 	framebufferResizeCallback(window, width, height);
-	glfwGetWindowContentScale(window, &scale, null);
+	glfwGetWindowContentScale(window, &scale, nullptr);
 	windowScaleCallback(window, scale, 0);
 	L.info("Window \"%s\" created at %dx%d *%f%s",
 		title, width, height, scale, fullscreen ? " fullscreen" : "");
@@ -158,11 +158,11 @@ void windowCleanup(void)
 {
 	if (!initialized) return;
 	queueDestroy(inputs);
-	inputs = null;
+	inputs = nullptr;
 	glfwDestroyWindow(window);
-	window = null;
+	window = nullptr;
 	L.debug("Window \"%s\" destroyed", windowTitle);
-	windowTitle = null;
+	windowTitle = nullptr;
 	initialized = false;
 }
 
@@ -211,7 +211,7 @@ void windowContextActivate(void)
 void windowContextDeactivate(void)
 {
 	assert(initialized);
-	glfwMakeContextCurrent(null);
+	glfwMakeContextCurrent(nullptr);
 }
 
 void windowFlip(void)

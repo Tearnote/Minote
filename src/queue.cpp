@@ -29,7 +29,7 @@ void queueDestroy(queue* q)
 {
 	if (!q) return;
 	free(q->data);
-	q->data = null;
+	q->data = nullptr;
 	free(q);
 }
 

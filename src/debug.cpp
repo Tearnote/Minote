@@ -59,7 +59,7 @@ static struct nk_draw_null_texture nullTexture = {};
 static struct nk_buffer commandList = {0};
 
 static struct ProgramNuklear* nuklear;
-static Texture* nuklearTexture = null;
+static Texture* nuklearTexture = nullptr;
 
 static VertexArray nuklearVao = 0;
 static VertexBuffer nuklearVbo = 0;
@@ -203,9 +203,9 @@ void debugCleanup(void)
 	glDeleteVertexArrays(1, &nuklearVao);
 	nuklearVao = 0;
 	programDestroy(nuklear);
-	nuklear = null;
+	nuklear = nullptr;
 	textureDestroy(nuklearTexture);
-	nuklearTexture = null;
+	nuklearTexture = nullptr;
 	nk_font_atlas_cleanup(&atlas);
 	nk_free(&nkContext);
 
@@ -254,13 +254,13 @@ void debugDraw(void)
 
 	glBindBuffer(GL_ARRAY_BUFFER, nuklearVbo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, nuklearEbo);
-	glBufferData(GL_ARRAY_BUFFER, NUKLEAR_VBO_SIZE, null, GL_STREAM_DRAW);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, NUKLEAR_EBO_SIZE, null,
+	glBufferData(GL_ARRAY_BUFFER, NUKLEAR_VBO_SIZE, nullptr, GL_STREAM_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, NUKLEAR_EBO_SIZE, nullptr,
 		GL_STREAM_DRAW);
 
 	// Convert the Nuklear command list into vertex inputs
-	void* vboData = null;
-	void* eboData = null;
+	void* vboData = nullptr;
+	void* eboData = nullptr;
 	vboData = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
 	eboData = glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
 	struct nk_convert_config convertConfig = {
@@ -270,9 +270,7 @@ void debugDraw(void)
 		.circle_segment_count = 22,
 		.arc_segment_count = 22,
 		.curve_segment_count = 22,
-#undef null
 		.null = nullTexture,
-#define null 0
 		.vertex_layout = nuklearVertexLayout,
 		.vertex_size = sizeof(VertexNuklear),
 		.vertex_alignment = alignof(VertexNuklear)
@@ -288,7 +286,7 @@ void debugDraw(void)
 	// Execute draw commands
 	point2i screenSize = windowGetSize();
 	const struct nk_draw_command* command;
-	const nk_draw_index* offset = null;
+	const nk_draw_index* offset = nullptr;
 	nk_draw_foreach(command, &nkContext, &commandList) {
 		if (!command->elem_count) continue;
 		textureUse(static_cast<Texture*>(command->texture.ptr), nuklear->atlas);

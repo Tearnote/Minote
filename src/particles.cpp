@@ -33,12 +33,12 @@ typedef struct Particle {
 	EaseType ease; ///< Easing profile of the particle progress
 } Particle;
 
-static darray* particles = null;
-static Rng* rng = null;
+static darray* particles = nullptr;
+static Rng* rng = nullptr;
 
-static Model* particle = null;
-static darray* particleTints = null;
-static darray* particleTransforms = null;
+static Model* particle = nullptr;
+static darray* particleTints = nullptr;
+static darray* particleTransforms = nullptr;
 
 static bool initialized = false;
 
@@ -48,7 +48,7 @@ void particlesInit(void)
 	if (initialized) return;
 
 	particles = darrayCreate(sizeof(Particle));
-	rng = rngCreate((uint64_t)time(null));
+	rng = rngCreate((uint64_t)time(nullptr));
 
 	particle = modelCreateFlat("particle", particleMeshSize, particleMesh);
 	particleTints = darrayCreate(sizeof(color4));
@@ -62,16 +62,16 @@ void particlesCleanup(void)
 	if (!initialized) return;
 
 	darrayDestroy(particleTransforms);
-	particleTransforms = null;
+	particleTransforms = nullptr;
 	darrayDestroy(particleTints);
-	particleTints = null;
+	particleTints = nullptr;
 	modelDestroy(particle);
-	particle = null;
+	particle = nullptr;
 
 	rngDestroy(rng);
-	rng = null;
+	rng = nullptr;
 	darrayDestroy(particles);
-	particles = null;
+	particles = nullptr;
 
 	initialized = false;
 }
@@ -162,7 +162,7 @@ void particlesDraw(void)
 
 	modelDraw(particle, numParticles,
 		(color4*)particleTints->data,
-		null,
+		nullptr,
 		(mat4x4*)particleTransforms->data);
 
 	darrayClear(particleTints);

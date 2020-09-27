@@ -54,7 +54,7 @@ void textureStorage(Texture* t, size2i size, GLenum format)
 	assert(size.y > 0);
 	glBindTexture(GL_TEXTURE_2D, t->id);
 	glTexImage2D(GL_TEXTURE_2D, 0, format, size.x, size.y,
-		0, GL_RGBA, GL_UNSIGNED_BYTE, null);
+		0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 	t->size.x = size.x;
 	t->size.y = size.y;
 }
@@ -283,13 +283,13 @@ static Shader shaderCreate(const char* name, const char* source, GLenum type)
 	assert(source);
 	assert(type == GL_VERTEX_SHADER || type == GL_FRAGMENT_SHADER);
 	Shader shader = glCreateShader(type);
-	glShaderSource(shader, 1, &source, null);
+	glShaderSource(shader, 1, &source, nullptr);
 	glCompileShader(shader);
 	GLint compileStatus = 0;
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &compileStatus);
 	if (compileStatus == GL_FALSE) {
 		GLchar infoLog[512];
-		glGetShaderInfoLog(shader, 512, null, infoLog);
+		glGetShaderInfoLog(shader, 512, nullptr, infoLog);
 		L.error("Failed to compile shader %s: %s", name, infoLog);
 		glDeleteShader(shader);
 		return 0;
@@ -339,7 +339,7 @@ void* _programCreate(size_t size, const char* vertName, const char* vertSrc,
 	glGetProgramiv(result->id, GL_LINK_STATUS, &linkStatus);
 	if (linkStatus == GL_FALSE) {
 		GLchar infoLog[512];
-		glGetProgramInfoLog(result->id, 512, null, infoLog);
+		glGetProgramInfoLog(result->id, 512, nullptr, infoLog);
 		L.error("Failed to link shader program %s+%s: %s",
 			vertName, fragName, infoLog);
 		glDeleteProgram(result->id);
@@ -361,7 +361,7 @@ void _programDestroy(ProgramBase* program)
 	L.debug("Destroyed shader program %s+%s",
 		program->vertName, program->fragName);
 	free(program);
-	program = null;
+	program = nullptr;
 }
 
 Uniform _programUniform(ProgramBase* program, const char* uniform)
