@@ -8,6 +8,7 @@
 
 #include <cstdlib>
 #include <array>
+#include "util.hpp"
 
 namespace minote {
 
@@ -32,28 +33,33 @@ struct queue {
 	/**
 	 * Remove and return an element from the front of the queue. If the queue is
      * empty, nothing happens.
-	 * @return Removed element, or nullptr if queue is empty
+	 * @return Removed element, or nullopt if queue is empty
 	 */
-	auto dequeue() -> Element*;
+	auto dequeue() -> optref<Element>;
 
 	/**
 	 * Return the element from the front of the queue without removing it.
 	 * If the queue is empty, nothing happens.
-	 * @return Peeked element, or nullptr if queue is empty
+	 * @return Peeked element, or nullopt if queue is empty
 	 */
-	auto peek() -> Element*;
+	[[nodiscard]]
+	auto peek() -> optref<Element>;
+	[[nodiscard]]
+	auto peek() const -> optref<const Element>;
 
 	/**
 	 * Check whether the queue is empty.
 	 * @return true is empty, false if not empty
 	 */
-	auto isEmpty() -> bool;
+	[[nodiscard]]
+	auto isEmpty() const -> bool;
 
 	/**
 	 * Check whether the queue is full.
 	 * @return true if full, false if not full
 	 */
-	auto isFull() -> bool;
+	[[nodiscard]]
+	auto isFull() const -> bool;
 
 	/**
 	 * Clear the queue, setting the number of elements to zero.

@@ -6,10 +6,11 @@
 #pragma once
 
 #include <type_traits>
+#include <functional>
+#include <optional>
 #include <cassert>
-#include <cstddef>
-#include <cstdlib> // Provide free()
 #include <cstring>
+#include <cstdlib> // Provide free()
 #include <cstdio>
 #include <cmath>
 #include "pcg/pcg_basic.h"
@@ -30,6 +31,10 @@ template<EnumType T>
 constexpr auto operator+(T e) {
 	return static_cast<std::underlying_type_t<T>>(e);
 }
+
+/// Shortened name for an optional reference type
+template<typename T>
+using optref = std::optional<std::reference_wrapper<T>>;
 
 /**
  * A more correct replacement for pi.

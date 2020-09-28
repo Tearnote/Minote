@@ -21,33 +21,42 @@ auto queue<T, N>::enqueue(const Element& e) -> bool
 }
 
 template<typename T, std::size_t N>
-auto queue<T, N>::dequeue() -> Element*
+auto queue<T, N>::dequeue() -> optref<Element>
 {
 	if (isEmpty())
-		return nullptr;
+		return std::nullopt;
 
-	Element* result = &data[tail];
+	Element& result = data[tail];
 	tail = (tail + 1) % Capacity;
 	return result;
 }
 
 template<typename T, std::size_t N>
-auto queue<T, N>::peek() -> Element*
+auto queue<T, N>::peek() -> optref<Element>
 {
 	if (isEmpty())
-		return nullptr;
+		return std::nullopt;
 
-	return &data[tail];
+	return data[tail];
 }
 
 template<typename T, std::size_t N>
-auto queue<T, N>::isEmpty() -> bool
+auto queue<T, N>::peek() const -> optref<const Element>
+{
+	if (isEmpty())
+		return std::nullopt;
+
+	return data[tail];
+}
+
+template<typename T, std::size_t N>
+auto queue<T, N>::isEmpty() const -> bool
 {
 	return head == tail;
 }
 
 template<typename T, std::size_t N>
-auto queue<T, N>::isFull() -> bool
+auto queue<T, N>::isFull() const -> bool
 {
 	return (head + 1) % Capacity == tail;
 }
