@@ -6,7 +6,7 @@
 #ifndef MINOTE_MAPPER_H
 #define MINOTE_MAPPER_H
 
-#include <stdbool.h>
+#include "varray.hpp"
 #include "time.hpp"
 
 typedef enum InputType {
@@ -23,6 +23,8 @@ typedef struct Input {
 	bool state; ///< true if press, false if release
 	nsec timestamp;
 } Input;
+
+using InputArray = minote::varray<Input, 64>;
 
 /**
  * Initialize the mapper system. windowInit() must have been called first.

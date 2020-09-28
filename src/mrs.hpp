@@ -9,7 +9,7 @@
 #define MINOTE_MRS_H
 
 #include "mrsdraw.hpp"
-#include "darray.hpp"
+#include "varray.hpp"
 #include "mapper.hpp"
 #include "mino.hpp"
 #include "util.hpp"
@@ -100,8 +100,8 @@ void mrsCleanup(void);
 
 /**
  * Simulate one frame of gameplay logic.
- * @param in List of ::Input events that happened during the frame
+ * @param inputs List of ::Input events that happened during the frame
  */
-void mrsAdvance(darray* inputs);
+void mrsAdvance(const InputArray& inputs);
 
 #endif //MINOTE_MRS_H

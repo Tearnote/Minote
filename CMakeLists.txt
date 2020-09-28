@@ -118,7 +118,7 @@ set(CXX_SOURCES
         src/system.hpp src/system.cpp
         src/time.hpp src/time.cpp
         src/renderer.hpp src/renderer.cpp
-        src/darray.hpp src/darray.cpp
+        src/varray.hpp src/varray.tpp
         src/play.hpp src/play.cpp
         src/mino.hpp src/mino.cpp
         src/mapper.hpp src/mapper.cpp

@@ -1,7 +1,7 @@
 /**
- * A constant-size FIFO queue container
+ * Statically allocated FIFO queue
  * @file
- * Based on a ring buffer, tightly packed. All methods are O(1).
+ * Uses a ring buffer as a backing store. All methods are O(1).
  */
 
 #pragma once
@@ -62,6 +62,6 @@ struct queue {
 
 };
 
-#include "queue.tpp"
-
 }
+
+#include "queue.tpp"

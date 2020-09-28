@@ -432,16 +432,14 @@ void mrsCleanup(void)
  * Populate and rotate the input arrays for press and hold detection.
  * @param inputs List of this frame's new inputs
  */
-static void mrsUpdateInputs(darray* inputs)
+static void mrsUpdateInputs(const InputArray& inputs)
 {
-	assert(inputs);
-
 	// Update raw inputs
 	if (mrsTet.state != TetrionOutro) {
-		for (size_t i = 0; i < inputs->count; i += 1) {
-			Input* in = static_cast<Input*>(darrayGet(inputs, i));
-			assert(in->type < InputSize);
-			mrsTet.player.inputMapRaw[in->type] = in->state;
+		for (size_t i = 0; i < inputs.size; i += 1) {
+			const Input& in = inputs[i];
+			assert(in.type < InputSize);
+			mrsTet.player.inputMapRaw[in.type] = in.state;
 		}
 	} else { // Force-release everything on gameover
 		arrayClear(mrsTet.player.inputMapRaw);
@@ -639,9 +637,8 @@ static void mrsUpdateWin(void)
 	//TODO
 }
 
-void mrsAdvance(darray* inputs)
+void mrsAdvance(const InputArray& inputs)
 {
-	assert(inputs);
 	assert(initialized);
 
 	mrsUpdateInputs(inputs);

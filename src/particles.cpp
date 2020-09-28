@@ -10,10 +10,11 @@
 #include <time.h>
 #include "aheasing/easing.h"
 #include "cephes/protos.h"
-#include "darray.hpp"
+#include "varray.hpp"
 #include "model.hpp"
 #include "util.hpp"
 
+using minote::varray;
 using minote::Rng;
 using minote::Tau;
 using minote::rad;
@@ -37,12 +38,14 @@ typedef struct Particle {
 	EaseType ease; ///< Easing profile of the particle progress
 } Particle;
 
-static darray* particles = nullptr;
+constexpr std::size_t MaxParticles{4096};
+
+static varray<Particle, MaxParticles> particles{};
 static Rng rng{};
 
 static Model* particle = nullptr;
-static darray* particleTints = nullptr;
-static darray* particleTransforms = nullptr;
+static varray<color4, MaxParticles> particleTints{};
+static varray<mat4x4, MaxParticles> particleTransforms{};
 
 static bool initialized = false;
 
@@ -51,12 +54,8 @@ void particlesInit(void)
 {
 	if (initialized) return;
 
-	particles = darrayCreate(sizeof(Particle));
 	rng.seed((uint64_t)time(nullptr));
-
 	particle = modelCreateFlat("particle", particleMeshSize, particleMesh);
-	particleTints = darrayCreate(sizeof(color4));
-	particleTransforms = darrayCreate(sizeof(mat4x4));
 
 	initialized = true;
 }
@@ -65,15 +64,8 @@ void particlesCleanup(void)
 {
 	if (!initialized) return;
 
-	darrayDestroy(particleTransforms);
-	particleTransforms = nullptr;
-	darrayDestroy(particleTints);
-	particleTints = nullptr;
 	modelDestroy(particle);
 	particle = nullptr;
-
-	darrayDestroy(particles);
-	particles = nullptr;
 
 	initialized = false;
 }
@@ -82,14 +74,13 @@ void particlesUpdate(void)
 {
 	assert(initialized);
 
-	size_t numParticles = particles->count;
+	size_t numParticles = particles.size;
 	nsec currentTime = getTime();
 
 	for (size_t i = numParticles - 1; i < numParticles; i -= 1) {
-		Particle* currentParticle = static_cast<Particle*>(darrayGet(particles,
-			i));
+		Particle* currentParticle = &particles[i];
 		if (currentParticle->start + currentParticle->duration < currentTime)
-			darrayRemoveSwap(particles, i);
+			particles.removeSwap(i);
 	}
 }
 
@@ -99,11 +90,11 @@ void particlesDraw(void)
 
 	double fresnelConst = sqrt(4.0 / Tau);
 
-	size_t numParticles = particles->count;
+	size_t numParticles = particles.size;
 	if (!numParticles) return;
 
 	for (size_t i = 0; i < numParticles; i += 1) {
-		Particle* current = static_cast<Particle*>(darrayGet(particles, i));
+		Particle* current = &particles[i];
 		assert(current->spin > 0.0f);
 
 		Tween progressTween = {
@@ -138,7 +129,8 @@ void particlesDraw(void)
 		if (current->vert == -1)
 			angle *= -1.0f;
 
-		color4* tint = static_cast<color4*>(darrayProduce(particleTints));
+		color4* tint = particleTints.produce();
+		assert(tint);
 		*tint = current->color;
 
 		// Shimmer mitigation
@@ -150,8 +142,8 @@ void particlesDraw(void)
 			tint->a *= fadeout;
 		}
 
-		mat4x4* transform = static_cast<mat4x4*>(darrayProduce(
-			particleTransforms));
+		mat4x4* transform = particleTransforms.produce();
+		assert(transform);
 		mat4x4 translated = {0};
 		mat4x4_translate(translated, x, y, current->origin.z);
 		mat4x4 rotated = {0};
@@ -159,16 +151,16 @@ void particlesDraw(void)
 		mat4x4_scale_aniso(*transform, rotated, 1.0f - progress, 1.0f, 1.0f);
 	}
 
-	numParticles = particleTransforms->count;
-	assert(particleTints->count == particleTransforms->count);
+	numParticles = particleTransforms.size;
+	assert(particleTints.size == particleTransforms.size);
 
 	modelDraw(particle, numParticles,
-		(color4*)particleTints->data,
+		particleTints.data(),
 		nullptr,
-		(mat4x4*)particleTransforms->data);
+		particleTransforms.data());
 
-	darrayClear(particleTints);
-	darrayClear(particleTransforms);
+	particleTints.clear();
+	particleTransforms.clear();
 }
 
 void particlesGenerate(point3f position, size_t count, ParticleParams* params)
@@ -178,8 +170,10 @@ void particlesGenerate(point3f position, size_t count, ParticleParams* params)
 	assert(params);
 
 	for (size_t i = 0; i < count; i += 1) {
-		Particle* newParticle = static_cast<Particle*>(darrayProduce(
-			particles));
+		Particle* newParticle = particles.produce();
+		if (!newParticle)
+			return;
+
 		newParticle->origin = position;
 		newParticle->color = params->color;
 

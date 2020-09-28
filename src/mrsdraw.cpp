@@ -14,24 +14,28 @@
 #include "mrs.hpp"
 #include "log.hpp"
 
-using minote::L;
+using minote::varray;
 using minote::mod;
 using minote::rad;
+using minote::L;
+
+static constexpr std::size_t BlocksMax{512};
+static constexpr std::size_t BordersMax{1024};
 
 static Model* scene = nullptr;
 static Model* guide = nullptr;
 
 static Model* block = nullptr;
-static darray* blockTintsOpaque = nullptr;
-static darray* blockHighlightsOpaque = nullptr;
-static darray* blockTransformsOpaque = nullptr;
-static darray* blockTintsAlpha = nullptr;
-static darray* blockHighlightsAlpha = nullptr;
-static darray* blockTransformsAlpha = nullptr;
+static varray<color4, BlocksMax> blockTintsOpaque{};
+static varray<color4, BlocksMax> blockHighlightsOpaque{};
+static varray<mat4x4, BlocksMax> blockTransformsOpaque{};
+static varray<color4, BlocksMax> blockTintsAlpha{};
+static varray<color4, BlocksMax> blockHighlightsAlpha{};
+static varray<mat4x4, BlocksMax> blockTransformsAlpha{};
 
 static Model* border = nullptr;
-static darray* borderTints = nullptr;
-static darray* borderTransforms = nullptr;
+static varray<color4, BordersMax> borderTints{};
+static varray<mat4x4, BordersMax> borderTransforms{};
 
 static bool initialized = false;
 
@@ -216,17 +220,21 @@ static void mrsQueueField(void)
 		color4* highlight = nullptr;
 		mat4x4* transform = nullptr;
 		if (minoColor(type).a == 1.0) {
-			tint = static_cast<color4*>(darrayProduce(blockTintsOpaque));
-			highlight = static_cast<color4*>(darrayProduce(
-				blockHighlightsOpaque));
-			transform = static_cast<mat4x4*>(darrayProduce(
-				blockTransformsOpaque));
+			tint = blockTintsOpaque.produce();
+			if (!tint)
+				return;
+			highlight = blockHighlightsOpaque.produce();
+			assert(highlight);
+			transform = blockTransformsOpaque.produce();
+			assert(transform);
 		} else {
-			tint = static_cast<color4*>(darrayProduce(blockTintsAlpha));
-			highlight = static_cast<color4*>(darrayProduce(
-				blockHighlightsAlpha));
-			transform = static_cast<mat4x4*>(darrayProduce(
-				blockTransformsAlpha));
+			tint = blockTintsAlpha.produce();
+			if (!tint)
+				return;
+			highlight = blockHighlightsAlpha.produce();
+			assert(highlight);
+			transform = blockTransformsAlpha.produce();
+			assert(transform);
 		}
 
 		*tint = minoColor(type);

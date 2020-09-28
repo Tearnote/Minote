@@ -7,6 +7,8 @@
 
 #include "queue.hpp"
 
+namespace minote {
+
 template<typename T, std::size_t N>
 auto queue<T, N>::enqueue(const Element& e) -> bool
 {
@@ -54,4 +56,6 @@ template<typename T, std::size_t N>
 void queue<T, N>::clear()
 {
 	head = tail;
+}
+
 }

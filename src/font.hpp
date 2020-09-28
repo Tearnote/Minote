@@ -9,7 +9,7 @@
 #include <hb.h>
 #include "fontlist.hpp"
 #include "opengl.hpp"
-#include "darray.hpp"
+#include "varray.hpp"
 
 /// Single glyph of a font alas
 typedef struct FontAtlasGlyph {
@@ -27,7 +27,7 @@ typedef struct FontAtlasGlyph {
 /// Complete loaded font with atlas, ready for rendering with
 typedef struct Font {
 	Texture* atlas; ///< Uploaded texture holding the atlas of MSDF renders
-	darray* metrics; ///< Array of FontAtlasChar for drawing from the atlas
+	minote::varray<FontAtlasGlyph, 1024> metrics; ///< Array of FontAtlasGlyph for drawing from the atlas
 	hb_font_t* hbFont; ///< Cached HarfBuzz font data for shaping
 } Font;
 
