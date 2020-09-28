@@ -113,7 +113,7 @@ set(CXX_SOURCES
         src/util.hpp
         src/window.hpp src/window.cpp
         src/basetypes.hpp src/basetypes.cpp
-        src/queue.hpp src/queue.cpp
+        src/queue.hpp src/queue.tpp
         src/game.hpp src/game.cpp
         src/system.hpp src/system.cpp
         src/time.hpp src/time.cpp

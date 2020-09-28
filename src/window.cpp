@@ -22,7 +22,7 @@ using minote::L;
 static bool initialized = false;
 static GLFWwindow* window; ///< Underlying GLFWwindow object
 static const char* windowTitle; ///< Window title from the title bar
-static queue* inputs; ///< Message queue for storing keypresses
+static queue<KeyInput, 64> inputs{}; ///< Message queue for storing keypresses
 static std::mutex inputsMutex; ///< Mutex protecting the #collectedInputs queue
 static std::atomic<bool> windowOpen; ///< false if window should be closed, true otherwise
 // These two are not #size2i because the struct cannot be atomic
@@ -45,7 +45,7 @@ keyCallback(GLFWwindow* w, int key, int scancode, int action, int mods)
 	if (action == GLFW_REPEAT) return; // Key repeat is not needed
 	KeyInput input = {.key = key, .action = action, .timestamp = getTime()};
 	inputsMutex.lock();
-	if (!queueEnqueue(inputs, &input))
+	if (!inputs.enqueue(input))
 		L.warn("Window input queue is full, key #%d %s dropped",
 			key, action == GLFW_PRESS ? "press" : "release");
 	inputsMutex.unlock();
@@ -137,7 +137,6 @@ void windowInit(const char* title, size2i size, bool fullscreen)
 #ifndef MINOTE_DEBUG
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 #endif //MINOTE_DEBUG
-	inputs = queueCreate(sizeof(KeyInput), 64);
 	glfwSetKeyCallback(window, keyCallback);
 	glfwSetWindowCloseCallback(window, windowCloseCallback);
 	glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
@@ -157,8 +156,6 @@ void windowInit(const char* title, size2i size, bool fullscreen)
 void windowCleanup(void)
 {
 	if (!initialized) return;
-	queueDestroy(inputs);
-	inputs = nullptr;
 	glfwDestroyWindow(window);
 	window = nullptr;
 	L.debug("Window \"%s\" destroyed", windowTitle);
@@ -224,7 +221,9 @@ bool windowInputDequeue(KeyInput* input)
 {
 	assert(initialized);
 	inputsMutex.lock();
-	bool result = queueDequeue(inputs, input);
+	KeyInput* result = inputs.dequeue();
+	if (result)
+		*input = *result;
 	inputsMutex.unlock();
 	return result;
 }
@@ -233,7 +232,9 @@ bool windowInputPeek(KeyInput* input)
 {
 	assert(initialized);
 	inputsMutex.lock();
-	bool result = queuePeek(inputs, input);
+	KeyInput* result = inputs.dequeue();
+	if (result)
+		*input = *result;
 	inputsMutex.unlock();
 	return result;
 }
@@ -242,7 +243,7 @@ void windowInputClear(void)
 {
 	assert(initialized);
 	inputsMutex.lock();
-	queueClear(inputs);
+	inputs.clear();
 	inputsMutex.unlock();
 }
 

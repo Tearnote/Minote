@@ -16,7 +16,7 @@
 using minote::L;
 
 /// Queue holding collectedInputs ready to be retrieved
-static queue* inputs = nullptr;
+static queue<Input, 64> inputs{};
 
 static bool initialized = false;
 
@@ -77,17 +77,12 @@ static bool actionToState(int action)
 void mapperInit(void)
 {
 	if (initialized) return;
-	inputs = queueCreate(sizeof(Input), 64);
 	initialized = true;
 }
 
 void mapperCleanup(void)
 {
 	if (!initialized) return;
-	if (inputs) {
-		queueDestroy(inputs);
-		inputs = nullptr;
-	}
 	initialized = false;
 }
 
@@ -105,7 +100,7 @@ void mapperUpdate(void)
 			.state = state,
 			.timestamp = key.timestamp
 		};
-		if(!queueEnqueue(inputs, &newInput))
+		if(!inputs.enqueue(newInput))
 			L.warn("Mapper queue full, input dropped");
 	}
 }
@@ -114,12 +109,18 @@ bool mapperDequeue(Input* input)
 {
 	assert(initialized);
 	assert(input);
-	return queueDequeue(inputs, input);
+	Input* result = inputs.dequeue();
+	if (result)
+		*input = *result;
+	return result;
 }
 
 bool mapperPeek(Input* input)
 {
 	assert(initialized);
 	assert(input);
-	return queuePeek(inputs, input);
+	Input* result = inputs.peek();
+	if (result)
+		*input = *result;
+	return result;
 }
