@@ -19,7 +19,7 @@ auto varray<T, N>::produce() -> Element*
 		return nullptr;
 
 	size += 1;
-	return &buffer[size];
+	return &buffer[size - 1];
 }
 
 template<typename T, std::size_t N>

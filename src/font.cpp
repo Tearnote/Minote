@@ -84,8 +84,7 @@ void fontInit(void)
 			goto cleanup;
 		}
 
-		fonts[i].metrics = darrayCreate(sizeof(FontAtlasGlyph));
-		darrayProduce(fonts[i].metrics); // Empty first element
+		*fonts[i].metrics.produce() = {}; // Empty first element
 		while (true) {
 			int index = 0;
 			FontAtlasGlyph atlasChar = {0};
@@ -96,10 +95,11 @@ void fontInit(void)
 				&atlasChar.atlasRight, &atlasChar.atlasTop);
 			if (parsed == 0 || parsed == EOF)
 				break;
-			assert(index == fonts[i].metrics->count);
+			assert(index == fonts[i].metrics.size);
 
-			FontAtlasGlyph* nextChar = static_cast<FontAtlasGlyph*>(darrayProduce(
-				fonts[i].metrics));
+			FontAtlasGlyph* nextChar = fonts[i].metrics.produce();
+			if (!nextChar)
+				break;
 			*nextChar = atlasChar;
 		}
 		fclose(metricsFile);
@@ -117,10 +117,6 @@ cleanup: // In case any stage failed, clean up all other stages
 			textureDestroy(fonts[i].atlas);
 			fonts[i].atlas = nullptr;
 		}
-		if (fonts[i].metrics) {
-			darrayDestroy(fonts[i].metrics);
-			fonts[i].metrics = nullptr;
-		}
 	}
 
 	initialized = true;
@@ -131,15 +127,13 @@ void fontCleanup(void)
 	if (!initialized) return;
 
 	for (size_t i = 0; i < FontSize; i += 1) {
-		if (!fonts[i].hbFont && !fonts[i].atlas && !fonts[i].metrics)
+		if (!fonts[i].hbFont && !fonts[i].atlas)
 			continue;
 
 		hb_font_destroy(fonts[i].hbFont);
 		fonts[i].hbFont = nullptr;
 		textureDestroy(fonts[i].atlas);
 		fonts[i].atlas = nullptr;
-		darrayDestroy(fonts[i].metrics);
-		fonts[i].metrics = nullptr;
 
 		L.info("Unloaded font %s", FontList[i]);
 	}

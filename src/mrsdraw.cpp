@@ -337,17 +337,21 @@ static void mrsQueuePlayer(void)
 		color4* highlight = nullptr;
 		mat4x4* transform = nullptr;
 		if (minoColor(mrsTet.player.type).a == 1.0) {
-			tint = static_cast<color4*>(darrayProduce(blockTintsOpaque));
-			highlight = static_cast<color4*>(darrayProduce(
-				blockHighlightsOpaque));
-			transform = static_cast<mat4x4*>(darrayProduce(
-				blockTransformsOpaque));
+			tint = blockTintsOpaque.produce();
+			if (!tint)
+				return;
+			highlight = blockHighlightsOpaque.produce();
+			assert(highlight);
+			transform = blockTransformsOpaque.produce();
+			assert(transform);
 		} else {
-			tint = static_cast<color4*>(darrayProduce(blockTintsAlpha));
-			highlight = static_cast<color4*>(darrayProduce(
-				blockHighlightsAlpha));
-			transform = static_cast<mat4x4*>(darrayProduce(
-				blockTransformsAlpha));
+			tint = blockTintsAlpha.produce();
+			if (!tint)
+				return;
+			highlight = blockHighlightsAlpha.produce();
+			assert(highlight);
+			transform = blockTransformsAlpha.produce();
+			assert(transform);
 		}
 
 		// Insert calculated values
@@ -390,11 +394,13 @@ static void mrsQueueGhost(void)
 		float x = mrsTet.player.shape[i].x + ghostPos.x;
 		float y = mrsTet.player.shape[i].y + ghostPos.y;
 
-		color4* tint = static_cast<color4*>(darrayProduce(blockTintsAlpha));
-		color4* highlight = static_cast<color4*>(darrayProduce(
-			blockHighlightsAlpha));
-		mat4x4* transform = static_cast<mat4x4*>(darrayProduce(
-			blockTransformsAlpha));
+		color4* tint = blockTintsAlpha.produce();
+		if (!tint)
+			return;
+		color4* highlight = blockHighlightsAlpha.produce();
+		assert(highlight);
+		mat4x4* transform = blockTransformsAlpha.produce();
+		assert(transform);
 
 		*tint = minoColor(mrsTet.player.type);
 		tint->a *= MrsGhostDim;
@@ -422,17 +428,21 @@ static void mrsQueuePreview(void)
 		color4* highlight = nullptr;
 		mat4x4* transform = nullptr;
 		if (minoColor(mrsTet.player.preview).a == 1.0) {
-			tint = static_cast<color4*>(darrayProduce(blockTintsOpaque));
-			highlight = static_cast<color4*>(darrayProduce(
-				blockHighlightsOpaque));
-			transform = static_cast<mat4x4*>(darrayProduce(
-				blockTransformsOpaque));
+			tint = blockTintsOpaque.produce();
+			if (!tint)
+				return;
+			highlight = blockHighlightsOpaque.produce();
+			assert(highlight);
+			transform = blockTransformsOpaque.produce();
+			assert(transform);
 		} else {
-			tint = static_cast<color4*>(darrayProduce(blockTintsAlpha));
-			highlight = static_cast<color4*>(darrayProduce(
-				blockHighlightsAlpha));
-			transform = static_cast<mat4x4*>(darrayProduce(
-				blockTransformsAlpha));
+			tint = blockTintsAlpha.produce();
+			if (!tint)
+				return;
+			highlight = blockHighlightsAlpha.produce();
+			assert(highlight);
+			transform = blockTransformsAlpha.produce();
+			assert(transform);
 		}
 
 		*tint = minoColor(mrsTet.player.preview);
@@ -446,32 +456,40 @@ static void mrsQueuePreview(void)
  */
 static void mrsDrawQueuedBlocks(void)
 {
-	modelDraw(block, blockTransformsOpaque->count,
-		(color4*)blockTintsOpaque->data,
-		(color4*)blockHighlightsOpaque->data,
-		(mat4x4*)blockTransformsOpaque->data);
-	darrayClear(blockTintsOpaque);
-	darrayClear(blockHighlightsOpaque);
-	darrayClear(blockTransformsOpaque);
+	assert(blockTransformsOpaque.size == blockHighlightsOpaque.size);
+	assert(blockTransformsOpaque.size == blockTintsOpaque.size);
+	assert(blockTransformsAlpha.size == blockHighlightsAlpha.size);
+	assert(blockTransformsAlpha.size == blockTintsAlpha.size);
+
+	modelDraw(block, blockTransformsOpaque.size,
+		blockTintsOpaque.data(),
+		blockHighlightsOpaque.data(),
+		blockTransformsOpaque.data());
+	blockTintsOpaque.clear();
+	blockHighlightsOpaque.clear();
+	blockTransformsOpaque.clear();
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Depth prepass start
-	modelDraw(block, blockTransformsAlpha->count,
-		(color4*)blockTintsAlpha->data,
-		(color4*)blockHighlightsAlpha->data,
-		(mat4x4*)blockTransformsAlpha->data);
+	modelDraw(block, blockTransformsAlpha.size,
+		blockTintsAlpha.data(),
+		blockHighlightsAlpha.data(),
+		blockTransformsAlpha.data());
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE); // Depth prepass end
-	modelDraw(block, blockTransformsAlpha->count,
-		(color4*)blockTintsAlpha->data,
-		(color4*)blockHighlightsAlpha->data,
-		(mat4x4*)blockTransformsAlpha->data);
-	darrayClear(blockTintsAlpha);
-	darrayClear(blockHighlightsAlpha);
-	darrayClear(blockTransformsAlpha);
+	modelDraw(block, blockTransformsAlpha.size,
+		blockTintsAlpha.data(),
+		blockHighlightsAlpha.data(),
+		blockTransformsAlpha.data());
+	blockTintsAlpha.clear();
+	blockHighlightsAlpha.clear();
+	blockTransformsAlpha.clear();
 }
 
 static void mrsQueueBorder(point3f pos, size3f size, color4 color)
 {
-	color4* tint = static_cast<color4*>(darrayProduce(borderTints));
-	mat4x4* transform = static_cast<mat4x4*>(darrayProduce(borderTransforms));
+	color4* tint = borderTints.produce();
+	if (!tint)
+		return;
+	mat4x4* transform = borderTransforms.produce();
+	assert(transform);
 	*tint = color;
 	mat4x4_identity(*transform);
 	mat4x4_translate_in_place(*transform, pos.x, pos.y, pos.z);
@@ -555,10 +573,11 @@ static void mrsDrawBorder(void)
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 	}
 
-	modelDraw(border, borderTransforms->count,
-		(color4*)borderTints->data, nullptr, (mat4x4*)borderTransforms->data);
-	darrayClear(borderTints);
-	darrayClear(borderTransforms);
+	assert(borderTints.size == borderTransforms.size);
+	modelDraw(border, borderTransforms.size,
+		borderTints.data(), nullptr, borderTransforms.data());
+	borderTints.clear();
+	borderTransforms.clear();
 }
 
 static void mrsDebug(void)
@@ -616,15 +635,7 @@ void mrsDrawInit(void)
 	scene = modelCreateFlat("scene", sceneMeshSize, sceneMesh);
 	guide = modelCreateFlat("scene", guideMeshSize, guideMesh);
 	block = modelCreatePhong("block", blockMeshSize, blockMesh, blockMeshMat);
-	blockTintsOpaque = darrayCreate(sizeof(color4));
-	blockHighlightsOpaque = darrayCreate(sizeof(color4));
-	blockTransformsOpaque = darrayCreate(sizeof(mat4x4));
-	blockTintsAlpha = darrayCreate(sizeof(color4));
-	blockHighlightsAlpha = darrayCreate(sizeof(color4));
-	blockTransformsAlpha = darrayCreate(sizeof(mat4x4));
 	border = modelCreateFlat("border", borderMeshSize, borderMesh);
-	borderTints = darrayCreate(sizeof(color4));
-	borderTransforms = darrayCreate(sizeof(mat4x4));
 
 	initialized = true;
 	L.debug("Mrs draw initialized");
@@ -634,24 +645,8 @@ void mrsDrawCleanup(void)
 {
 	if (!initialized) return;
 
-	darrayDestroy(borderTransforms);
-	borderTransforms = nullptr;
-	darrayDestroy(borderTints);
-	borderTints = nullptr;
 	modelDestroy(border);
 	border = nullptr;
-	darrayDestroy(blockTransformsAlpha);
-	blockTransformsAlpha = nullptr;
-	darrayDestroy(blockHighlightsAlpha);
-	blockHighlightsAlpha = nullptr;
-	darrayDestroy(blockTintsAlpha);
-	blockTintsAlpha = nullptr;
-	darrayDestroy(blockTransformsOpaque);
-	blockTransformsOpaque = nullptr;
-	darrayDestroy(blockHighlightsOpaque);
-	blockHighlightsOpaque = nullptr;
-	darrayDestroy(blockTintsOpaque);
-	blockTintsOpaque = nullptr;
 	modelDestroy(block);
 	block = nullptr;
 	modelDestroy(guide);
