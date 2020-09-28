@@ -18,6 +18,7 @@
 #include "log.hpp"
 
 using minote::L;
+using minote::queue;
 
 static bool initialized = false;
 static GLFWwindow* window; ///< Underlying GLFWwindow object

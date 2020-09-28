@@ -1,15 +1,15 @@
 /**
  * A constant-size FIFO queue container
  * @file
- * Based on a circular buffer, tightly packed. Data is copied on insertion and
- * retrieval, so it is best used for passing small messages. All functions in
- * this interface are O(1).
+ * Based on a ring buffer, tightly packed. All methods are O(1).
  */
 
 #pragma once
 
-#include <cstdint>
+#include <cstdlib>
 #include <array>
+
+namespace minote {
 
 template<typename T, std::size_t N>
 struct queue {
@@ -63,3 +63,5 @@ struct queue {
 };
 
 #include "queue.tpp"
+
+}

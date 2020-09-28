@@ -14,6 +14,7 @@
 #include "log.hpp"
 
 using minote::L;
+using minote::queue;
 
 /// Queue holding collectedInputs ready to be retrieved
 static queue<Input, 64> inputs{};
