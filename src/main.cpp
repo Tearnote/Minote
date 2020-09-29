@@ -9,7 +9,12 @@
 #include <clocale>
 #include <thread>
 #ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN 1
+#endif //WIN32_LEAN_AND_MEAN
+#ifndef NOMINMAX
+#define NOMINMAX 1
+#endif //NOMINMAX
 #include <windows.h>
 #endif //_WIN32
 #include "window.hpp"
