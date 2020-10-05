@@ -5,7 +5,6 @@
 
 #include "aa.hpp"
 
-#include <assert.h>
 #include "smaa/AreaTex.h"
 #include "smaa/SearchTex.h"
 #include "renderer.hpp"
@@ -122,8 +121,8 @@ static bool initialized = false;
  */
 static void aaResize(size2i size)
 {
-	assert(size.x > 0);
-	assert(size.y > 0);
+	ASSERT(size.x > 0);
+	ASSERT(size.y > 0);
 	if (size.x == currentSize.x && size.y == currentSize.y) return;
 	currentSize.x = size.x;
 	currentSize.y = size.y;
@@ -395,7 +394,7 @@ void aaCleanup(void)
 
 void aaSwitch(AAMode mode)
 {
-	assert(initialized);
+	ASSERT(initialized);
 	if (mode == currentMode) return;
 	aaCleanup();
 	aaInit(mode);
@@ -403,7 +402,7 @@ void aaSwitch(AAMode mode)
 
 void aaBegin(void)
 {
-	assert(initialized);
+	ASSERT(initialized);
 	if (currentMode == AANone) return;
 	aaResize(windowGetSize());
 	if (currentMode == AASimple
@@ -414,7 +413,7 @@ void aaBegin(void)
 
 void aaEnd(void)
 {
-	assert(initialized);
+	ASSERT(initialized);
 	if (currentMode == AANone) return;
 
 	if (currentMode == AAFast) {

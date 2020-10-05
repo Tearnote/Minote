@@ -5,7 +5,6 @@
 
 #include "font.hpp"
 
-#include <assert.h>
 #include <hb-ft.h>
 #include "stb/stb_image.h"
 #include "base/util.hpp"
@@ -66,7 +65,7 @@ void fontInit(void)
 					atlasPath, FontList[i]);
 				goto cleanup;
 			}
-			assert(channels == 3);
+			ASSERT(channels == 3);
 
 			fonts[i].atlas = textureCreate();
 			textureStorage(fonts[i].atlas, size, GL_RGBA8);
@@ -97,7 +96,7 @@ void fontInit(void)
 				&atlasChar.atlasRight, &atlasChar.atlasTop);
 			if (parsed == 0 || parsed == EOF)
 				break;
-			assert(index == fonts[i].metrics.size);
+			ASSERT(index == fonts[i].metrics.size);
 
 			FontAtlasGlyph* nextChar = fonts[i].metrics.produce();
 			if (!nextChar)

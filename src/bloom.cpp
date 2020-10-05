@@ -5,7 +5,6 @@
 
 #include "bloom.hpp"
 
-#include <assert.h>
 #include "glad/glad.h"
 #include "renderer.hpp"
 #include "sys/window.hpp"
@@ -65,8 +64,8 @@ static bool initialized = false;
  */
 static void bloomResize(size2i size)
 {
-	assert(size.x > 0);
-	assert(size.y > 0);
+	ASSERT(size.x > 0);
+	ASSERT(size.y > 0);
 	if (size.x == currentSize.x && size.y == currentSize.y) return;
 	currentSize.x = size.x;
 	currentSize.y = size.y;
@@ -137,7 +136,7 @@ void bloomCleanup(void)
 
 void bloomApply(void)
 {
-	assert(initialized);
+	ASSERT(initialized);
 	bloomResize(windowGetSize());
 
 	// Prepare the image for bloom

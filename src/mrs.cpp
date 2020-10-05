@@ -5,7 +5,6 @@
 
 #include "mrs.hpp"
 
-#include <assert.h>
 #include <stdint.h>
 #include <time.h>
 #include "mrsdef.hpp"
@@ -108,7 +107,7 @@ static bool tryKicks(spin prevRotation)
  */
 static void rotate(int direction)
 {
-	assert(direction == 1 || direction == -1);
+	ASSERT(direction == 1 || direction == -1);
 	spin prevRotation = mrsTet.player.rotation;
 	point2i prevPosition = mrsTet.player.pos;
 
@@ -195,7 +194,7 @@ static void rotate(int direction)
  */
 static void shift(int direction)
 {
-	assert(direction == 1 || direction == -1);
+	ASSERT(direction == 1 || direction == -1);
 	mrsTet.player.pos.x += direction;
 	if (pieceOverlapsField(&mrsTet.player.shape, mrsTet.player.pos, mrsTet.field)) {
 		mrsTet.player.pos.x -= direction;
@@ -217,7 +216,7 @@ static mino randomPiece(void)
 	size_t tokenTotal = 0;
 	for (size_t i = 0; i < countof(mrsTet.player.tokens); i += 1)
 		if (mrsTet.player.tokens[i] > 0) tokenTotal += mrsTet.player.tokens[i];
-	assert(tokenTotal);
+	ASSERT(tokenTotal);
 
 	// Create and fill the token list
 	int tokenList[tokenTotal];
@@ -225,12 +224,12 @@ static mino randomPiece(void)
 	for (size_t i = 0; i < countof(mrsTet.player.tokens); i += 1) {
 		if (mrsTet.player.tokens[i] <= 0) continue;
 		for (size_t j = 0; j < mrsTet.player.tokens[i]; j += 1) {
-			assert(tokenListIndex < tokenTotal);
+			ASSERT(tokenListIndex < tokenTotal);
 			tokenList[tokenListIndex] = i;
 			tokenListIndex += 1;
 		}
 	}
-	assert(tokenListIndex == tokenTotal);
+	ASSERT(tokenListIndex == tokenTotal);
 
 	// Pick a random token from the list and update the token distribution
 	int picked = tokenList[mrsTet.rng.randInt(tokenTotal)];
@@ -438,7 +437,7 @@ static void mrsUpdateInputs(const InputArray& inputs)
 	if (mrsTet.state != TetrionOutro) {
 		for (size_t i = 0; i < inputs.size; i += 1) {
 			const Input& in = inputs[i];
-			assert(in.type < InputSize);
+			ASSERT(in.type < InputSize);
 			mrsTet.player.inputMapRaw[in.type] = in.state;
 		}
 	} else { // Force-release everything on gameover
@@ -639,7 +638,7 @@ static void mrsUpdateWin(void)
 
 void mrsAdvance(const InputArray& inputs)
 {
-	assert(initialized);
+	ASSERT(initialized);
 
 	mrsUpdateInputs(inputs);
 	mrsUpdateState();

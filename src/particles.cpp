@@ -6,7 +6,6 @@
 #include "particles.hpp"
 
 #include <stdbool.h>
-#include <assert.h>
 #include <time.h>
 #include "cephes/protos.h"
 #include "base/varray.hpp"
@@ -68,7 +67,7 @@ void particlesCleanup(void)
 
 void particlesUpdate(void)
 {
-	assert(initialized);
+	ASSERT(initialized);
 
 	size_t numParticles = particles.size;
 	nsec currentTime = getTime();
@@ -82,7 +81,7 @@ void particlesUpdate(void)
 
 void particlesDraw(void)
 {
-	assert(initialized);
+	ASSERT(initialized);
 
 	double fresnelConst = sqrt(4.0 / Tau);
 
@@ -91,7 +90,7 @@ void particlesDraw(void)
 
 	for (size_t i = 0; i < numParticles; i += 1) {
 		Particle* current = &particles[i];
-		assert(current->spin > 0.0f);
+		ASSERT(current->spin > 0.0f);
 
 		Tween<float> progressTween = {
 			.from = 0.0f,
@@ -101,11 +100,11 @@ void particlesDraw(void)
 			.type = current->ease
 		};
 		float progress = progressTween.apply();
-		assert(progress >= 0.0f && progress <= 1.0f);
+		ASSERT(progress >= 0.0f && progress <= 1.0f);
 
 		double x;
 		double y;
-		assert(current->spin > 0.0f);
+		ASSERT(current->spin > 0.0f);
 		float distance = progress * current->distance * current->spin;
 		fresnl(distance * fresnelConst, &y, &x);
 		x = x / fresnelConst / current->spin;
@@ -126,7 +125,7 @@ void particlesDraw(void)
 			angle *= -1.0f;
 
 		color4* tint = particleTints.produce();
-		assert(tint);
+		ASSERT(tint);
 		*tint = current->color;
 
 		// Shimmer mitigation
@@ -139,7 +138,7 @@ void particlesDraw(void)
 		}
 
 		mat4x4* transform = particleTransforms.produce();
-		assert(transform);
+		ASSERT(transform);
 		mat4x4 translated = {0};
 		mat4x4_translate(translated, x, y, current->origin.z);
 		mat4x4 rotated = {0};
@@ -148,7 +147,7 @@ void particlesDraw(void)
 	}
 
 	numParticles = particleTransforms.size;
-	assert(particleTints.size == particleTransforms.size);
+	ASSERT(particleTints.size == particleTransforms.size);
 
 	modelDraw(particle, numParticles,
 		particleTints.data(),
@@ -161,9 +160,9 @@ void particlesDraw(void)
 
 void particlesGenerate(point3f position, size_t count, ParticleParams* params)
 {
-	assert(initialized);
-	assert(count);
-	assert(params);
+	ASSERT(initialized);
+	ASSERT(count);
+	ASSERT(params);
 
 	for (size_t i = 0; i < count; i += 1) {
 		Particle* newParticle = particles.produce();

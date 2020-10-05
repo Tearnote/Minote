@@ -5,7 +5,6 @@
 
 #include "mrsdraw.hpp"
 
-#include <assert.h>
 #include "particles.hpp"
 #include "mrsdef.hpp"
 #include "debug.hpp"
@@ -221,17 +220,17 @@ static void mrsQueueField(void)
 			if (!tint)
 				return;
 			highlight = blockHighlightsOpaque.produce();
-			assert(highlight);
+			ASSERT(highlight);
 			transform = blockTransformsOpaque.produce();
-			assert(transform);
+			ASSERT(transform);
 		} else {
 			tint = blockTintsAlpha.produce();
 			if (!tint)
 				return;
 			highlight = blockHighlightsAlpha.produce();
-			assert(highlight);
+			ASSERT(highlight);
 			transform = blockTransformsAlpha.produce();
-			assert(transform);
+			ASSERT(transform);
 		}
 
 		*tint = minoColor(type);
@@ -338,17 +337,17 @@ static void mrsQueuePlayer(void)
 			if (!tint)
 				return;
 			highlight = blockHighlightsOpaque.produce();
-			assert(highlight);
+			ASSERT(highlight);
 			transform = blockTransformsOpaque.produce();
-			assert(transform);
+			ASSERT(transform);
 		} else {
 			tint = blockTintsAlpha.produce();
 			if (!tint)
 				return;
 			highlight = blockHighlightsAlpha.produce();
-			assert(highlight);
+			ASSERT(highlight);
 			transform = blockTransformsAlpha.produce();
-			assert(transform);
+			ASSERT(transform);
 		}
 
 		// Insert calculated values
@@ -395,9 +394,9 @@ static void mrsQueueGhost(void)
 		if (!tint)
 			return;
 		color4* highlight = blockHighlightsAlpha.produce();
-		assert(highlight);
+		ASSERT(highlight);
 		mat4x4* transform = blockTransformsAlpha.produce();
-		assert(transform);
+		ASSERT(transform);
 
 		*tint = minoColor(mrsTet.player.type);
 		tint->a *= MrsGhostDim;
@@ -429,17 +428,17 @@ static void mrsQueuePreview(void)
 			if (!tint)
 				return;
 			highlight = blockHighlightsOpaque.produce();
-			assert(highlight);
+			ASSERT(highlight);
 			transform = blockTransformsOpaque.produce();
-			assert(transform);
+			ASSERT(transform);
 		} else {
 			tint = blockTintsAlpha.produce();
 			if (!tint)
 				return;
 			highlight = blockHighlightsAlpha.produce();
-			assert(highlight);
+			ASSERT(highlight);
 			transform = blockTransformsAlpha.produce();
-			assert(transform);
+			ASSERT(transform);
 		}
 
 		*tint = minoColor(mrsTet.player.preview);
@@ -453,10 +452,10 @@ static void mrsQueuePreview(void)
  */
 static void mrsDrawQueuedBlocks(void)
 {
-	assert(blockTransformsOpaque.size == blockHighlightsOpaque.size);
-	assert(blockTransformsOpaque.size == blockTintsOpaque.size);
-	assert(blockTransformsAlpha.size == blockHighlightsAlpha.size);
-	assert(blockTransformsAlpha.size == blockTintsAlpha.size);
+	ASSERT(blockTransformsOpaque.size == blockHighlightsOpaque.size);
+	ASSERT(blockTransformsOpaque.size == blockTintsOpaque.size);
+	ASSERT(blockTransformsAlpha.size == blockHighlightsAlpha.size);
+	ASSERT(blockTransformsAlpha.size == blockTintsAlpha.size);
 
 	modelDraw(block, blockTransformsOpaque.size,
 		blockTintsOpaque.data(),
@@ -486,7 +485,7 @@ static void mrsQueueBorder(point3f pos, size3f size, color4 color)
 	if (!tint)
 		return;
 	mat4x4* transform = borderTransforms.produce();
-	assert(transform);
+	ASSERT(transform);
 	*tint = color;
 	mat4x4_identity(*transform);
 	mat4x4_translate_in_place(*transform, pos.x, pos.y, pos.z);
@@ -570,7 +569,7 @@ static void mrsDrawBorder(void)
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 	}
 
-	assert(borderTints.size == borderTransforms.size);
+	ASSERT(borderTints.size == borderTransforms.size);
 	modelDraw(border, borderTransforms.size,
 		borderTints.data(), nullptr, borderTransforms.data());
 	borderTints.clear();
@@ -657,7 +656,7 @@ void mrsDrawCleanup(void)
 
 void mrsDraw(void)
 {
-	assert(initialized);
+	ASSERT(initialized);
 
 	glClearColor(0.0185f, 0.029f, 0.0944f, 1.0f); //TODO make into layer
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);

@@ -5,7 +5,6 @@
 
 #include "world.hpp"
 
-#include <assert.h>
 #include "linmath/linmath.h"
 #include "opengl.hpp"
 #include "sys/window.hpp"
@@ -36,8 +35,8 @@ static bool initialized = false;
  */
 static void worldResize(size2i size)
 {
-	assert(size.x > 0);
-	assert(size.y > 0);
+	ASSERT(size.x > 0);
+	ASSERT(size.y > 0);
 	if (size.x == currentSize.x && size.y == currentSize.y) return;
 	currentSize.x = size.x;
 	currentSize.y = size.y;

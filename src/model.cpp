@@ -5,7 +5,6 @@
 
 #include "model.hpp"
 
-#include <assert.h>
 #include "world.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"
@@ -102,7 +101,7 @@ void modelCleanup(void)
  */
 static void modelDestroyFlat(ModelFlat* m)
 {
-	assert(m);
+	ASSERT(m);
 	glDeleteVertexArrays(1, &m->vao);
 	m->vao = 0;
 	glDeleteBuffers(1, &m->transforms);
@@ -125,7 +124,7 @@ static void modelDestroyFlat(ModelFlat* m)
  */
 static void modelDestroyPhong(ModelPhong* m)
 {
-	assert(m);
+	ASSERT(m);
 	glDeleteVertexArrays(1, &m->vao);
 	m->vao = 0;
 	glDeleteBuffers(1, &m->transforms);
@@ -156,15 +155,15 @@ static void modelDrawFlat(ModelFlat* m, size_t instances,
 	color4 tints[], color4 highlights[],
 	mat4x4 transforms[])
 {
-	assert(initialized);
-	assert(m);
-	assert(m->base.type == ModelTypeFlat);
-	assert(m->vao);
-	assert(m->base.name);
-	assert(m->vertices);
-	assert(m->tints);
-	assert(m->transforms);
-	assert(transforms);
+	ASSERT(initialized);
+	ASSERT(m);
+	ASSERT(m->base.type == ModelTypeFlat);
+	ASSERT(m->vao);
+	ASSERT(m->base.name);
+	ASSERT(m->vertices);
+	ASSERT(m->tints);
+	ASSERT(m->transforms);
+	ASSERT(transforms);
 	if (!instances) return;
 
 	glBindVertexArray(m->vao);
@@ -212,16 +211,16 @@ static void modelDrawPhong(ModelPhong* m, size_t instances,
 	color4 tints[], color4 highlights[],
 	mat4x4 transforms[])
 {
-	assert(initialized);
-	assert(m);
-	assert(m->base.type == ModelTypePhong);
-	assert(m->vao);
-	assert(m->base.name);
-	assert(m->vertices);
-	assert(m->normals);
-	assert(m->tints);
-	assert(m->transforms);
-	assert(transforms);
+	ASSERT(initialized);
+	ASSERT(m);
+	ASSERT(m->base.type == ModelTypePhong);
+	ASSERT(m->vao);
+	ASSERT(m->base.name);
+	ASSERT(m->vertices);
+	ASSERT(m->normals);
+	ASSERT(m->tints);
+	ASSERT(m->transforms);
+	ASSERT(transforms);
 	if (!instances) return;
 
 	glBindVertexArray(m->vao);
@@ -272,10 +271,10 @@ static void modelDrawPhong(ModelPhong* m, size_t instances,
 static void modelGenerateNormals(size_t numVertices,
 	VertexPhong vertices[], point3f normalData[])
 {
-	assert(numVertices);
-	assert(vertices);
-	assert(normalData);
-	assert(numVertices % 3 == 0);
+	ASSERT(numVertices);
+	ASSERT(vertices);
+	ASSERT(normalData);
+	ASSERT(numVertices % 3 == 0);
 	for (size_t i = 0; i < numVertices; i += 3) {
 		vec3 v0 = {vertices[i + 0].pos.x,
 		           vertices[i + 0].pos.y,
@@ -308,9 +307,9 @@ static void modelGenerateNormals(size_t numVertices,
 Model* modelCreateFlat(const char* name,
 	size_t numVertices, VertexFlat vertices[])
 {
-	assert(name);
-	assert(numVertices);
-	assert(vertices);
+	ASSERT(name);
+	ASSERT(numVertices);
+	ASSERT(vertices);
 	auto* m = allocate<ModelFlat>();
 	m->base.type = ModelTypeFlat;
 	m->base.name = name;
@@ -365,9 +364,9 @@ Model* modelCreatePhong(const char* name,
 	size_t numVertices, VertexPhong vertices[],
 	MaterialPhong material)
 {
-	assert(name);
-	assert(numVertices);
-	assert(vertices);
+	ASSERT(name);
+	ASSERT(numVertices);
+	ASSERT(vertices);
 	auto* m = allocate<ModelPhong>();
 	m->base.type = ModelTypePhong;
 	m->base.name = name;
@@ -379,7 +378,7 @@ Model* modelCreatePhong(const char* name,
 	glBufferData(GL_ARRAY_BUFFER, sizeof(VertexPhong) * m->numVertices,
 		vertices, GL_STATIC_DRAW);
 	point3f normalData[m->numVertices];
-	assert(sizeof(normalData) == sizeof(point3f) * m->numVertices);
+	ASSERT(sizeof(normalData) == sizeof(point3f) * m->numVertices);
 	arrayClear(normalData);
 	modelGenerateNormals(m->numVertices, vertices, normalData);
 	glGenBuffers(1, &m->normals);
@@ -438,7 +437,7 @@ Model* modelCreatePhong(const char* name,
 void modelDestroy(Model* m)
 {
 	if (!m) return;
-	assert(m->type > ModelTypeNone && m->type < ModelTypeSize);
+	ASSERT(m->type > ModelTypeNone && m->type < ModelTypeSize);
 	switch (m->type) {
 	case ModelTypeFlat:
 		modelDestroyFlat((ModelFlat*)m);
@@ -447,7 +446,7 @@ void modelDestroy(Model* m)
 		modelDestroyPhong((ModelPhong*)m);
 		break;
 	default:
-		assert(false);
+		ASSERT(false);
 	}
 }
 
@@ -455,9 +454,9 @@ void modelDraw(Model* m, size_t instances,
 	color4 tints[], color4 highlights[],
 	mat4x4 transforms[])
 {
-	assert(m);
-	assert(m->type > ModelTypeNone && m->type < ModelTypeSize);
-	assert(transforms);
+	ASSERT(m);
+	ASSERT(m->type > ModelTypeNone && m->type < ModelTypeSize);
+	ASSERT(transforms);
 
 	switch (m->type) {
 	case ModelTypeFlat:
@@ -468,6 +467,6 @@ void modelDraw(Model* m, size_t instances,
 			transforms);
 		break;
 	default:
-		assert(false);
+		ASSERT(false);
 	}
 }

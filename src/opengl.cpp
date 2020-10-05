@@ -5,7 +5,6 @@
 
 #include "opengl.hpp"
 
-#include <assert.h>
 #include "sys/window.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"
@@ -23,7 +22,7 @@ Texture* textureCreate(void)
 {
 	auto* t = allocate<Texture>();
 	glGenTextures(1, &t->id);
-	assert(t->id);
+	ASSERT(t->id);
 	glBindTexture(GL_TEXTURE_2D, t->id);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -41,8 +40,8 @@ void textureDestroy(Texture* t)
 
 void textureFilter(Texture* t, GLenum filteringMode)
 {
-	assert(t);
-	assert(filteringMode == GL_NEAREST || filteringMode == GL_LINEAR);
+	ASSERT(t);
+	ASSERT(filteringMode == GL_NEAREST || filteringMode == GL_LINEAR);
 	glBindTexture(GL_TEXTURE_2D, t->id);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filteringMode);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filteringMode);
@@ -50,9 +49,9 @@ void textureFilter(Texture* t, GLenum filteringMode)
 
 void textureStorage(Texture* t, size2i size, GLenum format)
 {
-	assert(t);
-	assert(size.x > 0);
-	assert(size.y > 0);
+	ASSERT(t);
+	ASSERT(size.x > 0);
+	ASSERT(size.y > 0);
 	glBindTexture(GL_TEXTURE_2D, t->id);
 	glTexImage2D(GL_TEXTURE_2D, 0, format, size.x, size.y,
 		0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
@@ -62,10 +61,10 @@ void textureStorage(Texture* t, size2i size, GLenum format)
 
 void textureData(Texture* t, void* data, GLenum format, GLenum type)
 {
-	assert(t);
-	assert(t->size.x > 0);
-	assert(t->size.y > 0);
-	assert(data);
+	ASSERT(t);
+	ASSERT(t->size.x > 0);
+	ASSERT(t->size.y > 0);
+	ASSERT(data);
 	glBindTexture(GL_TEXTURE_2D, t->id);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, t->size.x, t->size.y,
 		format, type, data);
@@ -73,7 +72,7 @@ void textureData(Texture* t, void* data, GLenum format, GLenum type)
 
 void textureUse(Texture* t, TextureUnit unit)
 {
-	assert(t);
+	ASSERT(t);
 	glActiveTexture(unit);
 	glBindTexture(GL_TEXTURE_2D, t->id);
 }
@@ -82,7 +81,7 @@ TextureMS* textureMSCreate(void)
 {
 	auto* t = allocate<TextureMS>();
 	glGenTextures(1, &t->id);
-	assert(t->id);
+	ASSERT(t->id);
 	return t;
 }
 
@@ -95,10 +94,10 @@ void textureMSDestroy(TextureMS* t)
 
 void textureMSStorage(TextureMS* t, size2i size, GLenum format, GLsizei samples)
 {
-	assert(t);
-	assert(size.x > 0);
-	assert(size.y > 0);
-	assert(samples >= 2);
+	ASSERT(t);
+	ASSERT(size.x > 0);
+	ASSERT(size.y > 0);
+	ASSERT(samples >= 2);
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t->id);
 	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, format,
 		size.x, size.y, GL_TRUE);
@@ -109,7 +108,7 @@ void textureMSStorage(TextureMS* t, size2i size, GLenum format, GLsizei samples)
 
 void textureMSUse(TextureMS* t, TextureUnit unit)
 {
-	assert(t);
+	ASSERT(t);
 	glActiveTexture(unit);
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t->id);
 }
@@ -130,9 +129,9 @@ void renderbufferDestroy(Renderbuffer* r)
 
 void renderbufferStorage(Renderbuffer* r, size2i size, GLenum format)
 {
-	assert(r);
-	assert(size.x > 0);
-	assert(size.y > 0);
+	ASSERT(r);
+	ASSERT(size.x > 0);
+	ASSERT(size.y > 0);
 	glBindRenderbuffer(GL_RENDERBUFFER, r->id);
 	glRenderbufferStorage(GL_RENDERBUFFER, format, size.x, size.y);
 }
@@ -154,10 +153,10 @@ void renderbufferMSDestroy(RenderbufferMS* r)
 void renderbufferMSStorage(RenderbufferMS* r, size2i size, GLenum format,
 	GLsizei samples)
 {
-	assert(r);
-	assert(size.x > 0);
-	assert(size.y > 0);
-	assert(samples >= 2);
+	ASSERT(r);
+	ASSERT(size.x > 0);
+	ASSERT(size.y > 0);
+	ASSERT(samples >= 2);
 	glBindRenderbuffer(GL_RENDERBUFFER, r->id);
 	glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, format,
 		size.x, size.y);
@@ -170,7 +169,7 @@ Framebuffer* framebufferCreate(void)
 {
 	auto* f = allocate<Framebuffer>();
 	glGenFramebuffers(1, &f->id);
-	assert(f->id);
+	ASSERT(f->id);
 	return f;
 }
 
@@ -183,16 +182,16 @@ void framebufferDestroy(Framebuffer* f)
 
 void framebufferTexture(Framebuffer* f, Texture* t, GLenum attachment)
 {
-	assert(f);
-	assert(t);
+	ASSERT(f);
+	ASSERT(t);
 	framebufferUse(f);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, t->id, 0);
 }
 
 void framebufferTextureMS(Framebuffer* f, TextureMS* t, GLenum attachment)
 {
-	assert(f);
-	assert(t);
+	ASSERT(f);
+	ASSERT(t);
 	framebufferUse(f);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment,
 		GL_TEXTURE_2D_MULTISAMPLE, t->id, 0);
@@ -200,8 +199,8 @@ void framebufferTextureMS(Framebuffer* f, TextureMS* t, GLenum attachment)
 
 void framebufferRenderbuffer(Framebuffer* f, Renderbuffer* r, GLenum attachment)
 {
-	assert(f);
-	assert(r);
+	ASSERT(f);
+	ASSERT(r);
 	framebufferUse(f);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER,
 		r->id);
@@ -210,8 +209,8 @@ void framebufferRenderbuffer(Framebuffer* f, Renderbuffer* r, GLenum attachment)
 void
 framebufferRenderbufferMS(Framebuffer* f, RenderbufferMS* r, GLenum attachment)
 {
-	assert(f);
-	assert(r);
+	ASSERT(f);
+	ASSERT(r);
 	framebufferUse(f);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER,
 		r->id);
@@ -219,8 +218,8 @@ framebufferRenderbufferMS(Framebuffer* f, RenderbufferMS* r, GLenum attachment)
 
 void framebufferBuffers(Framebuffer* f, GLsizei count)
 {
-	assert(f);
-	assert(count >= 1 && count <= 16);
+	ASSERT(f);
+	ASSERT(count >= 1 && count <= 16);
 	GLenum attachments[count];
 	for (size_t i = 0; i <= count; i += 1)
 		attachments[i] = GL_COLOR_ATTACHMENT0 + i;
@@ -231,7 +230,7 @@ void framebufferBuffers(Framebuffer* f, GLsizei count)
 
 bool framebufferCheck(Framebuffer* f)
 {
-	assert(f);
+	ASSERT(f);
 	framebufferUse(f);
 	return glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
 }
@@ -247,7 +246,7 @@ void framebufferUse(Framebuffer* f)
 
 void framebufferToScreen(Framebuffer* f)
 {
-	assert(f);
+	ASSERT(f);
 	framebufferUse(f);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	boundFb = 0;
@@ -260,10 +259,10 @@ void framebufferToScreen(Framebuffer* f)
 
 void framebufferBlit(Framebuffer* src, Framebuffer* dst, size2i size)
 {
-	assert(src);
-	assert(dst);
-	assert(size.x > 0);
-	assert(size.y > 0);
+	ASSERT(src);
+	ASSERT(dst);
+	ASSERT(size.x > 0);
+	ASSERT(size.y > 0);
 	framebufferUse(dst);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, src->id);
 	glBlitFramebuffer(0, 0, size.x, size.y,
@@ -280,9 +279,9 @@ void framebufferBlit(Framebuffer* src, Framebuffer* dst, size2i size)
  */
 static Shader shaderCreate(const char* name, const char* source, GLenum type)
 {
-	assert(name);
-	assert(source);
-	assert(type == GL_VERTEX_SHADER || type == GL_FRAGMENT_SHADER);
+	ASSERT(name);
+	ASSERT(source);
+	ASSERT(type == GL_VERTEX_SHADER || type == GL_FRAGMENT_SHADER);
 	Shader shader = glCreateShader(type);
 	glShaderSource(shader, 1, &source, nullptr);
 	glCompileShader(shader);
@@ -295,7 +294,7 @@ static Shader shaderCreate(const char* name, const char* source, GLenum type)
 		glDeleteShader(shader);
 		return 0;
 	}
-	assert(shader);
+	ASSERT(shader);
 	L.debug("Compiled %s shader %s",
 		type == GL_VERTEX_SHADER ? "vertex" : "fragment", name);
 	return shader;
@@ -314,11 +313,11 @@ static void shaderDestroy(Shader shader)
 void* _programCreate(size_t size, const char* vertName, const char* vertSrc,
 	const char* fragName, const char* fragSrc)
 {
-	assert(size);
-	assert(vertName);
-	assert(vertSrc);
-	assert(fragName);
-	assert(fragSrc);
+	ASSERT(size);
+	ASSERT(vertName);
+	ASSERT(vertSrc);
+	ASSERT(fragName);
+	ASSERT(fragSrc);
 	// Overallocating memory so that it fits in the user's provided struct type
 	auto* result = reinterpret_cast<ProgramBase*>(allocate<uint8_t>(size));
 	result->vertName = vertName;
@@ -367,8 +366,8 @@ void _programDestroy(ProgramBase* program)
 
 Uniform _programUniform(ProgramBase* program, const char* uniform)
 {
-	assert(program);
-	assert(uniform);
+	ASSERT(program);
+	ASSERT(uniform);
 	Uniform result = glGetUniformLocation(program->id, uniform);
 	if (result == -1)
 		L.warn("\"%s\" uniform not available in shader program %s+%s",
@@ -379,8 +378,8 @@ Uniform _programUniform(ProgramBase* program, const char* uniform)
 TextureUnit
 _programSampler(ProgramBase* program, const char* sampler, TextureUnit unit)
 {
-	assert(program);
-	assert(sampler);
+	ASSERT(program);
+	ASSERT(sampler);
 	Uniform uniform = programUniform(program, sampler);
 	if (uniform != -1) {
 		programUse(program);
@@ -391,7 +390,7 @@ _programSampler(ProgramBase* program, const char* sampler, TextureUnit unit)
 
 void _programUse(ProgramBase* program)
 {
-	assert(program);
+	ASSERT(program);
 	if (program->id == boundProgram) return;
 	glUseProgram(program->id);
 	boundProgram = program->id;

@@ -8,7 +8,6 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
-#include <assert.h>
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 #include "linmath/linmath.h"
@@ -74,7 +73,7 @@ static bool syncEnabled = true;
  */
 static void rendererSync(void)
 {
-	assert(initialized);
+	ASSERT(initialized);
 
 	// Create sync model if it doesn't exist yet
 	if (!sync) {
@@ -107,9 +106,9 @@ static void rendererSync(void)
  */
 static void rendererResize(size2i size)
 {
-	assert(initialized);
-	assert(size.x > 0);
-	assert(size.y > 0);
+	ASSERT(initialized);
+	ASSERT(size.x > 0);
+	ASSERT(size.y > 0);
 	if (viewportSize.x == size.x && viewportSize.y == size.y) return;
 	viewportSize.x = size.x;
 	viewportSize.y = size.y;
@@ -206,7 +205,7 @@ Texture* rendererTexture(void)
 
 void rendererFrameBegin(void)
 {
-	assert(initialized);
+	ASSERT(initialized);
 
 	rendererResize(windowGetSize());
 	framebufferUse(renderFb);
@@ -214,7 +213,7 @@ void rendererFrameBegin(void)
 
 void rendererFrameEnd(void)
 {
-	assert(initialized);
+	ASSERT(initialized);
 
 	glDisable(GL_BLEND);
 	framebufferUse(nullptr);
@@ -229,7 +228,7 @@ void rendererFrameEnd(void)
 
 void rendererBlit(Texture* t, GLfloat boost)
 {
-	assert(t);
+	ASSERT(t);
 	programUse(blit);
 	textureUse(t, blit->image);
 	glUniform1f(blit->boost, boost);

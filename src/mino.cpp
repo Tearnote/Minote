@@ -5,7 +5,6 @@
 
 #include "mino.hpp"
 
-#include <assert.h>
 #include "base/util.hpp"
 
 using namespace minote;
@@ -40,14 +39,14 @@ void spinCounterClockwise(spin* val)
 
 color4 minoColor(mino type)
 {
-	assert(type >= MinoNone && type < MinoSize);
+	ASSERT(type >= MinoNone && type < MinoSize);
 	return MinoColors[type];
 }
 
 void pieceRotate(piece p, spin rotation)
 {
-	assert(p);
-	assert(rotation < SpinSize);
+	ASSERT(p);
+	ASSERT(rotation < SpinSize);
 
 	for (int i = 0; i < rotation; i += 1) { // Repeat as many times as rotations
 		for (size_t j = 0; j < MinosPerPiece; j += 1) { // Rotate each mino
@@ -64,7 +63,7 @@ void pieceRotate(piece p, spin rotation)
 
 Field* fieldCreate(size2i size)
 {
-	assert(size.x > 0 && size.y > 0);
+	ASSERT(size.x > 0 && size.y > 0);
 	auto* result = allocate<Field>();
 	result->size.x = size.x;
 	result->size.y = size.y;
@@ -74,7 +73,7 @@ Field* fieldCreate(size2i size)
 
 void fieldDestroy(Field* f)
 {
-	assert(f);
+	ASSERT(f);
 	free(f->grid);
 	f->grid = nullptr;
 	free(f);
@@ -83,8 +82,8 @@ void fieldDestroy(Field* f)
 
 void fieldSet(Field* f, point2i place, mino value)
 {
-	assert(f);
-	assert(value < MinoSize);
+	ASSERT(f);
+	ASSERT(value < MinoSize);
 	if (place.x < 0 || place.x >= f->size.x) return;
 	if (place.y < 0 || place.y >= f->size.y) return;
 	f->grid[place.y * f->size.x + place.x] = value;
@@ -92,7 +91,7 @@ void fieldSet(Field* f, point2i place, mino value)
 
 mino fieldGet(Field* f, point2i place)
 {
-	assert(f);
+	ASSERT(f);
 	if (place.x < 0 || place.x >= f->size.x) return MinoGarbage;
 	if (place.y < 0) return MinoGarbage;
 	if (place.y >= f->size.y) return MinoNone;
@@ -101,7 +100,7 @@ mino fieldGet(Field* f, point2i place)
 
 void fieldClearRow(Field* f, int row)
 {
-	assert(f);
+	ASSERT(f);
 	for (int x = 0; x < f->size.x; x += 1)
 		fieldSet(f, (point2i){
 			x,
@@ -111,7 +110,7 @@ void fieldClearRow(Field* f, int row)
 
 void fieldDropRow(Field* f, int row)
 {
-	assert(f);
+	ASSERT(f);
 	for (int y = row; y < f->size.y; y += 1) {
 		for (int x = 0; x < f->size.x; x += 1) {
 			fieldSet(f, (point2i){
@@ -127,7 +126,7 @@ void fieldDropRow(Field* f, int row)
 
 bool fieldIsRowFull(Field* f, int row)
 {
-	assert(f);
+	ASSERT(f);
 	for (int x = 0; x < f->size.x; x += 1) {
 		if (!fieldGet(f, (point2i){
 			x,
@@ -140,7 +139,7 @@ bool fieldIsRowFull(Field* f, int row)
 
 bool fieldIsEmpty(Field* f)
 {
-	assert(f);
+	ASSERT(f);
 	for (int y = 0; y < f->size.y; y += 1) {
 		for (int x = 0; x < f->size.x; x += 1) {
 			if (fieldGet(f, (point2i){
@@ -155,9 +154,9 @@ bool fieldIsEmpty(Field* f)
 
 void fieldStampPiece(Field* f, piece* piece, point2i place, mino type)
 {
-	assert(f);
-	assert(piece);
-	assert(type < MinoSize);
+	ASSERT(f);
+	ASSERT(piece);
+	ASSERT(type < MinoSize);
 	for (int i = 0; i < MinosPerPiece; i += 1) {
 		fieldSet(f, (point2i){
 			place.x + (*piece)[i].x,
@@ -168,8 +167,8 @@ void fieldStampPiece(Field* f, piece* piece, point2i place, mino type)
 
 bool pieceOverlapsField(piece* p, point2i pPos, Field* field)
 {
-	assert(p);
-	assert(field);
+	ASSERT(p);
+	ASSERT(field);
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
 		point2i cell = {
 			(*p)[i].x + pPos.x,

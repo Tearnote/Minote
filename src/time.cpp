@@ -5,7 +5,6 @@
 
 #include "time.hpp"
 
-#include <assert.h>
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 #ifdef _WIN32
@@ -14,9 +13,9 @@
 #include <string.h>
 #include <errno.h>
 #include <time.h>
-#include "util.h"
-#include "log.h"
+#include "base/log.hpp"
 #endif //_WIN32
+#include "base/util.hpp"
 
 nsec getTime(void)
 {
@@ -25,7 +24,7 @@ nsec getTime(void)
 
 void sleepFor(nsec duration)
 {
-	assert(duration > 0);
+	ASSERT(duration > 0);
 #ifdef _WIN32
 	Sleep(duration / (secToNsec(1) / 1000));
 #else //_WIN32

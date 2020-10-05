@@ -5,7 +5,6 @@
 
 #include "mapper.hpp"
 
-#include <assert.h>
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 #include "sys/window.hpp"
@@ -68,7 +67,7 @@ static InputType rawKeyToType(int key)
  */
 static bool actionToState(int action)
 {
-	assert(action == GLFW_PRESS || action == GLFW_RELEASE);
+	ASSERT(action == GLFW_PRESS || action == GLFW_RELEASE);
 	if (action == GLFW_PRESS)
 		return true;
 	else
@@ -89,7 +88,7 @@ void mapperCleanup(void)
 
 void mapperUpdate(void)
 {
-	assert(initialized);
+	ASSERT(initialized);
 	KeyInput key;
 	while (windowInputDequeue(&key)) {
 		InputType type = rawKeyToType(key.key);
@@ -108,8 +107,8 @@ void mapperUpdate(void)
 
 bool mapperDequeue(Input* input)
 {
-	assert(initialized);
-	assert(input);
+	ASSERT(initialized);
+	ASSERT(input);
 	Input* result = inputs.dequeue();
 	if (result)
 		*input = *result;
@@ -118,8 +117,8 @@ bool mapperDequeue(Input* input)
 
 bool mapperPeek(Input* input)
 {
-	assert(initialized);
-	assert(input);
+	ASSERT(initialized);
+	ASSERT(input);
 	Input* result = inputs.peek();
 	if (result)
 		*input = *result;

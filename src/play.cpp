@@ -5,7 +5,6 @@
 
 #include "play.hpp"
 
-#include <assert.h>
 #include "sys/window.hpp"
 #include "mapper.hpp"
 #include "base/varray.hpp"
@@ -47,7 +46,7 @@ void playCleanup(void)
 
 void playUpdate(void)
 {
-	assert(initialized);
+	ASSERT(initialized);
 
 	// Update as many times as we need to catch up
 	while (nextUpdate <= getTime()) {
@@ -71,6 +70,6 @@ void playUpdate(void)
 
 void playDraw(void)
 {
-	assert(initialized);
+	ASSERT(initialized);
 	mrsDraw();
 }

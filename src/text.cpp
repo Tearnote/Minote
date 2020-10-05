@@ -6,7 +6,6 @@
 #include "text.hpp"
 
 #include <stdbool.h>
-#include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include "linmath/linmath.h"
@@ -215,8 +214,8 @@ void textCleanup(void)
 
 void textQueue(FontType font, float size, point3f pos, color4 color, const char* fmt, ...)
 {
-	assert(initialized);
-	assert(fmt);
+	ASSERT(initialized);
+	ASSERT(fmt);
 
 	va_list args;
 	va_start(args, fmt);
@@ -228,8 +227,8 @@ void textQueue(FontType font, float size, point3f pos, color4 color, const char*
 void textQueueDir(FontType font, float size, point3f pos, point3f dir, point3f up,
 	color4 color, const char* fmt, ...)
 {
-	assert(initialized);
-	assert(fmt);
+	ASSERT(initialized);
+	ASSERT(fmt);
 
 	va_list args;
 	va_start(args, fmt);
@@ -239,7 +238,7 @@ void textQueueDir(FontType font, float size, point3f pos, point3f dir, point3f u
 
 void textDraw(void)
 {
-	assert(initialized);
+	ASSERT(initialized);
 
 	for (size_t i = 0; i < FontSize; i += 1) {
 		if (!msdfGlyphs[i].size) continue;
