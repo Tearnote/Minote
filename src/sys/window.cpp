@@ -5,19 +5,18 @@
 
 #include "window.hpp"
 
+#include <cstdlib>
 #include <atomic>
 #include <mutex>
-#include <stdlib.h>
-#include <assert.h>
 #ifdef _WIN32
 #include <windows.h>
 #endif //_WIN32
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
-#include "../base/queue.hpp"
-#include "../debug.hpp"
-#include "../base/util.hpp"
-#include "../base/log.hpp"
+#include "base/queue.hpp"
+#include "base/util.hpp"
+#include "base/log.hpp"
+#include "debug.hpp"
 
 using namespace minote;
 
@@ -38,7 +37,7 @@ static auto glfwError() -> const char*
 	const int code = glfwGetError(&description);
 	if (code == GLFW_NO_ERROR)
 		return "No error";
-	assert(description);
+	ASSERT(description);
 	return description;
 }
 
@@ -54,7 +53,7 @@ static void
 keyCallback(GLFWwindow* w, int key, int scancode, int action, int mods)
 {
 	(void)w, (void)scancode, (void)mods;
-	assert(initialized);
+	ASSERT(initialized);
 	if (action == GLFW_REPEAT) return; // Key repeat is not needed
 	KeyInput input = {.key = key, .action = action, .timestamp = getTime()};
 	inputsMutex.lock();
@@ -71,7 +70,7 @@ keyCallback(GLFWwindow* w, int key, int scancode, int action, int mods)
 static void windowCloseCallback(GLFWwindow* w)
 {
 	(void)w;
-	assert(initialized);
+	ASSERT(initialized);
 	windowOpen = false;
 }
 
@@ -85,9 +84,9 @@ static void windowCloseCallback(GLFWwindow* w)
 static void framebufferResizeCallback(GLFWwindow* w, int width, int height)
 {
 	(void)w;
-	assert(initialized);
-	assert(width);
-	assert(height);
+	ASSERT(initialized);
+	ASSERT(width);
+	ASSERT(height);
 	viewportWidth = width;
 	viewportHeight = height;
 	L.debug("Window \"%s\" resized to %dx%d",
@@ -105,8 +104,8 @@ static void framebufferResizeCallback(GLFWwindow* w, int width, int height)
 static void windowScaleCallback(GLFWwindow* w, float xScale, float yScale)
 {
 	(void)w, (void)yScale;
-	assert(initialized);
-	assert(xScale);
+	ASSERT(initialized);
+	ASSERT(xScale);
 	viewportScale = xScale;
 	L.debug("Window \"%s\" DPI scaling changed to %f",
 		windowTitle, xScale);
@@ -114,8 +113,8 @@ static void windowScaleCallback(GLFWwindow* w, float xScale, float yScale)
 
 void windowInit(const char* title, size2i size, bool fullscreen)
 {
-	assert(title);
-	assert(size.x >= 0 && size.y >= 0);
+	ASSERT(title);
+	ASSERT(size.x >= 0 && size.y >= 0);
 	if (initialized) return;
 	windowTitle = title;
 	windowOpen = true;
@@ -178,61 +177,61 @@ void windowCleanup(void)
 
 void windowPoll(void)
 {
-	assert(initialized);
+	ASSERT(initialized);
 	glfwPollEvents();
 }
 
 bool windowIsOpen(void)
 {
-	assert(initialized);
+	ASSERT(initialized);
 	return windowOpen;
 }
 
 void windowClose(void)
 {
-	assert(initialized);
+	ASSERT(initialized);
 	windowOpen = false;
 }
 
 const char* windowGetTitle(void)
 {
-	assert(initialized);
+	ASSERT(initialized);
 	return windowTitle;
 }
 
 size2i windowGetSize(void)
 {
-	assert(initialized);
+	ASSERT(initialized);
 	return (size2i){viewportWidth, viewportHeight};
 }
 
 float windowGetScale(void)
 {
-	assert(initialized);
+	ASSERT(initialized);
 	return viewportScale;
 }
 
 void windowContextActivate(void)
 {
-	assert(initialized);
+	ASSERT(initialized);
 	glfwMakeContextCurrent(window);
 }
 
 void windowContextDeactivate(void)
 {
-	assert(initialized);
+	ASSERT(initialized);
 	glfwMakeContextCurrent(nullptr);
 }
 
 void windowFlip(void)
 {
-	assert(initialized);
+	ASSERT(initialized);
 	glfwSwapBuffers(window);
 }
 
 bool windowInputDequeue(KeyInput* input)
 {
-	assert(initialized);
+	ASSERT(initialized);
 	inputsMutex.lock();
 	KeyInput* result = inputs.dequeue();
 	if (result)
@@ -243,7 +242,7 @@ bool windowInputDequeue(KeyInput* input)
 
 bool windowInputPeek(KeyInput* input)
 {
-	assert(initialized);
+	ASSERT(initialized);
 	inputsMutex.lock();
 	KeyInput* result = inputs.dequeue();
 	if (result)
@@ -254,7 +253,7 @@ bool windowInputPeek(KeyInput* input)
 
 void windowInputClear(void)
 {
-	assert(initialized);
+	ASSERT(initialized);
 	inputsMutex.lock();
 	inputs.clear();
 	inputsMutex.unlock();
@@ -262,13 +261,13 @@ void windowInputClear(void)
 
 GLFWwindow* getRawWindow(void)
 {
-	assert(window);
+	ASSERT(window);
 	return window;
 }
 
 void Window::init()
 {
-	assert(!initialized);
+	ASSERT(!initialized);
 
 	if (glfwInit() == GLFW_FALSE)
 		L.fail("Failed to initialize GLFW: %s", glfwError());

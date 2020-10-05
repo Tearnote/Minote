@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <cstdarg>
 #include <cstring>
-#include <cassert>
 #include <cstdlib>
 #include <cstdio>
 #include <ctime>
@@ -31,7 +30,7 @@ static constexpr std::size_t MaxMessageLen{2048};
  */
 static void logTo(FILE* const file, const char msg[])
 {
-	assert(msg);
+	ASSERT(msg);
 
 	if (std::fputs(msg, file) == EOF) {
 		std::perror("Failed to write into logfile");
@@ -50,7 +49,7 @@ static void logTo(FILE* const file, const char msg[])
 static void logPrio(Log& log, const Log::Level level,
 	const char* const fmt, va_list& ap)
 {
-	assert(fmt);
+	ASSERT(fmt);
 	using Level = Log::Level;
 
 	if (level < log.level)
@@ -111,7 +110,7 @@ Log::~Log()
 
 void Log::enableFile(const char* const filepath)
 {
-	assert(filepath);
+	ASSERT(filepath);
 	if (file) {
 		warn("Not opening logfile %s: already logging to a file", filepath);
 		return;

@@ -96,7 +96,7 @@ add_custom_target(Preprocess_fonts DEPENDS ${FONT_OUTPUTS})
 add_dependencies(Preprocess_fonts msdf-atlas-gen)
 
 # Build the game
-set(C_INTERNALLIBS
+set(INTERNALLIBS
         lib/glad/glad.h lib/glad/glad.c lib/glad/KHR/khrplatform.h
         lib/linmath/linmath.h
         lib/pcg/pcg_basic.h lib/pcg/pcg_basic.c
@@ -105,11 +105,16 @@ set(C_INTERNALLIBS
         lib/cephes/protos.h lib/cephes/mconf.h
         lib/cephes/const.c lib/cephes/polevl.c lib/cephes/fresnl.c
         lib/stb/stb_image.h lib/stb/stb_image.c
-        lib/scope_guard/scope_guard.hpp)
+        lib/scope_guard/scope_guard.hpp
+        lib/PPK_ASSERT/ppk_assert.h lib/PPK_ASSERT/ppk_assert.cpp)
+add_compile_definitions(PPK_ASSERT_DISABLE_STL)
+add_compile_definitions(PPK_ASSERT_DISABLE_EXCEPTIONS)
+add_compile_definitions(PPK_ASSERT_DISABLE_IGNORE_LINE)
+add_compile_definitions(PPK_ASSERT_DEFAULT_LEVEL=Error)
 
-set(CXX_SOURCES
+set(SOURCES
         src/main.hpp src/main.cpp
-        src/base/util.hpp
+        src/base/util.hpp src/base/util.cpp
         src/base/types.hpp
         src/base/log.hpp src/base/log.cpp
         src/base/varray.hpp src/base/varray.tpp
@@ -137,7 +142,7 @@ set(CXX_SOURCES
         src/fontlist.hpp
         src/text.hpp src/text.cpp)
 
-add_executable(Minote ${CXX_SOURCES} ${C_INTERNALLIBS})
+add_executable(Minote ${SOURCES} ${INTERNALLIBS})
 target_compile_options(Minote PRIVATE
         $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
         -Wall -Wextra -fno-exceptions -fno-rtti>)
@@ -145,8 +150,9 @@ target_compile_options(Minote PRIVATE
 add_dependencies(Minote Preprocess_shaders)
 add_dependencies(Minote Preprocess_fonts)
 
-target_include_directories(Minote PRIVATE ${PROJECT_BINARY_DIR}/glsl)
+target_include_directories(Minote PRIVATE src)
 target_include_directories(Minote PRIVATE lib)
+target_include_directories(Minote PRIVATE ${PROJECT_BINARY_DIR}/glsl)
 target_include_directories(Minote PRIVATE ${GLFW_INCLUDE_DIRS})
 target_include_directories(Minote PRIVATE ${HARFBUZZ_INCLUDE_DIRS})
 target_include_directories(Minote PRIVATE ${FREETYPE_INCLUDE_DIRS})

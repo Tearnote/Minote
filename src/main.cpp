@@ -18,7 +18,6 @@
 #include <windows.h>
 #endif //_WIN32
 #include "sys/window.hpp"
-#include "base/util.hpp"
 #include "base/log.hpp"
 #include "debug.hpp"
 #include "game.hpp"

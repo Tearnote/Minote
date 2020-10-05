@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "../base/types.hpp"
-#include "../time.hpp"
+#include "base/types.hpp"
+#include "time.hpp"
 
 using minote::size2i;
 

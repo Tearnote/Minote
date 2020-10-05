@@ -46,3 +46,6 @@ retrieved on 2020-09-13, in Public Domain.
 
 [`scope_guard`](https://github.com/Neargye/scope_guard) retrieved on 2020-10-05,
 used under MIT license.
+
+[`PPK_ASSERT`](https://github.com/gpakosz/PPK_ASSERT) retrieved on 2020-10-05,
+used under WTFPL.

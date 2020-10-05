@@ -6,19 +6,22 @@
 #pragma once
 
 #include <type_traits>
-#include <cassert>
 #include <cstddef>
 #include <cstdlib> // Provide free()
 #include <cstring>
 #include <cstdio>
 #include <cmath>
 #include "scope_guard/scope_guard.hpp"
+#include "PPK_ASSERT/ppk_assert.h"
 #include "pcg/pcg_basic.h"
 
 namespace minote {
 
 /// Making the DEFER feature from scope_guard more keyword-like
 #define defer DEFER
+
+/// Improved assert() macro from PPK_ASSERT, with printf-like formatting
+#define ASSERT PPK_ASSERT
 
 template<typename T>
 concept EnumType = std::is_enum_v<T>;
@@ -94,7 +97,7 @@ struct Rng {
 	 */
 	auto randInt(uint32_t bound) -> uint32_t
 	{
-		assert(bound >= 1);
+		ASSERT(bound >= 1);
 		return pcg32_boundedrand_r(&state, bound);
 	}
 
@@ -144,7 +147,7 @@ struct Rng {
 template<typename T>
 auto allocate(const std::size_t count = 1) -> T*
 {
-	assert(count);
+	ASSERT(count);
 	auto* const result{static_cast<T*>(std::calloc(count, sizeof(T)))};
 	if (!result) {
 		std::perror("Could not allocate memory");
@@ -164,7 +167,7 @@ auto allocate(const std::size_t count = 1) -> T*
 template<typename T>
 void reallocate(T*& buffer, const std::size_t newCount)
 {
-	assert(newCount);
+	ASSERT(newCount);
 	auto* const result{static_cast<T*>(std::realloc(buffer, sizeof(T) * newCount))};
 	if (!result) {
 		std::perror("Could not allocate memory");

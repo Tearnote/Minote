@@ -7,8 +7,8 @@
 
 #include "varray.hpp"
 
-#include <cassert>
 #include <cstring>
+#include "base/util.hpp"
 
 namespace minote {
 
@@ -25,7 +25,7 @@ auto varray<T, N>::produce() -> Element*
 template<typename T, std::size_t N>
 void varray<T, N>::remove(std::size_t index)
 {
-	assert(index < size);
+	ASSERT(index < size);
 	if (index < size - 1) {
 		std::memmove(buffer + index * sizeof(Element),
 			buffer + (index + 1) * sizeof(Element),
@@ -37,7 +37,7 @@ void varray<T, N>::remove(std::size_t index)
 template<typename T, std::size_t N>
 void varray<T, N>::removeSwap(std::size_t index)
 {
-	assert(index < size);
+	ASSERT(index < size);
 	if (index < size - 1)
 		buffer[index] = buffer[size - 1];
 	size -= 1;
@@ -52,14 +52,14 @@ void varray<T, N>::clear()
 template<typename T, std::size_t N>
 auto varray<T, N>::operator[](std::size_t index) -> Element&
 {
-	assert(index < size);
+	ASSERT(index < size);
 	return buffer[index];
 }
 
 template<typename T, std::size_t N>
 constexpr auto varray<T, N>::operator[](std::size_t index) const -> const Element&
 {
-	assert(index < size);
+	ASSERT(index < size);
 	return buffer[index];
 }
 
