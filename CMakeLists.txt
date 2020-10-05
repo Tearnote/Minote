@@ -109,13 +109,13 @@ set(C_INTERNALLIBS
 set(CXX_SOURCES
         src/main.hpp src/main.cpp
         src/base/util.hpp
+        src/base/types.hpp
         src/base/log.hpp src/base/log.cpp
         src/base/varray.hpp src/base/varray.tpp
         src/base/queue.hpp src/base/queue.tpp
         src/base/ease.hpp
         src/base/tween.hpp
         src/window.hpp src/window.cpp
-        src/basetypes.hpp src/basetypes.cpp
         src/game.hpp src/game.cpp
         src/system.hpp src/system.cpp
         src/time.hpp src/time.cpp

@@ -25,6 +25,9 @@ concept FloatingType = std::is_floating_point_v<T>;
 template<typename T>
 concept IntegralType = std::is_integral_v<T>;
 
+template<typename T>
+concept Arithmetic = std::is_arithmetic_v<T>;
+
 /// Conversion of scoped enum to the underlying type, using the unary + operator
 template<EnumType T>
 constexpr auto operator+(T e) {

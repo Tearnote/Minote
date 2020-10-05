@@ -7,8 +7,11 @@
 #define MINOTE_MODEL_H
 
 #include "linmath/linmath.h"
-#include "basetypes.hpp"
+#include "base/types.hpp"
 #include "opengl.hpp"
+
+using minote::point3f;
+using minote::color4;
 
 /// Convenient 4x4 matrix for when you want to perform no transform
 inline mat4x4 IdentityMatrix{{1.0f, 0.0f, 0.0f, 0.0f},

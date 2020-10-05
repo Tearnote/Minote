@@ -53,25 +53,27 @@ void fontInit(void)
 		ftFace = nullptr;
 
 		// Load the atlas into a texture
-		char atlasPath[256];
-		snprintf(atlasPath, 256, "%s/%s.png", FONT_DIR, FontList[i]);
-		size2i size;
-		int channels;
-		stbi_set_flip_vertically_on_load(true);
-		unsigned char* atlasData;
-		atlasData = stbi_load(atlasPath, &size.x, &size.y, &channels, 0);
-		if (!atlasData) {
-			L.error("Failed to load the font atlas (%s) for font %s",
-				atlasPath, FontList[i]);
-			goto cleanup;
-		}
-		assert(channels == 3);
+		{
+			char atlasPath[256];
+			snprintf(atlasPath, 256, "%s/%s.png", FONT_DIR, FontList[i]);
+			size2i size{};
+			int channels;
+			stbi_set_flip_vertically_on_load(true);
+			unsigned char* atlasData;
+			atlasData = stbi_load(atlasPath, &size.x, &size.y, &channels, 0);
+			if (!atlasData) {
+				L.error("Failed to load the font atlas (%s) for font %s",
+					atlasPath, FontList[i]);
+				goto cleanup;
+			}
+			assert(channels == 3);
 
-		fonts[i].atlas = textureCreate();
-		textureStorage(fonts[i].atlas, size, GL_RGBA8);
-		textureData(fonts[i].atlas, atlasData, GL_RGB, GL_UNSIGNED_BYTE);
-		stbi_image_free(atlasData);
-		atlasData = nullptr;
+			fonts[i].atlas = textureCreate();
+			textureStorage(fonts[i].atlas, size, GL_RGBA8);
+			textureData(fonts[i].atlas, atlasData, GL_RGB, GL_UNSIGNED_BYTE);
+			stbi_image_free(atlasData);
+			atlasData = nullptr;
+		}
 
 		// Parse the csv atlas metrics
 		char metricsPath[256];

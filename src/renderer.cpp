@@ -19,7 +19,7 @@
 #include "time.hpp"
 #include "base/log.hpp"
 
-using minote::L;
+using namespace minote;
 
 /// Basic blit function type
 typedef struct ProgramBlit {
@@ -81,15 +81,15 @@ static void rendererSync(void)
 		VertexFlat syncMesh[] = {
 			{
 				.pos = {0.0f, 0.0f, 0.0f},
-				.color = Color4Clear
+				.color = Clear4
 			},
 			{
 				.pos = {1.0f, 0.0f, 0.0f},
-				.color = Color4Clear
+				.color = Clear4
 			},
 			{
 				.pos = {0.0f, 1.0f, 0.0f},
-				.color = Color4Clear
+				.color = Clear4
 			}
 		};
 		sync = modelCreateFlat("sync", 3, syncMesh);

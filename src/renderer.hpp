@@ -8,7 +8,7 @@
 
 #include <stddef.h>
 #include "linmath/linmath.h"
-#include "basetypes.hpp"
+#include "base/types.hpp"
 #include "opengl.hpp"
 
 /**

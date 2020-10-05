@@ -8,10 +8,10 @@
 #include <assert.h>
 #include "base/util.hpp"
 
-using minote::allocate;
+using namespace minote;
 
 static const color4 MinoColors[MinoSize] = {
-	[MinoNone] = Color4Clear,
+	[MinoNone] = Clear4,
 	[MinoI] = {1.0f, 0.0f, 0.0f, 1.0f},
 	[MinoL] = {1.0f, .22f, 0.0f, 1.0f},
 	[MinoO] = {1.0f, 1.0f, 0.0f, 1.0f},

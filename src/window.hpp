@@ -10,8 +10,10 @@
 #define MINOTE_WINDOW_H
 
 #include <stdbool.h>
-#include "basetypes.hpp"
+#include "base/types.hpp"
 #include "time.hpp"
+
+using minote::size2i;
 
 /// Struct containing information about a keypress event
 typedef struct KeyInput {

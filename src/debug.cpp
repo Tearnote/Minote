@@ -18,7 +18,7 @@
 #include "base/util.hpp"
 #include "base/log.hpp"
 
-using minote::L;
+using namespace minote;
 
 #define NUKLEAR_VBO_SIZE 1024 * 1024
 #define NUKLEAR_EBO_SIZE 256 * 1024

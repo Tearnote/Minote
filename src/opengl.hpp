@@ -9,7 +9,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include "glad/glad.h"
-#include "basetypes.hpp"
+#include "base/types.hpp"
+
+using minote::size2i;
 
 /// OpenGL texture. You can obtain an instance with textureCreate().
 /// All fields read-only.

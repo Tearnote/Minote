@@ -7,7 +7,11 @@
 #define MINOTE_MINO_H
 
 #include <stdbool.h>
-#include "basetypes.hpp"
+#include "base/types.hpp"
+
+using minote::point2i;
+using minote::color4;
+using minote::size2i;
 
 /**
  * Possible states of a ::Field cell. Values below #MinoGarbage are also valid

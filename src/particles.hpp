@@ -7,12 +7,14 @@
 #define MINOTE_PARTICLES_H
 
 #include <stddef.h>
-#include "basetypes.hpp"
+#include "base/types.hpp"
 #include "base/tween.hpp"
 #include "base/ease.hpp"
 #include "time.hpp"
 
 using minote::EasingFunction;
+using minote::point3f;
+using minote::color4;
 
 /// Details of a particle effect
 typedef struct ParticleParams {

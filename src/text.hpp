@@ -6,8 +6,11 @@
 #ifndef MINOTE_TEXT_H
 #define MINOTE_TEXT_H
 
-#include "basetypes.hpp"
+#include "base/types.hpp"
 #include "fontlist.hpp"
+
+using minote::point3f;
+using minote::color4;
 
 /**
  * Initialize text drawing. Must be called after fontInit().

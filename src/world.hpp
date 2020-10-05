@@ -7,7 +7,10 @@
 #define MINOTE_WORLD_H
 
 #include "linmath/linmath.h"
-#include "basetypes.hpp"
+#include "base/types.hpp"
+
+using minote::point3f;
+using minote::color3;
 
 /// The 3D projection matrix (view space -> screen space).
 /// Standard OpenGL coordinates - Z points towards the screen.
