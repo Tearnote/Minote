@@ -123,7 +123,7 @@ set(SOURCES
         src/base/tween.hpp
         src/sys/window.hpp src/sys/window.cpp
         src/game.hpp src/game.cpp
-        src/time.hpp src/time.cpp
+        src/base/time.hpp src/base/time.cpp
         src/renderer.hpp src/renderer.cpp
         src/play.hpp src/play.cpp
         src/mino.hpp src/mino.cpp

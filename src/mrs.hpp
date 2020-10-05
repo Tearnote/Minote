@@ -17,7 +17,7 @@
 /// Frequency of game logic updates, simulated by semi-threading, in Hz
 #define MrsUpdateFrequency 60.0
 /// Inverse of #MrsUpdateFrequency, in ::nsec
-#define MrsUpdateTick static_cast<nsec>(secToNsec(1) / MrsUpdateFrequency)
+#define MrsUpdateTick static_cast<nsec>(minote::seconds(1) / MrsUpdateFrequency)
 
 #define FieldWidth 10u ///< Width of the playfield
 #define FieldHeight 22u ///< Height of the playfield

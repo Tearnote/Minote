@@ -9,9 +9,10 @@
 #pragma once
 
 #include "base/types.hpp"
-#include "time.hpp"
+#include "base/time.hpp"
 
 using minote::size2i;
+using minote::nsec;
 
 /// Struct containing information about a keypress event
 typedef struct KeyInput {
@@ -36,6 +37,13 @@ struct Window {
 	 * @remark Must be called on the same thread as the matching init().
 	 */
 	static void cleanup();
+
+	/**
+	 * Return the time passed since Window::init().
+	 * @return Number of nanoseconds since windowing initialization
+	 * @remark This function is thread-safe.
+	 */
+	static auto getTime() -> nsec;
 
 };
 

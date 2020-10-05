@@ -15,7 +15,7 @@
 #include "opengl.hpp"
 #include "model.hpp"
 #include "base/util.hpp"
-#include "time.hpp"
+#include "base/time.hpp"
 #include "base/log.hpp"
 
 using namespace minote;
@@ -96,7 +96,7 @@ static void rendererSync(void)
 
 	modelDraw(sync, 1, nullptr, nullptr, &IdentityMatrix);
 	GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-	glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, secToNsec(0.1));
+	glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, milliseconds(100));
 }
 
 /**

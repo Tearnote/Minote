@@ -10,7 +10,7 @@
 #include "base/types.hpp"
 #include "base/tween.hpp"
 #include "base/ease.hpp"
-#include "time.hpp"
+#include "base/time.hpp"
 
 using minote::EasingFunction;
 using minote::point3f;

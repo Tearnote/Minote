@@ -70,7 +70,7 @@ void particlesUpdate(void)
 	ASSERT(initialized);
 
 	size_t numParticles = particles.size;
-	nsec currentTime = getTime();
+	nsec currentTime = Window::getTime();
 
 	for (size_t i = numParticles - 1; i < numParticles; i -= 1) {
 		Particle* currentParticle = &particles[i];
@@ -172,7 +172,7 @@ void particlesGenerate(point3f position, size_t count, ParticleParams* params)
 		newParticle->origin = position;
 		newParticle->color = params->color;
 
-		newParticle->start = getTime();
+		newParticle->start = Window::getTime();
 		newParticle->duration = params->durationMin + rng.randFloat()
 			* (double)(params->durationMax - params->durationMin);
 		newParticle->ease = params->ease;

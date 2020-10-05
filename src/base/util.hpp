@@ -24,19 +24,19 @@ namespace minote {
 #define ASSERT PPK_ASSERT
 
 template<typename T>
-concept EnumType = std::is_enum_v<T>;
+concept Enum = std::is_enum_v<T>;
 
 template<typename T>
-concept FloatingType = std::is_floating_point_v<T>;
+concept FloatingPoint = std::is_floating_point_v<T>;
 
 template<typename T>
-concept IntegralType = std::is_integral_v<T>;
+concept Integral = std::is_integral_v<T>;
 
 template<typename T>
 concept Arithmetic = std::is_arithmetic_v<T>;
 
 /// Conversion of scoped enum to the underlying type, using the unary + operator
-template<EnumType T>
+template<Enum T>
 constexpr auto operator+(T e) {
 	return static_cast<std::underlying_type_t<T>>(e);
 }
@@ -45,7 +45,7 @@ constexpr auto operator+(T e) {
  * A more correct replacement for pi.
  * @see https://tauday.com/
  */
-template<FloatingType T>
+template<FloatingPoint T>
 constexpr T Tau_v{6.283185307179586476925286766559005768L};
 
 constexpr double Tau{Tau_v<double>};
@@ -55,7 +55,7 @@ constexpr double Tau{Tau_v<double>};
   * @param angle Angle in degrees
   * @return Angle in radians
   */
-template<FloatingType T>
+template<FloatingPoint T>
 constexpr auto rad(T angle)
 {
 	return angle * Tau_v<T> / static_cast<T>(360.0);
@@ -67,7 +67,7 @@ constexpr auto rad(T angle)
  * @param div Modulo divisor
  * @return Result of modulo (always positive)
  */
-template<IntegralType T>
+template<Integral T>
 constexpr auto mod(T num, T div)
 {
 	return num % div + (num % div < 0) * div;

@@ -78,7 +78,7 @@ union Vec3 {
 	 * @return Linear space color
 	 */
 	[[nodiscard]]
-	constexpr auto toLinear() const -> Vec3<T> requires FloatingType<T>
+	constexpr auto toLinear() const -> Vec3<T> requires FloatingPoint<T>
 	{
 		return {std::pow(r, 2.2f), std::pow(g, 2.2f), std::pow(b, 2.2f)};
 	};
@@ -89,7 +89,7 @@ union Vec3 {
 	 * @return Gamma space color
 	 */
 	[[nodiscard]]
-	constexpr auto toGamma() const -> Vec3<T> requires FloatingType<T>
+	constexpr auto toGamma() const -> Vec3<T> requires FloatingPoint<T>
 	{
 		return {std::pow(r, 0.4545f), std::pow(g, 0.4545f),
 		        std::pow(b, 0.4545f)};
@@ -142,7 +142,7 @@ union Vec4 {
 	 * @return Linear space color
 	 */
 	[[nodiscard]]
-	constexpr auto toLinear() const -> Vec4<T> requires FloatingType<T>
+	constexpr auto toLinear() const -> Vec4<T> requires FloatingPoint<T>
 	{
 		return {std::pow(r, 2.2f), std::pow(g, 2.2f), std::pow(b, 2.2f), a};
 	};
@@ -153,7 +153,7 @@ union Vec4 {
 	 * @return Gamma space color
 	 */
 	[[nodiscard]]
-	constexpr auto toGamma() const -> Vec4<T> requires FloatingType<T>
+	constexpr auto toGamma() const -> Vec4<T> requires FloatingPoint<T>
 	{
 		return {std::pow(r, 0.4545f), std::pow(g, 0.4545f),
 		        std::pow(b, 0.4545f), a};

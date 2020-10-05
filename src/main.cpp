@@ -72,7 +72,7 @@ auto main(int, char* []) -> int
 	// Input loop
 	while (windowIsOpen()) {
 		windowPoll();
-		sleepFor(secToNsec(1) / 1000); // 1ms minimum
+		sleepFor(milliseconds(1));
 	}
 
 	gameThread.join();

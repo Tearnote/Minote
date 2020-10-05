@@ -99,8 +99,8 @@ static Tween<float> clearFall = {
 /// Sparks released on line clear
 static ParticleParams particlesClear = {
 	.color = {0.0f, 0.0f, 0.0f, 1.0f}, // runtime
-	.durationMin = secToNsec(0),
-	.durationMax = secToNsec(1.5),
+	.durationMin = seconds(0),
+	.durationMax = seconds(1.5),
 	.distanceMin = 3.2f, // runtime
 	.distanceMax = 6.4f, // runtime
 	.spinMin = 0.001f,
@@ -114,8 +114,8 @@ static ParticleParams particlesClear = {
 /// or finishing line clear thump
 static ParticleParams particlesThump = {
 	.color = {0.6f, 0.6f, 0.6f, 0.8f},
-	.durationMin = secToNsec(0.4),
-	.durationMax = secToNsec(0.8),
+	.durationMin = seconds(0.4),
+	.durationMax = seconds(0.8),
 	.distanceMin = 0.2f,
 	.distanceMax = 1.2f,
 	.spinMin = 0.4f,
@@ -128,8 +128,8 @@ static ParticleParams particlesThump = {
 /// Sparks of a player piece being shifted across the playfield
 static ParticleParams particlesSlide = {
 	.color = {0.0f, 0.4f, 2.0f, 1.0f},
-	.durationMin = secToNsec(0.3),
-	.durationMax = secToNsec(0.6),
+	.durationMin = seconds(0.3),
+	.durationMax = seconds(0.6),
 	.distanceMin = 0.2f,
 	.distanceMax = 1.4f,
 	.spinMin = 0.4f,
@@ -142,8 +142,8 @@ static ParticleParams particlesSlide = {
 /// Sparks of a player piece being DASed across the playfield
 static ParticleParams particlesSlideFast = {
 	.color = {2.0f, 0.4f, 0.0f, 1.0f},
-	.durationMin = secToNsec(0.25),
-	.durationMax = secToNsec(0.5),
+	.durationMin = seconds(0.25),
+	.durationMax = seconds(0.5),
 	.distanceMin = 0.4f,
 	.distanceMax = 2.0f,
 	.spinMin = 0.4f,
@@ -376,7 +376,7 @@ static void mrsQueueGhost(void)
 	if (mrsTet.player.gravity >= MrsSubGrid)
 		return; // Don't show if the game is too fast for it to help
 	if (mrsTet.player.lockDelay
-		&& (getTime() >= playerPosY.start + playerPosY.duration))
+		&& (Window::getTime() >= playerPosY.start + playerPosY.duration))
 		return; // Don't show if player is on the ground
 
 	point2i ghostPos = mrsTet.player.pos;

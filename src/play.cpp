@@ -27,7 +27,7 @@ void playInit(void)
 {
 	if (initialized) return;
 
-	nextUpdate = getTime() + MrsUpdateTick;
+	nextUpdate = Window::getTime() + MrsUpdateTick;
 	mrsInit();
 
 	initialized = true;
@@ -49,7 +49,7 @@ void playUpdate(void)
 	ASSERT(initialized);
 
 	// Update as many times as we need to catch up
-	while (nextUpdate <= getTime()) {
+	while (nextUpdate <= Window::getTime()) {
 		Input i;
 		while (mapperPeek(&i)) { // Exhaust all collectedInputs...
 			if (i.timestamp <= nextUpdate)

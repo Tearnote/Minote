@@ -55,7 +55,7 @@ keyCallback(GLFWwindow* w, int key, int scancode, int action, int mods)
 	(void)w, (void)scancode, (void)mods;
 	ASSERT(initialized);
 	if (action == GLFW_REPEAT) return; // Key repeat is not needed
-	KeyInput input = {.key = key, .action = action, .timestamp = getTime()};
+	KeyInput input = {.key = key, .action = action, .timestamp = Window::getTime()};
 	inputsMutex.lock();
 	if (!inputs.enqueue(input))
 		L.warn("Window input queue is full, key #%d %s dropped",
@@ -294,4 +294,9 @@ void Window::cleanup()
 
 	L.debug("Windowing cleaned up");
 	initialized = false;
+}
+
+auto Window::Window::getTime() -> nsec
+{
+	return seconds(glfwGetTime());
 }

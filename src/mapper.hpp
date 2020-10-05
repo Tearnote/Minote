@@ -7,7 +7,7 @@
 #define MINOTE_MAPPER_H
 
 #include "base/varray.hpp"
-#include "time.hpp"
+#include "base/time.hpp"
 
 typedef enum InputType {
 	InputNone, ///< zero value
@@ -21,7 +21,7 @@ typedef enum InputType {
 typedef struct Input {
 	InputType type;
 	bool state; ///< true if press, false if release
-	nsec timestamp;
+	minote::nsec timestamp;
 } Input;
 
 using InputArray = minote::varray<Input, 64>;

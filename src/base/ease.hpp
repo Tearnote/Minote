@@ -12,11 +12,11 @@
 
 namespace minote {
 
-template<FloatingType T>
+template<FloatingPoint T>
 using EasingFunction = auto (*)(T) -> T;
 
 // Modeled after the line y = x
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto linearInterpolation(T p) -> T
 {
@@ -24,7 +24,7 @@ constexpr auto linearInterpolation(T p) -> T
 }
 
 // Modeled after the parabola y = x^2
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto quadraticEaseIn(T p) -> T
 {
@@ -32,7 +32,7 @@ constexpr auto quadraticEaseIn(T p) -> T
 }
 
 // Modeled after the parabola y = -x^2 + 2x
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto quadraticEaseOut(T p) -> T
 {
@@ -42,7 +42,7 @@ constexpr auto quadraticEaseOut(T p) -> T
 // Modeled after the piecewise quadratic
 // y = (1/2)((2x)^2)             ; [0, 0.5)
 // y = -(1/2)((2x-1)*(2x-3) - 1) ; [0.5, 1]
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto quadraticEaseInOut(T p) -> T
 {
@@ -57,7 +57,7 @@ constexpr auto quadraticEaseInOut(T p) -> T
 }
 
 // Modeled after the cubic y = x^3
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto cubicEaseIn(T p) -> T
 {
@@ -65,7 +65,7 @@ constexpr auto cubicEaseIn(T p) -> T
 }
 
 // Modeled after the cubic y = (x - 1)^3 + 1
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto cubicEaseOut(T p) -> T
 {
@@ -76,7 +76,7 @@ constexpr auto cubicEaseOut(T p) -> T
 // Modeled after the piecewise cubic
 // y = (1/2)((2x)^3)       ; [0, 0.5)
 // y = (1/2)((2x-2)^3 + 2) ; [0.5, 1]
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto cubicEaseInOut(T p) -> T
 {
@@ -92,7 +92,7 @@ constexpr auto cubicEaseInOut(T p) -> T
 }
 
 // Modeled after the quartic x^4
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto quarticEaseIn(T p) -> T
 {
@@ -100,7 +100,7 @@ constexpr auto quarticEaseIn(T p) -> T
 }
 
 // Modeled after the quartic y = 1 - (x - 1)^4
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto quarticEaseOut(T p) -> T
 {
@@ -111,7 +111,7 @@ constexpr auto quarticEaseOut(T p) -> T
 // Modeled after the piecewise quartic
 // y = (1/2)((2x)^4)        ; [0, 0.5)
 // y = -(1/2)((2x-2)^4 - 2) ; [0.5, 1]
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto quarticEaseInOut(T p) -> T
 {
@@ -127,7 +127,7 @@ constexpr auto quarticEaseInOut(T p) -> T
 }
 
 // Modeled after the quintic y = x^5
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto quinticEaseIn(T p) -> T
 {
@@ -135,7 +135,7 @@ constexpr auto quinticEaseIn(T p) -> T
 }
 
 // Modeled after the quintic y = (x - 1)^5 + 1
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto quinticEaseOut(T p) -> T
 {
@@ -146,7 +146,7 @@ constexpr auto quinticEaseOut(T p) -> T
 // Modeled after the piecewise quintic
 // y = (1/2)((2x)^5)       ; [0, 0.5)
 // y = (1/2)((2x-2)^5 + 2) ; [0.5, 1]
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto quinticEaseInOut(T p) -> T
 {
@@ -162,7 +162,7 @@ constexpr auto quinticEaseInOut(T p) -> T
 }
 
 // Modeled after quarter-cycle of sine wave
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto sineEaseIn(T p) -> T
 {
@@ -170,7 +170,7 @@ constexpr auto sineEaseIn(T p) -> T
 }
 
 // Modeled after quarter-cycle of sine wave (different phase)
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto sineEaseOut(T p) -> T
 {
@@ -178,7 +178,7 @@ constexpr auto sineEaseOut(T p) -> T
 }
 
 // Modeled after half sine wave
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto sineEaseInOut(T p) -> T
 {
@@ -186,7 +186,7 @@ constexpr auto sineEaseInOut(T p) -> T
 }
 
 // Modeled after shifted quadrant IV of unit circle
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto circularEaseIn(T p) -> T
 {
@@ -194,7 +194,7 @@ constexpr auto circularEaseIn(T p) -> T
 }
 
 // Modeled after shifted quadrant II of unit circle
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto circularEaseOut(T p) -> T
 {
@@ -204,7 +204,7 @@ constexpr auto circularEaseOut(T p) -> T
 // Modeled after the piecewise circular function
 // y = (1/2)(1 - sqrt(1 - 4x^2))           ; [0, 0.5)
 // y = (1/2)(sqrt(-(2x - 3)*(2x - 1)) + 1) ; [0.5, 1]
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto circularEaseInOut(T p) -> T
 {
@@ -219,7 +219,7 @@ constexpr auto circularEaseInOut(T p) -> T
 }
 
 // Modeled after the exponential function y = 2^(10(x - 1))
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto exponentialEaseIn(T p) -> T
 {
@@ -227,7 +227,7 @@ constexpr auto exponentialEaseIn(T p) -> T
 }
 
 // Modeled after the exponential function y = -2^(-10x) + 1
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto exponentialEaseOut(T p) -> T
 {
@@ -237,7 +237,7 @@ constexpr auto exponentialEaseOut(T p) -> T
 // Modeled after the piecewise exponential
 // y = (1/2)2^(10(2x - 1))         ; [0,0.5)
 // y = -(1/2)*2^(-10(2x - 1))) + 1 ; [0.5,1]
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto exponentialEaseInOut(T p) -> T
 {
@@ -254,7 +254,7 @@ constexpr auto exponentialEaseInOut(T p) -> T
 }
 
 // Modeled after the damped sine wave y = sin(13pi/2*x)*pow(2, 10 * (x - 1))
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto elasticEaseIn(T p) -> T
 {
@@ -262,7 +262,7 @@ constexpr auto elasticEaseIn(T p) -> T
 }
 
 // Modeled after the damped sine wave y = sin(-13pi/2*(x + 1))*pow(2, -10x) + 1
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto elasticEaseOut(T p) -> T
 {
@@ -272,7 +272,7 @@ constexpr auto elasticEaseOut(T p) -> T
 // Modeled after the piecewise exponentially-damped sine wave:
 // y = (1/2)*sin(13pi/2*(2*x))*pow(2, 10 * ((2*x) - 1))      ; [0,0.5)
 // y = (1/2)*(sin(-13pi/2*((2x-1)+1))*pow(2,-10(2*x-1)) + 2) ; [0.5, 1]
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto elasticEaseInOut(T p) -> T
 {
@@ -287,7 +287,7 @@ constexpr auto elasticEaseInOut(T p) -> T
 }
 
 // Modeled after the overshooting cubic y = x^3-x*sin(x*pi)
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto eackEaseIn(T p) -> T
 {
@@ -295,7 +295,7 @@ constexpr auto eackEaseIn(T p) -> T
 }
 
 // Modeled after overshooting cubic y = 1-((1-x)^3-(1-x)*sin((1-x)*pi))
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto backEaseOut(T p) -> T
 {
@@ -306,7 +306,7 @@ constexpr auto backEaseOut(T p) -> T
 // Modeled after the piecewise overshooting cubic function:
 // y = (1/2)*((2x)^3-(2x)*sin(2*x*pi))           ; [0, 0.5)
 // y = (1/2)*(1-((1-x)^3-(1-x)*sin((1-x)*pi))+1) ; [0.5, 1]
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto backEaseInOut(T p) -> T
 {
@@ -322,14 +322,14 @@ constexpr auto backEaseInOut(T p) -> T
 	}
 }
 
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto bounceEaseIn(T p) -> T
 {
 	return 1 - bounceEaseOut(1 - p);
 }
 
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto bounceEaseOut(T p) -> T
 {
@@ -351,7 +351,7 @@ constexpr auto bounceEaseOut(T p) -> T
 	}
 }
 
-template<FloatingType T>
+template<FloatingPoint T>
 [[maybe_unused]]
 constexpr auto bounceEaseInOut(T p) -> T
 {
