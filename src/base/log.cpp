@@ -16,10 +16,11 @@
 namespace minote {
 
 /// Mapping from Log::Level to string name
-static constexpr char logLevelStrings[][+Log::Level::Size]{
+static constexpr char LogLevelStrings[][+Log::Level::Size]{
 	"", "TRACE", "DEBUG", " INFO", " WARN", "ERROR", " CRIT"
 };
 
+/// Messages longer than this will be truncated
 static constexpr std::size_t MaxMessageLen{2048};
 
 /**
@@ -64,7 +65,7 @@ static void logPrio(Log& log, const Log::Level level,
 	const auto localnow{*std::localtime(&now)};
 	std::snprintf(msg, MaxMessageLen, "%02d:%02d:%02d [%s] ",
 		localnow.tm_hour, localnow.tm_min, localnow.tm_sec,
-		logLevelStrings[+level]);
+		LogLevelStrings[+level]);
 
 	// Insert formatted message
 	const auto timestampLen{std::strlen(msg)};
