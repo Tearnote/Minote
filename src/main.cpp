@@ -18,10 +18,10 @@
 #include <windows.h>
 #endif //_WIN32
 #include "sys/window.hpp"
+#include "base/util.hpp"
+#include "base/log.hpp"
 #include "debug.hpp"
 #include "game.hpp"
-#include "base/log.hpp"
-#include "base/types.hpp"
 
 using namespace minote; // Because we can't namespace main()
 
@@ -31,7 +31,7 @@ using namespace minote; // Because we can't namespace main()
  * @return EXIT_SUCCESS on successful execution, EXIT_FAILURE on a handled
  * critical error, other values on unhandled error
  */
-auto main(int, char*[]) -> int
+auto main(int, char* []) -> int
 {
 	//region Initialization
 
@@ -53,10 +53,12 @@ auto main(int, char*[]) -> int
 #endif //NDEBUG
 	L.console = true;
 	L.enableFile(logfile);
+	defer { L.disableFile(); };
 	L.info("Starting up %s %s", AppName, AppVersion);
 
 	// Window creation
 	Window::init();
+	defer { Window::cleanup(); };
 	char windowTitle[64]{""};
 	std::snprintf(windowTitle, 64, "%s %s", AppName, AppVersion);
 	windowInit(windowTitle, {1280, 720}, false);
@@ -78,8 +80,6 @@ auto main(int, char*[]) -> int
 
 	// Cleanup
 	windowCleanup();
-	Window::cleanup();
-	L.disableFile();
 
 	return EXIT_SUCCESS;
 }

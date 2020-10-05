@@ -12,9 +12,13 @@
 #include <cstring>
 #include <cstdio>
 #include <cmath>
+#include "scope_guard/scope_guard.hpp"
 #include "pcg/pcg_basic.h"
 
 namespace minote {
+
+/// Making the DEFER feature from scope_guard more keyword-like
+#define defer DEFER
 
 template<typename T>
 concept EnumType = std::is_enum_v<T>;

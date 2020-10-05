@@ -104,7 +104,8 @@ set(C_INTERNALLIBS
         lib/nuklear/nuklear.h
         lib/cephes/protos.h lib/cephes/mconf.h
         lib/cephes/const.c lib/cephes/polevl.c lib/cephes/fresnl.c
-        lib/stb/stb_image.h lib/stb/stb_image.c)
+        lib/stb/stb_image.h lib/stb/stb_image.c
+        lib/scope_guard/scope_guard.hpp)
 
 set(CXX_SOURCES
         src/main.hpp src/main.cpp

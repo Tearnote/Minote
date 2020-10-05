@@ -43,3 +43,6 @@ license.
 
 [`stb_image.h`](https://github.com/nothings/stb/blob/master/stb_image.h)
 retrieved on 2020-09-13, in Public Domain.
+
+[`scope_guard`](https://github.com/Neargye/scope_guard) retrieved on 2020-10-05,
+used under MIT license.
