@@ -6,7 +6,7 @@
 #include "opengl.hpp"
 
 #include <assert.h>
-#include "window.hpp"
+#include "sys/window.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"
 

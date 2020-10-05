@@ -6,12 +6,10 @@
  * polled with windowPoll() to keep the window responsive.
  */
 
-#ifndef MINOTE_WINDOW_H
-#define MINOTE_WINDOW_H
+#pragma once
 
-#include <stdbool.h>
-#include "base/types.hpp"
-#include "time.hpp"
+#include "../base/types.hpp"
+#include "../time.hpp"
 
 using minote::size2i;
 
@@ -21,6 +19,25 @@ typedef struct KeyInput {
 	int action; ///< GLFW_PRESS or GLFW_RELEASE
 	nsec timestamp; ///< Time when the event was detected
 } KeyInput;
+
+struct Window {
+
+	inline static bool initialized{false};
+
+	/**
+	 * Initialize the windowing system and other OS-specific bits. This must
+	 * be called before any windows are opened.
+	 * @remark The thread that calls this becomes the "main" thread.
+	 */
+	static void init();
+
+	/**
+	 * Clean up the windowing system. All windows must already be closed.
+	 * @remark Must be called on the same thread as the matching init().
+	 */
+	static void cleanup();
+
+};
 
 /**
  * Initialize the window system, showing the window with specified parameters
@@ -135,5 +152,3 @@ typedef struct GLFWwindow GLFWwindow;
  * @return GLFW window pointer
  */
 GLFWwindow* getRawWindow(void);
-
-#endif //MINOTE_WINDOW_H

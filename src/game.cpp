@@ -7,7 +7,7 @@
 
 #include "particles.hpp"
 #include "renderer.hpp"
-#include "window.hpp"
+#include "sys/window.hpp"
 #include "mapper.hpp"
 #include "bloom.hpp"
 #include "debug.hpp"

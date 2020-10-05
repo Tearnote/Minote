@@ -8,7 +8,7 @@
 #include <assert.h>
 #include "linmath/linmath.h"
 #include "opengl.hpp"
-#include "window.hpp"
+#include "sys/window.hpp"
 #include "base/util.hpp"
 
 using minote::rad;

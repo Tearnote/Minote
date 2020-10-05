@@ -9,7 +9,7 @@
 #include "smaa/AreaTex.h"
 #include "smaa/SearchTex.h"
 #include "renderer.hpp"
-#include "window.hpp"
+#include "sys/window.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"
 

@@ -17,8 +17,7 @@
 #endif //NOMINMAX
 #include <windows.h>
 #endif //_WIN32
-#include "window.hpp"
-#include "system.hpp"
+#include "sys/window.hpp"
 #include "debug.hpp"
 #include "game.hpp"
 #include "base/log.hpp"
@@ -57,7 +56,7 @@ auto main(int, char*[]) -> int
 	L.info("Starting up %s %s", AppName, AppVersion);
 
 	// Window creation
-	systemInit();
+	Window::init();
 	char windowTitle[64]{""};
 	std::snprintf(windowTitle, 64, "%s %s", AppName, AppVersion);
 	windowInit(windowTitle, {1280, 720}, false);
@@ -79,7 +78,7 @@ auto main(int, char*[]) -> int
 
 	// Cleanup
 	windowCleanup();
-	systemCleanup();
+	Window::cleanup();
 	L.disableFile();
 
 	return EXIT_SUCCESS;

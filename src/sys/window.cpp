@@ -9,16 +9,17 @@
 #include <mutex>
 #include <stdlib.h>
 #include <assert.h>
+#ifdef _WIN32
+#include <windows.h>
+#endif //_WIN32
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
-#include "system.hpp"
-#include "base/queue.hpp"
-#include "debug.hpp"
-#include "base/util.hpp"
-#include "base/log.hpp"
+#include "../base/queue.hpp"
+#include "../debug.hpp"
+#include "../base/util.hpp"
+#include "../base/log.hpp"
 
-using minote::L;
-using minote::queue;
+using namespace minote;
 
 static bool initialized = false;
 static GLFWwindow* window; ///< Underlying GLFWwindow object
@@ -30,6 +31,17 @@ static std::atomic<bool> windowOpen; ///< false if window should be closed, true
 static std::atomic<size_t> viewportWidth; ///< in pixels
 static std::atomic<size_t> viewportHeight; ///< in pixels
 static std::atomic<float> viewportScale; ///< DPI scaling of the window, where 1.0 is "normal"
+
+static auto glfwError() -> const char*
+{
+	const char* description{nullptr};
+	const int code = glfwGetError(&description);
+	if (code == GLFW_NO_ERROR)
+		return "No error";
+	assert(description);
+	return description;
+}
+
 /**
  * Function to run on each keypress event. The key event is added to the queue.
  * @param w Unused
@@ -130,7 +142,7 @@ void windowInit(const char* title, size2i size, bool fullscreen)
 	}
 	if (!window) {
 		L.crit("Failed to create window \"%s\": %s", title,
-			systemError());
+			glfwError());
 		exit(EXIT_FAILURE);
 	}
 	initialized = true;
@@ -252,4 +264,35 @@ GLFWwindow* getRawWindow(void)
 {
 	assert(window);
 	return window;
+}
+
+void Window::init()
+{
+	assert(!initialized);
+
+	if (glfwInit() == GLFW_FALSE)
+		L.fail("Failed to initialize GLFW: %s", glfwError());
+#ifdef _WIN32
+	if (timeBeginPeriod(1) != TIMERR_NOERROR)
+		L.fail("Failed to initialize Windows timer");
+#endif //_WIN32
+
+	L.info("Windowing initialized");
+	initialized = true;
+}
+
+void Window::cleanup()
+{
+	if (!initialized) {
+		L.warn("Windowing cleanup called without being previously initialized");
+		return;
+	}
+
+#ifdef _WIN32
+	timeEndPeriod(1);
+#endif //_WIN32
+	glfwTerminate();
+
+	L.debug("Windowing cleaned up");
+	initialized = false;
 }

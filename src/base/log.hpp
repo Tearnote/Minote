@@ -107,6 +107,14 @@ struct Log {
 	[[gnu::format(printf, 2, 3)]]
 	void crit(const char* fmt, ...);
 
+	/**
+	 * Log a Crit level message and exit the application immediately.
+	 * @param fmt Format string in printf syntax
+	 * @param ... String interpolation arguments
+	 */
+	[[gnu::format(printf, 2, 3)]] [[noreturn]]
+	void fail(const char* fmt, ...);
+
 };
 
 /// Global logger available for convenience

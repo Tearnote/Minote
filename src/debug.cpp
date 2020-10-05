@@ -13,7 +13,7 @@
 #define NK_IMPLEMENTATION
 #include "nuklear/nuklear.h"
 #include "renderer.hpp"
-#include "window.hpp"
+#include "sys/window.hpp"
 #include "world.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"

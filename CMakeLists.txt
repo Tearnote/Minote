@@ -115,9 +115,8 @@ set(CXX_SOURCES
         src/base/queue.hpp src/base/queue.tpp
         src/base/ease.hpp
         src/base/tween.hpp
-        src/window.hpp src/window.cpp
+        src/sys/window.hpp src/sys/window.cpp
         src/game.hpp src/game.cpp
-        src/system.hpp src/system.cpp
         src/time.hpp src/time.cpp
         src/renderer.hpp src/renderer.cpp
         src/play.hpp src/play.cpp

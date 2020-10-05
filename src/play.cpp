@@ -6,7 +6,7 @@
 #include "play.hpp"
 
 #include <assert.h>
-#include "window.hpp"
+#include "sys/window.hpp"
 #include "mapper.hpp"
 #include "base/varray.hpp"
 #include "base/util.hpp"

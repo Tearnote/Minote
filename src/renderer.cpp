@@ -12,7 +12,7 @@
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 #include "linmath/linmath.h"
-#include "window.hpp"
+#include "sys/window.hpp"
 #include "opengl.hpp"
 #include "model.hpp"
 #include "base/util.hpp"

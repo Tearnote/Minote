@@ -9,6 +9,7 @@
 #include <cstdarg>
 #include <cstring>
 #include <cassert>
+#include <cstdlib>
 #include <cstdio>
 #include <ctime>
 #include "util.hpp"
@@ -193,6 +194,15 @@ void Log::crit(const char* const fmt, ...)
 	va_start(ap, fmt);
 	logPrio(*this, Level::Crit, fmt, ap);
 	va_end(ap);
+}
+
+void Log::fail(char const* fmt, ...)
+{
+	va_list ap{};
+	va_start(ap, fmt);
+	logPrio(*this, Level::Crit, fmt, ap);
+	va_end(ap);
+	std::exit(EXIT_FAILURE);
 }
 
 }

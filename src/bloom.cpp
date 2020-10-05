@@ -8,7 +8,7 @@
 #include <assert.h>
 #include "glad/glad.h"
 #include "renderer.hpp"
-#include "window.hpp"
+#include "sys/window.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"
 
