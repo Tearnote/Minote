@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <cmath>
 #include "util.hpp"
 
 namespace minote {
@@ -165,7 +166,7 @@ template<FloatingType T>
 [[maybe_unused]]
 constexpr auto sineEaseIn(T p) -> T
 {
-	return sin((p - 1) * (Tau_v<T> / 4)) + 1;
+	return std::sin((p - 1) * (Tau_v<T> / 4)) + 1;
 }
 
 // Modeled after quarter-cycle of sine wave (different phase)
@@ -173,7 +174,7 @@ template<FloatingType T>
 [[maybe_unused]]
 constexpr auto sineEaseOut(T p) -> T
 {
-	return sin(p * (Tau_v<T> / 4));
+	return std::sin(p * (Tau_v<T> / 4));
 }
 
 // Modeled after half sine wave
@@ -181,7 +182,7 @@ template<FloatingType T>
 [[maybe_unused]]
 constexpr auto sineEaseInOut(T p) -> T
 {
-	return 0.5 * (1 - cos(p * (Tau_v<T> / 2)));
+	return 0.5 * (1 - std::cos(p * (Tau_v<T> / 2)));
 }
 
 // Modeled after shifted quadrant IV of unit circle
@@ -189,7 +190,7 @@ template<FloatingType T>
 [[maybe_unused]]
 constexpr auto circularEaseIn(T p) -> T
 {
-	return 1 - sqrt(1 - (p * p));
+	return 1 - std::sqrt(1 - (p * p));
 }
 
 // Modeled after shifted quadrant II of unit circle
@@ -197,7 +198,7 @@ template<FloatingType T>
 [[maybe_unused]]
 constexpr auto circularEaseOut(T p) -> T
 {
-	return sqrt((2 - p) * p);
+	return std::sqrt((2 - p) * p);
 }
 
 // Modeled after the piecewise circular function
@@ -209,11 +210,11 @@ constexpr auto circularEaseInOut(T p) -> T
 {
 	if(p < 0.5)
 	{
-		return 0.5 * (1 - sqrt(1 - 4 * (p * p)));
+		return 0.5 * (1 - std::sqrt(1 - 4 * (p * p)));
 	}
 	else
 	{
-		return 0.5 * (sqrt(-((2 * p) - 3) * ((2 * p) - 1)) + 1);
+		return 0.5 * (std::sqrt(-((2 * p) - 3) * ((2 * p) - 1)) + 1);
 	}
 }
 
@@ -222,7 +223,7 @@ template<FloatingType T>
 [[maybe_unused]]
 constexpr auto exponentialEaseIn(T p) -> T
 {
-	return (p == 0.0) ? p : pow(2, 10 * (p - 1));
+	return (p == 0.0) ? p : std::pow(2, 10 * (p - 1));
 }
 
 // Modeled after the exponential function y = -2^(-10x) + 1
@@ -230,7 +231,7 @@ template<FloatingType T>
 [[maybe_unused]]
 constexpr auto exponentialEaseOut(T p) -> T
 {
-	return (p == 1.0) ? p : 1 - pow(2, -10 * p);
+	return (p == 1.0) ? p : 1 - std::pow(2, -10 * p);
 }
 
 // Modeled after the piecewise exponential
@@ -244,11 +245,11 @@ constexpr auto exponentialEaseInOut(T p) -> T
 
 	if(p < 0.5)
 	{
-		return 0.5 * pow(2, (20 * p) - 10);
+		return 0.5 * std::pow(2, (20 * p) - 10);
 	}
 	else
 	{
-		return -0.5 * pow(2, (-20 * p) + 10) + 1;
+		return -0.5 * std::pow(2, (-20 * p) + 10) + 1;
 	}
 }
 
@@ -257,7 +258,7 @@ template<FloatingType T>
 [[maybe_unused]]
 constexpr auto elasticEaseIn(T p) -> T
 {
-	return sin(13 * (Tau_v<T> / 4) * p) * pow(2, 10 * (p - 1));
+	return std::sin(13 * (Tau_v<T> / 4) * p) * std::pow(2, 10 * (p - 1));
 }
 
 // Modeled after the damped sine wave y = sin(-13pi/2*(x + 1))*pow(2, -10x) + 1
@@ -265,7 +266,7 @@ template<FloatingType T>
 [[maybe_unused]]
 constexpr auto elasticEaseOut(T p) -> T
 {
-	return sin(-13 * (Tau_v<T> / 4) * (p + 1)) * pow(2, -10 * p) + 1;
+	return std::sin(-13 * (Tau_v<T> / 4) * (p + 1)) * std::pow(2, -10 * p) + 1;
 }
 
 // Modeled after the piecewise exponentially-damped sine wave:
@@ -277,11 +278,11 @@ constexpr auto elasticEaseInOut(T p) -> T
 {
 	if(p < 0.5)
 	{
-		return 0.5 * sin(13 * (Tau_v<T> / 4) * (2 * p)) * pow(2, 10 * ((2 * p) - 1));
+		return 0.5 * std::sin(13 * (Tau_v<T> / 4) * (2 * p)) * std::pow(2, 10 * ((2 * p) - 1));
 	}
 	else
 	{
-		return 0.5 * (sin(-13 * (Tau_v<T> / 4) * ((2 * p - 1) + 1)) * pow(2, -10 * (2 * p - 1)) + 2);
+		return 0.5 * (std::sin(-13 * (Tau_v<T> / 4) * ((2 * p - 1) + 1)) * std::pow(2, -10 * (2 * p - 1)) + 2);
 	}
 }
 
@@ -290,7 +291,7 @@ template<FloatingType T>
 [[maybe_unused]]
 constexpr auto eackEaseIn(T p) -> T
 {
-	return p * p * p - p * sin(p * (Tau_v<T> / 2));
+	return p * p * p - p * std::sin(p * (Tau_v<T> / 2));
 }
 
 // Modeled after overshooting cubic y = 1-((1-x)^3-(1-x)*sin((1-x)*pi))
@@ -299,7 +300,7 @@ template<FloatingType T>
 constexpr auto backEaseOut(T p) -> T
 {
 	T f = (1 - p);
-	return 1 - (f * f * f - f * sin(f * (Tau_v<T> / 2)));
+	return 1 - (f * f * f - f * std::sin(f * (Tau_v<T> / 2)));
 }
 
 // Modeled after the piecewise overshooting cubic function:
@@ -312,12 +313,12 @@ constexpr auto backEaseInOut(T p) -> T
 	if(p < 0.5)
 	{
 		T f = 2 * p;
-		return 0.5 * (f * f * f - f * sin(f * (Tau_v<T> / 2)));
+		return 0.5 * (f * f * f - f * std::sin(f * (Tau_v<T> / 2)));
 	}
 	else
 	{
 		T f = (1 - (2*p - 1));
-		return 0.5 * (1 - (f * f * f - f * sin(f * (Tau_v<T> / 2)))) + 0.5;
+		return 0.5 * (1 - (f * f * f - f * std::sin(f * (Tau_v<T> / 2)))) + 0.5;
 	}
 }
 
@@ -325,7 +326,7 @@ template<FloatingType T>
 [[maybe_unused]]
 constexpr auto bounceEaseIn(T p) -> T
 {
-	return 1 - BounceEaseOut(1 - p);
+	return 1 - bounceEaseOut(1 - p);
 }
 
 template<FloatingType T>
@@ -356,11 +357,11 @@ constexpr auto bounceEaseInOut(T p) -> T
 {
 	if(p < 0.5)
 	{
-		return 0.5 * BounceEaseIn(p*2);
+		return 0.5 * bounceEaseIn(p*2);
 	}
 	else
 	{
-		return 0.5 * BounceEaseOut(p * 2 - 1) + 0.5;
+		return 0.5 * bounceEaseOut(p * 2 - 1) + 0.5;
 	}
 }
 
