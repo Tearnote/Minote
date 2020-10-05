@@ -7,6 +7,7 @@
 
 #include <type_traits>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib> // Provide free()
 #include <cstring>
 #include <cstdio>
@@ -84,7 +85,7 @@ struct Rng {
 	 * be the same for any given seed.
 	 * @param seed Any 64-bit integer to be used as RNG seed
 	 */
-	void seed(uint64_t seed)
+	void seed(std::uint64_t seed)
 	{
 		pcg32_srandom_r(&state, seed, 'M'*'i'+'n'*'o'+'t'*'e');
 	}
@@ -95,7 +96,7 @@ struct Rng {
 	 * @param bound The return value will be smaller than this argument
 	 * @return A random integer
 	 */
-	auto randInt(uint32_t bound) -> uint32_t
+	auto randInt(std::uint32_t bound) -> std::uint32_t
 	{
 		ASSERT(bound >= 1);
 		return pcg32_boundedrand_r(&state, bound);

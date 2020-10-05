@@ -12,11 +12,10 @@
 #include "mrs.hpp"
 #include "base/log.hpp"
 
-using minote::L;
-using minote::varray;
+using namespace minote;
 
 /// Timestamp of the next game logic update
-static nsec nextUpdate = 0;
+static minote::nsec nextUpdate = 0;
 
 /// List of collectedInputs for the next logic frame to process
 static varray<Input, 64> collectedInputs{};

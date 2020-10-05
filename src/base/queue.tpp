@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "queue.hpp"
+#include "base/queue.hpp"
 
 namespace minote {
 

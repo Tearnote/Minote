@@ -10,7 +10,7 @@
 #include "base/util.hpp"
 #include "base/log.hpp"
 
-using minote::L;
+using namespace minote;
 
 Font fonts[FontSize] = {0};
 

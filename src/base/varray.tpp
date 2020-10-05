@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "varray.hpp"
+#include "base/varray.hpp"
 
 #include <cstring>
 #include "base/util.hpp"

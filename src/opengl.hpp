@@ -11,20 +11,18 @@
 #include "glad/glad.h"
 #include "base/types.hpp"
 
-using minote::size2i;
-
 /// OpenGL texture. You can obtain an instance with textureCreate().
 /// All fields read-only.
 typedef struct Texture {
 	GLuint id;
-	size2i size;
+	minote::size2i size;
 } Texture;
 
 /// OpenGL multisample texture. You can obtain an instance with textureMSCreate().
 /// All fields read-only.
 typedef struct TextureMS {
 	GLuint id;
-	size2i size;
+	minote::size2i size;
 	GLsizei samples;
 } TextureMS;
 
@@ -32,14 +30,14 @@ typedef struct TextureMS {
 /// All fields read-only.
 typedef struct Renderbuffer {
 	GLuint id;
-	size2i size;
+	minote::size2i size;
 } Renderbuffer;
 
 /// OpenGL multisample renderbuffer. You can obtain an instance with renderbufferMSCreate().
 /// All fields read-only.
 typedef struct RenderbufferMS {
 	GLuint id;
-	size2i size;
+	minote::size2i size;
 	GLsizei samples;
 } RenderbufferMS;
 
@@ -47,7 +45,7 @@ typedef struct RenderbufferMS {
 /// All fields read-only.
 typedef struct Framebuffer {
 	GLuint id;
-	size2i size;
+	minote::size2i size;
 	GLsizei samples;
 } Framebuffer;
 
@@ -106,7 +104,7 @@ void textureFilter(Texture* t, GLenum filteringMode);
  * @param format Internal storage format. Equivalent to "internalformat" of
  * glTexImage2D
  */
-void textureStorage(Texture* t, size2i size, GLenum format);
+void textureStorage(Texture* t, minote::size2i size, GLenum format);
 
 /**
  * Upload data to a ::Texture. Storage must have been allocated first
@@ -155,7 +153,7 @@ void textureMSDestroy(TextureMS* t);
  * glTexImage2DMultisample
  * @param samples Number of samples per pixel
  */
-void textureMSStorage(TextureMS* t, size2i size, GLenum format, GLsizei samples);
+void textureMSStorage(TextureMS* t, minote::size2i size, GLenum format, GLsizei samples);
 
 /**
  * Bind a ::TextureMS to a specified ::TextureUnit, allowing it to be sampled
@@ -190,7 +188,7 @@ void renderbufferDestroy(Renderbuffer* r);
  * @param format Internal storage format. Equivalent to "internalformat" of
  * glRenderbufferStorage
  */
-void renderbufferStorage(Renderbuffer* r, size2i size, GLenum format);
+void renderbufferStorage(Renderbuffer* r, minote::size2i size, GLenum format);
 
 /**
  * Create a new ::RenderbufferMS instance. Please note that this object cannot
@@ -218,7 +216,7 @@ void renderbufferMSDestroy(RenderbufferMS* r);
  * glRenderbufferStorageMultisample
  * @param samples Number of samples per pixel
  */
-void renderbufferMSStorage(RenderbufferMS* r, size2i size, GLenum format,
+void renderbufferMSStorage(RenderbufferMS* r, minote::size2i size, GLenum format,
 	GLsizei samples);
 
 /**
@@ -319,7 +317,7 @@ void framebufferToScreen(Framebuffer* f);
  * @param dst The destination ::Framebuffer object
  * @param size Size of the area to copy, in pixels
  */
-void framebufferBlit(Framebuffer* src, Framebuffer* dst, size2i size);
+void framebufferBlit(Framebuffer* src, Framebuffer* dst, minote::size2i size);
 
 /**
  * Base struct of ::Program type. To be a valid ::Program type usable with below

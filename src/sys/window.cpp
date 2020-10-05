@@ -265,6 +265,8 @@ GLFWwindow* getRawWindow(void)
 	return window;
 }
 
+namespace minote {
+
 void Window::init()
 {
 	ASSERT(!initialized);
@@ -299,4 +301,6 @@ void Window::cleanup()
 auto Window::Window::getTime() -> nsec
 {
 	return seconds(glfwGetTime());
+}
+
 }

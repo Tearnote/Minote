@@ -7,7 +7,7 @@
 
 #include <type_traits>
 #include <array>
-#include "util.hpp"
+#include "base/util.hpp"
 
 namespace minote {
 

@@ -11,15 +11,14 @@
 #include "base/types.hpp"
 #include "base/time.hpp"
 
-using minote::size2i;
-using minote::nsec;
-
 /// Struct containing information about a keypress event
 typedef struct KeyInput {
 	int key; ///< GLFW keycode
 	int action; ///< GLFW_PRESS or GLFW_RELEASE
-	nsec timestamp; ///< Time when the event was detected
+	minote::nsec timestamp; ///< Time when the event was detected
 } KeyInput;
+
+namespace minote {
 
 struct Window {
 
@@ -47,6 +46,8 @@ struct Window {
 
 };
 
+}
+
 /**
  * Initialize the window system, showing the window with specified parameters
  * on the screen. The OpenGL context is inactive by default. Requires
@@ -56,7 +57,7 @@ struct Window {
  * @param fullscreen Fullscreen if true, windowed if false. A fullscreen window
  * is created at display resolution, ignoring the @a size parameter
  */
-void windowInit(const char* title, size2i size, bool fullscreen);
+void windowInit(const char* title, minote::size2i size, bool fullscreen);
 
 /**
  * Close the open window and clean up the window system. No window function
@@ -99,7 +100,7 @@ const char* windowGetTitle(void);
  * @return Size of the window in pixels
  * @remark This function is thread-safe.
  */
-size2i windowGetSize(void);
+minote::size2i windowGetSize(void);
 
 /**
  * Return the scale of the window, with 1.0 being "normal".

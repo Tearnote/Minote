@@ -11,7 +11,7 @@
 #include "base/util.hpp"
 #include "base/log.hpp"
 
-using minote::L;
+using namespace minote;
 
 #define BloomPasses 6
 

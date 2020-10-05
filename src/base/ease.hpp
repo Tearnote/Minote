@@ -8,7 +8,7 @@
 #pragma once
 
 #include <cmath>
-#include "util.hpp"
+#include "base/util.hpp"
 
 namespace minote {
 

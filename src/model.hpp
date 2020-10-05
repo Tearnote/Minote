@@ -10,9 +10,6 @@
 #include "base/types.hpp"
 #include "opengl.hpp"
 
-using minote::point3f;
-using minote::color4;
-
 /// Convenient 4x4 matrix for when you want to perform no transform
 inline mat4x4 IdentityMatrix{{1.0f, 0.0f, 0.0f, 0.0f},
                              {0.0f, 1.0f, 0.0f, 0.0f},
@@ -21,8 +18,8 @@ inline mat4x4 IdentityMatrix{{1.0f, 0.0f, 0.0f, 0.0f},
 
 /// Data of a single mesh vertex of ::ModelFlat
 typedef struct VertexFlat {
-	point3f pos; ///< in model space
-	color4 color;
+	minote::point3f pos; ///< in model space
+	minote::color4 color;
 } VertexFlat;
 
 /// Data of a single mesh vertex of ::ModelPhong
@@ -128,7 +125,7 @@ void modelDestroy(Model* m);
  * @param transforms 4x4 matrices for transforming each instance
  */
 void modelDraw(Model* m, size_t instances,
-	color4 tints[], color4 highlights[],
+	minote::color4 tints[], minote::color4 highlights[],
 	mat4x4 transforms[]);
 
 #endif //MINOTE_MODEL_H

@@ -12,22 +12,18 @@
 #include "base/ease.hpp"
 #include "base/time.hpp"
 
-using minote::EasingFunction;
-using minote::point3f;
-using minote::color4;
-
 /// Details of a particle effect
 typedef struct ParticleParams {
-	color4 color; ///< Tint of every particle
-	nsec durationMin; ///< Smallest possible duration
-	nsec durationMax; ///< Largest possible duration
+	minote::color4 color; ///< Tint of every particle
+	minote::nsec durationMin; ///< Smallest possible duration
+	minote::nsec durationMax; ///< Largest possible duration
 	float distanceMin; ///< Smallest distance travelled
 	float distanceMax; ///< Largest distance travelled
 	float spinMin; ///< Smallest rate of turning
 	float spinMax; ///< Largest rate of turning
 	int directionVert; ///< 1 for up, -1 for down, 0 for random
 	int directionHorz; ///< 1 for right, -1 for left, 0 for random
-	EasingFunction<float> ease; ///< Overall easing profile of the particles' path
+	minote::EasingFunction<float> ease; ///< Overall easing profile of the particles' path
 } ParticleParams;
 
 /**
@@ -58,6 +54,6 @@ void particlesDraw(void);
  * @param count Number of particles
  * @param params Generation parameters
  */
-void particlesGenerate(point3f position, size_t count, ParticleParams* params);
+void particlesGenerate(minote::point3f position, size_t count, ParticleParams* params);
 
 #endif //MINOTE_PARTICLES_H

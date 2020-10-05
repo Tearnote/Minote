@@ -9,9 +9,6 @@
 #include "linmath/linmath.h"
 #include "base/types.hpp"
 
-using minote::point3f;
-using minote::color3;
-
 /// The 3D projection matrix (view space -> screen space).
 /// Standard OpenGL coordinates - Z points towards the screen.
 /// Read-only.
@@ -26,14 +23,14 @@ extern mat4x4 worldScreenProjection;
 extern mat4x4 worldCamera;
 
 /// Light source position, in world space. Read-write.
-extern point3f worldLightPosition;
+extern minote::point3f worldLightPosition;
 
 /// Light source color. Read-write.
-extern color3 worldLightColor;
+extern minote::color3 worldLightColor;
 
 /// Ambient light color. This will generally be the average color
 /// of the scene's background objects. Read-write.
-extern color3 worldAmbientColor;
+extern minote::color3 worldAmbientColor;
 
 /**
  * Initialize world data such as lights and matrices. This must be called after

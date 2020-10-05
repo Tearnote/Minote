@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include "ease.hpp"
-#include "util.hpp"
-#include "time.hpp"
+#include "base/ease.hpp"
+#include "base/util.hpp"
+#include "base/time.hpp"
 #include "sys/window.hpp"
 
 namespace minote {

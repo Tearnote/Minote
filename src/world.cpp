@@ -10,7 +10,7 @@
 #include "sys/window.hpp"
 #include "base/util.hpp"
 
-using minote::rad;
+using namespace minote;
 
 /// Start of the clipping plane, in world distance units
 #define ProjectionNear 0.1f

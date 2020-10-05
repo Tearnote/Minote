@@ -9,9 +9,6 @@
 #include "base/types.hpp"
 #include "fontlist.hpp"
 
-using minote::point3f;
-using minote::color4;
-
 /**
  * Initialize text drawing. Must be called after fontInit().
  * Must be called before any other text functions.
@@ -34,7 +31,7 @@ void textCleanup(void);
  * @param fmt Format string
  * @param ... Any additional arguments for string replacement
  */
-void textQueue(FontType font, float size, point3f pos, color4 color,
+void textQueue(FontType font, float size, minote::point3f pos, minote::color4 color,
 	const char* fmt, ...);
 
 /**
@@ -49,8 +46,8 @@ void textQueue(FontType font, float size, point3f pos, color4 color,
  * @param fmt Format string
  * @param ... Any additional arguments for string replacement
  */
-void textQueueDir(FontType font, float size, point3f pos, point3f dir, point3f up,
-	color4 color, const char* fmt, ...);
+void textQueueDir(FontType font, float size, minote::point3f pos, minote::point3f dir, minote::point3f up,
+	minote::color4 color, const char* fmt, ...);
 
 /**
  * Render all queued strings on the screen, with as few draw calls as possible.
