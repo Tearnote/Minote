@@ -8,8 +8,11 @@
 
 #include <stddef.h>
 #include "basetypes.hpp"
-#include "time.hpp"
 #include "tween.hpp"
+#include "ease.hpp"
+#include "time.hpp"
+
+using minote::EasingFunction;
 
 /// Details of a particle effect
 typedef struct ParticleParams {
@@ -22,7 +25,7 @@ typedef struct ParticleParams {
 	float spinMax; ///< Largest rate of turning
 	int directionVert; ///< 1 for up, -1 for down, 0 for random
 	int directionHorz; ///< 1 for right, -1 for left, 0 for random
-	EaseType ease; ///< Overall easing profile of the particles' path
+	EasingFunction<float> ease; ///< Overall easing profile of the particles' path
 } ParticleParams;
 
 /**

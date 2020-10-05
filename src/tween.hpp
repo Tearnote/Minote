@@ -3,58 +3,63 @@
  * @file
  */
 
-#ifndef MINOTE_TWEEN_H
-#define MINOTE_TWEEN_H
+#pragma once
 
+#include "ease.hpp"
+#include "util.hpp"
 #include "time.hpp"
 
-/**
- * The various kinds of easing functions.
- * @see https://easings.net/en
- */
-typedef enum EaseType {
-	EaseNone, ///< zero value
-	EaseLinear,
-	EaseInQuadratic, EaseOutQuadratic, EaseInOutQuadratic,
-	EaseInCubic, EaseOutCubic, EaseInOutCubic,
-	EaseInQuartic, EaseOutQuartic, EaseInOutQuartic,
-	EaseInQuintic, EaseOutQuintic, EaseInOutQuintic,
-	EaseInSine, EaseOutSine, EaseInOutSine,
-	EaseInCircular, EaseOutCircular, EaseInOutCircular,
-	EaseInExponential, EaseOutExponential, EaseInOutExponential,
-	EaseInElastic, EaseOutElastic, EaseInOutElastic,
-	EaseInBack, EaseOutBack, EaseInOutBack,
-	EaseInBounce, EaseOutBounce, EaseInOutBounce,
-	EaseSize ///< terminator
-} EaseType;
+namespace minote {
 
 /**
- * Description of a tween instance. To use this with below functions,
- * you need to fill in most of the fields manually. However, helper functions
- * exist to reuse the same instance repeatedly.
+ * Description of a tween instance. most of the fields need to be filled in
+ * manually before use; designated initializer syntax is convenient for this.
  */
-typedef struct Tween {
-	float from; ///< initial value
-	float to; ///< final value
-	nsec start; ///< time of starting the tween
-	nsec duration; ///< length of time that the tween will take to finish
-	EaseType type; ///< easing function to use during the tween
-} Tween;
+template<FloatingType T = float>
+struct Tween {
 
-/**
- * Calculate the current value of a ::Tween. It is safe to call this outside
- * of the specified time range, both before and after - the value will
- * be clamped.
- * @param t The ::Tween data
- * @return Calculated value
- */
-float tweenApply(Tween* t);
+	using Type = T;
 
-/**
- * Move a ::Tween's starting position to current time, replaying a configured
- * instance.
- * @param t The ::Tween data
- */
-void tweenRestart(Tween* t);
+	Type from{0.0f}; ///< initial value
+	Type to{1.0f}; ///< final value
+	nsec start{0}; ///< time of starting the tween
+	nsec duration{secToNsec(1)}; ///< time the tween will take to finish
+	EasingFunction<Type> type{linearInterpolation}; ///< easing function to use during the tween
 
-#endif //MINOTE_TWEEN_H
+	/**
+	 * Convenience function to replay a tween from the current moment.
+	 */
+	void restart() { start = getTime(); }
+
+	/**
+	 * Calculate the current value of the tween. The return value will
+	 * be clamped if it is outside of the specified time range.
+	 * @return Current tween result
+	 */
+	auto apply() const -> Type { return applyAt(getTime()); }
+
+	/**
+	 * Calculate the value of the tween for a specified moment in time.
+	 * @param time Timestamp to calculate for
+	 * @return Tween result at specified moment
+	 */
+	constexpr auto applyAt(nsec time) const -> Type;
+
+};
+
+template<FloatingType T>
+constexpr auto Tween<T>::applyAt(nsec time) const -> Type
+{
+	if (start >= time)
+		return from;
+	if (start + duration <= time)
+		return to;
+
+	const nsec elapsed = time - start;
+	const Type progress = type(static_cast<Type>(elapsed) / duration);
+
+	const Type span = to - from;
+	return from + span * progress;
+}
+
+}

@@ -1,40 +1,39 @@
-//
-//  easing.c
-//
-//  Copyright (c) 2011, Auerhaus Development, LLC
-//
-//  This program is free software. It comes without any warranty, to
-//  the extent permitted by applicable law. You can redistribute it
-//  and/or modify it under the terms of the Do What The Fuck You Want
-//  To Public License, Version 2, as published by Sam Hocevar. See
-//  http://sam.zoy.org/wtfpl/COPYING for more details.
-//
+/**
+ * Easing functions, adapted from AHEasing project to constexpr C++
+ * @file
+ * @see A large portion adapted from https://github.com/warrenm/AHEasing,
+ * under WTFPL license.
+ */
 
-#include <math.h>
-#include "easing.h"
+#pragma once
 
-// C standard doesn't guarantee these to exist in math.h
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif //M_PI
-#ifndef M_PI_2
-#define M_PI_2 1.57079632679489661923
-#endif //M_PI_2
+#include "util.hpp"
+
+namespace minote {
+
+template<FloatingType T>
+using EasingFunction = auto (*)(T) -> T;
 
 // Modeled after the line y = x
-AHFloat LinearInterpolation(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto linearInterpolation(T p) -> T
 {
 	return p;
 }
 
 // Modeled after the parabola y = x^2
-AHFloat QuadraticEaseIn(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto quadraticEaseIn(T p) -> T
 {
 	return p * p;
 }
 
 // Modeled after the parabola y = -x^2 + 2x
-AHFloat QuadraticEaseOut(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto quadraticEaseOut(T p) -> T
 {
 	return -(p * (p - 2));
 }
@@ -42,7 +41,9 @@ AHFloat QuadraticEaseOut(AHFloat p)
 // Modeled after the piecewise quadratic
 // y = (1/2)((2x)^2)             ; [0, 0.5)
 // y = -(1/2)((2x-1)*(2x-3) - 1) ; [0.5, 1]
-AHFloat QuadraticEaseInOut(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto quadraticEaseInOut(T p) -> T
 {
 	if(p < 0.5)
 	{
@@ -55,22 +56,28 @@ AHFloat QuadraticEaseInOut(AHFloat p)
 }
 
 // Modeled after the cubic y = x^3
-AHFloat CubicEaseIn(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto cubicEaseIn(T p) -> T
 {
 	return p * p * p;
 }
 
 // Modeled after the cubic y = (x - 1)^3 + 1
-AHFloat CubicEaseOut(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto cubicEaseOut(T p) -> T
 {
-	AHFloat f = (p - 1);
+	T f = (p - 1);
 	return f * f * f + 1;
 }
 
 // Modeled after the piecewise cubic
 // y = (1/2)((2x)^3)       ; [0, 0.5)
 // y = (1/2)((2x-2)^3 + 2) ; [0.5, 1]
-AHFloat CubicEaseInOut(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto cubicEaseInOut(T p) -> T
 {
 	if(p < 0.5)
 	{
@@ -78,28 +85,34 @@ AHFloat CubicEaseInOut(AHFloat p)
 	}
 	else
 	{
-		AHFloat f = ((2 * p) - 2);
+		T f = ((2 * p) - 2);
 		return 0.5 * f * f * f + 1;
 	}
 }
 
 // Modeled after the quartic x^4
-AHFloat QuarticEaseIn(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto quarticEaseIn(T p) -> T
 {
 	return p * p * p * p;
 }
 
 // Modeled after the quartic y = 1 - (x - 1)^4
-AHFloat QuarticEaseOut(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto quarticEaseOut(T p) -> T
 {
-	AHFloat f = (p - 1);
+	T f = (p - 1);
 	return f * f * f * (1 - p) + 1;
 }
 
 // Modeled after the piecewise quartic
 // y = (1/2)((2x)^4)        ; [0, 0.5)
 // y = -(1/2)((2x-2)^4 - 2) ; [0.5, 1]
-AHFloat QuarticEaseInOut(AHFloat p) 
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto quarticEaseInOut(T p) -> T
 {
 	if(p < 0.5)
 	{
@@ -107,28 +120,34 @@ AHFloat QuarticEaseInOut(AHFloat p)
 	}
 	else
 	{
-		AHFloat f = (p - 1);
+		T f = (p - 1);
 		return -8 * f * f * f * f + 1;
 	}
 }
 
 // Modeled after the quintic y = x^5
-AHFloat QuinticEaseIn(AHFloat p) 
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto quinticEaseIn(T p) -> T
 {
 	return p * p * p * p * p;
 }
 
 // Modeled after the quintic y = (x - 1)^5 + 1
-AHFloat QuinticEaseOut(AHFloat p) 
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto quinticEaseOut(T p) -> T
 {
-	AHFloat f = (p - 1);
+	T f = (p - 1);
 	return f * f * f * f * f + 1;
 }
 
 // Modeled after the piecewise quintic
 // y = (1/2)((2x)^5)       ; [0, 0.5)
 // y = (1/2)((2x-2)^5 + 2) ; [0.5, 1]
-AHFloat QuinticEaseInOut(AHFloat p) 
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto quinticEaseInOut(T p) -> T
 {
 	if(p < 0.5)
 	{
@@ -136,37 +155,47 @@ AHFloat QuinticEaseInOut(AHFloat p)
 	}
 	else
 	{
-		AHFloat f = ((2 * p) - 2);
+		T f = ((2 * p) - 2);
 		return  0.5 * f * f * f * f * f + 1;
 	}
 }
 
 // Modeled after quarter-cycle of sine wave
-AHFloat SineEaseIn(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto sineEaseIn(T p) -> T
 {
-	return sin((p - 1) * M_PI_2) + 1;
+	return sin((p - 1) * (Tau_v<T> / 4)) + 1;
 }
 
 // Modeled after quarter-cycle of sine wave (different phase)
-AHFloat SineEaseOut(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto sineEaseOut(T p) -> T
 {
-	return sin(p * M_PI_2);
+	return sin(p * (Tau_v<T> / 4));
 }
 
 // Modeled after half sine wave
-AHFloat SineEaseInOut(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto sineEaseInOut(T p) -> T
 {
-	return 0.5 * (1 - cos(p * M_PI));
+	return 0.5 * (1 - cos(p * (Tau_v<T> / 2)));
 }
 
 // Modeled after shifted quadrant IV of unit circle
-AHFloat CircularEaseIn(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto circularEaseIn(T p) -> T
 {
 	return 1 - sqrt(1 - (p * p));
 }
 
 // Modeled after shifted quadrant II of unit circle
-AHFloat CircularEaseOut(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto circularEaseOut(T p) -> T
 {
 	return sqrt((2 - p) * p);
 }
@@ -174,7 +203,9 @@ AHFloat CircularEaseOut(AHFloat p)
 // Modeled after the piecewise circular function
 // y = (1/2)(1 - sqrt(1 - 4x^2))           ; [0, 0.5)
 // y = (1/2)(sqrt(-(2x - 3)*(2x - 1)) + 1) ; [0.5, 1]
-AHFloat CircularEaseInOut(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto circularEaseInOut(T p) -> T
 {
 	if(p < 0.5)
 	{
@@ -187,13 +218,17 @@ AHFloat CircularEaseInOut(AHFloat p)
 }
 
 // Modeled after the exponential function y = 2^(10(x - 1))
-AHFloat ExponentialEaseIn(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto exponentialEaseIn(T p) -> T
 {
 	return (p == 0.0) ? p : pow(2, 10 * (p - 1));
 }
 
 // Modeled after the exponential function y = -2^(-10x) + 1
-AHFloat ExponentialEaseOut(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto exponentialEaseOut(T p) -> T
 {
 	return (p == 1.0) ? p : 1 - pow(2, -10 * p);
 }
@@ -201,10 +236,12 @@ AHFloat ExponentialEaseOut(AHFloat p)
 // Modeled after the piecewise exponential
 // y = (1/2)2^(10(2x - 1))         ; [0,0.5)
 // y = -(1/2)*2^(-10(2x - 1))) + 1 ; [0.5,1]
-AHFloat ExponentialEaseInOut(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto exponentialEaseInOut(T p) -> T
 {
 	if(p == 0.0 || p == 1.0) return p;
-	
+
 	if(p < 0.5)
 	{
 		return 0.5 * pow(2, (20 * p) - 10);
@@ -216,68 +253,84 @@ AHFloat ExponentialEaseInOut(AHFloat p)
 }
 
 // Modeled after the damped sine wave y = sin(13pi/2*x)*pow(2, 10 * (x - 1))
-AHFloat ElasticEaseIn(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto elasticEaseIn(T p) -> T
 {
-	return sin(13 * M_PI_2 * p) * pow(2, 10 * (p - 1));
+	return sin(13 * (Tau_v<T> / 4) * p) * pow(2, 10 * (p - 1));
 }
 
 // Modeled after the damped sine wave y = sin(-13pi/2*(x + 1))*pow(2, -10x) + 1
-AHFloat ElasticEaseOut(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto elasticEaseOut(T p) -> T
 {
-	return sin(-13 * M_PI_2 * (p + 1)) * pow(2, -10 * p) + 1;
+	return sin(-13 * (Tau_v<T> / 4) * (p + 1)) * pow(2, -10 * p) + 1;
 }
 
 // Modeled after the piecewise exponentially-damped sine wave:
 // y = (1/2)*sin(13pi/2*(2*x))*pow(2, 10 * ((2*x) - 1))      ; [0,0.5)
 // y = (1/2)*(sin(-13pi/2*((2x-1)+1))*pow(2,-10(2*x-1)) + 2) ; [0.5, 1]
-AHFloat ElasticEaseInOut(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto elasticEaseInOut(T p) -> T
 {
 	if(p < 0.5)
 	{
-		return 0.5 * sin(13 * M_PI_2 * (2 * p)) * pow(2, 10 * ((2 * p) - 1));
+		return 0.5 * sin(13 * (Tau_v<T> / 4) * (2 * p)) * pow(2, 10 * ((2 * p) - 1));
 	}
 	else
 	{
-		return 0.5 * (sin(-13 * M_PI_2 * ((2 * p - 1) + 1)) * pow(2, -10 * (2 * p - 1)) + 2);
+		return 0.5 * (sin(-13 * (Tau_v<T> / 4) * ((2 * p - 1) + 1)) * pow(2, -10 * (2 * p - 1)) + 2);
 	}
 }
 
 // Modeled after the overshooting cubic y = x^3-x*sin(x*pi)
-AHFloat BackEaseIn(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto eackEaseIn(T p) -> T
 {
-	return p * p * p - p * sin(p * M_PI);
+	return p * p * p - p * sin(p * (Tau_v<T> / 2));
 }
 
 // Modeled after overshooting cubic y = 1-((1-x)^3-(1-x)*sin((1-x)*pi))
-AHFloat BackEaseOut(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto backEaseOut(T p) -> T
 {
-	AHFloat f = (1 - p);
-	return 1 - (f * f * f - f * sin(f * M_PI));
+	T f = (1 - p);
+	return 1 - (f * f * f - f * sin(f * (Tau_v<T> / 2)));
 }
 
 // Modeled after the piecewise overshooting cubic function:
 // y = (1/2)*((2x)^3-(2x)*sin(2*x*pi))           ; [0, 0.5)
 // y = (1/2)*(1-((1-x)^3-(1-x)*sin((1-x)*pi))+1) ; [0.5, 1]
-AHFloat BackEaseInOut(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto backEaseInOut(T p) -> T
 {
 	if(p < 0.5)
 	{
-		AHFloat f = 2 * p;
-		return 0.5 * (f * f * f - f * sin(f * M_PI));
+		T f = 2 * p;
+		return 0.5 * (f * f * f - f * sin(f * (Tau_v<T> / 2)));
 	}
 	else
 	{
-		AHFloat f = (1 - (2*p - 1));
-		return 0.5 * (1 - (f * f * f - f * sin(f * M_PI))) + 0.5;
+		T f = (1 - (2*p - 1));
+		return 0.5 * (1 - (f * f * f - f * sin(f * (Tau_v<T> / 2)))) + 0.5;
 	}
 }
 
-AHFloat BounceEaseIn(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto bounceEaseIn(T p) -> T
 {
 	return 1 - BounceEaseOut(1 - p);
 }
 
-AHFloat BounceEaseOut(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto bounceEaseOut(T p) -> T
 {
 	if(p < 4/11.0)
 	{
@@ -297,7 +350,9 @@ AHFloat BounceEaseOut(AHFloat p)
 	}
 }
 
-AHFloat BounceEaseInOut(AHFloat p)
+template<FloatingType T>
+[[maybe_unused]]
+constexpr auto bounceEaseInOut(T p) -> T
 {
 	if(p < 0.5)
 	{
@@ -307,4 +362,6 @@ AHFloat BounceEaseInOut(AHFloat p)
 	{
 		return 0.5 * BounceEaseOut(p * 2 - 1) + 0.5;
 	}
+}
+
 }

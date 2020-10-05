@@ -14,10 +14,7 @@
 #include "mrs.hpp"
 #include "log.hpp"
 
-using minote::varray;
-using minote::mod;
-using minote::rad;
-using minote::L;
+using namespace minote;
 
 static constexpr std::size_t BlocksMax{512};
 static constexpr std::size_t BordersMax{1024};
@@ -46,58 +43,58 @@ static point2i lastPlayerPos = {0, 0};
 static int lastPlayerRotation = 0;
 
 /// Tweening of player piece position
-static Tween playerPosX = {
+static Tween<float> playerPosX = {
 	.from = 0.0f,
 	.to = 0.0f,
 	.duration = 3 * MrsUpdateTick,
-	.type = EaseOutExponential
+	.type = exponentialEaseOut
 };
 
-static Tween playerPosY = {
+static Tween<float> playerPosY = {
 	.from = 0.0f,
 	.to = 0.0f,
 	.duration = 3 * MrsUpdateTick,
-	.type = EaseOutExponential
+	.type = exponentialEaseOut
 };
 
 /// Tweening of player piece rotation
-static Tween playerRotation = {
+static Tween<float> playerRotation = {
 	.from = 0.0f,
 	.to = 0.0f,
 	.duration = 3 * MrsUpdateTick,
-	.type = EaseOutExponential
+	.type = exponentialEaseOut
 };
 
 /// Player piece animation after the piece locks
-static Tween lockFlash = {
+static Tween<float> lockFlash = {
 	.from = 1.0f,
 	.to = 0.0f,
 	.duration = 8 * MrsUpdateTick,
-	.type = EaseLinear
+	.type = linearInterpolation
 };
 
 /// Player piece animation as the lock delay ticks down
-static Tween lockDim = {
+static Tween<float> lockDim = {
 	.from = 1.0f,
 	.to = 0.1f,
 	.duration = MrsLockDelay * MrsUpdateTick,
-	.type = EaseInQuadratic
+	.type = quadraticEaseIn
 };
 
 /// Animation of the scene when combo counter changes
-static Tween comboFade = {
+static Tween<float> comboFade = {
 	.from = 1.1f,
 	.to = 1.1f,
 	.duration = 24 * MrsUpdateTick,
-	.type = EaseOutQuadratic
+	.type = quadraticEaseOut
 };
 
 /// Thump animation of a falling stack
-static Tween clearFall = {
+static Tween<float> clearFall = {
 	.from = 0.0f,
 	.to = 1.0f,
 	.duration = MrsClearDelay * MrsUpdateTick,
-	.type = EaseInCubic
+	.type = cubicEaseIn
 };
 
 /// Sparks released on line clear
@@ -111,7 +108,7 @@ static ParticleParams particlesClear = {
 	.spinMax = 0.3f,
 	.directionVert = 0,
 	.directionHorz = 0,
-	.ease = EaseOutQuartic
+	.ease = quarticEaseOut
 };
 
 /// Cloud of dust caused by a player piece falling on the stack
@@ -126,7 +123,7 @@ static ParticleParams particlesThump = {
 	.spinMax = 1.6f,
 	.directionVert = 1,
 	.directionHorz = 0,
-	.ease = EaseOutExponential
+	.ease = exponentialEaseOut
 };
 
 /// Sparks of a player piece being shifted across the playfield
@@ -140,7 +137,7 @@ static ParticleParams particlesSlide = {
 	.spinMax = 1.2f,
 	.directionVert = 1,
 	.directionHorz = 0, // runtime
-	.ease = EaseOutExponential
+	.ease = exponentialEaseOut
 };
 
 /// Sparks of a player piece being DASed across the playfield
@@ -154,7 +151,7 @@ static ParticleParams particlesSlideFast = {
 	.spinMax = 1.2f,
 	.directionVert = 1,
 	.directionHorz = 0, // runtime
-	.ease = EaseOutExponential
+	.ease = exponentialEaseOut
 };
 
 /**
@@ -180,7 +177,7 @@ static void mrsEffectDrop(void)
  */
 static void mrsDrawScene(void)
 {
-	float boost = tweenApply(&comboFade);
+	float boost = comboFade.apply();
 	color4 boostColor[] = {{boost, boost, boost, 1.0f}};
 	modelDraw(scene, 1, boostColor, nullptr,
 		&IdentityMatrix);
@@ -201,7 +198,7 @@ static void mrsDrawGuide(void)
 static void mrsQueueField(void)
 {
 	int linesCleared = 0;
-	float fallProgress = tweenApply(&clearFall);
+	float fallProgress = clearFall.apply();
 
 	for (size_t i = 0; i < FieldWidth * FieldHeight; i += 1) {
 		int x = i % FieldWidth;
@@ -254,7 +251,7 @@ static void mrsQueueField(void)
 			}
 		}
 		if (playerCell) {
-			float flash = tweenApply(&lockFlash);
+			float flash = lockFlash.apply();
 			*highlight = ((color4){MrsLockFlashBrightness, MrsLockFlashBrightness,
 				          MrsLockFlashBrightness, flash});
 		} else {
@@ -274,22 +271,22 @@ static void mrsQueuePlayer(void)
 {
 	// Tween the player position
 	if (mrsTet.player.pos.x != lastPlayerPos.x) {
-		playerPosX.from = tweenApply(&playerPosX);
+		playerPosX.from = playerPosX.apply();
 		playerPosX.to = mrsTet.player.pos.x;
 		if (mrsTet.player.autoshiftCharge == MrsAutoshiftCharge) {
 			playerPosX.duration = 1 * MrsUpdateTick;
-			playerPosX.type = EaseLinear;
+			playerPosX.type = linearInterpolation;
 		} else {
 			playerPosX.duration = 3 * MrsUpdateTick;
-			playerPosX.type = EaseOutExponential;
+			playerPosX.type = exponentialEaseOut;
 		}
-		tweenRestart(&playerPosX);
+		playerPosX.restart();
 		lastPlayerPos.x = mrsTet.player.pos.x;
 	}
 	if (mrsTet.player.pos.y != lastPlayerPos.y) {
-		playerPosY.from = tweenApply(&playerPosY);
+		playerPosY.from = playerPosY.apply();
 		playerPosY.to = mrsTet.player.pos.y;
-		tweenRestart(&playerPosY);
+		playerPosY.restart();
 		lastPlayerPos.y = mrsTet.player.pos.y;
 	}
 
@@ -298,10 +295,10 @@ static void mrsQueuePlayer(void)
 		int delta = mrsTet.player.rotation - mod(lastPlayerRotation, +SpinSize);
 		if (delta == 3) delta -= 4;
 		if (delta == -3) delta += 4;
-		playerRotation.from = tweenApply(&playerRotation);
+		playerRotation.from = playerRotation.apply();
 		lastPlayerRotation += delta;
 		playerRotation.to = lastPlayerRotation;
-		tweenRestart(&playerRotation);
+		playerRotation.restart();
 	}
 
 	// Stop if no drawing needed
@@ -319,11 +316,11 @@ static void mrsQueuePlayer(void)
 	mat4x4 pieceRotationTemp = {0};
 	mat4x4 pieceTransform = {0};
 	mat4x4_translate(pieceTranslation,
-		tweenApply(&playerPosX) - (signed)(FieldWidth / 2),
-		tweenApply(&playerPosY), 0.0f);
+		playerPosX.apply() - (signed)(FieldWidth / 2),
+		playerPosY.apply(), 0.0f);
 	mat4x4_translate(pieceRotationTemp, 0.5f, 0.5f, 0.0f);
 	mat4x4_rotate_Z(pieceRotation, pieceRotationTemp,
-		tweenApply(&playerRotation) * rad(90.0f));
+		playerRotation.apply() * rad(90.0f));
 	mat4x4_translate_in_place(pieceRotation, -0.5f, -0.5f, 0.0f);
 	mat4x4_mul(pieceTransform, pieceTranslation, pieceRotation);
 
@@ -357,9 +354,9 @@ static void mrsQueuePlayer(void)
 		// Insert calculated values
 		*tint = minoColor(mrsTet.player.type);
 		if (mrsTet.player.lockDelay != 0) {
-			tweenRestart(&lockDim);
+			lockDim.restart();
 			lockDim.start -= mrsTet.player.lockDelay * MrsUpdateTick;
-			float dim = tweenApply(&lockDim);
+			float dim = lockDim.apply();
 			tint->r *= dim;
 			tint->g *= dim;
 			tint->b *= dim;
@@ -502,7 +499,7 @@ static void mrsQueueBorder(point3f pos, size3f size, color4 color)
 static void mrsDrawBorder(void)
 {
 	int linesCleared = 0;
-	float fallProgress = tweenApply(&clearFall);
+	float fallProgress = clearFall.apply();
 
 	for (size_t i = 0; i < FieldWidth * FieldHeight; i += 1) {
 		int x = i % FieldWidth;
@@ -688,14 +685,14 @@ void mrsEffectSpawn(void)
 	playerPosY.to = lastPlayerPos.y;
 	playerRotation.from = lastPlayerRotation;
 	playerRotation.to = lastPlayerRotation;
-	tweenRestart(&playerPosX);
-	tweenRestart(&playerPosY);
-	tweenRestart(&playerRotation);
+	playerPosX.restart();
+	playerPosY.restart();
+	playerRotation.restart();
 }
 
 void mrsEffectLock(void)
 {
-	tweenRestart(&lockFlash);
+	lockFlash.restart();
 }
 
 void mrsEffectClear(int row, int power)
@@ -718,7 +715,7 @@ void mrsEffectClear(int row, int power)
 		}
 	}
 
-	tweenRestart(&clearFall);
+	clearFall.restart();
 }
 
 void mrsEffectThump(int row)

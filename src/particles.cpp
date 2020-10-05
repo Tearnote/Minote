@@ -8,16 +8,12 @@
 #include <stdbool.h>
 #include <assert.h>
 #include <time.h>
-#include "aheasing/easing.h"
 #include "cephes/protos.h"
 #include "varray.hpp"
 #include "model.hpp"
 #include "util.hpp"
 
-using minote::varray;
-using minote::Rng;
-using minote::Tau;
-using minote::rad;
+using namespace minote;
 
 /// Progress level after which a particle begins to fade out
 #define ShimmerFade 0.9f
@@ -35,7 +31,7 @@ typedef struct Particle {
 	nsec duration; ///< Total lifetime
 	float distance; ///< Total distance travelled from origin
 	float spin; ///< Rate at which the particle turns
-	EaseType ease; ///< Easing profile of the particle progress
+	EasingFunction<float> ease; ///< Easing profile of the particle progress
 } Particle;
 
 constexpr std::size_t MaxParticles{4096};
@@ -97,14 +93,14 @@ void particlesDraw(void)
 		Particle* current = &particles[i];
 		assert(current->spin > 0.0f);
 
-		Tween progressTween = {
+		Tween<float> progressTween = {
 			.from = 0.0f,
 			.to = 1.0f,
 			.start = current->start,
 			.duration = current->duration,
 			.type = current->ease
 		};
-		float progress = tweenApply(&progressTween);
+		float progress = progressTween.apply();
 		assert(progress >= 0.0f && progress <= 1.0f);
 
 		double x;
@@ -138,7 +134,7 @@ void particlesDraw(void)
 			float fadeout = progress - ShimmerFade;
 			fadeout *= 1.0f / (1.0f - ShimmerFade);
 			fadeout = 1.0f - fadeout;
-			fadeout = CubicEaseIn(fadeout);
+			fadeout = cubicEaseIn(fadeout);
 			tint->a *= fadeout;
 		}
 
@@ -196,7 +192,7 @@ void particlesGenerate(point3f position, size_t count, ParticleParams* params)
 		newParticle->distance += params->distanceMin;
 
 		newParticle->spin = rng.randFloat();
-		newParticle->spin = QuarticEaseIn(newParticle->spin);
+		newParticle->spin = quarticEaseIn(newParticle->spin);
 		newParticle->spin *= params->spinMax - params->spinMin;
 		newParticle->spin += params->spinMin;
 	}

@@ -100,7 +100,6 @@ set(C_INTERNALLIBS
         lib/glad/glad.h lib/glad/glad.c lib/glad/KHR/khrplatform.h
         lib/linmath/linmath.h
         lib/pcg/pcg_basic.h lib/pcg/pcg_basic.c
-        lib/aheasing/easing.h lib/aheasing/easing.c
         lib/smaa/AreaTex.h lib/smaa/SearchTex.h
         lib/nuklear/nuklear.h
         lib/cephes/protos.h lib/cephes/mconf.h
@@ -130,12 +129,13 @@ set(CXX_SOURCES
         src/bloom.hpp src/bloom.cpp
         src/model.hpp src/model.cpp
         src/world.hpp src/world.cpp
-        src/tween.hpp src/tween.cpp
+        src/tween.hpp
         src/particles.hpp src/particles.cpp
         src/debug.hpp src/debug.cpp
         src/fontlist.hpp
         src/font.hpp src/font.cpp
-        src/text.hpp src/text.cpp)
+        src/text.hpp src/text.cpp
+        src/ease.hpp)
 
 add_executable(Minote ${CXX_SOURCES} ${C_INTERNALLIBS})
 target_compile_options(Minote PRIVATE
