@@ -7,7 +7,7 @@
 
 #include "ease.hpp"
 #include "util.hpp"
-#include "time.hpp"
+#include "../time.hpp"
 
 namespace minote {
 

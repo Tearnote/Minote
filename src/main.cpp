@@ -21,7 +21,7 @@
 #include "system.hpp"
 #include "debug.hpp"
 #include "game.hpp"
-#include "log.hpp"
+#include "base/log.hpp"
 
 using namespace minote; // Because we can't namespace main()
 

@@ -7,8 +7,8 @@
 
 #include <assert.h>
 #include "window.hpp"
-#include "util.hpp"
-#include "log.hpp"
+#include "base/util.hpp"
+#include "base/log.hpp"
 
 using minote::L;
 using minote::allocate;

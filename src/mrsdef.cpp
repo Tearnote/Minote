@@ -5,7 +5,7 @@
  
 #include "mrsdef.hpp"
 
-#include "util.hpp"
+#include "base/util.hpp"
 
 piece MrsPieces[MinoGarbage] = {
 	{}, // MinoNone

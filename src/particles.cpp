@@ -9,9 +9,9 @@
 #include <assert.h>
 #include <time.h>
 #include "cephes/protos.h"
-#include "varray.hpp"
+#include "base/varray.hpp"
 #include "model.hpp"
-#include "util.hpp"
+#include "base/util.hpp"
 
 using namespace minote;
 

@@ -9,7 +9,7 @@
 #include "linmath/linmath.h"
 #include "opengl.hpp"
 #include "window.hpp"
-#include "util.hpp"
+#include "base/util.hpp"
 
 using minote::rad;
 

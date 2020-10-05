@@ -9,9 +9,9 @@
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 #include "window.hpp"
-#include "queue.hpp"
-#include "util.hpp"
-#include "log.hpp"
+#include "base/queue.hpp"
+#include "base/util.hpp"
+#include "base/log.hpp"
 
 using minote::L;
 using minote::queue;

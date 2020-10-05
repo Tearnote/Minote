@@ -8,10 +8,10 @@
 #include <assert.h>
 #include "window.hpp"
 #include "mapper.hpp"
-#include "varray.hpp"
-#include "util.hpp"
+#include "base/varray.hpp"
+#include "base/util.hpp"
 #include "mrs.hpp"
-#include "log.hpp"
+#include "base/log.hpp"
 
 using minote::L;
 using minote::varray;

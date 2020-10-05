@@ -6,7 +6,7 @@
 #include "mino.hpp"
 
 #include <assert.h>
-#include "util.hpp"
+#include "base/util.hpp"
 
 using minote::allocate;
 

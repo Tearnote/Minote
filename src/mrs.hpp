@@ -9,10 +9,10 @@
 #define MINOTE_MRS_H
 
 #include "mrsdraw.hpp"
-#include "varray.hpp"
+#include "base/varray.hpp"
 #include "mapper.hpp"
 #include "mino.hpp"
-#include "util.hpp"
+#include "base/util.hpp"
 
 /// Frequency of game logic updates, simulated by semi-threading, in Hz
 #define MrsUpdateFrequency 60.0

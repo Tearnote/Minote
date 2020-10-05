@@ -6,7 +6,7 @@
 #ifndef MINOTE_MAPPER_H
 #define MINOTE_MAPPER_H
 
-#include "varray.hpp"
+#include "base/varray.hpp"
 #include "time.hpp"
 
 typedef enum InputType {

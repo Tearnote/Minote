@@ -15,9 +15,9 @@
 #include "window.hpp"
 #include "opengl.hpp"
 #include "model.hpp"
-#include "util.hpp"
+#include "base/util.hpp"
 #include "time.hpp"
-#include "log.hpp"
+#include "base/log.hpp"
 
 using minote::L;
 

@@ -9,7 +9,7 @@
 #include <stdint.h>
 #include <time.h>
 #include "mrsdef.hpp"
-#include "log.hpp"
+#include "base/log.hpp"
 
 using minote::L;
 

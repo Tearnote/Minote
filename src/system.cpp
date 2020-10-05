@@ -13,7 +13,7 @@
 #endif //_WIN32
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
-#include "log.hpp"
+#include "base/log.hpp"
 
 using minote::L;
 

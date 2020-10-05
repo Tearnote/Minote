@@ -11,11 +11,11 @@
 #include <stdio.h>
 #include "linmath/linmath.h"
 #include "opengl.hpp"
-#include "varray.hpp"
+#include "base/varray.hpp"
 #include "world.hpp"
-#include "util.hpp"
+#include "base/util.hpp"
 #include "font.hpp"
-#include "log.hpp"
+#include "base/log.hpp"
 
 using minote::varray;
 using minote::L;

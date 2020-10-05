@@ -13,7 +13,7 @@
 #include "debug.hpp"
 #include "world.hpp"
 #include "model.hpp"
-#include "util.hpp"
+#include "base/util.hpp"
 #include "play.hpp"
 #include "font.hpp"
 #include "text.hpp"

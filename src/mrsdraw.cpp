@@ -12,7 +12,7 @@
 #include "model.hpp"
 #include "world.hpp"
 #include "mrs.hpp"
-#include "log.hpp"
+#include "base/log.hpp"
 
 using namespace minote;
 

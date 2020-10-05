@@ -8,8 +8,8 @@
 
 #include <stddef.h>
 #include "basetypes.hpp"
-#include "tween.hpp"
-#include "ease.hpp"
+#include "base/tween.hpp"
+#include "base/ease.hpp"
 #include "time.hpp"
 
 using minote::EasingFunction;
