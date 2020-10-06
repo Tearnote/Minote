@@ -8,6 +8,7 @@
 
 #include <cstdlib>
 #include <array>
+#include "base/util.hpp"
 
 namespace minote {
 
@@ -17,7 +18,7 @@ struct queue {
 	using Element = T;
 	static constexpr std::size_t Capacity{N};
 
-	std::array<Element, Capacity> data{}; ///< Ring buffer of elements
+	std::array<Element, Capacity> buffer{}; ///< Ring buffer of elements
 	std::size_t head{0}; ///< Index of the first empty space to enqueue into
 	std::size_t tail{0}; ///< Index of the next element to dequeue
 
@@ -32,28 +33,29 @@ struct queue {
 	/**
 	 * Remove and return an element from the front of the queue. If the queue is
      * empty, nothing happens.
-	 * @return Removed element, or nullptr if queue is empty
+	 * @return Removed element, or nullopt if queue is empty
 	 */
-	auto dequeue() -> Element*;
+	auto dequeue() -> optref<Element>;
 
 	/**
 	 * Return the element from the front of the queue without removing it.
 	 * If the queue is empty, nothing happens.
-	 * @return Peeked element, or nullptr if queue is empty
+	 * @return Peeked element, or nullopt if queue is empty
 	 */
-	auto peek() -> Element*;
+	auto peek() -> optref<Element>;
+	auto peek() const -> optref<const Element>;
 
 	/**
 	 * Check whether the queue is empty.
 	 * @return true is empty, false if not empty
 	 */
-	auto isEmpty() -> bool;
+	auto isEmpty() const -> bool;
 
 	/**
 	 * Check whether the queue is full.
 	 * @return true if full, false if not full
 	 */
-	auto isFull() -> bool;
+	auto isFull() const -> bool;
 
 	/**
 	 * Clear the queue, setting the number of elements to zero.

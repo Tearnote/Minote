@@ -216,20 +216,20 @@ static void mrsQueueField(void)
 		color4* highlight = nullptr;
 		mat4x4* transform = nullptr;
 		if (minoColor(type).a == 1.0) {
-			tint = blockTintsOpaque.produce();
-			if (!tint)
+			auto tintOpt = blockTintsOpaque.produce();
+			if (!tintOpt)
 				return;
-			highlight = blockHighlightsOpaque.produce();
-			ASSERT(highlight);
-			transform = blockTransformsOpaque.produce();
-			ASSERT(transform);
+			tint = &tintOpt.value();
+			highlight = &blockHighlightsOpaque.produce().value();
+			transform = &blockTransformsOpaque.produce().value();
 		} else {
-			tint = blockTintsAlpha.produce();
-			if (!tint)
+			auto tintOpt = blockTintsAlpha.produce();
+			if (!tintOpt)
 				return;
-			highlight = blockHighlightsAlpha.produce();
+			tint = &tintOpt.value();
+			highlight = &blockHighlightsAlpha.produce().value();
 			ASSERT(highlight);
-			transform = blockTransformsAlpha.produce();
+			transform = &blockTransformsAlpha.produce().value();
 			ASSERT(transform);
 		}
 
@@ -333,21 +333,19 @@ static void mrsQueuePlayer(void)
 		color4* highlight = nullptr;
 		mat4x4* transform = nullptr;
 		if (minoColor(mrsTet.player.type).a == 1.0) {
-			tint = blockTintsOpaque.produce();
-			if (!tint)
+			auto tintOpt = blockTintsOpaque.produce();
+			if (!tintOpt)
 				return;
-			highlight = blockHighlightsOpaque.produce();
-			ASSERT(highlight);
-			transform = blockTransformsOpaque.produce();
-			ASSERT(transform);
+			tint = &tintOpt.value();
+			highlight = &blockHighlightsOpaque.produce().value();
+			transform = &blockTransformsOpaque.produce().value();
 		} else {
-			tint = blockTintsAlpha.produce();
-			if (!tint)
+			auto tintOpt = blockTintsAlpha.produce();
+			if (!tintOpt)
 				return;
-			highlight = blockHighlightsAlpha.produce();
-			ASSERT(highlight);
-			transform = blockTransformsAlpha.produce();
-			ASSERT(transform);
+			tint = &tintOpt.value();
+			highlight = &blockHighlightsAlpha.produce().value();
+			transform = &blockTransformsAlpha.produce().value();
 		}
 
 		// Insert calculated values
@@ -390,13 +388,12 @@ static void mrsQueueGhost(void)
 		float x = mrsTet.player.shape[i].x + ghostPos.x;
 		float y = mrsTet.player.shape[i].y + ghostPos.y;
 
-		color4* tint = blockTintsAlpha.produce();
-		if (!tint)
+		auto tintOpt = blockTintsAlpha.produce();
+		if (!tintOpt)
 			return;
-		color4* highlight = blockHighlightsAlpha.produce();
-		ASSERT(highlight);
-		mat4x4* transform = blockTransformsAlpha.produce();
-		ASSERT(transform);
+		color4* tint = &tintOpt.value();
+		color4* highlight = &blockHighlightsAlpha.produce().value();
+		mat4x4* transform = &blockTransformsAlpha.produce().value();
 
 		*tint = minoColor(mrsTet.player.type);
 		tint->a *= MrsGhostDim;
@@ -424,21 +421,19 @@ static void mrsQueuePreview(void)
 		color4* highlight = nullptr;
 		mat4x4* transform = nullptr;
 		if (minoColor(mrsTet.player.preview).a == 1.0) {
-			tint = blockTintsOpaque.produce();
-			if (!tint)
+			auto tintOpt = blockTintsOpaque.produce();
+			if (!tintOpt)
 				return;
-			highlight = blockHighlightsOpaque.produce();
-			ASSERT(highlight);
-			transform = blockTransformsOpaque.produce();
-			ASSERT(transform);
+			tint = &tintOpt.value();
+			highlight = &blockHighlightsOpaque.produce().value();
+			transform = &blockTransformsOpaque.produce().value();
 		} else {
-			tint = blockTintsAlpha.produce();
-			if (!tint)
+			auto tintOpt = blockTintsAlpha.produce();
+			if (!tintOpt)
 				return;
-			highlight = blockHighlightsAlpha.produce();
-			ASSERT(highlight);
-			transform = blockTransformsAlpha.produce();
-			ASSERT(transform);
+			tint = &tintOpt.value();
+			highlight = &blockHighlightsAlpha.produce().value();
+			transform = &blockTransformsAlpha.produce().value();
 		}
 
 		*tint = minoColor(mrsTet.player.preview);
@@ -481,11 +476,11 @@ static void mrsDrawQueuedBlocks(void)
 
 static void mrsQueueBorder(point3f pos, size3f size, color4 color)
 {
-	color4* tint = borderTints.produce();
-	if (!tint)
+	auto tintOpt = borderTints.produce();
+	if (!tintOpt)
 		return;
-	mat4x4* transform = borderTransforms.produce();
-	ASSERT(transform);
+	color4* tint = &tintOpt.value();
+	mat4x4* transform = &borderTransforms.produce().value();
 	*tint = color;
 	mat4x4_identity(*transform);
 	mat4x4_translate_in_place(*transform, pos.x, pos.y, pos.z);

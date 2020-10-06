@@ -105,7 +105,7 @@ Log::~Log()
 		return;
 
 	console = true;
-	warn("Logfile was not closed on object destruction");
+	warn("Logfile was never closed");
 }
 
 void Log::enableFile(const char* const filepath)

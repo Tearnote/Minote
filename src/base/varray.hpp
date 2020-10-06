@@ -9,6 +9,7 @@
 
 #include <cstdlib>
 #include <array>
+#include "base/util.hpp"
 
 namespace minote {
 
@@ -25,7 +26,7 @@ struct varray {
 	 * Add a new element at the end and return a pointer to it.
 	 * @return pointer to newly added element, or nullptr if backing store full
 	 */
-	auto produce() -> Element*;
+	auto produce() -> optref<Element>;
 
 	/**
 	 * Remove an element at a given index. Other elements are shifted to fill
@@ -49,10 +50,10 @@ struct varray {
 	void clear();
 
 	auto data() -> Element*;
-	constexpr auto data() const -> const Element*;
+	auto data() const -> const Element*;
 
 	auto operator[](std::size_t index) -> Element&;
-	constexpr auto operator[](std::size_t index) const -> const Element&;
+	auto operator[](std::size_t index) const -> const Element&;
 
 };
 

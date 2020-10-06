@@ -233,22 +233,22 @@ bool windowInputDequeue(KeyInput* input)
 {
 	ASSERT(initialized);
 	inputsMutex.lock();
-	KeyInput* result = inputs.dequeue();
+	auto result = inputs.dequeue();
 	if (result)
-		*input = *result;
+		*input = result.value();
 	inputsMutex.unlock();
-	return result;
+	return result.has_value();
 }
 
 bool windowInputPeek(KeyInput* input)
 {
 	ASSERT(initialized);
 	inputsMutex.lock();
-	KeyInput* result = inputs.dequeue();
+	auto result = inputs.dequeue();
 	if (result)
-		*input = *result;
+		*input = result.value();
 	inputsMutex.unlock();
-	return result;
+	return result.has_value();
 }
 
 void windowInputClear(void)

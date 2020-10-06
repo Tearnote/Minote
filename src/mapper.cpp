@@ -109,18 +109,18 @@ bool mapperDequeue(Input* input)
 {
 	ASSERT(initialized);
 	ASSERT(input);
-	Input* result = inputs.dequeue();
+	auto result = inputs.dequeue();
 	if (result)
-		*input = *result;
-	return result;
+		*input = result.value();
+	return result.has_value();
 }
 
 bool mapperPeek(Input* input)
 {
 	ASSERT(initialized);
 	ASSERT(input);
-	Input* result = inputs.peek();
+	auto result = inputs.peek();
 	if (result)
-		*input = *result;
-	return result;
+		*input = result.value();
+	return result.has_value();
 }

@@ -5,16 +5,17 @@
 
 #include "base/util.hpp"
 
+#include <cstring>
 #include "base/log.hpp"
 
-using minote::L;
+using namespace minote;
 
 namespace ppk::assert {
 
 void implementation::throwException(const AssertionException& e)
 {
-	L.fail(R"(Assertion "%s" triggered on line %d in %s: %s)",
-		e.expression(), e.line(), e.file(), e.what());
+	L.fail(R"(Assertion "%s" triggered on line %d in %s%s%s)",
+		e.expression(), e.line(), e.file(), std::strlen(e.what())? ": " : "", e.what());
 }
 
 }

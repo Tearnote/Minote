@@ -79,9 +79,10 @@ static void textQueueV(FontType font, float size, point3f pos, point3f dir, poin
 		hb_shape(fonts[font].hbFont, text, nullptr, 0);
 
 		// Construct the string transform
-		mat4x4* transform = msdfTransforms[font].produce();
-		if (!transform)
+		auto transformOpt = msdfTransforms[font].produce();
+		if (!transformOpt)
 			break;
+		auto& transform{transformOpt.value()};
 		vec3 eye = {0};
 		vec3_sub(eye, reinterpret_cast<float const*>(&pos),
 			reinterpret_cast<float const*>(&dir));
@@ -90,7 +91,7 @@ static void textQueueV(FontType font, float size, point3f pos, point3f dir, poin
 		mat4x4_look_at(lookat, reinterpret_cast<float*>(&pos), eye,
 			reinterpret_cast<float*>(&up));
 		mat4x4_invert(inverted, lookat);
-		mat4x4_scale_aniso(*transform, inverted, size, size, size);
+		mat4x4_scale_aniso(transform, inverted, size, size, size);
 
 		// Iterate over glyphs
 		unsigned glyphCount = 0;
@@ -100,9 +101,10 @@ static void textQueueV(FontType font, float size, point3f pos, point3f dir, poin
 			&glyphCount);
 		point2f cursor = {0};
 		for (size_t i = 0; i < glyphCount; i += 1) {
-			GlyphMsdf* glyph = msdfGlyphs[font].produce();
-			if (!glyph)
+			auto glyphOpt = msdfGlyphs[font].produce();
+			if (!glyphOpt)
 				break;
+			auto& glyph{glyphOpt.value()};
 
 			// Calculate glyph information
 			size_t id = glyphInfo[i].codepoint;
@@ -113,20 +115,20 @@ static void textQueueV(FontType font, float size, point3f pos, point3f dir, poin
 			float yAdvance = glyphPos[i].y_advance / 1024.0f;
 
 			// Fill in draw data
-			glyph->position.x = cursor.x + xOffset + atlasChar->charLeft;
-			glyph->position.y = cursor.y + yOffset + atlasChar->charBottom;
-			glyph->size.x = atlasChar->charRight - atlasChar->charLeft;
-			glyph->size.y = atlasChar->charTop - atlasChar->charBottom;
-			glyph->texBounds.x =
+			glyph.position.x = cursor.x + xOffset + atlasChar->charLeft;
+			glyph.position.y = cursor.y + yOffset + atlasChar->charBottom;
+			glyph.size.x = atlasChar->charRight - atlasChar->charLeft;
+			glyph.size.y = atlasChar->charTop - atlasChar->charBottom;
+			glyph.texBounds.x =
 				atlasChar->atlasLeft / (float)fonts[font].atlas->size.x;
-			glyph->texBounds.y =
+			glyph.texBounds.y =
 				atlasChar->atlasBottom / (float)fonts[font].atlas->size.y;
-			glyph->texBounds.z =
+			glyph.texBounds.z =
 				atlasChar->atlasRight / (float)fonts[font].atlas->size.x;
-			glyph->texBounds.w =
+			glyph.texBounds.w =
 				atlasChar->atlasTop / (float)fonts[font].atlas->size.y;
-			glyph->color = color;
-			glyph->transformIndex = msdfTransforms[font].size - 1;
+			glyph.color = color;
+			glyph.transformIndex = msdfTransforms[font].size - 1;
 
 			// Advance position
 			cursor.x += xAdvance;

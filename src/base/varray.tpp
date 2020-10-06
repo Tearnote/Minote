@@ -13,13 +13,13 @@
 namespace minote {
 
 template<typename T, std::size_t N>
-auto varray<T, N>::produce() -> Element*
+auto varray<T, N>::produce() -> optref<Element>
 {
 	if (size == Capacity)
-		return nullptr;
+		return {};
 
 	size += 1;
-	return &buffer[size - 1];
+	return optref<Element>{buffer[size - 1]};
 }
 
 template<typename T, std::size_t N>
@@ -57,7 +57,7 @@ auto varray<T, N>::operator[](std::size_t index) -> Element&
 }
 
 template<typename T, std::size_t N>
-constexpr auto varray<T, N>::operator[](std::size_t index) const -> const Element&
+auto varray<T, N>::operator[](std::size_t index) const -> const Element&
 {
 	ASSERT(index < size);
 	return buffer[index];
@@ -70,7 +70,7 @@ auto varray<T, N>::data() -> Element*
 }
 
 template<typename T, std::size_t N>
-constexpr auto varray<T, N>::data() const -> const Element*
+auto varray<T, N>::data() const -> const Element*
 {
 	return buffer.data();
 }

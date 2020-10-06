@@ -51,10 +51,13 @@ void playUpdate(void)
 	while (nextUpdate <= Window::getTime()) {
 		Input i;
 		while (mapperPeek(&i)) { // Exhaust all collectedInputs...
-			if (i.timestamp <= nextUpdate)
-				mapperDequeue(collectedInputs.produce());
-			else
+			if (i.timestamp <= nextUpdate) {
+				auto nextInput{collectedInputs.produce()};
+				if (nextInput)
+					mapperDequeue(&nextInput.value());
+			} else {
 				break; // Or abort if we encounter an input from the future
+			}
 
 			// Interpret quit events here for now
 			if (i.type == InputQuit && i.state)

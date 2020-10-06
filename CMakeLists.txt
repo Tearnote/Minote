@@ -106,7 +106,18 @@ set(INTERNALLIBS
         lib/cephes/const.c lib/cephes/polevl.c lib/cephes/fresnl.c
         lib/stb/stb_image.h lib/stb/stb_image.c
         lib/scope_guard/scope_guard.hpp
-        lib/PPK_ASSERT/ppk_assert.h lib/PPK_ASSERT/ppk_assert.cpp)
+        lib/PPK_ASSERT/ppk_assert.h lib/PPK_ASSERT/ppk_assert.cpp
+        lib/type_safe/arithmetic_policy.hpp lib/type_safe/boolean.hpp lib/type_safe/bounded_type.hpp
+        lib/type_safe/compact_optional.hpp lib/type_safe/config.hpp lib/type_safe/constrained_type.hpp
+        lib/type_safe/deferred_construction.hpp lib/type_safe/downcast.hpp lib/type_safe/flag.hpp
+        lib/type_safe/flag_set.hpp lib/type_safe/floating_point.hpp lib/type_safe/index.hpp
+        lib/type_safe/integer.hpp lib/type_safe/narrow_cast.hpp lib/type_safe/optional.hpp
+        lib/type_safe/optional_ref.hpp lib/type_safe/output_parameter.hpp lib/type_safe/reference.hpp
+        lib/type_safe/strong_typedef.hpp lib/type_safe/tagged_union.hpp lib/type_safe/types.hpp lib/type_safe/variant.hpp
+        lib/type_safe/visitor.hpp lib/type_safe/detail/aligned_union.hpp lib/type_safe/detail/all_of.hpp
+        lib/type_safe/detail/assert.hpp lib/type_safe/detail/assign_or_construct.hpp lib/type_safe/detail/constant_parser.hpp
+        lib/type_safe/detail/copy_move_control.hpp lib/type_safe/detail/force_inline.hpp lib/type_safe/detail/is_nothrow_swappable.hpp
+        lib/type_safe/detail/map_invoke.hpp lib/type_safe/detail/variant_impl.hpp)
 add_compile_definitions(PPK_ASSERT_DISABLE_STL)
 add_compile_definitions(PPK_ASSERT_DISABLE_EXCEPTIONS)
 add_compile_definitions(PPK_ASSERT_DISABLE_IGNORE_LINE)
