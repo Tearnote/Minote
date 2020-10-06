@@ -71,7 +71,7 @@ auto main(int, char* []) -> int
 
 	// Input loop
 	while (windowIsOpen()) {
-		windowPoll();
+		Window::poll();
 		sleepFor(milliseconds(1));
 	}
 

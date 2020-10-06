@@ -175,12 +175,6 @@ void windowCleanup(void)
 	initialized = false;
 }
 
-void windowPoll(void)
-{
-	ASSERT(initialized);
-	glfwPollEvents();
-}
-
 bool windowIsOpen(void)
 {
 	ASSERT(initialized);
@@ -298,7 +292,12 @@ void Window::cleanup()
 	initialized = false;
 }
 
-auto Window::Window::getTime() -> nsec
+void Window::poll()
+{
+	glfwPollEvents();
+}
+
+auto Window::getTime() -> nsec
 {
 	return seconds(glfwGetTime());
 }

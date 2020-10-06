@@ -38,6 +38,14 @@ struct Window {
 	static void cleanup();
 
 	/**
+	 * Collect pending events for all windows and keep them responsive.
+	 * Call this as often as your target resolution of user input; at least
+	 * 240Hz is recommended.
+	 * @remark Must be called on the same thread as the last init().
+	 */
+	static void poll();
+
+	/**
 	 * Return the time passed since Window::init().
 	 * @return Number of nanoseconds since windowing initialization
 	 * @remark This function is thread-safe.
@@ -64,13 +72,6 @@ void windowInit(const char* title, minote::size2i size, bool fullscreen);
  * can be used until windowInit() is called again.
  */
 void windowCleanup(void);
-
-/**
- * 	Collect pending events from the OS and keep the open window responsive.
- * 	Call this as often as your target resolution of user input; at least 240Hz
- * 	is recommended.
- */
-void windowPoll(void);
 
 /**
  * Check whether the window is open. If this returns false, windowCleanup()
