@@ -21,7 +21,7 @@ union Vec2 {
 	};
 	struct {
 		T r;
-		T b;
+		T g;
 	};
 	struct {
 		T u;
