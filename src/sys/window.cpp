@@ -25,9 +25,6 @@
 
 using namespace minote;
 
-static queue<KeyInput, 64> inputs{}; ///< Message queue for storing keypresses
-static std::mutex inputsMutex; ///< Mutex protecting the #collectedInputs queue
-
 static thread_local Window* activeContext = nullptr;
 
 /**
@@ -71,12 +68,18 @@ static void keyCallback(GLFWwindow* handle, int key, int, int action, int)
 		return; // Key repeat is not used
 	auto& window = getWindow(handle);
 
-	KeyInput input = {.key = key, .action = action, .timestamp = Window::getTime()};
-	inputsMutex.lock();
-	if (!inputs.enqueue(input))
+	Window::KeyInput input = {
+		.key = key,
+		.action = action,
+		.timestamp = Window::getTime()
+	};
+
+	window.inputsMutex.lock();
+	const auto success = window.inputs.enqueue(input);
+	window.inputsMutex.unlock();
+	if (!success)
 		L.warn(R"(Window "%s" input queue is full, key #%d %s dropped)",
 			window.title, key, action == GLFW_PRESS ? "press" : "release");
-	inputsMutex.unlock();
 }
 
 /**
@@ -114,36 +117,6 @@ static void windowScaleCallback(GLFWwindow* handle, float xScale, float)
 
 	window.scale = xScale;
 	L.info(R"(Window "%s" DPI scaling changed to %f)", window.title, xScale);
-}
-
-bool windowInputDequeue(KeyInput* input)
-{
-	ASSERT(Window::initialized);
-	inputsMutex.lock();
-	auto result = inputs.dequeue();
-	if (result)
-		*input = result.value();
-	inputsMutex.unlock();
-	return result.has_value();
-}
-
-bool windowInputPeek(KeyInput* input)
-{
-	ASSERT(Window::initialized);
-	inputsMutex.lock();
-	auto result = inputs.dequeue();
-	if (result)
-		*input = result.value();
-	inputsMutex.unlock();
-	return result.has_value();
-}
-
-void windowInputClear(void)
-{
-	ASSERT(Window::initialized);
-	inputsMutex.lock();
-	inputs.clear();
-	inputsMutex.unlock();
 }
 
 namespace minote {
@@ -225,13 +198,13 @@ void Window::open(char const* const _title, const bool fullscreen, size2i _size)
 		L.fail(R"(Failed to create window "%s": %s)", title, glfwError());
 
 	// Get window properties
-	const size2i realSize = [=] { // Might be different from wanted size because of DPI scaling
+	const size2i realSize = [=, this] { // Might be different from wanted size because of DPI scaling
 		size2i s;
 		glfwGetFramebufferSize(handle, &s.x, &s.y);
 		return s;
 	}();
 	size = realSize;
-	const float _scale = [=] {
+	const float _scale = [=, this] {
 		float s = 0.0f;
 		glfwGetWindowContentScale(handle, &s, nullptr);
 		return s;
@@ -271,15 +244,13 @@ void Window::close()
 	L.info(R"(Window "%s" closed)", stringOrNull(title));
 }
 
-auto Window::isClosing() -> bool
+auto Window::isClosing() const -> bool
 {
 	ASSERT(initialized);
 	ASSERT(handle);
 
-	handleMutex.lock();
-	const bool result = glfwWindowShouldClose(handle);
-	handleMutex.unlock();
-	return result;
+	std::lock_guard lock(handleMutex);
+	return glfwWindowShouldClose(handle);
 }
 
 void Window::requestClose()
@@ -341,6 +312,35 @@ void Window::deactivateContext()
 	isContextActive = false;
 	activeContext = nullptr;
 	L.debug(R"(Window "%s" OpenGL context deactivated)", stringOrNull(title));
+}
+
+auto Window::dequeueInput() -> opt<Window::KeyInput>
+{
+	const std::lock_guard lock(inputsMutex);
+
+	const auto input = inputs.dequeue();
+	if (input)
+		return input.value();
+	else
+		return {};
+}
+
+auto Window::peekInput() const -> opt<Window::KeyInput>
+{
+	const std::lock_guard lock(inputsMutex);
+
+	const auto input = inputs.peek();
+	if (input)
+		return input.value();
+	else
+		return {};
+}
+
+void Window::clearInput()
+{
+	inputsMutex.lock();
+	inputs.clear();
+	inputsMutex.unlock();
 }
 
 }

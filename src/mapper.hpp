@@ -8,6 +8,7 @@
 
 #include "base/varray.hpp"
 #include "base/time.hpp"
+#include "sys/window.hpp"
 
 typedef enum InputType {
 	InputNone, ///< zero value
@@ -42,7 +43,7 @@ void mapperCleanup(void);
  * Process all pending inputs from the window and insert them into the player
  * event queue.
  */
-void mapperUpdate(void);
+void mapperUpdate(minote::Window& window);
 
 /**
  * Remove and return the next ::Input from the mapper's queue.

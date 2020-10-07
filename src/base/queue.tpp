@@ -46,7 +46,7 @@ auto queue<T, N>::peek() const -> optref<const Element>
 	if (isEmpty())
 		return {};
 
-	return optref<Element>(buffer[tail]);
+	return optref<const Element>(buffer[tail]);
 }
 
 template<typename T, std::size_t N>

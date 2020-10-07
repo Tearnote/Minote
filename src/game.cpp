@@ -91,7 +91,7 @@ static void gameDebug(void)
 
 static void gameUpdate(Window& window)
 {
-	mapperUpdate();
+	mapperUpdate(window);
 #ifdef MINOTE_DEBUG
 	debugUpdate();
 	gameDebug();

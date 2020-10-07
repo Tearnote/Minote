@@ -15,6 +15,7 @@
 #include "scope_guard/scope_guard.hpp"
 #include "PPK_ASSERT/ppk_assert.h"
 #include "type_safe/optional_ref.hpp"
+#include "type_safe/optional.hpp"
 #include "pcg/pcg_basic.h"
 
 namespace minote {
@@ -24,6 +25,10 @@ namespace minote {
 
 /// Improved assert() macro from PPK_ASSERT, with printf-like formatting
 #define ASSERT PPK_ASSERT
+
+/// Rename of the type_safe optional type
+template<typename T>
+using opt = type_safe::optional<T>;
 
 /// Rename of the type_safe optional reference type
 template<typename T>

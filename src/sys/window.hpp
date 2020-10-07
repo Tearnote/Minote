@@ -12,14 +12,9 @@
 #include <mutex>
 #include <GLFW/glfw3.h>
 #include "base/types.hpp"
+#include "base/queue.hpp"
 #include "base/time.hpp"
-
-/// Struct containing information about a keypress event
-typedef struct KeyInput {
-	int key; ///< GLFW keycode
-	int action; ///< GLFW_PRESS or GLFW_RELEASE
-	minote::nsec timestamp; ///< Time when the event was detected
-} KeyInput;
+#include "base/util.hpp"
 
 namespace minote {
 
@@ -58,16 +53,26 @@ struct Window {
 
 	////////////////////////////////////////////////////////////////////////////
 
+	/// Struct containing information about a keypress event
+	struct KeyInput {
+		int key = GLFW_KEY_UNKNOWN; ///< GLFW keycode
+		int action = -1; ///< GLFW_PRESS or GLFW_RELEASE
+		nsec timestamp = 0; ///< Time when the event was detected
+	};
+
 	/// Raw window handle. Please take note of thread safety notes in GLFW
 	/// documentation when using this field directly.
 	GLFWwindow* handle = nullptr;
 	/// Mutex protecting handle access with unsynchronized GLFW functions
-	std::mutex handleMutex;
+	mutable std::mutex handleMutex;
 
 	const char* title = nullptr; ///< Text displayed on the window's title bar
 	std::atomic<size2i> size; ///< Size of the window in physical pixels
 	std::atomic<float> scale = 0.0f; ///< DPI scaling, where 1.0 is "standard" DPI
 	bool isContextActive = false; ///< Whether the OpenGL context is active on any thread
+
+	queue<KeyInput, 64> inputs; ///< Queue containing collected keyboard inputs
+	mutable std::mutex inputsMutex; ///< Mutex protecting the queue for thread safety
 
 	/**
 	 * Open a window with specified parameters on the screen. OpenGL context
@@ -78,7 +83,7 @@ struct Window {
 	 * this parameter is ignored and the window is created at desktop resolution
 	 * @remark This function must be called on the main thread.
 	 */
-	void open(const char* title = "", bool fullscreen = false, size2i size = {1280, 720});
+	void open(const char* title, bool fullscreen = false, size2i size = {1280, 720});
 
 	/**
 	 * Close an open window. The OpenGL context must be already deactivated.
@@ -94,7 +99,7 @@ struct Window {
 	 * @remark This function is thread-safe.
 	 */
 	[[nodiscard]]
-	auto isClosing() -> bool;
+	auto isClosing() const -> bool;
 
 	/**
 	 * Request the window to be closed by the main thread.
@@ -125,32 +130,31 @@ struct Window {
 	 */
 	void deactivateContext();
 
+	/**
+	 * Remove and return a copy of a ::KeyInput from the window's input queue.
+	 * If the queue is empty, nothing happens. Run this often to keep the queue
+	 * from filling up and discarding input events.
+	 * @return The oldest ::KeyInput from the queue, or nullopt if queue empty
+	 * @remark This function is thread-safe.
+	 */
+	auto dequeueInput() -> opt<KeyInput>;
+
+	/**
+	 * Return a copy of a ::KeyInput from the window's input queue without
+	 * removing it. If the queue is empty, nothing happens.
+	 * @return The oldest ::KeyInput in the queue, or nullopt if queue empty
+	 * @remark This function is thread-safe.
+	 */
+	[[nodiscard]]
+	auto peekInput() const -> opt<KeyInput>;
+
+	/**
+	 * Clear the window's input queue. This can remove a GLFW_RELEASE event, so
+	 * consider every key unpressed.
+	 * @remark This function is thread-safe.
+	 */
+	void clearInput();
+
 };
 
 }
-
-/**
- * Remove and return a ::KeyInput from the window's input queue. If the queue
- * is empty, nothing happens. Run this often to keep the queue from filling up
- * and discarding input events.
- * @param[out] input Object to rewrite with the removed input
- * @return true if successful, false if input queue is empty
- * @remark This function is thread-safe.
- */
-bool windowInputDequeue(KeyInput* input);
-
-/**
- * Return a ::KeyInput from the window's input queue without removing it. If
- * the queue is empty, nothing happens.
- * @param[out] input Object to rewrite with the peeked input
- * @return true if successful, false if input queue is empty
- * @remark This function is thread-safe.
- */
-bool windowInputPeek(KeyInput* input);
-
-/**
- * Clear the window's input queue. This can remove a GLFW_RELEASE event, so
- * consider every key unpressed.
- * @remark This function is thread-safe.
- */
-void windowInputClear(void);

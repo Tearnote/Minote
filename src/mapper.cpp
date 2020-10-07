@@ -12,8 +12,7 @@
 #include "base/util.hpp"
 #include "base/log.hpp"
 
-using minote::L;
-using minote::queue;
+using namespace minote;
 
 /// Queue holding collectedInputs ready to be retrieved
 static queue<Input, 64> inputs{};
@@ -86,16 +85,16 @@ void mapperCleanup(void)
 	initialized = false;
 }
 
-void mapperUpdate(void)
+void mapperUpdate(Window& window)
 {
 	ASSERT(initialized);
-	KeyInput key;
-	while (windowInputDequeue(&key)) {
+	while (auto keyOpt = window.dequeueInput()) {
+		auto key = keyOpt.value();
 		InputType type = rawKeyToType(key.key);
 		bool state = actionToState(key.action);
 		if (type == InputNone)
 			continue;
-		Input newInput{
+		Input newInput = {
 			.type = type,
 			.state = state,
 			.timestamp = key.timestamp
