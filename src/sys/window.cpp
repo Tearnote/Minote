@@ -20,8 +20,7 @@
 
 using namespace minote;
 
-static bool initialized = false;
-static GLFWwindow* window; ///< Underlying GLFWwindow object
+static GLFWwindow* handle; ///< Underlying GLFWwindow object
 static const char* windowTitle; ///< Window title from the title bar
 static queue<KeyInput, 64> inputs{}; ///< Message queue for storing keypresses
 static std::mutex inputsMutex; ///< Mutex protecting the #collectedInputs queue
@@ -53,7 +52,7 @@ static void
 keyCallback(GLFWwindow* w, int key, int scancode, int action, int mods)
 {
 	(void)w, (void)scancode, (void)mods;
-	ASSERT(initialized);
+	ASSERT(Window::initialized);
 	if (action == GLFW_REPEAT) return; // Key repeat is not needed
 	KeyInput input = {.key = key, .action = action, .timestamp = Window::getTime()};
 	inputsMutex.lock();
@@ -70,7 +69,7 @@ keyCallback(GLFWwindow* w, int key, int scancode, int action, int mods)
 static void windowCloseCallback(GLFWwindow* w)
 {
 	(void)w;
-	ASSERT(initialized);
+	ASSERT(Window::initialized);
 	windowOpen = false;
 }
 
@@ -84,7 +83,7 @@ static void windowCloseCallback(GLFWwindow* w)
 static void framebufferResizeCallback(GLFWwindow* w, int width, int height)
 {
 	(void)w;
-	ASSERT(initialized);
+	ASSERT(Window::initialized);
 	ASSERT(width);
 	ASSERT(height);
 	viewportWidth = width;
@@ -104,128 +103,64 @@ static void framebufferResizeCallback(GLFWwindow* w, int width, int height)
 static void windowScaleCallback(GLFWwindow* w, float xScale, float yScale)
 {
 	(void)w, (void)yScale;
-	ASSERT(initialized);
+	ASSERT(Window::initialized);
 	ASSERT(xScale);
 	viewportScale = xScale;
 	L.debug("Window \"%s\" DPI scaling changed to %f",
 		windowTitle, xScale);
 }
 
-void windowInit(const char* title, size2i size, bool fullscreen)
-{
-	ASSERT(title);
-	ASSERT(size.x >= 0 && size.y >= 0);
-	if (initialized) return;
-	windowTitle = title;
-	windowOpen = true;
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#ifdef __APPLE__
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif // __APPLE__
-	glfwWindowHint(GLFW_RED_BITS, 8);
-	glfwWindowHint(GLFW_GREEN_BITS, 8);
-	glfwWindowHint(GLFW_BLUE_BITS, 8);
-	glfwWindowHint(GLFW_ALPHA_BITS, 0);
-	glfwWindowHint(GLFW_DEPTH_BITS, 0); // Handled by an internal FB
-	glfwWindowHint(GLFW_STENCIL_BITS, 0); // Same
-	glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE); // DPI aware
-	if (fullscreen) {
-		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-		window = glfwCreateWindow(mode->width, mode->height, title, monitor,
-			nullptr);
-	} else {
-		window = glfwCreateWindow(size.x, size.y, title, nullptr, nullptr);
-	}
-	if (!window) {
-		L.crit("Failed to create window \"%s\": %s", title,
-			glfwError());
-		exit(EXIT_FAILURE);
-	}
-	initialized = true;
-
-#ifndef MINOTE_DEBUG
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-#endif //MINOTE_DEBUG
-	glfwSetKeyCallback(window, keyCallback);
-	glfwSetWindowCloseCallback(window, windowCloseCallback);
-	glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
-	glfwSetWindowContentScaleCallback(window, windowScaleCallback);
-	// An initial check is required to get correct values for non-100% scaling
-	int width = 0;
-	int height = 0;
-	float scale = 0.0f;
-	glfwGetFramebufferSize(window, &width, &height);
-	framebufferResizeCallback(window, width, height);
-	glfwGetWindowContentScale(window, &scale, nullptr);
-	windowScaleCallback(window, scale, 0);
-	L.info("Window \"%s\" created at %dx%d *%f%s",
-		title, width, height, scale, fullscreen ? " fullscreen" : "");
-}
-
-void windowCleanup(void)
-{
-	if (!initialized) return;
-	glfwDestroyWindow(window);
-	window = nullptr;
-	L.debug("Window \"%s\" destroyed", windowTitle);
-	windowTitle = nullptr;
-	initialized = false;
-}
-
 bool windowIsOpen(void)
 {
-	ASSERT(initialized);
+	ASSERT(Window::initialized);
 	return windowOpen;
 }
 
 void windowClose(void)
 {
-	ASSERT(initialized);
+	ASSERT(Window::initialized);
 	windowOpen = false;
 }
 
 const char* windowGetTitle(void)
 {
-	ASSERT(initialized);
+	ASSERT(Window::initialized);
 	return windowTitle;
 }
 
 size2i windowGetSize(void)
 {
-	ASSERT(initialized);
-	return (size2i){viewportWidth, viewportHeight};
+	ASSERT(Window::initialized);
+	return {static_cast<int>(viewportWidth), static_cast<int>(viewportHeight)};
 }
 
 float windowGetScale(void)
 {
-	ASSERT(initialized);
+	ASSERT(Window::initialized);
 	return viewportScale;
 }
 
 void windowContextActivate(void)
 {
-	ASSERT(initialized);
-	glfwMakeContextCurrent(window);
+	ASSERT(Window::initialized);
+	glfwMakeContextCurrent(handle);
 }
 
 void windowContextDeactivate(void)
 {
-	ASSERT(initialized);
+	ASSERT(Window::initialized);
 	glfwMakeContextCurrent(nullptr);
 }
 
 void windowFlip(void)
 {
-	ASSERT(initialized);
-	glfwSwapBuffers(window);
+	ASSERT(Window::initialized);
+	glfwSwapBuffers(handle);
 }
 
 bool windowInputDequeue(KeyInput* input)
 {
-	ASSERT(initialized);
+	ASSERT(Window::initialized);
 	inputsMutex.lock();
 	auto result = inputs.dequeue();
 	if (result)
@@ -236,7 +171,7 @@ bool windowInputDequeue(KeyInput* input)
 
 bool windowInputPeek(KeyInput* input)
 {
-	ASSERT(initialized);
+	ASSERT(Window::initialized);
 	inputsMutex.lock();
 	auto result = inputs.dequeue();
 	if (result)
@@ -247,7 +182,7 @@ bool windowInputPeek(KeyInput* input)
 
 void windowInputClear(void)
 {
-	ASSERT(initialized);
+	ASSERT(Window::initialized);
 	inputsMutex.lock();
 	inputs.clear();
 	inputsMutex.unlock();
@@ -255,8 +190,8 @@ void windowInputClear(void)
 
 GLFWwindow* getRawWindow(void)
 {
-	ASSERT(window);
-	return window;
+	ASSERT(handle);
+	return handle;
 }
 
 namespace minote {
@@ -300,6 +235,81 @@ void Window::poll()
 auto Window::getTime() -> nsec
 {
 	return seconds(glfwGetTime());
+}
+
+void Window::open(char const* title, bool fullscreen, size2i size)
+{
+	ASSERT(title);
+	ASSERT(size.x >= 0 && size.y >= 0);
+	ASSERT(initialized);
+
+	windowTitle = title;
+	windowOpen = true;
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#ifdef __APPLE__
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif // __APPLE__
+	glfwWindowHint(GLFW_RED_BITS, 8);
+	glfwWindowHint(GLFW_GREEN_BITS, 8);
+	glfwWindowHint(GLFW_BLUE_BITS, 8);
+	glfwWindowHint(GLFW_ALPHA_BITS, 0);
+	glfwWindowHint(GLFW_DEPTH_BITS, 0); // Handled by an internal FB
+	glfwWindowHint(GLFW_STENCIL_BITS, 0); // Same
+	glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE); // DPI aware
+	if (fullscreen) {
+		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+		handle = glfwCreateWindow(mode->width, mode->height, title, monitor,
+			nullptr);
+	} else {
+		handle = glfwCreateWindow(size.x, size.y, title, nullptr, nullptr);
+	}
+	if (!handle) {
+		L.crit("Failed to create window \"%s\": %s", title,
+			glfwError());
+		exit(EXIT_FAILURE);
+	}
+	initialized = true;
+
+#ifndef MINOTE_DEBUG
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+#endif //MINOTE_DEBUG
+	glfwSetKeyCallback(handle, keyCallback);
+	glfwSetWindowCloseCallback(handle, windowCloseCallback);
+	glfwSetFramebufferSizeCallback(handle, framebufferResizeCallback);
+	glfwSetWindowContentScaleCallback(handle, windowScaleCallback);
+	// An initial check is required to get correct values for non-100% scaling
+	int width = 0;
+	int height = 0;
+	float scale = 0.0f;
+	glfwGetFramebufferSize(handle, &width, &height);
+	framebufferResizeCallback(handle, width, height);
+	glfwGetWindowContentScale(handle, &scale, nullptr);
+	windowScaleCallback(handle, scale, 0);
+	L.info("Window \"%s\" created at %dx%d *%f%s",
+		stringOrNull(windowTitle), width, height, scale, fullscreen ? " fullscreen" : "");
+}
+
+void Window::close()
+{
+	if (!initialized) {
+		L.warn(R"(Tried to close window "%s" without initialized windowing)",
+			stringOrNull(windowTitle));
+		return;
+	}
+	if (!handle) {
+		L.warn(R"(Tried to close window "%s" which is not open)",
+			stringOrNull(windowTitle));
+		return;
+	}
+
+	glfwDestroyWindow(handle);
+	handle = nullptr;
+
+	initialized = false;
+	L.info(R"(Window "%s" closed)", stringOrNull(windowTitle));
 }
 
 }

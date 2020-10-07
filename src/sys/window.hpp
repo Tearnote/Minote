@@ -33,15 +33,15 @@ struct Window {
 
 	/**
 	 * Clean up the windowing system. All windows must already be closed.
-	 * @remark Must be called on the same thread as the matching init().
+	 * @remark Must be called on the main thread.
 	 */
 	static void cleanup();
 
 	/**
-	 * Collect pending events for all windows and keep them responsive.
+	 * Collect pending events for all open windows and keep them responsive.
 	 * Call this as often as your target resolution of user input; at least
 	 * 240Hz is recommended.
-	 * @remark Must be called on the same thread as the last init().
+	 * @remark Must be called on the main thread.
 	 */
 	static void poll();
 
@@ -52,26 +52,26 @@ struct Window {
 	 */
 	static auto getTime() -> nsec;
 
+	/**
+	 * Open a window with specified parameters on the screen. OpenGL context
+	 * is not activated.
+	 * @param title Text to display on the title bar
+	 * @param fullscreen false for windowed mode, true for fullscreen
+	 * @param size Size of the window in logical units. If fullscreen is true,
+	 * this parameter is ignored and the window is created at desktop resolution
+	 * @remark This function must be called on the main thread.
+	 */
+	void open(const char* title = "", bool fullscreen = false, size2i size = {1280, 720});
+
+	/**
+	 * Close an open window. The OpenGL context must be already deactivated.
+	 * @remark This function must be called on the main thread.
+	 */
+	void close();
+
 };
 
 }
-
-/**
- * Initialize the window system, showing the window with specified parameters
- * on the screen. The OpenGL context is inactive by default. Requires
- * systemInit().
- * @param title The string to display on the title bar
- * @param size Size of the window in *logical* pixels. Affected by display DPI
- * @param fullscreen Fullscreen if true, windowed if false. A fullscreen window
- * is created at display resolution, ignoring the @a size parameter
- */
-void windowInit(const char* title, minote::size2i size, bool fullscreen);
-
-/**
- * Close the open window and clean up the window system. No window function
- * can be used until windowInit() is called again.
- */
-void windowCleanup(void);
 
 /**
  * Check whether the window is open. If this returns false, windowCleanup()

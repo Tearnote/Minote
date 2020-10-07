@@ -182,4 +182,17 @@ void reallocate(T*& buffer, const std::size_t newCount)
 	buffer = result;
 }
 
+/**
+ * Turn a string into "NULL" if it is nullptr.
+ * @param str String to test
+ * @return Itself, or "NULL" literal
+ */
+inline auto stringOrNull(const char* str) -> const char*
+{
+	if (str)
+		return str;
+	else
+		return "NULL";
+}
+
 }

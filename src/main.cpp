@@ -60,7 +60,9 @@ auto main(int, char* []) -> int
 	defer { Window::cleanup(); };
 	char windowTitle[64]{""};
 	std::snprintf(windowTitle, 64, "%s %s", AppName, AppVersion);
-	windowInit(windowTitle, {1280, 720}, false);
+	Window window{};
+	window.open(windowTitle);
+	defer { window.close(); };
 #ifdef MINOTE_DEBUG
 	debugInputSetup();
 #endif //MINOTE_DEBUG
@@ -68,17 +70,13 @@ auto main(int, char* []) -> int
 	//endregion Initialization
 
 	std::thread gameThread{game};
+	defer { gameThread.join(); };
 
 	// Input loop
 	while (windowIsOpen()) {
 		Window::poll();
 		sleepFor(milliseconds(1));
 	}
-
-	gameThread.join();
-
-	// Cleanup
-	windowCleanup();
 
 	return EXIT_SUCCESS;
 }
