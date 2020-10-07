@@ -8,11 +8,12 @@
 #ifndef MINOTE_GAME_H
 #define MINOTE_GAME_H
 
+#include "sys/window.hpp"
+
 /**
- * Entry point of the game thread. Call spawnThread(game) only after all systems
- * other than renderer are initialized. The thread will exit when
- * windowIsOpen() returns false.
+ * Entry point of the game thread. The thread will exit after window.isClosing()
+ * returns true.
  */
-void game();
+void game(minote::Window& window);
 
 #endif //MINOTE_GAME_H

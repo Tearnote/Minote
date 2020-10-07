@@ -97,13 +97,13 @@ static void debugMouseButtonCallback(GLFWwindow* w, int button, int action, int 
 	}
 }
 
-void debugInputSetup(void)
+void debugInputSetup(Window& window)
 {
 	atomic_init(&cursorPos, ((point2i){-1, -1}));
 	atomic_init(&leftClick, false);
 	atomic_init(&rightClick, false);
-	glfwSetCursorPosCallback(getRawWindow(), debugCursorPosCallback);
-	glfwSetMouseButtonCallback(getRawWindow(), debugMouseButtonCallback);
+	glfwSetCursorPosCallback(window.handle, debugCursorPosCallback);
+	glfwSetMouseButtonCallback(window.handle, debugMouseButtonCallback);
 }
 
 void debugInit(void)
@@ -233,7 +233,7 @@ void debugUpdate(void)
 	nk_input_end(&nkContext);
 }
 
-void debugDraw(void)
+void debugDraw(Window& window)
 {
 	ASSERT(initialized);
 	if (!nuklearEnabled) {
@@ -284,7 +284,7 @@ void debugDraw(void)
 	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 
 	// Execute draw commands
-	point2i screenSize = windowGetSize();
+	size2i screenSize = window.size;
 	const struct nk_draw_command* command;
 	const nk_draw_index* offset = nullptr;
 	nk_draw_foreach(command, &nkContext, &commandList) {

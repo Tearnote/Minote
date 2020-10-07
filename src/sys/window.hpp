@@ -8,6 +8,9 @@
 
 #pragma once
 
+#include <atomic>
+#include <mutex>
+#include <GLFW/glfw3.h>
 #include "base/types.hpp"
 #include "base/time.hpp"
 
@@ -53,6 +56,19 @@ struct Window {
 	 */
 	static auto getTime() -> nsec;
 
+	////////////////////////////////////////////////////////////////////////////
+
+	/// Raw window handle. Please take note of thread safety notes in GLFW
+	/// documentation when using this field directly.
+	GLFWwindow* handle = nullptr;
+	/// Mutex protecting handle access with unsynchronized GLFW functions
+	std::mutex handleMutex;
+
+	const char* title = nullptr; ///< Text displayed on the window's title bar
+	std::atomic<size2i> size; ///< Size of the window in physical pixels
+	std::atomic<float> scale = 0.0f; ///< DPI scaling, where 1.0 is "standard" DPI
+	bool isContextActive = false; ///< Whether the OpenGL context is active on any thread
+
 	/**
 	 * Open a window with specified parameters on the screen. OpenGL context
 	 * is not activated.
@@ -70,65 +86,48 @@ struct Window {
 	 */
 	void close();
 
+	/**
+	 * Ask if window close has been requested by application or user
+	 * (for example by pressing the X on the title bar). If true, the window
+	 * should be closed as soon as possible.
+	 * @return true if close requested, false if not
+	 * @remark This function is thread-safe.
+	 */
+	[[nodiscard]]
+	auto isClosing() -> bool;
+
+	/**
+	 * Request the window to be closed by the main thread.
+	 * @remark This function is thread-safe.
+	 */
+	void requestClose();
+
+	/**
+	 * Flip the window's front and back buffers. Call this after a frame
+	 * is drawn to present it on the screen.
+	 * @remark This function is thread-safe.
+	 */
+	void flip();
+
+	/**
+	 * Activate the window's OpenGL context on current thread. This is required
+	 * before OpenGL commands can be used. A window's context can be active
+	 * on one thread at a time, and a thread can have only one window's context
+	 * active.
+	 * @remark This function is thread-safe.
+	 */
+	void activateContext();
+
+	/**
+	 * Deactivate the window's OpenGL context on current thread. The context
+	 * must be inactive before the window can be closed.
+	 * @remark This function is thread-safe.
+	 */
+	void deactivateContext();
+
 };
 
 }
-
-/**
- * Check whether the window is open. If this returns false, windowCleanup()
- * should be called as soon as possible.
- * @return true if open, false if pending closure
- * @remark This function is thread-safe.
- */
-bool windowIsOpen(void);
-
-/**
- * Set the window's open flag to false. The window does not close immediately,
- * but is signaled to be destroyed as soon as possible by changing the return
- * value of windowIsOpen().
- * @remark This function is thread-safe.
- */
-void windowClose(void);
-
-/**
- * Returns the title of the window.
- * @return String displayed on the window's title bar
- * @remark This function is thread-safe.
- */
-const char* windowGetTitle(void);
-
-/**
- * Return the size of the window in pixels.
- * @return Size of the window in pixels
- * @remark This function is thread-safe.
- */
-minote::size2i windowGetSize(void);
-
-/**
- * Return the scale of the window, with 1.0 being "normal".
- * @return Scale of the window
- * @remark This function is thread-safe.
- */
-float windowGetScale(void);
-
-/**
- * Activate the window's OpenGL context on the current thread. This is
- * required before OpenGL commands can be used. windowContextDeactivate()
- * must be called before windowCleanup().
- */
-void windowContextActivate(void);
-
-/**
- * Dectivate the window's OpenGL context on the current thread. Must be
- * called on the same thread that activated it.
- */
-void windowContextDeactivate(void);
-
-/**
- * Flip the window's front and back buffers. Call after a frame is drawn to
- * present it on the screen.
- */
-void windowFlip(void);
 
 /**
  * Remove and return a ::KeyInput from the window's input queue. If the queue
@@ -155,11 +154,3 @@ bool windowInputPeek(KeyInput* input);
  * @remark This function is thread-safe.
  */
 void windowInputClear(void);
-
-typedef struct GLFWwindow GLFWwindow;
-/**
- * Return a handle to the GLFW window. Use this very carefully, because most
- * GLFW functions are not thread-safe.
- * @return GLFW window pointer
- */
-GLFWwindow* getRawWindow(void);

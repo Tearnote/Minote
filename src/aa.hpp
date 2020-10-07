@@ -6,6 +6,7 @@
 #ifndef MINOTE_AA_H
 #define MINOTE_AA_H
 
+#include "sys/window.hpp"
 #include "opengl.hpp"
 
 /// Supported antialiasing methods
@@ -23,7 +24,7 @@ typedef enum AAMode {
  * but before any other aa functions.
  * @param mode AA method to initialize
  */
-void aaInit(AAMode mode);
+void aaInit(AAMode mode, minote::Window& window);
 
 /**
  * Cleanup the antialiasing system. No aa function can be used until aaInit()

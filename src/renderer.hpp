@@ -9,6 +9,7 @@
 #include <stddef.h>
 #include "linmath/linmath.h"
 #include "base/types.hpp"
+#include "sys/window.hpp"
 #include "opengl.hpp"
 
 /**
@@ -16,7 +17,7 @@
  * This can be called on a different thread than windowInit(), and the
  * calling thread becomes bound to the OpenGL context.
  */
-void rendererInit(void);
+void rendererInit(minote::Window& window);
 
 /**
  * Cleanup the renderer system. No other renderer functions cannot be used

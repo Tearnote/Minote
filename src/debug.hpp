@@ -6,6 +6,8 @@
 #ifndef MINOTE_DEBUG_H
 #define MINOTE_DEBUG_H
 
+#include "sys/window.hpp"
+
 // Nuklear configuration
 #define NK_INCLUDE_FIXED_TYPES
 #define NK_INCLUDE_DEFAULT_ALLOCATOR
@@ -28,7 +30,7 @@
  * the callbacks, but at the moment there is no need for it. This function
  * must be called from the input (main) thread.
  */
-void debugInputSetup(void);
+void debugInputSetup(minote::Window& window);
 
 /**
  * Initialize the debug layer. Requires rendererInit() to be called first.
@@ -55,7 +57,7 @@ void debugUpdate(void);
  * Draw all pending debug windows to the screen. This needs to be called
  * at least once per frame if Nuklear is being used.
  */
-void debugDraw(void);
+void debugDraw(minote::Window& window);
 
 /**
  * Retrieve the Nuklear context for use with nk_* functions.

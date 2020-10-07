@@ -243,14 +243,14 @@ void framebufferUse(Framebuffer* f)
 	boundFb = target;
 }
 
-void framebufferToScreen(Framebuffer* f)
+void framebufferToScreen(Framebuffer* f, Window& w)
 {
 	ASSERT(f);
 	framebufferUse(f);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	boundFb = 0;
 
-	size2i screenSize = windowGetSize();
+	size2i screenSize = w.size;
 	glBlitFramebuffer(0, 0, screenSize.x, screenSize.y,
 		0, 0, screenSize.x, screenSize.y,
 		GL_COLOR_BUFFER_BIT, GL_NEAREST);

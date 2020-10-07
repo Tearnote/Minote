@@ -19,15 +19,17 @@
 #include "text.hpp"
 #include "aa.hpp"
 
-static void gameInit(void)
+using namespace minote;
+
+static void gameInit(Window& window)
 {
 	mapperInit();
-	rendererInit();
+	rendererInit(window);
 	fontInit();
 	textInit();
 	modelInit();
-	bloomInit();
-	aaInit(AAExtreme);
+	bloomInit(window);
+	aaInit(AAExtreme, window);
 	worldInit();
 #ifdef MINOTE_DEBUG
 	debugInit();
@@ -87,19 +89,19 @@ static void gameDebug(void)
 	nk_end(nkCtx());
 }
 
-static void gameUpdate(void)
+static void gameUpdate(Window& window)
 {
 	mapperUpdate();
 #ifdef MINOTE_DEBUG
 	debugUpdate();
 	gameDebug();
 #endif //MINOTE_DEBUG
-	playUpdate();
-	worldUpdate();
+	playUpdate(window);
+	worldUpdate(window);
 	particlesUpdate();
 }
 
-static void gameDraw(void)
+static void gameDraw(Window& window)
 {
 	rendererFrameBegin();
 	aaBegin();
@@ -111,18 +113,18 @@ static void gameDraw(void)
 	glEnable(GL_DEPTH_TEST);
 	bloomApply();
 #ifdef MINOTE_DEBUG
-	debugDraw();
+	debugDraw(window);
 #endif //MINOTE_DEBUG
 	rendererFrameEnd();
 }
 
-void game()
+void game(Window& window)
 {
-	gameInit();
+	gameInit(window);
 
-	while (windowIsOpen()) {
-		gameUpdate();
-		gameDraw();
+	while (!window.isClosing()) {
+		gameUpdate(window);
+		gameDraw(window);
 	}
 
 	gameCleanup();

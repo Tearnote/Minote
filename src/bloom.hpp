@@ -6,10 +6,12 @@
 #ifndef MINOTE_BLOOM_H
 #define MINOTE_BLOOM_H
 
+#include "sys/window.hpp"
+
 /**
  * Initialize the bloom filter. Must be called after rendererInit().
  */
-void bloomInit(void);
+void bloomInit(minote::Window& window);
 
 /**
  * Cleanup the bloom filter. No other bloom functions can be used until

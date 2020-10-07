@@ -49,6 +49,8 @@ static const GLchar* ProgramBoxBlurFragSrc = (GLchar[]){
 #include "boxBlur.frag"
 	'\0'};
 
+static Window* window = nullptr;
+
 static Framebuffer* bloomFb[BloomPasses] = {nullptr};
 static Texture* bloomFbColor[BloomPasses] = {nullptr};
 static ProgramThreshold* threshold = nullptr;
@@ -79,16 +81,17 @@ static void bloomResize(size2i size)
 	}
 }
 
-void bloomInit(void)
+void bloomInit(Window& w)
 {
 	if (initialized) return;
+	window = &w;
 
 	for (size_t i = 0; i < BloomPasses; i += 1) {
 		bloomFb[i] = framebufferCreate();
 		bloomFbColor[i] = textureCreate();
 	}
 
-	bloomResize(windowGetSize());
+	bloomResize(window->size);
 
 	for (size_t i = 0; i < BloomPasses; i += 1) {
 		framebufferTexture(bloomFb[i], bloomFbColor[i], GL_COLOR_ATTACHMENT0);
@@ -137,7 +140,7 @@ void bloomCleanup(void)
 void bloomApply(void)
 {
 	ASSERT(initialized);
-	bloomResize(windowGetSize());
+	bloomResize(window->size);
 
 	// Prepare the image for bloom
 	glDisable(GL_BLEND);

@@ -34,7 +34,6 @@ union Vec2 {
 	 */
 	[[nodiscard]]
 	constexpr auto arr() const -> std::array<T, 2> { return {x, y}; }
-
 };
 
 // We need this to be true for the union to be valid

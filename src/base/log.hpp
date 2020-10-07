@@ -118,6 +118,6 @@ struct Log {
 };
 
 /// Global logger available for convenience
-inline Log L = {};
+inline Log L;
 
 }

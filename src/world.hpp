@@ -8,6 +8,7 @@
 
 #include "linmath/linmath.h"
 #include "base/types.hpp"
+#include "sys/window.hpp"
 
 /// The 3D projection matrix (view space -> screen space).
 /// Standard OpenGL coordinates - Z points towards the screen.
@@ -47,6 +48,6 @@ void worldCleanup(void);
 /**
  * Update world data. This handles independent processes such as screen resize.
  */
-void worldUpdate(void);
+void worldUpdate(minote::Window& window);
 
 #endif //MINOTE_WORLD_H

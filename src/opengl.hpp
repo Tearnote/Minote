@@ -10,6 +10,7 @@
 #include <stddef.h>
 #include "glad/glad.h"
 #include "base/types.hpp"
+#include "sys/window.hpp"
 
 /// OpenGL texture. You can obtain an instance with textureCreate().
 /// All fields read-only.
@@ -309,7 +310,7 @@ void framebufferUse(Framebuffer* f);
  * Copy a contents of a ::Framebuffer to the screen (backbuffer).
  * @param f The ::Framebuffer object
  */
-void framebufferToScreen(Framebuffer* f);
+void framebufferToScreen(Framebuffer* f, minote::Window& w);
 
 /**
  * Copy the contents of one ::Framebuffer to another. Performs MSAA resolve.

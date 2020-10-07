@@ -78,6 +78,8 @@ static const GLchar* ProgramSmaaNeighborFragSrc = (GLchar[]){
 #include "smaaNeighbor.frag"
 	'\0'};
 
+static Window* window = nullptr;
+
 // AASimple, AAComplex, AAExtreme
 static Framebuffer* msaaFb = nullptr;
 static TextureMS* msaaFbColor = nullptr;
@@ -155,10 +157,11 @@ static void aaResize(size2i size)
 		textureStorage(smaaBlendFbColor2, size, GL_RGBA8);
 }
 
-void aaInit(AAMode mode)
+void aaInit(AAMode mode, Window& w)
 {
 	if (initialized) return;
 	currentMode = mode;
+	window = &w;
 
 	// Create needed objects
 	if (mode == AASimple || mode == AAComplex || mode == AAExtreme) {
@@ -187,7 +190,7 @@ void aaInit(AAMode mode)
 	}
 
 	// Set up framebuffer textures
-	aaResize(windowGetSize());
+	aaResize(window->size);
 
 	// Put framebuffers together and create shaders
 	if (mode == AASimple || mode == AAComplex || mode == AAExtreme) {
@@ -397,14 +400,14 @@ void aaSwitch(AAMode mode)
 	ASSERT(initialized);
 	if (mode == currentMode) return;
 	aaCleanup();
-	aaInit(mode);
+	aaInit(mode, *window);
 }
 
 void aaBegin(void)
 {
 	ASSERT(initialized);
 	if (currentMode == AANone) return;
-	aaResize(windowGetSize());
+	aaResize(window->size);
 	if (currentMode == AASimple
 		|| currentMode == AAComplex
 		|| currentMode == AAExtreme)

@@ -53,6 +53,8 @@ static const GLchar* ProgramDelinearizeFragSrc = (GLchar[]){
 
 static bool initialized = false;
 
+static Window* window = nullptr;
+
 static Framebuffer* renderFb = nullptr;
 static Texture* renderFbColor = nullptr;
 static Renderbuffer* renderFbDepthStencil = nullptr;
@@ -117,12 +119,14 @@ static void rendererResize(size2i size)
 	renderbufferStorage(renderFbDepthStencil, size, GL_DEPTH24_STENCIL8);
 }
 
-void rendererInit(void)
+void rendererInit(Window& w)
 {
 	if (initialized) return;
 
+	window = &w;
+
 	// Pick up the OpenGL context
-	windowContextActivate();
+	window->activateContext();
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		L.crit("Failed to initialize OpenGL");
 		exit(EXIT_FAILURE);
@@ -144,7 +148,7 @@ void rendererInit(void)
 	renderFbDepthStencil = renderbufferCreate();
 
 	// Set up matrices and framebuffer textures
-	rendererResize(windowGetSize());
+	rendererResize(window->size);
 
 	// Put framebuffers together
 	framebufferTexture(renderFb, renderFbColor, GL_COLOR_ATTACHMENT0);
@@ -169,7 +173,7 @@ void rendererInit(void)
 		ProgramDelinearizeFragName, ProgramDelinearizeFragSrc);
 	delinearize->image = programSampler(delinearize, "image", GL_TEXTURE0);
 
-	L.debug("Created renderer for window \"%s\"", windowGetTitle());
+	L.debug("Created renderer for window \"%s\"", window->title);
 }
 
 void rendererCleanup(void)
@@ -187,9 +191,8 @@ void rendererCleanup(void)
 	renderFbColor = nullptr;
 	framebufferDestroy(renderFb);
 	renderFb = nullptr;
-	windowContextDeactivate();
-	L.debug("Destroyed renderer for window \"%s\"",
-		windowGetTitle());
+	window->deactivateContext();
+	L.debug("Destroyed renderer for window \"%s\"", window->title);
 	initialized = false;
 }
 
@@ -207,7 +210,7 @@ void rendererFrameBegin(void)
 {
 	ASSERT(initialized);
 
-	rendererResize(windowGetSize());
+	rendererResize(window->size);
 	framebufferUse(renderFb);
 }
 
@@ -220,7 +223,7 @@ void rendererFrameEnd(void)
 	programUse(delinearize);
 	textureUse(renderFbColor, delinearize->image);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
-	windowFlip();
+	window->flip();
 	if (syncEnabled)
 		rendererSync();
 	glEnable(GL_BLEND);

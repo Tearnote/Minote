@@ -9,9 +9,14 @@
 #include <atomic>
 #include <mutex>
 #ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX 1
+#endif //NOMINMAX
+#ifdef WIN32_LEAN_AND_MEAN
+#undef WIN32_LEAN_AND_MEAN
+#endif //WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif //_WIN32
-#include "glad/glad.h"
 #include <GLFW/glfw3.h>
 #include "base/queue.hpp"
 #include "base/util.hpp"
@@ -20,16 +25,16 @@
 
 using namespace minote;
 
-static GLFWwindow* handle; ///< Underlying GLFWwindow object
-static const char* windowTitle; ///< Window title from the title bar
 static queue<KeyInput, 64> inputs{}; ///< Message queue for storing keypresses
 static std::mutex inputsMutex; ///< Mutex protecting the #collectedInputs queue
-static std::atomic<bool> windowOpen; ///< false if window should be closed, true otherwise
-// These two are not #size2i because the struct cannot be atomic
-static std::atomic<size_t> viewportWidth; ///< in pixels
-static std::atomic<size_t> viewportHeight; ///< in pixels
-static std::atomic<float> viewportScale; ///< DPI scaling of the window, where 1.0 is "normal"
 
+static thread_local Window* activeContext = nullptr;
+
+/**
+ * Retrieve the GLFW description of the most recently encountered error,
+ * and clear the GLFW error state.
+ * @return Error description string literal. Use ASAP, before the next GLFW call
+ */
 static auto glfwError() -> const char*
 {
 	const char* description = nullptr;
@@ -41,121 +46,74 @@ static auto glfwError() -> const char*
 }
 
 /**
+ * Trivial function to retrieve the Window from raw GLFW handle by user pointer.
+ * @param handle Raw GLFW window
+ * @return Window previously provided to the handle by glfwSetWindowUserPointer()
+ */
+static auto getWindow(GLFWwindow* handle) -> Window&
+{
+	ASSERT(handle);
+	return *reinterpret_cast<Window*>(glfwGetWindowUserPointer(handle));
+}
+
+/**
  * Function to run on each keypress event. The key event is added to the queue.
- * @param w Unused
+ * @param handle Raw GLFW window
  * @param key Platform-independent key identifier
  * @param scancode Platform-dependent keycode
  * @param action GLFW_PRESS or GLFW_RELEASE
- * @param mods Bitmask of active modifier keys (ctrl, shift etc)
+ * @param mods Bitmask of active modifier keys (ctrl, shift etc.)
  */
-static void
-keyCallback(GLFWwindow* w, int key, int scancode, int action, int mods)
+static void keyCallback(GLFWwindow* handle, int key, int, int action, int)
 {
-	(void)w, (void)scancode, (void)mods;
-	ASSERT(Window::initialized);
-	if (action == GLFW_REPEAT) return; // Key repeat is not needed
+	ASSERT(handle);
+	if (action == GLFW_REPEAT)
+		return; // Key repeat is not used
+	auto& window = getWindow(handle);
+
 	KeyInput input = {.key = key, .action = action, .timestamp = Window::getTime()};
 	inputsMutex.lock();
 	if (!inputs.enqueue(input))
-		L.warn("Window input queue is full, key #%d %s dropped",
-			key, action == GLFW_PRESS ? "press" : "release");
+		L.warn(R"(Window "%s" input queue is full, key #%d %s dropped)",
+			window.title, key, action == GLFW_PRESS ? "press" : "release");
 	inputsMutex.unlock();
 }
 
 /**
- * Function to run when user requested window close.
- * @param w Unused
- */
-static void windowCloseCallback(GLFWwindow* w)
-{
-	(void)w;
-	ASSERT(Window::initialized);
-	windowOpen = false;
-}
-
-/**
  * Function to run when the window is resized. The new size is kept for later
- * retrieval with windowGetSize().
- * @param w Unused
+ * retrieval, most likely by the renderer.
+ * @param handle Raw GLFW window
  * @param width New window width in pixels
  * @param height New window height in pixels
  */
-static void framebufferResizeCallback(GLFWwindow* w, int width, int height)
+static void framebufferResizeCallback(GLFWwindow* handle, int width, int height)
 {
-	(void)w;
-	ASSERT(Window::initialized);
+	ASSERT(handle);
 	ASSERT(width);
 	ASSERT(height);
-	viewportWidth = width;
-	viewportHeight = height;
-	L.debug("Window \"%s\" resized to %dx%d",
-		windowTitle, width, height);
+	auto& window = getWindow(handle);
+
+	const size2i newSize = {width, height};
+	window.size = newSize;
+	L.info(R"(Window "%s" resized to %dx%d)", window.title, width, height);
 }
 
 /**
  * Function to run when the window is rescaled. This might happen when dragging
- * it to a display with different DPI scaling, or at startup. The new scale is
- * kept for later retrieval with windowGetScale().
- * @param w Unused
+ * it to a display with different DPI scaling, or at startup. The new scale
+ * is saved for later retrieval.
+ * @param handle Raw GLFW window
  * @param xScale New window scale, with 1.0 being "normal"
  * @param yScale Unused. This appears to be 0.0 sometimes so we ignore it
  */
-static void windowScaleCallback(GLFWwindow* w, float xScale, float yScale)
+static void windowScaleCallback(GLFWwindow* handle, float xScale, float)
 {
-	(void)w, (void)yScale;
-	ASSERT(Window::initialized);
+	ASSERT(handle);
 	ASSERT(xScale);
-	viewportScale = xScale;
-	L.debug("Window \"%s\" DPI scaling changed to %f",
-		windowTitle, xScale);
-}
+	auto& window = getWindow(handle);
 
-bool windowIsOpen(void)
-{
-	ASSERT(Window::initialized);
-	return windowOpen;
-}
-
-void windowClose(void)
-{
-	ASSERT(Window::initialized);
-	windowOpen = false;
-}
-
-const char* windowGetTitle(void)
-{
-	ASSERT(Window::initialized);
-	return windowTitle;
-}
-
-size2i windowGetSize(void)
-{
-	ASSERT(Window::initialized);
-	return {static_cast<int>(viewportWidth), static_cast<int>(viewportHeight)};
-}
-
-float windowGetScale(void)
-{
-	ASSERT(Window::initialized);
-	return viewportScale;
-}
-
-void windowContextActivate(void)
-{
-	ASSERT(Window::initialized);
-	glfwMakeContextCurrent(handle);
-}
-
-void windowContextDeactivate(void)
-{
-	ASSERT(Window::initialized);
-	glfwMakeContextCurrent(nullptr);
-}
-
-void windowFlip(void)
-{
-	ASSERT(Window::initialized);
-	glfwSwapBuffers(handle);
+	window.scale = xScale;
+	L.info(R"(Window "%s" DPI scaling changed to %f)", window.title, xScale);
 }
 
 bool windowInputDequeue(KeyInput* input)
@@ -186,12 +144,6 @@ void windowInputClear(void)
 	inputsMutex.lock();
 	inputs.clear();
 	inputsMutex.unlock();
-}
-
-GLFWwindow* getRawWindow(void)
-{
-	ASSERT(handle);
-	return handle;
 }
 
 namespace minote {
@@ -237,14 +189,13 @@ auto Window::getTime() -> nsec
 	return seconds(glfwGetTime());
 }
 
-void Window::open(char const* title, bool fullscreen, size2i size)
+void Window::open(char const* const _title, const bool fullscreen, size2i _size)
 {
-	ASSERT(title);
-	ASSERT(size.x >= 0 && size.y >= 0);
+	ASSERT(_title);
+	ASSERT(_size.x >= 0 && _size.y >= 0);
 	ASSERT(initialized);
 
-	windowTitle = title;
-	windowOpen = true;
+	// Set up context params
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -257,57 +208,139 @@ void Window::open(char const* title, bool fullscreen, size2i size)
 	glfwWindowHint(GLFW_ALPHA_BITS, 0);
 	glfwWindowHint(GLFW_DEPTH_BITS, 0); // Handled by an internal FB
 	glfwWindowHint(GLFW_STENCIL_BITS, 0); // Same
-	glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE); // DPI aware
-	if (fullscreen) {
-		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-		handle = glfwCreateWindow(mode->width, mode->height, title, monitor,
-			nullptr);
-	} else {
-		handle = glfwCreateWindow(size.x, size.y, title, nullptr, nullptr);
-	}
-	if (!handle) {
-		L.crit("Failed to create window \"%s\": %s", title,
-			glfwError());
-		exit(EXIT_FAILURE);
-	}
+	glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE); // Declare DPI awareness
 
+	// Create the window handle
+	const auto[wantedSize, monitor] = [=]() -> std::pair<size2i, GLFWmonitor*> {
+		if (fullscreen) {
+			GLFWmonitor* const monitor = glfwGetPrimaryMonitor();
+			const GLFWvidmode* const mode = glfwGetVideoMode(monitor);
+			return {{mode->width, mode->height}, monitor};
+		} else {
+			return {_size, nullptr};
+		}
+	}();
+	handle = glfwCreateWindow(wantedSize.x, wantedSize.y, _title, monitor, nullptr);
+	if (!handle)
+		L.fail(R"(Failed to create window "%s": %s)", title, glfwError());
+
+	// Get window properties
+	const size2i realSize = [=] { // Might be different from wanted size because of DPI scaling
+		size2i s;
+		glfwGetFramebufferSize(handle, &s.x, &s.y);
+		return s;
+	}();
+	size = realSize;
+	const float _scale = [=] {
+		float s = 0.0f;
+		glfwGetWindowContentScale(handle, &s, nullptr);
+		return s;
+	}();
+	scale = _scale;
+	title = _title;
+
+	// Set up window callbacks
+	glfwSetWindowUserPointer(handle, this);
 #ifndef MINOTE_DEBUG
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+	glfwSetInputMode(handle, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 #endif //MINOTE_DEBUG
 	glfwSetKeyCallback(handle, keyCallback);
-	glfwSetWindowCloseCallback(handle, windowCloseCallback);
 	glfwSetFramebufferSizeCallback(handle, framebufferResizeCallback);
 	glfwSetWindowContentScaleCallback(handle, windowScaleCallback);
-	// An initial check is required to get correct values for non-100% scaling
-	int width = 0;
-	int height = 0;
-	float scale = 0.0f;
-	glfwGetFramebufferSize(handle, &width, &height);
-	framebufferResizeCallback(handle, width, height);
-	glfwGetWindowContentScale(handle, &scale, nullptr);
-	windowScaleCallback(handle, scale, 0);
-	L.info("Window \"%s\" created at %dx%d *%f%s",
-		stringOrNull(windowTitle), width, height, scale, fullscreen ? " fullscreen" : "");
+
+	L.info(R"(Window "%s" created at %dx%d *%f%s)",
+		stringOrNull(_title), realSize.x, realSize.y, _scale, fullscreen ? " fullscreen" : "");
 }
 
 void Window::close()
 {
 	if (!initialized) {
 		L.warn(R"(Tried to close window "%s" without initialized windowing)",
-			stringOrNull(windowTitle));
+			stringOrNull(title));
 		return;
 	}
 	if (!handle) {
 		L.warn(R"(Tried to close window "%s" which is not open)",
-			stringOrNull(windowTitle));
+			stringOrNull(title));
 		return;
 	}
 
 	glfwDestroyWindow(handle);
 	handle = nullptr;
 
-	L.info(R"(Window "%s" closed)", stringOrNull(windowTitle));
+	L.info(R"(Window "%s" closed)", stringOrNull(title));
+}
+
+auto Window::isClosing() -> bool
+{
+	ASSERT(initialized);
+	ASSERT(handle);
+
+	handleMutex.lock();
+	const bool result = glfwWindowShouldClose(handle);
+	handleMutex.unlock();
+	return result;
+}
+
+void Window::requestClose()
+{
+	ASSERT(initialized);
+	ASSERT(handle);
+
+	handleMutex.lock();
+	glfwSetWindowShouldClose(handle, true);
+	handleMutex.unlock();
+	L.info(R"(Window "%s" close requested)", stringOrNull(title));
+}
+
+void Window::flip()
+{
+	ASSERT(initialized);
+	ASSERT(handle);
+
+	glfwSwapBuffers(handle);
+}
+
+void Window::activateContext()
+{
+	ASSERT(initialized);
+	ASSERT(handle);
+	ASSERT(!isContextActive);
+	ASSERT(!activeContext);
+
+	glfwMakeContextCurrent(handle);
+	isContextActive = true;
+	activeContext = this;
+	L.debug(R"(Window "%s" OpenGL context activated)", stringOrNull(title));
+}
+
+void Window::deactivateContext()
+{
+	if (!initialized) {
+		L.warn(R"(Tried to deactivate context of window "%s" without initialized windowing)",
+			stringOrNull(title));
+		return;
+	}
+	if (!handle) {
+		L.warn(R"(Tried to deactivate context of window "%s" which is not open)",
+			stringOrNull(title));
+		return;
+	}
+	if (!isContextActive) {
+		L.warn(R"(Tried to deactivate context of window "%s" without an active context)",
+			stringOrNull(title));
+		return;
+	}
+	if (activeContext != this) {
+		L.warn(R"(Tried to deactivate context of window "%s" on the wrong thread)",
+			stringOrNull(title));
+		return;
+	}
+
+	glfwMakeContextCurrent(nullptr);
+	isContextActive = false;
+	activeContext = nullptr;
+	L.debug(R"(Window "%s" OpenGL context deactivated)", stringOrNull(title));
 }
 
 }

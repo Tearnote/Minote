@@ -35,6 +35,7 @@ find_package(PkgConfig REQUIRED)
 pkg_search_module(GLFW REQUIRED glfw3)
 pkg_search_module(FREETYPE REQUIRED freetype2)
 pkg_search_module(HARFBUZZ REQUIRED harfbuzz)
+add_compile_definitions(GLFW_INCLUDE_NONE)
 
 # Build the preprocessors
 add_executable(Preshade src/tools/preshade.cpp)

@@ -72,7 +72,7 @@ void worldCleanup(void)
 	initialized = false;
 }
 
-void worldUpdate(void)
+void worldUpdate(Window& window)
 {
-	worldResize(windowGetSize());
+	worldResize(window.size);
 }

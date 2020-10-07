@@ -7,8 +7,6 @@
 
 #include "sys/window.hpp"
 #include "mapper.hpp"
-#include "base/varray.hpp"
-#include "base/util.hpp"
 #include "mrs.hpp"
 #include "base/log.hpp"
 
@@ -43,7 +41,7 @@ void playCleanup(void)
 	L.debug("Play layer cleaned up");
 }
 
-void playUpdate(void)
+void playUpdate(Window& window)
 {
 	ASSERT(initialized);
 
@@ -61,7 +59,7 @@ void playUpdate(void)
 
 			// Interpret quit events here for now
 			if (i.type == InputQuit && i.state)
-				windowClose();
+				window.requestClose();
 		}
 
 		mrsAdvance(collectedInputs);
