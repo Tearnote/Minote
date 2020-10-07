@@ -171,13 +171,7 @@ target_include_directories(Minote PRIVATE ${FREETYPE_INCLUDE_DIRS})
 
 # Linker settings
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    include(CheckIPOSupported)
-    check_ipo_supported(RESULT result OUTPUT output)
-    if(result)
-        set_property(TARGET Minote PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-    else()
-        message(WARNING "IPO is not supported: ${output}")
-    endif()
+    set_property(TARGET Minote PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif()
 
 # Link the game
