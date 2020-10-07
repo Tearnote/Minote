@@ -21,11 +21,11 @@ struct Tween {
 
 	using Type = T;
 
-	Type from{0.0f}; ///< initial value
-	Type to{1.0f}; ///< final value
-	nsec start{0}; ///< time of starting the tween
-	nsec duration{seconds(1)}; ///< time the tween will take to finish
-	EasingFunction<Type> type{linearInterpolation}; ///< easing function to use during the tween
+	Type from = 0.0f; ///< initial value
+	Type to = 1.0f; ///< final value
+	nsec start = 0; ///< time of starting the tween
+	nsec duration = seconds(1); ///< time the tween will take to finish
+	EasingFunction<Type> type = linearInterpolation; ///< easing function to use during the tween
 
 	/**
 	 * Convenience function to replay a tween from the current moment.

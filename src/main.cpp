@@ -58,9 +58,9 @@ auto main(int, char* []) -> int
 	// Window creation
 	Window::init();
 	defer { Window::cleanup(); };
-	char windowTitle[64]{""};
+	char windowTitle[64] = "";
 	std::snprintf(windowTitle, 64, "%s %s", AppName, AppVersion);
-	Window window{};
+	Window window = {};
 	window.open(windowTitle);
 	defer { window.close(); };
 #ifdef MINOTE_DEBUG
@@ -69,7 +69,7 @@ auto main(int, char* []) -> int
 
 	//endregion Initialization
 
-	std::thread gameThread{game};
+	std::thread gameThread(game);
 	defer { gameThread.join(); };
 
 	// Input loop

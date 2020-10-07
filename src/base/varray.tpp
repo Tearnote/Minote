@@ -19,7 +19,7 @@ auto varray<T, N>::produce() -> optref<Element>
 		return {};
 
 	size += 1;
-	return optref<Element>{buffer[size - 1]};
+	return optref<Element>(buffer[size - 1]);
 }
 
 template<typename T, std::size_t N>

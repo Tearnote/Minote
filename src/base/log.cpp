@@ -16,12 +16,12 @@
 namespace minote {
 
 /// Mapping from Log::Level to string name
-static constexpr char LogLevelStrings[][+Log::Level::Size]{
+static constexpr char LogLevelStrings[][+Log::Level::Size] = {
 	"", "TRACE", "DEBUG", " INFO", " WARN", "ERROR", " CRIT"
 };
 
 /// Messages longer than this will be truncated
-static constexpr std::size_t MaxMessageLen{2048};
+static constexpr std::size_t MaxMessageLen = 2048;
 
 /**
  * Write a preformatted log message to a specified output.
@@ -57,18 +57,18 @@ static void logPrio(Log& log, const Log::Level level,
 	if (!log.console && !log.file)
 		return;
 
-	char msg[MaxMessageLen]{};
+	char msg[MaxMessageLen] = {};
 
 	// Insert timestamp and level
-	const auto now{std::time(nullptr)};
+	const auto now = std::time(nullptr);
 	// Copy-initialize to minimize chance of thread safety issues
-	const auto localnow{*std::localtime(&now)};
+	const auto localnow = *std::localtime(&now);
 	std::snprintf(msg, MaxMessageLen, "%02d:%02d:%02d [%s] ",
 		localnow.tm_hour, localnow.tm_min, localnow.tm_sec,
 		LogLevelStrings[+level]);
 
 	// Insert formatted message
-	const auto timestampLen{std::strlen(msg)};
+	const auto timestampLen = std::strlen(msg);
 	std::vsnprintf(msg + timestampLen, MaxMessageLen - timestampLen, fmt, ap);
 
 	// Append a newline
@@ -149,7 +149,7 @@ void Log::disableFile()
 
 void Log::trace(const char* const fmt, ...)
 {
-	va_list ap{};
+	va_list ap = {};
 	va_start(ap, fmt);
 	logPrio(*this, Level::Trace, fmt, ap);
 	va_end(ap);
@@ -157,7 +157,7 @@ void Log::trace(const char* const fmt, ...)
 
 void Log::debug(const char* const fmt, ...)
 {
-	va_list ap{};
+	va_list ap = {};
 	va_start(ap, fmt);
 	logPrio(*this, Level::Debug, fmt, ap);
 	va_end(ap);
@@ -165,7 +165,7 @@ void Log::debug(const char* const fmt, ...)
 
 void Log::info(const char* const fmt, ...)
 {
-	va_list ap{};
+	va_list ap = {};
 	va_start(ap, fmt);
 	logPrio(*this, Level::Info, fmt, ap);
 	va_end(ap);
@@ -173,7 +173,7 @@ void Log::info(const char* const fmt, ...)
 
 void Log::warn(const char* const fmt, ...)
 {
-	va_list ap{};
+	va_list ap = {};
 	va_start(ap, fmt);
 	logPrio(*this, Level::Warn, fmt, ap);
 	va_end(ap);
@@ -181,7 +181,7 @@ void Log::warn(const char* const fmt, ...)
 
 void Log::error(const char* const fmt, ...)
 {
-	va_list ap{};
+	va_list ap = {};
 	va_start(ap, fmt);
 	logPrio(*this, Level::Error, fmt, ap);
 	va_end(ap);
@@ -189,7 +189,7 @@ void Log::error(const char* const fmt, ...)
 
 void Log::crit(const char* const fmt, ...)
 {
-	va_list ap{};
+	va_list ap = {};
 	va_start(ap, fmt);
 	logPrio(*this, Level::Crit, fmt, ap);
 	va_end(ap);
@@ -197,7 +197,7 @@ void Log::crit(const char* const fmt, ...)
 
 void Log::fail(char const* fmt, ...)
 {
-	va_list ap{};
+	va_list ap = {};
 	va_start(ap, fmt);
 	logPrio(*this, Level::Crit, fmt, ap);
 	va_end(ap);

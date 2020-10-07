@@ -19,7 +19,7 @@
 
 namespace minote {
 
-/// Making the DEFER feature from scope_guard more keyword-like
+/// Make the DEFER feature from scope_guard more keyword-like
 #define defer DEFER
 
 /// Improved assert() macro from PPK_ASSERT, with printf-like formatting
@@ -52,9 +52,9 @@ constexpr auto operator+(T e) {
  * @see https://tauday.com/
  */
 template<FloatingPoint T>
-constexpr T Tau_v{6.283185307179586476925286766559005768L};
+constexpr T Tau_v = 6.283185307179586476925286766559005768L;
 
-constexpr double Tau{Tau_v<double>};
+constexpr auto Tau = Tau_v<double>;
 
  /**
   * Convert degrees to radians.
@@ -83,7 +83,7 @@ constexpr auto mod(T num, T div)
 struct Rng {
 
 	/// Internal state of the RNG. The .inc field must always be odd.
-	pcg32_random_t state{0, 1};
+	pcg32_random_t state = {0, 1};
 
 	/**
 	 * Seed the generator with a given value. The generated sequence will always
@@ -154,7 +154,7 @@ template<typename T>
 auto allocate(const std::size_t count = 1) -> T*
 {
 	ASSERT(count);
-	auto* const result{static_cast<T*>(std::calloc(count, sizeof(T)))};
+	auto* const result = static_cast<T*>(std::calloc(count, sizeof(T)));
 	if (!result) {
 		std::perror("Could not allocate memory");
 		std::exit(EXIT_FAILURE);
@@ -174,7 +174,7 @@ template<typename T>
 void reallocate(T*& buffer, const std::size_t newCount)
 {
 	ASSERT(newCount);
-	auto* const result{static_cast<T*>(std::realloc(buffer, sizeof(T) * newCount))};
+	auto* const result = static_cast<T*>(std::realloc(buffer, sizeof(T) * newCount));
 	if (!result) {
 		std::perror("Could not allocate memory");
 		std::exit(EXIT_FAILURE);

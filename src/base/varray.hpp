@@ -17,10 +17,10 @@ template<typename T, std::size_t N>
 struct varray {
 
 	using Element = T;
-	static constexpr std::size_t Capacity{N};
+	static constexpr std::size_t Capacity = N;
 
-	std::array<Element, Capacity> buffer{}; ///< Array containing the elements
-	std::size_t size{0}; ///< Number of elements currently in #data
+	std::array<Element, Capacity> buffer = {}; ///< Array containing the elements
+	std::size_t size = 0; ///< Number of elements currently in #data
 
 	/**
 	 * Add a new element at the end and return a pointer to it.

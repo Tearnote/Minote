@@ -25,13 +25,13 @@ struct Log {
 	};
 
 	/// Messages with level lower than this will be ignored
-	Level level{Level::None};
+	Level level = Level::None;
 
 	/// If true, messages are printed to stdout/stderr
-	bool console{false};
+	bool console = false;
 
 	/// File handle to write messages into, or nullptr for disabled file logging
-	FILE* file{nullptr};
+	FILE* file = nullptr;
 
 	~Log();
 
@@ -118,6 +118,6 @@ struct Log {
 };
 
 /// Global logger available for convenience
-inline Log L{};
+inline Log L = {};
 
 }

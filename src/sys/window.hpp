@@ -22,7 +22,7 @@ namespace minote {
 
 struct Window {
 
-	inline static bool initialized{false};
+	inline static bool initialized = false;
 
 	/**
 	 * Initialize the windowing system and other OS-specific bits. This must
@@ -46,7 +46,8 @@ struct Window {
 	static void poll();
 
 	/**
-	 * Return the time passed since Window::init().
+	 * Return the time passed since Window::init(). If init() was not called,
+	 * 0 is returned.
 	 * @return Number of nanoseconds since windowing initialization
 	 * @remark This function is thread-safe.
 	 */

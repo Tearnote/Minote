@@ -32,7 +32,7 @@ static std::atomic<float> viewportScale; ///< DPI scaling of the window, where 1
 
 static auto glfwError() -> const char*
 {
-	const char* description{nullptr};
+	const char* description = nullptr;
 	const int code = glfwGetError(&description);
 	if (code == GLFW_NO_ERROR)
 		return "No error";
@@ -271,7 +271,6 @@ void Window::open(char const* title, bool fullscreen, size2i size)
 			glfwError());
 		exit(EXIT_FAILURE);
 	}
-	initialized = true;
 
 #ifndef MINOTE_DEBUG
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
@@ -308,7 +307,6 @@ void Window::close()
 	glfwDestroyWindow(handle);
 	handle = nullptr;
 
-	initialized = false;
 	L.info(R"(Window "%s" closed)", stringOrNull(windowTitle));
 }
 

@@ -16,11 +16,11 @@ template<typename T, std::size_t N>
 struct queue {
 
 	using Element = T;
-	static constexpr std::size_t Capacity{N};
+	static constexpr std::size_t Capacity = N;
 
-	std::array<Element, Capacity> buffer{}; ///< Ring buffer of elements
-	std::size_t head{0}; ///< Index of the first empty space to enqueue into
-	std::size_t tail{0}; ///< Index of the next element to dequeue
+	std::array<Element, Capacity> buffer = {}; ///< Ring buffer of elements
+	std::size_t head = 0; ///< Index of the first empty space to enqueue into
+	std::size_t tail = 0; ///< Index of the next element to dequeue
 
 	/**
 	 * Add an element to the back of the queue. If there is no space, nothing
@@ -49,12 +49,14 @@ struct queue {
 	 * Check whether the queue is empty.
 	 * @return true is empty, false if not empty
 	 */
+	[[nodiscard]]
 	auto isEmpty() const -> bool;
 
 	/**
 	 * Check whether the queue is full.
 	 * @return true if full, false if not full
 	 */
+	[[nodiscard]]
 	auto isFull() const -> bool;
 
 	/**

@@ -7,7 +7,7 @@
 
 namespace minote {
 
-constexpr char AppName[]{"Minote"};
-constexpr char AppVersion[]{"0.0"};
+constexpr char AppName[] = "Minote";
+constexpr char AppVersion[] = "0.0";
 
 }

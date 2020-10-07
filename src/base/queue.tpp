@@ -26,9 +26,9 @@ auto queue<T, N>::dequeue() -> optref<Element>
 	if (isEmpty())
 		return {};
 
-	const auto prevTail{tail};
+	const auto prevTail = tail;
 	tail = (tail + 1) % Capacity;
-	return optref<Element>{buffer[prevTail]};
+	return optref<Element>(buffer[prevTail]);
 }
 
 template<typename T, std::size_t N>
@@ -37,7 +37,7 @@ auto queue<T, N>::peek() -> optref<Element>
 	if (isEmpty())
 		return {};
 
-	return optref<Element>{buffer[tail]};
+	return optref<Element>(buffer[tail]);
 }
 
 template<typename T, std::size_t N>
@@ -46,7 +46,7 @@ auto queue<T, N>::peek() const -> optref<const Element>
 	if (isEmpty())
 		return {};
 
-	return optref<Element>{buffer[tail]};
+	return optref<Element>(buffer[tail]);
 }
 
 template<typename T, std::size_t N>

@@ -16,8 +16,8 @@ template<Arithmetic T>
 union Vec2 {
 
 	struct {
-		T x{0};
-		T y{0};
+		T x = 0;
+		T y = 0;
 	};
 	struct {
 		T r;
@@ -50,9 +50,9 @@ template<Arithmetic T>
 union Vec3 {
 
 	struct {
-		T x{0};
-		T y{0};
-		T z{0};
+		T x = 0;
+		T y = 0;
+		T z = 0;
 	};
 	struct {
 		T r;
@@ -111,10 +111,10 @@ template<Arithmetic T>
 union Vec4 {
 
 	struct {
-		T x{0};
-		T y{0};
-		T z{0};
-		T w{0};
+		T x = 0;
+		T y = 0;
+		T z = 0;
+		T w = 0;
 	};
 	struct {
 		T r;
@@ -167,10 +167,10 @@ static_assert(std::is_standard_layout_v<Vec4<int>>);
 using point4f = Vec4<float>; ///< 3D vector with a w coordinate
 using color4 = Vec4<float>; ///< RGBA color value
 
-constexpr color3 White3{1.0f, 1.0f, 1.0f};
-constexpr color4 White4{1.0f, 1.0f, 1.0f, 1.0f};
-constexpr color3 Black3{0.0f, 0.0f, 0.0f};
-constexpr color4 Black4{0.0f, 0.0f, 0.0f, 1.0f};
-constexpr color4 Clear4{1.0f, 1.0f, 1.0f, 0.0f};
+constexpr color3 White3 = {1.0f, 1.0f, 1.0f};
+constexpr color4 White4 = {1.0f, 1.0f, 1.0f, 1.0f};
+constexpr color3 Black3 = {0.0f, 0.0f, 0.0f};
+constexpr color4 Black4 = {0.0f, 0.0f, 0.0f, 1.0f};
+constexpr color4 Clear4 = {1.0f, 1.0f, 1.0f, 0.0f};
 
 }
