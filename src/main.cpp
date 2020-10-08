@@ -32,7 +32,7 @@ using namespace minote; // Because we can't namespace main()
  */
 auto main(int, char* []) -> int
 {
-	//region Initialization
+	// Initialization
 
 	// Locale and Unicode
 	std::setlocale(LC_ALL, ""); // Use system locale
@@ -45,10 +45,10 @@ auto main(int, char* []) -> int
 	// Global logging
 #ifndef NDEBUG
 	L.level = Log::Level::Trace;
-	constexpr char logfile[]{"minote.log"};
+	constexpr char logfile[] = "minote.log";
 #else //NDEBUG
 	L.level = Log::Level::Info;
-	constexpr char logfile[]{"minote-debug.log"};
+	constexpr char logfile[] = "minote-debug.log";
 #endif //NDEBUG
 	L.console = true;
 	L.enableFile(logfile);
@@ -67,8 +67,7 @@ auto main(int, char* []) -> int
 	debugInputSetup(window);
 #endif //MINOTE_DEBUG
 
-	//endregion Initialization
-
+	// Spawn game thread
 	std::thread gameThread(game, std::ref(window));
 	defer { gameThread.join(); };
 
