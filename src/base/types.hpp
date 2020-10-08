@@ -13,18 +13,16 @@ namespace minote {
 
 /// A two-element vector type
 template<Arithmetic T>
-union Vec2 {
+struct Vec2 {
 
-	struct {
+	union {
 		T x = 0;
-		T y = 0;
-	};
-	struct {
 		T r;
-		T g;
-	};
-	struct {
 		T u;
+	};
+	union {
+		T y = 0;
+		T g;
 		T v;
 	};
 
@@ -46,21 +44,21 @@ using size2f = Vec2<float>; ///< Floating-point size in 2D space
 
 /// A three-element vector type
 template<Arithmetic T>
-union Vec3 {
+struct Vec3 {
 
-	struct {
+	union {
 		T x = 0;
-		T y = 0;
-		T z = 0;
-	};
-	struct {
 		T r;
-		T g;
-		T b;
-	};
-	struct {
 		T u;
+	};
+	union {
+		T y = 0;
+		T g;
 		T v;
+	};
+	union {
+		T z = 0;
+		T b;
 		T s;
 	};
 
@@ -107,24 +105,26 @@ using color3 = Vec3<float>; ///< RGB color value
 
 /// A four-element vector type
 template<Arithmetic T>
-union Vec4 {
+struct Vec4 {
 
-	struct {
+	union {
 		T x = 0;
-		T y = 0;
-		T z = 0;
-		T w = 0;
-	};
-	struct {
 		T r;
-		T g;
-		T b;
-		T a;
-	};
-	struct {
 		T u;
+	};
+	union {
+		T y = 0;
+		T g;
 		T v;
+	};
+	union {
+		T z = 0;
+		T b;
 		T s;
+	};
+	union {
+		T w = 0;
+		T a;
 		T t;
 	};
 
