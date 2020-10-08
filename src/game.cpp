@@ -61,8 +61,7 @@ static void gameDebug(void)
 void game(Window& window)
 {
 	// Initialization
-	mapperInit();
-	defer { mapperCleanup(); };
+	Mapper mapper;
 	rendererInit(window);
 	defer { rendererCleanup(); };
 	fontInit();
@@ -89,12 +88,12 @@ void game(Window& window)
 	// Main loop
 	while (!window.isClosing()) {
 		// Update state
-		mapperUpdate(window);
+		mapper.mapKeyInputs(window);
 #ifdef MINOTE_DEBUG
 		debugUpdate();
 		gameDebug();
 #endif //MINOTE_DEBUG
-		playUpdate(window);
+		playUpdate(window, mapper);
 		worldUpdate(window);
 		particlesUpdate();
 

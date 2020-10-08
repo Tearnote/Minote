@@ -9,6 +9,7 @@
 #define MINOTE_PLAY_H
 
 #include "sys/window.hpp"
+#include "mapper.hpp"
 
 /**
  * Initialize the play layer. Needs to be called before the layer can be used.
@@ -24,7 +25,7 @@ void playCleanup(void);
 /**
  * Advance the play layer.
  */
-void playUpdate(minote::Window& window);
+void playUpdate(minote::Window& window, minote::Mapper& mapper);
 
 /**
  * Draw the play layer to the screen.

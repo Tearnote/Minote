@@ -58,19 +58,19 @@ static auto getWindow(GLFWwindow* handle) -> Window&
  * @param handle Raw GLFW window
  * @param key Platform-independent key identifier
  * @param scancode Platform-dependent keycode
- * @param action GLFW_PRESS or GLFW_RELEASE
+ * @param state GLFW_PRESS or GLFW_RELEASE
  * @param mods Bitmask of active modifier keys (ctrl, shift etc.)
  */
-static void keyCallback(GLFWwindow* handle, int key, int, int action, int)
+static void keyCallback(GLFWwindow* handle, int key, int, int state, int)
 {
 	ASSERT(handle);
-	if (action == GLFW_REPEAT)
+	if (state == GLFW_REPEAT)
 		return; // Key repeat is not used
 	auto& window = getWindow(handle);
 
 	Window::KeyInput input = {
 		.key = key,
-		.action = action,
+		.state = state,
 		.timestamp = Window::getTime()
 	};
 
@@ -79,7 +79,7 @@ static void keyCallback(GLFWwindow* handle, int key, int, int action, int)
 	window.inputsMutex.unlock();
 	if (!success)
 		L.warn(R"(Window "%s" input queue is full, key #%d %s dropped)",
-			window.title, key, action == GLFW_PRESS ? "press" : "release");
+			window.title, key, state == GLFW_PRESS ? "press" : "release");
 }
 
 /**

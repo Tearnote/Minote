@@ -10,7 +10,7 @@
 #include "mrsdef.hpp"
 #include "base/log.hpp"
 
-using minote::L;
+using namespace minote;
 
 int mrsDebugPauseSpawn = 0;
 int mrsDebugInfLock = 0;
@@ -25,7 +25,7 @@ Tetrion mrsTet = {};
  * @return true if just pressed, false otherwise
  */
 #define inputPressed(type) \
-    (mrsTet.player.inputMap[(type)] && !mrsTet.player.inputMapPrev[(type)])
+    (mrsTet.player.actionMap[(+type)] && !mrsTet.player.actionMapPrev[(+type)])
 
 /**
  * Test whether an input is pressed during this frame.
@@ -33,7 +33,7 @@ Tetrion mrsTet = {};
  * @return true if pressed, false if not pressed
  */
 #define inputHeld(type) \
-    (mrsTet.player.inputMap[(type)])
+    (mrsTet.player.actionMap[(+type)])
 
 static void updateShape(void)
 {
@@ -69,7 +69,7 @@ static bool tryKicks(spin prevRotation)
 	}
 
 	// Now that every exception is filtered out, we can try the default kicks
-	int preference = mrsTet.player.lastDirection == InputRight ? 1 : -1;
+	int preference = mrsTet.player.lastDirection == Action::Type::Right ? 1 : -1;
 
 	// Down
 	mrsTet.player.pos.y -= 1;
@@ -274,10 +274,10 @@ static void spawnPiece(void)
 	updateShape();
 
 	// IRS
-	if (inputHeld(InputButton2)) {
+	if (inputHeld(Action::Type::RotCW)) {
 		rotate(1);
 	} else {
-		if (inputHeld(InputButton1) || inputHeld(InputButton3))
+		if (inputHeld(Action::Type::RotCCW) || inputHeld(Action::Type::RotCCW2))
 			rotate(-1);
 	}
 
@@ -365,9 +365,9 @@ static void drop(void)
 
 	if (!canDrop()) {
 		int direction = 0;
-		if (inputHeld(InputLeft))
+		if (inputHeld(Action::Type::Left))
 			direction = -1;
-		else if (inputHeld(InputRight))
+		else if (inputHeld(Action::Type::Right))
 			direction = 1;
 		mrsEffectLand(direction);
 	}
@@ -431,41 +431,40 @@ void mrsCleanup(void)
  * Populate and rotate the input arrays for press and hold detection.
  * @param inputs List of this frame's new inputs
  */
-static void mrsUpdateInputs(const InputArray& inputs)
+static void mrsUpdateInputs(const varray<Action, 64>& inputs)
 {
 	// Update raw inputs
 	if (mrsTet.state != TetrionOutro) {
 		for (size_t i = 0; i < inputs.size; i += 1) {
-			const Input& in = inputs[i];
-			ASSERT(in.type < InputSize);
-			mrsTet.player.inputMapRaw[in.type] = in.state;
+			const Action& in = inputs[i];
+			mrsTet.player.actionMapRaw[+in.type] = (in.state == Action::State::Pressed);
 		}
 	} else { // Force-release everything on gameover
-		arrayClear(mrsTet.player.inputMapRaw);
+		arrayClear(mrsTet.player.actionMapRaw);
 	}
 
 	// Rotate the input arrays
-	arrayCopy(mrsTet.player.inputMapPrev, mrsTet.player.inputMap);
-	arrayCopy(mrsTet.player.inputMap, mrsTet.player.inputMapRaw);
+	arrayCopy(mrsTet.player.actionMapPrev, mrsTet.player.actionMap);
+	arrayCopy(mrsTet.player.actionMap, mrsTet.player.actionMapRaw);
 
 	// Filter conflicting inputs
-	if (mrsTet.player.inputMap[InputDown] || mrsTet.player.inputMap[InputUp]) {
-		mrsTet.player.inputMap[InputLeft] = false;
-		mrsTet.player.inputMap[InputRight] = false;
+	if (mrsTet.player.actionMap[+Action::Type::Lock] || mrsTet.player.actionMap[+Action::Type::Drop]) {
+		mrsTet.player.actionMap[+Action::Type::Left] = false;
+		mrsTet.player.actionMap[+Action::Type::Right] = false;
 	}
-	if (mrsTet.player.inputMap[InputLeft]
-		&& mrsTet.player.inputMap[InputRight]) {
-		if (mrsTet.player.lastDirection == InputLeft)
-			mrsTet.player.inputMap[InputRight] = false;
-		if (mrsTet.player.lastDirection == InputRight)
-			mrsTet.player.inputMap[InputLeft] = false;
+	if (mrsTet.player.actionMap[+Action::Type::Left]
+		&& mrsTet.player.actionMap[+Action::Type::Right]) {
+		if (mrsTet.player.lastDirection == Action::Type::Left)
+			mrsTet.player.actionMap[+Action::Type::Right] = false;
+		if (mrsTet.player.lastDirection == Action::Type::Right)
+			mrsTet.player.actionMap[+Action::Type::Left] = false;
 	}
 
 	// Update last direction
-	if (inputHeld(InputLeft))
-		mrsTet.player.lastDirection = InputLeft;
-	else if (inputHeld(InputRight))
-		mrsTet.player.lastDirection = InputRight;
+	if (inputHeld(Action::Type::Left))
+		mrsTet.player.lastDirection = Action::Type::Left;
+	else if (inputHeld(Action::Type::Right))
+		mrsTet.player.lastDirection = Action::Type::Right;
 }
 
 /**
@@ -491,9 +490,9 @@ static void mrsUpdateRotation(void)
 {
 	if (mrsTet.player.state != PlayerActive)
 		return;
-	if (inputPressed(InputButton2))
+	if (inputPressed(Action::Type::RotCW))
 		rotate(1);
-	if (inputPressed(InputButton1) || inputPressed(InputButton3))
+	if (inputPressed(Action::Type::RotCCW) || inputPressed(Action::Type::RotCCW2))
 		rotate(-1);
 }
 
@@ -504,9 +503,9 @@ static void mrsUpdateShift(void)
 {
 	// Check requested movement direction
 	int shiftDirection = 0;
-	if (inputHeld(InputLeft))
+	if (inputHeld(Action::Type::Left))
 		shiftDirection = -1;
-	else if (inputHeld(InputRight))
+	else if (inputHeld(Action::Type::Right))
 		shiftDirection = 1;
 
 	// If not moving or moving in the opposite direction of ongoing DAS,
@@ -590,7 +589,7 @@ static void mrsUpdateGravity(void)
 
 	int remainingGravity = mrsTet.player.gravity;
 	if (mrsTet.player.state == PlayerActive) {
-		if (inputHeld(InputDown) || inputHeld(InputUp))
+		if (inputHeld(Action::Type::Lock) || inputHeld(Action::Type::Drop))
 			remainingGravity = FieldHeight * MrsSubGrid;
 	}
 
@@ -606,7 +605,7 @@ static void mrsUpdateGravity(void)
 
 	// Hard drop
 	if (mrsTet.player.state == PlayerActive) {
-		if (inputHeld(InputDown))
+		if (inputHeld(Action::Type::Lock))
 			lock();
 	}
 }
@@ -624,7 +623,7 @@ static void mrsUpdateLocking(void)
 	if (!mrsDebugInfLock)
 		mrsTet.player.lockDelay += 1;
 	// Two sources of locking: lock delay expired, manlock
-	if (mrsTet.player.lockDelay > MrsLockDelay || inputHeld(InputDown))
+	if (mrsTet.player.lockDelay > MrsLockDelay || inputHeld(Action::Type::Lock))
 		lock();
 }
 
@@ -636,7 +635,7 @@ static void mrsUpdateWin(void)
 	//TODO
 }
 
-void mrsAdvance(const InputArray& inputs)
+void mrsAdvance(const varray<Action, 64>& inputs)
 {
 	ASSERT(initialized);
 

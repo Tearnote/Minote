@@ -34,10 +34,10 @@ typedef enum PlayerState {
 
 /// A player-controlled active piece
 typedef struct Player {
-	bool inputMapRaw[InputSize]; ///< Unfiltered input state
-	bool inputMap[InputSize]; ///< Filtered input state
-	bool inputMapPrev[InputSize]; ///< #inputMap of the previous frame
-	InputType lastDirection; ///< None, Left or Right
+	bool actionMapRaw[+minote::Action::Type::Size]; ///< Unfiltered action state
+	bool actionMap[+minote::Action::Type::Size]; ///< Filtered action state
+	bool actionMapPrev[+minote::Action::Type::Size]; ///< #actionMap of the previous frame
+	minote::Action::Type lastDirection; ///< None, Left or Right
 
 	PlayerState state;
 	mino type; ///< Current player piece
@@ -102,6 +102,6 @@ void mrsCleanup(void);
  * Simulate one frame of gameplay logic.
  * @param inputs List of ::Input events that happened during the frame
  */
-void mrsAdvance(const InputArray& inputs);
+void mrsAdvance(const minote::varray<minote::Action, 64>& inputs);
 
 #endif //MINOTE_MRS_H

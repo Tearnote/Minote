@@ -5,121 +5,88 @@
 
 #include "mapper.hpp"
 
-#include "glad/glad.h"
-#include <GLFW/glfw3.h>
-#include "sys/window.hpp"
-#include "base/queue.hpp"
-#include "base/util.hpp"
 #include "base/log.hpp"
 
-using namespace minote;
+namespace minote {
 
-/// Queue holding collectedInputs ready to be retrieved
-static queue<Input, 64> inputs{};
-
-static bool initialized = false;
-
-/**
- * Convert a GLFW key code to a ::InputType.
- * @param key Any GLFW key code
- * @return Matching ::InputType value, or ::InputNone
- */
-static InputType rawKeyToType(int key)
+void Mapper::mapKeyInputs(Window& window)
 {
-	switch (key) {
-	case GLFW_KEY_UP:
-	case GLFW_KEY_W:
-		return InputUp;
-	case GLFW_KEY_DOWN:
-	case GLFW_KEY_S:
-		return InputDown;
-	case GLFW_KEY_LEFT:
-	case GLFW_KEY_A:
-		return InputLeft;
-	case GLFW_KEY_RIGHT:
-	case GLFW_KEY_D:
-		return InputRight;
-	case GLFW_KEY_Z:
-	case GLFW_KEY_J:
-		return InputButton1;
-	case GLFW_KEY_X:
-	case GLFW_KEY_K:
-		return InputButton2;
-	case GLFW_KEY_C:
-	case GLFW_KEY_L:
-		return InputButton3;
-	case GLFW_KEY_SPACE:
-		return InputButton4;
-	case GLFW_KEY_ENTER:
-		return InputStart;
-	case GLFW_KEY_ESCAPE:
-		return InputQuit;
-	default:
-		return InputNone;
-	}
-}
+	while (const auto keyOpt = window.dequeueInput()) {
+		const auto key = keyOpt.value();
 
-/**
- * Convert a GLFW action code to a ::Input state bool.
- * @param key Any GLFW action code
- * @return Matching bool value
- */
-static bool actionToState(int action)
-{
-	ASSERT(action == GLFW_PRESS || action == GLFW_RELEASE);
-	if (action == GLFW_PRESS)
-		return true;
-	else
-		return false;
-}
+		const auto type = [=] {
+			switch (key.key) {
+			case GLFW_KEY_UP:
+			case GLFW_KEY_W:
+				return Action::Type::Drop;
+			case GLFW_KEY_DOWN:
+			case GLFW_KEY_S:
+				return Action::Type::Lock;
+			case GLFW_KEY_LEFT:
+			case GLFW_KEY_A:
+				return Action::Type::Left;
+			case GLFW_KEY_RIGHT:
+			case GLFW_KEY_D:
+				return Action::Type::Right;
+			case GLFW_KEY_Z:
+			case GLFW_KEY_J:
+				return Action::Type::RotCCW;
+			case GLFW_KEY_X:
+			case GLFW_KEY_K:
+				return Action::Type::RotCW;
+			case GLFW_KEY_C:
+			case GLFW_KEY_L:
+				return Action::Type::RotCCW2;
+			case GLFW_KEY_SPACE:
+				return Action::Type::Skip;
+			case GLFW_KEY_ENTER:
+				return Action::Type::Accept;
+			case GLFW_KEY_ESCAPE:
+				return Action::Type::Back;
+			default:
+				return Action::Type::None;
+			}
+		}();
+		if (type == Action::Type::None)
+			continue; // Key not recognized
 
-void mapperInit(void)
-{
-	if (initialized) return;
-	initialized = true;
-}
+		const auto state = [=] {
+			switch (key.state) {
+			case GLFW_PRESS:
+				return Action::State::Pressed;
+			case GLFW_RELEASE:
+				return Action::State::Released;
+			default:
+				ASSERT(false, "Encountered invalid key state");
+			}
+		}();
 
-void mapperCleanup(void)
-{
-	if (!initialized) return;
-	initialized = false;
-}
+		const auto timestamp = Window::getTime();
 
-void mapperUpdate(Window& window)
-{
-	ASSERT(initialized);
-	while (auto keyOpt = window.dequeueInput()) {
-		auto key = keyOpt.value();
-		InputType type = rawKeyToType(key.key);
-		bool state = actionToState(key.action);
-		if (type == InputNone)
-			continue;
-		Input newInput = {
+		const Action newAction = {
 			.type = type,
 			.state = state,
-			.timestamp = key.timestamp
+			.timestamp = timestamp
 		};
-		if(!inputs.enqueue(newInput))
-			L.warn("Mapper queue full, input dropped");
+		if (!actions.enqueue(newAction))
+			L.warn("Mapper queue full, key input #%d %s dropped",
+				+type, state == Action::State::Pressed ? "press" : "release");
 	}
 }
 
-bool mapperDequeue(Input* input)
+auto Mapper::dequeueAction() -> optref<Action>
 {
-	ASSERT(initialized);
-	ASSERT(input);
-	auto result = inputs.dequeue();
-	if (result)
-		*input = result.value();
-	return result.has_value();
+	return actions.dequeue();
 }
 
-bool mapperPeek(Input* input)
+auto Mapper::peekAction() -> optref<Action>
 {
-	ASSERT(initialized);
-	ASSERT(input);
-	auto result = inputs.peek();
-	if (result)
-		*input = result.value();
-	return result.has_value();
+	return actions.peek();
+}
+
+auto Mapper::peekAction() const -> optref<const Action>
+{
+	return actions.peek();
+}
+
 }

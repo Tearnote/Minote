@@ -56,7 +56,7 @@ struct Window {
 	/// Struct containing information about a keypress event
 	struct KeyInput {
 		int key = GLFW_KEY_UNKNOWN; ///< GLFW keycode
-		int action = -1; ///< GLFW_PRESS or GLFW_RELEASE
+		int state = -1; ///< GLFW_PRESS or GLFW_RELEASE
 		nsec timestamp = 0; ///< Time when the event was detected
 	};
 
