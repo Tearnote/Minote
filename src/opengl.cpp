@@ -15,63 +15,11 @@ using Shader = GLuint;
 GLuint boundFb = 0;
 GLuint boundProgram = 0;
 
-Renderbuffer* renderbufferCreate(void)
-{
-	auto* r = allocate<Renderbuffer>();
-	glGenRenderbuffers(1, &r->id);
-	return r;
-}
-
-void renderbufferDestroy(Renderbuffer* r)
-{
-	if (!r) return;
-	glDeleteRenderbuffers(1, &r->id);
-	free(r);
-}
-
-void renderbufferStorage(Renderbuffer* r, size2i size, GLenum format)
-{
-	ASSERT(r);
-	ASSERT(size.x > 0);
-	ASSERT(size.y > 0);
-	glBindRenderbuffer(GL_RENDERBUFFER, r->id);
-	glRenderbufferStorage(GL_RENDERBUFFER, format, size.x, size.y);
-}
-
-RenderbufferMS* renderbufferMSCreate(void)
-{
-	auto* r = allocate<RenderbufferMS>();
-	glGenRenderbuffers(1, &r->id);
-	return r;
-}
-
-void renderbufferMSDestroy(RenderbufferMS* r)
-{
-	if (!r) return;
-	glDeleteRenderbuffers(1, &r->id);
-	free(r);
-}
-
-void renderbufferMSStorage(RenderbufferMS* r, size2i size, GLenum format,
-	GLsizei samples)
-{
-	ASSERT(r);
-	ASSERT(size.x > 0);
-	ASSERT(size.y > 0);
-	ASSERT(samples >= 2);
-	glBindRenderbuffer(GL_RENDERBUFFER, r->id);
-	glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, format,
-		size.x, size.y);
-	r->size.x = size.x;
-	r->size.y = size.y;
-	r->samples = samples;
-}
-
 Framebuffer* framebufferCreate(void)
 {
 	auto* f = allocate<Framebuffer>();
 	glGenFramebuffers(1, &f->id);
-	ASSERT(f->id);
+		ASSERT(f->id);
 	return f;
 }
 
@@ -84,42 +32,40 @@ void framebufferDestroy(Framebuffer* f)
 
 void framebufferTexture(Framebuffer* f, Texture& t, GLenum attachment)
 {
-	ASSERT(f);
+		ASSERT(f);
 	framebufferUse(f);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, t.id, 0);
 }
 
 void framebufferTextureMS(Framebuffer* f, TextureMS& t, GLenum attachment)
 {
-	ASSERT(f);
+		ASSERT(f);
 	framebufferUse(f);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment,
 		GL_TEXTURE_2D_MULTISAMPLE, t.id, 0);
 }
 
-void framebufferRenderbuffer(Framebuffer* f, Renderbuffer* r, GLenum attachment)
+void framebufferRenderbuffer(Framebuffer* f, Renderbuffer& r, GLenum attachment)
 {
-	ASSERT(f);
-	ASSERT(r);
+		ASSERT(f);
 	framebufferUse(f);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER,
-		r->id);
+		r.id);
 }
 
 void
-framebufferRenderbufferMS(Framebuffer* f, RenderbufferMS* r, GLenum attachment)
+framebufferRenderbufferMS(Framebuffer* f, RenderbufferMS& r, GLenum attachment)
 {
-	ASSERT(f);
-	ASSERT(r);
+		ASSERT(f);
 	framebufferUse(f);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER,
-		r->id);
+		r.id);
 }
 
 void framebufferBuffers(Framebuffer* f, GLsizei count)
 {
-	ASSERT(f);
-	ASSERT(count >= 1 && count <= 16);
+		ASSERT(f);
+		ASSERT(count >= 1 && count <= 16);
 	GLenum attachments[count];
 	for (size_t i = 0; i <= count; i += 1)
 		attachments[i] = GL_COLOR_ATTACHMENT0 + i;
@@ -130,7 +76,7 @@ void framebufferBuffers(Framebuffer* f, GLsizei count)
 
 bool framebufferCheck(Framebuffer* f)
 {
-	ASSERT(f);
+		ASSERT(f);
 	framebufferUse(f);
 	return glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
 }
@@ -146,7 +92,7 @@ void framebufferUse(Framebuffer* f)
 
 void framebufferToScreen(Framebuffer* f, Window& w)
 {
-	ASSERT(f);
+		ASSERT(f);
 	framebufferUse(f);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	boundFb = 0;
@@ -159,10 +105,10 @@ void framebufferToScreen(Framebuffer* f, Window& w)
 
 void framebufferBlit(Framebuffer* src, Framebuffer* dst, size2i size)
 {
-	ASSERT(src);
-	ASSERT(dst);
-	ASSERT(size.x > 0);
-	ASSERT(size.y > 0);
+		ASSERT(src);
+		ASSERT(dst);
+		ASSERT(size.x > 0);
+		ASSERT(size.y > 0);
 	framebufferUse(dst);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, src->id);
 	glBlitFramebuffer(0, 0, size.x, size.y,
@@ -179,9 +125,9 @@ void framebufferBlit(Framebuffer* src, Framebuffer* dst, size2i size)
  */
 static Shader shaderCreate(const char* name, const char* source, GLenum type)
 {
-	ASSERT(name);
-	ASSERT(source);
-	ASSERT(type == GL_VERTEX_SHADER || type == GL_FRAGMENT_SHADER);
+		ASSERT(name);
+		ASSERT(source);
+		ASSERT(type == GL_VERTEX_SHADER || type == GL_FRAGMENT_SHADER);
 	Shader shader = glCreateShader(type);
 	glShaderSource(shader, 1, &source, nullptr);
 	glCompileShader(shader);
@@ -194,7 +140,7 @@ static Shader shaderCreate(const char* name, const char* source, GLenum type)
 		glDeleteShader(shader);
 		return 0;
 	}
-	ASSERT(shader);
+		ASSERT(shader);
 	L.debug("Compiled %s shader %s",
 		type == GL_VERTEX_SHADER ? "vertex" : "fragment", name);
 	return shader;
@@ -213,11 +159,11 @@ static void shaderDestroy(Shader shader)
 void* _programCreate(size_t size, const char* vertName, const char* vertSrc,
 	const char* fragName, const char* fragSrc)
 {
-	ASSERT(size);
-	ASSERT(vertName);
-	ASSERT(vertSrc);
-	ASSERT(fragName);
-	ASSERT(fragSrc);
+		ASSERT(size);
+		ASSERT(vertName);
+		ASSERT(vertSrc);
+		ASSERT(fragName);
+		ASSERT(fragSrc);
 	// Overallocating memory so that it fits in the user's provided struct type
 	auto* result = reinterpret_cast<ProgramBase*>(allocate<uint8_t>(size));
 	result->vertName = vertName;
@@ -266,8 +212,8 @@ void _programDestroy(ProgramBase* program)
 
 Uniform _programUniform(ProgramBase* program, const char* uniform)
 {
-	ASSERT(program);
-	ASSERT(uniform);
+		ASSERT(program);
+		ASSERT(uniform);
 	Uniform result = glGetUniformLocation(program->id, uniform);
 	if (result == -1)
 		L.warn("\"%s\" uniform not available in shader program %s+%s",
@@ -278,8 +224,8 @@ Uniform _programUniform(ProgramBase* program, const char* uniform)
 TextureUnit
 _programSampler(ProgramBase* program, const char* sampler, TextureUnit unit)
 {
-	ASSERT(program);
-	ASSERT(sampler);
+		ASSERT(program);
+		ASSERT(sampler);
 	Uniform uniform = programUniform(program, sampler);
 	if (uniform != -1) {
 		programUse(program);
@@ -290,7 +236,7 @@ _programSampler(ProgramBase* program, const char* sampler, TextureUnit unit)
 
 void _programUse(ProgramBase* program)
 {
-	ASSERT(program);
+		ASSERT(program);
 	if (program->id == boundProgram) return;
 	glUseProgram(program->id);
 	boundProgram = program->id;
@@ -304,7 +250,8 @@ void _programUse(ProgramBase* program)
  * @param format PixelFormat to convert
  * @return Matching internalformat GLenum value
  */
-constexpr static auto pixelFormatToGLInternal(const PixelFormat format) -> GLenum
+constexpr static auto
+pixelFormatToGLInternal(const PixelFormat format) -> GLenum
 {
 	switch (format) {
 	case PixelFormat::R_u8:
@@ -323,6 +270,8 @@ constexpr static auto pixelFormatToGLInternal(const PixelFormat format) -> GLenu
 		return GL_RGB16F;
 	case PixelFormat::RGBA_f16:
 		return GL_RGBA16F;
+	case PixelFormat::DepthStencil:
+		return GL_DEPTH24_STENCIL8;
 	default:
 		ASSERT(false, "Invalid PixelFormat %d", +format);
 		return 0;
@@ -335,7 +284,8 @@ constexpr static auto pixelFormatToGLInternal(const PixelFormat format) -> GLenu
  * @param format PixelFormat to convert
  * @return Matching format GLenum value
  */
-constexpr static auto pixelFormatToGLExternal(const PixelFormat format) -> GLenum
+constexpr static auto
+pixelFormatToGLExternal(const PixelFormat format) -> GLenum
 {
 	switch (format) {
 	case PixelFormat::R_u8:
@@ -350,8 +300,9 @@ constexpr static auto pixelFormatToGLExternal(const PixelFormat format) -> GLenu
 	case PixelFormat::RGBA_u8:
 	case PixelFormat::RGBA_f16:
 		return GL_RGBA;
+	case PixelFormat::DepthStencil:
 	default:
-		ASSERT(false, "Invalid PixelFormat %d", +format);
+			ASSERT(false, "Invalid PixelFormat %d", +format);
 		return 0;
 	}
 }
@@ -364,7 +315,7 @@ constexpr static auto filterToGL(const Filter filter) -> GLint
 	case Filter::Linear:
 		return GL_LINEAR;
 	default:
-		ASSERT(false, "Invalid Filter %d", +filter);
+			ASSERT(false, "Invalid Filter %d", +filter);
 		return 0;
 	}
 }
@@ -430,6 +381,7 @@ void Texture::upload(std::uint8_t* data)
 	ASSERT(data);
 	ASSERT(id);
 	ASSERT(size.x > 0 && size.y > 0);
+	ASSERT(format != PixelFormat::DepthStencil);
 
 	glBindTexture(GL_TEXTURE_2D, id);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, size.x, size.y,
@@ -460,7 +412,7 @@ void TextureMS::destroy()
 {
 #ifndef NDEBUG
 	if (!id) {
-		L.warn("Tried to destroy a texture that has not been created");
+		L.warn("Tried to destroy a multisample texture that has not been created");
 		return;
 	}
 #endif //NDEBUG
@@ -491,6 +443,84 @@ void TextureMS::bind(TextureUnit unit)
 
 	glActiveTexture(unit);
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, id);
+}
+
+void Renderbuffer::create(size2i _size, PixelFormat _format)
+{
+	ASSERT(!id);
+	ASSERT(_format != PixelFormat::None);
+
+	glGenRenderbuffers(1, &id);
+	format = _format;
+	resize(_size);
+}
+
+void Renderbuffer::destroy()
+{
+#ifndef NDEBUG
+	if (!id) {
+		L.warn("Tried to destroy a renderbuffer that has not been created");
+		return;
+	}
+#endif //NDEBUG
+
+	glDeleteRenderbuffers(1, &id);
+	id = 0;
+	size = {0, 0};
+	format = PixelFormat::None;
+}
+
+void Renderbuffer::resize(size2i _size)
+{
+	ASSERT(_size.x > 0 && _size.y > 0);
+	ASSERT(id);
+	if (size == _size)
+		return;
+
+	glBindRenderbuffer(GL_RENDERBUFFER, id);
+	glRenderbufferStorage(GL_RENDERBUFFER, pixelFormatToGLInternal(format),
+		_size.x, _size.y);
+	size = _size;
+}
+
+void RenderbufferMS::create(size2i _size, PixelFormat _format, GLsizei _samples)
+{
+	ASSERT(!id);
+	ASSERT(_format != PixelFormat::None);
+	ASSERT(_samples == 2 || _samples == 4 || _samples == 8);
+
+	glGenRenderbuffers(1, &id);
+	format = _format;
+	samples = _samples;
+	resize(_size);
+}
+
+void RenderbufferMS::destroy()
+{
+#ifndef NDEBUG
+	if (!id) {
+		L.warn("Tried to destroy a multisample renderbuffer that has not been created");
+		return;
+	}
+#endif //NDEBUG
+
+	glDeleteRenderbuffers(1, &id);
+	id = 0;
+	size = {0, 0};
+	format = PixelFormat::None;
+}
+
+void RenderbufferMS::resize(size2i _size)
+{
+	ASSERT(_size.x > 0 && _size.y > 0);
+	ASSERT(id);
+	if (size == _size)
+		return;
+
+	glBindRenderbuffer(GL_RENDERBUFFER, id);
+	glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples,
+		pixelFormatToGLInternal(format), _size.x, _size.y);
+	size = _size;
 }
 
 }

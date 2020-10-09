@@ -55,9 +55,9 @@ static bool initialized = false;
 
 static Window* window = nullptr;
 
-static Framebuffer* renderFb = nullptr;
+static Framebuffer* renderFb;
 static Texture renderFbColor;
-static Renderbuffer* renderFbDepthStencil = nullptr;
+static Renderbuffer renderFbDepthStencil;
 
 static size2i viewportSize = {}; ///< in pixels
 
@@ -116,7 +116,7 @@ static void rendererResize(size2i size)
 	viewportSize.y = size.y;
 
 	renderFbColor.resize(size);
-	renderbufferStorage(renderFbDepthStencil, size, GL_DEPTH24_STENCIL8);
+	renderFbDepthStencil.resize(size);
 }
 
 void rendererInit(Window& w)
@@ -145,7 +145,7 @@ void rendererInit(Window& w)
 	// Create framebuffers
 	renderFb = framebufferCreate();
 	renderFbColor.create(window->size, PixelFormat::RGB_f16);
-	renderFbDepthStencil = renderbufferCreate();
+	renderFbDepthStencil.create(window->size, PixelFormat::DepthStencil);
 
 	// Set up matrices and framebuffer textures
 	rendererResize(window->size);
@@ -185,8 +185,7 @@ void rendererCleanup(void)
 	delinearize = nullptr;
 	programDestroy(blit);
 	blit = nullptr;
-	renderbufferDestroy(renderFbDepthStencil);
-	renderFbDepthStencil = nullptr;
+	renderFbDepthStencil.destroy();
 	renderFbColor.destroy();
 	framebufferDestroy(renderFb);
 	renderFb = nullptr;

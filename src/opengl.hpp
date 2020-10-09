@@ -53,7 +53,8 @@ enum struct PixelFormat {
 	R_f16,
 	RG_f16,
 	RGB_f16,
-	RGBA_f16
+	RGBA_f16,
+	DepthStencil
 };
 
 /// Base struct for the common fields of texture types
@@ -61,6 +62,7 @@ struct TextureBase {
 
 	GLuint id = 0; ///< The object has not been created if this is 0
 	size2i size = {0, 0}; ///< The texture does not have storage if this is {0, 0}
+	PixelFormat format = PixelFormat::None;
 
 };
 
@@ -68,7 +70,6 @@ struct TextureBase {
 struct Texture : TextureBase {
 
 	Filter filter = Filter::None;
-	PixelFormat format = PixelFormat::None;
 
 	/**
 	 * Create an OpenGL ID for the texture. This needs to be called before
@@ -101,6 +102,7 @@ struct Texture : TextureBase {
 	 * Upload texture data from CPU to the texture object, replacing previous
 	 * contents. Expected pixel format is 1 byte per channel (0-255),
 	 * same number of channels as internal format, and size.x * size.y pixels.
+	 * Uploading to a stencil+depth texture is not supported.
 	 * @param data Pixel data as an unchecked array of bytes
 	 */
 	void upload(std::uint8_t* data);
@@ -118,52 +120,94 @@ struct Texture : TextureBase {
 struct TextureMS : TextureBase {
 
 	GLsizei samples = 0;
-	PixelFormat format = PixelFormat::None;
 
 	/**
-	 * Create an OpenGL ID for the texture. This needs to be called before
-	 * the texture can be used. Storage is allocated by default, and filled
-	 * with garbage data. The default filtering mode is Linear.
-	 * @param size Initial size of the texture storage, in pixels
-	 * @param format Internal format of the texture
+	 * Create an OpenGL ID for the multisample texture. This needs to be called
+	 * before the texture can be used. Storage is allocated by default,
+	 * and filled with garbage data.
+	 * @param size Initial size of the multisample texture storage, in pixels
+	 * @param format Internal format of the multisample texture
 	 * @param samples Number of samples per pixel: 2, 4 or 8
 	 */
 	void create(size2i size, PixelFormat format, GLsizei samples);
 
 	/**
-	 * Destroy the OpenGL texture object. Storage and ID are both freed.
+	 * Destroy the OpenGL multisample texture object. Storage and ID are both
+	 * freed.
 	 */
 	void destroy();
 
 	/**
-	 * Recreate the texture's storage with new size. Previous contents are lost,
-	 * and the texture data is garbage again.
-	 * @param size New size of the texture storage, in pixels
+	 * Recreate the multisample texture's storage with new size. Previous
+	 * contents are lost, and the texture data is garbage again.
+	 * @param size New size of the multisample texture storage, in pixels
 	 */
 	void resize(size2i size);
 
 	/**
-	 * Bind the texture to the specified texture unit. This allows it to be used
-	 * in a shader for reading and/or writing.
-	 * @param unit Texture unit to bind the texture to
+	 * Bind the multisample texture to the specified texture unit. This allows
+	 * it to be used in a shader for reading and/or writing.
+	 * @param unit Texture unit to bind the multisample texture to
 	 */
 	void bind(TextureUnit unit);
 
 };
 
-/// OpenGL renderbuffer. You can obtain an instance with renderbufferCreate().
-/// All fields read-only.
+/// OpenGL renderbuffer. Operates faster than a texture, but cannot be read
 struct Renderbuffer : TextureBase {
 
-	;
+	/**
+	 * Create an OpenGL ID for the renderbuffer. This needs to be called before
+	 * the renderbuffer can be used. Storage is allocated by default, and filled
+	 * with garbage data.
+	 * @param size Initial size of the renderbuffer storage, in pixels
+	 * @param format Internal format of the renderbuffer
+	 */
+	void create(size2i size, PixelFormat format);
+
+	/**
+	 * Destroy the OpenGL renderbuffer object. Storage and ID are both freed.
+	 */
+	void destroy();
+
+	/**
+	 * Recreate the renderbuffer's storage with new size. Previous contents
+	 * are lost, and the renderbuffer data is garbage again.
+	 * @param size New size of the renderbuffer storage, in pixels
+	 */
+	void resize(size2i size);
 
 };
 
-/// OpenGL multisample renderbuffer. You can obtain an instance with renderbufferMSCreate().
-/// All fields read-only.
+/// OpenGL multisample renderbuffer. Operates faster than a multisample texture,
+/// but cannot be read
 struct RenderbufferMS : TextureBase {
 
 	GLsizei samples = 0;
+
+	/**
+	 * Create an OpenGL ID for the multisample renderbuffer. This needs
+	 * to be called before the renderbuffer can be used. Storage is allocated
+	 * by default, and filled with garbage data.
+	 * @param size Initial size of the multisample renderbuffer storage,
+	 * in pixels
+	 * @param format Internal format of the multisample renderbuffer
+	 * @param samples Number of samples per pixel: 2, 4 or 8
+	 */
+	void create(size2i size, PixelFormat format, GLsizei samples);
+
+	/**
+	 * Destroy the OpenGL multisample renderbuffer object. Storage and ID
+	 * are both freed.
+	 */
+	void destroy();
+
+	/**
+	 * Recreate the multisample renderbuffer's storage with new size. Previous
+	 * contents are lost, and the renderbuffer data is garbage again.
+	 * @param size New size of the multisample renderbuffer storage, in pixels
+	 */
+	void resize(size2i size);
 
 };
 
@@ -176,63 +220,6 @@ struct Framebuffer {
 	GLsizei samples = 0;
 
 };
-
-/**
- * Create a new ::Renderbuffer instance. Please note that this object cannot
- * be used for drawing into until storage is allocated with renderbufferStorage().
- * @return A newly created ::Renderbuffer. Needs to be destroyed
- * with renderbufferDestroy()
- */
-Renderbuffer* renderbufferCreate(void);
-
-/**
- * Destroy a ::Renderbuffer instance. The destroyed object cannot be used
- * anymore and the pointer becomes invalid.
- * @param q The ::Renderbuffer object
- */
-void renderbufferDestroy(Renderbuffer* r);
-
-/**
- * Allocate storage to a ::Renderbuffer. After this call, it can be used
- * for rendering into. Contents are undefined until drawn into. Can be called
- * more than once to orphan old storage and create a brand new surface
- * with different parameters.
- * @param t The ::Renderbuffer object
- * @param size Size of the allocated buffer, in pixels
- * @param format Internal storage format. Equivalent to "internalformat" of
- * glRenderbufferStorage
- */
-void renderbufferStorage(Renderbuffer* r, size2i size, GLenum format);
-
-/**
- * Create a new ::RenderbufferMS instance. Please note that this object cannot
- * be used for drawing into until storage is allocated with renderbufferMSStorage().
- * @return A newly created ::RenderbufferMS. Needs to be destroyed
- * with renderbufferMSDestroy()
- */
-RenderbufferMS* renderbufferMSCreate(void);
-
-/**
- * Destroy a ::RenderbufferMS instance. The destroyed object cannot be used
- * anymore and the pointer becomes invalid.
- * @param q The ::RenderbufferMS object
- */
-void renderbufferMSDestroy(RenderbufferMS* r);
-
-/**
- * Allocate storage to a ::RenderbufferMS. After this call, it can be used
- * for rendering into. Contents are undefined until drawn into. Can be called
- * more than once to orphan old storage and create a brand new surface
- * with different parameters.
- * @param t The ::RenderbufferMS object
- * @param size Size of the allocated buffer, in pixels
- * @param format Internal storage format. Equivalent to "internalformat" of
- * glRenderbufferStorageMultisample
- * @param samples Number of samples per pixel
- */
-void
-renderbufferMSStorage(RenderbufferMS* r, size2i size, GLenum format,
-	GLsizei samples);
 
 /**
  * Create a new ::Framebuffer instance. After creation you may attach textures
@@ -282,7 +269,7 @@ void framebufferTextureMS(Framebuffer* f, TextureMS& t, GLenum attachment);
  * of glFramebufferRenderbuffer
  */
 void
-framebufferRenderbuffer(Framebuffer* f, Renderbuffer* r, GLenum attachment);
+framebufferRenderbuffer(Framebuffer* f, Renderbuffer& r, GLenum attachment);
 
 /**
  * Attach a ::RenderbufferMS to a specified attachment point. Framebuffer
@@ -294,7 +281,7 @@ framebufferRenderbuffer(Framebuffer* f, Renderbuffer* r, GLenum attachment);
  * of glFramebufferRenderbuffer
  */
 void
-framebufferRenderbufferMS(Framebuffer* f, RenderbufferMS* r, GLenum attachment);
+framebufferRenderbufferMS(Framebuffer* f, RenderbufferMS& r, GLenum attachment);
 
 /**
  * Set the ::Framebuffer's color outputs to the specified number of color

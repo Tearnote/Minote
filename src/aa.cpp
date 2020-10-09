@@ -83,12 +83,12 @@ static Window* window = nullptr;
 // AASimple, AAComplex, AAExtreme
 static Framebuffer* msaaFb = nullptr;
 static TextureMS msaaFbColor;
-static RenderbufferMS* msaaFbDepthStencil = nullptr;
+static RenderbufferMS msaaFbDepthStencil;
 
 // AAFast, AAComplex
 static Framebuffer* smaaEdgeFb = nullptr;
 static Texture smaaEdgeFbColor;
-static Renderbuffer* smaaEdgeFbDepthStencil = nullptr;
+static Renderbuffer smaaEdgeFbDepthStencil;
 static Framebuffer* smaaBlendFb = nullptr;
 static Texture smaaBlendFbColor;
 
@@ -105,7 +105,7 @@ static Texture smaaSeparateFbColor;
 static Texture smaaSeparateFbColor2;
 static Framebuffer* smaaEdgeFb2 = nullptr;
 static Texture smaaEdgeFbColor2;
-static Renderbuffer* smaaEdgeFbDepthStencil2 = nullptr;
+static Renderbuffer smaaEdgeFbDepthStencil2;
 static Framebuffer* smaaBlendFb2 = nullptr;
 static Texture smaaBlendFbColor2;
 
@@ -134,16 +134,15 @@ static void aaResize(size2i size)
 
 	if (msaaFbColor.id)
 		msaaFbColor.resize(size);
-	if (msaaFbDepthStencil)
-		renderbufferMSStorage(msaaFbDepthStencil, size, GL_DEPTH24_STENCIL8,
-			msaaSamples);
+	if (msaaFbDepthStencil.id)
+		msaaFbDepthStencil.resize(size);
 
 	if (smaaSeparateFbColor.id)
 		smaaSeparateFbColor.resize(size);
 	if (smaaEdgeFbColor.id)
 		smaaEdgeFbColor.resize(size);
-	if (smaaEdgeFbDepthStencil)
-		renderbufferStorage(smaaEdgeFbDepthStencil, size, GL_DEPTH24_STENCIL8);
+	if (smaaEdgeFbDepthStencil.id)
+		smaaEdgeFbDepthStencil.resize(size);
 	if (smaaBlendFbColor.id)
 		smaaBlendFbColor.resize(size);
 
@@ -151,8 +150,8 @@ static void aaResize(size2i size)
 		smaaSeparateFbColor2.resize(size);
 	if (smaaEdgeFbColor2.id)
 		smaaEdgeFbColor2.resize(size);
-	if (smaaEdgeFbDepthStencil2)
-		renderbufferStorage(smaaEdgeFbDepthStencil2, size, GL_DEPTH24_STENCIL8);
+	if (smaaEdgeFbDepthStencil2.id)
+		smaaEdgeFbDepthStencil2.resize(size);
 	if (smaaBlendFbColor2.id)
 		smaaBlendFbColor2.resize(size);
 }
@@ -170,7 +169,7 @@ void aaInit(AAMode mode, Window& w)
 	if (mode == AASimple || mode == AAComplex || mode == AAExtreme) {
 		msaaFb = framebufferCreate();
 		msaaFbColor.create(window->size, PixelFormat::RGBA_f16, msaaSamples);
-		msaaFbDepthStencil = renderbufferMSCreate();
+		msaaFbDepthStencil.create(window->size, PixelFormat::DepthStencil, msaaSamples);
 	}
 
 	if (mode == AAFast || mode == AAComplex) {
@@ -178,7 +177,7 @@ void aaInit(AAMode mode, Window& w)
 		smaaEdgeFb = framebufferCreate();
 		smaaEdgeFbColor.create(window->size, PixelFormat::RGBA_u8);
 		smaaBlendFbColor.create(window->size, PixelFormat::RGBA_u8);
-		smaaEdgeFbDepthStencil = renderbufferCreate();
+		smaaEdgeFbDepthStencil.create(window->size, PixelFormat::DepthStencil);
 	}
 
 	if (mode == AAComplex) {
@@ -187,7 +186,7 @@ void aaInit(AAMode mode, Window& w)
 		smaaSeparateFbColor2.create(window->size, PixelFormat::RGBA_f16);
 		smaaEdgeFb2 = framebufferCreate();
 		smaaEdgeFbColor2.create(window->size, PixelFormat::RGBA_u8);
-		smaaEdgeFbDepthStencil2 = renderbufferCreate();
+		smaaEdgeFbDepthStencil2.create(window->size, PixelFormat::DepthStencil);
 		smaaBlendFb2 = framebufferCreate();
 		smaaBlendFbColor2.create(window->size, PixelFormat::RGBA_u8);
 	}
@@ -338,16 +337,17 @@ void aaCleanup(void)
 	if (!initialized) return;
 	framebufferDestroy(msaaFb);
 	msaaFb = nullptr;
-	msaaFbColor.destroy();
-	renderbufferMSDestroy(msaaFbDepthStencil);
-	msaaFbDepthStencil = nullptr;
+	if (msaaFbColor.id)
+		msaaFbColor.destroy();
+	if (msaaFbDepthStencil.id)
+		msaaFbDepthStencil.destroy();
 
 	framebufferDestroy(smaaEdgeFb);
 	smaaEdgeFb = nullptr;
 	if (smaaEdgeFbColor.id)
 		smaaEdgeFbColor.destroy();
-	renderbufferDestroy(smaaEdgeFbDepthStencil);
-	smaaEdgeFbDepthStencil = nullptr;
+	if (smaaEdgeFbDepthStencil.id)
+		smaaEdgeFbDepthStencil.destroy();
 	framebufferDestroy(smaaBlendFb);
 	smaaBlendFb = nullptr;
 	if (smaaBlendFbColor.id)
@@ -375,8 +375,8 @@ void aaCleanup(void)
 	smaaEdgeFb2 = nullptr;
 	if (smaaEdgeFbColor2.id)
 		smaaEdgeFbColor2.destroy();
-	renderbufferDestroy(smaaEdgeFbDepthStencil2);
-	smaaEdgeFbDepthStencil2 = nullptr;
+	if (smaaEdgeFbDepthStencil2.id)
+		smaaEdgeFbDepthStencil2.destroy();
 	framebufferDestroy(smaaBlendFb2);
 	smaaBlendFb2 = nullptr;
 	if (smaaBlendFbColor2.id)
