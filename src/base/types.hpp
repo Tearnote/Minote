@@ -32,6 +32,11 @@ struct Vec2 {
 	 */
 	[[nodiscard]]
 	constexpr auto arr() const -> std::array<T, 2> { return {x, y}; }
+
+	constexpr auto operator==(const Vec2<T> other) const -> bool
+	{
+		return x == other.x && y == other.y;
+	}
 };
 
 // We need this to be true for the union to be valid
@@ -91,6 +96,11 @@ struct Vec3 {
 		return {std::pow(r, 0.4545f), std::pow(g, 0.4545f),
 		        std::pow(b, 0.4545f)};
 	};
+
+	constexpr auto operator==(const Vec3<T> other) const -> bool
+	{
+		return x == other.x && y == other.y && z == other.z;
+	}
 
 };
 
@@ -157,6 +167,11 @@ struct Vec4 {
 		return {std::pow(r, 0.4545f), std::pow(g, 0.4545f),
 		        std::pow(b, 0.4545f), a};
 	};
+
+	constexpr auto operator==(const Vec4<T> other) const -> bool
+	{
+		return x == other.x && y == other.y && z == other.z && w == other.w;
+	}
 
 };
 
