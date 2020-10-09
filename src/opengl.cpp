@@ -15,42 +15,6 @@ using Shader = GLuint;
 GLuint boundFb = 0;
 GLuint boundProgram = 0;
 
-TextureMS* textureMSCreate(void)
-{
-	auto* t = allocate<TextureMS>();
-	glGenTextures(1, &t->id);
-	ASSERT(t->id);
-	return t;
-}
-
-void textureMSDestroy(TextureMS* t)
-{
-	if (!t) return;
-	glDeleteTextures(1, &t->id);
-	free(t);
-}
-
-void textureMSStorage(TextureMS* t, size2i size, GLenum format, GLsizei samples)
-{
-	ASSERT(t);
-	ASSERT(size.x > 0);
-	ASSERT(size.y > 0);
-	ASSERT(samples >= 2);
-	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t->id);
-	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, format,
-		size.x, size.y, GL_TRUE);
-	t->size.x = size.x;
-	t->size.y = size.y;
-	t->samples = samples;
-}
-
-void textureMSUse(TextureMS* t, TextureUnit unit)
-{
-	ASSERT(t);
-	glActiveTexture(unit);
-	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t->id);
-}
-
 Renderbuffer* renderbufferCreate(void)
 {
 	auto* r = allocate<Renderbuffer>();
@@ -125,13 +89,12 @@ void framebufferTexture(Framebuffer* f, Texture& t, GLenum attachment)
 	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, t.id, 0);
 }
 
-void framebufferTextureMS(Framebuffer* f, TextureMS* t, GLenum attachment)
+void framebufferTextureMS(Framebuffer* f, TextureMS& t, GLenum attachment)
 {
 	ASSERT(f);
-	ASSERT(t);
 	framebufferUse(f);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment,
-		GL_TEXTURE_2D_MULTISAMPLE, t->id, 0);
+		GL_TEXTURE_2D_MULTISAMPLE, t.id, 0);
 }
 
 void framebufferRenderbuffer(Framebuffer* f, Renderbuffer* r, GLenum attachment)
@@ -479,6 +442,55 @@ void Texture::bind(TextureUnit unit)
 
 	glActiveTexture(unit);
 	glBindTexture(GL_TEXTURE_2D, id);
+}
+
+void TextureMS::create(size2i _size, PixelFormat _format, GLsizei _samples)
+{
+	ASSERT(!id);
+	ASSERT(_format != PixelFormat::None);
+	ASSERT(_samples == 2 || _samples == 4 || _samples == 8);
+
+	glGenTextures(1, &id);
+	format = _format;
+	samples = _samples;
+	resize(_size);
+}
+
+void TextureMS::destroy()
+{
+#ifndef NDEBUG
+	if (!id) {
+		L.warn("Tried to destroy a texture that has not been created");
+		return;
+	}
+#endif //NDEBUG
+
+	glDeleteTextures(1, &id);
+	id = 0;
+	size = {0, 0};
+	format = PixelFormat::None;
+	samples = 0;
+}
+
+void TextureMS::resize(size2i _size)
+{
+	ASSERT(_size.x > 0 && _size.y > 0);
+	ASSERT(id);
+	if (size == _size)
+		return;
+
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, id);
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples,
+		pixelFormatToGLInternal(format), _size.x, _size.y, GL_TRUE);
+	size = _size;
+}
+
+void TextureMS::bind(TextureUnit unit)
+{
+	ASSERT(id);
+
+	glActiveTexture(unit);
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, id);
 }
 
 }

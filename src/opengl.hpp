@@ -114,11 +114,40 @@ struct Texture : TextureBase {
 
 };
 
-/// OpenGL multisample texture. You can obtain an instance with textureMSCreate().
-/// All fields read-only.
+/// OpenGL multisample 2D texture. Allows for drawing antialiased shapes
 struct TextureMS : TextureBase {
 
 	GLsizei samples = 0;
+	PixelFormat format = PixelFormat::None;
+
+	/**
+	 * Create an OpenGL ID for the texture. This needs to be called before
+	 * the texture can be used. Storage is allocated by default, and filled
+	 * with garbage data. The default filtering mode is Linear.
+	 * @param size Initial size of the texture storage, in pixels
+	 * @param format Internal format of the texture
+	 * @param samples Number of samples per pixel: 2, 4 or 8
+	 */
+	void create(size2i size, PixelFormat format, GLsizei samples);
+
+	/**
+	 * Destroy the OpenGL texture object. Storage and ID are both freed.
+	 */
+	void destroy();
+
+	/**
+	 * Recreate the texture's storage with new size. Previous contents are lost,
+	 * and the texture data is garbage again.
+	 * @param size New size of the texture storage, in pixels
+	 */
+	void resize(size2i size);
+
+	/**
+	 * Bind the texture to the specified texture unit. This allows it to be used
+	 * in a shader for reading and/or writing.
+	 * @param unit Texture unit to bind the texture to
+	 */
+	void bind(TextureUnit unit);
 
 };
 
@@ -147,42 +176,6 @@ struct Framebuffer {
 	GLsizei samples = 0;
 
 };
-
-/**
- * Create a new ::TextureMS instance. Please note that this object cannot
- * be used for drawing into until storage is allocated with textureStorage().
- * @return A newly created ::TextureMS. Needs to be destroyed with textureMSDestroy()
- */
-TextureMS* textureMSCreate(void);
-
-/**
- * Destroy a ::TextureMS instance. The destroyed object cannot be used anymore
- * and the pointer becomes invalid.
- * @param q The ::TextureMS object
- */
-void textureMSDestroy(TextureMS* t);
-
-/**
- * Allocate storage to a ::TextureMS. After this call, it can be used
- * for rendering into. Contents are undefined until drawn into. Can be called
- * more than once to orphan old storage and create a brand new surface
- * with different parameters.
- * @param t The ::TextureMS object
- * @param size Size of the allocated buffer, in pixels
- * @param format Internal storage format. Equivalent to "internalformat" of
- * glTexImage2DMultisample
- * @param samples Number of samples per pixel
- */
-void textureMSStorage(TextureMS* t, size2i size, GLenum format,
-	GLsizei samples);
-
-/**
- * Bind a ::TextureMS to a specified ::TextureUnit, allowing it to be sampled
- * by a ::Program.
- * @param t The ::TextureMS object
- * @param unit Unit number obtained from programSampler()
- */
-void textureMSUse(TextureMS* t, TextureUnit unit);
 
 /**
  * Create a new ::Renderbuffer instance. Please note that this object cannot
@@ -277,7 +270,7 @@ void framebufferTexture(Framebuffer* f, Texture& t, GLenum attachment);
  * @param attachment Attachment point identifier. Equivalent to "attachment"
  * of glFramebufferTexture2D
  */
-void framebufferTextureMS(Framebuffer* f, TextureMS* t, GLenum attachment);
+void framebufferTextureMS(Framebuffer* f, TextureMS& t, GLenum attachment);
 
 /**
  * Attach a ::Renderbuffer to a specified attachment point. Framebuffer

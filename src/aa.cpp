@@ -82,7 +82,7 @@ static Window* window = nullptr;
 
 // AASimple, AAComplex, AAExtreme
 static Framebuffer* msaaFb = nullptr;
-static TextureMS* msaaFbColor = nullptr;
+static TextureMS msaaFbColor;
 static RenderbufferMS* msaaFbDepthStencil = nullptr;
 
 // AAFast, AAComplex
@@ -132,8 +132,8 @@ static void aaResize(size2i size)
 	size_t msaaSamples = (currentMode == AASimple) ? 4 :
 	                     (currentMode == AAExtreme) ? 8 : 2;
 
-	if (msaaFbColor)
-		textureMSStorage(msaaFbColor, size, GL_RGBA16F, msaaSamples);
+	if (msaaFbColor.id)
+		msaaFbColor.resize(size);
 	if (msaaFbDepthStencil)
 		renderbufferMSStorage(msaaFbDepthStencil, size, GL_DEPTH24_STENCIL8,
 			msaaSamples);
@@ -164,9 +164,12 @@ void aaInit(AAMode mode, Window& w)
 	window = &w;
 
 	// Create needed objects
+	size_t msaaSamples = (currentMode == AASimple) ? 4 :
+	                     (currentMode == AAExtreme) ? 8 : 2;
+
 	if (mode == AASimple || mode == AAComplex || mode == AAExtreme) {
 		msaaFb = framebufferCreate();
-		msaaFbColor = textureMSCreate();
+		msaaFbColor.create(window->size, PixelFormat::RGBA_f16, msaaSamples);
 		msaaFbDepthStencil = renderbufferMSCreate();
 	}
 
@@ -335,8 +338,7 @@ void aaCleanup(void)
 	if (!initialized) return;
 	framebufferDestroy(msaaFb);
 	msaaFb = nullptr;
-	textureMSDestroy(msaaFbColor);
-	msaaFbColor = nullptr;
+	msaaFbColor.destroy();
 	renderbufferMSDestroy(msaaFbDepthStencil);
 	msaaFbDepthStencil = nullptr;
 
@@ -475,7 +477,7 @@ void aaEnd(void)
 		// SMAA sample separation pass
 		programUse(smaaSeparate);
 		framebufferUse(smaaSeparateFb);
-		textureMSUse(msaaFbColor, smaaSeparate->image);
+		msaaFbColor.bind(smaaSeparate->image);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		// SMAA edge detection pass
