@@ -87,13 +87,13 @@ static RenderbufferMS* msaaFbDepthStencil = nullptr;
 
 // AAFast, AAComplex
 static Framebuffer* smaaEdgeFb = nullptr;
-static Texture* smaaEdgeFbColor = nullptr;
+static Texture smaaEdgeFbColor;
 static Renderbuffer* smaaEdgeFbDepthStencil = nullptr;
 static Framebuffer* smaaBlendFb = nullptr;
-static Texture* smaaBlendFbColor = nullptr;
+static Texture smaaBlendFbColor;
 
-static Texture* smaaArea = nullptr;
-static Texture* smaaSearch = nullptr;
+static Texture smaaArea;
+static Texture smaaSearch;
 
 static ProgramSmaaEdge* smaaEdge = nullptr;
 static ProgramSmaaBlend* smaaBlend = nullptr;
@@ -101,13 +101,13 @@ static ProgramSmaaNeighbor* smaaNeighbor = nullptr;
 
 // AAComplex
 static Framebuffer* smaaSeparateFb = nullptr;
-static Texture* smaaSeparateFbColor = nullptr;
-static Texture* smaaSeparateFbColor2 = nullptr;
+static Texture smaaSeparateFbColor;
+static Texture smaaSeparateFbColor2;
 static Framebuffer* smaaEdgeFb2 = nullptr;
-static Texture* smaaEdgeFbColor2 = nullptr;
+static Texture smaaEdgeFbColor2;
 static Renderbuffer* smaaEdgeFbDepthStencil2 = nullptr;
 static Framebuffer* smaaBlendFb2 = nullptr;
-static Texture* smaaBlendFbColor2 = nullptr;
+static Texture smaaBlendFbColor2;
 
 static ProgramSmaaSeparate* smaaSeparate = nullptr;
 
@@ -138,23 +138,23 @@ static void aaResize(size2i size)
 		renderbufferMSStorage(msaaFbDepthStencil, size, GL_DEPTH24_STENCIL8,
 			msaaSamples);
 
-	if (smaaSeparateFbColor)
-		textureStorage(smaaSeparateFbColor, size, GL_RGBA16F);
-	if (smaaEdgeFbColor)
-		textureStorage(smaaEdgeFbColor, size, GL_RGBA8);
+	if (smaaSeparateFbColor.id)
+		smaaSeparateFbColor.resize(size);
+	if (smaaEdgeFbColor.id)
+		smaaEdgeFbColor.resize(size);
 	if (smaaEdgeFbDepthStencil)
 		renderbufferStorage(smaaEdgeFbDepthStencil, size, GL_DEPTH24_STENCIL8);
-	if (smaaBlendFbColor)
-		textureStorage(smaaBlendFbColor, size, GL_RGBA8);
+	if (smaaBlendFbColor.id)
+		smaaBlendFbColor.resize(size);
 
-	if (smaaSeparateFbColor2)
-		textureStorage(smaaSeparateFbColor2, size, GL_RGBA16F);
-	if (smaaEdgeFbColor2)
-		textureStorage(smaaEdgeFbColor2, size, GL_RGBA8);
+	if (smaaSeparateFbColor2.id)
+		smaaSeparateFbColor2.resize(size);
+	if (smaaEdgeFbColor2.id)
+		smaaEdgeFbColor2.resize(size);
 	if (smaaEdgeFbDepthStencil2)
 		renderbufferStorage(smaaEdgeFbDepthStencil2, size, GL_DEPTH24_STENCIL8);
-	if (smaaBlendFbColor2)
-		textureStorage(smaaBlendFbColor2, size, GL_RGBA8);
+	if (smaaBlendFbColor2.id)
+		smaaBlendFbColor2.resize(size);
 }
 
 void aaInit(AAMode mode, Window& w)
@@ -173,20 +173,20 @@ void aaInit(AAMode mode, Window& w)
 	if (mode == AAFast || mode == AAComplex) {
 		smaaBlendFb = framebufferCreate();
 		smaaEdgeFb = framebufferCreate();
-		smaaEdgeFbColor = textureCreate();
-		smaaBlendFbColor = textureCreate();
+		smaaEdgeFbColor.create(window->size, PixelFormat::RGBA_u8);
+		smaaBlendFbColor.create(window->size, PixelFormat::RGBA_u8);
 		smaaEdgeFbDepthStencil = renderbufferCreate();
 	}
 
 	if (mode == AAComplex) {
 		smaaSeparateFb = framebufferCreate();
-		smaaSeparateFbColor = textureCreate();
-		smaaSeparateFbColor2 = textureCreate();
+		smaaSeparateFbColor.create(window->size, PixelFormat::RGBA_f16);
+		smaaSeparateFbColor2.create(window->size, PixelFormat::RGBA_f16);
 		smaaEdgeFb2 = framebufferCreate();
-		smaaEdgeFbColor2 = textureCreate();
+		smaaEdgeFbColor2.create(window->size, PixelFormat::RGBA_u8);
 		smaaEdgeFbDepthStencil2 = renderbufferCreate();
 		smaaBlendFb2 = framebufferCreate();
-		smaaBlendFbColor2 = textureCreate();
+		smaaBlendFbColor2.create(window->size, PixelFormat::RGBA_u8);
 	}
 
 	// Set up framebuffer textures
@@ -276,10 +276,8 @@ void aaInit(AAMode mode, Window& w)
 				areaTexBytes + (AREATEX_HEIGHT - 1 - i) * AREATEX_PITCH,
 				AREATEX_PITCH);
 
-		smaaArea = textureCreate();
-		textureStorage(smaaArea, (size2i){AREATEX_WIDTH, AREATEX_HEIGHT},
-			GL_RG8);
-		textureData(smaaArea, areaTexBytesFlipped, GL_RG, GL_UNSIGNED_BYTE);
+		smaaArea.create({AREATEX_WIDTH, AREATEX_HEIGHT}, PixelFormat::RG_u8);
+		smaaArea.upload(areaTexBytesFlipped);
 
 		unsigned char searchTexBytesFlipped[SEARCHTEX_SIZE] = {0};
 		for (size_t i = 0; i < SEARCHTEX_HEIGHT; i += 1)
@@ -287,12 +285,9 @@ void aaInit(AAMode mode, Window& w)
 				searchTexBytes + (SEARCHTEX_HEIGHT - 1 - i) * SEARCHTEX_PITCH,
 				SEARCHTEX_PITCH);
 
-		smaaSearch = textureCreate();
-		textureFilter(smaaSearch, GL_NEAREST);
-		textureStorage(smaaSearch, (size2i){SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT},
-			GL_RG8);
-		textureData(smaaSearch, searchTexBytesFlipped, GL_RED,
-			GL_UNSIGNED_BYTE);
+		smaaSearch.create({SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT}, PixelFormat::R_u8);
+		smaaSearch.setFilter(Filter::Nearest);
+		smaaSearch.upload(searchTexBytesFlipped);
 	}
 
 	if (mode == AAComplex) {
@@ -347,19 +342,19 @@ void aaCleanup(void)
 
 	framebufferDestroy(smaaEdgeFb);
 	smaaEdgeFb = nullptr;
-	textureDestroy(smaaEdgeFbColor);
-	smaaEdgeFbColor = nullptr;
+	if (smaaEdgeFbColor.id)
+		smaaEdgeFbColor.destroy();
 	renderbufferDestroy(smaaEdgeFbDepthStencil);
 	smaaEdgeFbDepthStencil = nullptr;
 	framebufferDestroy(smaaBlendFb);
 	smaaBlendFb = nullptr;
-	textureDestroy(smaaBlendFbColor);
-	smaaBlendFbColor = nullptr;
-	
-	textureDestroy(smaaArea);
-	smaaArea = nullptr;
-	textureDestroy(smaaSearch);
-	smaaSearch = nullptr;
+	if (smaaBlendFbColor.id)
+		smaaBlendFbColor.destroy();
+
+	if (smaaArea.id)
+		smaaArea.destroy();
+	if (smaaSearch.id)
+		smaaSearch.destroy();
 	
 	programDestroy(smaaEdge);
 	smaaEdge = nullptr;
@@ -370,20 +365,20 @@ void aaCleanup(void)
 	
 	framebufferDestroy(smaaSeparateFb);
 	smaaSeparateFb = nullptr;
-	textureDestroy(smaaSeparateFbColor);
-	smaaSeparateFbColor = nullptr;
-	textureDestroy(smaaSeparateFbColor2);
-	smaaSeparateFbColor2 = nullptr;
+	if (smaaSeparateFbColor.id)
+		smaaSeparateFbColor.destroy();
+	if (smaaSeparateFbColor2.id)
+		smaaSeparateFbColor2.destroy();
 	framebufferDestroy(smaaEdgeFb2);
 	smaaEdgeFb2 = nullptr;
-	textureDestroy(smaaEdgeFbColor2);
-	smaaEdgeFbColor2 = nullptr;
+	if (smaaEdgeFbColor2.id)
+		smaaEdgeFbColor2.destroy();
 	renderbufferDestroy(smaaEdgeFbDepthStencil2);
 	smaaEdgeFbDepthStencil2 = nullptr;
 	framebufferDestroy(smaaBlendFb2);
 	smaaBlendFb2 = nullptr;
-	textureDestroy(smaaBlendFbColor2);
-	smaaBlendFbColor2 = nullptr;
+	if (smaaBlendFbColor2.id)
+		smaaBlendFbColor2.destroy();
 
 	programDestroy(smaaSeparate);
 	smaaSeparate = nullptr;
@@ -432,8 +427,8 @@ void aaEnd(void)
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
 		glStencilMask(0xFF);
 		glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		textureUse(rendererTexture(), smaaEdge->image);
-		textureFilter(rendererTexture(), GL_NEAREST); // It's ok, we turn it back
+		rendererTexture().bind(smaaEdge->image);
+		rendererTexture().setFilter(Filter::Nearest); // It's ok, we turn it back
 		glUniform4f(smaaEdge->screenSize,
 			1.0 / (float)currentSize.x, 1.0 / (float)currentSize.y,
 			currentSize.x, currentSize.y);
@@ -445,9 +440,9 @@ void aaEnd(void)
 		glStencilFunc(GL_EQUAL, 1, 0xFF);
 		glStencilMask(0x00);
 		glClear(GL_COLOR_BUFFER_BIT);
-		textureUse(smaaEdgeFbColor, smaaBlend->edges);
-		textureUse(smaaArea, smaaBlend->area);
-		textureUse(smaaSearch, smaaBlend->search);
+		smaaEdgeFbColor.bind(smaaBlend->edges);
+		smaaArea.bind(smaaBlend->area);
+		smaaSearch.bind(smaaBlend->search);
 		glUniform4f(smaaBlend->subsampleIndices,
 			0.0f, 0.0f, 0.0f, 0.0f);
 		glUniform4f(smaaBlend->screenSize,
@@ -459,9 +454,9 @@ void aaEnd(void)
 		// SMAA neighbor blending pass
 		programUse(smaaNeighbor);
 		framebufferUse(rendererFramebuffer());
-		textureUse(rendererTexture(), smaaNeighbor->image);
-		textureFilter(rendererTexture(), GL_LINEAR);
-		textureUse(smaaBlendFbColor, smaaNeighbor->blend);
+		rendererTexture().bind(smaaNeighbor->image);
+		rendererTexture().setFilter(Filter::Linear); // It's ok, we turn it back
+		smaaBlendFbColor.bind(smaaNeighbor->blend);
 		glUniform1f(smaaNeighbor->alpha, 1.0f);
 		glUniform4f(smaaNeighbor->screenSize,
 			1.0 / (float)currentSize.x, 1.0 / (float)currentSize.y,
@@ -491,8 +486,8 @@ void aaEnd(void)
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
 		glStencilMask(0xFF);
 		glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		textureUse(smaaSeparateFbColor, smaaEdge->image);
-		textureFilter(smaaSeparateFbColor, GL_NEAREST);
+		smaaSeparateFbColor.bind(smaaEdge->image);
+		smaaSeparateFbColor.setFilter(Filter::Nearest);
 		glUniform4f(smaaEdge->screenSize,
 			1.0 / (float)currentSize.x, 1.0 / (float)currentSize.y,
 			currentSize.x, currentSize.y);
@@ -500,8 +495,8 @@ void aaEnd(void)
 
 		framebufferUse(smaaEdgeFb2);
 		glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		textureUse(smaaSeparateFbColor2, smaaEdge->image);
-		textureFilter(smaaSeparateFbColor2, GL_NEAREST);
+		smaaSeparateFbColor2.bind(smaaEdge->image);
+		smaaSeparateFbColor2.setFilter(Filter::Nearest);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		// SMAA blending weight calculation pass
@@ -510,9 +505,9 @@ void aaEnd(void)
 		glStencilFunc(GL_EQUAL, 1, 0xFF);
 		glStencilMask(0x00);
 		glClear(GL_COLOR_BUFFER_BIT);
-		textureUse(smaaEdgeFbColor, smaaBlend->edges);
-		textureUse(smaaArea, smaaBlend->area);
-		textureUse(smaaSearch, smaaBlend->search);
+		smaaEdgeFbColor.bind(smaaBlend->edges);
+		smaaArea.bind(smaaBlend->area);
+		smaaSearch.bind(smaaBlend->search);
 		glUniform4f(smaaBlend->subsampleIndices,
 			1.0f, 2.0f, 2.0f, 0.0f);
 		glUniform4f(smaaBlend->screenSize,
@@ -522,9 +517,9 @@ void aaEnd(void)
 
 		framebufferUse(smaaBlendFb2);
 		glClear(GL_COLOR_BUFFER_BIT);
-		textureUse(smaaEdgeFbColor2, smaaBlend->edges);
-		textureUse(smaaArea, smaaBlend->area);
-		textureUse(smaaSearch, smaaBlend->search);
+		smaaEdgeFbColor2.bind(smaaBlend->edges);
+		smaaArea.bind(smaaBlend->area);
+		smaaSearch.bind(smaaBlend->search);
 		glUniform4f(smaaBlend->subsampleIndices,
 			2.0f, 1.0f, 1.0f, 0.0f);
 		glUniform4f(smaaBlend->screenSize,
@@ -536,9 +531,9 @@ void aaEnd(void)
 		// SMAA neighbor blending pass
 		programUse(smaaNeighbor);
 		framebufferUse(rendererFramebuffer());
-		textureUse(smaaSeparateFbColor, smaaNeighbor->image);
-		textureFilter(smaaSeparateFbColor, GL_LINEAR);
-		textureUse(smaaBlendFbColor, smaaNeighbor->blend);
+		smaaSeparateFbColor.bind(smaaNeighbor->image);
+		smaaSeparateFbColor.setFilter(Filter::Linear);
+		smaaBlendFbColor.bind(smaaNeighbor->blend);
 		glUniform1f(smaaNeighbor->alpha, 1.0f);
 		glUniform4f(smaaNeighbor->screenSize,
 			1.0 / (float)currentSize.x, 1.0 / (float)currentSize.y,
@@ -546,9 +541,9 @@ void aaEnd(void)
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		glEnable(GL_BLEND);
-		textureUse(smaaSeparateFbColor2, smaaNeighbor->image);
-		textureFilter(smaaSeparateFbColor2, GL_LINEAR);
-		textureUse(smaaBlendFbColor2, smaaNeighbor->blend);
+		smaaSeparateFbColor2.bind(smaaNeighbor->image);
+		smaaSeparateFbColor2.setFilter(Filter::Linear);
+		smaaBlendFbColor2.bind(smaaNeighbor->blend);
 		glUniform1f(smaaNeighbor->alpha, 0.5f);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 

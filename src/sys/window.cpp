@@ -138,10 +138,12 @@ void Window::init()
 
 void Window::cleanup()
 {
+#ifndef NDEBUG
 	if (!initialized) {
 		L.warn("Windowing cleanup called without being previously initialized");
 		return;
 	}
+#endif //NDEBUG
 
 #ifdef _WIN32
 	timeEndPeriod(1);
@@ -227,6 +229,7 @@ void Window::open(char const* const _title, const bool fullscreen, size2i _size)
 
 void Window::close()
 {
+#ifndef NDEBUG
 	if (!initialized) {
 		L.warn(R"(Tried to close window "%s" without initialized windowing)",
 			stringOrNull(title));
@@ -237,6 +240,7 @@ void Window::close()
 			stringOrNull(title));
 		return;
 	}
+#endif //NDEBUG
 
 	glfwDestroyWindow(handle);
 	handle = nullptr;
@@ -287,6 +291,7 @@ void Window::activateContext()
 
 void Window::deactivateContext()
 {
+#ifndef NDEBUG
 	if (!initialized) {
 		L.warn(R"(Tried to deactivate context of window "%s" without initialized windowing)",
 			stringOrNull(title));
@@ -307,6 +312,7 @@ void Window::deactivateContext()
 			stringOrNull(title));
 		return;
 	}
+#endif //NDEBUG
 
 	glfwMakeContextCurrent(nullptr);
 	isContextActive = false;

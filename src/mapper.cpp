@@ -1,5 +1,5 @@
 /**
- * Implementation of mapper.h
+ * Implementation of mapper.hpp
  * @file
  */
 
@@ -58,6 +58,7 @@ void Mapper::mapKeyInputs(Window& window)
 				return Action::State::Released;
 			default:
 				ASSERT(false, "Encountered invalid key state");
+				return Action::State::None;
 			}
 		}();
 

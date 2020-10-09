@@ -59,7 +59,7 @@ static struct nk_draw_null_texture nullTexture = {};
 static struct nk_buffer commandList = {0};
 
 static struct ProgramNuklear* nuklear;
-static Texture* nuklearTexture = nullptr;
+static Texture nuklearTexture;
 
 static VertexArray nuklearVao = 0;
 static VertexBuffer nuklearVbo = 0;
@@ -121,11 +121,10 @@ void debugInit(void)
 		NK_FONT_ATLAS_RGBA32);
 
 	// Upload font atlas to GPU
-	nuklearTexture = textureCreate();
-	textureStorage(nuklearTexture, (size2i){atlasWidth, atlasHeight}, GL_RGBA);
-	textureData(nuklearTexture, (void*)atlasData, GL_RGBA, GL_UNSIGNED_BYTE);
+	nuklearTexture.create({atlasWidth, atlasHeight}, PixelFormat::RGBA_u8);
+	nuklearTexture.upload((uint8_t*)atlasData);
 
-	nk_font_atlas_end(&atlas, nk_handle_ptr(nuklearTexture), &nullTexture);
+	nk_font_atlas_end(&atlas, nk_handle_ptr(&nuklearTexture), &nullTexture);
 	nk_init_default(&nkContext, &atlas.default_font->handle);
 
 	// Set the theme
@@ -204,8 +203,7 @@ void debugCleanup(void)
 	nuklearVao = 0;
 	programDestroy(nuklear);
 	nuklear = nullptr;
-	textureDestroy(nuklearTexture);
-	nuklearTexture = nullptr;
+	nuklearTexture.destroy();
 	nk_font_atlas_cleanup(&atlas);
 	nk_free(&nkContext);
 
@@ -247,7 +245,7 @@ void debugDraw(Window& window)
 	glEnable(GL_SCISSOR_TEST);
 
 	programUse(nuklear);
-	textureUse(nuklearTexture, nuklear->atlas);
+	nuklearTexture.bind(nuklear->atlas);
 	glUniformMatrix4fv(nuklear->projection, 1, GL_FALSE,
 		*worldScreenProjection);
 	glBindVertexArray(nuklearVao);
@@ -289,7 +287,7 @@ void debugDraw(Window& window)
 	const nk_draw_index* offset = nullptr;
 	nk_draw_foreach(command, &nkContext, &commandList) {
 		if (!command->elem_count) continue;
-		textureUse(static_cast<Texture*>(command->texture.ptr), nuklear->atlas);
+		static_cast<Texture*>(command->texture.ptr)->bind(nuklear->atlas);
 		glScissor(command->clip_rect.x,
 			screenSize.y - command->clip_rect.y - command->clip_rect.h,
 			command->clip_rect.w, command->clip_rect.h);

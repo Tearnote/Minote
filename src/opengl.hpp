@@ -3,131 +3,150 @@
  * @file
  */
 
-#ifndef MINOTE_OPENGL_H
-#define MINOTE_OPENGL_H
+#pragma once
 
-#include <stdbool.h>
-#include <stddef.h>
+#include <cstddef>
 #include "glad/glad.h"
 #include "base/types.hpp"
 #include "sys/window.hpp"
 
-/// OpenGL texture. You can obtain an instance with textureCreate().
-/// All fields read-only.
-typedef struct Texture {
-	GLuint id;
-	minote::size2i size;
-} Texture;
+namespace minote {
+
+/// OpenGL shader program. You can obtain an instance with programCreate().
+using Program = GLuint;
+
+/// OpenGL uniform location. This is used as part of a struct containing ::ProgramBase.
+using Uniform = GLint;
+
+/// OpenGL texture unit. This is used as part of a struct containing ::ProgramBase.
+using TextureUnit = GLenum;
+
+/// OpenGL vertex buffer object ID
+using VertexBuffer = GLuint;
+
+/// OpenGL vertex array object ID
+using VertexArray = GLuint;
+
+/// OpenGL element array object ID
+using ElementArray = GLuint;
+
+/// OpenGL buffer texture object ID
+using BufferTexture = GLuint;
+
+/// OpenGL buffer object, for use with buffer textures
+using BufferTextureStorage = GLuint;
+
+/// Available texture filtering modes
+enum struct Filter {
+	None,
+	Nearest,
+	Linear
+};
+
+/// Available internal pixel formats
+enum struct PixelFormat {
+	None,
+	R_u8,
+	RG_u8,
+	RGB_u8,
+	RGBA_u8,
+	R_f16,
+	RG_f16,
+	RGB_f16,
+	RGBA_f16
+};
+
+/// Base struct for the common fields of texture types
+struct TextureBase {
+
+	GLuint id = 0; ///< The object has not been created if this is 0
+	size2i size = {0, 0}; ///< The texture does not have storage if this is {0, 0}
+
+};
+
+/// Standard 2D texture, usable for reading and writing inside shaders
+struct Texture : TextureBase {
+
+	Filter filter = Filter::None;
+	PixelFormat format = PixelFormat::None;
+
+	/**
+	 * Create an OpenGL ID for the texture. This needs to be called before
+	 * the texture can be used. Storage is allocated by default, and filled
+	 * with garbage data. The default filtering mode is Linear.
+	 * @param size Initial size of the texture storage, in pixels
+	 * @param format Internal format of the texture
+	 */
+	void create(size2i size, PixelFormat format);
+
+	/**
+	 * Destroy the OpenGL texture object. Storage and ID are both freed.
+	 */
+	void destroy();
+
+	/**
+	 * Set the filtering mode for the texture.
+	 * @param filter New filtering mode
+	 */
+	void setFilter(Filter filter);
+
+	/**
+	 * Recreate the texture's storage with new size. Previous contents are lost,
+	 * and the texture data is garbage again.
+	 * @param size New size of the texture storage, in pixels
+	 */
+	void resize(size2i size);
+
+	/**
+	 * Upload texture data from CPU to the texture object, replacing previous
+	 * contents. Expected pixel format is 1 byte per channel (0-255),
+	 * same number of channels as internal format, and size.x * size.y pixels.
+	 * @param data Pixel data as an unchecked array of bytes
+	 */
+	void upload(std::uint8_t* data);
+
+	/**
+	 * Bind the texture to the specified texture unit. This allows it to be used
+	 * in a shader for reading and/or writing.
+	 * @param unit Texture unit to bind the texture to
+	 */
+	void bind(TextureUnit unit);
+
+};
 
 /// OpenGL multisample texture. You can obtain an instance with textureMSCreate().
 /// All fields read-only.
-typedef struct TextureMS {
-	GLuint id;
-	minote::size2i size;
-	GLsizei samples;
-} TextureMS;
+struct TextureMS : TextureBase {
+
+	GLsizei samples = 0;
+
+};
 
 /// OpenGL renderbuffer. You can obtain an instance with renderbufferCreate().
 /// All fields read-only.
-typedef struct Renderbuffer {
-	GLuint id;
-	minote::size2i size;
-} Renderbuffer;
+struct Renderbuffer : TextureBase {
+
+	;
+
+};
 
 /// OpenGL multisample renderbuffer. You can obtain an instance with renderbufferMSCreate().
 /// All fields read-only.
-typedef struct RenderbufferMS {
-	GLuint id;
-	minote::size2i size;
-	GLsizei samples;
-} RenderbufferMS;
+struct RenderbufferMS : TextureBase {
+
+	GLsizei samples = 0;
+
+};
 
 /// OpenGL framebuffer. You can obtain an instance with framebufferCreate().
 /// All fields read-only.
-typedef struct Framebuffer {
-	GLuint id;
-	minote::size2i size;
-	GLsizei samples;
-} Framebuffer;
+struct Framebuffer {
 
-/// OpenGL shader program. You can obtain an instance with programCreate().
-typedef GLuint Program;
+	GLuint id = 0;
+	size2i size;
+	GLsizei samples = 0;
 
-/// OpenGL uniform location. This is used as part of a struct containing ::ProgramBase.
-typedef GLint Uniform;
-
-/// OpenGL texture unit. This is used as part of a struct containing ::ProgramBase.
-typedef GLenum TextureUnit;
-
-/// OpenGL vertex buffer object ID
-typedef GLuint VertexBuffer;
-
-/// OpenGL vertex array object ID
-typedef GLuint VertexArray;
-
-/// OpenGL element array object ID
-typedef GLuint ElementArray;
-
-/// OpenGL buffer texture object ID
-typedef GLuint BufferTexture;
-
-/// OpenGL buffer object, for use with buffer textures
-typedef GLuint BufferTextureStorage;
-
-/**
- * Create a new ::Texture instance. Please note that this object cannot be used
- * for drawing or sampling until storage is allocated with textureStorage().
- * @return A newly created ::Texture. Needs to be destroyed with textureDestroy()
- */
-Texture* textureCreate(void);
-
-/**
- * Destroy a ::Texture instance. The destroyed object cannot be used anymore and
- * the pointer becomes invalid.
- * @param q The ::Texture object
- */
-void textureDestroy(Texture* t);
-
-/**
- * Set a ::Texture's filtering mode. The default value is GL_LINEAR.
- * @param t The ::Texture object
- * @param filteringMode GL_LINEAR or GL_NEAREST
- */
-void textureFilter(Texture* t, GLenum filteringMode);
-
-/**
- * Allocate storage to a ::Texture. After this call, it can be used
- * for rendering and sampling. Contents are undefined until drawn into
- * or specified with textureData(). Can be called more than once to orphan
- * old storage and create a brand new surface with different parameters.
- * @param t The ::Texture object
- * @param size Size of the allocated buffer, in pixels
- * @param format Internal storage format. Equivalent to "internalformat" of
- * glTexImage2D
- */
-void textureStorage(Texture* t, minote::size2i size, GLenum format);
-
-/**
- * Upload data to a ::Texture. Storage must have been allocated first
- * with textureStorage(). No sanity checks are performed - @a data must be
- * as big as number of pixels in allocated storage times size of each pixel
- * according to @a format and @a type.
- * @param t The ::Texture object
- * @param data Pointer to raw data buffer to upload
- * @param format Format of pixel @a data being uploaded. Equivalent to "format"
- * of glTexImage2D
- * @param type Type of each value in @a data. Equivalent to "type"
- * of glTexImage2D
- */
-void textureData(Texture* t, void* data, GLenum format, GLenum type);
-
-/**
- * Bind a ::Texture to a specified ::TextureUnit, allowing it to be sampled
- * by a ::Program.
- * @param t The ::Texture object
- * @param unit Unit number obtained from programSampler()
- */
-void textureUse(Texture* t, TextureUnit unit);
+};
 
 /**
  * Create a new ::TextureMS instance. Please note that this object cannot
@@ -154,7 +173,8 @@ void textureMSDestroy(TextureMS* t);
  * glTexImage2DMultisample
  * @param samples Number of samples per pixel
  */
-void textureMSStorage(TextureMS* t, minote::size2i size, GLenum format, GLsizei samples);
+void textureMSStorage(TextureMS* t, size2i size, GLenum format,
+	GLsizei samples);
 
 /**
  * Bind a ::TextureMS to a specified ::TextureUnit, allowing it to be sampled
@@ -189,7 +209,7 @@ void renderbufferDestroy(Renderbuffer* r);
  * @param format Internal storage format. Equivalent to "internalformat" of
  * glRenderbufferStorage
  */
-void renderbufferStorage(Renderbuffer* r, minote::size2i size, GLenum format);
+void renderbufferStorage(Renderbuffer* r, size2i size, GLenum format);
 
 /**
  * Create a new ::RenderbufferMS instance. Please note that this object cannot
@@ -217,7 +237,8 @@ void renderbufferMSDestroy(RenderbufferMS* r);
  * glRenderbufferStorageMultisample
  * @param samples Number of samples per pixel
  */
-void renderbufferMSStorage(RenderbufferMS* r, minote::size2i size, GLenum format,
+void
+renderbufferMSStorage(RenderbufferMS* r, size2i size, GLenum format,
 	GLsizei samples);
 
 /**
@@ -245,7 +266,7 @@ void framebufferDestroy(Framebuffer* f);
  * @param attachment Attachment point identifier. Equivalent to "attachment"
  * of glFramebufferTexture2D
  */
-void framebufferTexture(Framebuffer* f, Texture* t, GLenum attachment);
+void framebufferTexture(Framebuffer* f, Texture& t, GLenum attachment);
 
 /**
  * Attach a ::TextureMS to a specified attachment point. Framebuffer
@@ -267,7 +288,8 @@ void framebufferTextureMS(Framebuffer* f, TextureMS* t, GLenum attachment);
  * @param attachment Attachment point identifier. Equivalent to "attachment"
  * of glFramebufferRenderbuffer
  */
-void framebufferRenderbuffer(Framebuffer* f, Renderbuffer* r, GLenum attachment);
+void
+framebufferRenderbuffer(Framebuffer* f, Renderbuffer* r, GLenum attachment);
 
 /**
  * Attach a ::RenderbufferMS to a specified attachment point. Framebuffer
@@ -278,7 +300,8 @@ void framebufferRenderbuffer(Framebuffer* f, Renderbuffer* r, GLenum attachment)
  * @param attachment Attachment point identifier. Equivalent to "attachment"
  * of glFramebufferRenderbuffer
  */
-void framebufferRenderbufferMS(Framebuffer* f, RenderbufferMS* r, GLenum attachment);
+void
+framebufferRenderbufferMS(Framebuffer* f, RenderbufferMS* r, GLenum attachment);
 
 /**
  * Set the ::Framebuffer's color outputs to the specified number of color
@@ -310,7 +333,7 @@ void framebufferUse(Framebuffer* f);
  * Copy a contents of a ::Framebuffer to the screen (backbuffer).
  * @param f The ::Framebuffer object
  */
-void framebufferToScreen(Framebuffer* f, minote::Window& w);
+void framebufferToScreen(Framebuffer* f, Window& w);
 
 /**
  * Copy the contents of one ::Framebuffer to another. Performs MSAA resolve.
@@ -318,7 +341,7 @@ void framebufferToScreen(Framebuffer* f, minote::Window& w);
  * @param dst The destination ::Framebuffer object
  * @param size Size of the area to copy, in pixels
  */
-void framebufferBlit(Framebuffer* src, Framebuffer* dst, minote::size2i size);
+void framebufferBlit(Framebuffer* src, Framebuffer* dst, size2i size);
 
 /**
  * Base struct of ::Program type. To be a valid ::Program type usable with below
@@ -395,4 +418,4 @@ _programSampler(ProgramBase* program, const char* sampler, TextureUnit unit);
 
 void _programUse(ProgramBase* program);
 
-#endif //MINOTE_OPENGL_H
+}

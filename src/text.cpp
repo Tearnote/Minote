@@ -120,13 +120,13 @@ static void textQueueV(FontType font, float size, point3f pos, point3f dir, poin
 			glyph.size.x = atlasChar->charRight - atlasChar->charLeft;
 			glyph.size.y = atlasChar->charTop - atlasChar->charBottom;
 			glyph.texBounds.x =
-				atlasChar->atlasLeft / (float)fonts[font].atlas->size.x;
+				atlasChar->atlasLeft / (float)fonts[font].atlas.size.x;
 			glyph.texBounds.y =
-				atlasChar->atlasBottom / (float)fonts[font].atlas->size.y;
+				atlasChar->atlasBottom / (float)fonts[font].atlas.size.y;
 			glyph.texBounds.z =
-				atlasChar->atlasRight / (float)fonts[font].atlas->size.x;
+				atlasChar->atlasRight / (float)fonts[font].atlas.size.x;
 			glyph.texBounds.w =
-				atlasChar->atlasTop / (float)fonts[font].atlas->size.y;
+				atlasChar->atlasTop / (float)fonts[font].atlas.size.y;
 			glyph.color = color;
 			glyph.transformIndex = msdfTransforms[font].size - 1;
 
@@ -259,7 +259,7 @@ void textDraw(void)
 
 		glBindVertexArray(msdfVao[i]);
 		programUse(msdf);
-		textureUse(fonts[i].atlas, msdf->atlas);
+		fonts[i].atlas.bind(msdf->atlas);
 		glActiveTexture(msdf->transforms);
 		glBindTexture(GL_TEXTURE_BUFFER, msdfTransformsTex[i]);
 		glUniformMatrix4fv(msdf->projection, 1, GL_FALSE, *worldProjection);

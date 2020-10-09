@@ -52,7 +52,7 @@ static const GLchar* ProgramBoxBlurFragSrc = (GLchar[]){
 static Window* window = nullptr;
 
 static Framebuffer* bloomFb[BloomPasses] = {nullptr};
-static Texture* bloomFbColor[BloomPasses] = {nullptr};
+static Texture bloomFbColor[BloomPasses];
 static ProgramThreshold* threshold = nullptr;
 static ProgramBoxBlur* boxBlur = nullptr;
 
@@ -77,7 +77,7 @@ static void bloomResize(size2i size)
 			size.x >> (i + 1),
 			size.y >> (i + 1)
 		};
-		textureStorage(bloomFbColor[i], layerSize, GL_RGBA16F);
+		bloomFbColor[i].resize(layerSize);
 	}
 }
 
@@ -85,10 +85,15 @@ void bloomInit(Window& w)
 {
 	if (initialized) return;
 	window = &w;
+	size2i windowSize = window->size;
 
 	for (size_t i = 0; i < BloomPasses; i += 1) {
+		size2i layerSize = {
+			windowSize.x >> (i + 1),
+			windowSize.y >> (i + 1)
+		};
 		bloomFb[i] = framebufferCreate();
-		bloomFbColor[i] = textureCreate();
+		bloomFbColor[i].create(layerSize, PixelFormat::RGBA_f16);
 	}
 
 	bloomResize(window->size);
@@ -128,8 +133,7 @@ void bloomCleanup(void)
 	programDestroy(threshold);
 	threshold = nullptr;
 	for (size_t i = BloomPasses - 1; i < BloomPasses; i -= 1) {
-		textureDestroy(bloomFbColor[i]);
-		bloomFbColor[i] = nullptr;
+		bloomFbColor[i].destroy();
 		framebufferDestroy(bloomFb[i]);
 		bloomFb[i] = nullptr;
 	}
@@ -148,7 +152,7 @@ void bloomApply(void)
 	framebufferUse(bloomFb[0]);
 	glViewport(0, 0, currentSize.x >> 1, currentSize.y >> 1);
 	programUse(threshold);
-	textureUse(rendererTexture(), threshold->image);
+	rendererTexture().bind(threshold->image);
 	glUniform1f(threshold->threshold, 1.0f);
 	glUniform1f(threshold->softKnee, 0.25f);
 	glUniform1f(threshold->strength, 1.0f);
@@ -159,7 +163,7 @@ void bloomApply(void)
 	for (size_t i = 0; i < BloomPasses - 1; i += 1) {
 		framebufferUse(bloomFb[i + 1]);
 		glViewport(0, 0, currentSize.x >> (i + 2), currentSize.y >> (i + 2));
-		textureUse(bloomFbColor[i], boxBlur->image);
+		bloomFbColor[i].bind(boxBlur->image);
 		glUniform1f(boxBlur->step, 1.0f);
 		glUniform2f(boxBlur->imageTexel,
 			1.0 / (float)(currentSize.x >> (i + 1)),
@@ -171,7 +175,7 @@ void bloomApply(void)
 	for (size_t i = BloomPasses - 2; i < BloomPasses; i -= 1) {
 		framebufferUse(bloomFb[i]);
 		glViewport(0, 0, currentSize.x >> (i + 1), currentSize.y >> (i + 1));
-		textureUse(bloomFbColor[i + 1], boxBlur->image);
+		bloomFbColor[i + 1].bind(boxBlur->image);
 		glUniform1f(boxBlur->step, 0.5f);
 		glUniform2f(boxBlur->imageTexel,
 			1.0 / (float)(currentSize.x >> (i + 2)),

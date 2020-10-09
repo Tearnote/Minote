@@ -67,9 +67,8 @@ void fontInit(void)
 			}
 			ASSERT(channels == 3);
 
-			fonts[i].atlas = textureCreate();
-			textureStorage(fonts[i].atlas, size, GL_RGBA8);
-			textureData(fonts[i].atlas, atlasData, GL_RGB, GL_UNSIGNED_BYTE);
+			fonts[i].atlas.create(size, PixelFormat::RGB_f16);
+			fonts[i].atlas.upload(atlasData);
 			stbi_image_free(atlasData);
 			atlasData = nullptr;
 		}
@@ -114,10 +113,8 @@ cleanup: // In case any stage failed, clean up all other stages
 			hb_font_destroy(fonts[i].hbFont);
 			fonts[i].hbFont = nullptr;
 		}
-		if (fonts[i].atlas) {
-			textureDestroy(fonts[i].atlas);
-			fonts[i].atlas = nullptr;
-		}
+		if (fonts[i].atlas.id)
+			fonts[i].atlas.destroy();
 	}
 
 	initialized = true;
@@ -128,13 +125,12 @@ void fontCleanup(void)
 	if (!initialized) return;
 
 	for (size_t i = 0; i < FontSize; i += 1) {
-		if (!fonts[i].hbFont && !fonts[i].atlas)
+		if (!fonts[i].hbFont && !fonts[i].atlas.id)
 			continue;
 
 		hb_font_destroy(fonts[i].hbFont);
 		fonts[i].hbFont = nullptr;
-		textureDestroy(fonts[i].atlas);
-		fonts[i].atlas = nullptr;
+		fonts[i].atlas.destroy();
 
 		L.info("Unloaded font %s", FontList[i]);
 	}

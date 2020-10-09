@@ -52,23 +52,23 @@ typedef Model ModelBase;
 typedef struct ModelFlat {
 	ModelBase base;
 	size_t numVertices;
-	VertexBuffer vertices; ///< VBO with model vertex data
-	VertexBuffer tints; ///< VBO for storing per-draw tint colors
-	VertexBuffer highlights; ///< VBO for storing per-draw color highlight colors
-	VertexBuffer transforms; ///< VBO for storing per-draw model matrices
-	VertexArray vao;
+	minote::VertexBuffer vertices; ///< VBO with model vertex data
+	minote::VertexBuffer tints; ///< VBO for storing per-draw tint colors
+	minote::VertexBuffer highlights; ///< VBO for storing per-draw color highlight colors
+	minote::VertexBuffer transforms; ///< VBO for storing per-draw model matrices
+	minote::VertexArray vao;
 } ModelFlat;
 
 /// Model type with Phong shading. Makes use of light source and material data.
 typedef struct ModelPhong {
 	ModelBase base;
 	size_t numVertices;
-	VertexBuffer vertices; ///< VBO with model vertex data
-	VertexBuffer normals; ///< VBO with model normals, generated from vertices
-	VertexBuffer tints; ///< VBO for storing per-draw tint colors
-	VertexBuffer highlights; ///< VBO for storing per-draw color highlight colors
-	VertexBuffer transforms; ///< VBO for storing per-draw model matrices
-	VertexArray vao;
+	minote::VertexBuffer vertices; ///< VBO with model vertex data
+	minote::VertexBuffer normals; ///< VBO with model normals, generated from vertices
+	minote::VertexBuffer tints; ///< VBO for storing per-draw tint colors
+	minote::VertexBuffer highlights; ///< VBO for storing per-draw color highlight colors
+	minote::VertexBuffer transforms; ///< VBO for storing per-draw model matrices
+	minote::VertexArray vao;
 	MaterialPhong material;
 } ModelPhong;
 

@@ -1,80 +1,19 @@
 /**
- * Implementation of opengl.h
+ * Implementation of opengl.hpp
  * @file
  */
 
 #include "opengl.hpp"
 
-#include "sys/window.hpp"
-#include "base/util.hpp"
 #include "base/log.hpp"
 
-using namespace minote;
+namespace minote {
 
 /// OpenGL shader object ID
-typedef GLuint Shader;
+using Shader = GLuint;
 
 GLuint boundFb = 0;
 GLuint boundProgram = 0;
-
-Texture* textureCreate(void)
-{
-	auto* t = allocate<Texture>();
-	glGenTextures(1, &t->id);
-	ASSERT(t->id);
-	glBindTexture(GL_TEXTURE_2D, t->id);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	return t;
-}
-
-void textureDestroy(Texture* t)
-{
-	if (!t) return;
-	glDeleteTextures(1, &t->id);
-	free(t);
-}
-
-void textureFilter(Texture* t, GLenum filteringMode)
-{
-	ASSERT(t);
-	ASSERT(filteringMode == GL_NEAREST || filteringMode == GL_LINEAR);
-	glBindTexture(GL_TEXTURE_2D, t->id);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filteringMode);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filteringMode);
-}
-
-void textureStorage(Texture* t, size2i size, GLenum format)
-{
-	ASSERT(t);
-	ASSERT(size.x > 0);
-	ASSERT(size.y > 0);
-	glBindTexture(GL_TEXTURE_2D, t->id);
-	glTexImage2D(GL_TEXTURE_2D, 0, format, size.x, size.y,
-		0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-	t->size.x = size.x;
-	t->size.y = size.y;
-}
-
-void textureData(Texture* t, void* data, GLenum format, GLenum type)
-{
-	ASSERT(t);
-	ASSERT(t->size.x > 0);
-	ASSERT(t->size.y > 0);
-	ASSERT(data);
-	glBindTexture(GL_TEXTURE_2D, t->id);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, t->size.x, t->size.y,
-		format, type, data);
-}
-
-void textureUse(Texture* t, TextureUnit unit)
-{
-	ASSERT(t);
-	glActiveTexture(unit);
-	glBindTexture(GL_TEXTURE_2D, t->id);
-}
 
 TextureMS* textureMSCreate(void)
 {
@@ -179,12 +118,11 @@ void framebufferDestroy(Framebuffer* f)
 	free(f);
 }
 
-void framebufferTexture(Framebuffer* f, Texture* t, GLenum attachment)
+void framebufferTexture(Framebuffer* f, Texture& t, GLenum attachment)
 {
 	ASSERT(f);
-	ASSERT(t);
 	framebufferUse(f);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, t->id, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, t.id, 0);
 }
 
 void framebufferTextureMS(Framebuffer* f, TextureMS* t, GLenum attachment)
@@ -393,4 +331,154 @@ void _programUse(ProgramBase* program)
 	if (program->id == boundProgram) return;
 	glUseProgram(program->id);
 	boundProgram = program->id;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Convert the strictly typed PixelFormat enum into the equivalent
+ * OpenGL internalformat value.
+ * @param format PixelFormat to convert
+ * @return Matching internalformat GLenum value
+ */
+constexpr static auto pixelFormatToGLInternal(const PixelFormat format) -> GLenum
+{
+	switch (format) {
+	case PixelFormat::R_u8:
+		return GL_R8;
+	case PixelFormat::RG_u8:
+		return GL_RG8;
+	case PixelFormat::RGB_u8:
+		return GL_RGB8;
+	case PixelFormat::RGBA_u8:
+		return GL_RGBA8;
+	case PixelFormat::R_f16:
+		return GL_R16F;
+	case PixelFormat::RG_f16:
+		return GL_RG16F;
+	case PixelFormat::RGB_f16:
+		return GL_RGB16F;
+	case PixelFormat::RGBA_f16:
+		return GL_RGBA16F;
+	default:
+		ASSERT(false, "Invalid PixelFormat %d", +format);
+		return 0;
+	}
+}
+
+/**
+ * Convert the strictly typed PixelFormat enum into the equivalent
+ * OpenGL format value.
+ * @param format PixelFormat to convert
+ * @return Matching format GLenum value
+ */
+constexpr static auto pixelFormatToGLExternal(const PixelFormat format) -> GLenum
+{
+	switch (format) {
+	case PixelFormat::R_u8:
+	case PixelFormat::R_f16:
+		return GL_RED;
+	case PixelFormat::RG_u8:
+	case PixelFormat::RG_f16:
+		return GL_RG;
+	case PixelFormat::RGB_u8:
+	case PixelFormat::RGB_f16:
+		return GL_RGB;
+	case PixelFormat::RGBA_u8:
+	case PixelFormat::RGBA_f16:
+		return GL_RGBA;
+	default:
+		ASSERT(false, "Invalid PixelFormat %d", +format);
+		return 0;
+	}
+}
+
+constexpr static auto filterToGL(const Filter filter) -> GLint
+{
+	switch (filter) {
+	case Filter::Nearest:
+		return GL_NEAREST;
+	case Filter::Linear:
+		return GL_LINEAR;
+	default:
+		ASSERT(false, "Invalid Filter %d", +filter);
+		return 0;
+	}
+}
+
+void Texture::create(size2i _size, PixelFormat _format)
+{
+	ASSERT(!id);
+	ASSERT(_format != PixelFormat::None);
+
+	glGenTextures(1, &id);
+	glBindTexture(GL_TEXTURE_2D, id);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	setFilter(Filter::Linear);
+	format = _format;
+	resize(_size);
+}
+
+void Texture::destroy()
+{
+#ifndef NDEBUG
+	if (!id) {
+		L.warn("Tried to destroy a texture that has not been created");
+		return;
+	}
+#endif //NDEBUG
+
+	glDeleteTextures(1, &id);
+	id = 0;
+	size = {0, 0};
+	filter = Filter::None;
+	format = PixelFormat::None;
+}
+
+void Texture::setFilter(Filter _filter)
+{
+	ASSERT(_filter != Filter::None);
+	if (filter == _filter)
+		return;
+
+	const GLint newFilter = filterToGL(_filter);
+	glBindTexture(GL_TEXTURE_2D, id);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, newFilter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, newFilter);
+	filter = _filter;
+}
+
+void Texture::resize(size2i _size)
+{
+	ASSERT(_size.x > 0 && _size.y > 0);
+	ASSERT(id);
+	if (size == _size)
+		return;
+
+	glBindTexture(GL_TEXTURE_2D, id);
+	glTexImage2D(GL_TEXTURE_2D, 0, pixelFormatToGLInternal(format),
+		_size.x, _size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+	size = _size;
+}
+
+void Texture::upload(std::uint8_t* data)
+{
+	ASSERT(data);
+	ASSERT(id);
+	ASSERT(size.x > 0 && size.y > 0);
+
+	glBindTexture(GL_TEXTURE_2D, id);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, size.x, size.y,
+		pixelFormatToGLExternal(format), GL_UNSIGNED_BYTE, data);
+}
+
+void Texture::bind(TextureUnit unit)
+{
+	ASSERT(id);
+
+	glActiveTexture(unit);
+	glBindTexture(GL_TEXTURE_2D, id);
+}
+
 }

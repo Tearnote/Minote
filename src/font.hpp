@@ -26,7 +26,7 @@ typedef struct FontAtlasGlyph {
 
 /// Complete loaded font with atlas, ready for rendering with
 typedef struct Font {
-	Texture* atlas; ///< Uploaded texture holding the atlas of MSDF renders
+	minote::Texture atlas; ///< Uploaded texture holding the atlas of MSDF renders
 	minote::varray<FontAtlasGlyph, 1024> metrics; ///< Array of FontAtlasGlyph for drawing from the atlas
 	hb_font_t* hbFont; ///< Cached HarfBuzz font data for shaping
 } Font;

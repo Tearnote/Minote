@@ -56,7 +56,7 @@ static bool initialized = false;
 static Window* window = nullptr;
 
 static Framebuffer* renderFb = nullptr;
-static Texture* renderFbColor = nullptr;
+static Texture renderFbColor;
 static Renderbuffer* renderFbDepthStencil = nullptr;
 
 static size2i viewportSize = {}; ///< in pixels
@@ -115,7 +115,7 @@ static void rendererResize(size2i size)
 	viewportSize.x = size.x;
 	viewportSize.y = size.y;
 
-	textureStorage(renderFbColor, size, GL_RGB16F);
+	renderFbColor.resize(size);
 	renderbufferStorage(renderFbDepthStencil, size, GL_DEPTH24_STENCIL8);
 }
 
@@ -144,7 +144,7 @@ void rendererInit(Window& w)
 
 	// Create framebuffers
 	renderFb = framebufferCreate();
-	renderFbColor = textureCreate();
+	renderFbColor.create(window->size, PixelFormat::RGB_f16);
 	renderFbDepthStencil = renderbufferCreate();
 
 	// Set up matrices and framebuffer textures
@@ -187,8 +187,7 @@ void rendererCleanup(void)
 	blit = nullptr;
 	renderbufferDestroy(renderFbDepthStencil);
 	renderFbDepthStencil = nullptr;
-	textureDestroy(renderFbColor);
-	renderFbColor = nullptr;
+	renderFbColor.destroy();
 	framebufferDestroy(renderFb);
 	renderFb = nullptr;
 	window->deactivateContext();
@@ -201,7 +200,7 @@ Framebuffer* rendererFramebuffer(void)
 	return renderFb;
 }
 
-Texture* rendererTexture(void)
+Texture& rendererTexture(void)
 {
 	return renderFbColor;
 }
@@ -221,7 +220,7 @@ void rendererFrameEnd(void)
 	glDisable(GL_BLEND);
 	framebufferUse(nullptr);
 	programUse(delinearize);
-	textureUse(renderFbColor, delinearize->image);
+	renderFbColor.bind(delinearize->image);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 	window->flip();
 	if (syncEnabled)
@@ -229,11 +228,10 @@ void rendererFrameEnd(void)
 	glEnable(GL_BLEND);
 }
 
-void rendererBlit(Texture* t, GLfloat boost)
+void rendererBlit(Texture& t, GLfloat boost)
 {
-	ASSERT(t);
 	programUse(blit);
-	textureUse(t, blit->image);
+	t.bind(blit->image);
 	glUniform1f(blit->boost, boost);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 }

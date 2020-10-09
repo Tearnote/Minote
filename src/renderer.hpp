@@ -31,14 +31,14 @@ void rendererCleanup(void);
  * changes to this ::Framebuffer.
  * @return The ::Framebuffer object for main rendering
  */
-Framebuffer* rendererFramebuffer(void);
+minote::Framebuffer* rendererFramebuffer(void);
 
 /**
  * Return the main render ::Texture. Use this to sample what has been drawn
  * so far. Do not destroy or make any changes to this ::Texture.
  * @return The ::Texture object for main rendering
  */
-Texture* rendererTexture(void);
+minote::Texture& rendererTexture(void);
 
 /**
  * Prepare for rendering a new frame. The main framebuffer is bound. You
@@ -60,7 +60,7 @@ void rendererFrameEnd(void);
  * @param src The ::Texture object
  * @param boost Color multiplier
  */
-void rendererBlit(Texture* t, GLfloat boost);
+void rendererBlit(minote::Texture& t, GLfloat boost);
 
 /**
  * Retrieves the current status of the synchronization feature, which prevents
