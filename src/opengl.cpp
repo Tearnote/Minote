@@ -244,82 +244,6 @@ void _programUse(ProgramBase* program)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/**
- * Convert the strictly typed PixelFormat enum into the equivalent
- * OpenGL internalformat value.
- * @param format PixelFormat to convert
- * @return Matching internalformat GLenum value
- */
-constexpr static auto
-pixelFormatToGLInternal(const PixelFormat format) -> GLenum
-{
-	switch (format) {
-	case PixelFormat::R_u8:
-		return GL_R8;
-	case PixelFormat::RG_u8:
-		return GL_RG8;
-	case PixelFormat::RGB_u8:
-		return GL_RGB8;
-	case PixelFormat::RGBA_u8:
-		return GL_RGBA8;
-	case PixelFormat::R_f16:
-		return GL_R16F;
-	case PixelFormat::RG_f16:
-		return GL_RG16F;
-	case PixelFormat::RGB_f16:
-		return GL_RGB16F;
-	case PixelFormat::RGBA_f16:
-		return GL_RGBA16F;
-	case PixelFormat::DepthStencil:
-		return GL_DEPTH24_STENCIL8;
-	default:
-		ASSERT(false, "Invalid PixelFormat %d", +format);
-		return 0;
-	}
-}
-
-/**
- * Convert the strictly typed PixelFormat enum into the equivalent
- * OpenGL format value.
- * @param format PixelFormat to convert
- * @return Matching format GLenum value
- */
-constexpr static auto
-pixelFormatToGLExternal(const PixelFormat format) -> GLenum
-{
-	switch (format) {
-	case PixelFormat::R_u8:
-	case PixelFormat::R_f16:
-		return GL_RED;
-	case PixelFormat::RG_u8:
-	case PixelFormat::RG_f16:
-		return GL_RG;
-	case PixelFormat::RGB_u8:
-	case PixelFormat::RGB_f16:
-		return GL_RGB;
-	case PixelFormat::RGBA_u8:
-	case PixelFormat::RGBA_f16:
-		return GL_RGBA;
-	case PixelFormat::DepthStencil:
-	default:
-			ASSERT(false, "Invalid PixelFormat %d", +format);
-		return 0;
-	}
-}
-
-constexpr static auto filterToGL(const Filter filter) -> GLint
-{
-	switch (filter) {
-	case Filter::Nearest:
-		return GL_NEAREST;
-	case Filter::Linear:
-		return GL_LINEAR;
-	default:
-			ASSERT(false, "Invalid Filter %d", +filter);
-		return 0;
-	}
-}
-
 void Texture::create(size2i _size, PixelFormat _format)
 {
 	ASSERT(!id);
@@ -356,10 +280,9 @@ void Texture::setFilter(Filter _filter)
 	if (filter == _filter)
 		return;
 
-	const GLint newFilter = filterToGL(_filter);
 	glBindTexture(GL_TEXTURE_2D, id);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, newFilter);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, newFilter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, +_filter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, +_filter);
 	filter = _filter;
 }
 
@@ -371,7 +294,7 @@ void Texture::resize(size2i _size)
 		return;
 
 	glBindTexture(GL_TEXTURE_2D, id);
-	glTexImage2D(GL_TEXTURE_2D, 0, pixelFormatToGLInternal(format),
+	glTexImage2D(GL_TEXTURE_2D, 0, +format,
 		_size.x, _size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 	size = _size;
 }
@@ -383,9 +306,30 @@ void Texture::upload(std::uint8_t* data)
 	ASSERT(size.x > 0 && size.y > 0);
 	ASSERT(format != PixelFormat::DepthStencil);
 
+	const GLenum channels = [=] {
+		switch (format) {
+		case PixelFormat::R_u8:
+		case PixelFormat::R_f16:
+			return GL_RED;
+		case PixelFormat::RG_u8:
+		case PixelFormat::RG_f16:
+			return GL_RG;
+		case PixelFormat::RGB_u8:
+		case PixelFormat::RGB_f16:
+			return GL_RGB;
+		case PixelFormat::RGBA_u8:
+		case PixelFormat::RGBA_f16:
+			return GL_RGBA;
+		case PixelFormat::DepthStencil:
+		default:
+			ASSERT(false, "Invalid PixelFormat %d", +format);
+			return 0;
+		}
+	}();
+
 	glBindTexture(GL_TEXTURE_2D, id);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, size.x, size.y,
-		pixelFormatToGLExternal(format), GL_UNSIGNED_BYTE, data);
+		channels, GL_UNSIGNED_BYTE, data);
 }
 
 void Texture::bind(TextureUnit unit)
@@ -432,8 +376,8 @@ void TextureMS::resize(size2i _size)
 		return;
 
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, id);
-	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples,
-		pixelFormatToGLInternal(format), _size.x, _size.y, GL_TRUE);
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, +format,
+		_size.x, _size.y, GL_TRUE);
 	size = _size;
 }
 
@@ -478,8 +422,7 @@ void Renderbuffer::resize(size2i _size)
 		return;
 
 	glBindRenderbuffer(GL_RENDERBUFFER, id);
-	glRenderbufferStorage(GL_RENDERBUFFER, pixelFormatToGLInternal(format),
-		_size.x, _size.y);
+	glRenderbufferStorage(GL_RENDERBUFFER, +format, _size.x, _size.y);
 	size = _size;
 }
 
@@ -518,8 +461,8 @@ void RenderbufferMS::resize(size2i _size)
 		return;
 
 	glBindRenderbuffer(GL_RENDERBUFFER, id);
-	glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples,
-		pixelFormatToGLInternal(format), _size.x, _size.y);
+	glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples,+format,
+		_size.x, _size.y);
 	size = _size;
 }
 

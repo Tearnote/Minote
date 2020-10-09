@@ -37,24 +37,24 @@ using BufferTexture = GLuint;
 using BufferTextureStorage = GLuint;
 
 /// Available texture filtering modes
-enum struct Filter {
-	None,
-	Nearest,
-	Linear
+enum struct Filter : GLint {
+	None = 0,
+	Nearest = GL_NEAREST,
+	Linear = GL_LINEAR
 };
 
 /// Available internal pixel formats
-enum struct PixelFormat {
-	None,
-	R_u8,
-	RG_u8,
-	RGB_u8,
-	RGBA_u8,
-	R_f16,
-	RG_f16,
-	RGB_f16,
-	RGBA_f16,
-	DepthStencil
+enum struct PixelFormat : GLint {
+	None = 0,
+	R_u8 = GL_R8,
+	RG_u8 = GL_RG8,
+	RGB_u8 = GL_RGB8,
+	RGBA_u8 = GL_RGBA8,
+	R_f16 = GL_R16F,
+	RG_f16 = GL_RG16F,
+	RGB_f16 = GL_RGB16F,
+	RGBA_f16 = GL_RGBA16F,
+	DepthStencil = GL_DEPTH24_STENCIL8
 };
 
 /// Base struct for the common fields of texture types
@@ -210,6 +210,8 @@ struct RenderbufferMS : TextureBase {
 	void resize(size2i size);
 
 };
+
+////////////////////////////////////////////////////////////////////////////////
 
 /// OpenGL framebuffer. You can obtain an instance with framebufferCreate().
 /// All fields read-only.
