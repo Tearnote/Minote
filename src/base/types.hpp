@@ -27,11 +27,13 @@ struct Vec2 {
 	};
 
 	/**
-	 * Convert to array, for passing to C-style interfaces.
+	 * Convert to std::array, for passing as continuous memory.
 	 * @return std::array version of the vector
 	 */
 	[[nodiscard]]
-	constexpr auto arr() const -> std::array<T, 2> { return {x, y}; }
+	constexpr auto arr() -> std::array<T, 2> { return {x, y}; }
+	[[nodiscard]]
+	constexpr auto arr() const -> std::array<const T, 2> { return {x, y}; }
 
 	constexpr auto operator==(const Vec2<T> other) const -> bool
 	{
@@ -68,11 +70,13 @@ struct Vec3 {
 	};
 
 	/**
-	 * Convert to array, for passing to C-style interfaces.
+	 * Convert to std::array, for passing as continuous memory.
 	 * @return std::array version of the vector
 	 */
 	[[nodiscard]]
-	constexpr auto arr() const -> std::array<T, 3> { return {x, y, z}; }
+	constexpr auto arr() -> std::array<T, 3> { return {x, y, z}; }
+	[[nodiscard]]
+	constexpr auto arr() const -> std::array<const T, 3> { return {x, y, z}; }
 
 	/**
 	 * Interpret the vector as a color and convert it from gamma to linear
@@ -139,11 +143,13 @@ struct Vec4 {
 	};
 
 	/**
-	 * Convert to array, for passing to C-style interfaces.
+	 * Convert to std::array, for passing as continuous memory.
 	 * @return std::array version of the vector
 	 */
 	[[nodiscard]]
-	constexpr auto arr() const -> std::array<T, 4> { return {x, y, z, w}; }
+	constexpr auto arr() -> std::array<T, 4> { return {x, y, z, w}; }
+	[[nodiscard]]
+	constexpr auto arr() const -> std::array<const T, 4> { return {x, y, z, w}; }
 
 	/**
 	 * Interpret the vector as a color and convert it from gamma to linear
