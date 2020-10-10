@@ -10,7 +10,7 @@
 #include "linmath/linmath.h"
 #include "base/types.hpp"
 #include "sys/window.hpp"
-#include "opengl.hpp"
+#include "sys/opengl.hpp"
 
 /**
  * Initialize the renderer system. windowInit() must have been called first.

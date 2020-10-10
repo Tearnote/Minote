@@ -8,7 +8,7 @@
 
 #include <hb.h>
 #include "fontlist.hpp"
-#include "opengl.hpp"
+#include "sys/opengl.hpp"
 #include "base/varray.hpp"
 
 /// Single glyph of a font alas

@@ -9,7 +9,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include "linmath/linmath.h"
-#include "opengl.hpp"
+#include "sys/opengl.hpp"
 #include "base/varray.hpp"
 #include "world.hpp"
 #include "base/util.hpp"

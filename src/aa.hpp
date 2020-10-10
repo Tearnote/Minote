@@ -7,7 +7,7 @@
 #define MINOTE_AA_H
 
 #include "sys/window.hpp"
-#include "opengl.hpp"
+#include "sys/opengl.hpp"
 
 /// Supported antialiasing methods
 typedef enum AAMode {

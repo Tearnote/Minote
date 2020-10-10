@@ -12,7 +12,7 @@
 #include <GLFW/glfw3.h>
 #include "linmath/linmath.h"
 #include "sys/window.hpp"
-#include "opengl.hpp"
+#include "sys/opengl.hpp"
 #include "model.hpp"
 #include "base/util.hpp"
 #include "base/time.hpp"

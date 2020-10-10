@@ -3,7 +3,7 @@
  * @file
  */
 
-#include "opengl.hpp"
+#include "sys/opengl.hpp"
 
 #include "base/log.hpp"
 

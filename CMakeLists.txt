@@ -117,14 +117,15 @@ set(SOURCES
         src/main.hpp src/main.cpp
         src/base/util.hpp src/base/util.cpp
         src/base/types.hpp
+        src/base/time.hpp src/base/time.cpp
         src/base/log.hpp src/base/log.cpp
         src/base/varray.hpp src/base/varray.tpp
         src/base/queue.hpp src/base/queue.tpp
         src/base/ease.hpp
         src/base/tween.hpp
         src/sys/window.hpp src/sys/window.cpp
+        src/sys/opengl.hpp src/sys/opengl.cpp
         src/game.hpp src/game.cpp
-        src/base/time.hpp src/base/time.cpp
         src/renderer.hpp src/renderer.cpp
         src/play.hpp src/play.cpp
         src/mino.hpp src/mino.cpp
@@ -133,7 +134,6 @@ set(SOURCES
         src/mrsdef.hpp src/mrsdef.cpp
         src/mrsdraw.hpp src/mrsdraw.cpp
         src/aa.hpp src/aa.cpp
-        src/opengl.hpp src/opengl.cpp
         src/bloom.hpp src/bloom.cpp
         src/model.hpp src/model.cpp
         src/world.hpp src/world.cpp

@@ -6,7 +6,7 @@
 #include "world.hpp"
 
 #include "linmath/linmath.h"
-#include "opengl.hpp"
+#include "sys/opengl.hpp"
 #include "sys/window.hpp"
 #include "base/util.hpp"
 
