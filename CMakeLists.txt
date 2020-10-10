@@ -98,7 +98,7 @@ add_dependencies(Preprocess_fonts msdf-atlas-gen)
 
 # Build the game
 set(INTERNALLIBS
-        lib/glad/glad.h lib/glad/glad.c lib/glad/KHR/khrplatform.h
+        lib/glad/glad.h
         lib/linmath/linmath.h
         lib/pcg/pcg_basic.h lib/pcg/pcg_basic.c
         lib/smaa/AreaTex.h lib/smaa/SearchTex.h
@@ -108,6 +108,14 @@ set(INTERNALLIBS
         lib/stb/stb_image.h lib/stb/stb_image.c
         lib/scope_guard/scope_guard.hpp
         lib/PPK_ASSERT/ppk_assert.h lib/PPK_ASSERT/ppk_assert.cpp)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    list(APPEND INTERNALLIBS lib/glad/release/glad.h lib/glad/release/glad.c
+            lib/glad/release/khrplatform.h)
+else()
+    list(APPEND INTERNALLIBS lib/glad/debug/glad.h lib/glad/debug/glad.c
+            lib/glad/debug/khrplatform.h)
+endif()
+
 add_compile_definitions(PPK_ASSERT_DISABLE_STL)
 add_compile_definitions(PPK_ASSERT_DISABLE_EXCEPTIONS)
 add_compile_definitions(PPK_ASSERT_DISABLE_IGNORE_LINE)

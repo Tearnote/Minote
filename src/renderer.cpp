@@ -5,7 +5,7 @@
 
 #include "renderer.hpp"
 
-#include <stdbool.h>
+#include <functional>
 #include <string.h>
 #include <stdlib.h>
 #include "glad/glad.h"
@@ -119,6 +119,73 @@ static void rendererResize(size2i size)
 	renderFbDepthStencil.resize(size);
 }
 
+#ifndef NDEBUG
+static void APIENTRY debugMessageCallback(GLenum source, GLenum type, GLuint,
+	GLenum severity, GLsizei, const GLchar* message, const void*)
+{
+	const char* const sourceStr = [=] {
+		switch (source) {
+		case GL_DEBUG_SOURCE_API:
+			return "API";
+		case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
+			return "window";
+		case GL_DEBUG_SOURCE_SHADER_COMPILER:
+			return "shader compiler";
+		case GL_DEBUG_SOURCE_THIRD_PARTY:
+			return "third party";
+		case GL_DEBUG_SOURCE_APPLICATION:
+			return "application";
+		case GL_DEBUG_SOURCE_OTHER:
+			return "other";
+		default:
+			return "unknown";
+		}
+	}();
+	const char* const typeStr = [=] {
+		switch (type) {
+		case GL_DEBUG_TYPE_ERROR:
+			return "error";
+		case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+			return "deprecated behavior";
+		case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+			return "undefined behavior";
+		case GL_DEBUG_TYPE_PORTABILITY:
+			return "portability";
+		case GL_DEBUG_TYPE_PERFORMANCE:
+			return "performance";
+		case GL_DEBUG_TYPE_MARKER:
+			return "marker";
+		case GL_DEBUG_TYPE_PUSH_GROUP:
+			return "pushed group";
+		case GL_DEBUG_TYPE_POP_GROUP:
+			return "popped group";
+		case GL_DEBUG_TYPE_OTHER:
+			return "other";
+		default:
+			return "unknown";
+		}
+	}();
+	const auto logFunc = [=] {
+		switch (severity) {
+		case GL_DEBUG_SEVERITY_HIGH:
+			return &Log::error;
+		case GL_DEBUG_SEVERITY_MEDIUM:
+			return &Log::warn;
+		case GL_DEBUG_SEVERITY_LOW:
+			return &Log::info;
+		case GL_DEBUG_SEVERITY_NOTIFICATION:
+			return &Log::debug;
+		default:
+			L.warn("Unknown OpenGL message severity %d", severity);
+			return &Log::warn;
+		}
+	}();
+
+	std::invoke(logFunc, L, "OpenGL %s message from the %s: %s",
+		typeStr, sourceStr, message);
+}
+#endif //NDEBUG
+
 void rendererInit(Window& w)
 {
 	if (initialized) return;
@@ -141,6 +208,11 @@ void rendererInit(Window& w)
 	glEnable(GL_MULTISAMPLE);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+#ifndef NDEBUG
+	glEnable(GL_DEBUG_OUTPUT);
+	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // Our log handling is fast
+	glDebugMessageCallback(debugMessageCallback, nullptr);
+#endif //NDEBUG
 
 	// Create framebuffers
 	renderFb = framebufferCreate();
