@@ -320,26 +320,26 @@ void Window::deactivateContext()
 	L.debug(R"(Window "%s" OpenGL context deactivated)", stringOrNull(title));
 }
 
-auto Window::dequeueInput() -> opt<Window::KeyInput>
+auto Window::dequeueInput() -> std::optional<KeyInput>
 {
 	const std::lock_guard lock(inputsMutex);
 
-	const auto input = inputs.dequeue();
+	const auto* input = inputs.dequeue();
 	if (input)
-		return input.value();
+		return *input;
 	else
-		return {};
+		return std::nullopt;
 }
 
-auto Window::peekInput() const -> opt<Window::KeyInput>
+auto Window::peekInput() const -> std::optional<KeyInput>
 {
 	const std::lock_guard lock(inputsMutex);
 
-	const auto input = inputs.peek();
+	const auto* input = inputs.peek();
 	if (input)
-		return input.value();
+		return *input;
 	else
-		return {};
+		return std::nullopt;
 }
 
 void Window::clearInput()

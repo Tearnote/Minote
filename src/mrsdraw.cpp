@@ -212,26 +212,17 @@ static void mrsQueueField(void)
 		mino type = fieldGet(mrsTet.field, (point2i){x, y});
 		if (type == MinoNone) continue;
 
-		color4* tint = nullptr;
-		color4* highlight = nullptr;
-		mat4x4* transform = nullptr;
-		if (minoColor(type).a == 1.0) {
-			auto tintOpt = blockTintsOpaque.produce();
-			if (!tintOpt)
-				return;
-			tint = &tintOpt.value();
-			highlight = &blockHighlightsOpaque.produce().value();
-			transform = &blockTransformsOpaque.produce().value();
-		} else {
-			auto tintOpt = blockTintsAlpha.produce();
-			if (!tintOpt)
-				return;
-			tint = &tintOpt.value();
-			highlight = &blockHighlightsAlpha.produce().value();
-			ASSERT(highlight);
-			transform = &blockTransformsAlpha.produce().value();
-			ASSERT(transform);
-		}
+		const bool transparent = (minoColor(type).a == 1.0);
+		auto& tints = transparent? blockTintsOpaque : blockTintsAlpha;
+		auto& highlights = transparent? blockHighlightsOpaque : blockHighlightsAlpha;
+		auto& transforms = transparent? blockTransformsOpaque : blockTransformsAlpha;
+		color4* const tint = tints.produce();
+		color4* const highlight = highlights.produce();
+		mat4x4* const transform = transforms.produce();
+		if (!tint)
+			return; // Block limit reached, no point continuing
+		ASSERT(highlight);
+		ASSERT(transform);
 
 		*tint = minoColor(type);
 		tint->r *= MrsFieldDim;
@@ -329,24 +320,17 @@ static void mrsQueuePlayer(void)
 		mat4x4_translate(minoTransform, player[i].x, player[i].y, 0.0f);
 
 		// Queue up next mino
-		color4* tint = nullptr;
-		color4* highlight = nullptr;
-		mat4x4* transform = nullptr;
-		if (minoColor(mrsTet.player.type).a == 1.0) {
-			auto tintOpt = blockTintsOpaque.produce();
-			if (!tintOpt)
-				return;
-			tint = &tintOpt.value();
-			highlight = &blockHighlightsOpaque.produce().value();
-			transform = &blockTransformsOpaque.produce().value();
-		} else {
-			auto tintOpt = blockTintsAlpha.produce();
-			if (!tintOpt)
-				return;
-			tint = &tintOpt.value();
-			highlight = &blockHighlightsAlpha.produce().value();
-			transform = &blockTransformsAlpha.produce().value();
-		}
+		const bool transparent = (minoColor(mrsTet.player.type).a == 1.0);
+		auto& tints = transparent? blockTintsOpaque : blockTintsAlpha;
+		auto& highlights = transparent? blockHighlightsOpaque : blockHighlightsAlpha;
+		auto& transforms = transparent? blockTransformsOpaque : blockTransformsAlpha;
+		color4* const tint = tints.produce();
+		color4* const highlight = highlights.produce();
+		mat4x4* const transform = transforms.produce();
+		if (!tint)
+			return; // Block limit reached, no point continuing
+		ASSERT(highlight);
+		ASSERT(transform);
 
 		// Insert calculated values
 		*tint = minoColor(mrsTet.player.type);
@@ -388,12 +372,13 @@ static void mrsQueueGhost(void)
 		float x = mrsTet.player.shape[i].x + ghostPos.x;
 		float y = mrsTet.player.shape[i].y + ghostPos.y;
 
-		auto tintOpt = blockTintsAlpha.produce();
-		if (!tintOpt)
+		auto* const tint = blockTintsAlpha.produce();
+		auto* const highlight = blockHighlightsAlpha.produce();
+		auto* const transform = blockTransformsAlpha.produce();
+		if (!tint)
 			return;
-		color4* tint = &tintOpt.value();
-		color4* highlight = &blockHighlightsAlpha.produce().value();
-		mat4x4* transform = &blockTransformsAlpha.produce().value();
+		ASSERT(highlight);
+		ASSERT(transform);
 
 		*tint = minoColor(mrsTet.player.type);
 		tint->a *= MrsGhostDim;
@@ -417,24 +402,17 @@ static void mrsQueuePreview(void)
 		if (mrsTet.player.preview == MinoI)
 			y -= 1;
 
-		color4* tint = nullptr;
-		color4* highlight = nullptr;
-		mat4x4* transform = nullptr;
-		if (minoColor(mrsTet.player.preview).a == 1.0) {
-			auto tintOpt = blockTintsOpaque.produce();
-			if (!tintOpt)
-				return;
-			tint = &tintOpt.value();
-			highlight = &blockHighlightsOpaque.produce().value();
-			transform = &blockTransformsOpaque.produce().value();
-		} else {
-			auto tintOpt = blockTintsAlpha.produce();
-			if (!tintOpt)
-				return;
-			tint = &tintOpt.value();
-			highlight = &blockHighlightsAlpha.produce().value();
-			transform = &blockTransformsAlpha.produce().value();
-		}
+		const bool transparent = (minoColor(mrsTet.player.preview).a == 1.0);
+		auto& tints = transparent? blockTintsOpaque : blockTintsAlpha;
+		auto& highlights = transparent? blockHighlightsOpaque : blockHighlightsAlpha;
+		auto& transforms = transparent? blockTransformsOpaque : blockTransformsAlpha;
+		color4* const tint = tints.produce();
+		color4* const highlight = highlights.produce();
+		mat4x4* const transform = transforms.produce();
+		if (!tint)
+			return; // Block limit reached, no point continuing
+		ASSERT(highlight);
+		ASSERT(transform);
 
 		*tint = minoColor(mrsTet.player.preview);
 		*highlight = Clear4;
@@ -476,11 +454,12 @@ static void mrsDrawQueuedBlocks(void)
 
 static void mrsQueueBorder(point3f pos, size3f size, color4 color)
 {
-	auto tintOpt = borderTints.produce();
-	if (!tintOpt)
+	auto* const tint = borderTints.produce();
+	auto* const transform = borderTransforms.produce();
+	if (!tint)
 		return;
-	color4* tint = &tintOpt.value();
-	mat4x4* transform = &borderTransforms.produce().value();
+	ASSERT(transform);
+
 	*tint = color;
 	mat4x4_identity(*transform);
 	mat4x4_translate_in_place(*transform, pos.x, pos.y, pos.z);

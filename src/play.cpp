@@ -47,20 +47,18 @@ void playUpdate(Window& window, Mapper& mapper)
 
 	// Update as many times as we need to catch up
 	while (nextUpdate <= Window::getTime()) {
-		while (const auto actionOpt = mapper.peekAction()) { // Exhaust all actions...
-			const auto action = actionOpt.value();
-
-			if (action.timestamp <= nextUpdate) {
-				// collectedInputs is the same size, so this should never be nullopt
-				auto& nextAction = collectedInputs.produce().value();
-				nextAction = action;
+		while (const auto* const action = mapper.peekAction()) { // Exhaust all actions...
+			if (action->timestamp <= nextUpdate) {
+				auto* const nextAction = collectedInputs.produce();
+				ASSERT(nextAction); // This should never be null
+				*nextAction = *action;
 				mapper.dequeueAction();
 			} else {
-				break; // Or abort if we encounter an action from the future
+				break; // ...or abort if we encounter an action from the future
 			}
 
 			// Interpret quit events here for now
-			if (action.type == Action::Type::Back)
+			if (action->type == Action::Type::Back)
 				window.requestClose();
 		}
 

@@ -49,6 +49,3 @@ used under MIT license.
 
 [`PPK_ASSERT`](https://github.com/gpakosz/PPK_ASSERT) retrieved on 2020-10-05,
 used under WTFPL.
-
-[`type_safe`](https://github.com/foonathan/type_safe) retrieved on 2020-10-06,
-used under MIT license.

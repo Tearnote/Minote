@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <optional>
 #include <atomic>
 #include <mutex>
 #include <GLFW/glfw3.h>
@@ -137,7 +138,7 @@ struct Window {
 	 * @return The oldest ::KeyInput from the queue, or nullopt if queue empty
 	 * @remark This function is thread-safe.
 	 */
-	auto dequeueInput() -> opt<KeyInput>;
+	auto dequeueInput() -> std::optional<KeyInput>;
 
 	/**
 	 * Return a copy of a ::KeyInput from the window's input queue without
@@ -146,7 +147,7 @@ struct Window {
 	 * @remark This function is thread-safe.
 	 */
 	[[nodiscard]]
-	auto peekInput() const -> opt<KeyInput>;
+	auto peekInput() const -> std::optional<KeyInput>;
 
 	/**
 	 * Clear the window's input queue. This can remove a GLFW_RELEASE event, so

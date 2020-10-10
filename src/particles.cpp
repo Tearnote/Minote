@@ -124,8 +124,9 @@ void particlesDraw(void)
 		if (current->vert == -1)
 			angle *= -1.0f;
 
-		auto& tint = particleTints.produce().value();
-		tint = current->color;
+		auto* const tint = particleTints.produce();
+		ASSERT(tint);
+		*tint = current->color;
 
 		// Shimmer mitigation
 		if (progress > ShimmerFade) {
@@ -133,15 +134,16 @@ void particlesDraw(void)
 			fadeout *= 1.0f / (1.0f - ShimmerFade);
 			fadeout = 1.0f - fadeout;
 			fadeout = cubicEaseIn(fadeout);
-			tint.a *= fadeout;
+			tint->a *= fadeout;
 		}
 
-		auto& transform = particleTransforms.produce().value();
+		auto* const transform = particleTransforms.produce();
+		ASSERT(transform);
 		mat4x4 translated = {0};
 		mat4x4_translate(translated, x, y, current->origin.z);
 		mat4x4 rotated = {0};
 		mat4x4_rotate_Z(rotated, translated, angle);
-		mat4x4_scale_aniso(transform, rotated, 1.0f - progress, 1.0f, 1.0f);
+		mat4x4_scale_aniso(*transform, rotated, 1.0f - progress, 1.0f, 1.0f);
 	}
 
 	numParticles = particleTransforms.size;
@@ -163,35 +165,34 @@ void particlesGenerate(point3f position, size_t count, ParticleParams* params)
 	ASSERT(params);
 
 	for (size_t i = 0; i < count; i += 1) {
-		auto newParticleOpt = particles.produce();
-		if (!newParticleOpt)
+		auto* const newParticle = particles.produce();
+		if (!newParticle)
 			return;
-		auto& newParticle{newParticleOpt.value()};
 
-		newParticle.origin = position;
-		newParticle.color = params->color;
+		newParticle->origin = position;
+		newParticle->color = params->color;
 
-		newParticle.start = Window::getTime();
-		newParticle.duration = params->durationMin + rng.randFloat()
+		newParticle->start = Window::getTime();
+		newParticle->duration = params->durationMin + rng.randFloat()
 			* (double)(params->durationMax - params->durationMin);
-		newParticle.ease = params->ease;
+		newParticle->ease = params->ease;
 
 		if (params->directionHorz != 0)
-			newParticle.horz = params->directionHorz;
+			newParticle->horz = params->directionHorz;
 		else
-			newParticle.horz = (int)rng.randInt(2) * 2 - 1;
+			newParticle->horz = (int)rng.randInt(2) * 2 - 1;
 		if (params->directionVert != 0)
-			newParticle.vert = params->directionVert;
+			newParticle->vert = params->directionVert;
 		else
-			newParticle.vert = (int)rng.randInt(2) * 2 - 1;
+			newParticle->vert = (int)rng.randInt(2) * 2 - 1;
 
-		newParticle.distance = rng.randFloat();
-		newParticle.distance *= params->distanceMax - params->distanceMin;
-		newParticle.distance += params->distanceMin;
+		newParticle->distance = rng.randFloat();
+		newParticle->distance *= params->distanceMax - params->distanceMin;
+		newParticle->distance += params->distanceMin;
 
-		newParticle.spin = rng.randFloat();
-		newParticle.spin = quarticEaseIn(newParticle.spin);
-		newParticle.spin *= params->spinMax - params->spinMin;
-		newParticle.spin += params->spinMin;
+		newParticle->spin = rng.randFloat();
+		newParticle->spin = quarticEaseIn(newParticle->spin);
+		newParticle->spin *= params->spinMax - params->spinMin;
+		newParticle->spin += params->spinMin;
 	}
 }

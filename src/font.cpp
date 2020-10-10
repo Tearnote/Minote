@@ -84,7 +84,7 @@ void fontInit(void)
 			goto cleanup;
 		}
 
-		fonts[i].metrics.produce().value() = {}; // Empty first element
+		*fonts[i].metrics.produce() = {}; // Empty first element
 		while (true) {
 			int index = 0;
 			FontAtlasGlyph atlasChar = {0};
@@ -97,10 +97,10 @@ void fontInit(void)
 				break;
 			ASSERT(index == fonts[i].metrics.size);
 
-			auto nextChar = fonts[i].metrics.produce();
+			auto* const nextChar = fonts[i].metrics.produce();
 			if (!nextChar)
 				break;
-			nextChar.value() = atlasChar;
+			*nextChar = atlasChar;
 		}
 		fclose(metricsFile);
 		metricsFile = nullptr;

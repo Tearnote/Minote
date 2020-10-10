@@ -53,7 +53,7 @@ struct Mapper {
 	 * happens.
 	 * @return Most recent Action, or nullopt if queue empty
 	 */
-	auto dequeueAction() -> optref<Action>;
+	auto dequeueAction() -> Action*;
 
 	/**
 	 * Return the most recent Action without removing it. If the queue is empty,
@@ -61,9 +61,9 @@ struct Mapper {
 	 * @return Most recent Action, or nullopt if queue empty
 	 */
 	[[nodiscard]]
-	auto peekAction() -> optref<Action>;
+	auto peekAction() -> Action*;
 	[[nodiscard]]
-	auto peekAction() const -> optref<const Action>;
+	auto peekAction() const -> const Action*;
 
 };
 

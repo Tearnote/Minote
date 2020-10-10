@@ -26,7 +26,7 @@ struct varray {
 	 * Add a new element at the end and return a pointer to it.
 	 * @return pointer to newly added element, or nullptr if backing store full
 	 */
-	auto produce() -> optref<Element>;
+	auto produce() -> Element*;
 
 	/**
 	 * Remove an element at a given index. Other elements are shifted to fill

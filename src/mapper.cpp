@@ -75,17 +75,17 @@ void Mapper::mapKeyInputs(Window& window)
 	}
 }
 
-auto Mapper::dequeueAction() -> optref<Action>
+auto Mapper::dequeueAction() -> Action*
 {
 	return actions.dequeue();
 }
 
-auto Mapper::peekAction() -> optref<Action>
+auto Mapper::peekAction() -> Action*
 {
 	return actions.peek();
 }
 
-auto Mapper::peekAction() const -> optref<const Action>
+auto Mapper::peekAction() const -> const Action*
 {
 	return actions.peek();
 }
