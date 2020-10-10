@@ -61,6 +61,7 @@ enum struct PixelFormat : GLint {
 struct TextureBase {
 
 	GLuint id = 0; ///< The object has not been created if this is 0
+	const char* name = nullptr; ///< Human-readable name, used in logging
 	size2i size = {0, 0}; ///< The texture does not have storage if this is {0, 0}
 	PixelFormat format = PixelFormat::None;
 
@@ -75,10 +76,11 @@ struct Texture : TextureBase {
 	 * Create an OpenGL ID for the texture. This needs to be called before
 	 * the texture can be used. Storage is allocated by default, and filled
 	 * with garbage data. The default filtering mode is Linear.
+	 * @param name Human-readable name, for logging and debug output
 	 * @param size Initial size of the texture storage, in pixels
 	 * @param format Internal format of the texture
 	 */
-	void create(size2i size, PixelFormat format);
+	void create(const char* name, size2i size, PixelFormat format);
 
 	/**
 	 * Destroy the OpenGL texture object. Storage and ID are both freed.
@@ -125,11 +127,12 @@ struct TextureMS : TextureBase {
 	 * Create an OpenGL ID for the multisample texture. This needs to be called
 	 * before the texture can be used. Storage is allocated by default,
 	 * and filled with garbage data.
+	 * @param name Human-readable name, for logging and debug output
 	 * @param size Initial size of the multisample texture storage, in pixels
 	 * @param format Internal format of the multisample texture
 	 * @param samples Number of samples per pixel: 2, 4 or 8
 	 */
-	void create(size2i size, PixelFormat format, GLsizei samples);
+	void create(const char* name, size2i size, PixelFormat format, GLsizei samples);
 
 	/**
 	 * Destroy the OpenGL multisample texture object. Storage and ID are both
@@ -160,10 +163,11 @@ struct Renderbuffer : TextureBase {
 	 * Create an OpenGL ID for the renderbuffer. This needs to be called before
 	 * the renderbuffer can be used. Storage is allocated by default, and filled
 	 * with garbage data.
+	 * @param name Human-readable name, for logging and debug output
 	 * @param size Initial size of the renderbuffer storage, in pixels
 	 * @param format Internal format of the renderbuffer
 	 */
-	void create(size2i size, PixelFormat format);
+	void create(const char* name, size2i size, PixelFormat format);
 
 	/**
 	 * Destroy the OpenGL renderbuffer object. Storage and ID are both freed.
@@ -189,12 +193,13 @@ struct RenderbufferMS : TextureBase {
 	 * Create an OpenGL ID for the multisample renderbuffer. This needs
 	 * to be called before the renderbuffer can be used. Storage is allocated
 	 * by default, and filled with garbage data.
+	 * @param name Human-readable name, for logging and debug output
 	 * @param size Initial size of the multisample renderbuffer storage,
 	 * in pixels
 	 * @param format Internal format of the multisample renderbuffer
 	 * @param samples Number of samples per pixel: 2, 4 or 8
 	 */
-	void create(size2i size, PixelFormat format, GLsizei samples);
+	void create(const char* name, size2i size, PixelFormat format, GLsizei samples);
 
 	/**
 	 * Destroy the OpenGL multisample renderbuffer object. Storage and ID
@@ -237,8 +242,7 @@ enum struct Attachment : GLenum {
 struct Framebuffer {
 
 	GLuint id = 0;
-	GLsizei samples = 0; ///< Sample count of all attachments needs to match
-
+	GLsizei samples = -1; ///< Sample count of all attachments needs to match
 
 };
 

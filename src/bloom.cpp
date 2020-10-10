@@ -93,7 +93,7 @@ void bloomInit(Window& w)
 			windowSize.y >> (i + 1)
 		};
 		bloomFb[i] = framebufferCreate();
-		bloomFbColor[i].create(layerSize, PixelFormat::RGBA_f16);
+		bloomFbColor[i].create("bloomFbColor", layerSize, PixelFormat::RGBA_f16);
 	}
 
 	bloomResize(window->size);

@@ -244,18 +244,24 @@ void _programUse(ProgramBase* program)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void Texture::create(size2i _size, PixelFormat _format)
+void Texture::create(const char* _name, size2i _size, PixelFormat _format)
 {
 	ASSERT(!id);
 	ASSERT(_format != PixelFormat::None);
 
 	glGenTextures(1, &id);
+#ifndef NDEBUG
+	glObjectLabel(GL_TEXTURE, id, std::strlen(_name), _name);
+#endif //NDEBUG
+	name = _name;
 	glBindTexture(GL_TEXTURE_2D, id);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	setFilter(Filter::Linear);
 	format = _format;
 	resize(_size);
+
+	L.debug(R"(Texture "%s" created)", name);
 }
 
 void Texture::destroy()
@@ -272,6 +278,8 @@ void Texture::destroy()
 	size = {0, 0};
 	filter = Filter::None;
 	format = PixelFormat::None;
+
+	L.debug(R"(Texture "%s" destroyed)", name);
 }
 
 void Texture::setFilter(Filter _filter)
@@ -340,16 +348,22 @@ void Texture::bind(TextureUnit unit)
 	glBindTexture(GL_TEXTURE_2D, id);
 }
 
-void TextureMS::create(size2i _size, PixelFormat _format, GLsizei _samples)
+void TextureMS::create(const char* _name, size2i _size, PixelFormat _format, GLsizei _samples)
 {
 	ASSERT(!id);
 	ASSERT(_format != PixelFormat::None);
 	ASSERT(_samples == 2 || _samples == 4 || _samples == 8);
 
 	glGenTextures(1, &id);
+#ifndef NDEBUG
+	glObjectLabel(GL_TEXTURE, id, std::strlen(_name), _name);
+#endif //NDEBUG
+	name = _name;
 	format = _format;
 	samples = _samples;
 	resize(_size);
+
+	L.debug(R"(Multisample texture "%s" created)", name);
 }
 
 void TextureMS::destroy()
@@ -366,6 +380,8 @@ void TextureMS::destroy()
 	size = {0, 0};
 	format = PixelFormat::None;
 	samples = 0;
+
+	L.debug(R"(Multisample texture "%s" destroyed)", name);
 }
 
 void TextureMS::resize(size2i _size)
@@ -389,14 +405,20 @@ void TextureMS::bind(TextureUnit unit)
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, id);
 }
 
-void Renderbuffer::create(size2i _size, PixelFormat _format)
+void Renderbuffer::create(const char* _name, size2i _size, PixelFormat _format)
 {
 	ASSERT(!id);
 	ASSERT(_format != PixelFormat::None);
 
 	glGenRenderbuffers(1, &id);
+#ifndef NDEBUG
+	glObjectLabel(GL_RENDERBUFFER, id, std::strlen(_name), _name);
+#endif //NDEBUG
+	name = _name;
 	format = _format;
 	resize(_size);
+
+	L.debug(R"(Renderbuffer "%s" created)", name);
 }
 
 void Renderbuffer::destroy()
@@ -412,6 +434,8 @@ void Renderbuffer::destroy()
 	id = 0;
 	size = {0, 0};
 	format = PixelFormat::None;
+
+	L.debug(R"(Renderbuffer "%s" destroyed)", name);
 }
 
 void Renderbuffer::resize(size2i _size)
@@ -426,16 +450,22 @@ void Renderbuffer::resize(size2i _size)
 	size = _size;
 }
 
-void RenderbufferMS::create(size2i _size, PixelFormat _format, GLsizei _samples)
+void RenderbufferMS::create(const char* _name, size2i _size, PixelFormat _format, GLsizei _samples)
 {
 	ASSERT(!id);
 	ASSERT(_format != PixelFormat::None);
 	ASSERT(_samples == 2 || _samples == 4 || _samples == 8);
 
 	glGenRenderbuffers(1, &id);
+#ifndef NDEBUG
+	glObjectLabel(GL_RENDERBUFFER, id, std::strlen(_name), _name);
+#endif //NDEBUG
+	name = _name;
 	format = _format;
 	samples = _samples;
 	resize(_size);
+
+	L.debug(R"(Multisample renderbuffer "%s" created)", name);
 }
 
 void RenderbufferMS::destroy()
@@ -451,6 +481,8 @@ void RenderbufferMS::destroy()
 	id = 0;
 	size = {0, 0};
 	format = PixelFormat::None;
+
+	L.debug(R"(Multisample renderbuffer "%s" destroyed)", name);
 }
 
 void RenderbufferMS::resize(size2i _size)

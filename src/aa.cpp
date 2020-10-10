@@ -168,27 +168,27 @@ void aaInit(AAMode mode, Window& w)
 
 	if (mode == AASimple || mode == AAComplex || mode == AAExtreme) {
 		msaaFb = framebufferCreate();
-		msaaFbColor.create(window->size, PixelFormat::RGBA_f16, msaaSamples);
-		msaaFbDepthStencil.create(window->size, PixelFormat::DepthStencil, msaaSamples);
+		msaaFbColor.create("msaaFbColor", window->size, PixelFormat::RGBA_f16, msaaSamples);
+		msaaFbDepthStencil.create("msaaFbDepthStencil", window->size, PixelFormat::DepthStencil, msaaSamples);
 	}
 
 	if (mode == AAFast || mode == AAComplex) {
 		smaaBlendFb = framebufferCreate();
 		smaaEdgeFb = framebufferCreate();
-		smaaEdgeFbColor.create(window->size, PixelFormat::RGBA_u8);
-		smaaBlendFbColor.create(window->size, PixelFormat::RGBA_u8);
-		smaaEdgeFbDepthStencil.create(window->size, PixelFormat::DepthStencil);
+		smaaEdgeFbColor.create("smaaEdgeFbColor", window->size, PixelFormat::RGBA_u8);
+		smaaBlendFbColor.create("smaaBlendFbColor", window->size, PixelFormat::RGBA_u8);
+		smaaEdgeFbDepthStencil.create("smaaEdgeFbDepthStencil", window->size, PixelFormat::DepthStencil);
 	}
 
 	if (mode == AAComplex) {
 		smaaSeparateFb = framebufferCreate();
-		smaaSeparateFbColor.create(window->size, PixelFormat::RGBA_f16);
-		smaaSeparateFbColor2.create(window->size, PixelFormat::RGBA_f16);
+		smaaSeparateFbColor.create("smaaSeparateFbColor", window->size, PixelFormat::RGBA_f16);
+		smaaSeparateFbColor2.create("smaaSeparateFbColor2", window->size, PixelFormat::RGBA_f16);
 		smaaEdgeFb2 = framebufferCreate();
-		smaaEdgeFbColor2.create(window->size, PixelFormat::RGBA_u8);
-		smaaEdgeFbDepthStencil2.create(window->size, PixelFormat::DepthStencil);
+		smaaEdgeFbColor2.create("smaaEdgeFbColor2", window->size, PixelFormat::RGBA_u8);
+		smaaEdgeFbDepthStencil2.create("smaaEdgeFbDepthStencil2", window->size, PixelFormat::DepthStencil);
 		smaaBlendFb2 = framebufferCreate();
-		smaaBlendFbColor2.create(window->size, PixelFormat::RGBA_u8);
+		smaaBlendFbColor2.create("smaaBlendFbColor2", window->size, PixelFormat::RGBA_u8);
 	}
 
 	// Set up framebuffer textures
@@ -278,7 +278,7 @@ void aaInit(AAMode mode, Window& w)
 				areaTexBytes + (AREATEX_HEIGHT - 1 - i) * AREATEX_PITCH,
 				AREATEX_PITCH);
 
-		smaaArea.create({AREATEX_WIDTH, AREATEX_HEIGHT}, PixelFormat::RG_u8);
+		smaaArea.create("smaaArea", {AREATEX_WIDTH, AREATEX_HEIGHT}, PixelFormat::RG_u8);
 		smaaArea.upload(areaTexBytesFlipped);
 
 		unsigned char searchTexBytesFlipped[SEARCHTEX_SIZE] = {0};
@@ -287,7 +287,7 @@ void aaInit(AAMode mode, Window& w)
 				searchTexBytes + (SEARCHTEX_HEIGHT - 1 - i) * SEARCHTEX_PITCH,
 				SEARCHTEX_PITCH);
 
-		smaaSearch.create({SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT}, PixelFormat::R_u8);
+		smaaSearch.create("smaaSearch", {SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT}, PixelFormat::R_u8);
 		smaaSearch.setFilter(Filter::Nearest);
 		smaaSearch.upload(searchTexBytesFlipped);
 	}
