@@ -51,7 +51,7 @@ static const GLchar* ProgramBoxBlurFragSrc = (GLchar[]){
 
 static Window* window = nullptr;
 
-static Framebuffer* bloomFb[BloomPasses] = {nullptr};
+static Framebuffer bloomFb[BloomPasses];
 static Texture bloomFbColor[BloomPasses];
 static ProgramThreshold* threshold = nullptr;
 static ProgramBoxBlur* boxBlur = nullptr;
@@ -92,19 +92,14 @@ void bloomInit(Window& w)
 			windowSize.x >> (i + 1),
 			windowSize.y >> (i + 1)
 		};
-		bloomFb[i] = framebufferCreate();
+		bloomFb[i].create("bloomFb");
 		bloomFbColor[i].create("bloomFbColor", layerSize, PixelFormat::RGBA_f16);
 	}
 
 	bloomResize(window->size);
 
-	for (size_t i = 0; i < BloomPasses; i += 1) {
-		framebufferTexture(bloomFb[i], bloomFbColor[i], GL_COLOR_ATTACHMENT0);
-		if (!framebufferCheck(bloomFb[i])) {
-			L.crit("Failed to create the bloom framebuffer #%zu", i);
-			exit(EXIT_FAILURE);
-		}
-	}
+	for (size_t i = 0; i < BloomPasses; i += 1)
+		bloomFb[i].attach(bloomFbColor[i], Attachment::Color0);
 
 	threshold = programCreate(ProgramThreshold,
 		ProgramThresholdVertName, ProgramThresholdVertSrc,
@@ -134,8 +129,7 @@ void bloomCleanup(void)
 	threshold = nullptr;
 	for (size_t i = BloomPasses - 1; i < BloomPasses; i -= 1) {
 		bloomFbColor[i].destroy();
-		framebufferDestroy(bloomFb[i]);
-		bloomFb[i] = nullptr;
+		bloomFb[i].destroy();
 	}
 
 	initialized = false;
@@ -149,7 +143,7 @@ void bloomApply(void)
 	// Prepare the image for bloom
 	glDisable(GL_BLEND);
 	glDisable(GL_DEPTH_TEST);
-	framebufferUse(bloomFb[0]);
+	bloomFb[0].bind();
 	glViewport(0, 0, currentSize.x >> 1, currentSize.y >> 1);
 	programUse(threshold);
 	rendererTexture().bind(threshold->image);
@@ -161,7 +155,7 @@ void bloomApply(void)
 	// Blur the bloom image
 	programUse(boxBlur);
 	for (size_t i = 0; i < BloomPasses - 1; i += 1) {
-		framebufferUse(bloomFb[i + 1]);
+		bloomFb[i + 1].bind();
 		glViewport(0, 0, currentSize.x >> (i + 2), currentSize.y >> (i + 2));
 		bloomFbColor[i].bind(boxBlur->image);
 		glUniform1f(boxBlur->step, 1.0f);
@@ -173,7 +167,7 @@ void bloomApply(void)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_ONE, GL_ONE);
 	for (size_t i = BloomPasses - 2; i < BloomPasses; i -= 1) {
-		framebufferUse(bloomFb[i]);
+		bloomFb[i].bind();
 		glViewport(0, 0, currentSize.x >> (i + 1), currentSize.y >> (i + 1));
 		bloomFbColor[i + 1].bind(boxBlur->image);
 		glUniform1f(boxBlur->step, 0.5f);
@@ -184,7 +178,7 @@ void bloomApply(void)
 	}
 
 	// Draw the bloom on top of the render
-	framebufferUse(rendererFramebuffer());
+	rendererFramebuffer().bind();
 	glViewport(0, 0, currentSize.x, currentSize.y);
 	rendererBlit(bloomFbColor[0], 1.0f);
 

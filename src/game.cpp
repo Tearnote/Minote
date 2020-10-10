@@ -24,7 +24,7 @@ namespace minote {
  */
 static void gameDebug(void)
 {
-	static AAMode aa = AAExtreme;
+	static AAMode aa = AANone;
 	if (nk_begin(nkCtx(), "Settings", nk_rect(1070, 30, 180, 220),
 		NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_MINIMIZABLE
 			| NK_WINDOW_NO_SCROLLBAR)) {
@@ -72,7 +72,7 @@ void game(Window& window)
 	defer { modelCleanup(); };
 	bloomInit(window);
 	defer { bloomCleanup(); };
-	aaInit(AAExtreme, window);
+	aaInit(AANone, window);
 	defer { aaCleanup(); };
 	worldInit();
 	defer { worldCleanup(); };

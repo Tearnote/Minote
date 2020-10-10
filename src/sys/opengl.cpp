@@ -12,90 +12,13 @@ namespace minote {
 /// OpenGL shader object ID
 using Shader = GLuint;
 
-GLuint boundFb = 0;
 GLuint boundProgram = 0;
-
-Framebuffer* framebufferCreate(void)
-{
-	auto* f = allocate<Framebuffer>();
-	glGenFramebuffers(1, &f->id);
-		ASSERT(f->id);
-	return f;
-}
-
-void framebufferDestroy(Framebuffer* f)
-{
-	if (!f) return;
-	glDeleteFramebuffers(1, &f->id);
-	free(f);
-}
-
-void framebufferTexture(Framebuffer* f, Texture& t, GLenum attachment)
-{
-		ASSERT(f);
-	framebufferUse(f);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, t.id, 0);
-}
-
-void framebufferTextureMS(Framebuffer* f, TextureMS& t, GLenum attachment)
-{
-		ASSERT(f);
-	framebufferUse(f);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment,
-		GL_TEXTURE_2D_MULTISAMPLE, t.id, 0);
-}
-
-void framebufferRenderbuffer(Framebuffer* f, Renderbuffer& r, GLenum attachment)
-{
-		ASSERT(f);
-	framebufferUse(f);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER,
-		r.id);
-}
-
-void
-framebufferRenderbufferMS(Framebuffer* f, RenderbufferMS& r, GLenum attachment)
-{
-		ASSERT(f);
-	framebufferUse(f);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER,
-		r.id);
-}
-
-void framebufferBuffers(Framebuffer* f, GLsizei count)
-{
-		ASSERT(f);
-		ASSERT(count >= 1 && count <= 16);
-	GLenum attachments[count];
-	for (size_t i = 0; i <= count; i += 1)
-		attachments[i] = GL_COLOR_ATTACHMENT0 + i;
-
-	framebufferUse(f);
-	glDrawBuffers(count, attachments);
-}
-
-bool framebufferCheck(Framebuffer* f)
-{
-		ASSERT(f);
-	framebufferUse(f);
-	return glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
-}
-
-void framebufferUse(Framebuffer* f)
-{
-	GLuint target = 0;
-	if (f) target = f->id;
-	if (boundFb == target) return;
-	glBindFramebuffer(GL_FRAMEBUFFER, target);
-	boundFb = target;
-}
 
 void framebufferToScreen(Framebuffer* f, Window& w)
 {
-		ASSERT(f);
-	framebufferUse(f);
+	ASSERT(f);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, f->id);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-	boundFb = 0;
 
 	size2i screenSize = w.size;
 	glBlitFramebuffer(0, 0, screenSize.x, screenSize.y,
@@ -105,11 +28,11 @@ void framebufferToScreen(Framebuffer* f, Window& w)
 
 void framebufferBlit(Framebuffer* src, Framebuffer* dst, size2i size)
 {
-		ASSERT(src);
-		ASSERT(dst);
-		ASSERT(size.x > 0);
-		ASSERT(size.y > 0);
-	framebufferUse(dst);
+	ASSERT(src);
+	ASSERT(dst);
+	ASSERT(size.x > 0);
+	ASSERT(size.y > 0);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->id);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, src->id);
 	glBlitFramebuffer(0, 0, size.x, size.y,
 		0, 0, size.x, size.y,
@@ -244,9 +167,23 @@ void _programUse(ProgramBase* program)
 
 ////////////////////////////////////////////////////////////////////////////////
 
+static auto attachmentIndex(const Attachment attachment) -> std::size_t
+{
+	switch(attachment) {
+	case Attachment::DepthStencil:
+		return 16;
+	case Attachment::None:
+		L.warn("Invalid attachment index %d", +attachment);
+		return -1;
+	default:
+		return (+attachment) - (+Attachment::Color0);
+	}
+}
+
 void Texture::create(const char* _name, size2i _size, PixelFormat _format)
 {
 	ASSERT(!id);
+	ASSERT(_name);
 	ASSERT(_format != PixelFormat::None);
 
 	glGenTextures(1, &id);
@@ -280,6 +217,7 @@ void Texture::destroy()
 	format = PixelFormat::None;
 
 	L.debug(R"(Texture "%s" destroyed)", name);
+	name = nullptr;
 }
 
 void Texture::setFilter(Filter _filter)
@@ -351,6 +289,7 @@ void Texture::bind(TextureUnit unit)
 void TextureMS::create(const char* _name, size2i _size, PixelFormat _format, GLsizei _samples)
 {
 	ASSERT(!id);
+	ASSERT(_name);
 	ASSERT(_format != PixelFormat::None);
 	ASSERT(_samples == 2 || _samples == 4 || _samples == 8);
 
@@ -382,6 +321,7 @@ void TextureMS::destroy()
 	samples = 0;
 
 	L.debug(R"(Multisample texture "%s" destroyed)", name);
+	name = nullptr;
 }
 
 void TextureMS::resize(size2i _size)
@@ -408,6 +348,7 @@ void TextureMS::bind(TextureUnit unit)
 void Renderbuffer::create(const char* _name, size2i _size, PixelFormat _format)
 {
 	ASSERT(!id);
+	ASSERT(_name);
 	ASSERT(_format != PixelFormat::None);
 
 	glGenRenderbuffers(1, &id);
@@ -436,6 +377,7 @@ void Renderbuffer::destroy()
 	format = PixelFormat::None;
 
 	L.debug(R"(Renderbuffer "%s" destroyed)", name);
+	name = nullptr;
 }
 
 void Renderbuffer::resize(size2i _size)
@@ -453,6 +395,7 @@ void Renderbuffer::resize(size2i _size)
 void RenderbufferMS::create(const char* _name, size2i _size, PixelFormat _format, GLsizei _samples)
 {
 	ASSERT(!id);
+	ASSERT(_name);
 	ASSERT(_format != PixelFormat::None);
 	ASSERT(_samples == 2 || _samples == 4 || _samples == 8);
 
@@ -483,6 +426,7 @@ void RenderbufferMS::destroy()
 	format = PixelFormat::None;
 
 	L.debug(R"(Multisample renderbuffer "%s" destroyed)", name);
+	name = nullptr;
 }
 
 void RenderbufferMS::resize(size2i _size)
@@ -493,9 +437,172 @@ void RenderbufferMS::resize(size2i _size)
 		return;
 
 	glBindRenderbuffer(GL_RENDERBUFFER, id);
-	glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples,+format,
+	glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, +format,
 		_size.x, _size.y);
 	size = _size;
+}
+
+void Framebuffer::create(const char* _name)
+{
+	ASSERT(!id);
+	ASSERT(_name);
+	glGenFramebuffers(1, &id);
+#ifndef NDEBUG
+	glObjectLabel(GL_FRAMEBUFFER, id, std::strlen(_name), _name);
+#endif //NDEBUG
+	name = _name;
+
+	L.debug(R"(Framebuffer "%s" created)", name);
+}
+
+void Framebuffer::destroy()
+{
+#ifndef NDEBUG
+	if (!id) {
+		L.warn("Tried to destroy a multisample renderbuffer that has not been created");
+		return;
+	}
+#endif //NDEBUG
+
+	glDeleteFramebuffers(1, &id);
+	id = 0;
+	samples = -1;
+	dirty = true;
+	attachments.fill(nullptr);
+
+	L.debug(R"(Framebuffer "%s" destroyed)", name);
+	name = nullptr;
+}
+
+void Framebuffer::attach(const Texture& t, const Attachment attachment)
+{
+	ASSERT(id);
+	ASSERT(t.id);
+	ASSERT(attachment != Attachment::None);
+#ifndef NDEBUG
+	if (t.format == PixelFormat::DepthStencil)
+		ASSERT(attachment == Attachment::DepthStencil);
+	else
+		ASSERT(attachment != Attachment::DepthStencil);
+	if (samples != -1)
+		ASSERT(samples == 0);
+	ASSERT(!attachments[attachmentIndex(attachment)]);
+#endif //NDEBUG
+
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
+	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, +attachment,
+		GL_TEXTURE_2D, t.id, 0);
+	attachments[attachmentIndex(attachment)] = &t;
+	samples = 0;
+	dirty = true;
+
+	L.debug(R"(Texture "%s" attached to framebuffer "%s")", t.name, name);
+}
+
+void Framebuffer::attach(const TextureMS& t, Attachment attachment)
+{
+	ASSERT(id);
+	ASSERT(t.id);
+	ASSERT(attachment != Attachment::None);
+#ifndef NDEBUG
+	if (t.format == PixelFormat::DepthStencil)
+		ASSERT(attachment == Attachment::DepthStencil);
+	else
+		ASSERT(attachment != Attachment::DepthStencil);
+	if (samples != -1)
+		ASSERT(samples == t.samples);
+#endif //NDEBUG
+
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
+	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, +attachment,
+		GL_TEXTURE_2D_MULTISAMPLE, t.id, 0);
+	attachments[attachmentIndex(attachment)] = &t;
+	samples = t.samples;
+	dirty = true;
+
+	L.debug(R"(Multisample texture "%s" attached to framebuffer "%s")", t.name, name);
+}
+
+void Framebuffer::attach(const Renderbuffer& r, Attachment attachment)
+{
+	ASSERT(id);
+	ASSERT(r.id);
+	ASSERT(attachment != Attachment::None);
+#ifndef NDEBUG
+	if (r.format == PixelFormat::DepthStencil)
+		ASSERT(attachment == Attachment::DepthStencil);
+	else
+		ASSERT(attachment != Attachment::DepthStencil);
+	if (samples != -1)
+		ASSERT(samples == 0);
+#endif //NDEBUG
+
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
+	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, +attachment,
+		GL_RENDERBUFFER, r.id);
+	attachments[attachmentIndex(attachment)] = &r;
+	samples = 0;
+	dirty = true;
+
+	L.debug(R"(Renderbuffer "%s" attached to framebuffer "%s")", r.name, name);
+}
+
+void Framebuffer::attach(const RenderbufferMS& r, Attachment attachment)
+{
+	ASSERT(id);
+	ASSERT(r.id);
+	ASSERT(attachment != Attachment::None);
+#ifndef NDEBUG
+	if (r.format == PixelFormat::DepthStencil)
+		ASSERT(attachment == Attachment::DepthStencil);
+	else
+		ASSERT(attachment != Attachment::DepthStencil);
+	if (samples != -1)
+		ASSERT(samples == r.samples);
+#endif //NDEBUG
+
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
+	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, +attachment,
+		GL_RENDERBUFFER, r.id);
+	attachments[attachmentIndex(attachment)] = &r;
+	samples = r.samples;
+	dirty = true;
+
+	L.debug(R"(Multisample renderbuffer "%s" attached to framebuffer "%s")", r.name, name);
+}
+
+void Framebuffer::bind() const
+{
+	ASSERT(id);
+
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
+
+	if (dirty) {
+		// Call glDrawBuffers with all enabled color framebuffers
+		std::array<GLenum, 16> enabledBuffers = {};
+		std::size_t enabledSize = 0;
+		for (std::size_t i = 0; i < 16; i += 1) {
+			if (!attachments[i])
+				continue;
+			enabledBuffers[enabledSize] = i + GL_COLOR_ATTACHMENT0;
+			enabledSize += 1;
+		}
+		L.trace(R"(Framebuffer "%s" verified with %zu color attachments)", name, enabledSize);
+		glDrawBuffers(enabledSize, enabledBuffers.data());
+
+#ifndef NDEBUG
+		// Check framebuffer correctness
+		if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+			L.error(R"(Framebuffer "%s" validity check failed)", name);
+#endif //NDEBUG
+
+		dirty = false;
+	}
+}
+
+void Framebuffer::unbind()
+{
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }
 
 }

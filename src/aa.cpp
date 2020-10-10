@@ -81,15 +81,15 @@ static const GLchar* ProgramSmaaNeighborFragSrc = (GLchar[]){
 static Window* window = nullptr;
 
 // AASimple, AAComplex, AAExtreme
-static Framebuffer* msaaFb = nullptr;
+static Framebuffer msaaFb;
 static TextureMS msaaFbColor;
 static RenderbufferMS msaaFbDepthStencil;
 
 // AAFast, AAComplex
-static Framebuffer* smaaEdgeFb = nullptr;
+static Framebuffer smaaEdgeFb;
 static Texture smaaEdgeFbColor;
 static Renderbuffer smaaEdgeFbDepthStencil;
-static Framebuffer* smaaBlendFb = nullptr;
+static Framebuffer smaaBlendFb;
 static Texture smaaBlendFbColor;
 
 static Texture smaaArea;
@@ -100,13 +100,13 @@ static ProgramSmaaBlend* smaaBlend = nullptr;
 static ProgramSmaaNeighbor* smaaNeighbor = nullptr;
 
 // AAComplex
-static Framebuffer* smaaSeparateFb = nullptr;
+static Framebuffer smaaSeparateFb;
 static Texture smaaSeparateFbColor;
 static Texture smaaSeparateFbColor2;
-static Framebuffer* smaaEdgeFb2 = nullptr;
+static Framebuffer smaaEdgeFb2;
 static Texture smaaEdgeFbColor2;
 static Renderbuffer smaaEdgeFbDepthStencil2;
-static Framebuffer* smaaBlendFb2 = nullptr;
+static Framebuffer smaaBlendFb2;
 static Texture smaaBlendFbColor2;
 
 static ProgramSmaaSeparate* smaaSeparate = nullptr;
@@ -167,27 +167,27 @@ void aaInit(AAMode mode, Window& w)
 	                     (currentMode == AAExtreme) ? 8 : 2;
 
 	if (mode == AASimple || mode == AAComplex || mode == AAExtreme) {
-		msaaFb = framebufferCreate();
+		msaaFb.create("msaaFb");
 		msaaFbColor.create("msaaFbColor", window->size, PixelFormat::RGBA_f16, msaaSamples);
 		msaaFbDepthStencil.create("msaaFbDepthStencil", window->size, PixelFormat::DepthStencil, msaaSamples);
 	}
 
 	if (mode == AAFast || mode == AAComplex) {
-		smaaBlendFb = framebufferCreate();
-		smaaEdgeFb = framebufferCreate();
+		smaaBlendFb.create("smaaBlendFb");
+		smaaEdgeFb.create("smaaEdgeFb");
 		smaaEdgeFbColor.create("smaaEdgeFbColor", window->size, PixelFormat::RGBA_u8);
 		smaaBlendFbColor.create("smaaBlendFbColor", window->size, PixelFormat::RGBA_u8);
 		smaaEdgeFbDepthStencil.create("smaaEdgeFbDepthStencil", window->size, PixelFormat::DepthStencil);
 	}
 
 	if (mode == AAComplex) {
-		smaaSeparateFb = framebufferCreate();
+		smaaSeparateFb.create("smaaSeparateFb");
 		smaaSeparateFbColor.create("smaaSeparateFbColor", window->size, PixelFormat::RGBA_f16);
 		smaaSeparateFbColor2.create("smaaSeparateFbColor2", window->size, PixelFormat::RGBA_f16);
-		smaaEdgeFb2 = framebufferCreate();
+		smaaEdgeFb2.create("smaaEdgeFb2");
 		smaaEdgeFbColor2.create("smaaEdgeFbColor2", window->size, PixelFormat::RGBA_u8);
 		smaaEdgeFbDepthStencil2.create("smaaEdgeFbDepthStencil2", window->size, PixelFormat::DepthStencil);
-		smaaBlendFb2 = framebufferCreate();
+		smaaBlendFb2.create("smaaBlendFb2");
 		smaaBlendFbColor2.create("smaaBlendFbColor2", window->size, PixelFormat::RGBA_u8);
 	}
 
@@ -196,17 +196,12 @@ void aaInit(AAMode mode, Window& w)
 
 	// Put framebuffers together and create shaders
 	if (mode == AASimple || mode == AAComplex || mode == AAExtreme) {
-		framebufferTextureMS(msaaFb, msaaFbColor, GL_COLOR_ATTACHMENT0);
-		framebufferRenderbufferMS(msaaFb, msaaFbDepthStencil,
-			GL_DEPTH_STENCIL_ATTACHMENT);
-		if (!framebufferCheck(msaaFb)) {
-			L.crit("Failed to create the render framebuffer");
-			exit(EXIT_FAILURE);
-		}
+		msaaFb.attach(msaaFbColor, Attachment::Color0);
+		msaaFb.attach(msaaFbDepthStencil, Attachment::DepthStencil);
 
 		if (mode == AAComplex) {
 			// Verify that multisampling has the expected subsample layout
-			framebufferUse(msaaFb);
+			msaaFb.bind();
 			GLfloat sampleLocations[4] = {0};
 			glGetMultisamplefv(GL_SAMPLE_POSITION, 0, sampleLocations);
 			glGetMultisamplefv(GL_SAMPLE_POSITION, 1, sampleLocations + 2);
@@ -230,21 +225,11 @@ void aaInit(AAMode mode, Window& w)
 	}
 
 	if (mode == AAFast || mode == AAComplex) {
-		framebufferTexture(smaaEdgeFb, smaaEdgeFbColor, GL_COLOR_ATTACHMENT0);
-		framebufferRenderbuffer(smaaEdgeFb, smaaEdgeFbDepthStencil,
-			GL_DEPTH_STENCIL_ATTACHMENT);
-		if (!framebufferCheck(smaaEdgeFb)) {
-			L.crit("Failed to create the SMAA edge framebuffer");
-			exit(EXIT_FAILURE);
-		}
+		smaaEdgeFb.attach(smaaEdgeFbColor, Attachment::Color0);
+		smaaEdgeFb.attach(smaaEdgeFbDepthStencil, Attachment::DepthStencil);
 
-		framebufferTexture(smaaBlendFb, smaaBlendFbColor, GL_COLOR_ATTACHMENT0);
-		framebufferRenderbuffer(smaaBlendFb, smaaEdgeFbDepthStencil,
-			GL_DEPTH_STENCIL_ATTACHMENT);
-		if (!framebufferCheck(smaaBlendFb)) {
-			L.crit("Failed to create the SMAA blend framebuffer");
-			exit(EXIT_FAILURE);
-		}
+		smaaBlendFb.attach(smaaBlendFbColor, Attachment::Color0);
+		smaaBlendFb.attach(smaaEdgeFbDepthStencil, Attachment::DepthStencil);
 
 		smaaEdge = programCreate(ProgramSmaaEdge,
 			ProgramSmaaEdgeVertName, ProgramSmaaEdgeVertSrc,
@@ -293,31 +278,14 @@ void aaInit(AAMode mode, Window& w)
 	}
 
 	if (mode == AAComplex) {
-		framebufferTexture(smaaSeparateFb, smaaSeparateFbColor,
-			GL_COLOR_ATTACHMENT0);
-		framebufferTexture(smaaSeparateFb, smaaSeparateFbColor2,
-			GL_COLOR_ATTACHMENT1);
-		framebufferBuffers(smaaSeparateFb, 2);
-		if (!framebufferCheck(smaaSeparateFb)) {
-			L.crit("Failed to create the SMAA separate framebuffer");
-			exit(EXIT_FAILURE);
-		}
+		smaaSeparateFb.attach(smaaSeparateFbColor, Attachment::Color0);
+		smaaSeparateFb.attach(smaaSeparateFbColor2,	Attachment::Color1);
 
-		framebufferTexture(smaaEdgeFb2, smaaEdgeFbColor2, GL_COLOR_ATTACHMENT0);
-		framebufferRenderbuffer(smaaEdgeFb2, smaaEdgeFbDepthStencil2,
-			GL_DEPTH_STENCIL_ATTACHMENT);
-		if (!framebufferCheck(smaaEdgeFb2)) {
-			L.crit("Failed to create the SMAA edge framebuffer");
-			exit(EXIT_FAILURE);
-		}
+		smaaEdgeFb2.attach(smaaEdgeFbColor2, Attachment::Color0);
+		smaaEdgeFb2.attach(smaaEdgeFbDepthStencil2, Attachment::DepthStencil);
 
-		framebufferTexture(smaaBlendFb2, smaaBlendFbColor2, GL_COLOR_ATTACHMENT0);
-		framebufferRenderbuffer(smaaBlendFb2, smaaEdgeFbDepthStencil2,
-			GL_DEPTH_STENCIL_ATTACHMENT);
-		if (!framebufferCheck(smaaBlendFb2)) {
-			L.crit("Failed to create the SMAA blend framebuffer");
-			exit(EXIT_FAILURE);
-		}
+		smaaBlendFb2.attach(smaaBlendFbColor2, Attachment::Color0);
+		smaaBlendFb2.attach(smaaEdgeFbDepthStencil2, Attachment::DepthStencil);
 
 		smaaSeparate = programCreate(ProgramSmaaSeparate,
 			ProgramSmaaSeparateVertName, ProgramSmaaSeparateVertSrc,
@@ -326,7 +294,7 @@ void aaInit(AAMode mode, Window& w)
 			GL_TEXTURE0);
 	}
 
-	framebufferUse(rendererFramebuffer());
+	rendererFramebuffer().bind();
 
 	initialized = true;
 	L.debug("Initialized AA mode %d", mode);
@@ -335,21 +303,21 @@ void aaInit(AAMode mode, Window& w)
 void aaCleanup(void)
 {
 	if (!initialized) return;
-	framebufferDestroy(msaaFb);
-	msaaFb = nullptr;
+	if (msaaFb.id)
+		msaaFb.destroy();
 	if (msaaFbColor.id)
 		msaaFbColor.destroy();
 	if (msaaFbDepthStencil.id)
 		msaaFbDepthStencil.destroy();
 
-	framebufferDestroy(smaaEdgeFb);
-	smaaEdgeFb = nullptr;
+	if (smaaEdgeFb.id)
+		smaaEdgeFb.destroy();
 	if (smaaEdgeFbColor.id)
 		smaaEdgeFbColor.destroy();
 	if (smaaEdgeFbDepthStencil.id)
 		smaaEdgeFbDepthStencil.destroy();
-	framebufferDestroy(smaaBlendFb);
-	smaaBlendFb = nullptr;
+	if (smaaBlendFb.id)
+		smaaBlendFb.destroy();
 	if (smaaBlendFbColor.id)
 		smaaBlendFbColor.destroy();
 
@@ -365,20 +333,20 @@ void aaCleanup(void)
 	programDestroy(smaaNeighbor);
 	smaaNeighbor = nullptr;
 	
-	framebufferDestroy(smaaSeparateFb);
-	smaaSeparateFb = nullptr;
+	if (smaaSeparateFb.id)
+		smaaSeparateFb.destroy();
 	if (smaaSeparateFbColor.id)
 		smaaSeparateFbColor.destroy();
 	if (smaaSeparateFbColor2.id)
 		smaaSeparateFbColor2.destroy();
-	framebufferDestroy(smaaEdgeFb2);
-	smaaEdgeFb2 = nullptr;
+	if (smaaEdgeFb2.id)
+		smaaEdgeFb2.destroy();
 	if (smaaEdgeFbColor2.id)
 		smaaEdgeFbColor2.destroy();
 	if (smaaEdgeFbDepthStencil2.id)
 		smaaEdgeFbDepthStencil2.destroy();
-	framebufferDestroy(smaaBlendFb2);
-	smaaBlendFb2 = nullptr;
+	if (smaaBlendFb2.id)
+		smaaBlendFb2.destroy();
 	if (smaaBlendFbColor2.id)
 		smaaBlendFbColor2.destroy();
 
@@ -408,7 +376,7 @@ void aaBegin(void)
 	if (currentMode == AASimple
 		|| currentMode == AAComplex
 		|| currentMode == AAExtreme)
-		framebufferUse(msaaFb);
+		msaaFb.bind();
 }
 
 void aaEnd(void)
@@ -425,7 +393,7 @@ void aaEnd(void)
 		glEnable(GL_STENCIL_TEST);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 		programUse(smaaEdge);
-		framebufferUse(smaaEdgeFb);
+		smaaEdgeFb.bind();
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
 		glStencilMask(0xFF);
 		glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -438,7 +406,7 @@ void aaEnd(void)
 
 		// SMAA blending weight calculation pass
 		programUse(smaaBlend);
-		framebufferUse(smaaBlendFb);
+		smaaBlendFb.bind();
 		glStencilFunc(GL_EQUAL, 1, 0xFF);
 		glStencilMask(0x00);
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -455,7 +423,7 @@ void aaEnd(void)
 
 		// SMAA neighbor blending pass
 		programUse(smaaNeighbor);
-		framebufferUse(rendererFramebuffer());
+		rendererFramebuffer().bind();
 		rendererTexture().bind(smaaNeighbor->image);
 		rendererTexture().setFilter(Filter::Linear); // It's ok, we turn it back
 		smaaBlendFbColor.bind(smaaNeighbor->blend);
@@ -476,7 +444,7 @@ void aaEnd(void)
 
 		// SMAA sample separation pass
 		programUse(smaaSeparate);
-		framebufferUse(smaaSeparateFb);
+		smaaSeparateFb.bind();
 		msaaFbColor.bind(smaaSeparate->image);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
@@ -484,7 +452,7 @@ void aaEnd(void)
 		glEnable(GL_STENCIL_TEST);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 		programUse(smaaEdge);
-		framebufferUse(smaaEdgeFb);
+		smaaEdgeFb.bind();
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
 		glStencilMask(0xFF);
 		glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -495,7 +463,7 @@ void aaEnd(void)
 			currentSize.x, currentSize.y);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
-		framebufferUse(smaaEdgeFb2);
+		smaaEdgeFb2.bind();
 		glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		smaaSeparateFbColor2.bind(smaaEdge->image);
 		smaaSeparateFbColor2.setFilter(Filter::Nearest);
@@ -503,7 +471,7 @@ void aaEnd(void)
 
 		// SMAA blending weight calculation pass
 		programUse(smaaBlend);
-		framebufferUse(smaaBlendFb);
+		smaaBlendFb.bind();
 		glStencilFunc(GL_EQUAL, 1, 0xFF);
 		glStencilMask(0x00);
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -517,7 +485,7 @@ void aaEnd(void)
 			currentSize.x, currentSize.y);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
-		framebufferUse(smaaBlendFb2);
+		smaaBlendFb2.bind();
 		glClear(GL_COLOR_BUFFER_BIT);
 		smaaEdgeFbColor2.bind(smaaBlend->edges);
 		smaaArea.bind(smaaBlend->area);
@@ -532,7 +500,7 @@ void aaEnd(void)
 
 		// SMAA neighbor blending pass
 		programUse(smaaNeighbor);
-		framebufferUse(rendererFramebuffer());
+		rendererFramebuffer().bind();
 		smaaSeparateFbColor.bind(smaaNeighbor->image);
 		smaaSeparateFbColor.setFilter(Filter::Linear);
 		smaaBlendFbColor.bind(smaaNeighbor->blend);
@@ -553,6 +521,6 @@ void aaEnd(void)
 	}
 
 	if (currentMode == AASimple || currentMode == AAExtreme) {
-		framebufferBlit(msaaFb, rendererFramebuffer(), currentSize);
+		framebufferBlit(&msaaFb, &rendererFramebuffer(), currentSize);
 	}
 }

@@ -31,7 +31,7 @@ void rendererCleanup(void);
  * changes to this ::Framebuffer.
  * @return The ::Framebuffer object for main rendering
  */
-minote::Framebuffer* rendererFramebuffer(void);
+minote::Framebuffer& rendererFramebuffer(void);
 
 /**
  * Return the main render ::Texture. Use this to sample what has been drawn

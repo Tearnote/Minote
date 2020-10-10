@@ -57,11 +57,17 @@ enum struct PixelFormat : GLint {
 	DepthStencil = GL_DEPTH24_STENCIL8
 };
 
-/// Base struct for the common fields of texture types
-struct TextureBase {
+/// Common fields of all OpenGL object types
+struct GLObject {
 
 	GLuint id = 0; ///< The object has not been created if this is 0
 	const char* name = nullptr; ///< Human-readable name, used in logging
+
+};
+
+/// Common fields of texture types
+struct TextureBase : GLObject {
+
 	size2i size = {0, 0}; ///< The texture does not have storage if this is {0, 0}
 	PixelFormat format = PixelFormat::None;
 
@@ -234,105 +240,86 @@ enum struct Attachment : GLenum {
 	Color12 = GL_COLOR_ATTACHMENT12,
 	Color13 = GL_COLOR_ATTACHMENT13,
 	Color14 = GL_COLOR_ATTACHMENT14,
-	Color15 = GL_COLOR_ATTACHMENT15
+	Color15 = GL_COLOR_ATTACHMENT15,
 };
 
 /// OpenGL framebuffer. Proxy object that allows drawing into textures
 /// and renderbuffers from within shaders.
-struct Framebuffer {
+struct Framebuffer : GLObject {
 
-	GLuint id = 0;
 	GLsizei samples = -1; ///< Sample count of all attachments needs to match
+	mutable bool dirty = true; ///< Is a glDrawBuffers call and completeness check needed?
+	std::array<const TextureBase*, 17> attachments = {};
+
+	/**
+	 * Create an OpenGL ID for the framebuffer. This needs to be called before
+	 * the framebuffer can be used. The object has no textures attached
+	 * by default, and needs to have at least one color attachment attached
+	 * to satisfy completeness requirements.
+	 * @param name Human-readable name, for logging and debug output
+	 */
+	void create(const char* name);
+
+	/**
+	 * Destroy the OpenGL framebuffer object. The ID is released, but attached
+	 * objects continue to exist.
+	 */
+	void destroy();
+
+	/**
+	 * Attach a texture to a specified attachment point. All future attachments
+	 * must not be multisample. The DepthStencil attachment can only hold
+	 * a texture with a DepthStencil pixel format. Attachments cannot
+	 * be overwritten.
+	 * @param t Texture to attach
+	 * @param attachment Attachment point to attach to
+	 */
+	void attach(const Texture& t, Attachment attachment);
+
+	/**
+	 * Attach a multisample texture to a specified attachment point. All future
+	 * attachments must have the same number of samples. The DepthStencil
+	 * attachment can only hold a texture with a DepthStencil pixel format.
+	 * Attachments cannot be overwritten.
+	 * @param t Multisample texture to attach
+	 * @param attachment Attachment point to attach to
+	 */
+	void attach(const TextureMS& t, Attachment attachment);
+
+	/**
+	 * Attach a renderbuffer to a specified attachment point. All future
+	 * attachments must not be multisample. The DepthStencil attachment can only
+	 * hold a renderbuffer with a DepthStencil pixel format. Attachments
+	 * cannot be overwritten.
+	 * @param t Renderbuffer to attach
+	 * @param attachment Attachment point to attach to
+	 */
+	void attach(const Renderbuffer& r, Attachment attachment);
+
+	/**
+	 * Attach a multisample renderbuffer to a specified attachment point.
+	 * All future attachments must have the same number of samples.
+	 * The DepthStencil attachment can only hold a renderbuffer
+	 * with a DepthStencil pixel format. Attachments cannot be overwritten.
+	 * @param t Multisample renderbuffer to attach
+	 * @param attachment Attachment point to attach to
+	 */
+	void attach(const RenderbufferMS& r, Attachment attachment);
+
+	/**
+	 * Bind this framebuffer to the OpenGL context, causing all future draw
+	 * commands to render into the framebuffer's attachments. In a debug build,
+	 * the framebuffer is checked for completeness.
+	 */
+	void bind() const;
+
+	/**
+	 * Bind the zero framebuffer, which causes all future draw commands to draw
+	 * to the window surface.
+	 */
+	static void unbind();
 
 };
-
-/**
- * Create a new ::Framebuffer instance. After creation you may attach textures
- * and renderbuffers to it.
- * @return A newly created ::Framebuffer. Needs to be destroyed
- * with framebufferDestroy()
- */
-Framebuffer* framebufferCreate(void);
-
-/**
- * Destroy a ::Framebuffer instance. The destroyed object cannot be used
- * anymore and the pointer becomes invalid. All the textures and renderbuffers
- * bound to it are still intact, and need to be destroyed separately.
- * @param q The ::Framebuffer object
- */
-void framebufferDestroy(Framebuffer* f);
-
-/**
- * Attach a ::Texture to a specified attachment point. Framebuffer completeness
- * is not checked at this point, it needs to be done manually
- * with framebufferCheck() after all attachments are set up.
- * @param f The ::Framebuffer object
- * @param t ::Texture to attach
- * @param attachment Attachment point identifier. Equivalent to "attachment"
- * of glFramebufferTexture2D
- */
-void framebufferTexture(Framebuffer* f, Texture& t, GLenum attachment);
-
-/**
- * Attach a ::TextureMS to a specified attachment point. Framebuffer
- * completeness is not checked at this point, it needs to be done manually
- * with framebufferCheck() after all attachments are set up.
- * @param f The ::Framebuffer object
- * @param t ::TextureMS to attach
- * @param attachment Attachment point identifier. Equivalent to "attachment"
- * of glFramebufferTexture2D
- */
-void framebufferTextureMS(Framebuffer* f, TextureMS& t, GLenum attachment);
-
-/**
- * Attach a ::Renderbuffer to a specified attachment point. Framebuffer
- * completeness is not checked at this point, it needs to be done manually
- * with framebufferCheck() after all attachments are set up.
- * @param f The ::Framebuffer object
- * @param t ::Renderbuffer to attach
- * @param attachment Attachment point identifier. Equivalent to "attachment"
- * of glFramebufferRenderbuffer
- */
-void
-framebufferRenderbuffer(Framebuffer* f, Renderbuffer& r, GLenum attachment);
-
-/**
- * Attach a ::RenderbufferMS to a specified attachment point. Framebuffer
- * completeness is not checked at this point, it needs to be done manually
- * with framebufferCheck() after all attachments are set up.
- * @param f The ::Framebuffer object
- * @param t ::RenderbufferMS to attach
- * @param attachment Attachment point identifier. Equivalent to "attachment"
- * of glFramebufferRenderbuffer
- */
-void
-framebufferRenderbufferMS(Framebuffer* f, RenderbufferMS& r, GLenum attachment);
-
-/**
- * Set the ::Framebuffer's color outputs to the specified number of color
- * attachments. This should not be needed, but OpenGL isn't the best API
- * in the world. Only required for count of 2 or higher.
- * @param f The ::Framebuffer object
- * @param count Number of color framebuffers to use, starting
- * with GL_COLOR_ATTACHMENT0
- */
-void framebufferBuffers(Framebuffer* f, GLsizei count);
-
-/**
- * Check framebuffer completeness. To satisfy completeness, at least one color
- * attachment needs to be set, all attached objects need to be valid,
- * and they all need to have the same sample count.
- * @param f The ::Framebuffer object
- * @return true if complete, false if incomplete
- */
-bool framebufferCheck(Framebuffer* f);
-
-/**
- * Bind a ::Framebuffer, so that all future draw calls write into the attached
- * objects instead of the screen.
- * @param f The ::Framebuffer object, or #null for the backbuffer
- */
-void framebufferUse(Framebuffer* f);
 
 /**
  * Copy a contents of a ::Framebuffer to the screen (backbuffer).

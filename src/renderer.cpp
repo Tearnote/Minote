@@ -55,7 +55,7 @@ static bool initialized = false;
 
 static Window* window = nullptr;
 
-static Framebuffer* renderFb;
+static Framebuffer renderFb;
 static Texture renderFbColor;
 static Renderbuffer renderFbDepthStencil;
 
@@ -215,7 +215,7 @@ void rendererInit(Window& w)
 #endif //NDEBUG
 
 	// Create framebuffers
-	renderFb = framebufferCreate();
+	renderFb.create("renderFb");
 	renderFbColor.create("renderFbColor", window->size, PixelFormat::RGB_f16);
 	renderFbDepthStencil.create("renderFbDepthStencil", window->size, PixelFormat::DepthStencil);
 
@@ -223,15 +223,10 @@ void rendererInit(Window& w)
 	rendererResize(window->size);
 
 	// Put framebuffers together
-	framebufferTexture(renderFb, renderFbColor, GL_COLOR_ATTACHMENT0);
-	framebufferRenderbuffer(renderFb, renderFbDepthStencil,
-		GL_DEPTH_STENCIL_ATTACHMENT);
-	if (!framebufferCheck(renderFb)) {
-		L.crit("Failed to create the rendering framebuffer");
-		exit(EXIT_FAILURE);
-	}
+	renderFb.attach(renderFbColor, Attachment::Color0);
+	renderFb.attach(renderFbDepthStencil, Attachment::DepthStencil);
 
-	framebufferUse(rendererFramebuffer());
+	rendererFramebuffer().bind();
 
 	// Create built-in shaders
 	blit = programCreate(ProgramBlit,
@@ -259,14 +254,13 @@ void rendererCleanup(void)
 	blit = nullptr;
 	renderFbDepthStencil.destroy();
 	renderFbColor.destroy();
-	framebufferDestroy(renderFb);
-	renderFb = nullptr;
+	renderFb.destroy();
 	window->deactivateContext();
 	L.debug("Destroyed renderer for window \"%s\"", window->title);
 	initialized = false;
 }
 
-Framebuffer* rendererFramebuffer(void)
+Framebuffer& rendererFramebuffer(void)
 {
 	return renderFb;
 }
@@ -281,7 +275,7 @@ void rendererFrameBegin(void)
 	ASSERT(initialized);
 
 	rendererResize(window->size);
-	framebufferUse(renderFb);
+	renderFb.bind();
 }
 
 void rendererFrameEnd(void)
@@ -289,7 +283,7 @@ void rendererFrameEnd(void)
 	ASSERT(initialized);
 
 	glDisable(GL_BLEND);
-	framebufferUse(nullptr);
+	Framebuffer::unbind();
 	programUse(delinearize);
 	renderFbColor.bind(delinearize->image);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
