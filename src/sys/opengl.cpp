@@ -14,31 +14,6 @@ using Shader = GLuint;
 
 GLuint boundProgram = 0;
 
-void framebufferToScreen(Framebuffer* f, Window& w)
-{
-	ASSERT(f);
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, f->id);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-
-	size2i screenSize = w.size;
-	glBlitFramebuffer(0, 0, screenSize.x, screenSize.y,
-		0, 0, screenSize.x, screenSize.y,
-		GL_COLOR_BUFFER_BIT, GL_NEAREST);
-}
-
-void framebufferBlit(Framebuffer* src, Framebuffer* dst, size2i size)
-{
-	ASSERT(src);
-	ASSERT(dst);
-	ASSERT(size.x > 0);
-	ASSERT(size.y > 0);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->id);
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, src->id);
-	glBlitFramebuffer(0, 0, size.x, size.y,
-		0, 0, size.x, size.y,
-		GL_COLOR_BUFFER_BIT, GL_NEAREST);
-}
-
 /**
  * Create an OpenGL shader object. The shader is compiled and ready for linking.
  * @param name Human-readable name for reference
@@ -178,6 +153,22 @@ static auto attachmentIndex(const Attachment attachment) -> std::size_t
 	default:
 		return (+attachment) - (+Attachment::Color0);
 	}
+}
+
+/**
+ * Helper function to retrieve a texture pointer at a specified attachment point
+ * @param f Framebuffer object
+ * @param attachment Attachment point
+ * @return The pointer to texture at given attachment point (can be nullptr)
+ */
+static auto getAttachment(Framebuffer& f, const Attachment attachment) -> const TextureBase*&
+{
+	return f.attachments[attachmentIndex(attachment)];
+}
+
+static auto getAttachment(const Framebuffer& f, const Attachment attachment) -> const TextureBase* const&
+{
+	return f.attachments[attachmentIndex(attachment)];
 }
 
 void Texture::create(const char* _name, size2i _size, PixelFormat _format)
@@ -486,13 +477,13 @@ void Framebuffer::attach(const Texture& t, const Attachment attachment)
 		ASSERT(attachment != Attachment::DepthStencil);
 	if (samples != -1)
 		ASSERT(samples == 0);
-	ASSERT(!attachments[attachmentIndex(attachment)]);
+	ASSERT(!getAttachment(*this, attachment));
 #endif //NDEBUG
 
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
 	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, +attachment,
 		GL_TEXTURE_2D, t.id, 0);
-	attachments[attachmentIndex(attachment)] = &t;
+	getAttachment(*this, attachment) = &t;
 	samples = 0;
 	dirty = true;
 
@@ -516,7 +507,7 @@ void Framebuffer::attach(const TextureMS& t, Attachment attachment)
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
 	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, +attachment,
 		GL_TEXTURE_2D_MULTISAMPLE, t.id, 0);
-	attachments[attachmentIndex(attachment)] = &t;
+	getAttachment(*this, attachment) = &t;
 	samples = t.samples;
 	dirty = true;
 
@@ -540,7 +531,7 @@ void Framebuffer::attach(const Renderbuffer& r, Attachment attachment)
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
 	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, +attachment,
 		GL_RENDERBUFFER, r.id);
-	attachments[attachmentIndex(attachment)] = &r;
+	getAttachment(*this, attachment) = &r;
 	samples = 0;
 	dirty = true;
 
@@ -564,14 +555,14 @@ void Framebuffer::attach(const RenderbufferMS& r, Attachment attachment)
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
 	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, +attachment,
 		GL_RENDERBUFFER, r.id);
-	attachments[attachmentIndex(attachment)] = &r;
+	getAttachment(*this, attachment) = &r;
 	samples = r.samples;
 	dirty = true;
 
 	L.debug(R"(Multisample renderbuffer "%s" attached to framebuffer "%s")", r.name, name);
 }
 
-void Framebuffer::bind() const
+void Framebuffer::bind()
 {
 	ASSERT(id);
 
@@ -603,6 +594,28 @@ void Framebuffer::bind() const
 void Framebuffer::unbind()
 {
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+}
+
+void Framebuffer::blit(Framebuffer& dst, const Framebuffer& src,
+	const Attachment srcBuffer, const bool depthStencil)
+{
+	ASSERT(getAttachment(src, srcBuffer));
+	if (depthStencil) {
+		ASSERT(getAttachment(src, Attachment::DepthStencil));
+		ASSERT(getAttachment(dst, Attachment::DepthStencil));
+	}
+
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, src.id);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst.id);
+	glReadBuffer(+srcBuffer);
+
+	const size2i blitSize = src.attachments[attachmentIndex(srcBuffer)]->size;
+	const GLbitfield mask = GL_COLOR_BUFFER_BIT |
+		(depthStencil? GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT : 0);
+
+	glBlitFramebuffer(0, 0, blitSize.x, blitSize.y,
+		0, 0, blitSize.x, blitSize.y,
+		mask, GL_NEAREST);
 }
 
 }

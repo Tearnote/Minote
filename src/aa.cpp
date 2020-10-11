@@ -521,6 +521,6 @@ void aaEnd(void)
 	}
 
 	if (currentMode == AASimple || currentMode == AAExtreme) {
-		framebufferBlit(&msaaFb, &rendererFramebuffer(), currentSize);
+		Framebuffer::blit(rendererFramebuffer(), msaaFb);
 	}
 }

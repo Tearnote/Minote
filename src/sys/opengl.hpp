@@ -248,7 +248,7 @@ enum struct Attachment : GLenum {
 struct Framebuffer : GLObject {
 
 	GLsizei samples = -1; ///< Sample count of all attachments needs to match
-	mutable bool dirty = true; ///< Is a glDrawBuffers call and completeness check needed?
+	bool dirty = true; ///< Is a glDrawBuffers call and completeness check needed?
 	std::array<const TextureBase*, 17> attachments = {};
 
 	/**
@@ -311,7 +311,7 @@ struct Framebuffer : GLObject {
 	 * commands to render into the framebuffer's attachments. In a debug build,
 	 * the framebuffer is checked for completeness.
 	 */
-	void bind() const;
+	void bind();
 
 	/**
 	 * Bind the zero framebuffer, which causes all future draw commands to draw
@@ -319,21 +319,18 @@ struct Framebuffer : GLObject {
 	 */
 	static void unbind();
 
+	/**
+	 * Copy the contents of one framebuffer to another. MSAA resolve
+	 * is performed if required.
+	 * @param dst Destination framebuffer
+	 * @param src Source framebuffer
+	 * @param srcBuffer The attachment in src to read from
+	 * @param depthStencil Whether to blit the DepthStencil attachment
+	 */
+	static void blit(Framebuffer& dst, const Framebuffer& src,
+		Attachment srcBuffer = Attachment::Color0, bool depthStencil = false);
+
 };
-
-/**
- * Copy a contents of a ::Framebuffer to the screen (backbuffer).
- * @param f The ::Framebuffer object
- */
-void framebufferToScreen(Framebuffer* f, Window& w);
-
-/**
- * Copy the contents of one ::Framebuffer to another. Performs MSAA resolve.
- * @param src The source ::Framebuffer object
- * @param dst The destination ::Framebuffer object
- * @param size Size of the area to copy, in pixels
- */
-void framebufferBlit(Framebuffer* src, Framebuffer* dst, size2i size);
 
 /**
  * Base struct of ::Program type. To be a valid ::Program type usable with below
