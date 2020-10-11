@@ -33,8 +33,6 @@ struct Log {
 	/// File handle to write messages into, or nullptr for disabled file logging
 	FILE* file = nullptr;
 
-	~Log();
-
 	/**
 	 * Enable logging to a file. Remember to call disableFile() when finished,
 	 * so that the file can be closed properly.
@@ -114,6 +112,8 @@ struct Log {
 	 */
 	[[gnu::format(printf, 2, 3)]] [[noreturn]]
 	void fail(const char* fmt, ...);
+
+	~Log();
 
 };
 

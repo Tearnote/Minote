@@ -147,9 +147,11 @@ static auto attachmentIndex(const Attachment attachment) -> std::size_t
 	switch(attachment) {
 	case Attachment::DepthStencil:
 		return 16;
+#ifndef NDEBUG
 	case Attachment::None:
 		L.warn("Invalid attachment index %d", +attachment);
 		return -1;
+#endif //NDEBUG
 	default:
 		return (+attachment) - (+Attachment::Color0);
 	}
@@ -169,6 +171,14 @@ static auto getAttachment(Framebuffer& f, const Attachment attachment) -> const 
 static auto getAttachment(const Framebuffer& f, const Attachment attachment) -> const TextureBase* const&
 {
 	return f.attachments[attachmentIndex(attachment)];
+}
+
+GLObject::~GLObject()
+{
+#ifndef NDEBUG
+	if (id)
+		L.warn(R"(OpenGL object "%s" was never destroyed)", stringOrNull(name));
+#endif //NDEBUG
 }
 
 void Texture::create(const char* _name, size2i _size, PixelFormat _format)

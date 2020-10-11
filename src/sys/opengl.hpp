@@ -38,14 +38,14 @@ using BufferTextureStorage = GLuint;
 
 /// Available texture filtering modes
 enum struct Filter : GLint {
-	None = 0,
+	None = GL_NONE,
 	Nearest = GL_NEAREST,
 	Linear = GL_LINEAR
 };
 
 /// Available internal pixel formats
 enum struct PixelFormat : GLint {
-	None = 0,
+	None = GL_NONE,
 	R_u8 = GL_R8,
 	RG_u8 = GL_RG8,
 	RGB_u8 = GL_RGB8,
@@ -63,6 +63,7 @@ struct GLObject {
 	GLuint id = 0; ///< The object has not been created if this is 0
 	const char* name = nullptr; ///< Human-readable name, used in logging
 
+	~GLObject();
 };
 
 /// Common fields of texture types

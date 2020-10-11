@@ -349,4 +349,12 @@ void Window::clearInput()
 	inputsMutex.unlock();
 }
 
+Window::~Window()
+{
+#ifndef NDEBUG
+	if(handle)
+		L.warn(R"(Window "%s" was never closed)", stringOrNull(title));
+#endif //NDEBUG
+}
+
 }

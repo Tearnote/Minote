@@ -156,6 +156,8 @@ struct Window {
 	 */
 	void clearInput();
 
+	~Window();
+
 };
 
 }

@@ -99,15 +99,6 @@ static void logPrio(Log& log, const Log::Level level,
 	}
 }
 
-Log::~Log()
-{
-	if (!file)
-		return;
-
-	console = true;
-	warn("Logfile was never closed");
-}
-
 void Log::enableFile(const char* const filepath)
 {
 	ASSERT(filepath);
@@ -202,6 +193,16 @@ void Log::fail(char const* fmt, ...)
 	logPrio(*this, Level::Crit, fmt, ap);
 	va_end(ap);
 	std::exit(EXIT_FAILURE);
+}
+
+Log::~Log()
+{
+#ifndef NDEBUG
+	if (file) {
+		console = true;
+		warn("Logfile was never closed");
+	}
+#endif //NDEBUG
 }
 
 }
