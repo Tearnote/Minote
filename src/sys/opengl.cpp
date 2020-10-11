@@ -253,7 +253,7 @@ void Texture::upload(std::uint8_t* data)
 	ASSERT(size.x > 0 && size.y > 0);
 	ASSERT(format != PixelFormat::DepthStencil);
 
-	const GLenum channels = [=] {
+	const GLenum channels = [=, this] {
 		switch (format) {
 		case PixelFormat::R_u8:
 		case PixelFormat::R_f16:
@@ -588,7 +588,6 @@ void Framebuffer::bind()
 			enabledBuffers[enabledSize] = i + GL_COLOR_ATTACHMENT0;
 			enabledSize += 1;
 		}
-		L.trace(R"(Framebuffer "%s" verified with %zu color attachments)", name, enabledSize);
 		glDrawBuffers(enabledSize, enabledBuffers.data());
 
 #ifndef NDEBUG

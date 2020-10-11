@@ -132,7 +132,7 @@ set(SOURCES
         src/base/ease.hpp
         src/base/tween.hpp
         src/sys/window.hpp src/sys/window.cpp
-        src/sys/opengl.hpp src/sys/opengl.cpp
+        src/sys/opengl.hpp src/sys/opengl.tpp src/sys/opengl.cpp
         src/game.hpp src/game.cpp
         src/renderer.hpp src/renderer.cpp
         src/play.hpp src/play.cpp

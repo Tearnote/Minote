@@ -36,6 +36,9 @@ concept Integral = std::is_integral_v<T>;
 template<typename T>
 concept Arithmetic = std::is_arithmetic_v<T>;
 
+template<typename T>
+concept Standard = std::is_standard_layout_v<T>;
+
 /// Conversion of scoped enum to the underlying type, using the unary + operator
 template<Enum T>
 constexpr auto operator+(T e) {

@@ -333,6 +333,36 @@ struct Framebuffer : GLObject {
 
 };
 
+template<Standard T>
+struct Uniform2 {
+
+	using Type = T;
+
+	GLint location = -1;
+	Type value = {};
+
+	void setLocation(Program program, const char* name);
+
+	void set(Type val);
+
+	inline auto operator=(Type val) -> Uniform2<Type>& { set(val); return *this; }
+
+	inline auto operator=(const Uniform2& other) -> Uniform2& {
+		if (&other == this)
+			return *this;
+		set(other);
+	}
+
+	inline operator Type&() { return value; }
+	inline operator Type() const { return value; }
+
+	Uniform2() = default;
+	Uniform2(const Uniform2&) = delete;
+	Uniform2(Uniform2&&) = delete;
+	auto operator=(Uniform2&&) -> Uniform2& = delete;
+
+};
+
 /**
  * Base struct of ::Program type. To be a valid ::Program type usable with below
  * functions, a struct needs to have ::ProgramBase as its first element.
@@ -409,3 +439,5 @@ _programSampler(ProgramBase* program, const char* sampler, TextureUnit unit);
 void _programUse(ProgramBase* program);
 
 }
+
+#include "sys/opengl.tpp"
