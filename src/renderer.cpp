@@ -8,9 +8,7 @@
 #include <functional>
 #include <string.h>
 #include <stdlib.h>
-#include "glad/glad.h"
 #include <GLFW/glfw3.h>
-#include "linmath/linmath.h"
 #include "sys/window.hpp"
 #include "sys/opengl.hpp"
 #include "model.hpp"

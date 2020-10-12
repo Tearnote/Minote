@@ -7,7 +7,6 @@
 
 #include "sys/opengl.hpp"
 
-#include "linmath/linmath.h"
 #include "base/log.hpp"
 
 namespace minote {

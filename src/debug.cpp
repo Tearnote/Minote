@@ -7,7 +7,7 @@
 #include "debug.hpp"
 
 #include <atomic>
-#include <stdalign.h>
+#include <glm/gtc/type_ptr.hpp>
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 #define NK_IMPLEMENTATION
@@ -247,7 +247,7 @@ void debugDraw(Window& window)
 	programUse(nuklear);
 	nuklearTexture.bind(nuklear->atlas);
 	glUniformMatrix4fv(nuklear->projection, 1, GL_FALSE,
-		*worldScreenProjection);
+		glm::value_ptr(worldScreenProjection));
 	glBindVertexArray(nuklearVao);
 
 	glBindBuffer(GL_ARRAY_BUFFER, nuklearVbo);

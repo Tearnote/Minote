@@ -214,14 +214,14 @@ static mino randomPiece(void)
 {
 	// Count the number of tokens
 	size_t tokenTotal = 0;
-	for (size_t i = 0; i < countof(mrsTet.player.tokens); i += 1)
+	for (size_t i = 0; i < MinoGarbage - 1; i += 1)
 		if (mrsTet.player.tokens[i] > 0) tokenTotal += mrsTet.player.tokens[i];
 	ASSERT(tokenTotal);
 
 	// Create and fill the token list
 	int tokenList[tokenTotal];
 	size_t tokenListIndex = 0;
-	for (size_t i = 0; i < countof(mrsTet.player.tokens); i += 1) {
+	for (size_t i = 0; i < MinoGarbage - 1; i += 1) {
 		if (mrsTet.player.tokens[i] <= 0) continue;
 		for (size_t j = 0; j < mrsTet.player.tokens[i]; j += 1) {
 			ASSERT(tokenListIndex < tokenTotal);
@@ -233,9 +233,9 @@ static mino randomPiece(void)
 
 	// Pick a random token from the list and update the token distribution
 	int picked = tokenList[mrsTet.rng.randInt(tokenTotal)];
-	for (size_t i = 0; i < countof(mrsTet.player.tokens); i += 1) {
+	for (size_t i = 0; i < MinoGarbage - 1; i += 1) {
 		if (i == picked)
-			mrsTet.player.tokens[i] -= countof(mrsTet.player.tokens) - 1;
+			mrsTet.player.tokens[i] -= MinoGarbage - 1 - 1;
 		else
 			mrsTet.player.tokens[i] += 1;
 	}
@@ -398,7 +398,7 @@ void mrsInit(void)
 	mrsTet.player.gravity = 3;
 
 	mrsTet.rng.seed((uint64_t)time(nullptr));
-	for (size_t i = 0; i < countof(mrsTet.player.tokens); i += 1)
+	for (size_t i = 0; i < MinoGarbage - 1; i += 1)
 		mrsTet.player.tokens[i] = MrsStartingTokens;
 	do {
 		mrsTet.player.preview = randomPiece();

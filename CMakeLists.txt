@@ -35,7 +35,13 @@ find_package(PkgConfig REQUIRED)
 pkg_search_module(GLFW REQUIRED glfw3)
 pkg_search_module(FREETYPE REQUIRED freetype2)
 pkg_search_module(HARFBUZZ REQUIRED harfbuzz)
+pkg_search_module(GLM REQUIRED glm)
+
 add_compile_definitions(GLFW_INCLUDE_NONE)
+add_compile_definitions(GLM_FORCE_ALIGNED_GENTYPES)
+add_compile_definitions(GLM_FORCE_DEFAULT_ALIGNED_GENTYPES)
+add_compile_definitions(GLM_FORCE_SIZE_T_LENGTH)
+add_compile_definitions(GLM_FORCE_UNRESTRICTED_GENTYPE)
 
 # Build the preprocessors
 add_executable(Preshade src/tools/preshade.cpp)
@@ -99,7 +105,6 @@ add_dependencies(Preprocess_fonts msdf-atlas-gen)
 # Build the game
 set(INTERNALLIBS
         lib/glad/glad.h
-        lib/linmath/linmath.h
         lib/pcg/pcg_basic.h lib/pcg/pcg_basic.c
         lib/smaa/AreaTex.h lib/smaa/SearchTex.h
         lib/nuklear/nuklear.h
@@ -165,6 +170,7 @@ target_include_directories(Minote PRIVATE ${PROJECT_BINARY_DIR}/glsl)
 target_include_directories(Minote PRIVATE ${GLFW_INCLUDE_DIRS})
 target_include_directories(Minote PRIVATE ${HARFBUZZ_INCLUDE_DIRS})
 target_include_directories(Minote PRIVATE ${FREETYPE_INCLUDE_DIRS})
+target_include_directories(Minote PRIVATE ${GLM_INCLUDE_DIRS})
 
 # Linker settings
 if(CMAKE_BUILD_TYPE STREQUAL "Release")

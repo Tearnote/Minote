@@ -5,10 +5,10 @@
 
 #include "text.hpp"
 
-#include <stdbool.h>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <stdarg.h>
 #include <stdio.h>
-#include "linmath/linmath.h"
 #include "sys/opengl.hpp"
 #include "base/varray.hpp"
 #include "world.hpp"
@@ -54,7 +54,7 @@ static VertexBuffer msdfGlyphsVbo[FontSize] = {0};
 static varray<GlyphMsdf, MaxGlyphs> msdfGlyphs[FontSize]{};
 static BufferTextureStorage msdfTransformsStorage[FontSize] = {0};
 static BufferTexture msdfTransformsTex[FontSize] = {0};
-static varray<mat4x4, MaxStrings> msdfTransforms[FontSize]{};
+static varray<glm::mat4, MaxStrings> msdfTransforms[FontSize]{};
 
 static bool initialized = false;
 
@@ -82,13 +82,10 @@ static void textQueueV(FontType font, float size, point3f pos, point3f dir, poin
 		auto* const transform = msdfTransforms[font].produce();
 		if (!transform)
 			break;
-		vec3 eye = {0};
-		vec3_sub(eye, pos.arr().data(), dir.arr().data());
-		mat4x4 lookat = {0};
-		mat4x4 inverted = {0};
-		mat4x4_look_at(lookat, pos.arr().data(), eye, up.arr().data());
-		mat4x4_invert(inverted, lookat);
-		mat4x4_scale_aniso(*transform, inverted, size, size, size);
+		glm::vec3 eye = glm::vec3(pos.x, pos.y, pos.z) - glm::vec3(dir.x, dir.y, dir.z);
+		glm::mat4 lookat = glm::lookAt(glm::vec3(pos.x, pos.y, pos.z), eye, glm::vec3(up.x, up.y, up.z));
+		glm::mat4 inverted = glm::inverse(lookat);
+		*transform = glm::scale(inverted, {size, size, size});
 
 		// Iterate over glyphs
 		unsigned glyphCount = 0;
@@ -248,7 +245,7 @@ void textDraw(void)
 		glBufferData(GL_ARRAY_BUFFER, glyphsSize, nullptr, GL_STREAM_DRAW);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, glyphsSize, msdfGlyphs[i].data());
 
-		size_t transformsSize = sizeof(mat4x4) * msdfTransforms[i].size;
+		size_t transformsSize = sizeof(glm::mat4) * msdfTransforms[i].size;
 		glBindBuffer(GL_TEXTURE_BUFFER, msdfTransformsStorage[i]);
 		glBufferData(GL_TEXTURE_BUFFER, transformsSize, nullptr, GL_STREAM_DRAW);
 		glBufferSubData(GL_TEXTURE_BUFFER, 0, transformsSize, msdfTransforms[i].data());
@@ -258,8 +255,8 @@ void textDraw(void)
 		fonts[i].atlas.bind(msdf->atlas);
 		glActiveTexture(msdf->transforms);
 		glBindTexture(GL_TEXTURE_BUFFER, msdfTransformsTex[i]);
-		glUniformMatrix4fv(msdf->projection, 1, GL_FALSE, *worldProjection);
-		glUniformMatrix4fv(msdf->camera, 1, GL_FALSE, *worldCamera);
+		glUniformMatrix4fv(msdf->projection, 1, GL_FALSE, glm::value_ptr(worldProjection));
+		glUniformMatrix4fv(msdf->camera, 1, GL_FALSE, glm::value_ptr(worldCamera));
 		glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, instances);
 
 		msdfGlyphs[i].clear();

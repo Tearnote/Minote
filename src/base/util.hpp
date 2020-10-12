@@ -117,15 +117,20 @@ struct Rng {
 
 };
 
-////////////////////////////////////////////////////////////////////////////////
-
 /**
- * Return the number of elements of an array. It must not be decayed to
- * a pointer, or this information is lost.
- * @param x Array argument
+ * Turn a string into "NULL" if it is nullptr.
+ * @param str String to test
+ * @return Itself, or "NULL" literal
  */
-#define countof(x) \
-    ((sizeof(x)/sizeof(0[x])) / ((std::size_t)(!(sizeof(x) % sizeof(0[x])))))
+inline auto stringOrNull(const char* str) -> const char*
+{
+	if (str)
+		return str;
+	else
+		return "NULL";
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 /**
  * Clear an array, setting all bytes to 0.
@@ -178,19 +183,6 @@ void reallocate(T*& buffer, const std::size_t newCount)
 		std::exit(EXIT_FAILURE);
 	}
 	buffer = result;
-}
-
-/**
- * Turn a string into "NULL" if it is nullptr.
- * @param str String to test
- * @return Itself, or "NULL" literal
- */
-inline auto stringOrNull(const char* str) -> const char*
-{
-	if (str)
-		return str;
-	else
-		return "NULL";
 }
 
 }

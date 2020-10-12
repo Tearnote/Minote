@@ -5,13 +5,14 @@
 
 #include "mrsdraw.hpp"
 
+#include <glm/mat4x4.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include "particles.hpp"
 #include "mrsdef.hpp"
 #include "debug.hpp"
 #include "model.hpp"
 #include "world.hpp"
 #include "mrs.hpp"
-#include "base/log.hpp"
 
 using namespace minote;
 
@@ -24,14 +25,14 @@ static Model* guide = nullptr;
 static Model* block = nullptr;
 static varray<color4, BlocksMax> blockTintsOpaque{};
 static varray<color4, BlocksMax> blockHighlightsOpaque{};
-static varray<mat4x4, BlocksMax> blockTransformsOpaque{};
+static varray<glm::mat4, BlocksMax> blockTransformsOpaque{};
 static varray<color4, BlocksMax> blockTintsAlpha{};
 static varray<color4, BlocksMax> blockHighlightsAlpha{};
-static varray<mat4x4, BlocksMax> blockTransformsAlpha{};
+static varray<glm::mat4, BlocksMax> blockTransformsAlpha{};
 
 static Model* border = nullptr;
 static varray<color4, BordersMax> borderTints{};
-static varray<mat4x4, BordersMax> borderTransforms{};
+static varray<glm::mat4, BordersMax> borderTransforms{};
 
 static bool initialized = false;
 
@@ -218,7 +219,7 @@ static void mrsQueueField(void)
 		auto& transforms = transparent? blockTransformsOpaque : blockTransformsAlpha;
 		color4* const tint = tints.produce();
 		color4* const highlight = highlights.produce();
-		mat4x4* const transform = transforms.produce();
+		glm::mat4* const transform = transforms.produce();
 		if (!tint)
 			return; // Block limit reached, no point continuing
 		ASSERT(highlight);
@@ -250,7 +251,11 @@ static void mrsQueueField(void)
 
 		float fx = (float)x;
 		float fy = (float)y - (float)linesCleared * fallProgress;
-		mat4x4_translate(*transform, fx - (signed)(FieldWidth / 2), fy, 0.0f);
+		*transform = glm::translate(glm::mat4(1.0f), {
+			fx - (signed)(FieldWidth / 2),
+			fy,
+			0.0f
+		});
 	}
 }
 
@@ -301,32 +306,43 @@ static void mrsQueuePlayer(void)
 	arrayCopy(player, MrsPieces[mrsTet.player.type]);
 
 	// Get piece transform (piece position and rotation)
-	mat4x4 pieceTranslation = {0};
-	mat4x4 pieceRotation = {0};
-	mat4x4 pieceRotationTemp = {0};
-	mat4x4 pieceTransform = {0};
-	mat4x4_translate(pieceTranslation,
+	const glm::mat4 pieceTranslation = glm::translate(glm::mat4(1.0f), {
 		playerPosX.apply() - (signed)(FieldWidth / 2),
-		playerPosY.apply(), 0.0f);
-	mat4x4_translate(pieceRotationTemp, 0.5f, 0.5f, 0.0f);
-	mat4x4_rotate_Z(pieceRotation, pieceRotationTemp,
-		playerRotation.apply() * rad(90.0f));
-	mat4x4_translate_in_place(pieceRotation, -0.5f, -0.5f, 0.0f);
-	mat4x4_mul(pieceTransform, pieceTranslation, pieceRotation);
+		playerPosY.apply(),
+		0.0f
+	});
+	const glm::mat4 pieceRotationPre = glm::translate(glm::mat4(1.0f), {
+		0.5f,
+		0.5f,
+		0.0f
+	});
+	const glm::mat4 pieceRotation = glm::rotate(pieceRotationPre,
+		playerRotation.apply() * rad(90.0f), {0.0f, 0.0f, 1.0f});
+//	mat4x4_rotate_Z(pieceRotation, pieceRotationTemp,
+//		playerRotation.apply() * rad(90.0f));
+	const glm::mat4 pieceRotationPost = glm::translate(pieceRotation, {
+		-0.5f,
+		-0.5f,
+		0.0f
+	});
+	const glm::mat4 pieceTransform = pieceTranslation * pieceRotationPost;
 
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
 		// Get mino transform (offset from piece origin)
-		mat4x4 minoTransform = {0};
-		mat4x4_translate(minoTransform, player[i].x, player[i].y, 0.0f);
+		glm::mat4 minoTransform = glm::translate(glm::mat4(1.0f), {
+			player[i].x,
+			player[i].y,
+			0.0f
+		});
 
 		// Queue up next mino
 		const bool transparent = (minoColor(mrsTet.player.type).a == 1.0);
 		auto& tints = transparent? blockTintsOpaque : blockTintsAlpha;
 		auto& highlights = transparent? blockHighlightsOpaque : blockHighlightsAlpha;
 		auto& transforms = transparent? blockTransformsOpaque : blockTransformsAlpha;
-		color4* const tint = tints.produce();
-		color4* const highlight = highlights.produce();
-		mat4x4* const transform = transforms.produce();
+		auto* const tint = tints.produce();
+		auto* const highlight = highlights.produce();
+		auto* const transform = transforms.produce();
 		if (!tint)
 			return; // Block limit reached, no point continuing
 		ASSERT(highlight);
@@ -343,7 +359,7 @@ static void mrsQueuePlayer(void)
 			tint->b *= dim;
 		}
 		*highlight = Clear4;
-		mat4x4_mul(*transform, pieceTransform, minoTransform);
+		*transform = pieceTransform * minoTransform;
 	}
 }
 
@@ -383,7 +399,7 @@ static void mrsQueueGhost(void)
 		*tint = minoColor(mrsTet.player.type);
 		tint->a *= MrsGhostDim;
 		*highlight = Clear4;
-		mat4x4_translate(*transform, x - (signed)(FieldWidth / 2), y, 0.0f);
+		*transform = glm::translate(glm::mat4(1.0f), {x - (signed)(FieldWidth / 2), y, 0.0f});
 	}
 }
 
@@ -408,7 +424,7 @@ static void mrsQueuePreview(void)
 		auto& transforms = transparent? blockTransformsOpaque : blockTransformsAlpha;
 		color4* const tint = tints.produce();
 		color4* const highlight = highlights.produce();
-		mat4x4* const transform = transforms.produce();
+		glm::mat4* const transform = transforms.produce();
 		if (!tint)
 			return; // Block limit reached, no point continuing
 		ASSERT(highlight);
@@ -416,7 +432,7 @@ static void mrsQueuePreview(void)
 
 		*tint = minoColor(mrsTet.player.preview);
 		*highlight = Clear4;
-		mat4x4_translate(*transform, x, y, 0.0f);
+		*transform = glm::translate(glm::mat4(1.0f), {x, y, 0.0f});
 	}
 }
 
@@ -461,9 +477,8 @@ static void mrsQueueBorder(point3f pos, size3f size, color4 color)
 	ASSERT(transform);
 
 	*tint = color;
-	mat4x4_identity(*transform);
-	mat4x4_translate_in_place(*transform, pos.x, pos.y, pos.z);
-	mat4x4_scale_aniso(*transform, *transform, size.x, size.y, size.z);
+	const glm::mat4 transformTemp = glm::translate(glm::mat4(1.0f), {pos.x, pos.y, pos.z});
+	*transform = glm::scale(transformTemp, {size.x, size.y, size.z});
 }
 
 /**

@@ -5,7 +5,8 @@
 
 #include "world.hpp"
 
-#include "linmath/linmath.h"
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include "sys/opengl.hpp"
 #include "sys/window.hpp"
 #include "base/util.hpp"
@@ -18,9 +19,9 @@ using namespace minote;
 /// End of the clipping plane (draw distance), in world distance units
 #define ProjectionFar 100.0f
 
-mat4x4 worldProjection = {0}; ///< perspective transform
-mat4x4 worldScreenProjection = {0}; ///< screenspace transform
-mat4x4 worldCamera = {0}; ///< view transform
+glm::mat4 worldProjection = {}; ///< perspective transform
+glm::mat4 worldScreenProjection = {}; ///< screenspace transform
+glm::mat4 worldCamera = {}; ///< view transform
 point3f worldLightPosition = {0}; ///< in world space
 color3 worldLightColor = {0};
 color3 worldAmbientColor = {0};
@@ -42,18 +43,19 @@ static void worldResize(size2i size)
 	currentSize.y = size.y;
 
 	glViewport(0, 0, size.x, size.y);
-	mat4x4_perspective(worldProjection, rad(45.0f),
+	worldProjection = glm::perspective(glm::radians(45.0f),
 		(float)size.x / (float)size.y, ProjectionNear, ProjectionFar);
-	mat4x4_ortho(worldScreenProjection, 0.0f, size.x, size.y, 0.0f, 1.0f, -1.0f);
+	worldScreenProjection = glm::ortho(0.0f, (float)size.x, (float)size.y, 0.0f,
+		1.0f, -1.0f);
 }
 
 void worldInit(void)
 {
 	if (initialized) return;
-	vec3 eye = {0.0f, 12.0f, 32.0f};
-	vec3 center = {0.0f, 12.0f, 0.0f};
-	vec3 up = {0.0f, 1.0f, 0.0f};
-	mat4x4_look_at(worldCamera, eye, center, up);
+	constexpr glm::vec3 eye = {0.0f, 12.0f, 32.0f};
+	constexpr glm::vec3 center = {0.0f, 12.0f, 0.0f};
+	constexpr glm::vec3 up = {0.0f, 1.0f, 0.0f};
+	worldCamera = glm::lookAt(eye, center, up);
 	worldLightPosition.x = -8.0f;
 	worldLightPosition.y = 32.0f;
 	worldLightPosition.z = 16.0f;

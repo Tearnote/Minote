@@ -6,15 +6,15 @@
 #ifndef MINOTE_MODEL_H
 #define MINOTE_MODEL_H
 
-#include "linmath/linmath.h"
+#include <glm/mat4x4.hpp>
 #include "base/types.hpp"
 #include "sys/opengl.hpp"
 
 /// Convenient 4x4 matrix for when you want to perform no transform
-inline mat4x4 IdentityMatrix{{1.0f, 0.0f, 0.0f, 0.0f},
-                             {0.0f, 1.0f, 0.0f, 0.0f},
-                             {0.0f, 0.0f, 1.0f, 0.0f},
-                             {0.0f, 0.0f, 0.0f, 1.0f}};
+inline glm::mat4 IdentityMatrix{{1.0f, 0.0f, 0.0f, 0.0f},
+                                {0.0f, 1.0f, 0.0f, 0.0f},
+                                {0.0f, 0.0f, 1.0f, 0.0f},
+                                {0.0f, 0.0f, 0.0f, 1.0f}};
 
 /// Data of a single mesh vertex of ::ModelFlat
 typedef struct VertexFlat {
@@ -126,6 +126,6 @@ void modelDestroy(Model* m);
  */
 void modelDraw(Model* m, size_t instances,
 	minote::color4 tints[], minote::color4 highlights[],
-	mat4x4 transforms[]);
+	glm::mat4 transforms[]);
 
 #endif //MINOTE_MODEL_H

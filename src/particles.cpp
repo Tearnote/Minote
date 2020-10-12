@@ -5,8 +5,9 @@
 
 #include "particles.hpp"
 
-#include <stdbool.h>
 #include <time.h>
+#include <glm/ext/matrix_float4x4.hpp>
+#include <glm/ext/matrix_transform.hpp>
 #include "cephes/protos.h"
 #include "base/varray.hpp"
 #include "model.hpp"
@@ -40,7 +41,7 @@ static Rng rng{};
 
 static Model* particle = nullptr;
 static varray<color4, MaxParticles> particleTints{};
-static varray<mat4x4, MaxParticles> particleTransforms{};
+static varray<glm::mat4, MaxParticles> particleTransforms{};
 
 static bool initialized = false;
 
@@ -139,11 +140,12 @@ void particlesDraw(void)
 
 		auto* const transform = particleTransforms.produce();
 		ASSERT(transform);
-		mat4x4 translated = {0};
-		mat4x4_translate(translated, x, y, current->origin.z);
-		mat4x4 rotated = {0};
-		mat4x4_rotate_Z(rotated, translated, angle);
-		mat4x4_scale_aniso(*transform, rotated, 1.0f - progress, 1.0f, 1.0f);
+		const glm::mat4 translated = glm::translate(glm::mat4(1.0f),
+			{(float)x, (float)y, current->origin.z});
+		const glm::mat4 rotated = glm::rotate(translated, angle,
+			{0.0f, 0.0f, 1.0f});
+		//mat4x4_rotate_Z(rotated, translated, angle);
+		*transform = glm::scale(rotated, {1.0f - progress, 1.0f, 1.0f});
 	}
 
 	numParticles = particleTransforms.size;

@@ -5,6 +5,7 @@
 
 #include "model.hpp"
 
+#include <glm/gtc/type_ptr.hpp>
 #include "world.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"
@@ -152,7 +153,7 @@ static void modelDestroyPhong(ModelPhong* m)
  */
 static void modelDrawFlat(ModelFlat* m, size_t instances,
 	color4 tints[], color4 highlights[],
-	mat4x4 transforms[])
+	glm::mat4 transforms[])
 {
 	ASSERT(initialized);
 	ASSERT(m);
@@ -189,11 +190,11 @@ static void modelDrawFlat(ModelFlat* m, size_t instances,
 		glVertexAttrib4f(3, 0.0f, 0.0f, 0.0f, 0.0f);
 	}
 	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, nullptr,
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4) * instances, nullptr,
 		GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4x4) * instances, transforms);
-	glUniformMatrix4fv(flat->projection, 1, GL_FALSE, *worldProjection);
-	glUniformMatrix4fv(flat->camera, 1, GL_FALSE, *worldCamera);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::mat4) * instances, transforms);
+	glUniformMatrix4fv(flat->projection, 1, GL_FALSE, glm::value_ptr(worldProjection));
+	glUniformMatrix4fv(flat->camera, 1, GL_FALSE, glm::value_ptr(worldCamera));
 	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numVertices, instances);
 }
 
@@ -208,7 +209,7 @@ static void modelDrawFlat(ModelFlat* m, size_t instances,
  */
 static void modelDrawPhong(ModelPhong* m, size_t instances,
 	color4 tints[], color4 highlights[],
-	mat4x4 transforms[])
+	glm::mat4 transforms[])
 {
 	ASSERT(initialized);
 	ASSERT(m);
@@ -246,14 +247,14 @@ static void modelDrawPhong(ModelPhong* m, size_t instances,
 		glVertexAttrib4f(4, 0.0f, 0.0f, 0.0f, 0.0f);
 	}
 	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4x4) * instances, nullptr,
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4) * instances, nullptr,
 		GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4x4) * instances, transforms);
-	glUniformMatrix4fv(phong->projection, 1, GL_FALSE, *worldProjection);
-	glUniformMatrix4fv(phong->camera, 1, GL_FALSE, *worldCamera);
-	glUniform3fv(phong->lightPosition, 1, reinterpret_cast<GLfloat*>(&worldLightPosition));
-	glUniform3fv(phong->lightColor, 1, reinterpret_cast<GLfloat*>(&worldLightColor));
-	glUniform3fv(phong->ambientColor, 1, reinterpret_cast<GLfloat*>(&worldAmbientColor));
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::mat4) * instances, transforms);
+	glUniformMatrix4fv(phong->projection, 1, GL_FALSE, glm::value_ptr(worldProjection));
+	glUniformMatrix4fv(phong->camera, 1, GL_FALSE, glm::value_ptr(worldCamera));
+	glUniform3fv(phong->lightPosition, 1, worldLightPosition.arr().data());
+	glUniform3fv(phong->lightColor, 1, worldLightColor.arr().data());
+	glUniform3fv(phong->ambientColor, 1, worldAmbientColor.arr().data());
 	glUniform1f(phong->ambient, m->material.ambient);
 	glUniform1f(phong->diffuse, m->material.diffuse);
 	glUniform1f(phong->specular, m->material.specular);
@@ -275,22 +276,16 @@ static void modelGenerateNormals(size_t numVertices,
 	ASSERT(normalData);
 	ASSERT(numVertices % 3 == 0);
 	for (size_t i = 0; i < numVertices; i += 3) {
-		vec3 v0 = {vertices[i + 0].pos.x,
-		           vertices[i + 0].pos.y,
-		           vertices[i + 0].pos.z};
-		vec3 v1 = {vertices[i + 1].pos.x,
-		           vertices[i + 1].pos.y,
-		           vertices[i + 1].pos.z};
-		vec3 v2 = {vertices[i + 2].pos.x,
-		           vertices[i + 2].pos.y,
-		           vertices[i + 2].pos.z};
-		vec3 u = {0};
-		vec3 v = {0};
-		vec3_sub(u, v1, v0);
-		vec3_sub(v, v2, v0);
-		vec3 normal = {0};
-		vec3_mul_cross(normal, u, v);
-		vec3_norm(normal, normal);
+		glm::vec3 v0 = {vertices[i + 0].pos.x,
+		                vertices[i + 0].pos.y,
+		                vertices[i + 0].pos.z};
+		glm::vec3 v1 = {vertices[i + 1].pos.x,
+		                vertices[i + 1].pos.y,
+		                vertices[i + 1].pos.z};
+		glm::vec3 v2 = {vertices[i + 2].pos.x,
+		                vertices[i + 2].pos.y,
+		                vertices[i + 2].pos.z};
+		glm::vec3 normal = glm::normalize(glm::cross(v1 - v0, v2 - v0));
 		normalData[i + 0].x = normal[0];
 		normalData[i + 0].y = normal[1];
 		normalData[i + 0].z = normal[2];
@@ -343,14 +338,14 @@ Model* modelCreateFlat(const char* name,
 	glEnableVertexAttribArray(5);
 	glEnableVertexAttribArray(6);
 	glEnableVertexAttribArray(7);
-	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
+	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4),
 		(void*)0);
-	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
-		(void*)sizeof(vec4));
-	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
-		(void*)(sizeof(vec4) * 2));
-	glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
-		(void*)(sizeof(vec4) * 3));
+	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4),
+		(void*)sizeof(glm::vec4));
+	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4),
+		(void*)(sizeof(glm::vec4) * 2));
+	glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4),
+		(void*)(sizeof(glm::vec4) * 3));
 	glVertexAttribDivisor(4, 1);
 	glVertexAttribDivisor(5, 1);
 	glVertexAttribDivisor(6, 1);
@@ -416,14 +411,14 @@ Model* modelCreatePhong(const char* name,
 	glEnableVertexAttribArray(6);
 	glEnableVertexAttribArray(7);
 	glEnableVertexAttribArray(8);
-	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
+	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4),
 		(void*)0);
-	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
-		(void*)sizeof(vec4));
-	glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
-		(void*)(sizeof(vec4) * 2));
-	glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, sizeof(mat4x4),
-		(void*)(sizeof(vec4) * 3));
+	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4),
+		(void*)sizeof(glm::vec4));
+	glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4),
+		(void*)(sizeof(glm::vec4) * 2));
+	glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4),
+		(void*)(sizeof(glm::vec4) * 3));
 	glVertexAttribDivisor(5, 1);
 	glVertexAttribDivisor(6, 1);
 	glVertexAttribDivisor(7, 1);
@@ -451,7 +446,7 @@ void modelDestroy(Model* m)
 
 void modelDraw(Model* m, size_t instances,
 	color4 tints[], color4 highlights[],
-	mat4x4 transforms[])
+	glm::mat4 transforms[])
 {
 	ASSERT(m);
 	ASSERT(m->type > ModelTypeNone && m->type < ModelTypeSize);
