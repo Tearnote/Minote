@@ -5,8 +5,6 @@
 
 #pragma once
 
-#include "sys/opengl.hpp"
-
 #include "base/log.hpp"
 
 namespace minote {

@@ -5,8 +5,6 @@
 
 #pragma once
 
-#include "base/varray.hpp"
-
 #include <cstring>
 #include "base/util.hpp"
 

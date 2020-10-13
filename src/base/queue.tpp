@@ -5,8 +5,6 @@
 
 #pragma once
 
-#include "base/queue.hpp"
-
 namespace minote {
 
 template<typename T, std::size_t N>
