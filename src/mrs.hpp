@@ -45,7 +45,7 @@ typedef struct Player {
 	piece shape; ///< Cached piece data
 	mino preview; ///< Next player piece
 	int tokens[MinoGarbage - 1]; ///< Past player pieces
-	point2i pos; ///< Position of current piece
+	ivec2 pos; ///< Position of current piece
 	int ySub; ///< Y subgrid of current piece
 	int yLowest; ///< The bottommost row reached by current piece
 

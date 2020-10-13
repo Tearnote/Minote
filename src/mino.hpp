@@ -7,11 +7,11 @@
 #define MINOTE_MINO_H
 
 #include <stdbool.h>
-#include "base/types.hpp"
+#include "base/math.hpp"
 
-using minote::point2i;
+using minote::ivec2;
 using minote::color4;
-using minote::size2i;
+using minote::ivec2;
 
 /**
  * Possible states of a ::Field cell. Values below #MinoGarbage are also valid
@@ -42,7 +42,7 @@ typedef enum spin: int {
 #define MinosPerPiece 4
 
 /// Shape of a player piece at a specific ::spin
-typedef point2i piece[MinosPerPiece];
+typedef ivec2 piece[MinosPerPiece];
 
 /**
  * Rotate a spin to the next clockwise value.
@@ -76,7 +76,7 @@ void pieceRotate(piece p, spin rotation);
 /// All fields are read-only.
 typedef struct Field {
 	mino* grid; ///< Dynamically allocated field contents
-	size2i size; ///< Dimensions of the field
+	ivec2 size; ///< Dimensions of the field
 } Field;
 
 /**
@@ -84,7 +84,7 @@ typedef struct Field {
  * @param size 2D dimensions of the new Field
  * @return A newly created ::Field. Needs to be destroyed with fieldDestroy()
  */
-Field* fieldCreate(size2i size);
+Field* fieldCreate(ivec2 size);
 
 /**
  * Destroy a ::Field instance. The destroyed object cannot be used anymore and
@@ -100,7 +100,7 @@ void fieldDestroy(Field* f);
  * @param place Coordinate to modify. Can be out of bounds
  * @param value New value to write into the specified coordinate
  */
-void fieldSet(Field* f, point2i place, mino value);
+void fieldSet(Field* f, ivec2 place, mino value);
 
 /**
  * Retrieve the value of a single cell of a ::Field. Out of bounds coordinates
@@ -110,7 +110,7 @@ void fieldSet(Field* f, point2i place, mino value);
  * @param place Coordinate to retriee. Can be out of bounds
  * @return Value at the specified coordinate
  */
-mino fieldGet(Field* f, point2i place);
+mino fieldGet(Field* f, ivec2 place);
 
 /**
  * Set a row of ::Field cells to MinoNone.
@@ -149,7 +149,7 @@ bool fieldIsEmpty(Field* f);
  * @param place The offset to apply to the @a piece
  * @param type Value to overwrite with
  */
-void fieldStampPiece(Field* f, piece* piece, point2i place, mino type);
+void fieldStampPiece(Field* f, piece* piece, ivec2 place, mino type);
 
 /**
  * Check if a piece is on top of any taken cells of the field.
@@ -158,6 +158,6 @@ void fieldStampPiece(Field* f, piece* piece, point2i place, mino type);
  * @param field Field to test
  * @return true if there is overlap, false if there is not
  */
-bool pieceOverlapsField(piece* p, point2i pPos, Field* field);
+bool pieceOverlapsField(piece* p, ivec2 pPos, Field* field);
 
 #endif //MINOTE_MINO_H

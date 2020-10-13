@@ -7,7 +7,6 @@
 #include "debug.hpp"
 
 #include <atomic>
-#include <glm/gtc/type_ptr.hpp>
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 #define NK_IMPLEMENTATION
@@ -31,8 +30,8 @@ typedef struct ProgramNuklear {
 } ProgramNuklear;
 
 typedef struct VertexNuklear {
-	point2f pos;
-	point2f texCoord;
+	vec2 pos;
+	vec2 texCoord;
 	color4 color;
 } VertexNuklear;
 
@@ -65,7 +64,7 @@ static VertexArray nuklearVao = 0;
 static VertexBuffer nuklearVbo = 0;
 static ElementArray nuklearEbo = 0;
 
-static std::atomic<point2i> cursorPos;
+static std::atomic<ivec2> cursorPos;
 static std::atomic<bool> leftClick;
 static std::atomic<bool> rightClick;
 
@@ -76,7 +75,7 @@ static void debugCursorPosCallback(GLFWwindow* w, double x, double y)
 {
 	(void)w;
 
-	point2i newPos = {static_cast<int>(x), static_cast<int>(y)};
+	ivec2 newPos = {static_cast<int>(x), static_cast<int>(y)};
 	atomic_store(&cursorPos, newPos);
 }
 
@@ -99,7 +98,7 @@ static void debugMouseButtonCallback(GLFWwindow* w, int button, int action, int 
 
 void debugInputSetup(Window& window)
 {
-	atomic_init(&cursorPos, ((point2i){-1, -1}));
+	atomic_init(&cursorPos, ((ivec2){-1, -1}));
 	atomic_init(&leftClick, false);
 	atomic_init(&rightClick, false);
 	glfwSetCursorPosCallback(window.handle, debugCursorPosCallback);
@@ -223,7 +222,7 @@ void debugUpdate(void)
 
 	nk_input_begin(&nkContext);
 
-	point2i newCursorPos = atomic_load(&cursorPos);
+	ivec2 newCursorPos = atomic_load(&cursorPos);
 	nk_input_motion(&nkContext, newCursorPos.x, newCursorPos.y);
 	nk_input_button(&nkContext, NK_BUTTON_LEFT, newCursorPos.x, newCursorPos.y,
 		atomic_load(&leftClick));
@@ -247,7 +246,7 @@ void debugDraw(Window& window)
 	programUse(nuklear);
 	nuklearTexture.bind(nuklear->atlas);
 	glUniformMatrix4fv(nuklear->projection, 1, GL_FALSE,
-		glm::value_ptr(worldScreenProjection));
+		value_ptr(worldScreenProjection));
 	glBindVertexArray(nuklearVao);
 
 	glBindBuffer(GL_ARRAY_BUFFER, nuklearVbo);
@@ -282,7 +281,7 @@ void debugDraw(Window& window)
 	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 
 	// Execute draw commands
-	size2i screenSize = window.size;
+	ivec2 screenSize = window.size;
 	const struct nk_draw_command* command;
 	const nk_draw_index* offset = nullptr;
 	nk_draw_foreach(command, &nkContext, &commandList) {

@@ -50,7 +50,7 @@ void pieceRotate(piece p, spin rotation)
 
 	for (int i = 0; i < rotation; i += 1) { // Repeat as many times as rotations
 		for (size_t j = 0; j < MinosPerPiece; j += 1) { // Rotate each mino
-			point2i newPos{
+			ivec2 newPos{
 				-p[j].y,
 				p[j].x
 			};
@@ -61,7 +61,7 @@ void pieceRotate(piece p, spin rotation)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Field* fieldCreate(size2i size)
+Field* fieldCreate(ivec2 size)
 {
 	ASSERT(size.x > 0 && size.y > 0);
 	auto* result = allocate<Field>();
@@ -80,7 +80,7 @@ void fieldDestroy(Field* f)
 	f = nullptr;
 }
 
-void fieldSet(Field* f, point2i place, mino value)
+void fieldSet(Field* f, ivec2 place, mino value)
 {
 	ASSERT(f);
 	ASSERT(value < MinoSize);
@@ -89,7 +89,7 @@ void fieldSet(Field* f, point2i place, mino value)
 	f->grid[place.y * f->size.x + place.x] = value;
 }
 
-mino fieldGet(Field* f, point2i place)
+mino fieldGet(Field* f, ivec2 place)
 {
 	ASSERT(f);
 	if (place.x < 0 || place.x >= f->size.x) return MinoGarbage;
@@ -102,7 +102,7 @@ void fieldClearRow(Field* f, int row)
 {
 	ASSERT(f);
 	for (int x = 0; x < f->size.x; x += 1)
-		fieldSet(f, (point2i){
+		fieldSet(f, (ivec2){
 			x,
 			row
 		}, MinoNone);
@@ -113,10 +113,10 @@ void fieldDropRow(Field* f, int row)
 	ASSERT(f);
 	for (int y = row; y < f->size.y; y += 1) {
 		for (int x = 0; x < f->size.x; x += 1) {
-			fieldSet(f, (point2i){
+			fieldSet(f, (ivec2){
 				x,
 				y
-			}, fieldGet(f, (point2i){
+			}, fieldGet(f, (ivec2){
 				x,
 				y + 1
 			}));
@@ -128,7 +128,7 @@ bool fieldIsRowFull(Field* f, int row)
 {
 	ASSERT(f);
 	for (int x = 0; x < f->size.x; x += 1) {
-		if (!fieldGet(f, (point2i){
+		if (!fieldGet(f, (ivec2){
 			x,
 			row
 		}))
@@ -142,7 +142,7 @@ bool fieldIsEmpty(Field* f)
 	ASSERT(f);
 	for (int y = 0; y < f->size.y; y += 1) {
 		for (int x = 0; x < f->size.x; x += 1) {
-			if (fieldGet(f, (point2i){
+			if (fieldGet(f, (ivec2){
 				x,
 				y
 			}))
@@ -152,25 +152,25 @@ bool fieldIsEmpty(Field* f)
 	return true;
 }
 
-void fieldStampPiece(Field* f, piece* piece, point2i place, mino type)
+void fieldStampPiece(Field* f, piece* piece, ivec2 place, mino type)
 {
 	ASSERT(f);
 	ASSERT(piece);
 	ASSERT(type < MinoSize);
 	for (int i = 0; i < MinosPerPiece; i += 1) {
-		fieldSet(f, (point2i){
+		fieldSet(f, (ivec2){
 			place.x + (*piece)[i].x,
 			place.y + (*piece)[i].y
 		}, type);
 	}
 }
 
-bool pieceOverlapsField(piece* p, point2i pPos, Field* field)
+bool pieceOverlapsField(piece* p, ivec2 pPos, Field* field)
 {
 	ASSERT(p);
 	ASSERT(field);
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
-		point2i cell = {
+		ivec2 cell = {
 			(*p)[i].x + pPos.x,
 			(*p)[i].y + pPos.y
 		};

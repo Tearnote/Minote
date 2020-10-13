@@ -181,7 +181,7 @@ GLObject::~GLObject()
 #endif //NDEBUG
 }
 
-void Texture::create(const char* _name, size2i _size, PixelFormat _format)
+void Texture::create(const char* _name, ivec2 _size, PixelFormat _format)
 {
 	ASSERT(!id);
 	ASSERT(_name);
@@ -233,7 +233,7 @@ void Texture::setFilter(Filter _filter)
 	filter = _filter;
 }
 
-void Texture::resize(size2i _size)
+void Texture::resize(ivec2 _size)
 {
 	ASSERT(_size.x > 0 && _size.y > 0);
 	ASSERT(id);
@@ -287,7 +287,7 @@ void Texture::bind(TextureUnit unit)
 	glBindTexture(GL_TEXTURE_2D, id);
 }
 
-void TextureMS::create(const char* _name, size2i _size, PixelFormat _format, GLsizei _samples)
+void TextureMS::create(const char* _name, ivec2 _size, PixelFormat _format, GLsizei _samples)
 {
 	ASSERT(!id);
 	ASSERT(_name);
@@ -325,7 +325,7 @@ void TextureMS::destroy()
 	name = nullptr;
 }
 
-void TextureMS::resize(size2i _size)
+void TextureMS::resize(ivec2 _size)
 {
 	ASSERT(_size.x > 0 && _size.y > 0);
 	ASSERT(id);
@@ -346,7 +346,7 @@ void TextureMS::bind(TextureUnit unit)
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, id);
 }
 
-void Renderbuffer::create(const char* _name, size2i _size, PixelFormat _format)
+void Renderbuffer::create(const char* _name, ivec2 _size, PixelFormat _format)
 {
 	ASSERT(!id);
 	ASSERT(_name);
@@ -381,7 +381,7 @@ void Renderbuffer::destroy()
 	name = nullptr;
 }
 
-void Renderbuffer::resize(size2i _size)
+void Renderbuffer::resize(ivec2 _size)
 {
 	ASSERT(_size.x > 0 && _size.y > 0);
 	ASSERT(id);
@@ -393,7 +393,7 @@ void Renderbuffer::resize(size2i _size)
 	size = _size;
 }
 
-void RenderbufferMS::create(const char* _name, size2i _size, PixelFormat _format, GLsizei _samples)
+void RenderbufferMS::create(const char* _name, ivec2 _size, PixelFormat _format, GLsizei _samples)
 {
 	ASSERT(!id);
 	ASSERT(_name);
@@ -430,7 +430,7 @@ void RenderbufferMS::destroy()
 	name = nullptr;
 }
 
-void RenderbufferMS::resize(size2i _size)
+void RenderbufferMS::resize(ivec2 _size)
 {
 	ASSERT(_size.x > 0 && _size.y > 0);
 	ASSERT(id);
@@ -618,7 +618,7 @@ void Framebuffer::blit(Framebuffer& dst, const Framebuffer& src,
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst.id);
 	glReadBuffer(+srcBuffer);
 
-	const size2i blitSize = src.attachments[attachmentIndex(srcBuffer)]->size;
+	const ivec2 blitSize = src.attachments[attachmentIndex(srcBuffer)]->size;
 	const GLbitfield mask = GL_COLOR_BUFFER_BIT |
 		(depthStencil? GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT : 0);
 

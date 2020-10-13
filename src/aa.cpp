@@ -112,7 +112,7 @@ static Texture smaaBlendFbColor2;
 static ProgramSmaaSeparate* smaaSeparate = nullptr;
 
 static AAMode currentMode = AANone;
-static size2i currentSize = {0};
+static ivec2 currentSize {0};
 
 static bool initialized = false;
 
@@ -121,7 +121,7 @@ static bool initialized = false;
  * run every frame with the current size of the screen.
  * @param size Current screen size
  */
-static void aaResize(size2i size)
+static void aaResize(ivec2 size)
 {
 	ASSERT(size.x > 0);
 	ASSERT(size.y > 0);

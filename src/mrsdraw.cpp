@@ -5,8 +5,6 @@
 
 #include "mrsdraw.hpp"
 
-#include <glm/mat4x4.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include "particles.hpp"
 #include "mrsdef.hpp"
 #include "debug.hpp"
@@ -25,19 +23,19 @@ static Model* guide = nullptr;
 static Model* block = nullptr;
 static varray<color4, BlocksMax> blockTintsOpaque{};
 static varray<color4, BlocksMax> blockHighlightsOpaque{};
-static varray<glm::mat4, BlocksMax> blockTransformsOpaque{};
+static varray<mat4, BlocksMax> blockTransformsOpaque{};
 static varray<color4, BlocksMax> blockTintsAlpha{};
 static varray<color4, BlocksMax> blockHighlightsAlpha{};
-static varray<glm::mat4, BlocksMax> blockTransformsAlpha{};
+static varray<mat4, BlocksMax> blockTransformsAlpha{};
 
 static Model* border = nullptr;
 static varray<color4, BordersMax> borderTints{};
-static varray<glm::mat4, BordersMax> borderTransforms{};
+static varray<mat4, BordersMax> borderTransforms{};
 
 static bool initialized = false;
 
 /// Last player position as seen by the drawing system
-static point2i lastPlayerPos = {0, 0};
+static ivec2 lastPlayerPos = {0, 0};
 
 /// Last number of player piece 90-degree turns as seen by the drawing system
 static int lastPlayerRotation = 0;
@@ -162,8 +160,8 @@ static void mrsEffectDrop(void)
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
 		int x = mrsTet.player.pos.x + mrsTet.player.shape[i].x;
 		int y = mrsTet.player.pos.y + mrsTet.player.shape[i].y;
-		if (fieldGet(mrsTet.field, (point2i){x, y - 1})) {
-			particlesGenerate((point3f){
+		if (fieldGet(mrsTet.field, (ivec2){x, y - 1})) {
+			particlesGenerate((vec3){
 				(float)x - (float)FieldWidth / 2,
 				(float)y,
 				0.0f
@@ -179,8 +177,8 @@ static void mrsDrawScene(void)
 {
 	float boost = comboFade.apply();
 	color4 boostColor[] = {{boost, boost, boost, 1.0f}};
-	modelDraw(scene, 1, boostColor, nullptr,
-		&IdentityMatrix);
+	auto identity = mat4(1.0f);
+	modelDraw(scene, 1, boostColor, nullptr, &identity);
 }
 
 /**
@@ -189,7 +187,8 @@ static void mrsDrawScene(void)
 static void mrsDrawGuide(void)
 {
 	color4 white[]{{1.0f, 1.0f, 1.0f, 1.0f}};
-	modelDraw(guide, 1, white, nullptr, &IdentityMatrix);
+	auto identity = mat4(1.0f);
+	modelDraw(guide, 1, white, nullptr, &identity);
 }
 
 /**
@@ -210,7 +209,7 @@ static void mrsQueueField(void)
 			continue;
 		}
 
-		mino type = fieldGet(mrsTet.field, (point2i){x, y});
+		mino type = fieldGet(mrsTet.field, (ivec2){x, y});
 		if (type == MinoNone) continue;
 
 		const bool transparent = (minoColor(type).a == 1.0);
@@ -219,7 +218,7 @@ static void mrsQueueField(void)
 		auto& transforms = transparent? blockTransformsOpaque : blockTransformsAlpha;
 		color4* const tint = tints.produce();
 		color4* const highlight = highlights.produce();
-		glm::mat4* const transform = transforms.produce();
+		mat4* const transform = transforms.produce();
 		if (!tint)
 			return; // Block limit reached, no point continuing
 		ASSERT(highlight);
@@ -251,7 +250,7 @@ static void mrsQueueField(void)
 
 		float fx = (float)x;
 		float fy = (float)y - (float)linesCleared * fallProgress;
-		*transform = glm::translate(glm::mat4(1.0f), {
+		*transform = translate(mat4(1.0f), {
 			fx - (signed)(FieldWidth / 2),
 			fy,
 			0.0f
@@ -286,8 +285,8 @@ static void mrsQueuePlayer(void)
 	}
 
 	// Tween the player rotation
-	if (mrsTet.player.rotation != mod(lastPlayerRotation, +SpinSize)) {
-		int delta = mrsTet.player.rotation - mod(lastPlayerRotation, +SpinSize);
+	if (mrsTet.player.rotation != tmod(lastPlayerRotation, +SpinSize)) {
+		int delta = mrsTet.player.rotation - tmod(lastPlayerRotation, +SpinSize);
 		if (delta == 3) delta -= 4;
 		if (delta == -3) delta += 4;
 		playerRotation.from = playerRotation.apply();
@@ -306,30 +305,30 @@ static void mrsQueuePlayer(void)
 	arrayCopy(player, MrsPieces[mrsTet.player.type]);
 
 	// Get piece transform (piece position and rotation)
-	const glm::mat4 pieceTranslation = glm::translate(glm::mat4(1.0f), {
+	const mat4 pieceTranslation = translate(mat4(1.0f), {
 		playerPosX.apply() - (signed)(FieldWidth / 2),
 		playerPosY.apply(),
 		0.0f
 	});
-	const glm::mat4 pieceRotationPre = glm::translate(glm::mat4(1.0f), {
+	const mat4 pieceRotationPre = translate(mat4(1.0f), {
 		0.5f,
 		0.5f,
 		0.0f
 	});
-	const glm::mat4 pieceRotation = glm::rotate(pieceRotationPre,
-		playerRotation.apply() * rad(90.0f), {0.0f, 0.0f, 1.0f});
+	const mat4 pieceRotation = rotate(pieceRotationPre,
+		playerRotation.apply() * radians(90.0f), {0.0f, 0.0f, 1.0f});
 //	mat4x4_rotate_Z(pieceRotation, pieceRotationTemp,
 //		playerRotation.apply() * rad(90.0f));
-	const glm::mat4 pieceRotationPost = glm::translate(pieceRotation, {
+	const mat4 pieceRotationPost = translate(pieceRotation, {
 		-0.5f,
 		-0.5f,
 		0.0f
 	});
-	const glm::mat4 pieceTransform = pieceTranslation * pieceRotationPost;
+	const mat4 pieceTransform = pieceTranslation * pieceRotationPost;
 
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
 		// Get mino transform (offset from piece origin)
-		glm::mat4 minoTransform = glm::translate(glm::mat4(1.0f), {
+		mat4 minoTransform = translate(mat4(1.0f), {
 			player[i].x,
 			player[i].y,
 			0.0f
@@ -377,8 +376,8 @@ static void mrsQueueGhost(void)
 		&& (Window::getTime() >= playerPosY.start + playerPosY.duration))
 		return; // Don't show if player is on the ground
 
-	point2i ghostPos = mrsTet.player.pos;
-	while (!pieceOverlapsField(&mrsTet.player.shape, (point2i){
+	ivec2 ghostPos = mrsTet.player.pos;
+	while (!pieceOverlapsField(&mrsTet.player.shape, (ivec2){
 		ghostPos.x,
 		ghostPos.y - 1
 	}, mrsTet.field))
@@ -399,7 +398,7 @@ static void mrsQueueGhost(void)
 		*tint = minoColor(mrsTet.player.type);
 		tint->a *= MrsGhostDim;
 		*highlight = Clear4;
-		*transform = glm::translate(glm::mat4(1.0f), {x - (signed)(FieldWidth / 2), y, 0.0f});
+		*transform = translate(mat4(1.0f), {x - (signed)(FieldWidth / 2), y, 0.0f});
 	}
 }
 
@@ -424,7 +423,7 @@ static void mrsQueuePreview(void)
 		auto& transforms = transparent? blockTransformsOpaque : blockTransformsAlpha;
 		color4* const tint = tints.produce();
 		color4* const highlight = highlights.produce();
-		glm::mat4* const transform = transforms.produce();
+		mat4* const transform = transforms.produce();
 		if (!tint)
 			return; // Block limit reached, no point continuing
 		ASSERT(highlight);
@@ -432,7 +431,7 @@ static void mrsQueuePreview(void)
 
 		*tint = minoColor(mrsTet.player.preview);
 		*highlight = Clear4;
-		*transform = glm::translate(glm::mat4(1.0f), {x, y, 0.0f});
+		*transform = translate(mat4(1.0f), {x, y, 0.0f});
 	}
 }
 
@@ -468,7 +467,7 @@ static void mrsDrawQueuedBlocks(void)
 	blockTransformsAlpha.clear();
 }
 
-static void mrsQueueBorder(point3f pos, size3f size, color4 color)
+static void mrsQueueBorder(vec3 pos, vec3 size, color4 color)
 {
 	auto* const tint = borderTints.produce();
 	auto* const transform = borderTransforms.produce();
@@ -477,7 +476,7 @@ static void mrsQueueBorder(point3f pos, size3f size, color4 color)
 	ASSERT(transform);
 
 	*tint = color;
-	const glm::mat4 transformTemp = glm::translate(glm::mat4(1.0f), {pos.x, pos.y, pos.z});
+	const mat4 transformTemp = translate(mat4(1.0f), {pos.x, pos.y, pos.z});
 	*transform = glm::scale(transformTemp, {size.x, size.y, size.z});
 }
 
@@ -499,7 +498,7 @@ static void mrsDrawBorder(void)
 			continue;
 		}
 
-		if (!fieldGet(mrsTet.field, (point2i){x, y})) continue;
+		if (!fieldGet(mrsTet.field, (ivec2){x, y})) continue;
 
 		// Coords transformed to world space
 		float tx = (float)x - (signed)(FieldWidth / 2);
@@ -509,52 +508,52 @@ static void mrsDrawBorder(void)
 			alpha *= MrsExtraRowDim;
 
 		// Left
-		if (!fieldGet(mrsTet.field, (point2i){x - 1, y}))
-			mrsQueueBorder((point3f){tx, ty + 0.125f, 0.0f},
-				(size3f){0.125f, 0.75f, 1.0f},
+		if (!fieldGet(mrsTet.field, (ivec2){x - 1, y}))
+			mrsQueueBorder((vec3){tx, ty + 0.125f, 0.0f},
+				(vec3){0.125f, 0.75f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Right
-		if (!fieldGet(mrsTet.field, (point2i){x + 1, y}))
-			mrsQueueBorder((point3f){tx + 0.875f, ty + 0.125f, 0.0f},
-				(size3f){0.125f, 0.75f, 1.0f},
+		if (!fieldGet(mrsTet.field, (ivec2){x + 1, y}))
+			mrsQueueBorder((vec3){tx + 0.875f, ty + 0.125f, 0.0f},
+				(vec3){0.125f, 0.75f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Down
-		if (!fieldGet(mrsTet.field, (point2i){x, y - 1}))
-			mrsQueueBorder((point3f){tx + 0.125f, ty, 0.0f},
-				(size3f){0.75f, 0.125f, 1.0f},
+		if (!fieldGet(mrsTet.field, (ivec2){x, y - 1}))
+			mrsQueueBorder((vec3){tx + 0.125f, ty, 0.0f},
+				(vec3){0.75f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Up
-		if (!fieldGet(mrsTet.field, (point2i){x, y + 1}))
-			mrsQueueBorder((point3f){tx + 0.125f, ty + 0.875f, 0.0f},
-				(size3f){0.75f, 0.125f, 1.0f},
+		if (!fieldGet(mrsTet.field, (ivec2){x, y + 1}))
+			mrsQueueBorder((vec3){tx + 0.125f, ty + 0.875f, 0.0f},
+				(vec3){0.75f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Down Left
-		if (!fieldGet(mrsTet.field, (point2i){x - 1, y - 1})
-			|| !fieldGet(mrsTet.field, (point2i){x - 1, y})
-			|| !fieldGet(mrsTet.field, (point2i){x, y - 1}))
-			mrsQueueBorder((point3f){tx, ty, 0.0f},
-				(size3f){0.125f, 0.125f, 1.0f},
+		if (!fieldGet(mrsTet.field, (ivec2){x - 1, y - 1})
+			|| !fieldGet(mrsTet.field, (ivec2){x - 1, y})
+			|| !fieldGet(mrsTet.field, (ivec2){x, y - 1}))
+			mrsQueueBorder((vec3){tx, ty, 0.0f},
+				(vec3){0.125f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Down Right
-		if (!fieldGet(mrsTet.field, (point2i){x + 1, y - 1})
-			|| !fieldGet(mrsTet.field, (point2i){x + 1, y})
-			|| !fieldGet(mrsTet.field, (point2i){x, y - 1}))
-			mrsQueueBorder((point3f){tx + 0.875f, ty, 0.0f},
-				(size3f){0.125f, 0.125f, 1.0f},
+		if (!fieldGet(mrsTet.field, (ivec2){x + 1, y - 1})
+			|| !fieldGet(mrsTet.field, (ivec2){x + 1, y})
+			|| !fieldGet(mrsTet.field, (ivec2){x, y - 1}))
+			mrsQueueBorder((vec3){tx + 0.875f, ty, 0.0f},
+				(vec3){0.125f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Up Left
-		if (!fieldGet(mrsTet.field, (point2i){x - 1, y + 1})
-			|| !fieldGet(mrsTet.field, (point2i){x - 1, y})
-			|| !fieldGet(mrsTet.field, (point2i){x, y + 1}))
-			mrsQueueBorder((point3f){tx, ty + 0.875f, 0.0f},
-				(size3f){0.125f, 0.125f, 1.0f},
+		if (!fieldGet(mrsTet.field, (ivec2){x - 1, y + 1})
+			|| !fieldGet(mrsTet.field, (ivec2){x - 1, y})
+			|| !fieldGet(mrsTet.field, (ivec2){x, y + 1}))
+			mrsQueueBorder((vec3){tx, ty + 0.875f, 0.0f},
+				(vec3){0.125f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 		// Up Right
-		if (!fieldGet(mrsTet.field, (point2i){x + 1, y + 1})
-			|| !fieldGet(mrsTet.field, (point2i){x + 1, y})
-			|| !fieldGet(mrsTet.field, (point2i){x, y + 1}))
-			mrsQueueBorder((point3f){tx + 0.875f, ty + 0.875f, 0.0f},
-				(size3f){0.125f, 0.125f, 1.0f},
+		if (!fieldGet(mrsTet.field, (ivec2){x + 1, y + 1})
+			|| !fieldGet(mrsTet.field, (ivec2){x + 1, y})
+			|| !fieldGet(mrsTet.field, (ivec2){x, y + 1}))
+			mrsQueueBorder((vec3){tx + 0.875f, ty + 0.875f, 0.0f},
+				(vec3){0.125f, 0.125f, 1.0f},
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 	}
 
@@ -591,7 +590,7 @@ static void mrsDebug(void)
 		nk_layout_row_dynamic(nkCtx(), 16, 10);
 		for (int y = MrsFieldHeightVisible - 1; y >= 0; y -= 1) {
 			for (int x = 0; x < FieldWidth; x += 1) {
-				mino cell = fieldGet(mrsTet.field, (point2i){x, y});
+				mino cell = fieldGet(mrsTet.field, (ivec2){x, y});
 				color4 cellColor = minoColor(cell);
 				if (nk_button_color(nkCtx(), nk_rgba(
 					cellColor.r * 255.0f,
@@ -599,9 +598,9 @@ static void mrsDebug(void)
 					cellColor.b * 255.0f,
 					cellColor.a * 255.0f))) {
 					if (cell)
-						fieldSet(mrsTet.field, (point2i){x, y}, MinoNone);
+						fieldSet(mrsTet.field, (ivec2){x, y}, MinoNone);
 					else
-						fieldSet(mrsTet.field, (point2i){x, y}, MinoGarbage);
+						fieldSet(mrsTet.field, (ivec2){x, y}, MinoGarbage);
 				}
 			}
 		}
@@ -688,14 +687,14 @@ void mrsEffectClear(int row, int power)
 	for (int x = 0; x < FieldWidth; x += 1) {
 		for (int ySub = 0; ySub < 8; ySub += 1) {
 			color4 cellColor = minoColor(
-				fieldGet(mrsTet.field, (point2i){x, row}));
+				fieldGet(mrsTet.field, (ivec2){x, row}));
 			particlesClear.color = cellColor;
 			particlesClear.color.r *= MrsParticlesClearBoost;
 			particlesClear.color.g *= MrsParticlesClearBoost;
 			particlesClear.color.b *= MrsParticlesClearBoost;
 			particlesClear.distanceMin = 3.2f * power;
 			particlesClear.distanceMax = particlesClear.distanceMin * 2.0f;
-			particlesGenerate((point3f){
+			particlesGenerate((vec3){
 					(float)x - (float)FieldWidth / 2,
 					(float)row + 0.0625f + 0.125f * (float)ySub,
 					0.0f},
@@ -709,9 +708,9 @@ void mrsEffectClear(int row, int power)
 void mrsEffectThump(int row)
 {
 	for (int x = 0; x < FieldWidth; x += 1) {
-		if (fieldGet(mrsTet.field, (point2i){x, row})
-			&& fieldGet(mrsTet.field, (point2i){x, row - 1}))
-			particlesGenerate((point3f){
+		if (fieldGet(mrsTet.field, (ivec2){x, row})
+			&& fieldGet(mrsTet.field, (ivec2){x, row - 1}))
+			particlesGenerate((vec3){
 				(float)x - (float)FieldWidth / 2,
 				(float)row,
 				0.0f
@@ -739,8 +738,8 @@ void mrsEffectSlide(int direction, bool fast)
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
 		int x = mrsTet.player.pos.x + mrsTet.player.shape[i].x;
 		int y = mrsTet.player.pos.y + mrsTet.player.shape[i].y;
-		if (fieldGet(mrsTet.field, (point2i){x, y - 1})) {
-			particlesGenerate((point3f){
+		if (fieldGet(mrsTet.field, (ivec2){x, y - 1})) {
+			particlesGenerate((vec3){
 				(float)x - (float)FieldWidth / 2,
 				(float)y,
 				0.0f

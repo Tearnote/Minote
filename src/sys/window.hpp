@@ -12,7 +12,7 @@
 #include <atomic>
 #include <mutex>
 #include <GLFW/glfw3.h>
-#include "base/types.hpp"
+#include "base/math.hpp"
 #include "base/queue.hpp"
 #include "base/time.hpp"
 #include "base/util.hpp"
@@ -68,7 +68,7 @@ struct Window {
 	mutable std::mutex handleMutex;
 
 	const char* title = nullptr; ///< Text displayed on the window's title bar
-	std::atomic<size2i> size; ///< Size of the window in physical pixels
+	std::atomic<ivec2> size; ///< Size of the window in physical pixels
 	std::atomic<float> scale = 0.0f; ///< DPI scaling, where 1.0 is "standard" DPI
 	bool isContextActive = false; ///< Whether the OpenGL context is active on any thread
 
@@ -84,7 +84,7 @@ struct Window {
 	 * this parameter is ignored and the window is created at desktop resolution
 	 * @remark This function must be called on the main thread.
 	 */
-	void open(const char* title, bool fullscreen = false, size2i size = {1280, 720});
+	void open(const char* title, bool fullscreen = false, ivec2 size = {1280, 720});
 
 	/**
 	 * Close an open window. The OpenGL context must be already deactivated.

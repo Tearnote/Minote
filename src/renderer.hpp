@@ -7,7 +7,7 @@
 #define MINOTE_RENDERER_H
 
 #include <stddef.h>
-#include "base/types.hpp"
+#include "base/math.hpp"
 #include "sys/window.hpp"
 #include "sys/opengl.hpp"
 

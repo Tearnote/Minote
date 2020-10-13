@@ -57,7 +57,7 @@ static Framebuffer renderFb;
 static Texture renderFbColor;
 static Renderbuffer renderFbDepthStencil;
 
-static size2i viewportSize = {}; ///< in pixels
+static ivec2 viewportSize = {}; ///< in pixels
 
 static Model* sync = nullptr; ///< Invisible model used to prevent frame buffering
 
@@ -94,7 +94,8 @@ static void rendererSync(void)
 		sync = modelCreateFlat("sync", 3, syncMesh);
 	}
 
-	modelDraw(sync, 1, nullptr, nullptr, &IdentityMatrix);
+	auto identity = mat4(1.0f);
+	modelDraw(sync, 1, nullptr, nullptr, &identity);
 	GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 	glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, milliseconds(100));
 }
@@ -104,7 +105,7 @@ static void rendererSync(void)
  * matrices and framebuffers as needed.
  * @param size New viewport size in pixels
  */
-static void rendererResize(size2i size)
+static void rendererResize(ivec2 size)
 {
 	ASSERT(initialized);
 	ASSERT(size.x > 0);

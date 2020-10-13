@@ -56,7 +56,7 @@ static Texture bloomFbColor[BloomPasses];
 static ProgramThreshold* threshold = nullptr;
 static ProgramBoxBlur* boxBlur = nullptr;
 
-static size2i currentSize = {0};
+static ivec2 currentSize {0};
 static bool initialized = false;
 
 /**
@@ -64,7 +64,7 @@ static bool initialized = false;
  * This can be run every frame with the current size of the screen.
  * @param size Current screen size
  */
-static void bloomResize(size2i size)
+static void bloomResize(ivec2 size)
 {
 	ASSERT(size.x > 0);
 	ASSERT(size.y > 0);
@@ -73,7 +73,7 @@ static void bloomResize(size2i size)
 	currentSize.y = size.y;
 
 	for (size_t i = 0; i < BloomPasses; i += 1) {
-		size2i layerSize = {
+		ivec2 layerSize = {
 			size.x >> (i + 1),
 			size.y >> (i + 1)
 		};
@@ -85,10 +85,10 @@ void bloomInit(Window& w)
 {
 	if (initialized) return;
 	window = &w;
-	size2i windowSize = window->size;
+	ivec2 windowSize = window->size;
 
 	for (size_t i = 0; i < BloomPasses; i += 1) {
-		size2i layerSize = {
+		ivec2 layerSize = {
 			windowSize.x >> (i + 1),
 			windowSize.y >> (i + 1)
 		};

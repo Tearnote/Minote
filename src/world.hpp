@@ -6,25 +6,24 @@
 #ifndef MINOTE_WORLD_H
 #define MINOTE_WORLD_H
 
-#include <glm/mat4x4.hpp>
-#include "base/types.hpp"
+#include "base/math.hpp"
 #include "sys/window.hpp"
 
 /// The 3D projection matrix (view space -> screen space).
 /// Standard OpenGL coordinates - Z points towards the screen.
 /// Read-only.
-extern glm::mat4 worldProjection;
+extern minote::mat4 worldProjection;
 
 /// The 2D projection matrix (window coordinates -> screen space).
 /// 0,0 is top left - remember to flip Y for functions such as glScissor().
 /// Read-only.
-extern glm::mat4 worldScreenProjection;
+extern minote::mat4 worldScreenProjection;
 
 /// The camera transform (world space -> view space). Read-only.
-extern glm::mat4 worldCamera;
+extern minote::mat4 worldCamera;
 
 /// Light source position, in world space. Read-write.
-extern minote::point3f worldLightPosition;
+extern minote::vec3 worldLightPosition;
 
 /// Light source color. Read-write.
 extern minote::color3 worldLightColor;

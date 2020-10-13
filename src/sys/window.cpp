@@ -96,7 +96,7 @@ static void framebufferResizeCallback(GLFWwindow* handle, int width, int height)
 	ASSERT(height);
 	auto& window = getWindow(handle);
 
-	const size2i newSize = {width, height};
+	const ivec2 newSize = {width, height};
 	window.size = newSize;
 	L.info(R"(Window "%s" resized to %dx%d)", window.title, width, height);
 }
@@ -164,7 +164,7 @@ auto Window::getTime() -> nsec
 	return seconds(glfwGetTime());
 }
 
-void Window::open(char const* const _title, const bool fullscreen, size2i _size)
+void Window::open(char const* const _title, const bool fullscreen, ivec2 _size)
 {
 	ASSERT(_title);
 	ASSERT(_size.x >= 0 && _size.y >= 0);
@@ -186,7 +186,7 @@ void Window::open(char const* const _title, const bool fullscreen, size2i _size)
 	glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE); // Declare DPI awareness
 
 	// Create the window handle
-	const auto[wantedSize, monitor] = [=]() -> std::pair<size2i, GLFWmonitor*> {
+	const auto[wantedSize, monitor] = [=]() -> std::pair<ivec2, GLFWmonitor*> {
 		if (fullscreen) {
 			GLFWmonitor* const monitor = glfwGetPrimaryMonitor();
 			const GLFWvidmode* const mode = glfwGetVideoMode(monitor);
@@ -200,8 +200,8 @@ void Window::open(char const* const _title, const bool fullscreen, size2i _size)
 		L.fail(R"(Failed to create window "%s": %s)", title, glfwError());
 
 	// Get window properties
-	const size2i realSize = [=, this] { // Might be different from wanted size because of DPI scaling
-		size2i s;
+	const ivec2 realSize = [=, this] { // Might be different from wanted size because of DPI scaling
+		ivec2 s;
 		glfwGetFramebufferSize(handle, &s.x, &s.y);
 		return s;
 	}();

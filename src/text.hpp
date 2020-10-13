@@ -6,7 +6,7 @@
 #ifndef MINOTE_TEXT_H
 #define MINOTE_TEXT_H
 
-#include "base/types.hpp"
+#include "base/math.hpp"
 #include "fontlist.hpp"
 
 /**
@@ -31,7 +31,7 @@ void textCleanup(void);
  * @param fmt Format string
  * @param ... Any additional arguments for string replacement
  */
-void textQueue(FontType font, float size, minote::point3f pos, minote::color4 color,
+void textQueue(FontType font, float size, minote::vec3 pos, minote::color4 color,
 	const char* fmt, ...);
 
 /**
@@ -46,7 +46,7 @@ void textQueue(FontType font, float size, minote::point3f pos, minote::color4 co
  * @param fmt Format string
  * @param ... Any additional arguments for string replacement
  */
-void textQueueDir(FontType font, float size, minote::point3f pos, minote::point3f dir, minote::point3f up,
+void textQueueDir(FontType font, float size, minote::vec3 pos, minote::vec3 dir, minote::vec3 up,
 	minote::color4 color, const char* fmt, ...);
 
 /**

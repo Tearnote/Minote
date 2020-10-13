@@ -6,8 +6,6 @@
 #include "particles.hpp"
 
 #include <time.h>
-#include <glm/ext/matrix_float4x4.hpp>
-#include <glm/ext/matrix_transform.hpp>
 #include "cephes/protos.h"
 #include "base/varray.hpp"
 #include "model.hpp"
@@ -23,7 +21,7 @@ using namespace minote;
  * lifetime, and current position can be calculated for any point in time.
  */
 typedef struct Particle {
-	point3f origin; ///< Starting point
+	vec3 origin; ///< Starting point
 	color4 color; ///< Individual tint
 	int vert; ///< -1 for down, 1 for up
 	int horz; ///< -1 for left, 1 for right
@@ -121,7 +119,7 @@ void particlesDraw(void)
 
 		float angle = distance * distance;
 		if (current->horz == -1)
-			angle = rad(180.0f) - angle;
+			angle = radians(180.0f) - angle;
 		if (current->vert == -1)
 			angle *= -1.0f;
 
@@ -160,7 +158,7 @@ void particlesDraw(void)
 	particleTransforms.clear();
 }
 
-void particlesGenerate(point3f position, size_t count, ParticleParams* params)
+void particlesGenerate(vec3 position, size_t count, ParticleParams* params)
 {
 	ASSERT(initialized);
 	ASSERT(count);

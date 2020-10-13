@@ -11,7 +11,6 @@
 #include <cstdlib> // Provide free()
 #include <cstring>
 #include <cstdio>
-#include <cmath>
 #include "scope_guard/scope_guard.hpp"
 #include "PPK_ASSERT/ppk_assert.h"
 #include "pcg/pcg_basic.h"
@@ -23,6 +22,8 @@ namespace minote {
 
 /// Improved assert() macro from PPK_ASSERT, with printf-like formatting
 #define ASSERT PPK_ASSERT
+
+// Simple concept library
 
 template<typename T>
 concept Enum = std::is_enum_v<T>;
@@ -36,45 +37,10 @@ concept Integral = std::is_integral_v<T>;
 template<typename T>
 concept Arithmetic = std::is_arithmetic_v<T>;
 
-template<typename T>
-concept Standard = std::is_standard_layout_v<T>;
-
 /// Conversion of scoped enum to the underlying type, using the unary + operator
 template<Enum T>
 constexpr auto operator+(T e) {
 	return static_cast<std::underlying_type_t<T>>(e);
-}
-
-/**
- * A more correct replacement for pi.
- * @see https://tauday.com/
- */
-template<FloatingPoint T>
-constexpr T Tau_v = 6.283185307179586476925286766559005768L;
-
-constexpr auto Tau = Tau_v<double>;
-
- /**
-  * Convert degrees to radians.
-  * @param angle Angle in degrees
-  * @return Angle in radians
-  */
-template<FloatingPoint T>
-constexpr auto rad(T angle)
-{
-	return angle * Tau_v<T> / static_cast<T>(360.0);
-}
-
-/**
- * True modulo operation (as opposed to remainder, which is operator% in C++.)
- * @param num Value
- * @param div Modulo divisor
- * @return Result of modulo (always positive)
- */
-template<Integral T>
-constexpr auto mod(T num, T div)
-{
-	return num % div + (num % div < 0) * div;
 }
 
 /// Encapsulation of a PCG pseudorandom number generator
@@ -90,7 +56,7 @@ struct Rng {
 	 */
 	void seed(std::uint64_t seed)
 	{
-		pcg32_srandom_r(&state, seed, 'M'*'i'+'n'*'o'+'t'*'e');
+		pcg32_srandom_r(&state, seed, 'M' * 'i' + 'n' * 'o' + 't' * 'e');
 	}
 
 	/**
@@ -110,9 +76,10 @@ struct Rng {
      * (exclusive). RNG state is advanced by one step.
 	 * @return A random floating-point number
 	 */
-	auto randFloat()
+	template<FloatingPoint T = float>
+	auto randFloat() -> T
 	{
-		return std::ldexp(pcg32_random_r(&state), -32);
+		return ldexp(static_cast<T>(pcg32_random_r(&state)), -32);
 	}
 
 };

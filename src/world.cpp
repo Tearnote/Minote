@@ -5,8 +5,6 @@
 
 #include "world.hpp"
 
-#include <glm/ext/matrix_clip_space.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include "sys/opengl.hpp"
 #include "sys/window.hpp"
 #include "base/util.hpp"
@@ -19,14 +17,14 @@ using namespace minote;
 /// End of the clipping plane (draw distance), in world distance units
 #define ProjectionFar 100.0f
 
-glm::mat4 worldProjection = {}; ///< perspective transform
-glm::mat4 worldScreenProjection = {}; ///< screenspace transform
-glm::mat4 worldCamera = {}; ///< view transform
-point3f worldLightPosition = {0}; ///< in world space
-color3 worldLightColor = {0};
-color3 worldAmbientColor = {0};
+mat4 worldProjection = {}; ///< perspective transform
+mat4 worldScreenProjection = {}; ///< screenspace transform
+mat4 worldCamera = {}; ///< view transform
+vec3 worldLightPosition {0}; ///< in world space
+color3 worldLightColor {0};
+color3 worldAmbientColor {0};
 
-static size2i currentSize = {0};
+static ivec2 currentSize {0};
 static bool initialized = false;
 
 /**
@@ -34,7 +32,7 @@ static bool initialized = false;
  * every frame with the current size of the screen.
  * @param size Current screen size
  */
-static void worldResize(size2i size)
+static void worldResize(ivec2 size)
 {
 	ASSERT(size.x > 0);
 	ASSERT(size.y > 0);
@@ -43,19 +41,19 @@ static void worldResize(size2i size)
 	currentSize.y = size.y;
 
 	glViewport(0, 0, size.x, size.y);
-	worldProjection = glm::perspective(glm::radians(45.0f),
+	worldProjection = perspective(radians(45.0f),
 		(float)size.x / (float)size.y, ProjectionNear, ProjectionFar);
-	worldScreenProjection = glm::ortho(0.0f, (float)size.x, (float)size.y, 0.0f,
+	worldScreenProjection = ortho(0.0f, (float)size.x, (float)size.y, 0.0f,
 		1.0f, -1.0f);
 }
 
 void worldInit(void)
 {
 	if (initialized) return;
-	constexpr glm::vec3 eye = {0.0f, 12.0f, 32.0f};
-	constexpr glm::vec3 center = {0.0f, 12.0f, 0.0f};
-	constexpr glm::vec3 up = {0.0f, 1.0f, 0.0f};
-	worldCamera = glm::lookAt(eye, center, up);
+	constexpr vec3 eye = {0.0f, 12.0f, 32.0f};
+	constexpr vec3 center = {0.0f, 12.0f, 0.0f};
+	constexpr vec3 up = {0.0f, 1.0f, 0.0f};
+	worldCamera = lookAt(eye, center, up);
 	worldLightPosition.x = -8.0f;
 	worldLightPosition.y = 32.0f;
 	worldLightPosition.z = 16.0f;

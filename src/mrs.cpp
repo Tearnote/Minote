@@ -109,7 +109,7 @@ static void rotate(int direction)
 {
 	ASSERT(direction == 1 || direction == -1);
 	spin prevRotation = mrsTet.player.rotation;
-	point2i prevPosition = mrsTet.player.pos;
+	ivec2 prevPosition = mrsTet.player.pos;
 
 	if (direction == 1)
 		spinClockwise(&mrsTet.player.rotation);
@@ -340,7 +340,7 @@ static void thump(void)
  */
 static bool canDrop(void)
 {
-	return !pieceOverlapsField(&mrsTet.player.shape, (point2i){
+	return !pieceOverlapsField(&mrsTet.player.shape, (ivec2){
 		mrsTet.player.pos.x,
 		mrsTet.player.pos.y - 1
 	}, mrsTet.field);
@@ -392,7 +392,7 @@ void mrsInit(void)
 	mrsTet = {};
 	mrsTet.frame = -1;
 	mrsTet.ready = 3 * 50;
-	mrsTet.field = fieldCreate((size2i){FieldWidth, FieldHeight});
+	mrsTet.field = fieldCreate((ivec2){FieldWidth, FieldHeight});
 	mrsTet.player.autoshiftDelay = MrsAutoshiftRepeat; // Starts out pre-charged
 	mrsTet.player.spawnDelay = MrsSpawnDelay; // Start instantly
 	mrsTet.player.gravity = 3;

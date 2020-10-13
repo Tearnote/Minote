@@ -7,7 +7,7 @@
 #define MINOTE_PARTICLES_H
 
 #include <stddef.h>
-#include "base/types.hpp"
+#include "base/math.hpp"
 #include "base/tween.hpp"
 #include "base/ease.hpp"
 #include "base/time.hpp"
@@ -54,6 +54,6 @@ void particlesDraw(void);
  * @param count Number of particles
  * @param params Generation parameters
  */
-void particlesGenerate(minote::point3f position, size_t count, ParticleParams* params);
+void particlesGenerate(minote::vec3 position, size_t count, ParticleParams* params);
 
 #endif //MINOTE_PARTICLES_H

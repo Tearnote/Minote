@@ -7,7 +7,7 @@
 
 #include <cstddef>
 #include "glad/glad.h"
-#include "base/types.hpp"
+#include "base/math.hpp"
 #include "sys/window.hpp"
 
 namespace minote {
@@ -69,7 +69,7 @@ struct GLObject {
 /// Common fields of texture types
 struct TextureBase : GLObject {
 
-	size2i size = {0, 0}; ///< The texture does not have storage if this is {0, 0}
+	ivec2 size = {0, 0}; ///< The texture does not have storage if this is {0, 0}
 	PixelFormat format = PixelFormat::None;
 
 };
@@ -87,7 +87,7 @@ struct Texture : TextureBase {
 	 * @param size Initial size of the texture storage, in pixels
 	 * @param format Internal format of the texture
 	 */
-	void create(const char* name, size2i size, PixelFormat format);
+	void create(const char* name, ivec2 size, PixelFormat format);
 
 	/**
 	 * Destroy the OpenGL texture object. Storage and ID are both freed.
@@ -105,7 +105,7 @@ struct Texture : TextureBase {
 	 * and the texture data is garbage again.
 	 * @param size New size of the texture storage, in pixels
 	 */
-	void resize(size2i size);
+	void resize(ivec2 size);
 
 	/**
 	 * Upload texture data from CPU to the texture object, replacing previous
@@ -139,7 +139,7 @@ struct TextureMS : TextureBase {
 	 * @param format Internal format of the multisample texture
 	 * @param samples Number of samples per pixel: 2, 4 or 8
 	 */
-	void create(const char* name, size2i size, PixelFormat format, GLsizei samples);
+	void create(const char* name, ivec2 size, PixelFormat format, GLsizei samples);
 
 	/**
 	 * Destroy the OpenGL multisample texture object. Storage and ID are both
@@ -152,7 +152,7 @@ struct TextureMS : TextureBase {
 	 * contents are lost, and the texture data is garbage again.
 	 * @param size New size of the multisample texture storage, in pixels
 	 */
-	void resize(size2i size);
+	void resize(ivec2 size);
 
 	/**
 	 * Bind the multisample texture to the specified texture unit. This allows
@@ -174,7 +174,7 @@ struct Renderbuffer : TextureBase {
 	 * @param size Initial size of the renderbuffer storage, in pixels
 	 * @param format Internal format of the renderbuffer
 	 */
-	void create(const char* name, size2i size, PixelFormat format);
+	void create(const char* name, ivec2 size, PixelFormat format);
 
 	/**
 	 * Destroy the OpenGL renderbuffer object. Storage and ID are both freed.
@@ -186,7 +186,7 @@ struct Renderbuffer : TextureBase {
 	 * are lost, and the renderbuffer data is garbage again.
 	 * @param size New size of the renderbuffer storage, in pixels
 	 */
-	void resize(size2i size);
+	void resize(ivec2 size);
 
 };
 
@@ -206,7 +206,7 @@ struct RenderbufferMS : TextureBase {
 	 * @param format Internal format of the multisample renderbuffer
 	 * @param samples Number of samples per pixel: 2, 4 or 8
 	 */
-	void create(const char* name, size2i size, PixelFormat format, GLsizei samples);
+	void create(const char* name, ivec2 size, PixelFormat format, GLsizei samples);
 
 	/**
 	 * Destroy the OpenGL multisample renderbuffer object. Storage and ID
@@ -219,7 +219,7 @@ struct RenderbufferMS : TextureBase {
 	 * contents are lost, and the renderbuffer data is garbage again.
 	 * @param size New size of the multisample renderbuffer storage, in pixels
 	 */
-	void resize(size2i size);
+	void resize(ivec2 size);
 
 };
 
@@ -333,7 +333,7 @@ struct Framebuffer : GLObject {
 
 };
 
-template<Standard T>
+template<GLSLType T>
 struct Uniform2 {
 
 	using Type = T;

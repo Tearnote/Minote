@@ -55,7 +55,7 @@ void fontInit(void)
 		{
 			char atlasPath[256];
 			snprintf(atlasPath, 256, "%s/%s.png", FONT_DIR, FontList[i]);
-			size2i size{};
+			ivec2 size{};
 			int channels;
 			stbi_set_flip_vertically_on_load(true);
 			unsigned char* atlasData;

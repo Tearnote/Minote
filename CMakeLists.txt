@@ -129,7 +129,7 @@ add_compile_definitions(PPK_ASSERT_DEFAULT_LEVEL=Error)
 set(SOURCES
         src/main.hpp src/main.cpp
         src/base/util.hpp src/base/util.cpp
-        src/base/types.hpp
+        src/base/math.hpp
         src/base/time.hpp src/base/time.cpp
         src/base/log.hpp src/base/log.cpp
         src/base/varray.hpp src/base/varray.tpp
