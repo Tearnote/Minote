@@ -19,33 +19,27 @@
 using namespace minote;
 
 /// Basic blit function type
-typedef struct ProgramBlit {
-	ProgramBase base;
+struct Blit : Shader {
 	Sampler<Texture> image;
 	Uniform<float> boost;
-} ProgramBlit;
+};
 
 /// Internal gamma correction shader
-typedef struct ProgramDelinearize {
-	ProgramBase base;
+struct Delinearize : Shader {
 	Sampler<Texture> image;
-} ProgramDelinearize;
+};
 
-static const char* ProgramBlitVertName = "blit.vert";
-static const GLchar* ProgramBlitVertSrc = (GLchar[]){
+static const GLchar* BlitVertSrc = (GLchar[]){
 #include "blit.vert"
 	'\0'};
-static const char* ProgramBlitFragName = "blit.frag";
-static const GLchar* ProgramBlitFragSrc = (GLchar[]){
+static const GLchar* BlitFragSrc = (GLchar[]){
 #include "blit.frag"
 	'\0'};
 
-static const char* ProgramDelinearizeVertName = "delinearize.vert";
-static const GLchar* ProgramDelinearizeVertSrc = (GLchar[]){
+static const GLchar* DelinearizeVertSrc = (GLchar[]){
 #include "delinearize.vert"
 	'\0'};
-static const char* ProgramDelinearizeFragName = "delinearize.frag";
-static const GLchar* ProgramDelinearizeFragSrc = (GLchar[]){
+static const GLchar* DelinearizeFragSrc = (GLchar[]){
 #include "delinearize.frag"
 	'\0'};
 
@@ -61,8 +55,8 @@ static ivec2 viewportSize = {}; ///< in pixels
 
 static Model* sync = nullptr; ///< Invisible model used to prevent frame buffering
 
-static ProgramBlit* blit = nullptr;
-static ProgramDelinearize* delinearize = nullptr;
+static Blit blit;
+static Delinearize delinearize;
 
 static bool syncEnabled = true;
 
@@ -228,16 +222,12 @@ void rendererInit(Window& w)
 	rendererFramebuffer().bind();
 
 	// Create built-in shaders
-	blit = programCreate(ProgramBlit,
-		ProgramBlitVertName, ProgramBlitVertSrc,
-		ProgramBlitFragName, ProgramBlitFragSrc);
-	blit->image.setLocation(blit->base.id, "image");
-	blit->boost.setLocation(blit->base.id, "boost");
+	blit.create("blit", BlitVertSrc, BlitFragSrc);
+	blit.image.setLocation(blit, "image");
+	blit.boost.setLocation(blit, "boost");
 
-	delinearize = programCreate(ProgramDelinearize,
-		ProgramDelinearizeVertName, ProgramDelinearizeVertSrc,
-		ProgramDelinearizeFragName, ProgramDelinearizeFragSrc);
-	delinearize->image.setLocation(delinearize->base.id, "image");
+	delinearize.create("delinearize", DelinearizeVertSrc, DelinearizeFragSrc);
+	delinearize.image.setLocation(delinearize, "image");
 
 	L.debug("Created renderer for window \"%s\"", window->title);
 }
@@ -247,10 +237,8 @@ void rendererCleanup(void)
 	if (!initialized) return;
 	modelDestroy(sync);
 	sync = nullptr;
-	programDestroy(delinearize);
-	delinearize = nullptr;
-	programDestroy(blit);
-	blit = nullptr;
+	delinearize.destroy();
+	blit.destroy();
 	renderFbDepthStencil.destroy();
 	renderFbColor.destroy();
 	renderFb.destroy();
@@ -283,8 +271,8 @@ void rendererFrameEnd(void)
 
 	glDisable(GL_BLEND);
 	Framebuffer::unbind();
-	programUse(delinearize);
-	delinearize->image = renderFbColor;
+	delinearize.bind();
+	delinearize.image = renderFbColor;
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 	window->flip();
 	if (syncEnabled)
@@ -294,9 +282,9 @@ void rendererFrameEnd(void)
 
 void rendererBlit(Texture& t, GLfloat boost)
 {
-	programUse(blit);
-	blit->image = t;
-	blit->boost = boost;
+	blit.bind();
+	blit.image = t;
+	blit.boost = boost;
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 

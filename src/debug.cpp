@@ -23,11 +23,10 @@ using namespace minote;
 #define NUKLEAR_EBO_SIZE 256 * 1024
 
 /// Nuklear shader type
-typedef struct ProgramNuklear {
-	ProgramBase base;
+struct Nuklear : Shader {
 	Sampler<Texture> atlas;
 	Uniform<mat4> projection;
-} ProgramNuklear;
+};
 
 typedef struct VertexNuklear {
 	vec2 pos;
@@ -42,12 +41,10 @@ static const struct nk_draw_vertex_layout_element nuklearVertexLayout[] = {
 	{NK_VERTEX_LAYOUT_END}
 };
 
-static const char* ProgramNuklearVertName = "nuklear.vert";
-static const GLchar* ProgramNuklearVertSrc = (GLchar[]){
+static const GLchar* NuklearVertSrc = (GLchar[]){
 #include "nuklear.vert"
 	'\0'};
-static const char* ProgramNuklearFragName = "nuklear.frag";
-static const GLchar* ProgramNuklearFragSrc = (GLchar[]){
+static const GLchar* NuklearFragSrc = (GLchar[]){
 #include "nuklear.frag"
 	'\0'};
 
@@ -57,7 +54,7 @@ static struct nk_font_atlas atlas = {};
 static struct nk_draw_null_texture nullTexture = {};
 static struct nk_buffer commandList = {0};
 
-static struct ProgramNuklear* nuklear;
+static Nuklear nuklear;
 static Texture nuklearTexture;
 
 static VertexArray nuklearVao = 0;
@@ -159,11 +156,9 @@ void debugInit(void)
 	nk_style_from_table(&nkContext, table);
 
 	// Compile the shader
-	nuklear = programCreate(ProgramNuklear,
-		ProgramNuklearVertName, ProgramNuklearVertSrc,
-		ProgramNuklearFragName, ProgramNuklearFragSrc);
-	nuklear->atlas.setLocation(nuklear->base.id, "atlas");
-	nuklear->projection.setLocation(nuklear->base.id, "projection");
+	nuklear.create("nuklear", NuklearVertSrc, NuklearFragSrc);
+	nuklear.atlas.setLocation(nuklear, "atlas");
+	nuklear.projection.setLocation(nuklear, "projection");
 
 	// Set up the buffers
 	glGenVertexArrays(1, &nuklearVao);
@@ -200,8 +195,7 @@ void debugCleanup(void)
 	nuklearVbo = 0;
 	glDeleteVertexArrays(1, &nuklearVao);
 	nuklearVao = 0;
-	programDestroy(nuklear);
-	nuklear = nullptr;
+	nuklear.destroy();
 	nuklearTexture.destroy();
 	nk_font_atlas_cleanup(&atlas);
 	nk_free(&nkContext);
@@ -243,9 +237,9 @@ void debugDraw(Window& window)
 	glDisable(GL_DEPTH_TEST);
 	glEnable(GL_SCISSOR_TEST);
 
-	programUse(nuklear);
-	nuklear->atlas = nuklearTexture;
-	nuklear->projection = worldScreenProjection;
+	nuklear.bind();
+	nuklear.atlas = nuklearTexture;
+	nuklear.projection = worldScreenProjection;
 	glBindVertexArray(nuklearVao);
 
 	glBindBuffer(GL_ARRAY_BUFFER, nuklearVbo);
@@ -285,7 +279,7 @@ void debugDraw(Window& window)
 	const nk_draw_index* offset = nullptr;
 	nk_draw_foreach(command, &nkContext, &commandList) {
 		if (!command->elem_count) continue;
-		nuklear->atlas = *static_cast<Texture*>(command->texture.ptr);
+		nuklear.atlas = *static_cast<Texture*>(command->texture.ptr);
 		glScissor(command->clip_rect.x,
 			screenSize.y - command->clip_rect.y - command->clip_rect.h,
 			command->clip_rect.w, command->clip_rect.h);

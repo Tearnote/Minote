@@ -10,12 +10,12 @@
 namespace minote {
 
 template<GLSLType T>
-void Uniform<T>::setLocation(const Program program, const char* const name)
+void Uniform<T>::setLocation(const Shader& shader, const char* const name)
 {
-	ASSERT(program);
+	ASSERT(shader.id);
 	ASSERT(name);
 
-	location = glGetUniformLocation(program, name);
+	location = glGetUniformLocation(shader.id, name);
 
 	if (location == -1)
 		L.warn(R"(Failed to get location for uniform "%s")", name);
@@ -46,23 +46,23 @@ void Uniform<T>::set(const Type val)
 	else if constexpr (std::is_same_v<Type, mat4>)
 		glUniformMatrix4fv(location, 1, false, value_ptr(val));
 	else
-		ASSERT(false); // Unreachable if the Concept holds
+		ASSERT(false); // Unreachable if T concept holds
 }
 
 template<GLSLTexture T>
-void Sampler<T>::setLocation(const Program program, const char* const name, const TextureUnit _unit)
+void Sampler<T>::setLocation(const Shader& shader, const char* const name, const TextureUnit _unit)
 {
-	ASSERT(program);
+	ASSERT(shader.id);
 	ASSERT(name);
 	ASSERT(_unit != TextureUnit::None);
 
-	location = glGetUniformLocation(program, name);
+	location = glGetUniformLocation(shader.id, name);
 	if (location == -1) {
 		L.warn(R"(Failed to get location for sampler "%s")", name);
 		return;
 	}
 
-	glUseProgram(program);
+	shader.bind();
 	glUniform1i(location, +_unit - GL_TEXTURE0);
 	unit = _unit;
 }

@@ -17,13 +17,12 @@
 using namespace minote;
 
 /// Shader type for MSDF drawing
-typedef struct ProgramMsdf {
-	ProgramBase base;
+struct Msdf : Shader {
 	Sampler<Texture> transforms; ///< Buffer texture containing per-string transforms
 	Sampler<Texture> atlas; ///< Font atlas
 	Uniform<mat4> camera;
 	Uniform<mat4> projection;
-} ProgramMsdf;
+};
 
 /// Single glyph instance for the MSDF shader
 typedef struct GlyphMsdf {
@@ -34,19 +33,17 @@ typedef struct GlyphMsdf {
 	int transformIndex; ///< Index of the string transform from the "transforms" buffer texture
 } GlyphMsdf;
 
-static const char* ProgramMsdfVertName = "msdf.vert";
-static const GLchar* ProgramMsdfVertSrc = (GLchar[]){
+static const GLchar* MsdfVertSrc = (GLchar[]){
 #include "msdf.vert"
 	'\0'};
-static const char* ProgramMsdfFragName = "msdf.frag";
-static const GLchar* ProgramMsdfFragSrc = (GLchar[]){
+static const GLchar* MsdfFragSrc = (GLchar[]){
 #include "msdf.frag"
 	'\0'};
 
 static constexpr std::size_t MaxGlyphs{1024};
 static constexpr std::size_t MaxStrings{1024};
 
-static ProgramMsdf* msdf = nullptr;
+static Msdf msdf;
 static VertexArray msdfVao[FontSize] = {0};
 static VertexBuffer msdfGlyphsVbo[FontSize] = {0};
 static varray<GlyphMsdf, MaxGlyphs> msdfGlyphs[FontSize]{};
@@ -134,13 +131,11 @@ void textInit(void)
 {
 	if (initialized) return;
 
-	msdf = programCreate(ProgramMsdf,
-		ProgramMsdfVertName, ProgramMsdfVertSrc,
-		ProgramMsdfFragName, ProgramMsdfFragSrc);
-	msdf->atlas.setLocation(msdf->base.id, "atlas", TextureUnit::_0);
-	msdf->transforms.setLocation(msdf->base.id, "transforms", TextureUnit::_1);
-	msdf->projection.setLocation(msdf->base.id, "projection");
-	msdf->camera.setLocation(msdf->base.id, "camera");
+	msdf.create("msdf", MsdfVertSrc, MsdfFragSrc);
+	msdf.atlas.setLocation(msdf, "atlas", TextureUnit::_0);
+	msdf.transforms.setLocation(msdf, "transforms", TextureUnit::_1);
+	msdf.projection.setLocation(msdf, "projection");
+	msdf.camera.setLocation(msdf, "camera");
 
 	glGenBuffers(FontSize, msdfGlyphsVbo);
 	glGenVertexArrays(FontSize, msdfVao);
@@ -198,8 +193,7 @@ void textCleanup(void)
 	glDeleteVertexArrays(FontSize, msdfVao);
 	arrayClear(msdfVao);
 
-	programDestroy(msdf);
-	msdf = nullptr;
+	msdf.destroy();
 
 	L.debug("Fonts cleaned up");
 	initialized = false;
@@ -249,12 +243,12 @@ void textDraw(void)
 		glBufferSubData(GL_TEXTURE_BUFFER, 0, transformsSize, msdfTransforms[i].data());
 
 		glBindVertexArray(msdfVao[i]);
-		programUse(msdf);
-		msdf->atlas = fonts[i].atlas;
-		glActiveTexture(+msdf->transforms.unit);
+		msdf.bind();
+		msdf.atlas = fonts[i].atlas;
+		glActiveTexture(+msdf.transforms.unit);
 		glBindTexture(GL_TEXTURE_BUFFER, msdfTransformsTex[i]);
-		msdf->projection = worldProjection;
-		msdf->camera = worldCamera;
+		msdf.projection = worldProjection;
+		msdf.camera = worldCamera;
 		glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, instances);
 
 		msdfGlyphs[i].clear();

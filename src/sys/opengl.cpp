@@ -9,118 +9,6 @@
 
 namespace minote {
 
-/// OpenGL shader object ID
-using Shader = GLuint;
-
-GLuint boundProgram = 0;
-
-/**
- * Create an OpenGL shader object. The shader is compiled and ready for linking.
- * @param name Human-readable name for reference
- * @param source Struct containing shader's name and GLSL source code
- * @param type GL_VERTEX_SHADER or GL_FRAGMENT_SHADER
- * @return Newly created ::Shader's ID
- */
-static Shader shaderCreate(const char* name, const char* source, GLenum type)
-{
-		ASSERT(name);
-		ASSERT(source);
-		ASSERT(type == GL_VERTEX_SHADER || type == GL_FRAGMENT_SHADER);
-	Shader shader = glCreateShader(type);
-	glShaderSource(shader, 1, &source, nullptr);
-	glCompileShader(shader);
-	GLint compileStatus = 0;
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &compileStatus);
-	if (compileStatus == GL_FALSE) {
-		GLchar infoLog[512];
-		glGetShaderInfoLog(shader, 512, nullptr, infoLog);
-		L.error("Failed to compile shader %s: %s", name, infoLog);
-		glDeleteShader(shader);
-		return 0;
-	}
-		ASSERT(shader);
-	L.debug("Compiled %s shader %s",
-		type == GL_VERTEX_SHADER ? "vertex" : "fragment", name);
-	return shader;
-}
-
-/**
- * Destroy a ::Shader instance. The shader ID becomes invalid and cannot be
- * used again.
- * @param shader ::Shader ID to destroy
- */
-static void shaderDestroy(Shader shader)
-{
-	glDeleteShader(shader);
-}
-
-void* _programCreate(size_t size, const char* vertName, const char* vertSrc,
-	const char* fragName, const char* fragSrc)
-{
-		ASSERT(size);
-		ASSERT(vertName);
-		ASSERT(vertSrc);
-		ASSERT(fragName);
-		ASSERT(fragSrc);
-	// Overallocating memory so that it fits in the user's provided struct type
-	auto* result = reinterpret_cast<ProgramBase*>(allocate<uint8_t>(size));
-	result->vertName = vertName;
-	result->fragName = fragName;
-	Shader vert = shaderCreate(vertName, vertSrc, GL_VERTEX_SHADER);
-	if (vert == 0)
-		return result;
-	Shader frag = shaderCreate(fragName, fragSrc, GL_FRAGMENT_SHADER);
-	if (frag == 0) {
-		shaderDestroy(vert); // Proper cleanup, how fancy
-		return result;
-	}
-
-	result->id = glCreateProgram();
-	glAttachShader(result->id, vert);
-	glAttachShader(result->id, frag);
-	glLinkProgram(result->id);
-	GLint linkStatus = 0;
-	glGetProgramiv(result->id, GL_LINK_STATUS, &linkStatus);
-	if (linkStatus == GL_FALSE) {
-		GLchar infoLog[512];
-		glGetProgramInfoLog(result->id, 512, nullptr, infoLog);
-		L.error("Failed to link shader program %s+%s: %s",
-			vertName, fragName, infoLog);
-		glDeleteProgram(result->id);
-		result->id = 0;
-	}
-	shaderDestroy(frag);
-	frag = 0;
-	shaderDestroy(vert);
-	vert = 0;
-	L.debug("Linked shader program %s+%s", vertName, fragName);
-#ifndef NDEBUG
-	glObjectLabel(GL_PROGRAM, result->id, std::strlen(fragName), fragName);
-#endif //NDEBUG
-	return result;
-}
-
-void _programDestroy(ProgramBase* program)
-{
-	if (!program) return;
-	glDeleteProgram(program->id);
-	program->id = 0;
-	L.debug("Destroyed shader program %s+%s",
-		program->vertName, program->fragName);
-	free(program);
-	program = nullptr;
-}
-
-void _programUse(ProgramBase* program)
-{
-		ASSERT(program);
-	if (program->id == boundProgram) return;
-	glUseProgram(program->id);
-	boundProgram = program->id;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 static auto attachmentIndex(const Attachment attachment) -> std::size_t
 {
 	switch(attachment) {
@@ -604,6 +492,97 @@ void Framebuffer::blit(Framebuffer& dst, const Framebuffer& src,
 	glBlitFramebuffer(0, 0, blitSize.x, blitSize.y,
 		0, 0, blitSize.x, blitSize.y,
 		mask, GL_NEAREST);
+}
+
+static auto compileShaderStage(const GLuint id, const char* const name, const char* const source) -> bool
+{
+	ASSERT(id);
+	ASSERT(name);
+	ASSERT(source);
+
+	glShaderSource(id, 1, &source, nullptr);
+	glCompileShader(id);
+
+	GLint compileStatus = 0;
+	glGetShaderiv(id, GL_COMPILE_STATUS, &compileStatus);
+	if (compileStatus == GL_FALSE) {
+		GLchar infoLog[2048] = "";
+		glGetShaderInfoLog(id, 2048, nullptr, infoLog);
+		L.error(R"(Shader "%s" failed to compile: %s)", name, infoLog);
+		return false;
+	}
+	L.debug(R"(Shader "%s" compiled)", name);
+	return true;
+}
+
+void Shader::create(char const* _name, char const* vertSrc, char const* fragSrc)
+{
+	ASSERT(!id);
+	ASSERT(_name);
+	ASSERT(vertSrc);
+	ASSERT(fragSrc);
+
+	const GLuint vert = glCreateShader(GL_VERTEX_SHADER);
+#ifndef NDEBUG
+	glObjectLabel(GL_SHADER, vert, std::strlen(_name), _name);
+#endif //NDEBUG
+	defer { glDeleteShader(vert); };
+	const GLuint frag = glCreateShader(GL_FRAGMENT_SHADER);
+#ifndef NDEBUG
+	glObjectLabel(GL_SHADER, frag, std::strlen(_name), _name);
+#endif //NDEBUG
+	defer { glDeleteShader(frag); };
+
+	if (!compileShaderStage(vert, _name, vertSrc))
+		return;
+	if (!compileShaderStage(frag, _name, fragSrc))
+		return;
+
+	id = glCreateProgram();
+#ifndef NDEBUG
+	glObjectLabel(GL_PROGRAM, id, std::strlen(_name), _name);
+#endif //NDEBUG
+	glAttachShader(id, vert);
+	glAttachShader(id, frag);
+
+	glLinkProgram(id);
+	const GLint linkStatus = [=, this] {
+		GLint status = 0;
+		glGetProgramiv(id, GL_LINK_STATUS, &status);
+		return status;
+	}();
+	if (linkStatus == GL_FALSE) {
+		std::array<GLchar, 2048> infoLog = {};
+		glGetProgramInfoLog(id, infoLog.size(), nullptr, infoLog.data());
+		L.error(R"(Shader "%s" failed to link: %s)", _name, infoLog.data());
+		glDeleteProgram(id);
+		id = 0;
+		return;
+	}
+
+	name = _name;
+	L.info(R"(Shader "%s" created)", name);
+}
+
+void Shader::destroy()
+{
+#ifndef NDEBUG
+	if (!id) {
+		L.warn("Tried to destroy a shader that has not been created");
+		return;
+	}
+#endif //NDEBUG
+
+	glDeleteProgram(id);
+	id = 0;
+	L.debug(R"(Shader "%s" destroyed)", name);
+	name = nullptr;
+}
+
+void Shader::bind() const
+{
+	ASSERT(id);
+	glUseProgram(id);
 }
 
 }

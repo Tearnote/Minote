@@ -362,6 +362,16 @@ struct Framebuffer : GLObject {
 
 };
 
+struct Shader : GLObject {
+
+	void create(const char* name, const char* vertSrc, const char* fragSrc);
+
+	void destroy();
+
+	void bind() const;
+
+};
+
 template<GLSLType T>
 struct Uniform {
 
@@ -370,7 +380,7 @@ struct Uniform {
 	GLint location = -1;
 	Type value = {};
 
-	void setLocation(Program program, const char* name);
+	void setLocation(const Shader& shader, const char* name);
 
 	void set(Type val);
 
@@ -400,7 +410,7 @@ struct Sampler {
 	GLint location = -1;
 	TextureUnit unit = TextureUnit::None;
 
-	void setLocation(Program program, const char* name, TextureUnit unit = TextureUnit::_0);
+	void setLocation(const Shader& shader, const char* name, TextureUnit unit = TextureUnit::_0);
 
 	void set(Type& val);
 
@@ -413,55 +423,6 @@ struct Sampler {
 	auto operator=(Sampler&&) -> Sampler& = delete;
 
 };
-
-/**
- * Base struct of ::Program type. To be a valid ::Program type usable with below
- * functions, a struct needs to have ::ProgramBase as its first element.
- */
-typedef struct ProgramBase {
-	Program id;
-	const char* vertName; ///< Filename of the vertex shader for reference
-	const char* fragName; ///< Filename of the fragment shader for reference
-} ProgramBase;
-
-/**
- * Create a new ::Program of specified valid type. Shaders are compiled, linked
- * and ready for use.
- * @param type A struct type with ::ProgramBase as its first element
- * @param vertName Name of the vertex shader
- * @param vertSrc GLSL source of the vertex shader
- * @param fragName Name of the fragment shader
- * @param fragSrc GLSL source of the fragment shader
- * @return Newly created Program. Must be destroyed with #programDestroy()
- */
-#define programCreate(type, vertName, vertSrc, fragName, fragSrc) \
-    ((type*)_programCreate(sizeof(type), (vertName), (vertSrc),   \
-                                         (fragName), (fragSrc)))
-
-/**
- * Destroy a ::Program. The pointer becomes invalid and cannot be used again.
- * @param program The ::Program object
- */
-#define programDestroy(program) \
-    (_programDestroy((ProgramBase*)(program)))
-
-/**
- * Activate a ::Program for rendering. The same ::Program stays active for any
- * number of draw calls until changed with another programUse().
- * @param program The Program object
- */
-#define programUse(program) \
-    (_programUse((ProgramBase*)(program)))
-
-////////////////////////////////////////////////////////////////////////////////
-// Implementation details
-
-void* _programCreate(size_t size, const char* vertName, const char* vertSrc,
-	const char* fragName, const char* fragSrc);
-
-void _programDestroy(ProgramBase* program);
-
-void _programUse(ProgramBase* program);
 
 }
 

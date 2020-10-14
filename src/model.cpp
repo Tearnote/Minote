@@ -12,15 +12,13 @@
 using namespace minote;
 
 /// Flat shading type
-typedef struct ProgramFlat {
-	ProgramBase base;
+struct Flat : Shader {
 	Uniform<mat4> camera;
 	Uniform<mat4> projection;
-} ProgramFlat;
+};
 
 /// Phong-Blinn shading type
-typedef struct ProgramPhong {
-	ProgramBase base;
+struct Phong : Shader {
 	Uniform<mat4> camera;
 	Uniform<mat4> projection;
 	Uniform<vec3> lightPosition;
@@ -30,28 +28,24 @@ typedef struct ProgramPhong {
 	Uniform<float> diffuse;
 	Uniform<float> specular;
 	Uniform<float> shine;
-} ProgramPhong;
+};
 
-static const char* ProgramFlatVertName = "flat.vert";
-static const GLchar* ProgramFlatVertSrc = (GLchar[]){
+static const GLchar* FlatVertSrc = (GLchar[]){
 #include "flat.vert"
 	'\0'};
-static const char* ProgramFlatFragName = "flat.frag";
-static const GLchar* ProgramFlatFragSrc = (GLchar[]){
+static const GLchar* FlatFragSrc = (GLchar[]){
 #include "flat.frag"
 	'\0'};
 
-static const char* ProgramPhongVertName = "phong.vert";
-static const GLchar* ProgramPhongVertSrc = (GLchar[]){
+static const GLchar* PhongVertSrc = (GLchar[]){
 #include "phong.vert"
 	'\0'};
-static const char* ProgramPhongFragName = "phong.frag";
-static const GLchar* ProgramPhongFragSrc = (GLchar[]){
+static const GLchar* PhongFragSrc = (GLchar[]){
 #include "phong.frag"
 	'\0'};
 
-static ProgramFlat* flat = nullptr;
-static ProgramPhong* phong = nullptr;
+static Flat flat;
+static Phong phong;
 
 static bool initialized = false;
 
@@ -59,24 +53,20 @@ void modelInit(void)
 {
 	if (initialized) return;
 
-	flat = programCreate(ProgramFlat,
-		ProgramFlatVertName, ProgramFlatVertSrc,
-		ProgramFlatFragName, ProgramFlatFragSrc);
-	flat->projection.setLocation(flat->base.id, "projection");
-	flat->camera.setLocation(flat->base.id, "camera");
+	flat.create("flat", FlatVertSrc, FlatFragSrc);
+	flat.projection.setLocation(flat, "projection");
+	flat.camera.setLocation(flat, "camera");
 
-	phong = programCreate(ProgramPhong,
-		ProgramPhongVertName, ProgramPhongVertSrc,
-		ProgramPhongFragName, ProgramPhongFragSrc);
-	phong->projection.setLocation(phong->base.id, "projection");
-	phong->camera.setLocation(phong->base.id, "camera");
-	phong->lightPosition.setLocation(phong->base.id, "lightPosition");
-	phong->lightColor.setLocation(phong->base.id, "lightColor");
-	phong->ambientColor.setLocation(phong->base.id, "ambientColor");
-	phong->ambient.setLocation(phong->base.id, "ambient");
-	phong->diffuse.setLocation(phong->base.id, "diffuse");
-	phong->specular.setLocation(phong->base.id, "specular");
-	phong->shine.setLocation(phong->base.id, "shine");
+	phong.create("phong", PhongVertSrc, PhongFragSrc);
+	phong.projection.setLocation(phong, "projection");
+	phong.camera.setLocation(phong, "camera");
+	phong.lightPosition.setLocation(phong, "lightPosition");
+	phong.lightColor.setLocation(phong, "lightColor");
+	phong.ambientColor.setLocation(phong, "ambientColor");
+	phong.ambient.setLocation(phong, "ambient");
+	phong.diffuse.setLocation(phong, "diffuse");
+	phong.specular.setLocation(phong, "specular");
+	phong.shine.setLocation(phong, "shine");
 
 	initialized = true;
 }
@@ -85,10 +75,8 @@ void modelCleanup(void)
 {
 	if (!initialized) return;
 
-	programDestroy(phong);
-	phong = nullptr;
-	programDestroy(flat);
-	flat = nullptr;
+	phong.destroy();
+	flat.destroy();
 
 	initialized = false;
 }
@@ -166,7 +154,7 @@ static void modelDrawFlat(ModelFlat* m, size_t instances,
 	if (!instances) return;
 
 	glBindVertexArray(m->vao);
-	programUse(flat);
+	flat.bind();
 	if (tints) {
 		glEnableVertexAttribArray(2);
 		glBindBuffer(GL_ARRAY_BUFFER, m->tints);
@@ -192,8 +180,8 @@ static void modelDrawFlat(ModelFlat* m, size_t instances,
 	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4) * instances, nullptr,
 		GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4) * instances, transforms);
-	flat->projection = worldProjection;
-	flat->camera = worldCamera;
+	flat.projection = worldProjection;
+	flat.camera = worldCamera;
 	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numVertices, instances);
 }
 
@@ -223,7 +211,7 @@ static void modelDrawPhong(ModelPhong* m, size_t instances,
 	if (!instances) return;
 
 	glBindVertexArray(m->vao);
-	programUse(phong);
+	phong.bind();
 	if (tints) {
 		glEnableVertexAttribArray(3);
 		glBindBuffer(GL_ARRAY_BUFFER, m->tints);
@@ -249,15 +237,15 @@ static void modelDrawPhong(ModelPhong* m, size_t instances,
 	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4) * instances, nullptr,
 		GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4) * instances, transforms);
-	phong->projection = worldProjection;
-	phong->camera = worldCamera;
-	phong->lightPosition = worldLightPosition;
-	phong->lightColor = worldLightColor;
-	phong->ambientColor = worldAmbientColor;
-	phong->ambient = m->material.ambient;
-	phong->diffuse = m->material.diffuse;
-	phong->specular = m->material.specular;
-	phong->shine = m->material.shine;
+	phong.projection = worldProjection;
+	phong.camera = worldCamera;
+	phong.lightPosition = worldLightPosition;
+	phong.lightColor = worldLightColor;
+	phong.ambientColor = worldAmbientColor;
+	phong.ambient = m->material.ambient;
+	phong.diffuse = m->material.diffuse;
+	phong.specular = m->material.specular;
+	phong.shine = m->material.shine;
 	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numVertices, instances);
 }
 

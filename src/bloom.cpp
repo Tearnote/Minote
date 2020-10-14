@@ -16,36 +16,30 @@ using namespace minote;
 #define BloomPasses 6
 
 /// Bloom threshold filter type
-typedef struct ProgramThreshold {
-	ProgramBase base;
+struct Threshold : Shader {
 	Sampler<Texture> image;
 	Uniform<float> threshold;
 	Uniform<float> softKnee;
 	Uniform<float> strength;
-} ProgramThreshold;
+};
 
-typedef struct ProgramBoxBlur {
-	ProgramBase base;
+struct BoxBlur : Shader {
 	Sampler<Texture> image;
 	Uniform<float> step;
 	Uniform<vec2> imageTexel;
-} ProgramBoxBlur;
+};
 
-static const char* ProgramThresholdVertName = "threshold.vert";
-static const GLchar* ProgramThresholdVertSrc = (GLchar[]){
+static const GLchar* ThresholdVertSrc = (GLchar[]){
 #include "threshold.vert"
 	'\0'};
-static const char* ProgramThresholdFragName = "threshold.frag";
-static const GLchar* ProgramThresholdFragSrc = (GLchar[]){
+static const GLchar* ThresholdFragSrc = (GLchar[]){
 #include "threshold.frag"
 	'\0'};
 
-static const char* ProgramBoxBlurVertName = "boxBlur.vert";
-static const GLchar* ProgramBoxBlurVertSrc = (GLchar[]){
+static const GLchar* BoxBlurVertSrc = (GLchar[]){
 #include "boxBlur.vert"
 	'\0'};
-static const char* ProgramBoxBlurFragName = "boxBlur.frag";
-static const GLchar* ProgramBoxBlurFragSrc = (GLchar[]){
+static const GLchar* BoxBlurFragSrc = (GLchar[]){
 #include "boxBlur.frag"
 	'\0'};
 
@@ -53,8 +47,8 @@ static Window* window = nullptr;
 
 static Framebuffer bloomFb[BloomPasses];
 static Texture bloomFbColor[BloomPasses];
-static ProgramThreshold* threshold = nullptr;
-static ProgramBoxBlur* boxBlur = nullptr;
+static Threshold threshold;
+static BoxBlur boxBlur;
 
 static ivec2 currentSize {0};
 static bool initialized = false;
@@ -101,20 +95,16 @@ void bloomInit(Window& w)
 	for (size_t i = 0; i < BloomPasses; i += 1)
 		bloomFb[i].attach(bloomFbColor[i], Attachment::Color0);
 
-	threshold = programCreate(ProgramThreshold,
-		ProgramThresholdVertName, ProgramThresholdVertSrc,
-		ProgramThresholdFragName, ProgramThresholdFragSrc);
-	threshold->image.setLocation(threshold->base.id, "image");
-	threshold->threshold.setLocation(threshold->base.id, "threshold");
-	threshold->softKnee.setLocation(threshold->base.id, "softKnee");
-	threshold->strength.setLocation(threshold->base.id, "strength");
+	threshold.create("threshold", ThresholdVertSrc, ThresholdFragSrc);
+	threshold.image.setLocation(threshold, "image");
+	threshold.threshold.setLocation(threshold, "threshold");
+	threshold.softKnee.setLocation(threshold, "softKnee");
+	threshold.strength.setLocation(threshold, "strength");
 
-	boxBlur = programCreate(ProgramBoxBlur,
-		ProgramBoxBlurVertName, ProgramBoxBlurVertSrc,
-		ProgramBoxBlurFragName, ProgramBoxBlurFragSrc);
-	boxBlur->image.setLocation(boxBlur->base.id, "image");
-	boxBlur->step.setLocation(boxBlur->base.id, "step");
-	boxBlur->imageTexel.setLocation(boxBlur->base.id, "imageTexel");
+	boxBlur.create("boxBlur", BoxBlurVertSrc, BoxBlurFragSrc);
+	boxBlur.image.setLocation(boxBlur, "image");
+	boxBlur.step.setLocation(boxBlur, "step");
+	boxBlur.imageTexel.setLocation(boxBlur, "imageTexel");
 
 	initialized = true;
 }
@@ -123,10 +113,8 @@ void bloomCleanup(void)
 {
 	if (!initialized) return;
 
-	programDestroy(boxBlur);
-	boxBlur = nullptr;
-	programDestroy(threshold);
-	threshold = nullptr;
+	boxBlur.destroy();
+	threshold.destroy();
 	for (size_t i = BloomPasses - 1; i < BloomPasses; i -= 1) {
 		bloomFbColor[i].destroy();
 		bloomFb[i].destroy();
@@ -145,21 +133,21 @@ void bloomApply(void)
 	glDisable(GL_DEPTH_TEST);
 	bloomFb[0].bind();
 	glViewport(0, 0, currentSize.x >> 1, currentSize.y >> 1);
-	programUse(threshold);
-	threshold->image = rendererTexture();
-	threshold->threshold = 1.0f;
-	threshold->softKnee = 0.25f;
-	threshold->strength = 1.0f;
+	threshold.bind();
+	threshold.image = rendererTexture();
+	threshold.threshold = 1.0f;
+	threshold.softKnee = 0.25f;
+	threshold.strength = 1.0f;
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	// Blur the bloom image
-	programUse(boxBlur);
+	boxBlur.bind();
 	for (size_t i = 0; i < BloomPasses - 1; i += 1) {
 		bloomFb[i + 1].bind();
 		glViewport(0, 0, currentSize.x >> (i + 2), currentSize.y >> (i + 2));
-		boxBlur->image = bloomFbColor[i];
-		boxBlur->step = 1.0f;
-		boxBlur->imageTexel = {
+		boxBlur.image = bloomFbColor[i];
+		boxBlur.step = 1.0f;
+		boxBlur.imageTexel = {
 			1.0 / (float)(currentSize.x >> (i + 1)),
 			1.0 / (float)(currentSize.y >> (i + 1))
 		};
@@ -170,9 +158,9 @@ void bloomApply(void)
 	for (size_t i = BloomPasses - 2; i < BloomPasses; i -= 1) {
 		bloomFb[i].bind();
 		glViewport(0, 0, currentSize.x >> (i + 1), currentSize.y >> (i + 1));
-		boxBlur->image = bloomFbColor[i + 1];
-		boxBlur->step = 0.5f;
-		boxBlur->imageTexel = {
+		boxBlur.image = bloomFbColor[i + 1];
+		boxBlur.step = 0.5f;
+		boxBlur.imageTexel = {
 			1.0 / (float)(currentSize.x >> (i + 2)),
 			1.0 / (float)(currentSize.y >> (i + 2))
 		};
