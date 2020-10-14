@@ -94,6 +94,9 @@ void* _programCreate(size_t size, const char* vertName, const char* vertSrc,
 	shaderDestroy(vert);
 	vert = 0;
 	L.debug("Linked shader program %s+%s", vertName, fragName);
+#ifndef NDEBUG
+	glObjectLabel(GL_PROGRAM, result->id, std::strlen(fragName), fragName);
+#endif //NDEBUG
 	return result;
 }
 
@@ -106,30 +109,6 @@ void _programDestroy(ProgramBase* program)
 		program->vertName, program->fragName);
 	free(program);
 	program = nullptr;
-}
-
-Uniform _programUniform(ProgramBase* program, const char* uniform)
-{
-		ASSERT(program);
-		ASSERT(uniform);
-	Uniform result = glGetUniformLocation(program->id, uniform);
-	if (result == -1)
-		L.warn("\"%s\" uniform not available in shader program %s+%s",
-			uniform, program->vertName, program->fragName);
-	return result;
-}
-
-TextureUnit
-_programSampler(ProgramBase* program, const char* sampler, TextureUnit unit)
-{
-		ASSERT(program);
-		ASSERT(sampler);
-	Uniform uniform = programUniform(program, sampler);
-	if (uniform != -1) {
-		programUse(program);
-		glUniform1i(uniform, unit - GL_TEXTURE0);
-	}
-	return unit;
 }
 
 void _programUse(ProgramBase* program)
@@ -168,7 +147,7 @@ static auto getAttachment(Framebuffer& f, const Attachment attachment) -> const 
 	return f.attachments[attachmentIndex(attachment)];
 }
 
-static auto getAttachment(const Framebuffer& f, const Attachment attachment) -> const TextureBase* const&
+static auto getAttachment(const Framebuffer& f, const Attachment attachment) -> const TextureBase*
 {
 	return f.attachments[attachmentIndex(attachment)];
 }
@@ -181,7 +160,7 @@ GLObject::~GLObject()
 #endif //NDEBUG
 }
 
-void Texture::create(const char* _name, ivec2 _size, PixelFormat _format)
+void Texture::create(const char* const _name, const ivec2 _size, const PixelFormat _format)
 {
 	ASSERT(!id);
 	ASSERT(_name);
@@ -221,7 +200,7 @@ void Texture::destroy()
 	name = nullptr;
 }
 
-void Texture::setFilter(Filter _filter)
+void Texture::setFilter(const Filter _filter)
 {
 	ASSERT(_filter != Filter::None);
 	if (filter == _filter)
@@ -233,7 +212,7 @@ void Texture::setFilter(Filter _filter)
 	filter = _filter;
 }
 
-void Texture::resize(ivec2 _size)
+void Texture::resize(const ivec2 _size)
 {
 	ASSERT(_size.x > 0 && _size.y > 0);
 	ASSERT(id);
@@ -246,7 +225,7 @@ void Texture::resize(ivec2 _size)
 	size = _size;
 }
 
-void Texture::upload(std::uint8_t* data)
+void Texture::upload(const std::uint8_t* const data)
 {
 	ASSERT(data);
 	ASSERT(id);
@@ -279,20 +258,20 @@ void Texture::upload(std::uint8_t* data)
 		channels, GL_UNSIGNED_BYTE, data);
 }
 
-void Texture::bind(TextureUnit unit)
+void Texture::bind(const TextureUnit unit)
 {
 	ASSERT(id);
 
-	glActiveTexture(unit);
+	glActiveTexture(+unit);
 	glBindTexture(GL_TEXTURE_2D, id);
 }
 
-void TextureMS::create(const char* _name, ivec2 _size, PixelFormat _format, GLsizei _samples)
+void TextureMS::create(const char* const _name, const ivec2 _size, const PixelFormat _format, const Samples _samples)
 {
 	ASSERT(!id);
 	ASSERT(_name);
 	ASSERT(_format != PixelFormat::None);
-	ASSERT(_samples == 2 || _samples == 4 || _samples == 8);
+	ASSERT(+_samples >= 2);
 
 	glGenTextures(1, &id);
 #ifndef NDEBUG
@@ -319,13 +298,13 @@ void TextureMS::destroy()
 	id = 0;
 	size = {0, 0};
 	format = PixelFormat::None;
-	samples = 0;
+	samples = Samples::None;
 
 	L.debug(R"(Multisample texture "%s" destroyed)", name);
 	name = nullptr;
 }
 
-void TextureMS::resize(ivec2 _size)
+void TextureMS::resize(const ivec2 _size)
 {
 	ASSERT(_size.x > 0 && _size.y > 0);
 	ASSERT(id);
@@ -333,20 +312,20 @@ void TextureMS::resize(ivec2 _size)
 		return;
 
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, id);
-	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, +format,
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, +samples, +format,
 		_size.x, _size.y, GL_TRUE);
 	size = _size;
 }
 
-void TextureMS::bind(TextureUnit unit)
+void TextureMS::bind(const TextureUnit unit)
 {
 	ASSERT(id);
 
-	glActiveTexture(unit);
+	glActiveTexture(+unit);
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, id);
 }
 
-void Renderbuffer::create(const char* _name, ivec2 _size, PixelFormat _format)
+void Renderbuffer::create(const char* const _name, const ivec2 _size, const PixelFormat _format)
 {
 	ASSERT(!id);
 	ASSERT(_name);
@@ -381,7 +360,7 @@ void Renderbuffer::destroy()
 	name = nullptr;
 }
 
-void Renderbuffer::resize(ivec2 _size)
+void Renderbuffer::resize(const ivec2 _size)
 {
 	ASSERT(_size.x > 0 && _size.y > 0);
 	ASSERT(id);
@@ -393,12 +372,12 @@ void Renderbuffer::resize(ivec2 _size)
 	size = _size;
 }
 
-void RenderbufferMS::create(const char* _name, ivec2 _size, PixelFormat _format, GLsizei _samples)
+void RenderbufferMS::create(const char* const _name, const ivec2 _size, const PixelFormat _format, const Samples _samples)
 {
 	ASSERT(!id);
 	ASSERT(_name);
 	ASSERT(_format != PixelFormat::None);
-	ASSERT(_samples == 2 || _samples == 4 || _samples == 8);
+	ASSERT(+_samples >= 2);
 
 	glGenRenderbuffers(1, &id);
 #ifndef NDEBUG
@@ -430,7 +409,7 @@ void RenderbufferMS::destroy()
 	name = nullptr;
 }
 
-void RenderbufferMS::resize(ivec2 _size)
+void RenderbufferMS::resize(const ivec2 _size)
 {
 	ASSERT(_size.x > 0 && _size.y > 0);
 	ASSERT(id);
@@ -438,12 +417,12 @@ void RenderbufferMS::resize(ivec2 _size)
 		return;
 
 	glBindRenderbuffer(GL_RENDERBUFFER, id);
-	glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, +format,
+	glRenderbufferStorageMultisample(GL_RENDERBUFFER, +samples, +format,
 		_size.x, _size.y);
 	size = _size;
 }
 
-void Framebuffer::create(const char* _name)
+void Framebuffer::create(const char* const _name)
 {
 	ASSERT(!id);
 	ASSERT(_name);
@@ -467,7 +446,7 @@ void Framebuffer::destroy()
 
 	glDeleteFramebuffers(1, &id);
 	id = 0;
-	samples = -1;
+	samples = Samples::None;
 	dirty = true;
 	attachments.fill(nullptr);
 
@@ -475,7 +454,7 @@ void Framebuffer::destroy()
 	name = nullptr;
 }
 
-void Framebuffer::attach(const Texture& t, const Attachment attachment)
+void Framebuffer::attach(Texture& t, const Attachment attachment)
 {
 	ASSERT(id);
 	ASSERT(t.id);
@@ -485,8 +464,8 @@ void Framebuffer::attach(const Texture& t, const Attachment attachment)
 		ASSERT(attachment == Attachment::DepthStencil);
 	else
 		ASSERT(attachment != Attachment::DepthStencil);
-	if (samples != -1)
-		ASSERT(samples == 0);
+	if (samples != Samples::None)
+		ASSERT(samples == Samples::_1);
 	ASSERT(!getAttachment(*this, attachment));
 #endif //NDEBUG
 
@@ -494,13 +473,13 @@ void Framebuffer::attach(const Texture& t, const Attachment attachment)
 	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, +attachment,
 		GL_TEXTURE_2D, t.id, 0);
 	getAttachment(*this, attachment) = &t;
-	samples = 0;
+	samples = Samples::_1;
 	dirty = true;
 
 	L.debug(R"(Texture "%s" attached to framebuffer "%s")", t.name, name);
 }
 
-void Framebuffer::attach(const TextureMS& t, Attachment attachment)
+void Framebuffer::attach(TextureMS& t, const Attachment attachment)
 {
 	ASSERT(id);
 	ASSERT(t.id);
@@ -510,7 +489,7 @@ void Framebuffer::attach(const TextureMS& t, Attachment attachment)
 		ASSERT(attachment == Attachment::DepthStencil);
 	else
 		ASSERT(attachment != Attachment::DepthStencil);
-	if (samples != -1)
+	if (samples != Samples::None)
 		ASSERT(samples == t.samples);
 #endif //NDEBUG
 
@@ -524,7 +503,7 @@ void Framebuffer::attach(const TextureMS& t, Attachment attachment)
 	L.debug(R"(Multisample texture "%s" attached to framebuffer "%s")", t.name, name);
 }
 
-void Framebuffer::attach(const Renderbuffer& r, Attachment attachment)
+void Framebuffer::attach(Renderbuffer& r, const Attachment attachment)
 {
 	ASSERT(id);
 	ASSERT(r.id);
@@ -534,21 +513,21 @@ void Framebuffer::attach(const Renderbuffer& r, Attachment attachment)
 		ASSERT(attachment == Attachment::DepthStencil);
 	else
 		ASSERT(attachment != Attachment::DepthStencil);
-	if (samples != -1)
-		ASSERT(samples == 0);
+	if (samples != Samples::None)
+		ASSERT(samples == Samples::_1);
 #endif //NDEBUG
 
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
 	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, +attachment,
 		GL_RENDERBUFFER, r.id);
 	getAttachment(*this, attachment) = &r;
-	samples = 0;
+	samples = Samples::_1;
 	dirty = true;
 
 	L.debug(R"(Renderbuffer "%s" attached to framebuffer "%s")", r.name, name);
 }
 
-void Framebuffer::attach(const RenderbufferMS& r, Attachment attachment)
+void Framebuffer::attach(RenderbufferMS& r, Attachment attachment)
 {
 	ASSERT(id);
 	ASSERT(r.id);
@@ -558,7 +537,7 @@ void Framebuffer::attach(const RenderbufferMS& r, Attachment attachment)
 		ASSERT(attachment == Attachment::DepthStencil);
 	else
 		ASSERT(attachment != Attachment::DepthStencil);
-	if (samples != -1)
+	if (samples != Samples::None)
 		ASSERT(samples == r.samples);
 #endif //NDEBUG
 

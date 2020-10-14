@@ -15,12 +15,6 @@ namespace minote {
 /// OpenGL shader program. You can obtain an instance with programCreate().
 using Program = GLuint;
 
-/// OpenGL uniform location. This is used as part of a struct containing ::ProgramBase.
-using Uniform = GLint;
-
-/// OpenGL texture unit. This is used as part of a struct containing ::ProgramBase.
-using TextureUnit = GLenum;
-
 /// OpenGL vertex buffer object ID
 using VertexBuffer = GLuint;
 
@@ -55,6 +49,34 @@ enum struct PixelFormat : GLint {
 	RGB_f16 = GL_RGB16F,
 	RGBA_f16 = GL_RGBA16F,
 	DepthStencil = GL_DEPTH24_STENCIL8
+};
+
+enum struct TextureUnit : GLenum {
+	None = 0,
+	_0 = GL_TEXTURE0,
+	_1 = GL_TEXTURE1,
+	_2 = GL_TEXTURE2,
+	_3 = GL_TEXTURE3,
+	_4 = GL_TEXTURE4,
+	_5 = GL_TEXTURE5,
+	_6 = GL_TEXTURE6,
+	_7 = GL_TEXTURE7,
+	_8 = GL_TEXTURE8,
+	_9 = GL_TEXTURE9,
+	_10 = GL_TEXTURE10,
+	_11 = GL_TEXTURE11,
+	_12 = GL_TEXTURE12,
+	_13 = GL_TEXTURE13,
+	_14 = GL_TEXTURE14,
+	_15 = GL_TEXTURE15,
+};
+
+enum struct Samples : GLsizei {
+	None = 0,
+	_1 = 1,
+	_2 = 2,
+	_4 = 4,
+	_8 = 8
 };
 
 /// Common fields of all OpenGL object types
@@ -114,7 +136,7 @@ struct Texture : TextureBase {
 	 * Uploading to a stencil+depth texture is not supported.
 	 * @param data Pixel data as an unchecked array of bytes
 	 */
-	void upload(std::uint8_t* data);
+	void upload(const std::uint8_t* data);
 
 	/**
 	 * Bind the texture to the specified texture unit. This allows it to be used
@@ -128,7 +150,7 @@ struct Texture : TextureBase {
 /// OpenGL multisample 2D texture. Allows for drawing antialiased shapes
 struct TextureMS : TextureBase {
 
-	GLsizei samples = 0;
+	Samples samples = Samples::None;
 
 	/**
 	 * Create an OpenGL ID for the multisample texture. This needs to be called
@@ -137,9 +159,9 @@ struct TextureMS : TextureBase {
 	 * @param name Human-readable name, for logging and debug output
 	 * @param size Initial size of the multisample texture storage, in pixels
 	 * @param format Internal format of the multisample texture
-	 * @param samples Number of samples per pixel: 2, 4 or 8
+	 * @param samples Number of samples per pixel
 	 */
-	void create(const char* name, ivec2 size, PixelFormat format, GLsizei samples);
+	void create(const char* name, ivec2 size, PixelFormat format, Samples samples);
 
 	/**
 	 * Destroy the OpenGL multisample texture object. Storage and ID are both
@@ -157,11 +179,18 @@ struct TextureMS : TextureBase {
 	/**
 	 * Bind the multisample texture to the specified texture unit. This allows
 	 * it to be used in a shader for reading and/or writing.
-	 * @param unit Texture unit to bind the multisample texture to
+	 * @param unit Texture unit to bind the multisample texture to, from 0 to 15
+	 * inclusive
 	 */
 	void bind(TextureUnit unit);
 
 };
+
+/// Concept for any texture type that can be read in a shader
+template<typename T>
+concept GLSLTexture =
+	std::is_same_v<T, Texture>
+	|| std::is_same_v<T, TextureMS>;
 
 /// OpenGL renderbuffer. Operates faster than a texture, but cannot be read
 struct Renderbuffer : TextureBase {
@@ -194,7 +223,7 @@ struct Renderbuffer : TextureBase {
 /// but cannot be read
 struct RenderbufferMS : TextureBase {
 
-	GLsizei samples = 0;
+	Samples samples = Samples::None;
 
 	/**
 	 * Create an OpenGL ID for the multisample renderbuffer. This needs
@@ -206,7 +235,7 @@ struct RenderbufferMS : TextureBase {
 	 * @param format Internal format of the multisample renderbuffer
 	 * @param samples Number of samples per pixel: 2, 4 or 8
 	 */
-	void create(const char* name, ivec2 size, PixelFormat format, GLsizei samples);
+	void create(const char* name, ivec2 size, PixelFormat format, Samples samples);
 
 	/**
 	 * Destroy the OpenGL multisample renderbuffer object. Storage and ID
@@ -248,7 +277,7 @@ enum struct Attachment : GLenum {
 /// and renderbuffers from within shaders.
 struct Framebuffer : GLObject {
 
-	GLsizei samples = -1; ///< Sample count of all attachments needs to match
+	Samples samples = Samples::None; ///< Sample count of all attachments needs to match
 	bool dirty = true; ///< Is a glDrawBuffers call and completeness check needed?
 	std::array<const TextureBase*, 17> attachments = {};
 
@@ -275,7 +304,7 @@ struct Framebuffer : GLObject {
 	 * @param t Texture to attach
 	 * @param attachment Attachment point to attach to
 	 */
-	void attach(const Texture& t, Attachment attachment);
+	void attach(Texture& t, Attachment attachment);
 
 	/**
 	 * Attach a multisample texture to a specified attachment point. All future
@@ -285,7 +314,7 @@ struct Framebuffer : GLObject {
 	 * @param t Multisample texture to attach
 	 * @param attachment Attachment point to attach to
 	 */
-	void attach(const TextureMS& t, Attachment attachment);
+	void attach(TextureMS& t, Attachment attachment);
 
 	/**
 	 * Attach a renderbuffer to a specified attachment point. All future
@@ -295,7 +324,7 @@ struct Framebuffer : GLObject {
 	 * @param t Renderbuffer to attach
 	 * @param attachment Attachment point to attach to
 	 */
-	void attach(const Renderbuffer& r, Attachment attachment);
+	void attach(Renderbuffer& r, Attachment attachment);
 
 	/**
 	 * Attach a multisample renderbuffer to a specified attachment point.
@@ -305,7 +334,7 @@ struct Framebuffer : GLObject {
 	 * @param t Multisample renderbuffer to attach
 	 * @param attachment Attachment point to attach to
 	 */
-	void attach(const RenderbufferMS& r, Attachment attachment);
+	void attach(RenderbufferMS& r, Attachment attachment);
 
 	/**
 	 * Bind this framebuffer to the OpenGL context, causing all future draw
@@ -334,7 +363,7 @@ struct Framebuffer : GLObject {
 };
 
 template<GLSLType T>
-struct Uniform2 {
+struct Uniform {
 
 	using Type = T;
 
@@ -345,21 +374,43 @@ struct Uniform2 {
 
 	void set(Type val);
 
-	inline auto operator=(Type val) -> Uniform2<Type>& { set(val); return *this; }
+	inline auto operator=(Type val) -> Uniform<Type>& { set(val); return *this; }
 
-	inline auto operator=(const Uniform2& other) -> Uniform2& {
-		if (&other == this)
-			return *this;
-		set(other);
+	inline auto operator=(const Uniform& other) -> Uniform& {
+		if (&other != this)
+			set(other);
+		return *this;
 	}
 
 	inline operator Type&() { return value; }
 	inline operator Type() const { return value; }
 
-	Uniform2() = default;
-	Uniform2(const Uniform2&) = delete;
-	Uniform2(Uniform2&&) = delete;
-	auto operator=(Uniform2&&) -> Uniform2& = delete;
+	Uniform() = default;
+	Uniform(const Uniform&) = delete;
+	Uniform(Uniform&&) = delete;
+	auto operator=(Uniform&&) -> Uniform& = delete;
+
+};
+
+template <GLSLTexture T>
+struct Sampler {
+
+	using Type = T;
+
+	GLint location = -1;
+	TextureUnit unit = TextureUnit::None;
+
+	void setLocation(Program program, const char* name, TextureUnit unit = TextureUnit::_0);
+
+	void set(Type& val);
+
+	inline auto operator=(Type& val) -> Sampler<Type>& { set(val); return *this; }
+
+	Sampler() = default;
+	Sampler(const Sampler&) = delete;
+	Sampler(Sampler&&) = delete;
+	inline auto operator=(const Sampler& other) -> Sampler& = delete;
+	auto operator=(Sampler&&) -> Sampler& = delete;
 
 };
 
@@ -395,27 +446,6 @@ typedef struct ProgramBase {
     (_programDestroy((ProgramBase*)(program)))
 
 /**
- * Obtain a uniform location from the program. If it fails, returns -1 and logs
- * a warning.
- * @param program The ::Program object
- * @param uniform String literal of the uniform to query for
- * @return Uniform location in the program, or -1 on failure
- */
-#define programUniform(program, uniform) \
-    (_programUniform((ProgramBase*)(program), (uniform)))
-
-/**
- * Set a sampler uniform to a specified texture unit. If it fails, logs
- * a warning.
- * @param program The Program object
- * @param sampler String literal of the sampler uniform to set
- * @param unit Texture unit to set @p sampler to
- * @return Value of @p unit
- */
-#define programSampler(program, sampler, unit) \
-    (_programSampler((ProgramBase*)(program), (sampler), (unit)))
-
-/**
  * Activate a ::Program for rendering. The same ::Program stays active for any
  * number of draw calls until changed with another programUse().
  * @param program The Program object
@@ -430,11 +460,6 @@ void* _programCreate(size_t size, const char* vertName, const char* vertSrc,
 	const char* fragName, const char* fragSrc);
 
 void _programDestroy(ProgramBase* program);
-
-Uniform _programUniform(ProgramBase* program, const char* uniform);
-
-TextureUnit
-_programSampler(ProgramBase* program, const char* sampler, TextureUnit unit);
 
 void _programUse(ProgramBase* program);
 

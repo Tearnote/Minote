@@ -10,7 +10,7 @@
 namespace minote {
 
 template<GLSLType T>
-void Uniform2<T>::setLocation(Program program, char const* name)
+void Uniform<T>::setLocation(const Program program, const char* const name)
 {
 	ASSERT(program);
 	ASSERT(name);
@@ -22,7 +22,7 @@ void Uniform2<T>::setLocation(Program program, char const* name)
 }
 
 template<GLSLType T>
-void Uniform2<T>::set(const Type val)
+void Uniform<T>::set(const Type val)
 {
 	if (location == -1)
 		return;
@@ -44,9 +44,33 @@ void Uniform2<T>::set(const Type val)
 	else if constexpr (std::is_same_v<Type, ivec4>)
 		glUniform4i(location, val.x, val.y, val.z, val.w);
 	else if constexpr (std::is_same_v<Type, mat4>)
-		glUniform4fv(location, 1, value_ptr(val));
+		glUniformMatrix4fv(location, 1, false, value_ptr(val));
 	else
-		L.warn("Invalid uniform type");
+		ASSERT(false); // Unreachable if the Concept holds
+}
+
+template<GLSLTexture T>
+void Sampler<T>::setLocation(const Program program, const char* const name, const TextureUnit _unit)
+{
+	ASSERT(program);
+	ASSERT(name);
+	ASSERT(_unit != TextureUnit::None);
+
+	location = glGetUniformLocation(program, name);
+	if (location == -1) {
+		L.warn(R"(Failed to get location for sampler "%s")", name);
+		return;
+	}
+
+	glUseProgram(program);
+	glUniform1i(location, +_unit - GL_TEXTURE0);
+	unit = _unit;
+}
+
+template<GLSLTexture T>
+void Sampler<T>::set(Type& val)
+{
+	val.bind(unit);
 }
 
 }

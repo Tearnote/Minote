@@ -21,14 +21,14 @@ using namespace minote;
 /// Basic blit function type
 typedef struct ProgramBlit {
 	ProgramBase base;
-	TextureUnit image;
-	Uniform boost;
+	Sampler<Texture> image;
+	Uniform<float> boost;
 } ProgramBlit;
 
 /// Internal gamma correction shader
 typedef struct ProgramDelinearize {
 	ProgramBase base;
-	TextureUnit image;
+	Sampler<Texture> image;
 } ProgramDelinearize;
 
 static const char* ProgramBlitVertName = "blit.vert";
@@ -231,13 +231,13 @@ void rendererInit(Window& w)
 	blit = programCreate(ProgramBlit,
 		ProgramBlitVertName, ProgramBlitVertSrc,
 		ProgramBlitFragName, ProgramBlitFragSrc);
-	blit->image = programSampler(blit, "image", GL_TEXTURE0);
-	blit->boost = programUniform(blit, "boost");
+	blit->image.setLocation(blit->base.id, "image");
+	blit->boost.setLocation(blit->base.id, "boost");
 
 	delinearize = programCreate(ProgramDelinearize,
 		ProgramDelinearizeVertName, ProgramDelinearizeVertSrc,
 		ProgramDelinearizeFragName, ProgramDelinearizeFragSrc);
-	delinearize->image = programSampler(delinearize, "image", GL_TEXTURE0);
+	delinearize->image.setLocation(delinearize->base.id, "image");
 
 	L.debug("Created renderer for window \"%s\"", window->title);
 }
@@ -284,7 +284,7 @@ void rendererFrameEnd(void)
 	glDisable(GL_BLEND);
 	Framebuffer::unbind();
 	programUse(delinearize);
-	renderFbColor.bind(delinearize->image);
+	delinearize->image = renderFbColor;
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 	window->flip();
 	if (syncEnabled)
@@ -295,8 +295,8 @@ void rendererFrameEnd(void)
 void rendererBlit(Texture& t, GLfloat boost)
 {
 	programUse(blit);
-	t.bind(blit->image);
-	glUniform1f(blit->boost, boost);
+	blit->image = t;
+	blit->boost = boost;
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 

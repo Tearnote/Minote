@@ -18,17 +18,17 @@ using namespace minote;
 /// Bloom threshold filter type
 typedef struct ProgramThreshold {
 	ProgramBase base;
-	TextureUnit image;
-	Uniform threshold;
-	Uniform softKnee;
-	Uniform strength;
+	Sampler<Texture> image;
+	Uniform<float> threshold;
+	Uniform<float> softKnee;
+	Uniform<float> strength;
 } ProgramThreshold;
 
 typedef struct ProgramBoxBlur {
 	ProgramBase base;
-	TextureUnit image;
-	Uniform step;
-	Uniform imageTexel;
+	Sampler<Texture> image;
+	Uniform<float> step;
+	Uniform<vec2> imageTexel;
 } ProgramBoxBlur;
 
 static const char* ProgramThresholdVertName = "threshold.vert";
@@ -104,17 +104,17 @@ void bloomInit(Window& w)
 	threshold = programCreate(ProgramThreshold,
 		ProgramThresholdVertName, ProgramThresholdVertSrc,
 		ProgramThresholdFragName, ProgramThresholdFragSrc);
-	threshold->image = programSampler(threshold, "image", GL_TEXTURE0);
-	threshold->threshold = programUniform(threshold, "threshold");
-	threshold->softKnee = programUniform(threshold, "softKnee");
-	threshold->strength = programUniform(threshold, "strength");
+	threshold->image.setLocation(threshold->base.id, "image");
+	threshold->threshold.setLocation(threshold->base.id, "threshold");
+	threshold->softKnee.setLocation(threshold->base.id, "softKnee");
+	threshold->strength.setLocation(threshold->base.id, "strength");
 
 	boxBlur = programCreate(ProgramBoxBlur,
 		ProgramBoxBlurVertName, ProgramBoxBlurVertSrc,
 		ProgramBoxBlurFragName, ProgramBoxBlurFragSrc);
-	boxBlur->image = programSampler(boxBlur, "image", GL_TEXTURE0);
-	boxBlur->step = programUniform(boxBlur, "step");
-	boxBlur->imageTexel = programUniform(boxBlur, "imageTexel");
+	boxBlur->image.setLocation(boxBlur->base.id, "image");
+	boxBlur->step.setLocation(boxBlur->base.id, "step");
+	boxBlur->imageTexel.setLocation(boxBlur->base.id, "imageTexel");
 
 	initialized = true;
 }
@@ -146,10 +146,10 @@ void bloomApply(void)
 	bloomFb[0].bind();
 	glViewport(0, 0, currentSize.x >> 1, currentSize.y >> 1);
 	programUse(threshold);
-	rendererTexture().bind(threshold->image);
-	glUniform1f(threshold->threshold, 1.0f);
-	glUniform1f(threshold->softKnee, 0.25f);
-	glUniform1f(threshold->strength, 1.0f);
+	threshold->image = rendererTexture();
+	threshold->threshold = 1.0f;
+	threshold->softKnee = 0.25f;
+	threshold->strength = 1.0f;
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	// Blur the bloom image
@@ -157,11 +157,12 @@ void bloomApply(void)
 	for (size_t i = 0; i < BloomPasses - 1; i += 1) {
 		bloomFb[i + 1].bind();
 		glViewport(0, 0, currentSize.x >> (i + 2), currentSize.y >> (i + 2));
-		bloomFbColor[i].bind(boxBlur->image);
-		glUniform1f(boxBlur->step, 1.0f);
-		glUniform2f(boxBlur->imageTexel,
+		boxBlur->image = bloomFbColor[i];
+		boxBlur->step = 1.0f;
+		boxBlur->imageTexel = {
 			1.0 / (float)(currentSize.x >> (i + 1)),
-			1.0 / (float)(currentSize.y >> (i + 1)));
+			1.0 / (float)(currentSize.y >> (i + 1))
+		};
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
 	glEnable(GL_BLEND);
@@ -169,11 +170,12 @@ void bloomApply(void)
 	for (size_t i = BloomPasses - 2; i < BloomPasses; i -= 1) {
 		bloomFb[i].bind();
 		glViewport(0, 0, currentSize.x >> (i + 1), currentSize.y >> (i + 1));
-		bloomFbColor[i + 1].bind(boxBlur->image);
-		glUniform1f(boxBlur->step, 0.5f);
-		glUniform2f(boxBlur->imageTexel,
+		boxBlur->image = bloomFbColor[i + 1];
+		boxBlur->step = 0.5f;
+		boxBlur->imageTexel = {
 			1.0 / (float)(currentSize.x >> (i + 2)),
-			1.0 / (float)(currentSize.y >> (i + 2)));
+			1.0 / (float)(currentSize.y >> (i + 2))
+		};
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
 

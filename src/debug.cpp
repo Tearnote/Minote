@@ -25,8 +25,8 @@ using namespace minote;
 /// Nuklear shader type
 typedef struct ProgramNuklear {
 	ProgramBase base;
-	TextureUnit atlas;
-	Uniform projection;
+	Sampler<Texture> atlas;
+	Uniform<mat4> projection;
 } ProgramNuklear;
 
 typedef struct VertexNuklear {
@@ -162,8 +162,8 @@ void debugInit(void)
 	nuklear = programCreate(ProgramNuklear,
 		ProgramNuklearVertName, ProgramNuklearVertSrc,
 		ProgramNuklearFragName, ProgramNuklearFragSrc);
-	nuklear->atlas = programSampler(nuklear, "atlas", GL_TEXTURE0);
-	nuklear->projection = programUniform(nuklear, "projection");
+	nuklear->atlas.setLocation(nuklear->base.id, "atlas");
+	nuklear->projection.setLocation(nuklear->base.id, "projection");
 
 	// Set up the buffers
 	glGenVertexArrays(1, &nuklearVao);
@@ -244,9 +244,8 @@ void debugDraw(Window& window)
 	glEnable(GL_SCISSOR_TEST);
 
 	programUse(nuklear);
-	nuklearTexture.bind(nuklear->atlas);
-	glUniformMatrix4fv(nuklear->projection, 1, GL_FALSE,
-		value_ptr(worldScreenProjection));
+	nuklear->atlas = nuklearTexture;
+	nuklear->projection = worldScreenProjection;
 	glBindVertexArray(nuklearVao);
 
 	glBindBuffer(GL_ARRAY_BUFFER, nuklearVbo);
@@ -286,7 +285,7 @@ void debugDraw(Window& window)
 	const nk_draw_index* offset = nullptr;
 	nk_draw_foreach(command, &nkContext, &commandList) {
 		if (!command->elem_count) continue;
-		static_cast<Texture*>(command->texture.ptr)->bind(nuklear->atlas);
+		nuklear->atlas = *static_cast<Texture*>(command->texture.ptr);
 		glScissor(command->clip_rect.x,
 			screenSize.y - command->clip_rect.y - command->clip_rect.h,
 			command->clip_rect.w, command->clip_rect.h);

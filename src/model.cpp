@@ -14,22 +14,22 @@ using namespace minote;
 /// Flat shading type
 typedef struct ProgramFlat {
 	ProgramBase base;
-	Uniform camera;
-	Uniform projection;
+	Uniform<mat4> camera;
+	Uniform<mat4> projection;
 } ProgramFlat;
 
 /// Phong-Blinn shading type
 typedef struct ProgramPhong {
 	ProgramBase base;
-	Uniform camera;
-	Uniform projection;
-	Uniform lightPosition;
-	Uniform lightColor;
-	Uniform ambientColor;
-	Uniform ambient;
-	Uniform diffuse;
-	Uniform specular;
-	Uniform shine;
+	Uniform<mat4> camera;
+	Uniform<mat4> projection;
+	Uniform<vec3> lightPosition;
+	Uniform<vec3> lightColor;
+	Uniform<vec3> ambientColor;
+	Uniform<float> ambient;
+	Uniform<float> diffuse;
+	Uniform<float> specular;
+	Uniform<float> shine;
 } ProgramPhong;
 
 static const char* ProgramFlatVertName = "flat.vert";
@@ -62,21 +62,21 @@ void modelInit(void)
 	flat = programCreate(ProgramFlat,
 		ProgramFlatVertName, ProgramFlatVertSrc,
 		ProgramFlatFragName, ProgramFlatFragSrc);
-	flat->projection = programUniform(flat, "projection");
-	flat->camera = programUniform(flat, "camera");
+	flat->projection.setLocation(flat->base.id, "projection");
+	flat->camera.setLocation(flat->base.id, "camera");
 
 	phong = programCreate(ProgramPhong,
 		ProgramPhongVertName, ProgramPhongVertSrc,
 		ProgramPhongFragName, ProgramPhongFragSrc);
-	phong->projection = programUniform(phong, "projection");
-	phong->camera = programUniform(phong, "camera");
-	phong->lightPosition = programUniform(phong, "lightPosition");
-	phong->lightColor = programUniform(phong, "lightColor");
-	phong->ambientColor = programUniform(phong, "ambientColor");
-	phong->ambient = programUniform(phong, "ambient");
-	phong->diffuse = programUniform(phong, "diffuse");
-	phong->specular = programUniform(phong, "specular");
-	phong->shine = programUniform(phong, "shine");
+	phong->projection.setLocation(phong->base.id, "projection");
+	phong->camera.setLocation(phong->base.id, "camera");
+	phong->lightPosition.setLocation(phong->base.id, "lightPosition");
+	phong->lightColor.setLocation(phong->base.id, "lightColor");
+	phong->ambientColor.setLocation(phong->base.id, "ambientColor");
+	phong->ambient.setLocation(phong->base.id, "ambient");
+	phong->diffuse.setLocation(phong->base.id, "diffuse");
+	phong->specular.setLocation(phong->base.id, "specular");
+	phong->shine.setLocation(phong->base.id, "shine");
 
 	initialized = true;
 }
@@ -192,8 +192,8 @@ static void modelDrawFlat(ModelFlat* m, size_t instances,
 	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4) * instances, nullptr,
 		GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4) * instances, transforms);
-	glUniformMatrix4fv(flat->projection, 1, GL_FALSE, value_ptr(worldProjection));
-	glUniformMatrix4fv(flat->camera, 1, GL_FALSE, value_ptr(worldCamera));
+	flat->projection = worldProjection;
+	flat->camera = worldCamera;
 	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numVertices, instances);
 }
 
@@ -249,15 +249,15 @@ static void modelDrawPhong(ModelPhong* m, size_t instances,
 	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4) * instances, nullptr,
 		GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4) * instances, transforms);
-	glUniformMatrix4fv(phong->projection, 1, GL_FALSE, value_ptr(worldProjection));
-	glUniformMatrix4fv(phong->camera, 1, GL_FALSE, value_ptr(worldCamera));
-	glUniform3fv(phong->lightPosition, 1, value_ptr(worldLightPosition));
-	glUniform3fv(phong->lightColor, 1, value_ptr(worldLightColor));
-	glUniform3fv(phong->ambientColor, 1, value_ptr(worldAmbientColor));
-	glUniform1f(phong->ambient, m->material.ambient);
-	glUniform1f(phong->diffuse, m->material.diffuse);
-	glUniform1f(phong->specular, m->material.specular);
-	glUniform1f(phong->shine, m->material.shine);
+	phong->projection = worldProjection;
+	phong->camera = worldCamera;
+	phong->lightPosition = worldLightPosition;
+	phong->lightColor = worldLightColor;
+	phong->ambientColor = worldAmbientColor;
+	phong->ambient = m->material.ambient;
+	phong->diffuse = m->material.diffuse;
+	phong->specular = m->material.specular;
+	phong->shine = m->material.shine;
 	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numVertices, instances);
 }
 

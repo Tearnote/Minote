@@ -16,30 +16,30 @@ using namespace minote;
 
 typedef struct ProgramSmaaSeparate {
 	ProgramBase base;
-	TextureUnit image;
+	Sampler<TextureMS> image;
 } ProgramSmaaSeparate;
 
 typedef struct ProgramSmaaEdge {
 	ProgramBase base;
-	TextureUnit image;
-	Uniform screenSize;
+	Sampler<Texture> image;
+	Uniform<vec4> screenSize;
 } ProgramSmaaEdge;
 
 typedef struct ProgramSmaaBlend {
 	ProgramBase base;
-	TextureUnit edges;
-	TextureUnit area;
-	TextureUnit search;
-	Uniform subsampleIndices;
-	Uniform screenSize;
+	Sampler<Texture> edges;
+	Sampler<Texture> area;
+	Sampler<Texture> search;
+	Uniform<vec4> subsampleIndices;
+	Uniform<vec4> screenSize;
 } ProgramSmaaBlend;
 
 typedef struct ProgramSmaaNeighbor {
 	ProgramBase base;
-	TextureUnit image;
-	TextureUnit blend;
-	Uniform alpha;
-	Uniform screenSize;
+	Sampler<Texture> image;
+	Sampler<Texture> blend;
+	Uniform<float> alpha;
+	Uniform<vec4> screenSize;
 } ProgramSmaaNeighbor;
 
 static const char* ProgramSmaaSeparateVertName = "smaaSeparate.vert";
@@ -129,9 +129,6 @@ static void aaResize(ivec2 size)
 	currentSize.x = size.x;
 	currentSize.y = size.y;
 
-	size_t msaaSamples = (currentMode == AASimple) ? 4 :
-	                     (currentMode == AAExtreme) ? 8 : 2;
-
 	if (msaaFbColor.id)
 		msaaFbColor.resize(size);
 	if (msaaFbDepthStencil.id)
@@ -163,8 +160,8 @@ void aaInit(AAMode mode, Window& w)
 	window = &w;
 
 	// Create needed objects
-	size_t msaaSamples = (currentMode == AASimple) ? 4 :
-	                     (currentMode == AAExtreme) ? 8 : 2;
+	const Samples msaaSamples = (currentMode == AASimple) ? Samples::_4 :
+	                     (currentMode == AAExtreme) ? Samples::_8 : Samples::_2;
 
 	if (mode == AASimple || mode == AAComplex || mode == AAExtreme) {
 		msaaFb.create("msaaFb");
@@ -234,27 +231,27 @@ void aaInit(AAMode mode, Window& w)
 		smaaEdge = programCreate(ProgramSmaaEdge,
 			ProgramSmaaEdgeVertName, ProgramSmaaEdgeVertSrc,
 			ProgramSmaaEdgeFragName, ProgramSmaaEdgeFragSrc);
-		smaaEdge->image = programSampler(smaaEdge, "image", GL_TEXTURE0);
-		smaaEdge->screenSize = programUniform(smaaEdge, "screenSize");
+		smaaEdge->image.setLocation(smaaEdge->base.id, "image");
+		smaaEdge->screenSize.setLocation(smaaEdge->base.id, "screenSize");
 
 		smaaBlend = programCreate(ProgramSmaaBlend,
 			ProgramSmaaBlendVertName, ProgramSmaaBlendVertSrc,
 			ProgramSmaaBlendFragName, ProgramSmaaBlendFragSrc);
-		smaaBlend->edges = programSampler(smaaBlend, "edges", GL_TEXTURE0);
-		smaaBlend->area = programSampler(smaaBlend, "area", GL_TEXTURE1);
-		smaaBlend->search = programSampler(smaaBlend, "search", GL_TEXTURE2);
-		smaaBlend->subsampleIndices = programUniform(smaaBlend, "subsampleIndices");
-		smaaBlend->screenSize = programUniform(smaaBlend, "screenSize");
+		smaaBlend->edges.setLocation(smaaBlend->base.id, "edges", TextureUnit::_0);
+		smaaBlend->area.setLocation(smaaBlend->base.id, "area", TextureUnit::_1);
+		smaaBlend->search.setLocation(smaaBlend->base.id, "search", TextureUnit::_2);
+		smaaBlend->subsampleIndices.setLocation(smaaBlend->base.id, "subsampleIndices");
+		smaaBlend->screenSize.setLocation(smaaBlend->base.id, "screenSize");
 
 		smaaNeighbor = programCreate(ProgramSmaaNeighbor,
 			ProgramSmaaNeighborVertName, ProgramSmaaNeighborVertSrc,
 			ProgramSmaaNeighborFragName, ProgramSmaaNeighborFragSrc);
-		smaaNeighbor->image = programSampler(smaaNeighbor, "image",
-			GL_TEXTURE0);
-		smaaNeighbor->blend = programSampler(smaaNeighbor, "blend",
-			GL_TEXTURE2);
-		smaaNeighbor->alpha = programUniform(smaaNeighbor, "alpha");
-		smaaNeighbor->screenSize = programUniform(smaaNeighbor, "screenSize");
+		smaaNeighbor->image.setLocation(smaaNeighbor->base.id, "image",
+			TextureUnit::_0);
+		smaaNeighbor->blend.setLocation(smaaNeighbor->base.id, "blend",
+			TextureUnit::_2);
+		smaaNeighbor->alpha.setLocation(smaaNeighbor->base.id, "alpha");
+		smaaNeighbor->screenSize.setLocation(smaaNeighbor->base.id, "screenSize");
 
 		// Load lookup textures
 		unsigned char areaTexBytesFlipped[AREATEX_SIZE] = {0};
@@ -290,8 +287,8 @@ void aaInit(AAMode mode, Window& w)
 		smaaSeparate = programCreate(ProgramSmaaSeparate,
 			ProgramSmaaSeparateVertName, ProgramSmaaSeparateVertSrc,
 			ProgramSmaaSeparateFragName, ProgramSmaaSeparateFragSrc);
-		smaaSeparate->image = programSampler(smaaSeparate, "image",
-			GL_TEXTURE0);
+		smaaSeparate->image.setLocation(smaaSeparate->base.id, "image",
+			TextureUnit::_0);
 	}
 
 	rendererFramebuffer().bind();
@@ -397,11 +394,12 @@ void aaEnd(void)
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
 		glStencilMask(0xFF);
 		glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		rendererTexture().bind(smaaEdge->image);
+		smaaEdge->image = rendererTexture();
 		rendererTexture().setFilter(Filter::Nearest); // It's ok, we turn it back
-		glUniform4f(smaaEdge->screenSize,
+		smaaEdge->screenSize = {
 			1.0 / (float)currentSize.x, 1.0 / (float)currentSize.y,
-			currentSize.x, currentSize.y);
+			currentSize.x, currentSize.y
+		};
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		// SMAA blending weight calculation pass
@@ -410,27 +408,28 @@ void aaEnd(void)
 		glStencilFunc(GL_EQUAL, 1, 0xFF);
 		glStencilMask(0x00);
 		glClear(GL_COLOR_BUFFER_BIT);
-		smaaEdgeFbColor.bind(smaaBlend->edges);
-		smaaArea.bind(smaaBlend->area);
-		smaaSearch.bind(smaaBlend->search);
-		glUniform4f(smaaBlend->subsampleIndices,
-			0.0f, 0.0f, 0.0f, 0.0f);
-		glUniform4f(smaaBlend->screenSize,
+		smaaBlend->edges = smaaEdgeFbColor;
+		smaaBlend->area = smaaArea;
+		smaaBlend->search = smaaSearch;
+		smaaBlend->subsampleIndices = {0.0f, 0.0f, 0.0f, 0.0f};
+		smaaBlend->screenSize = {
 			1.0 / (float)currentSize.x, 1.0 / (float)currentSize.y,
-			currentSize.x, currentSize.y);
+			currentSize.x, currentSize.y
+		};
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 		glDisable(GL_STENCIL_TEST);
 
 		// SMAA neighbor blending pass
 		programUse(smaaNeighbor);
 		rendererFramebuffer().bind();
-		rendererTexture().bind(smaaNeighbor->image);
+		smaaNeighbor->image = rendererTexture();
 		rendererTexture().setFilter(Filter::Linear); // It's ok, we turn it back
-		smaaBlendFbColor.bind(smaaNeighbor->blend);
-		glUniform1f(smaaNeighbor->alpha, 1.0f);
-		glUniform4f(smaaNeighbor->screenSize,
+		smaaNeighbor->blend = smaaBlendFbColor;
+		smaaNeighbor->alpha = 1.0f;
+		smaaNeighbor->screenSize = {
 			1.0 / (float)currentSize.x, 1.0 / (float)currentSize.y,
-			currentSize.x, currentSize.y);
+			currentSize.x, currentSize.y
+		};
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		glEnable(GL_BLEND);
@@ -445,7 +444,7 @@ void aaEnd(void)
 		// SMAA sample separation pass
 		programUse(smaaSeparate);
 		smaaSeparateFb.bind();
-		msaaFbColor.bind(smaaSeparate->image);
+		smaaSeparate->image = msaaFbColor;
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		// SMAA edge detection pass
@@ -456,16 +455,17 @@ void aaEnd(void)
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
 		glStencilMask(0xFF);
 		glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		smaaSeparateFbColor.bind(smaaEdge->image);
+		smaaEdge->image = smaaSeparateFbColor;
 		smaaSeparateFbColor.setFilter(Filter::Nearest);
-		glUniform4f(smaaEdge->screenSize,
+		smaaEdge->screenSize = {
 			1.0 / (float)currentSize.x, 1.0 / (float)currentSize.y,
-			currentSize.x, currentSize.y);
+			currentSize.x, currentSize.y
+		};
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		smaaEdgeFb2.bind();
 		glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		smaaSeparateFbColor2.bind(smaaEdge->image);
+		smaaEdge->image = smaaSeparateFbColor2;
 		smaaSeparateFbColor2.setFilter(Filter::Nearest);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
@@ -475,46 +475,47 @@ void aaEnd(void)
 		glStencilFunc(GL_EQUAL, 1, 0xFF);
 		glStencilMask(0x00);
 		glClear(GL_COLOR_BUFFER_BIT);
-		smaaEdgeFbColor.bind(smaaBlend->edges);
-		smaaArea.bind(smaaBlend->area);
-		smaaSearch.bind(smaaBlend->search);
-		glUniform4f(smaaBlend->subsampleIndices,
-			1.0f, 2.0f, 2.0f, 0.0f);
-		glUniform4f(smaaBlend->screenSize,
+		smaaBlend->edges = smaaEdgeFbColor;
+		smaaBlend->area = smaaArea;
+		smaaBlend->search = smaaSearch;
+		smaaBlend->subsampleIndices = {1.0f, 2.0f, 2.0f, 0.0f};
+		smaaBlend->screenSize = {
 			1.0 / (float)currentSize.x, 1.0 / (float)currentSize.y,
-			currentSize.x, currentSize.y);
+			currentSize.x, currentSize.y
+		};
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		smaaBlendFb2.bind();
 		glClear(GL_COLOR_BUFFER_BIT);
-		smaaEdgeFbColor2.bind(smaaBlend->edges);
-		smaaArea.bind(smaaBlend->area);
-		smaaSearch.bind(smaaBlend->search);
-		glUniform4f(smaaBlend->subsampleIndices,
-			2.0f, 1.0f, 1.0f, 0.0f);
-		glUniform4f(smaaBlend->screenSize,
+		smaaBlend->edges = smaaEdgeFbColor2;
+		smaaBlend->area = smaaArea;
+		smaaBlend->search = smaaSearch;
+		smaaBlend->subsampleIndices = {2.0f, 1.0f, 1.0f, 0.0f};
+		smaaBlend->screenSize = {
 			1.0 / (float)currentSize.x, 1.0 / (float)currentSize.y,
-			currentSize.x, currentSize.y);
+			currentSize.x, currentSize.y
+		};
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 		glDisable(GL_STENCIL_TEST);
 
 		// SMAA neighbor blending pass
 		programUse(smaaNeighbor);
 		rendererFramebuffer().bind();
-		smaaSeparateFbColor.bind(smaaNeighbor->image);
+		smaaNeighbor->image = smaaSeparateFbColor;
 		smaaSeparateFbColor.setFilter(Filter::Linear);
-		smaaBlendFbColor.bind(smaaNeighbor->blend);
-		glUniform1f(smaaNeighbor->alpha, 1.0f);
-		glUniform4f(smaaNeighbor->screenSize,
+		smaaNeighbor->blend = smaaBlendFbColor;
+		smaaNeighbor->alpha = 1.0f;
+		smaaNeighbor->screenSize = {
 			1.0 / (float)currentSize.x, 1.0 / (float)currentSize.y,
-			currentSize.x, currentSize.y);
+			currentSize.x, currentSize.y
+		};
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		glEnable(GL_BLEND);
-		smaaSeparateFbColor2.bind(smaaNeighbor->image);
+		smaaNeighbor->image = smaaSeparateFbColor2;
 		smaaSeparateFbColor2.setFilter(Filter::Linear);
-		smaaBlendFbColor2.bind(smaaNeighbor->blend);
-		glUniform1f(smaaNeighbor->alpha, 0.5f);
+		smaaNeighbor->blend = smaaBlendFbColor2;
+		smaaNeighbor->alpha = 0.5f;
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		glEnable(GL_DEPTH_TEST);

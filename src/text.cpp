@@ -19,10 +19,10 @@ using namespace minote;
 /// Shader type for MSDF drawing
 typedef struct ProgramMsdf {
 	ProgramBase base;
-	TextureUnit transforms; ///< Buffer texture containing per-string transforms
-	TextureUnit atlas; ///< Font atlas
-	Uniform camera;
-	Uniform projection;
+	Sampler<Texture> transforms; ///< Buffer texture containing per-string transforms
+	Sampler<Texture> atlas; ///< Font atlas
+	Uniform<mat4> camera;
+	Uniform<mat4> projection;
 } ProgramMsdf;
 
 /// Single glyph instance for the MSDF shader
@@ -137,10 +137,10 @@ void textInit(void)
 	msdf = programCreate(ProgramMsdf,
 		ProgramMsdfVertName, ProgramMsdfVertSrc,
 		ProgramMsdfFragName, ProgramMsdfFragSrc);
-	msdf->atlas = programSampler(msdf, "atlas", GL_TEXTURE0);
-	msdf->transforms = programSampler(msdf, "transforms", GL_TEXTURE1);
-	msdf->projection = programUniform(msdf, "projection");
-	msdf->camera = programUniform(msdf, "camera");
+	msdf->atlas.setLocation(msdf->base.id, "atlas", TextureUnit::_0);
+	msdf->transforms.setLocation(msdf->base.id, "transforms", TextureUnit::_1);
+	msdf->projection.setLocation(msdf->base.id, "projection");
+	msdf->camera.setLocation(msdf->base.id, "camera");
 
 	glGenBuffers(FontSize, msdfGlyphsVbo);
 	glGenVertexArrays(FontSize, msdfVao);
@@ -250,11 +250,11 @@ void textDraw(void)
 
 		glBindVertexArray(msdfVao[i]);
 		programUse(msdf);
-		fonts[i].atlas.bind(msdf->atlas);
-		glActiveTexture(msdf->transforms);
+		msdf->atlas = fonts[i].atlas;
+		glActiveTexture(+msdf->transforms.unit);
 		glBindTexture(GL_TEXTURE_BUFFER, msdfTransformsTex[i]);
-		glUniformMatrix4fv(msdf->projection, 1, GL_FALSE, value_ptr(worldProjection));
-		glUniformMatrix4fv(msdf->camera, 1, GL_FALSE, value_ptr(worldCamera));
+		msdf->projection = worldProjection;
+		msdf->camera = worldCamera;
 		glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, instances);
 
 		msdfGlyphs[i].clear();
