@@ -5,15 +5,10 @@
 
 #pragma once
 
-#include <cstddef>
 #include "glad/glad.h"
 #include "base/math.hpp"
-#include "sys/window.hpp"
 
 namespace minote {
-
-/// OpenGL shader program. You can obtain an instance with programCreate().
-using Program = GLuint;
 
 /// OpenGL vertex buffer object ID
 using VertexBuffer = GLuint;
@@ -369,6 +364,8 @@ struct Shader : GLObject {
 	void destroy();
 
 	void bind() const;
+
+	virtual void setLocations() = 0;
 
 };
 

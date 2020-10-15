@@ -17,16 +17,35 @@ using namespace minote;
 
 /// Bloom threshold filter type
 struct Threshold : Shader {
+
 	Sampler<Texture> image;
 	Uniform<float> threshold;
 	Uniform<float> softKnee;
 	Uniform<float> strength;
+
+	void setLocations() override
+	{
+		image.setLocation(*this, "image");
+		threshold.setLocation(*this, "threshold");
+		softKnee.setLocation(*this, "softKnee");
+		strength.setLocation(*this, "strength");
+	}
+
 };
 
 struct BoxBlur : Shader {
+
 	Sampler<Texture> image;
 	Uniform<float> step;
 	Uniform<vec2> imageTexel;
+
+	void setLocations() override
+	{
+		image.setLocation(*this, "image");
+		step.setLocation(*this, "step");
+		imageTexel.setLocation(*this, "imageTexel");
+	}
+
 };
 
 static const GLchar* ThresholdVertSrc = (GLchar[]){
@@ -96,15 +115,7 @@ void bloomInit(Window& w)
 		bloomFb[i].attach(bloomFbColor[i], Attachment::Color0);
 
 	threshold.create("threshold", ThresholdVertSrc, ThresholdFragSrc);
-	threshold.image.setLocation(threshold, "image");
-	threshold.threshold.setLocation(threshold, "threshold");
-	threshold.softKnee.setLocation(threshold, "softKnee");
-	threshold.strength.setLocation(threshold, "strength");
-
 	boxBlur.create("boxBlur", BoxBlurVertSrc, BoxBlurFragSrc);
-	boxBlur.image.setLocation(boxBlur, "image");
-	boxBlur.step.setLocation(boxBlur, "step");
-	boxBlur.imageTexel.setLocation(boxBlur, "imageTexel");
 
 	initialized = true;
 }

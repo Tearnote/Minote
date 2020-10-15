@@ -13,12 +13,21 @@ using namespace minote;
 
 /// Flat shading type
 struct Flat : Shader {
+
 	Uniform<mat4> camera;
 	Uniform<mat4> projection;
+
+	void setLocations() override
+	{
+		camera.setLocation(*this, "camera");
+		projection.setLocation(*this, "projection");
+	}
+
 };
 
 /// Phong-Blinn shading type
 struct Phong : Shader {
+
 	Uniform<mat4> camera;
 	Uniform<mat4> projection;
 	Uniform<vec3> lightPosition;
@@ -28,6 +37,20 @@ struct Phong : Shader {
 	Uniform<float> diffuse;
 	Uniform<float> specular;
 	Uniform<float> shine;
+
+	void setLocations() override
+	{
+		camera.setLocation(*this, "camera");
+		projection.setLocation(*this, "projection");
+		lightPosition.setLocation(*this, "lightPosition");
+		lightColor.setLocation(*this, "lightColor");
+		ambientColor.setLocation(*this, "ambientColor");
+		ambient.setLocation(*this, "ambient");
+		diffuse.setLocation(*this, "diffuse");
+		specular.setLocation(*this, "specular");
+		shine.setLocation(*this, "shine");
+	}
+
 };
 
 static const GLchar* FlatVertSrc = (GLchar[]){
@@ -54,19 +77,7 @@ void modelInit(void)
 	if (initialized) return;
 
 	flat.create("flat", FlatVertSrc, FlatFragSrc);
-	flat.projection.setLocation(flat, "projection");
-	flat.camera.setLocation(flat, "camera");
-
 	phong.create("phong", PhongVertSrc, PhongFragSrc);
-	phong.projection.setLocation(phong, "projection");
-	phong.camera.setLocation(phong, "camera");
-	phong.lightPosition.setLocation(phong, "lightPosition");
-	phong.lightColor.setLocation(phong, "lightColor");
-	phong.ambientColor.setLocation(phong, "ambientColor");
-	phong.ambient.setLocation(phong, "ambient");
-	phong.diffuse.setLocation(phong, "diffuse");
-	phong.specular.setLocation(phong, "specular");
-	phong.shine.setLocation(phong, "shine");
 
 	initialized = true;
 }

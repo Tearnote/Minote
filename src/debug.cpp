@@ -24,8 +24,16 @@ using namespace minote;
 
 /// Nuklear shader type
 struct Nuklear : Shader {
+
 	Sampler<Texture> atlas;
 	Uniform<mat4> projection;
+
+	void setLocations() override
+	{
+		atlas.setLocation(*this, "atlas");
+		projection.setLocation(*this, "projection");
+	}
+
 };
 
 typedef struct VertexNuklear {
@@ -157,8 +165,6 @@ void debugInit(void)
 
 	// Compile the shader
 	nuklear.create("nuklear", NuklearVertSrc, NuklearFragSrc);
-	nuklear.atlas.setLocation(nuklear, "atlas");
-	nuklear.projection.setLocation(nuklear, "projection");
 
 	// Set up the buffers
 	glGenVertexArrays(1, &nuklearVao);

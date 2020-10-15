@@ -18,10 +18,20 @@ using namespace minote;
 
 /// Shader type for MSDF drawing
 struct Msdf : Shader {
+
 	Sampler<Texture> transforms; ///< Buffer texture containing per-string transforms
 	Sampler<Texture> atlas; ///< Font atlas
 	Uniform<mat4> camera;
 	Uniform<mat4> projection;
+
+	void setLocations() override
+	{
+		atlas.setLocation(*this, "atlas", TextureUnit::_0);
+		transforms.setLocation(*this, "transforms", TextureUnit::_1);
+		projection.setLocation(*this, "projection");
+		camera.setLocation(*this, "camera");
+	}
+
 };
 
 /// Single glyph instance for the MSDF shader
@@ -132,10 +142,6 @@ void textInit(void)
 	if (initialized) return;
 
 	msdf.create("msdf", MsdfVertSrc, MsdfFragSrc);
-	msdf.atlas.setLocation(msdf, "atlas", TextureUnit::_0);
-	msdf.transforms.setLocation(msdf, "transforms", TextureUnit::_1);
-	msdf.projection.setLocation(msdf, "projection");
-	msdf.camera.setLocation(msdf, "camera");
 
 	glGenBuffers(FontSize, msdfGlyphsVbo);
 	glGenVertexArrays(FontSize, msdfVao);

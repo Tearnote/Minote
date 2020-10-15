@@ -561,6 +561,9 @@ void Shader::create(char const* _name, char const* vertSrc, char const* fragSrc)
 	}
 
 	name = _name;
+
+	setLocations();
+
 	L.info(R"(Shader "%s" created)", name);
 }
 

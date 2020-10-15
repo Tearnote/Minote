@@ -20,13 +20,27 @@ using namespace minote;
 
 /// Basic blit function type
 struct Blit : Shader {
+
 	Sampler<Texture> image;
 	Uniform<float> boost;
+
+	void setLocations() override
+	{
+		image.setLocation(*this, "image");
+		boost.setLocation(*this, "boost");
+	}
 };
 
 /// Internal gamma correction shader
 struct Delinearize : Shader {
+
 	Sampler<Texture> image;
+
+	void setLocations() override
+	{
+		image.setLocation(*this, "image");
+	}
+
 };
 
 static const GLchar* BlitVertSrc = (GLchar[]){
@@ -223,11 +237,7 @@ void rendererInit(Window& w)
 
 	// Create built-in shaders
 	blit.create("blit", BlitVertSrc, BlitFragSrc);
-	blit.image.setLocation(blit, "image");
-	blit.boost.setLocation(blit, "boost");
-
 	delinearize.create("delinearize", DelinearizeVertSrc, DelinearizeFragSrc);
-	delinearize.image.setLocation(delinearize, "image");
 
 	L.debug("Created renderer for window \"%s\"", window->title);
 }

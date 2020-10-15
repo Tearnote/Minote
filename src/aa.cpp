@@ -15,27 +15,63 @@
 using namespace minote;
 
 struct SmaaSeparate : Shader {
+
 	Sampler<TextureMS> image;
+
+	void setLocations() override
+	{
+		image.setLocation(*this, "image");
+	}
+
 };
 
 struct SmaaEdge : Shader {
+
 	Sampler<Texture> image;
 	Uniform<vec4> screenSize;
+
+	void setLocations() override
+	{
+		image.setLocation(*this, "image");
+		screenSize.setLocation(*this, "screenSize");
+	}
+
 };
 
 struct SmaaBlend : Shader {
+
 	Sampler<Texture> edges;
 	Sampler<Texture> area;
 	Sampler<Texture> search;
 	Uniform<vec4> subsampleIndices;
 	Uniform<vec4> screenSize;
+
+	void setLocations() override
+	{
+		edges.setLocation(*this, "edges", TextureUnit::_0);
+		area.setLocation(*this, "area", TextureUnit::_1);
+		search.setLocation(*this, "search", TextureUnit::_2);
+		subsampleIndices.setLocation(*this, "subsampleIndices");
+		screenSize.setLocation(*this, "screenSize");
+	}
+
 };
 
 struct SmaaNeighbor : Shader {
+
 	Sampler<Texture> image;
 	Sampler<Texture> blend;
 	Uniform<float> alpha;
 	Uniform<vec4> screenSize;
+
+	void setLocations() override
+	{
+		image.setLocation(*this, "image", TextureUnit::_0);
+		blend.setLocation(*this, "blend", TextureUnit::_2);
+		alpha.setLocation(*this, "alpha");
+		screenSize.setLocation(*this, "screenSize");
+	}
+
 };
 
 static const GLchar* SmaaSeparateVertSrc = (GLchar[]){
@@ -217,23 +253,8 @@ void aaInit(AAMode mode, Window& w)
 		smaaBlendFb.attach(smaaEdgeFbDepthStencil, Attachment::DepthStencil);
 
 		smaaEdge.create("smaaEdge", SmaaEdgeVertSrc, SmaaEdgeFragSrc);
-		smaaEdge.image.setLocation(smaaEdge, "image");
-		smaaEdge.screenSize.setLocation(smaaEdge, "screenSize");
-
 		smaaBlend.create("smaaBlend", SmaaBlendVertSrc, SmaaBlendFragSrc);
-		smaaBlend.edges.setLocation(smaaBlend, "edges", TextureUnit::_0);
-		smaaBlend.area.setLocation(smaaBlend, "area", TextureUnit::_1);
-		smaaBlend.search.setLocation(smaaBlend, "search", TextureUnit::_2);
-		smaaBlend.subsampleIndices.setLocation(smaaBlend, "subsampleIndices");
-		smaaBlend.screenSize.setLocation(smaaBlend, "screenSize");
-
 		smaaNeighbor.create("smaaNeighbor", SmaaNeighborVertSrc, SmaaNeighborFragSrc);
-		smaaNeighbor.image.setLocation(smaaNeighbor, "image",
-			TextureUnit::_0);
-		smaaNeighbor.blend.setLocation(smaaNeighbor, "blend",
-			TextureUnit::_2);
-		smaaNeighbor.alpha.setLocation(smaaNeighbor, "alpha");
-		smaaNeighbor.screenSize.setLocation(smaaNeighbor, "screenSize");
 
 		// Load lookup textures
 		unsigned char areaTexBytesFlipped[AREATEX_SIZE] = {0};
@@ -267,8 +288,6 @@ void aaInit(AAMode mode, Window& w)
 		smaaBlendFb2.attach(smaaEdgeFbDepthStencil2, Attachment::DepthStencil);
 
 		smaaSeparate.create("smaaSeparate", SmaaSeparateVertSrc, SmaaSeparateFragSrc);
-		smaaSeparate.image.setLocation(smaaSeparate, "image",
-			TextureUnit::_0);
 	}
 
 	rendererFramebuffer().bind();
