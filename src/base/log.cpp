@@ -192,6 +192,9 @@ void Log::fail(char const* fmt, ...)
 	va_start(ap, fmt);
 	logPrio(*this, Level::Crit, fmt, ap);
 	va_end(ap);
+#ifdef __GNUC__
+	__builtin_trap();
+#endif //__GNUC__
 	std::exit(EXIT_FAILURE);
 }
 
