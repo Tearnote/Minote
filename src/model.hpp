@@ -45,10 +45,10 @@ typedef Model ModelBase;
 typedef struct ModelFlat {
 	ModelBase base;
 	size_t numVertices;
-	minote::VertexBuffer vertices; ///< VBO with model vertex data
-	minote::VertexBuffer tints; ///< VBO for storing per-draw tint colors
-	minote::VertexBuffer highlights; ///< VBO for storing per-draw color highlight colors
-	minote::VertexBuffer transforms; ///< VBO for storing per-draw model matrices
+	minote::VertexBuffer<VertexFlat> vertices; ///< VBO with model vertex data
+	minote::VertexBuffer<minote::color4> tints; ///< VBO for storing per-draw tint colors
+	minote::VertexBuffer<minote::color4> highlights; ///< VBO for storing per-draw color highlight colors
+	minote::VertexBuffer<minote::mat4> transforms; ///< VBO for storing per-draw model matrices
 	minote::VertexArray vao;
 } ModelFlat;
 
@@ -56,11 +56,11 @@ typedef struct ModelFlat {
 typedef struct ModelPhong {
 	ModelBase base;
 	size_t numVertices;
-	minote::VertexBuffer vertices; ///< VBO with model vertex data
-	minote::VertexBuffer normals; ///< VBO with model normals, generated from vertices
-	minote::VertexBuffer tints; ///< VBO for storing per-draw tint colors
-	minote::VertexBuffer highlights; ///< VBO for storing per-draw color highlight colors
-	minote::VertexBuffer transforms; ///< VBO for storing per-draw model matrices
+	minote::VertexBuffer<VertexPhong> vertices; ///< VBO with model vertex data
+	minote::VertexBuffer<minote::vec3> normals; ///< VBO with model normals, generated from vertices
+	minote::VertexBuffer<minote::color4> tints; ///< VBO for storing per-draw tint colors
+	minote::VertexBuffer<minote::color4> highlights; ///< VBO for storing per-draw color highlight colors
+	minote::VertexBuffer<minote::mat4> transforms; ///< VBO for storing per-draw model matrices
 	minote::VertexArray vao;
 	MaterialPhong material;
 } ModelPhong;

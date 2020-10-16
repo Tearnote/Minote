@@ -66,7 +66,7 @@ static Nuklear nuklear;
 static Texture nuklearTexture;
 
 static VertexArray nuklearVao = 0;
-static VertexBuffer nuklearVbo = 0;
+static VertexBuffer<VertexNuklear> nuklearVbo;
 static ElementArray nuklearEbo = 0;
 
 static std::atomic<ivec2> cursorPos;
@@ -169,8 +169,8 @@ void debugInit(void)
 	// Set up the buffers
 	glGenVertexArrays(1, &nuklearVao);
 	glBindVertexArray(nuklearVao);
-	glGenBuffers(1, &nuklearVbo);
-	glBindBuffer(GL_ARRAY_BUFFER, nuklearVbo);
+	nuklearVbo.create("nuklearVbo", true);
+	nuklearVbo.bind();
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(VertexNuklear),
 		(void*)0);
@@ -197,8 +197,7 @@ void debugCleanup(void)
 	nk_buffer_free(&commandList);
 	glDeleteBuffers(1, &nuklearEbo);
 	nuklearEbo = 0;
-	glDeleteBuffers(1, &nuklearVbo);
-	nuklearVbo = 0;
+	nuklearVbo.destroy();
 	glDeleteVertexArrays(1, &nuklearVao);
 	nuklearVao = 0;
 	nuklear.destroy();
@@ -248,7 +247,7 @@ void debugDraw(Window& window)
 	nuklear.projection = worldScreenProjection;
 	glBindVertexArray(nuklearVao);
 
-	glBindBuffer(GL_ARRAY_BUFFER, nuklearVbo);
+	nuklearVbo.bind();
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, nuklearEbo);
 	glBufferData(GL_ARRAY_BUFFER, NUKLEAR_VBO_SIZE, nullptr, GL_STREAM_DRAW);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, NUKLEAR_EBO_SIZE, nullptr,

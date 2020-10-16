@@ -40,6 +40,27 @@ static auto getAttachment(const Framebuffer& f, const Attachment attachment) -> 
 	return f.attachments[attachmentIndex(attachment)];
 }
 
+static auto compileShaderStage(const GLuint id, const char* const name, const char* const source) -> bool
+{
+		ASSERT(id);
+		ASSERT(name);
+		ASSERT(source);
+
+	glShaderSource(id, 1, &source, nullptr);
+	glCompileShader(id);
+
+	GLint compileStatus = 0;
+	glGetShaderiv(id, GL_COMPILE_STATUS, &compileStatus);
+	if (compileStatus == GL_FALSE) {
+		GLchar infoLog[2048] = "";
+		glGetShaderInfoLog(id, 2048, nullptr, infoLog);
+		L.error(R"(Shader "%s" failed to compile: %s)", name, infoLog);
+		return false;
+	}
+	L.debug(R"(Shader "%s" compiled)", name);
+	return true;
+}
+
 GLObject::~GLObject()
 {
 #ifndef NDEBUG
@@ -492,27 +513,6 @@ void Framebuffer::blit(Framebuffer& dst, const Framebuffer& src,
 	glBlitFramebuffer(0, 0, blitSize.x, blitSize.y,
 		0, 0, blitSize.x, blitSize.y,
 		mask, GL_NEAREST);
-}
-
-static auto compileShaderStage(const GLuint id, const char* const name, const char* const source) -> bool
-{
-	ASSERT(id);
-	ASSERT(name);
-	ASSERT(source);
-
-	glShaderSource(id, 1, &source, nullptr);
-	glCompileShader(id);
-
-	GLint compileStatus = 0;
-	glGetShaderiv(id, GL_COMPILE_STATUS, &compileStatus);
-	if (compileStatus == GL_FALSE) {
-		GLchar infoLog[2048] = "";
-		glGetShaderInfoLog(id, 2048, nullptr, infoLog);
-		L.error(R"(Shader "%s" failed to compile: %s)", name, infoLog);
-		return false;
-	}
-	L.debug(R"(Shader "%s" compiled)", name);
-	return true;
 }
 
 void Shader::create(char const* _name, char const* vertSrc, char const* fragSrc)

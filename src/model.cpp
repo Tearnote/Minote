@@ -102,14 +102,10 @@ static void modelDestroyFlat(ModelFlat* m)
 	ASSERT(m);
 	glDeleteVertexArrays(1, &m->vao);
 	m->vao = 0;
-	glDeleteBuffers(1, &m->transforms);
-	m->transforms = 0;
-	glDeleteBuffers(1, &m->highlights);
-	m->highlights = 0;
-	glDeleteBuffers(1, &m->tints);
-	m->tints = 0;
-	glDeleteBuffers(1, &m->vertices);
-	m->vertices = 0;
+	m->transforms.destroy();
+	m->highlights.destroy();
+	m->tints.destroy();
+	m->vertices.destroy();
 	L.debug("Model %s destroyed", m->base.name);
 	free(m);
 	m = nullptr;
@@ -125,16 +121,11 @@ static void modelDestroyPhong(ModelPhong* m)
 	ASSERT(m);
 	glDeleteVertexArrays(1, &m->vao);
 	m->vao = 0;
-	glDeleteBuffers(1, &m->transforms);
-	m->transforms = 0;
-	glDeleteBuffers(1, &m->highlights);
-	m->highlights = 0;
-	glDeleteBuffers(1, &m->tints);
-	m->tints = 0;
-	glDeleteBuffers(1, &m->normals);
-	m->normals = 0;
-	glDeleteBuffers(1, &m->vertices);
-	m->vertices = 0;
+	m->transforms.destroy();
+	m->highlights.destroy();
+	m->tints.destroy();
+	m->normals.destroy();
+	m->vertices.destroy();
 	L.debug("Model %s destroyed", m->base.name);
 	free(m);
 	m = nullptr;
@@ -158,9 +149,6 @@ static void modelDrawFlat(ModelFlat* m, size_t instances,
 	ASSERT(m->base.type == ModelTypeFlat);
 	ASSERT(m->vao);
 	ASSERT(m->base.name);
-	ASSERT(m->vertices);
-	ASSERT(m->tints);
-	ASSERT(m->transforms);
 	ASSERT(transforms);
 	if (!instances) return;
 
@@ -168,29 +156,19 @@ static void modelDrawFlat(ModelFlat* m, size_t instances,
 	flat.bind();
 	if (tints) {
 		glEnableVertexAttribArray(2);
-		glBindBuffer(GL_ARRAY_BUFFER, m->tints);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(color4) * instances, nullptr,
-			GL_STREAM_DRAW);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(color4) * instances, tints);
+		m->tints.upload(instances, tints);
 	} else {
 		glDisableVertexAttribArray(2);
 		glVertexAttrib4f(2, 1.0f, 1.0f, 1.0f, 1.0f);
 	}
 	if (highlights) {
 		glEnableVertexAttribArray(3);
-		glBindBuffer(GL_ARRAY_BUFFER, m->highlights);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(color4) * instances, nullptr,
-			GL_STREAM_DRAW);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(color4) * instances,
-			highlights);
+		m->highlights.upload(instances, highlights);
 	} else {
 		glDisableVertexAttribArray(3);
 		glVertexAttrib4f(3, 0.0f, 0.0f, 0.0f, 0.0f);
 	}
-	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4) * instances, nullptr,
-		GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4) * instances, transforms);
+	m->transforms.upload(instances, transforms);
 	flat.projection = worldProjection;
 	flat.camera = worldCamera;
 	glDrawArraysInstanced(GL_TRIANGLES, 0, m->numVertices, instances);
@@ -214,10 +192,6 @@ static void modelDrawPhong(ModelPhong* m, size_t instances,
 	ASSERT(m->base.type == ModelTypePhong);
 	ASSERT(m->vao);
 	ASSERT(m->base.name);
-	ASSERT(m->vertices);
-	ASSERT(m->normals);
-	ASSERT(m->tints);
-	ASSERT(m->transforms);
 	ASSERT(transforms);
 	if (!instances) return;
 
@@ -225,29 +199,19 @@ static void modelDrawPhong(ModelPhong* m, size_t instances,
 	phong.bind();
 	if (tints) {
 		glEnableVertexAttribArray(3);
-		glBindBuffer(GL_ARRAY_BUFFER, m->tints);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(color4) * instances, nullptr,
-			GL_STREAM_DRAW);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(color4) * instances, tints);
+		m->tints.upload(instances, tints);
 	} else {
 		glDisableVertexAttribArray(3);
 		glVertexAttrib4f(3, 1.0f, 1.0f, 1.0f, 1.0f);
 	}
 	if (highlights) {
 		glEnableVertexAttribArray(4);
-		glBindBuffer(GL_ARRAY_BUFFER, m->highlights);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(color4) * instances, nullptr,
-			GL_STREAM_DRAW);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(color4) * instances,
-			highlights);
+		m->highlights.upload(instances, highlights);
 	} else {
 		glDisableVertexAttribArray(4);
 		glVertexAttrib4f(4, 0.0f, 0.0f, 0.0f, 0.0f);
 	}
-	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(mat4) * instances, nullptr,
-		GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4) * instances, transforms);
+	m->transforms.upload(instances, transforms);
 	phong.projection = worldProjection;
 	phong.camera = worldCamera;
 	phong.lightPosition = worldLightPosition;
@@ -306,13 +270,13 @@ Model* modelCreateFlat(const char* name,
 	m->base.type = ModelTypeFlat;
 	m->base.name = name;
 	m->numVertices = numVertices;
-	glGenBuffers(1, &m->vertices);
-	glBindBuffer(GL_ARRAY_BUFFER, m->vertices);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(VertexFlat) * m->numVertices, vertices,
-		GL_STATIC_DRAW);
-	glGenBuffers(1, &m->tints);
-	glGenBuffers(1, &m->highlights);
-	glGenBuffers(1, &m->transforms);
+	m->vertices.create("vertices", false);
+	m->vertices.upload(m->numVertices, vertices);
+	m->tints.create("tints", true);
+	m->highlights.create("highlights", true);
+	m->transforms.create("transforms", true);
+
+	m->vertices.bind();
 	glGenVertexArrays(1, &m->vao);
 	glBindVertexArray(m->vao);
 	glEnableVertexAttribArray(0);
@@ -321,17 +285,17 @@ Model* modelCreateFlat(const char* name,
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(VertexFlat),
 		(void*)offsetof(VertexFlat, color));
-	glBindBuffer(GL_ARRAY_BUFFER, m->tints);
+	m->tints.bind();
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(color4),
 		(void*)0);
 	glVertexAttribDivisor(2, 1);
-	glBindBuffer(GL_ARRAY_BUFFER, m->highlights);
+	m->highlights.bind();
 	glEnableVertexAttribArray(3);
 	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(color4),
 		(void*)0);
 	glVertexAttribDivisor(3, 1);
-	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
+	m->transforms.bind();
 	glEnableVertexAttribArray(4);
 	glEnableVertexAttribArray(5);
 	glEnableVertexAttribArray(6);
@@ -365,46 +329,42 @@ Model* modelCreatePhong(const char* name,
 	m->material = material;
 
 	m->numVertices = numVertices;
-	glGenBuffers(1, &m->vertices);
-	glBindBuffer(GL_ARRAY_BUFFER, m->vertices);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(VertexPhong) * m->numVertices,
-		vertices, GL_STATIC_DRAW);
+	m->vertices.create("vertices", false);
+	m->vertices.upload(m->numVertices, vertices);
 	vec3 normalData[m->numVertices];
 	ASSERT(sizeof(normalData) == sizeof(vec3) * m->numVertices);
 	arrayClear(normalData);
 	modelGenerateNormals(m->numVertices, vertices, normalData);
-	glGenBuffers(1, &m->normals);
-	glBindBuffer(GL_ARRAY_BUFFER, m->normals);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(normalData), normalData,
-		GL_STATIC_DRAW);
-	glGenBuffers(1, &m->tints);
-	glGenBuffers(1, &m->highlights);
-	glGenBuffers(1, &m->transforms);
+	m->normals.create("normals", false);
+	m->normals.upload(m->numVertices, normalData);
+	m->tints.create("tints", true);
+	m->highlights.create("highlights", true);
+	m->transforms.create("transforms", true);
 
 	glGenVertexArrays(1, &m->vao);
 	glBindVertexArray(m->vao);
-	glBindBuffer(GL_ARRAY_BUFFER, m->vertices);
+	m->vertices.bind();
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexPhong),
 		(void*)0);
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(VertexPhong),
 		(void*)offsetof(VertexPhong, color));
-	glBindBuffer(GL_ARRAY_BUFFER, m->normals);
+	m->normals.bind();
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(vec3),
 		(void*)0);
-	glBindBuffer(GL_ARRAY_BUFFER, m->tints);
+	m->tints.bind();
 	glEnableVertexAttribArray(3);
 	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(color4),
 		(void*)0);
 	glVertexAttribDivisor(3, 1);
-	glBindBuffer(GL_ARRAY_BUFFER, m->highlights);
+	m->highlights.bind();
 	glEnableVertexAttribArray(4);
 	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(color4),
 		(void*)0);
 	glVertexAttribDivisor(4, 1);
-	glBindBuffer(GL_ARRAY_BUFFER, m->transforms);
+	m->transforms.bind();
 	glEnableVertexAttribArray(5);
 	glEnableVertexAttribArray(6);
 	glEnableVertexAttribArray(7);

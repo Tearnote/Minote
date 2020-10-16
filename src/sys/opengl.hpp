@@ -6,12 +6,10 @@
 #pragma once
 
 #include "glad/glad.h"
+#include "base/varray.hpp"
 #include "base/math.hpp"
 
 namespace minote {
-
-/// OpenGL vertex buffer object ID
-using VertexBuffer = GLuint;
 
 /// OpenGL vertex array object ID
 using VertexArray = GLuint;
@@ -24,6 +22,40 @@ using BufferTexture = GLuint;
 
 /// OpenGL buffer object, for use with buffer textures
 using BufferTextureStorage = GLuint;
+
+/// Common fields of all OpenGL object types
+struct GLObject {
+
+	GLuint id = 0; ///< The object has not been created if this is 0
+	const char* name = nullptr; ///< Human-readable name, used in logging
+
+	~GLObject();
+};
+
+template<Trivial T>
+struct VertexBuffer : GLObject {
+
+	using Type = T;
+
+	bool dynamic = false;
+
+	bool uploaded = false;
+
+	void create(const char* name, bool dynamic);
+
+	void destroy();
+
+	template<std::size_t N>
+	void upload(varray<Type, N> data);
+
+	template<std::size_t N>
+	void upload(std::array<Type, N> data);
+
+	void upload(std::size_t elements, Type data[]); //TODO remove
+
+	void bind() const;
+
+};
 
 /// Available texture filtering modes
 enum struct Filter : GLint {
@@ -72,15 +104,6 @@ enum struct Samples : GLsizei {
 	_2 = 2,
 	_4 = 4,
 	_8 = 8
-};
-
-/// Common fields of all OpenGL object types
-struct GLObject {
-
-	GLuint id = 0; ///< The object has not been created if this is 0
-	const char* name = nullptr; ///< Human-readable name, used in logging
-
-	~GLObject();
 };
 
 /// Common fields of texture types

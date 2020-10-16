@@ -55,7 +55,7 @@ static constexpr std::size_t MaxStrings{1024};
 
 static Msdf msdf;
 static VertexArray msdfVao[FontSize] = {0};
-static VertexBuffer msdfGlyphsVbo[FontSize] = {0};
+static VertexBuffer<GlyphMsdf> msdfGlyphsVbo[FontSize];
 static varray<GlyphMsdf, MaxGlyphs> msdfGlyphs[FontSize]{};
 static BufferTextureStorage msdfTransformsStorage[FontSize] = {0};
 static BufferTexture msdfTransformsTex[FontSize] = {0};
@@ -143,14 +143,15 @@ void textInit(void)
 
 	msdf.create("msdf", MsdfVertSrc, MsdfFragSrc);
 
-	glGenBuffers(FontSize, msdfGlyphsVbo);
+	for (auto& msdfGlyphVbo : msdfGlyphsVbo)
+		msdfGlyphVbo.create("msdfGlyphVbo", true);
 	glGenVertexArrays(FontSize, msdfVao);
 	glGenBuffers(FontSize, msdfTransformsStorage);
 	glGenTextures(FontSize, msdfTransformsTex);
 
 	for (size_t i = 0; i < FontSize; i += 1) {
 		glBindVertexArray(msdfVao[i]);
-		glBindBuffer(GL_ARRAY_BUFFER, msdfGlyphsVbo[i]);
+		msdfGlyphsVbo[i].bind();
 
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(GlyphMsdf),
@@ -194,8 +195,8 @@ void textCleanup(void)
 
 	glDeleteTextures(FontSize, msdfTransformsTex);
 	glDeleteBuffers(FontSize, msdfTransformsStorage);
-	glDeleteBuffers(FontSize, msdfGlyphsVbo);
-	arrayClear(msdfGlyphsVbo);
+	for (auto& msdfGlyphVbo : msdfGlyphsVbo)
+		msdfGlyphVbo.destroy();
 	glDeleteVertexArrays(FontSize, msdfVao);
 	arrayClear(msdfVao);
 
@@ -238,10 +239,7 @@ void textDraw(void)
 
 		size_t instances = msdfGlyphs[i].size;
 
-		size_t glyphsSize = sizeof(GlyphMsdf) * msdfGlyphs[i].size;
-		glBindBuffer(GL_ARRAY_BUFFER, msdfGlyphsVbo[i]);
-		glBufferData(GL_ARRAY_BUFFER, glyphsSize, nullptr, GL_STREAM_DRAW);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, glyphsSize, msdfGlyphs[i].data());
+		msdfGlyphsVbo[i].upload(msdfGlyphs[i]);
 
 		size_t transformsSize = sizeof(mat4) * msdfTransforms[i].size;
 		glBindBuffer(GL_TEXTURE_BUFFER, msdfTransformsStorage[i]);
