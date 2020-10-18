@@ -51,7 +51,7 @@ template<std::size_t N>
 void VertexBuffer<T>::upload(varray<Type, N> data)
 {
 	ASSERT(id);
-	ASSERT(dynamic == false || uploaded == false);
+	ASSERT(dynamic == true || uploaded == false);
 	if(!data.size)
 		return;
 
