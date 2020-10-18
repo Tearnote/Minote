@@ -103,6 +103,7 @@ void game(Window& window)
 		playDraw();
 		particlesDraw();
 		aaEnd();
+		textQueue(FontJost, 3.0f, {6, 2, 0}, {0.0f, 0.0f, 0.0f, 1.0f}, "Text test");
 		glDisable(GL_DEPTH_TEST);
 		textDraw();
 		glEnable(GL_DEPTH_TEST);

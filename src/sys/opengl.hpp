@@ -69,11 +69,9 @@ enum struct PixelFormat : GLint {
 	None = GL_NONE,
 	R_u8 = GL_R8,
 	RG_u8 = GL_RG8,
-	RGB_u8 = GL_RGB8,
 	RGBA_u8 = GL_RGBA8,
 	R_f16 = GL_R16F,
 	RG_f16 = GL_RG16F,
-	RGB_f16 = GL_RGB16F,
 	RGBA_f16 = GL_RGBA16F,
 	DepthStencil = GL_DEPTH24_STENCIL8
 };

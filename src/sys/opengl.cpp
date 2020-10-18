@@ -149,9 +149,6 @@ void Texture::upload(const std::uint8_t* const data)
 		case PixelFormat::RG_u8:
 		case PixelFormat::RG_f16:
 			return GL_RG;
-		case PixelFormat::RGB_u8:
-		case PixelFormat::RGB_f16:
-			return GL_RGB;
 		case PixelFormat::RGBA_u8:
 		case PixelFormat::RGBA_f16:
 			return GL_RGBA;

@@ -59,15 +59,14 @@ void fontInit(void)
 			int channels;
 			stbi_set_flip_vertically_on_load(true);
 			unsigned char* atlasData;
-			atlasData = stbi_load(atlasPath, &size.x, &size.y, &channels, 0);
+			atlasData = stbi_load(atlasPath, &size.x, &size.y, &channels, 4);
 			if (!atlasData) {
 				L.error("Failed to load the font atlas (%s) for font %s",
 					atlasPath, FontList[i]);
 				goto cleanup;
 			}
-			ASSERT(channels == 3);
 
-			fonts[i].atlas.create(FontList[i], size, PixelFormat::RGB_f16);
+			fonts[i].atlas.create(FontList[i], size, PixelFormat::RGBA_f16);
 			fonts[i].atlas.upload(atlasData);
 			stbi_image_free(atlasData);
 			atlasData = nullptr;

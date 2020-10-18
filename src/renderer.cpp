@@ -223,7 +223,7 @@ void rendererInit(Window& w)
 
 	// Create framebuffers
 	renderFb.create("renderFb");
-	renderFbColor.create("renderFbColor", window->size, PixelFormat::RGB_f16);
+	renderFbColor.create("renderFbColor", window->size, PixelFormat::RGBA_f16);
 	renderFbDepthStencil.create("renderFbDepthStencil", window->size, PixelFormat::DepthStencil);
 
 	// Set up matrices and framebuffer textures
