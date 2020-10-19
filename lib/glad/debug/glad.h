@@ -139,8 +139,8 @@ typedef void (APIENTRY *GLDEBUGPROCAMD)(GLuint id,GLenum category,GLenum severit
 typedef unsigned short GLhalfNV;
 typedef GLintptr GLvdpauSurfaceNV;
 typedef void (APIENTRY *GLVULKANPROCNV)(void);
-#define GL_DEPTH_BUFFER_BIT 0x00000100
-#define GL_STENCIL_BUFFER_BIT 0x00000400
+#define GL_DEPTH_BUFFER_BIT 0x00000100u
+#define GL_STENCIL_BUFFER_BIT 0x00000400u
 #define GL_COLOR_BUFFER_BIT 0x00004000u
 #define GL_FALSE 0
 #define GL_TRUE 1

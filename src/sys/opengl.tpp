@@ -9,6 +9,41 @@
 
 namespace minote {
 
+namespace detail {
+
+inline auto attachmentIndex(const Attachment attachment) -> std::size_t
+{
+	switch(attachment) {
+	case Attachment::DepthStencil:
+		return 16;
+#ifndef NDEBUG
+	case Attachment::None:
+		L.warn("Invalid attachment index %d", +attachment);
+		return -1;
+#endif //NDEBUG
+	default:
+		return (+attachment) - (+Attachment::Color0);
+	}
+}
+
+/**
+ * Helper function to retrieve a texture pointer at a specified attachment point
+ * @param f Framebuffer object
+ * @param attachment Attachment point
+ * @return The pointer to texture at given attachment point (can be nullptr)
+ */
+inline auto getAttachment(Framebuffer& f, const Attachment attachment) -> const TextureBase*&
+{
+	return f.attachments[attachmentIndex(attachment)];
+}
+
+inline auto getAttachment(const Framebuffer& f, const Attachment attachment) -> const TextureBase*
+{
+	return f.attachments[attachmentIndex(attachment)];
+}
+
+}
+
 template<Trivial T>
 void VertexBuffer<T>::create(const char* const _name, const bool _dynamic)
 {
@@ -117,6 +152,374 @@ void VertexBuffer<T>::bind() const
 	glBindBuffer(GL_ARRAY_BUFFER, id);
 }
 
+template<PixelFmt F>
+void Texture<F>::create(const char* const _name, const ivec2 _size)
+{
+	ASSERT(!id);
+	ASSERT(_name);
+	ASSERT(Format != PixelFmt::None);
+
+	glGenTextures(1, &id);
+#ifndef NDEBUG
+	glObjectLabel(GL_TEXTURE, id, std::strlen(_name), _name);
+#endif //NDEBUG
+	name = _name;
+	glBindTexture(GL_TEXTURE_2D, id);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	setFilter(Filter::Linear);
+	resize(_size);
+
+	L.debug(R"(Texture "%s" created)", name);
+}
+
+template<PixelFmt F>
+void Texture<F>::destroy()
+{
+#ifndef NDEBUG
+	if (!id) {
+		L.warn("Tried to destroy a texture that has not been created");
+		return;
+	}
+#endif //NDEBUG
+
+	glDeleteTextures(1, &id);
+	id = 0;
+	size = {0, 0};
+	filter = Filter::None;
+
+	L.debug(R"(Texture "%s" destroyed)", name);
+	name = nullptr;
+}
+
+template<PixelFmt F>
+void Texture<F>::setFilter(const Filter _filter)
+{
+	ASSERT(_filter != Filter::None);
+	if (filter == _filter)
+		return;
+
+	glBindTexture(GL_TEXTURE_2D, id);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, +_filter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, +_filter);
+	filter = _filter;
+}
+
+template<PixelFmt F>
+void Texture<F>::resize(const ivec2 _size)
+{
+	ASSERT(_size.x > 0 && _size.y > 0);
+	ASSERT(id);
+	if (size == _size)
+		return;
+
+	glBindTexture(GL_TEXTURE_2D, id);
+	glTexImage2D(GL_TEXTURE_2D, 0, +Format,
+		_size.x, _size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+	size = _size;
+}
+
+template<PixelFmt F>
+void Texture<F>::upload(const std::uint8_t* const data)
+{
+	ASSERT(data);
+	ASSERT(id);
+	ASSERT(size.x > 0 && size.y > 0);
+	ASSERT(Format != PixelFmt::DepthStencil);
+
+	const GLenum channels = [=, this] {
+		switch (Format) {
+		case PixelFmt::R_u8:
+		case PixelFmt::R_f16:
+			return GL_RED;
+		case PixelFmt::RG_u8:
+		case PixelFmt::RG_f16:
+			return GL_RG;
+		case PixelFmt::RGBA_u8:
+		case PixelFmt::RGBA_f16:
+			return GL_RGBA;
+		case PixelFmt::DepthStencil:
+		default:
+				ASSERT(false, "Invalid PixelFormat %d", +Format);
+			return 0;
+		}
+	}();
+
+	glBindTexture(GL_TEXTURE_2D, id);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, size.x, size.y,
+		channels, GL_UNSIGNED_BYTE, data);
+}
+
+template<PixelFmt F>
+void Texture<F>::bind(const TextureUnit unit)
+{
+	ASSERT(id);
+
+	glActiveTexture(+unit);
+	glBindTexture(GL_TEXTURE_2D, id);
+}
+
+template<PixelFmt F>
+void TextureMS<F>::create(const char* const _name, const ivec2 _size, const Samples _samples)
+{
+	ASSERT(!id);
+	ASSERT(_name);
+	ASSERT(Format != PixelFmt::None);
+	ASSERT(+_samples >= 2);
+
+	glGenTextures(1, &id);
+#ifndef NDEBUG
+	glObjectLabel(GL_TEXTURE, id, std::strlen(_name), _name);
+#endif //NDEBUG
+	name = _name;
+	samples = _samples;
+	resize(_size);
+
+	L.debug(R"(Multisample texture "%s" created)", name);
+}
+
+template<PixelFmt F>
+void TextureMS<F>::destroy()
+{
+#ifndef NDEBUG
+	if (!id) {
+		L.warn("Tried to destroy a multisample texture that has not been created");
+		return;
+	}
+#endif //NDEBUG
+
+	glDeleteTextures(1, &id);
+	id = 0;
+	size = {0, 0};
+	samples = Samples::None;
+
+	L.debug(R"(Multisample texture "%s" destroyed)", name);
+	name = nullptr;
+}
+
+template<PixelFmt F>
+void TextureMS<F>::resize(const ivec2 _size)
+{
+	ASSERT(_size.x > 0 && _size.y > 0);
+	ASSERT(id);
+	if (size == _size)
+		return;
+
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, id);
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, +samples, +Format,
+		_size.x, _size.y, GL_TRUE);
+	size = _size;
+}
+
+template<PixelFmt F>
+void TextureMS<F>::bind(const TextureUnit unit)
+{
+	ASSERT(id);
+
+	glActiveTexture(+unit);
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, id);
+}
+
+template<PixelFmt F>
+void Renderbuffer<F>::create(const char* const _name, const ivec2 _size)
+{
+	ASSERT(!id);
+	ASSERT(_name);
+	ASSERT(Format != PixelFmt::None);
+
+	glGenRenderbuffers(1, &id);
+#ifndef NDEBUG
+	glObjectLabel(GL_RENDERBUFFER, id, std::strlen(_name), _name);
+#endif //NDEBUG
+	name = _name;
+	resize(_size);
+
+	L.debug(R"(Renderbuffer "%s" created)", name);
+}
+
+template<PixelFmt F>
+void Renderbuffer<F>::destroy()
+{
+#ifndef NDEBUG
+	if (!id) {
+		L.warn("Tried to destroy a renderbuffer that has not been created");
+		return;
+	}
+#endif //NDEBUG
+
+	glDeleteRenderbuffers(1, &id);
+	id = 0;
+	size = {0, 0};
+
+	L.debug(R"(Renderbuffer "%s" destroyed)", name);
+	name = nullptr;
+}
+
+template<PixelFmt F>
+void Renderbuffer<F>::resize(const ivec2 _size)
+{
+	ASSERT(_size.x > 0 && _size.y > 0);
+	ASSERT(id);
+	if (size == _size)
+		return;
+
+	glBindRenderbuffer(GL_RENDERBUFFER, id);
+	glRenderbufferStorage(GL_RENDERBUFFER, +Format, _size.x, _size.y);
+	size = _size;
+}
+
+template<PixelFmt F>
+void RenderbufferMS<F>::create(const char* const _name, const ivec2 _size, const Samples _samples)
+{
+	ASSERT(!id);
+	ASSERT(_name);
+	ASSERT(Format != PixelFmt::None);
+	ASSERT(+_samples >= 2);
+
+	glGenRenderbuffers(1, &id);
+#ifndef NDEBUG
+	glObjectLabel(GL_RENDERBUFFER, id, std::strlen(_name), _name);
+#endif //NDEBUG
+	name = _name;
+	samples = _samples;
+	resize(_size);
+
+	L.debug(R"(Multisample renderbuffer "%s" created)", name);
+}
+
+template<PixelFmt F>
+void RenderbufferMS<F>::destroy()
+{
+#ifndef NDEBUG
+	if (!id) {
+		L.warn("Tried to destroy a multisample renderbuffer that has not been created");
+		return;
+	}
+#endif //NDEBUG
+
+	glDeleteRenderbuffers(1, &id);
+	id = 0;
+	size = {0, 0};
+
+	L.debug(R"(Multisample renderbuffer "%s" destroyed)", name);
+	name = nullptr;
+}
+
+template<PixelFmt F>
+void RenderbufferMS<F>::resize(const ivec2 _size)
+{
+	ASSERT(_size.x > 0 && _size.y > 0);
+	ASSERT(id);
+	if (size == _size)
+		return;
+
+	glBindRenderbuffer(GL_RENDERBUFFER, id);
+	glRenderbufferStorageMultisample(GL_RENDERBUFFER, +samples, +Format,
+		_size.x, _size.y);
+	size = _size;
+}
+
+template<PixelFmt F>
+void Framebuffer::attach(Texture<F>& t, const Attachment attachment)
+{
+	ASSERT(id);
+	ASSERT(t.id);
+	ASSERT(attachment != Attachment::None);
+#ifndef NDEBUG
+	if (t.Format == PixelFmt::DepthStencil)
+		ASSERT(attachment == Attachment::DepthStencil);
+	else
+		ASSERT(attachment != Attachment::DepthStencil);
+	if (samples != Samples::None)
+		ASSERT(samples == Samples::_1);
+	ASSERT(!detail::getAttachment(*this, attachment));
+#endif //NDEBUG
+
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
+	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, +attachment,
+		GL_TEXTURE_2D, t.id, 0);
+	detail::getAttachment(*this, attachment) = &t;
+	samples = Samples::_1;
+	dirty = true;
+
+	L.debug(R"(Texture "%s" attached to framebuffer "%s")", t.name, name);
+}
+
+template<PixelFmt F>
+void Framebuffer::attach(TextureMS<F>& t, const Attachment attachment)
+{
+	ASSERT(id);
+	ASSERT(t.id);
+	ASSERT(attachment != Attachment::None);
+#ifndef NDEBUG
+	if (t.Format == PixelFmt::DepthStencil)
+		ASSERT(attachment == Attachment::DepthStencil);
+	else
+		ASSERT(attachment != Attachment::DepthStencil);
+	if (samples != Samples::None)
+		ASSERT(samples == t.samples);
+#endif //NDEBUG
+
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
+	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, +attachment,
+		GL_TEXTURE_2D_MULTISAMPLE, t.id, 0);
+	detail::getAttachment(*this, attachment) = &t;
+	samples = t.samples;
+	dirty = true;
+
+	L.debug(R"(Multisample texture "%s" attached to framebuffer "%s")", t.name, name);
+}
+
+template<PixelFmt F>
+void Framebuffer::attach(Renderbuffer<F>& r, const Attachment attachment)
+{
+	ASSERT(id);
+	ASSERT(r.id);
+	ASSERT(attachment != Attachment::None);
+#ifndef NDEBUG
+	if (r.Format == PixelFmt::DepthStencil)
+		ASSERT(attachment == Attachment::DepthStencil);
+	else
+		ASSERT(attachment != Attachment::DepthStencil);
+	if (samples != Samples::None)
+		ASSERT(samples == Samples::_1);
+#endif //NDEBUG
+
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
+	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, +attachment,
+		GL_RENDERBUFFER, r.id);
+	detail::getAttachment(*this, attachment) = &r;
+	samples = Samples::_1;
+	dirty = true;
+
+	L.debug(R"(Renderbuffer "%s" attached to framebuffer "%s")", r.name, name);
+}
+
+template<PixelFmt F>
+void Framebuffer::attach(RenderbufferMS<F>& r, Attachment attachment)
+{
+	ASSERT(id);
+	ASSERT(r.id);
+	ASSERT(attachment != Attachment::None);
+#ifndef NDEBUG
+	if (r.Format == PixelFmt::DepthStencil)
+		ASSERT(attachment == Attachment::DepthStencil);
+	else
+		ASSERT(attachment != Attachment::DepthStencil);
+	if (samples != Samples::None)
+		ASSERT(samples == r.samples);
+#endif //NDEBUG
+
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
+	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, +attachment,
+		GL_RENDERBUFFER, r.id);
+	detail::getAttachment(*this, attachment) = &r;
+	samples = r.samples;
+	dirty = true;
+
+	L.debug(R"(Multisample renderbuffer "%s" attached to framebuffer "%s")", r.name, name);
+}
+
 template<GLSLType T>
 void Uniform<T>::setLocation(const Shader& shader, const char* const name)
 {
@@ -157,7 +560,7 @@ void Uniform<T>::set(const Type val)
 		ASSERT(false); // Unreachable if T concept holds
 }
 
-template<GLSLTexture T>
+template<template<PixelFmt> typename T>
 void Sampler<T>::setLocation(const Shader& shader, const char* const name, const TextureUnit _unit)
 {
 	ASSERT(shader.id);
@@ -175,8 +578,9 @@ void Sampler<T>::setLocation(const Shader& shader, const char* const name, const
 	unit = _unit;
 }
 
-template<GLSLTexture T>
-void Sampler<T>::set(Type& val)
+template<template<PixelFmt> typename T>
+template<PixelFmt F>
+void Sampler<T>::set(T<F>& val)
 {
 	val.bind(unit);
 }

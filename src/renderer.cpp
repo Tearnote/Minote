@@ -61,9 +61,9 @@ static bool initialized = false;
 
 static Window* window = nullptr;
 
-static Framebuffer renderFb;
-static Texture renderFbColor;
-static Renderbuffer renderFbDepthStencil;
+Framebuffer renderFb;
+Texture<PixelFmt::RGBA_f16> renderFbColor;
+Renderbuffer<PixelFmt::DepthStencil> renderFbDepthStencil;
 
 static ivec2 viewportSize = {}; ///< in pixels
 
@@ -223,8 +223,8 @@ void rendererInit(Window& w)
 
 	// Create framebuffers
 	renderFb.create("renderFb");
-	renderFbColor.create("renderFbColor", window->size, PixelFormat::RGBA_f16);
-	renderFbDepthStencil.create("renderFbDepthStencil", window->size, PixelFormat::DepthStencil);
+	renderFbColor.create("renderFbColor", window->size);
+	renderFbDepthStencil.create("renderFbDepthStencil", window->size);
 
 	// Set up matrices and framebuffer textures
 	rendererResize(window->size);
@@ -233,7 +233,7 @@ void rendererInit(Window& w)
 	renderFb.attach(renderFbColor, Attachment::Color0);
 	renderFb.attach(renderFbDepthStencil, Attachment::DepthStencil);
 
-	rendererFramebuffer().bind();
+	renderFb.bind();
 
 	// Create built-in shaders
 	blit.create("blit", BlitVertSrc, BlitFragSrc);
@@ -255,16 +255,6 @@ void rendererCleanup(void)
 	window->deactivateContext();
 	L.debug("Destroyed renderer for window \"%s\"", window->title);
 	initialized = false;
-}
-
-Framebuffer& rendererFramebuffer(void)
-{
-	return renderFb;
-}
-
-Texture& rendererTexture(void)
-{
-	return renderFbColor;
 }
 
 void rendererFrameBegin(void)
@@ -290,7 +280,15 @@ void rendererFrameEnd(void)
 	glEnable(GL_BLEND);
 }
 
-void rendererBlit(Texture& t, GLfloat boost)
+void rendererBlit(Texture<PixelFmt::RGBA_u8>& t, GLfloat boost)
+{
+	blit.bind();
+	blit.image = t;
+	blit.boost = boost;
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+}
+
+void rendererBlit(Texture<PixelFmt::RGBA_f16>& t, GLfloat boost)
 {
 	blit.bind();
 	blit.image = t;

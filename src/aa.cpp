@@ -106,18 +106,18 @@ static Window* window = nullptr;
 
 // AASimple, AAComplex, AAExtreme
 static Framebuffer msaaFb;
-static TextureMS msaaFbColor;
-static RenderbufferMS msaaFbDepthStencil;
+static TextureMS<PixelFmt::RGBA_f16> msaaFbColor;
+static RenderbufferMS<PixelFmt::DepthStencil> msaaFbDepthStencil;
 
 // AAFast, AAComplex
 static Framebuffer smaaEdgeFb;
-static Texture smaaEdgeFbColor;
-static Renderbuffer smaaEdgeFbDepthStencil;
+static Texture<PixelFmt::RGBA_u8> smaaEdgeFbColor;
+static Renderbuffer<PixelFmt::DepthStencil> smaaEdgeFbDepthStencil;
 static Framebuffer smaaBlendFb;
-static Texture smaaBlendFbColor;
+static Texture<PixelFmt::RGBA_u8> smaaBlendFbColor;
 
-static Texture smaaArea;
-static Texture smaaSearch;
+static Texture<PixelFmt::RG_u8> smaaArea;
+static Texture<PixelFmt::R_u8> smaaSearch;
 
 static SmaaEdge smaaEdge;
 static SmaaBlend smaaBlend;
@@ -125,13 +125,13 @@ static SmaaNeighbor smaaNeighbor;
 
 // AAComplex
 static Framebuffer smaaSeparateFb;
-static Texture smaaSeparateFbColor;
-static Texture smaaSeparateFbColor2;
+static Texture<PixelFmt::RGBA_f16> smaaSeparateFbColor;
+static Texture<PixelFmt::RGBA_f16> smaaSeparateFbColor2;
 static Framebuffer smaaEdgeFb2;
-static Texture smaaEdgeFbColor2;
-static Renderbuffer smaaEdgeFbDepthStencil2;
+static Texture<PixelFmt::RGBA_u8> smaaEdgeFbColor2;
+static Renderbuffer<PixelFmt::DepthStencil> smaaEdgeFbDepthStencil2;
 static Framebuffer smaaBlendFb2;
-static Texture smaaBlendFbColor2;
+static Texture<PixelFmt::RGBA_u8> smaaBlendFbColor2;
 
 static SmaaSeparate smaaSeparate;
 
@@ -189,27 +189,27 @@ void aaInit(AAMode mode, Window& w)
 
 	if (mode == AASimple || mode == AAComplex || mode == AAExtreme) {
 		msaaFb.create("msaaFb");
-		msaaFbColor.create("msaaFbColor", window->size, PixelFormat::RGBA_f16, msaaSamples);
-		msaaFbDepthStencil.create("msaaFbDepthStencil", window->size, PixelFormat::DepthStencil, msaaSamples);
+		msaaFbColor.create("msaaFbColor", window->size, msaaSamples);
+		msaaFbDepthStencil.create("msaaFbDepthStencil", window->size, msaaSamples);
 	}
 
 	if (mode == AAFast || mode == AAComplex) {
 		smaaBlendFb.create("smaaBlendFb");
 		smaaEdgeFb.create("smaaEdgeFb");
-		smaaEdgeFbColor.create("smaaEdgeFbColor", window->size, PixelFormat::RGBA_u8);
-		smaaBlendFbColor.create("smaaBlendFbColor", window->size, PixelFormat::RGBA_u8);
-		smaaEdgeFbDepthStencil.create("smaaEdgeFbDepthStencil", window->size, PixelFormat::DepthStencil);
+		smaaEdgeFbColor.create("smaaEdgeFbColor", window->size);
+		smaaBlendFbColor.create("smaaBlendFbColor", window->size);
+		smaaEdgeFbDepthStencil.create("smaaEdgeFbDepthStencil", window->size);
 	}
 
 	if (mode == AAComplex) {
 		smaaSeparateFb.create("smaaSeparateFb");
-		smaaSeparateFbColor.create("smaaSeparateFbColor", window->size, PixelFormat::RGBA_f16);
-		smaaSeparateFbColor2.create("smaaSeparateFbColor2", window->size, PixelFormat::RGBA_f16);
+		smaaSeparateFbColor.create("smaaSeparateFbColor", window->size);
+		smaaSeparateFbColor2.create("smaaSeparateFbColor2", window->size);
 		smaaEdgeFb2.create("smaaEdgeFb2");
-		smaaEdgeFbColor2.create("smaaEdgeFbColor2", window->size, PixelFormat::RGBA_u8);
-		smaaEdgeFbDepthStencil2.create("smaaEdgeFbDepthStencil2", window->size, PixelFormat::DepthStencil);
+		smaaEdgeFbColor2.create("smaaEdgeFbColor2", window->size);
+		smaaEdgeFbDepthStencil2.create("smaaEdgeFbDepthStencil2", window->size);
 		smaaBlendFb2.create("smaaBlendFb2");
-		smaaBlendFbColor2.create("smaaBlendFbColor2", window->size, PixelFormat::RGBA_u8);
+		smaaBlendFbColor2.create("smaaBlendFbColor2", window->size);
 	}
 
 	// Set up framebuffer textures
@@ -263,7 +263,7 @@ void aaInit(AAMode mode, Window& w)
 				areaTexBytes + (AREATEX_HEIGHT - 1 - i) * AREATEX_PITCH,
 				AREATEX_PITCH);
 
-		smaaArea.create("smaaArea", {AREATEX_WIDTH, AREATEX_HEIGHT}, PixelFormat::RG_u8);
+		smaaArea.create("smaaArea", {AREATEX_WIDTH, AREATEX_HEIGHT});
 		smaaArea.upload(areaTexBytesFlipped);
 
 		unsigned char searchTexBytesFlipped[SEARCHTEX_SIZE] = {0};
@@ -272,7 +272,7 @@ void aaInit(AAMode mode, Window& w)
 				searchTexBytes + (SEARCHTEX_HEIGHT - 1 - i) * SEARCHTEX_PITCH,
 				SEARCHTEX_PITCH);
 
-		smaaSearch.create("smaaSearch", {SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT}, PixelFormat::R_u8);
+		smaaSearch.create("smaaSearch", {SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT});
 		smaaSearch.setFilter(Filter::Nearest);
 		smaaSearch.upload(searchTexBytesFlipped);
 	}
@@ -290,7 +290,7 @@ void aaInit(AAMode mode, Window& w)
 		smaaSeparate.create("smaaSeparate", SmaaSeparateVertSrc, SmaaSeparateFragSrc);
 	}
 
-	rendererFramebuffer().bind();
+	renderFb.bind();
 
 	initialized = true;
 	L.debug("Initialized AA mode %d", mode);
@@ -393,8 +393,8 @@ void aaEnd(void)
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
 		glStencilMask(0xFF);
 		glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		smaaEdge.image = rendererTexture();
-		rendererTexture().setFilter(Filter::Nearest); // It's ok, we turn it back
+		smaaEdge.image = renderFbColor;
+		renderFbColor.setFilter(Filter::Nearest); // It's ok, we turn it back
 		smaaEdge.screenSize = {
 			1.0 / (float)currentSize.x, 1.0 / (float)currentSize.y,
 			currentSize.x, currentSize.y
@@ -420,9 +420,9 @@ void aaEnd(void)
 
 		// SMAA neighbor blending pass
 		smaaNeighbor.bind();
-		rendererFramebuffer().bind();
-		smaaNeighbor.image = rendererTexture();
-		rendererTexture().setFilter(Filter::Linear); // It's ok, we turn it back
+		renderFb.bind();
+		smaaNeighbor.image = renderFbColor;
+		renderFbColor.setFilter(Filter::Linear); // It's ok, we turn it back
 		smaaNeighbor.blend = smaaBlendFbColor;
 		smaaNeighbor.alpha = 1.0f;
 		smaaNeighbor.screenSize = {
@@ -499,7 +499,7 @@ void aaEnd(void)
 
 		// SMAA neighbor blending pass
 		smaaNeighbor.bind();
-		rendererFramebuffer().bind();
+		renderFb.bind();
 		smaaNeighbor.image = smaaSeparateFbColor;
 		smaaSeparateFbColor.setFilter(Filter::Linear);
 		smaaNeighbor.blend = smaaBlendFbColor;
@@ -521,6 +521,6 @@ void aaEnd(void)
 	}
 
 	if (currentMode == AASimple || currentMode == AAExtreme) {
-		Framebuffer::blit(rendererFramebuffer(), msaaFb);
+		Framebuffer::blit(renderFb, msaaFb);
 	}
 }

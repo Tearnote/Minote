@@ -63,7 +63,7 @@ static struct nk_draw_null_texture nullTexture = {};
 static struct nk_buffer commandList = {0};
 
 static Nuklear nuklear;
-static Texture nuklearTexture;
+static Texture<PixelFmt::RGBA_u8> nuklearTexture;
 
 static VertexArray nuklearVao = 0;
 static VertexBuffer<VertexNuklear> nuklearVbo;
@@ -125,7 +125,7 @@ void debugInit(void)
 		NK_FONT_ATLAS_RGBA32);
 
 	// Upload font atlas to GPU
-	nuklearTexture.create("nuklearTexture", {atlasWidth, atlasHeight}, PixelFormat::RGBA_u8);
+	nuklearTexture.create("nuklearTexture", {atlasWidth, atlasHeight});
 	nuklearTexture.upload((uint8_t*)atlasData);
 
 	nk_font_atlas_end(&atlas, nk_handle_ptr(&nuklearTexture), &nullTexture);
@@ -284,7 +284,7 @@ void debugDraw(Window& window)
 	const nk_draw_index* offset = nullptr;
 	nk_draw_foreach(command, &nkContext, &commandList) {
 		if (!command->elem_count) continue;
-		nuklear.atlas = *static_cast<Texture*>(command->texture.ptr);
+		nuklear.atlas = *static_cast<Texture<PixelFmt::RGBA_u8>*>(command->texture.ptr);
 		glScissor(command->clip_rect.x,
 			screenSize.y - command->clip_rect.y - command->clip_rect.h,
 			command->clip_rect.w, command->clip_rect.h);

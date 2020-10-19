@@ -66,7 +66,7 @@ void fontInit(void)
 				goto cleanup;
 			}
 
-			fonts[i].atlas.create(FontList[i], size, PixelFormat::RGBA_f16);
+			fonts[i].atlas.create(FontList[i], size);
 			fonts[i].atlas.upload(atlasData);
 			stbi_image_free(atlasData);
 			atlasData = nullptr;

@@ -11,6 +11,10 @@
 #include "sys/window.hpp"
 #include "sys/opengl.hpp"
 
+extern minote::Framebuffer renderFb;
+extern minote::Texture<minote::PixelFmt::RGBA_f16> renderFbColor;
+extern minote::Renderbuffer<minote::PixelFmt::DepthStencil> renderFbDepthStencil;
+
 /**
  * Initialize the renderer system. windowInit() must have been called first.
  * This can be called on a different thread than windowInit(), and the
@@ -23,21 +27,6 @@ void rendererInit(minote::Window& window);
  * until rendererInit() is called again.
  */
 void rendererCleanup(void);
-
-/**
- * Return the main render ::Framebuffer. Use this if you changed from the default
- * framebuffer and want to draw to the screen again. Do not destroy or make any
- * changes to this ::Framebuffer.
- * @return The ::Framebuffer object for main rendering
- */
-minote::Framebuffer& rendererFramebuffer(void);
-
-/**
- * Return the main render ::Texture. Use this to sample what has been drawn
- * so far. Do not destroy or make any changes to this ::Texture.
- * @return The ::Texture object for main rendering
- */
-minote::Texture& rendererTexture(void);
 
 /**
  * Prepare for rendering a new frame. The main framebuffer is bound. You
@@ -59,7 +48,8 @@ void rendererFrameEnd(void);
  * @param src The ::Texture object
  * @param boost Color multiplier
  */
-void rendererBlit(minote::Texture& t, GLfloat boost);
+void rendererBlit(minote::Texture<minote::PixelFmt::RGBA_u8>& t, GLfloat boost);
+void rendererBlit(minote::Texture<minote::PixelFmt::RGBA_f16>& t, GLfloat boost);
 
 /**
  * Retrieves the current status of the synchronization feature, which prevents

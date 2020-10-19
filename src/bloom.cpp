@@ -65,7 +65,7 @@ static const GLchar* BoxBlurFragSrc = (GLchar[]){
 static Window* window = nullptr;
 
 static Framebuffer bloomFb[BloomPasses];
-static Texture bloomFbColor[BloomPasses];
+static Texture<PixelFmt::RGBA_f16> bloomFbColor[BloomPasses];
 static Threshold threshold;
 static BoxBlur boxBlur;
 
@@ -106,7 +106,7 @@ void bloomInit(Window& w)
 			windowSize.y >> (i + 1)
 		};
 		bloomFb[i].create("bloomFb");
-		bloomFbColor[i].create("bloomFbColor", layerSize, PixelFormat::RGBA_f16);
+		bloomFbColor[i].create("bloomFbColor", layerSize);
 	}
 
 	bloomResize(window->size);
@@ -145,7 +145,7 @@ void bloomApply(void)
 	bloomFb[0].bind();
 	glViewport(0, 0, currentSize.x >> 1, currentSize.y >> 1);
 	threshold.bind();
-	threshold.image = rendererTexture();
+	threshold.image = renderFbColor;
 	threshold.threshold = 1.0f;
 	threshold.softKnee = 0.25f;
 	threshold.strength = 1.0f;
@@ -179,7 +179,7 @@ void bloomApply(void)
 	}
 
 	// Draw the bloom on top of the render
-	rendererFramebuffer().bind();
+	renderFb.bind();
 	glViewport(0, 0, currentSize.x, currentSize.y);
 	rendererBlit(bloomFbColor[0], 1.0f);
 

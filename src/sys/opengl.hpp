@@ -23,40 +23,6 @@ using BufferTexture = GLuint;
 /// OpenGL buffer object, for use with buffer textures
 using BufferTextureStorage = GLuint;
 
-/// Common fields of all OpenGL object types
-struct GLObject {
-
-	GLuint id = 0; ///< The object has not been created if this is 0
-	const char* name = nullptr; ///< Human-readable name, used in logging
-
-	~GLObject();
-};
-
-template<Trivial T>
-struct VertexBuffer : GLObject {
-
-	using Type = T;
-
-	bool dynamic = false;
-
-	bool uploaded = false;
-
-	void create(const char* name, bool dynamic);
-
-	void destroy();
-
-	template<std::size_t N>
-	void upload(varray<Type, N> data);
-
-	template<std::size_t N>
-	void upload(std::array<Type, N> data);
-
-	void upload(std::size_t elements, Type data[]); //TODO remove
-
-	void bind() const;
-
-};
-
 /// Available texture filtering modes
 enum struct Filter : GLint {
 	None = GL_NONE,
@@ -65,7 +31,7 @@ enum struct Filter : GLint {
 };
 
 /// Available internal pixel formats
-enum struct PixelFormat : GLint {
+enum struct PixelFmt : GLint {
 	None = GL_NONE,
 	R_u8 = GL_R8,
 	RG_u8 = GL_RG8,
@@ -104,16 +70,73 @@ enum struct Samples : GLsizei {
 	_8 = 8
 };
 
+enum struct Attachment : GLenum {
+	None = GL_NONE,
+	DepthStencil = GL_DEPTH_STENCIL_ATTACHMENT,
+	Color0 = GL_COLOR_ATTACHMENT0,
+	Color1 = GL_COLOR_ATTACHMENT1,
+	Color2 = GL_COLOR_ATTACHMENT2,
+	Color3 = GL_COLOR_ATTACHMENT3,
+	Color4 = GL_COLOR_ATTACHMENT4,
+	Color5 = GL_COLOR_ATTACHMENT5,
+	Color6 = GL_COLOR_ATTACHMENT6,
+	Color7 = GL_COLOR_ATTACHMENT7,
+	Color8 = GL_COLOR_ATTACHMENT8,
+	Color9 = GL_COLOR_ATTACHMENT9,
+	Color10 = GL_COLOR_ATTACHMENT10,
+	Color11 = GL_COLOR_ATTACHMENT11,
+	Color12 = GL_COLOR_ATTACHMENT12,
+	Color13 = GL_COLOR_ATTACHMENT13,
+	Color14 = GL_COLOR_ATTACHMENT14,
+	Color15 = GL_COLOR_ATTACHMENT15,
+};
+
+/// Common fields of all OpenGL object types
+struct GLObject {
+
+	GLuint id = 0; ///< The object has not been created if this is 0
+	const char* name = nullptr; ///< Human-readable name, used in logging
+
+	~GLObject();
+};
+
+template<Trivial T>
+struct VertexBuffer : GLObject {
+
+	using Type = T;
+
+	bool dynamic = false;
+
+	bool uploaded = false;
+
+	void create(const char* name, bool dynamic);
+
+	void destroy();
+
+	template<std::size_t N>
+	void upload(varray<Type, N> data);
+
+	template<std::size_t N>
+	void upload(std::array<Type, N> data);
+
+	void upload(std::size_t elements, Type data[]); //TODO remove
+
+	void bind() const;
+
+};
+
 /// Common fields of texture types
 struct TextureBase : GLObject {
 
 	ivec2 size = {0, 0}; ///< The texture does not have storage if this is {0, 0}
-	PixelFormat format = PixelFormat::None;
 
 };
 
 /// Standard 2D texture, usable for reading and writing inside shaders
+template<PixelFmt F>
 struct Texture : TextureBase {
+
+	static constexpr auto Format = F;
 
 	Filter filter = Filter::None;
 
@@ -123,9 +146,8 @@ struct Texture : TextureBase {
 	 * with garbage data. The default filtering mode is Linear.
 	 * @param name Human-readable name, for logging and debug output
 	 * @param size Initial size of the texture storage, in pixels
-	 * @param format Internal format of the texture
 	 */
-	void create(const char* name, ivec2 size, PixelFormat format);
+	void create(const char* name, ivec2 size);
 
 	/**
 	 * Destroy the OpenGL texture object. Storage and ID are both freed.
@@ -164,7 +186,10 @@ struct Texture : TextureBase {
 };
 
 /// OpenGL multisample 2D texture. Allows for drawing antialiased shapes
+template<PixelFmt F>
 struct TextureMS : TextureBase {
+
+	static constexpr auto Format = F;
 
 	Samples samples = Samples::None;
 
@@ -174,10 +199,9 @@ struct TextureMS : TextureBase {
 	 * and filled with garbage data.
 	 * @param name Human-readable name, for logging and debug output
 	 * @param size Initial size of the multisample texture storage, in pixels
-	 * @param format Internal format of the multisample texture
 	 * @param samples Number of samples per pixel
 	 */
-	void create(const char* name, ivec2 size, PixelFormat format, Samples samples);
+	void create(const char* name, ivec2 size, Samples samples);
 
 	/**
 	 * Destroy the OpenGL multisample texture object. Storage and ID are both
@@ -205,11 +229,14 @@ struct TextureMS : TextureBase {
 /// Concept for any texture type that can be read in a shader
 template<typename T>
 concept GLSLTexture =
-	std::is_same_v<T, Texture>
-	|| std::is_same_v<T, TextureMS>;
+	std::is_same_v<T, Texture<T::Format>> ||
+	std::is_same_v<T, TextureMS<T::Format>>;
 
 /// OpenGL renderbuffer. Operates faster than a texture, but cannot be read
+template<PixelFmt F>
 struct Renderbuffer : TextureBase {
+
+	static constexpr auto Format = F;
 
 	/**
 	 * Create an OpenGL ID for the renderbuffer. This needs to be called before
@@ -217,9 +244,8 @@ struct Renderbuffer : TextureBase {
 	 * with garbage data.
 	 * @param name Human-readable name, for logging and debug output
 	 * @param size Initial size of the renderbuffer storage, in pixels
-	 * @param format Internal format of the renderbuffer
 	 */
-	void create(const char* name, ivec2 size, PixelFormat format);
+	void create(const char* name, ivec2 size);
 
 	/**
 	 * Destroy the OpenGL renderbuffer object. Storage and ID are both freed.
@@ -237,7 +263,10 @@ struct Renderbuffer : TextureBase {
 
 /// OpenGL multisample renderbuffer. Operates faster than a multisample texture,
 /// but cannot be read
+template<PixelFmt F>
 struct RenderbufferMS : TextureBase {
+
+	static constexpr auto Format = F;
 
 	Samples samples = Samples::None;
 
@@ -248,10 +277,9 @@ struct RenderbufferMS : TextureBase {
 	 * @param name Human-readable name, for logging and debug output
 	 * @param size Initial size of the multisample renderbuffer storage,
 	 * in pixels
-	 * @param format Internal format of the multisample renderbuffer
 	 * @param samples Number of samples per pixel: 2, 4 or 8
 	 */
-	void create(const char* name, ivec2 size, PixelFormat format, Samples samples);
+	void create(const char* name, ivec2 size, Samples samples);
 
 	/**
 	 * Destroy the OpenGL multisample renderbuffer object. Storage and ID
@@ -266,27 +294,6 @@ struct RenderbufferMS : TextureBase {
 	 */
 	void resize(ivec2 size);
 
-};
-
-enum struct Attachment : GLenum {
-	None = GL_NONE,
-	DepthStencil = GL_DEPTH_STENCIL_ATTACHMENT,
-	Color0 = GL_COLOR_ATTACHMENT0,
-	Color1 = GL_COLOR_ATTACHMENT1,
-	Color2 = GL_COLOR_ATTACHMENT2,
-	Color3 = GL_COLOR_ATTACHMENT3,
-	Color4 = GL_COLOR_ATTACHMENT4,
-	Color5 = GL_COLOR_ATTACHMENT5,
-	Color6 = GL_COLOR_ATTACHMENT6,
-	Color7 = GL_COLOR_ATTACHMENT7,
-	Color8 = GL_COLOR_ATTACHMENT8,
-	Color9 = GL_COLOR_ATTACHMENT9,
-	Color10 = GL_COLOR_ATTACHMENT10,
-	Color11 = GL_COLOR_ATTACHMENT11,
-	Color12 = GL_COLOR_ATTACHMENT12,
-	Color13 = GL_COLOR_ATTACHMENT13,
-	Color14 = GL_COLOR_ATTACHMENT14,
-	Color15 = GL_COLOR_ATTACHMENT15,
 };
 
 /// OpenGL framebuffer. Proxy object that allows drawing into textures
@@ -320,7 +327,8 @@ struct Framebuffer : GLObject {
 	 * @param t Texture to attach
 	 * @param attachment Attachment point to attach to
 	 */
-	void attach(Texture& t, Attachment attachment);
+	template<PixelFmt F>
+	void attach(Texture<F>& t, Attachment attachment);
 
 	/**
 	 * Attach a multisample texture to a specified attachment point. All future
@@ -330,7 +338,8 @@ struct Framebuffer : GLObject {
 	 * @param t Multisample texture to attach
 	 * @param attachment Attachment point to attach to
 	 */
-	void attach(TextureMS& t, Attachment attachment);
+	template<PixelFmt F>
+	void attach(TextureMS<F>& t, Attachment attachment);
 
 	/**
 	 * Attach a renderbuffer to a specified attachment point. All future
@@ -340,7 +349,8 @@ struct Framebuffer : GLObject {
 	 * @param t Renderbuffer to attach
 	 * @param attachment Attachment point to attach to
 	 */
-	void attach(Renderbuffer& r, Attachment attachment);
+	template<PixelFmt F>
+	void attach(Renderbuffer<F>& r, Attachment attachment);
 
 	/**
 	 * Attach a multisample renderbuffer to a specified attachment point.
@@ -350,7 +360,8 @@ struct Framebuffer : GLObject {
 	 * @param t Multisample renderbuffer to attach
 	 * @param attachment Attachment point to attach to
 	 */
-	void attach(RenderbufferMS& r, Attachment attachment);
+	template<PixelFmt F>
+	void attach(RenderbufferMS<F>& r, Attachment attachment);
 
 	/**
 	 * Bind this framebuffer to the OpenGL context, causing all future draw
@@ -420,19 +431,19 @@ struct Uniform {
 
 };
 
-template <GLSLTexture T>
+template<template<PixelFmt> typename T>
 struct Sampler {
-
-	using Type = T;
 
 	GLint location = -1;
 	TextureUnit unit = TextureUnit::None;
 
 	void setLocation(const Shader& shader, const char* name, TextureUnit unit = TextureUnit::_0);
 
-	void set(Type& val);
+	template<PixelFmt F>
+	void set(T<F>& val);
 
-	inline auto operator=(Type& val) -> Sampler<Type>& { set(val); return *this; }
+	template<PixelFmt F>
+	inline auto operator=(T<F>& val) -> Sampler<T>& { set(val); return *this; }
 
 	Sampler() = default;
 	Sampler(const Sampler&) = delete;
