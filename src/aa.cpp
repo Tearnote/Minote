@@ -257,14 +257,14 @@ void aaInit(AAMode mode, Window& w)
 		smaaNeighbor.create("smaaNeighbor", SmaaNeighborVertSrc, SmaaNeighborFragSrc);
 
 		// Load lookup textures
-		unsigned char areaTexBytesFlipped[AREATEX_SIZE] = {0};
+		u8vec2 areaTexBytesFlipped[AREATEX_SIZE / 2] = {};
 		for (size_t i = 0; i < AREATEX_HEIGHT; i += 1)
 			memcpy(areaTexBytesFlipped + i * AREATEX_PITCH,
 				areaTexBytes + (AREATEX_HEIGHT - 1 - i) * AREATEX_PITCH,
 				AREATEX_PITCH);
 
 		smaaArea.create("smaaArea", {AREATEX_WIDTH, AREATEX_HEIGHT});
-		smaaArea.upload(areaTexBytesFlipped);
+		smaaArea.upload(std::to_array(areaTexBytesFlipped));
 
 		unsigned char searchTexBytesFlipped[SEARCHTEX_SIZE] = {0};
 		for (size_t i = 0; i < SEARCHTEX_HEIGHT; i += 1)
@@ -274,7 +274,7 @@ void aaInit(AAMode mode, Window& w)
 
 		smaaSearch.create("smaaSearch", {SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT});
 		smaaSearch.setFilter(Filter::Nearest);
-		smaaSearch.upload(searchTexBytesFlipped);
+		smaaSearch.upload(std::to_array(searchTexBytesFlipped));
 	}
 
 	if (mode == AAComplex) {

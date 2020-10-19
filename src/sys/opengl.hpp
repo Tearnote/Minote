@@ -42,6 +42,13 @@ enum struct PixelFmt : GLint {
 	DepthStencil = GL_DEPTH24_STENCIL8
 };
 
+template<typename T>
+concept UploadFmt =
+	std::is_same_v<T, std::uint8_t> ||
+	std::is_same_v<T, u8vec2> ||
+	std::is_same_v<T, u8vec3> ||
+	std::is_same_v<T, u8vec4>;
+
 enum struct TextureUnit : GLenum {
 	None = 0,
 	_0 = GL_TEXTURE0,
@@ -167,14 +174,11 @@ struct Texture : TextureBase {
 	 */
 	void resize(ivec2 size);
 
-	/**
-	 * Upload texture data from CPU to the texture object, replacing previous
-	 * contents. Expected pixel format is 1 byte per channel (0-255),
-	 * same number of channels as internal format, and size.x * size.y pixels.
-	 * Uploading to a stencil+depth texture is not supported.
-	 * @param data Pixel data as an unchecked array of bytes
-	 */
-	void upload(std::uint8_t const* data);
+	template<UploadFmt T, std::size_t N>
+	void upload(std::array<T, N> const& data);
+
+	template<UploadFmt T>
+	void upload(T const data[], int channels = 0); //TODO make safe
 
 	/**
 	 * Bind the texture to the specified texture unit. This allows it to be used

@@ -22,6 +22,7 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/color_space.hpp>
+#include <glm/gtc/type_precision.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "base/util.hpp"
 
@@ -37,6 +38,9 @@ using ivec4 = glm::ivec4;
 using mat4 = glm::mat4;
 using color3 = glm::vec3;
 using color4 = glm::vec4;
+using u8vec2 = glm::u8vec2;
+using u8vec3 = glm::u8vec3;
+using u8vec4 = glm::u8vec4;
 
 // Constants
 /**

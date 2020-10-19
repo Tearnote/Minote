@@ -220,28 +220,66 @@ void Texture<F>::resize(ivec2 const _size)
 }
 
 template<PixelFmt F>
-void Texture<F>::upload(std::uint8_t const* const data)
+template<UploadFmt T, std::size_t N>
+void Texture<F>::upload(std::array<T, N> const& data)
 {
-	ASSERT(data);
+	ASSERT(data.size() == size.x * size.y);
 	ASSERT(id);
 	ASSERT(size.x > 0 && size.y > 0);
 	ASSERT(Format != PixelFmt::DepthStencil);
 
-	GLenum const channels = [=, this] {
-		switch (Format) {
-		case PixelFmt::R_u8:
-		case PixelFmt::R_f16:
+	constexpr GLenum channels = [] {
+		if constexpr (std::is_same_v<T, std::uint8_t>)
 			return GL_RED;
-		case PixelFmt::RG_u8:
-		case PixelFmt::RG_f16:
+		else if constexpr (std::is_same_v<T, u8vec2>)
 			return GL_RG;
-		case PixelFmt::RGBA_u8:
-		case PixelFmt::RGBA_f16:
+		else if constexpr (std::is_same_v<T, u8vec3>)
+			return GL_RGB;
+		else if constexpr (std::is_same_v<T, u8vec4>)
 			return GL_RGBA;
-		case PixelFmt::DepthStencil:
-		default:
-				ASSERT(false, "Invalid PixelFormat %d", +Format);
-			return 0;
+		else
+			ASSERT("Invalid texture upload type");
+		return GL_NONE;
+	}();
+
+	glBindTexture(GL_TEXTURE_2D, id);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, size.x, size.y,
+		channels, GL_UNSIGNED_BYTE, data.data());
+}
+
+template<PixelFmt F>
+template<UploadFmt T>
+void Texture<F>::upload(T const data[], int const _channels)
+{
+	ASSERT(data);
+	ASSERT(_channels >= 0 && _channels <= 4);
+	ASSERT(id);
+	ASSERT(size.x > 0 && size.y > 0);
+	ASSERT(Format != PixelFmt::DepthStencil);
+
+	const GLenum channels = [=] {
+		if (!_channels) {
+			if constexpr (std::is_same_v<T, std::uint8_t>)
+				return GL_RED;
+			else if constexpr (std::is_same_v<T, u8vec2>)
+				return GL_RG;
+			else if constexpr (std::is_same_v<T, u8vec3>)
+				return GL_RGB;
+			else if constexpr (std::is_same_v<T, u8vec4>)
+				return GL_RGBA;
+			else
+				ASSERT("Invalid texture upload type");
+			return GL_NONE;
+		} else {
+			switch (_channels) {
+			case 1: return GL_RED;
+			case 2: return GL_RG;
+			case 3: return GL_RGB;
+			case 4: return GL_RGBA;
+			default:
+				ASSERT("Invalid texture upload type");
+				return GL_NONE;
+			}
 		}
 	}();
 

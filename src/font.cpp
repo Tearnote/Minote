@@ -59,7 +59,7 @@ void fontInit(void)
 			int channels;
 			stbi_set_flip_vertically_on_load(true);
 			unsigned char* atlasData;
-			atlasData = stbi_load(atlasPath, &size.x, &size.y, &channels, 4);
+			atlasData = stbi_load(atlasPath, &size.x, &size.y, &channels, 0);
 			if (!atlasData) {
 				L.error("Failed to load the font atlas (%s) for font %s",
 					atlasPath, FontList[i]);
@@ -67,7 +67,7 @@ void fontInit(void)
 			}
 
 			fonts[i].atlas.create(FontList[i], size);
-			fonts[i].atlas.upload(atlasData);
+			fonts[i].atlas.upload(atlasData, channels);
 			stbi_image_free(atlasData);
 			atlasData = nullptr;
 		}
