@@ -88,15 +88,15 @@ static void rendererSync(void)
 		VertexFlat syncMesh[] = {
 			{
 				.pos = {0.0f, 0.0f, 0.0f},
-				.color = Clear4
+				.color = {1.0f, 1.0f, 1.0f, 0.0f}
 			},
 			{
 				.pos = {1.0f, 0.0f, 0.0f},
-				.color = Clear4
+				.color = {1.0f, 1.0f, 1.0f, 0.0f}
 			},
 			{
 				.pos = {0.0f, 1.0f, 0.0f},
-				.color = Clear4
+				.color = {1.0f, 1.0f, 1.0f, 0.0f}
 			}
 		};
 		sync = modelCreateFlat("sync", 3, syncMesh);

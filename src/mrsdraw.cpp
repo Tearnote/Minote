@@ -245,7 +245,7 @@ static void mrsQueueField(void)
 			*highlight = ((color4){MrsLockFlashBrightness, MrsLockFlashBrightness,
 				          MrsLockFlashBrightness, flash});
 		} else {
-			*highlight = Clear4;
+			*highlight = {1.0f, 1.0f, 1.0f, 0.0f};
 		}
 
 		float fx = (float)x;
@@ -357,7 +357,7 @@ static void mrsQueuePlayer(void)
 			tint->g *= dim;
 			tint->b *= dim;
 		}
-		*highlight = Clear4;
+		*highlight = {1.0f, 1.0f, 1.0f, 0.0f};
 		*transform = pieceTransform * minoTransform;
 	}
 }
@@ -397,7 +397,7 @@ static void mrsQueueGhost(void)
 
 		*tint = minoColor(mrsTet.player.type);
 		tint->a *= MrsGhostDim;
-		*highlight = Clear4;
+		*highlight = {1.0f, 1.0f, 1.0f, 0.0f};
 		*transform = translate(mat4(1.0f), {x - (signed)(FieldWidth / 2), y, 0.0f});
 	}
 }
@@ -430,7 +430,7 @@ static void mrsQueuePreview(void)
 		ASSERT(transform);
 
 		*tint = minoColor(mrsTet.player.preview);
-		*highlight = Clear4;
+		*highlight = {1.0f, 1.0f, 1.0f, 0.0f};
 		*transform = translate(mat4(1.0f), {x, y, 0.0f});
 	}
 }

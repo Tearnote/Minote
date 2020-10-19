@@ -57,7 +57,7 @@ struct Rng {
 	 * be the same for any given seed.
 	 * @param seed Any 64-bit integer to be used as RNG seed
 	 */
-	void seed(std::uint64_t seed)
+	void seed(std::uint64_t const seed)
 	{
 		pcg32_srandom_r(&state, seed, 'M' * 'i' + 'n' * 'o' + 't' * 'e');
 	}
@@ -68,7 +68,7 @@ struct Rng {
 	 * @param bound The return value will be smaller than this argument
 	 * @return A random integer
 	 */
-	auto randInt(std::uint32_t bound) -> std::uint32_t
+	auto randInt(std::uint32_t const bound) -> std::uint32_t
 	{
 		ASSERT(bound >= 1);
 		return pcg32_boundedrand_r(&state, bound);
@@ -92,7 +92,7 @@ struct Rng {
  * @param str String to test
  * @return Itself, or "NULL" literal
  */
-inline auto stringOrNull(const char* str) -> const char*
+inline auto stringOrNull(char const* const str) -> char const*
 {
 	if (str)
 		return str;
@@ -102,6 +102,7 @@ inline auto stringOrNull(const char* str) -> const char*
 
 ////////////////////////////////////////////////////////////////////////////////
 
+//TODO remove
 /**
  * Clear an array, setting all bytes to 0.
  * @param arr Array argument
@@ -109,6 +110,7 @@ inline auto stringOrNull(const char* str) -> const char*
 #define arrayClear(arr) \
     std::memset((arr), 0, sizeof((arr)))
 
+//TODO remove
 /**
  * Copy the contents of one array into another array of the same or bigger size.
  * @param dst Destination of the copy
@@ -124,7 +126,7 @@ inline auto stringOrNull(const char* str) -> const char*
  * @return Pointer to allocated memory
  */
 template<typename T>
-auto allocate(const std::size_t count = 1) -> T*
+auto allocate(std::size_t const count = 1) -> T*
 {
 	ASSERT(count);
 	auto* const result = static_cast<T*>(std::calloc(count, sizeof(T)));
@@ -144,7 +146,7 @@ auto allocate(const std::size_t count = 1) -> T*
  * @param newSize New number of elements to allocate memory for
  */
 template<typename T>
-void reallocate(T*& buffer, const std::size_t newCount)
+void reallocate(T*& buffer, std::size_t const newCount)
 {
 	ASSERT(newCount);
 	auto* const result = static_cast<T*>(std::realloc(buffer, sizeof(T) * newCount));

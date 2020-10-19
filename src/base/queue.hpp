@@ -28,7 +28,7 @@ struct queue {
 	 * @param e Element to add
 	 * @return true if added, false if out of space
 	 */
-	auto enqueue(const Element& e) -> bool;
+	auto enqueue(Element const& e) -> bool;
 
 	/**
 	 * Remove and return an element from the front of the queue. If the queue is
@@ -43,7 +43,7 @@ struct queue {
 	 * @return Peeked element, or nullptr if queue is empty
 	 */
 	auto peek() -> Element*;
-	auto peek() const -> const Element*;
+	auto peek() const -> Element const*;
 
 	/**
 	 * Check whether the queue is empty.

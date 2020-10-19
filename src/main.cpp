@@ -30,7 +30,7 @@ using namespace minote; // Because we can't namespace main()
  * @return EXIT_SUCCESS on successful execution, EXIT_FAILURE on a handled
  * critical error, other values on unhandled error
  */
-auto main(int, char* []) -> int
+auto main(int, char*[]) -> int
 {
 	// Initialization
 
@@ -58,10 +58,13 @@ auto main(int, char* []) -> int
 	// Window creation
 	Window::init();
 	defer { Window::cleanup(); };
-	char windowTitle[64] = "";
-	std::snprintf(windowTitle, 64, "%s %s", AppName, AppVersion);
+	auto const windowTitle = [] {
+		std::array<char, 64> title = {};
+		std::snprintf(title.data(), title.size(), "%s %s", AppName, AppVersion);
+		return title;
+	}();
 	Window window;
-	window.open(windowTitle);
+	window.open(windowTitle.data());
 	defer { window.close(); };
 #ifdef MINOTE_DEBUG
 	debugInputSetup(window);

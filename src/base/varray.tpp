@@ -55,7 +55,7 @@ auto varray<T, N>::operator[](std::size_t index) -> Element&
 }
 
 template<typename T, std::size_t N>
-auto varray<T, N>::operator[](std::size_t index) const -> const Element&
+auto varray<T, N>::operator[](std::size_t index) const -> Element const&
 {
 	ASSERT(index < size);
 	return buffer[index];
@@ -68,7 +68,7 @@ auto varray<T, N>::data() -> Element*
 }
 
 template<typename T, std::size_t N>
-auto varray<T, N>::data() const -> const Element*
+auto varray<T, N>::data() const -> Element const*
 {
 	return buffer.data();
 }

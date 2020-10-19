@@ -39,8 +39,6 @@ using color3 = glm::vec3;
 using color4 = glm::vec4;
 
 // Constants
-constexpr color4 Clear4 = {1.0f, 1.0f, 1.0f, 0.0f};
-
 /**
  * A more correct replacement for pi.
  * @see https://tauday.com/

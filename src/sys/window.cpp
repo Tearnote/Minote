@@ -32,10 +32,10 @@ static thread_local Window* activeContext = nullptr;
  * and clear the GLFW error state.
  * @return Error description string literal. Use ASAP, before the next GLFW call
  */
-static auto glfwError() -> const char*
+static auto glfwError() -> char const*
 {
-	const char* description = nullptr;
-	const int code = glfwGetError(&description);
+	char const* description = nullptr;
+	int const code = glfwGetError(&description);
 	if (code == GLFW_NO_ERROR)
 		return "No error";
 	ASSERT(description);
@@ -61,7 +61,7 @@ static auto getWindow(GLFWwindow* handle) -> Window&
  * @param state GLFW_PRESS or GLFW_RELEASE
  * @param mods Bitmask of active modifier keys (ctrl, shift etc.)
  */
-static void keyCallback(GLFWwindow* handle, int key, int, int state, int)
+static void keyCallback(GLFWwindow* const handle, int const key, int, int const state, int)
 {
 	ASSERT(handle);
 	if (state == GLFW_REPEAT)
@@ -75,7 +75,7 @@ static void keyCallback(GLFWwindow* handle, int key, int, int state, int)
 	};
 
 	window.inputsMutex.lock();
-	const auto success = window.inputs.enqueue(input);
+	auto const success = window.inputs.enqueue(input);
 	window.inputsMutex.unlock();
 	if (!success)
 		L.warn(R"(Window "%s" input queue is full, key #%d %s dropped)",
@@ -89,14 +89,14 @@ static void keyCallback(GLFWwindow* handle, int key, int, int state, int)
  * @param width New window width in pixels
  * @param height New window height in pixels
  */
-static void framebufferResizeCallback(GLFWwindow* handle, int width, int height)
+static void framebufferResizeCallback(GLFWwindow* const handle, int const width, int const height)
 {
 	ASSERT(handle);
 	ASSERT(width);
 	ASSERT(height);
 	auto& window = getWindow(handle);
 
-	const ivec2 newSize = {width, height};
+	ivec2 const newSize = {width, height};
 	window.size = newSize;
 	L.info(R"(Window "%s" resized to %dx%d)", window.title, width, height);
 }
@@ -109,7 +109,7 @@ static void framebufferResizeCallback(GLFWwindow* handle, int width, int height)
  * @param xScale New window scale, with 1.0 being "normal"
  * @param yScale Unused. This appears to be 0.0 sometimes so we ignore it
  */
-static void windowScaleCallback(GLFWwindow* handle, float xScale, float)
+static void windowScaleCallback(GLFWwindow* const handle, float const xScale, float)
 {
 	ASSERT(handle);
 	ASSERT(xScale);
@@ -164,7 +164,7 @@ auto Window::getTime() -> nsec
 	return seconds(glfwGetTime());
 }
 
-void Window::open(char const* const _title, const bool fullscreen, ivec2 _size)
+void Window::open(char const* const _title, bool const fullscreen, ivec2 const _size)
 {
 	ASSERT(_title);
 	ASSERT(_size.x >= 0 && _size.y >= 0);
@@ -186,10 +186,10 @@ void Window::open(char const* const _title, const bool fullscreen, ivec2 _size)
 	glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE); // Declare DPI awareness
 
 	// Create the window handle
-	const auto[wantedSize, monitor] = [=]() -> std::pair<ivec2, GLFWmonitor*> {
+	auto const[wantedSize, monitor] = [=]() -> std::pair<ivec2, GLFWmonitor*> {
 		if (fullscreen) {
 			GLFWmonitor* const monitor = glfwGetPrimaryMonitor();
-			const GLFWvidmode* const mode = glfwGetVideoMode(monitor);
+			GLFWvidmode const* const mode = glfwGetVideoMode(monitor);
 			return {{mode->width, mode->height}, monitor};
 		} else {
 			return {_size, nullptr};
@@ -200,13 +200,13 @@ void Window::open(char const* const _title, const bool fullscreen, ivec2 _size)
 		L.fail(R"(Failed to create window "%s": %s)", title, glfwError());
 
 	// Get window properties
-	const ivec2 realSize = [=, this] { // Might be different from wanted size because of DPI scaling
+	ivec2 const realSize = [=, this] { // Might be different from wanted size because of DPI scaling
 		ivec2 s;
 		glfwGetFramebufferSize(handle, &s.x, &s.y);
 		return s;
 	}();
 	size = realSize;
-	const float _scale = [=, this] {
+	float const _scale = [=, this] {
 		float s = 0.0f;
 		glfwGetWindowContentScale(handle, &s, nullptr);
 		return s;
@@ -322,9 +322,9 @@ void Window::deactivateContext()
 
 auto Window::dequeueInput() -> std::optional<KeyInput>
 {
-	const std::lock_guard lock(inputsMutex);
+	std::lock_guard const lock(inputsMutex);
 
-	const auto* input = inputs.dequeue();
+	auto const* input = inputs.dequeue();
 	if (input)
 		return *input;
 	else
@@ -333,9 +333,9 @@ auto Window::dequeueInput() -> std::optional<KeyInput>
 
 auto Window::peekInput() const -> std::optional<KeyInput>
 {
-	const std::lock_guard lock(inputsMutex);
+	std::lock_guard const lock(inputsMutex);
 
-	const auto* input = inputs.peek();
+	auto const* input = inputs.peek();
 	if (input)
 		return *input;
 	else

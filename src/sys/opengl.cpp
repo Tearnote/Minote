@@ -9,22 +9,28 @@ namespace minote {
 
 namespace detail {
 
-auto compileShaderStage(const GLuint id, const char* const name,
-	const char* const source) -> bool
+auto compileShaderStage(GLuint const id, char const* const name,
+	char const* const source) -> bool
 {
-		ASSERT(id);
-		ASSERT(name);
-		ASSERT(source);
+	ASSERT(id);
+	ASSERT(name);
+	ASSERT(source);
 
 	glShaderSource(id, 1, &source, nullptr);
 	glCompileShader(id);
 
-	GLint compileStatus = 0;
-	glGetShaderiv(id, GL_COMPILE_STATUS, &compileStatus);
+	GLint const compileStatus = [=] {
+		GLint status = 0;
+		glGetShaderiv(id, GL_COMPILE_STATUS, &status);
+		return status;
+	}();
 	if (compileStatus == GL_FALSE) {
-		GLchar infoLog[2048] = "";
-		glGetShaderInfoLog(id, 2048, nullptr, infoLog);
-		L.error(R"(Shader "%s" failed to compile: %s)", name, infoLog);
+		auto const infoLog = [=] {
+			std::array<GLchar, 2048> log = {};
+			glGetShaderInfoLog(id, log.size(), nullptr, log.data());
+			return log;
+		}();
+		L.error(R"(Shader "%s" failed to compile: %s)", name, infoLog.data());
 		return false;
 	}
 	L.debug(R"(Shader "%s" compiled)", name);
@@ -41,10 +47,11 @@ GLObject::~GLObject()
 #endif //NDEBUG
 }
 
-void Framebuffer::create(const char* const _name)
+void Framebuffer::create(char const* const _name)
 {
 	ASSERT(!id);
 	ASSERT(_name);
+
 	glGenFramebuffers(1, &id);
 #ifndef NDEBUG
 	glObjectLabel(GL_FRAMEBUFFER, id, std::strlen(_name), _name);
@@ -81,14 +88,18 @@ void Framebuffer::bind()
 
 	if (dirty) {
 		// Call glDrawBuffers with all enabled color framebuffers
-		std::array<GLenum, 16> enabledBuffers = {};
-		std::size_t enabledSize = 0;
-		for (std::size_t i = 0; i < 16; i += 1) {
-			if (!attachments[i])
-				continue;
-			enabledBuffers[enabledSize] = i + GL_COLOR_ATTACHMENT0;
-			enabledSize += 1;
-		}
+		auto const[enabledBuffers, enabledSize] = [this] {
+			std::array<GLenum, 16> buffers = {};
+			std::size_t size = 0;
+			for (std::size_t i = 0; i < 16; i += 1) {
+				if (!attachments[i])
+					continue;
+				buffers[size] = i + GL_COLOR_ATTACHMENT0;
+				size += 1;
+			}
+			return std::make_pair(buffers, size);
+		}();
+
 		glDrawBuffers(enabledSize, enabledBuffers.data());
 
 #ifndef NDEBUG
@@ -106,8 +117,8 @@ void Framebuffer::unbind()
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }
 
-void Framebuffer::blit(Framebuffer& dst, const Framebuffer& src,
-	const Attachment srcBuffer, const bool depthStencil)
+void Framebuffer::blit(Framebuffer& dst, Framebuffer const& src,
+	Attachment const srcBuffer, bool const depthStencil)
 {
 	ASSERT(detail::getAttachment(src, srcBuffer));
 	if (depthStencil) {
@@ -119,8 +130,8 @@ void Framebuffer::blit(Framebuffer& dst, const Framebuffer& src,
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst.id);
 	glReadBuffer(+srcBuffer);
 
-	const ivec2 blitSize = src.attachments[detail::attachmentIndex(srcBuffer)]->size;
-	const GLbitfield mask = GL_COLOR_BUFFER_BIT |
+	ivec2 const blitSize = src.attachments[detail::attachmentIndex(srcBuffer)]->size;
+	GLbitfield const mask = GL_COLOR_BUFFER_BIT |
 		(depthStencil? GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT : 0);
 
 	glBlitFramebuffer(0, 0, blitSize.x, blitSize.y,
@@ -128,19 +139,19 @@ void Framebuffer::blit(Framebuffer& dst, const Framebuffer& src,
 		mask, GL_NEAREST);
 }
 
-void Shader::create(char const* _name, const char* vertSrc, const char* fragSrc)
+void Shader::create(char const* _name, char const* vertSrc, char const* fragSrc)
 {
 	ASSERT(!id);
 	ASSERT(_name);
 	ASSERT(vertSrc);
 	ASSERT(fragSrc);
 
-	const GLuint vert = glCreateShader(GL_VERTEX_SHADER);
+	GLuint const vert = glCreateShader(GL_VERTEX_SHADER);
 #ifndef NDEBUG
 	glObjectLabel(GL_SHADER, vert, std::strlen(_name), _name);
 #endif //NDEBUG
 	defer { glDeleteShader(vert); };
-	const GLuint frag = glCreateShader(GL_FRAGMENT_SHADER);
+	GLuint const frag = glCreateShader(GL_FRAGMENT_SHADER);
 #ifndef NDEBUG
 	glObjectLabel(GL_SHADER, frag, std::strlen(_name), _name);
 #endif //NDEBUG
@@ -159,14 +170,17 @@ void Shader::create(char const* _name, const char* vertSrc, const char* fragSrc)
 	glAttachShader(id, frag);
 
 	glLinkProgram(id);
-	const GLint linkStatus = [=, this] {
+	GLint const linkStatus = [this] {
 		GLint status = 0;
 		glGetProgramiv(id, GL_LINK_STATUS, &status);
 		return status;
 	}();
 	if (linkStatus == GL_FALSE) {
-		std::array<GLchar, 2048> infoLog = {};
-		glGetProgramInfoLog(id, infoLog.size(), nullptr, infoLog.data());
+		auto const infoLog = [this] {
+			std::array<GLchar, 2048> log = {};
+			glGetProgramInfoLog(id, log.size(), nullptr, log.data());
+			return log;
+		}();
 		L.error(R"(Shader "%s" failed to link: %s)", _name, infoLog.data());
 		glDeleteProgram(id);
 		id = 0;

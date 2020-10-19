@@ -28,7 +28,7 @@ static constexpr std::size_t MaxMessageLen = 2048;
  * @param file The output file
  * @param msg Preformatted message, with a newline at the end
  */
-static void logTo(FILE* const file, const char msg[])
+static void logTo(FILE* const file, char const msg[])
 {
 	ASSERT(msg);
 
@@ -46,8 +46,7 @@ static void logTo(FILE* const file, const char msg[])
  * @param fmt Format string in printf syntax
  * @param ap List of arguments to print
  */
-static void logPrio(Log& log, const Log::Level level,
-	const char* const fmt, va_list& ap)
+static void logPrio(Log& log, Log::Level const level, char const* const fmt, va_list& ap)
 {
 	ASSERT(fmt);
 	using Level = Log::Level;
@@ -60,15 +59,15 @@ static void logPrio(Log& log, const Log::Level level,
 	char msg[MaxMessageLen] = {};
 
 	// Insert timestamp and level
-	const auto now = std::time(nullptr);
+	auto const now = std::time(nullptr);
 	// Copy-initialize to minimize chance of thread safety issues
-	const auto localnow = *std::localtime(&now);
+	auto const localnow = *std::localtime(&now);
 	std::snprintf(msg, MaxMessageLen, "%02d:%02d:%02d [%s] ",
 		localnow.tm_hour, localnow.tm_min, localnow.tm_sec,
 		LogLevelStrings[+level]);
 
 	// Insert formatted message
-	const auto timestampLen = std::strlen(msg);
+	auto const timestampLen = std::strlen(msg);
 	std::vsnprintf(msg + timestampLen, MaxMessageLen - timestampLen, fmt, ap);
 
 	// Append a newline
@@ -99,7 +98,7 @@ static void logPrio(Log& log, const Log::Level level,
 	}
 }
 
-void Log::enableFile(const char* const filepath)
+void Log::enableFile(char const* const filepath)
 {
 	ASSERT(filepath);
 	if (file) {
@@ -112,7 +111,7 @@ void Log::enableFile(const char* const filepath)
 		return;
 
 	// Handle error by forcibly printing it to console
-	const auto consolePrev = console;
+	auto const consolePrev = console;
 	console = true;
 	error("Failed to open logfile %s for writing: %s",
 		filepath, std::strerror(errno));
@@ -125,20 +124,20 @@ void Log::disableFile()
 	if (!file)
 		return;
 
-	const auto result = fclose(file);
+	auto const result = fclose(file);
 	file = nullptr;
 	if (!result)
 		return;
 
 	// Handle error by forcibly printing it to console
-	const auto consolePrev = console;
+	auto const consolePrev = console;
 	console = true;
 	error("Failed to flush logfile: %s", std::strerror(errno));
 	errno = 0;
 	console = consolePrev;
 }
 
-void Log::trace(const char* const fmt, ...)
+void Log::trace(char const* const fmt, ...)
 {
 	va_list ap = {};
 	va_start(ap, fmt);
@@ -146,7 +145,7 @@ void Log::trace(const char* const fmt, ...)
 	va_end(ap);
 }
 
-void Log::debug(const char* const fmt, ...)
+void Log::debug(char const* const fmt, ...)
 {
 	va_list ap = {};
 	va_start(ap, fmt);
@@ -154,7 +153,7 @@ void Log::debug(const char* const fmt, ...)
 	va_end(ap);
 }
 
-void Log::info(const char* const fmt, ...)
+void Log::info(char const* const fmt, ...)
 {
 	va_list ap = {};
 	va_start(ap, fmt);
@@ -162,7 +161,7 @@ void Log::info(const char* const fmt, ...)
 	va_end(ap);
 }
 
-void Log::warn(const char* const fmt, ...)
+void Log::warn(char const* const fmt, ...)
 {
 	va_list ap = {};
 	va_start(ap, fmt);
@@ -170,7 +169,7 @@ void Log::warn(const char* const fmt, ...)
 	va_end(ap);
 }
 
-void Log::error(const char* const fmt, ...)
+void Log::error(char const* const fmt, ...)
 {
 	va_list ap = {};
 	va_start(ap, fmt);
@@ -178,7 +177,7 @@ void Log::error(const char* const fmt, ...)
 	va_end(ap);
 }
 
-void Log::crit(const char* const fmt, ...)
+void Log::crit(char const* const fmt, ...)
 {
 	va_list ap = {};
 	va_start(ap, fmt);
@@ -186,7 +185,7 @@ void Log::crit(const char* const fmt, ...)
 	va_end(ap);
 }
 
-void Log::fail(char const* fmt, ...)
+void Log::fail(char const* const fmt, ...)
 {
 	va_list ap = {};
 	va_start(ap, fmt);

@@ -38,7 +38,7 @@ struct Log {
 	 * so that the file can be closed properly.
 	 * @param filepath Path to the logfile. File does not have to already exist
 	 */
-	void enableFile(const char* filepath);
+	void enableFile(char const* filepath);
 
 	/**
 	 * Disable logging to a file, cleanly closing the currently open logfile.
@@ -53,7 +53,7 @@ struct Log {
 	 * @param ... String interpolation arguments
 	 */
 	[[gnu::format(printf, 2, 3)]]
-	void trace(const char* fmt, ...);
+	void trace(char const* fmt, ...);
 
 	/**
 	 * Log a Debug level message. Meant for diagnostic information
@@ -63,7 +63,7 @@ struct Log {
 	 * @param ... String interpolation arguments
 	 */
 	[[gnu::format(printf, 2, 3)]]
-	void debug(const char* fmt, ...);
+	void debug(char const* fmt, ...);
 
 	/**
 	 * Log an Info level message. Meant for information that is understandable
@@ -73,7 +73,7 @@ struct Log {
 	 * @param ... String interpolation arguments
 	 */
 	[[gnu::format(printf, 2, 3)]]
-	void info(const char* fmt, ...);
+	void info(char const* fmt, ...);
 
 	/**
 	 * Log a Warn level message. Meant for failures that cause a subsystem
@@ -83,7 +83,7 @@ struct Log {
 	 * @param ... String interpolation arguments
 	 */
 	[[gnu::format(printf, 2, 3)]]
-	void warn(const char* fmt, ...);
+	void warn(char const* fmt, ...);
 
 	/**
 	 * Log an Error level message. Meant for failures that a subsystem cannot
@@ -93,7 +93,7 @@ struct Log {
 	 * @param ... String interpolation arguments
 	 */
 	[[gnu::format(printf, 2, 3)]]
-	void error(const char* fmt, ...);
+	void error(char const* fmt, ...);
 
 	/**
 	 * Log a Crit level message. Meant for failures that the entire application
@@ -103,7 +103,7 @@ struct Log {
 	 * @param ... String interpolation arguments
 	 */
 	[[gnu::format(printf, 2, 3)]]
-	void crit(const char* fmt, ...);
+	void crit(char const* fmt, ...);
 
 	/**
 	 * Log a Crit level message and exit the application immediately.
@@ -111,7 +111,7 @@ struct Log {
 	 * @param ... String interpolation arguments
 	 */
 	[[gnu::format(printf, 2, 3)]] [[noreturn]]
-	void fail(const char* fmt, ...);
+	void fail(char const* fmt, ...);
 
 	~Log();
 

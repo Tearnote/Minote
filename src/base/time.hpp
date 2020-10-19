@@ -25,7 +25,7 @@ using nsec = std::int64_t;
  * @return Number of nanoseconds
  */
 template <Arithmetic T>
-constexpr auto seconds(T t) -> nsec {
+constexpr auto seconds(T const t) -> nsec {
 	return t * 1'000'000'000LL;
 }
 
@@ -35,7 +35,7 @@ constexpr auto seconds(T t) -> nsec {
  * @return Number of nanoseconds
  */
 template <Arithmetic T>
-constexpr auto milliseconds(T t) -> nsec {
+constexpr auto milliseconds(T const t) -> nsec {
 	return t * 1'000'000LL;
 }
 

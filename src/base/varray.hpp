@@ -50,10 +50,10 @@ struct varray {
 	void clear();
 
 	auto data() -> Element*;
-	auto data() const -> const Element*;
+	auto data() const -> Element const*;
 
 	auto operator[](std::size_t index) -> Element&;
-	auto operator[](std::size_t index) const -> const Element&;
+	auto operator[](std::size_t index) const -> Element const&;
 
 };
 

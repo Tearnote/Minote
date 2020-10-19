@@ -11,7 +11,7 @@ namespace minote {
 
 namespace detail {
 
-inline auto attachmentIndex(const Attachment attachment) -> std::size_t
+inline auto attachmentIndex(Attachment const attachment) -> std::size_t
 {
 	switch(attachment) {
 	case Attachment::DepthStencil:
@@ -32,12 +32,12 @@ inline auto attachmentIndex(const Attachment attachment) -> std::size_t
  * @param attachment Attachment point
  * @return The pointer to texture at given attachment point (can be nullptr)
  */
-inline auto getAttachment(Framebuffer& f, const Attachment attachment) -> const TextureBase*&
+inline auto getAttachment(Framebuffer& f, Attachment const attachment) -> TextureBase const*&
 {
 	return f.attachments[attachmentIndex(attachment)];
 }
 
-inline auto getAttachment(const Framebuffer& f, const Attachment attachment) -> const TextureBase*
+inline auto getAttachment(Framebuffer const& f, Attachment const attachment) -> TextureBase const*
 {
 	return f.attachments[attachmentIndex(attachment)];
 }
@@ -45,7 +45,7 @@ inline auto getAttachment(const Framebuffer& f, const Attachment attachment) -> 
 }
 
 template<Trivial T>
-void VertexBuffer<T>::create(const char* const _name, const bool _dynamic)
+void VertexBuffer<T>::create(char const* const _name, bool const _dynamic)
 {
 		ASSERT(!id);
 		ASSERT(_name);
@@ -91,8 +91,8 @@ void VertexBuffer<T>::upload(varray<Type, N> data)
 		return;
 
 	bind();
-	const GLenum usage = dynamic? GL_STREAM_DRAW : GL_STATIC_DRAW;
-	const GLsizeiptr size = sizeof(Type) * data.size;
+	GLenum const usage = dynamic? GL_STREAM_DRAW : GL_STATIC_DRAW;
+	GLsizeiptr const size = sizeof(Type) * data.size;
 	if (dynamic && uploaded) {
 		glBufferData(GL_ARRAY_BUFFER, size, nullptr, usage);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, size, data.data());
@@ -112,8 +112,8 @@ void VertexBuffer<T>::upload(std::array<Type, N> data)
 		return;
 
 	bind();
-	const GLenum usage = dynamic? GL_STREAM_DRAW : GL_STATIC_DRAW;
-	const GLsizeiptr size = sizeof(Type) * N;
+	GLenum const usage = dynamic? GL_STREAM_DRAW : GL_STATIC_DRAW;
+	GLsizeiptr const size = sizeof(Type) * N;
 	if (dynamic && uploaded) {
 		glBufferData(GL_ARRAY_BUFFER, size, nullptr, usage);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, size, data.data());
@@ -133,8 +133,8 @@ void VertexBuffer<T>::upload(std::size_t elements, Type* data)
 		return;
 
 	bind();
-	const GLenum usage = dynamic? GL_STREAM_DRAW : GL_STATIC_DRAW;
-	const GLsizeiptr size = sizeof(Type) * elements;
+	GLenum const usage = dynamic? GL_STREAM_DRAW : GL_STATIC_DRAW;
+	GLsizeiptr const size = sizeof(Type) * elements;
 	if (dynamic && uploaded) {
 		glBufferData(GL_ARRAY_BUFFER, size, nullptr, usage);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, size, data);
@@ -153,7 +153,7 @@ void VertexBuffer<T>::bind() const
 }
 
 template<PixelFmt F>
-void Texture<F>::create(const char* const _name, const ivec2 _size)
+void Texture<F>::create(char const* const _name, ivec2 const _size)
 {
 	ASSERT(!id);
 	ASSERT(_name);
@@ -193,7 +193,7 @@ void Texture<F>::destroy()
 }
 
 template<PixelFmt F>
-void Texture<F>::setFilter(const Filter _filter)
+void Texture<F>::setFilter(Filter const _filter)
 {
 	ASSERT(_filter != Filter::None);
 	if (filter == _filter)
@@ -206,7 +206,7 @@ void Texture<F>::setFilter(const Filter _filter)
 }
 
 template<PixelFmt F>
-void Texture<F>::resize(const ivec2 _size)
+void Texture<F>::resize(ivec2 const _size)
 {
 	ASSERT(_size.x > 0 && _size.y > 0);
 	ASSERT(id);
@@ -220,14 +220,14 @@ void Texture<F>::resize(const ivec2 _size)
 }
 
 template<PixelFmt F>
-void Texture<F>::upload(const std::uint8_t* const data)
+void Texture<F>::upload(std::uint8_t const* const data)
 {
 	ASSERT(data);
 	ASSERT(id);
 	ASSERT(size.x > 0 && size.y > 0);
 	ASSERT(Format != PixelFmt::DepthStencil);
 
-	const GLenum channels = [=, this] {
+	GLenum const channels = [=, this] {
 		switch (Format) {
 		case PixelFmt::R_u8:
 		case PixelFmt::R_f16:
@@ -251,7 +251,7 @@ void Texture<F>::upload(const std::uint8_t* const data)
 }
 
 template<PixelFmt F>
-void Texture<F>::bind(const TextureUnit unit)
+void Texture<F>::bind(TextureUnit const unit)
 {
 	ASSERT(id);
 
@@ -260,7 +260,7 @@ void Texture<F>::bind(const TextureUnit unit)
 }
 
 template<PixelFmt F>
-void TextureMS<F>::create(const char* const _name, const ivec2 _size, const Samples _samples)
+void TextureMS<F>::create(char const* const _name, ivec2 const _size, Samples const _samples)
 {
 	ASSERT(!id);
 	ASSERT(_name);
@@ -298,7 +298,7 @@ void TextureMS<F>::destroy()
 }
 
 template<PixelFmt F>
-void TextureMS<F>::resize(const ivec2 _size)
+void TextureMS<F>::resize(ivec2 const _size)
 {
 	ASSERT(_size.x > 0 && _size.y > 0);
 	ASSERT(id);
@@ -312,7 +312,7 @@ void TextureMS<F>::resize(const ivec2 _size)
 }
 
 template<PixelFmt F>
-void TextureMS<F>::bind(const TextureUnit unit)
+void TextureMS<F>::bind(TextureUnit const unit)
 {
 	ASSERT(id);
 
@@ -321,7 +321,7 @@ void TextureMS<F>::bind(const TextureUnit unit)
 }
 
 template<PixelFmt F>
-void Renderbuffer<F>::create(const char* const _name, const ivec2 _size)
+void Renderbuffer<F>::create(char const* const _name, ivec2 const _size)
 {
 	ASSERT(!id);
 	ASSERT(_name);
@@ -356,7 +356,7 @@ void Renderbuffer<F>::destroy()
 }
 
 template<PixelFmt F>
-void Renderbuffer<F>::resize(const ivec2 _size)
+void Renderbuffer<F>::resize(ivec2 const _size)
 {
 	ASSERT(_size.x > 0 && _size.y > 0);
 	ASSERT(id);
@@ -369,7 +369,7 @@ void Renderbuffer<F>::resize(const ivec2 _size)
 }
 
 template<PixelFmt F>
-void RenderbufferMS<F>::create(const char* const _name, const ivec2 _size, const Samples _samples)
+void RenderbufferMS<F>::create(char const* const _name, ivec2 const _size, Samples const _samples)
 {
 	ASSERT(!id);
 	ASSERT(_name);
@@ -406,7 +406,7 @@ void RenderbufferMS<F>::destroy()
 }
 
 template<PixelFmt F>
-void RenderbufferMS<F>::resize(const ivec2 _size)
+void RenderbufferMS<F>::resize(ivec2 const _size)
 {
 	ASSERT(_size.x > 0 && _size.y > 0);
 	ASSERT(id);
@@ -420,7 +420,7 @@ void RenderbufferMS<F>::resize(const ivec2 _size)
 }
 
 template<PixelFmt F>
-void Framebuffer::attach(Texture<F>& t, const Attachment attachment)
+void Framebuffer::attach(Texture<F>& t, Attachment const attachment)
 {
 	ASSERT(id);
 	ASSERT(t.id);
@@ -446,7 +446,7 @@ void Framebuffer::attach(Texture<F>& t, const Attachment attachment)
 }
 
 template<PixelFmt F>
-void Framebuffer::attach(TextureMS<F>& t, const Attachment attachment)
+void Framebuffer::attach(TextureMS<F>& t, Attachment const attachment)
 {
 	ASSERT(id);
 	ASSERT(t.id);
@@ -471,7 +471,7 @@ void Framebuffer::attach(TextureMS<F>& t, const Attachment attachment)
 }
 
 template<PixelFmt F>
-void Framebuffer::attach(Renderbuffer<F>& r, const Attachment attachment)
+void Framebuffer::attach(Renderbuffer<F>& r, Attachment const attachment)
 {
 	ASSERT(id);
 	ASSERT(r.id);
@@ -496,7 +496,7 @@ void Framebuffer::attach(Renderbuffer<F>& r, const Attachment attachment)
 }
 
 template<PixelFmt F>
-void Framebuffer::attach(RenderbufferMS<F>& r, Attachment attachment)
+void Framebuffer::attach(RenderbufferMS<F>& r, Attachment const attachment)
 {
 	ASSERT(id);
 	ASSERT(r.id);
@@ -521,7 +521,7 @@ void Framebuffer::attach(RenderbufferMS<F>& r, Attachment attachment)
 }
 
 template<GLSLType T>
-void Uniform<T>::setLocation(const Shader& shader, const char* const name)
+void Uniform<T>::setLocation(Shader const& shader, char const* const name)
 {
 	ASSERT(shader.id);
 	ASSERT(name);
@@ -533,7 +533,7 @@ void Uniform<T>::setLocation(const Shader& shader, const char* const name)
 }
 
 template<GLSLType T>
-void Uniform<T>::set(const Type val)
+void Uniform<T>::set(Type const val)
 {
 	if (location == -1)
 		return;
@@ -561,7 +561,7 @@ void Uniform<T>::set(const Type val)
 }
 
 template<template<PixelFmt> typename T>
-void Sampler<T>::setLocation(const Shader& shader, const char* const name, const TextureUnit _unit)
+void Sampler<T>::setLocation(Shader const& shader, char const* const name, TextureUnit const _unit)
 {
 	ASSERT(shader.id);
 	ASSERT(name);

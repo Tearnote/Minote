@@ -95,7 +95,7 @@ enum struct Attachment : GLenum {
 struct GLObject {
 
 	GLuint id = 0; ///< The object has not been created if this is 0
-	const char* name = nullptr; ///< Human-readable name, used in logging
+	char const* name = nullptr; ///< Human-readable name, used in logging
 
 	~GLObject();
 };
@@ -109,7 +109,7 @@ struct VertexBuffer : GLObject {
 
 	bool uploaded = false;
 
-	void create(const char* name, bool dynamic);
+	void create(char const* name, bool dynamic);
 
 	void destroy();
 
@@ -147,7 +147,7 @@ struct Texture : TextureBase {
 	 * @param name Human-readable name, for logging and debug output
 	 * @param size Initial size of the texture storage, in pixels
 	 */
-	void create(const char* name, ivec2 size);
+	void create(char const* name, ivec2 size);
 
 	/**
 	 * Destroy the OpenGL texture object. Storage and ID are both freed.
@@ -174,7 +174,7 @@ struct Texture : TextureBase {
 	 * Uploading to a stencil+depth texture is not supported.
 	 * @param data Pixel data as an unchecked array of bytes
 	 */
-	void upload(const std::uint8_t* data);
+	void upload(std::uint8_t const* data);
 
 	/**
 	 * Bind the texture to the specified texture unit. This allows it to be used
@@ -201,7 +201,7 @@ struct TextureMS : TextureBase {
 	 * @param size Initial size of the multisample texture storage, in pixels
 	 * @param samples Number of samples per pixel
 	 */
-	void create(const char* name, ivec2 size, Samples samples);
+	void create(char const* name, ivec2 size, Samples samples);
 
 	/**
 	 * Destroy the OpenGL multisample texture object. Storage and ID are both
@@ -245,7 +245,7 @@ struct Renderbuffer : TextureBase {
 	 * @param name Human-readable name, for logging and debug output
 	 * @param size Initial size of the renderbuffer storage, in pixels
 	 */
-	void create(const char* name, ivec2 size);
+	void create(char const* name, ivec2 size);
 
 	/**
 	 * Destroy the OpenGL renderbuffer object. Storage and ID are both freed.
@@ -279,7 +279,7 @@ struct RenderbufferMS : TextureBase {
 	 * in pixels
 	 * @param samples Number of samples per pixel: 2, 4 or 8
 	 */
-	void create(const char* name, ivec2 size, Samples samples);
+	void create(char const* name, ivec2 size, Samples samples);
 
 	/**
 	 * Destroy the OpenGL multisample renderbuffer object. Storage and ID
@@ -302,7 +302,7 @@ struct Framebuffer : GLObject {
 
 	Samples samples = Samples::None; ///< Sample count of all attachments needs to match
 	bool dirty = true; ///< Is a glDrawBuffers call and completeness check needed?
-	std::array<const TextureBase*, 17> attachments = {};
+	std::array<TextureBase const*, 17> attachments = {};
 
 	/**
 	 * Create an OpenGL ID for the framebuffer. This needs to be called before
@@ -311,7 +311,7 @@ struct Framebuffer : GLObject {
 	 * to satisfy completeness requirements.
 	 * @param name Human-readable name, for logging and debug output
 	 */
-	void create(const char* name);
+	void create(char const* name);
 
 	/**
 	 * Destroy the OpenGL framebuffer object. The ID is released, but attached
@@ -384,14 +384,14 @@ struct Framebuffer : GLObject {
 	 * @param srcBuffer The attachment in src to read from
 	 * @param depthStencil Whether to blit the DepthStencil attachment
 	 */
-	static void blit(Framebuffer& dst, const Framebuffer& src,
+	static void blit(Framebuffer& dst, Framebuffer const& src,
 		Attachment srcBuffer = Attachment::Color0, bool depthStencil = false);
 
 };
 
 struct Shader : GLObject {
 
-	void create(const char* name, const char* vertSrc, const char* fragSrc);
+	void create(char const* name, char const* vertSrc, char const* fragSrc);
 
 	void destroy();
 
@@ -409,13 +409,13 @@ struct Uniform {
 	GLint location = -1;
 	Type value = {};
 
-	void setLocation(const Shader& shader, const char* name);
+	void setLocation(Shader const& shader, char const* name);
 
 	void set(Type val);
 
 	inline auto operator=(Type val) -> Uniform<Type>& { set(val); return *this; }
 
-	inline auto operator=(const Uniform& other) -> Uniform& {
+	inline auto operator=(Uniform const& other) -> Uniform& {
 		if (&other != this)
 			set(other);
 		return *this;
@@ -425,7 +425,7 @@ struct Uniform {
 	inline operator Type() const { return value; }
 
 	Uniform() = default;
-	Uniform(const Uniform&) = delete;
+	Uniform(Uniform const&) = delete;
 	Uniform(Uniform&&) = delete;
 	auto operator=(Uniform&&) -> Uniform& = delete;
 
@@ -437,7 +437,7 @@ struct Sampler {
 	GLint location = -1;
 	TextureUnit unit = TextureUnit::None;
 
-	void setLocation(const Shader& shader, const char* name, TextureUnit unit = TextureUnit::_0);
+	void setLocation(Shader const& shader, char const* name, TextureUnit unit = TextureUnit::_0);
 
 	template<PixelFmt F>
 	void set(T<F>& val);
@@ -446,9 +446,9 @@ struct Sampler {
 	inline auto operator=(T<F>& val) -> Sampler<T>& { set(val); return *this; }
 
 	Sampler() = default;
-	Sampler(const Sampler&) = delete;
+	Sampler(Sampler const&) = delete;
 	Sampler(Sampler&&) = delete;
-	inline auto operator=(const Sampler& other) -> Sampler& = delete;
+	inline auto operator=(Sampler const& other) -> Sampler& = delete;
 	auto operator=(Sampler&&) -> Sampler& = delete;
 
 };

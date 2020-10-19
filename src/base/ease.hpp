@@ -17,7 +17,7 @@ using EasingFunction = auto (*)(T) -> T;
 // Modeled after the line y = x
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto linearInterpolation(T p) -> T
+constexpr auto linearInterpolation(T const p) -> T
 {
 	return p;
 }
@@ -25,7 +25,7 @@ constexpr auto linearInterpolation(T p) -> T
 // Modeled after the parabola y = x^2
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto quadraticEaseIn(T p) -> T
+constexpr auto quadraticEaseIn(T const p) -> T
 {
 	return p * p;
 }
@@ -33,7 +33,7 @@ constexpr auto quadraticEaseIn(T p) -> T
 // Modeled after the parabola y = -x^2 + 2x
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto quadraticEaseOut(T p) -> T
+constexpr auto quadraticEaseOut(T const p) -> T
 {
 	return -(p * (p - 2));
 }
@@ -43,7 +43,7 @@ constexpr auto quadraticEaseOut(T p) -> T
 // y = -(1/2)((2x-1)*(2x-3) - 1) ; [0.5, 1]
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto quadraticEaseInOut(T p) -> T
+constexpr auto quadraticEaseInOut(T const p) -> T
 {
 	if (p < 0.5) {
 		return 2 * p * p;
@@ -55,7 +55,7 @@ constexpr auto quadraticEaseInOut(T p) -> T
 // Modeled after the cubic y = x^3
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto cubicEaseIn(T p) -> T
+constexpr auto cubicEaseIn(T const p) -> T
 {
 	return p * p * p;
 }
@@ -63,7 +63,7 @@ constexpr auto cubicEaseIn(T p) -> T
 // Modeled after the cubic y = (x - 1)^3 + 1
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto cubicEaseOut(T p) -> T
+constexpr auto cubicEaseOut(T const p) -> T
 {
 	T f = p - 1;
 	return f * f * f + 1;
@@ -74,7 +74,7 @@ constexpr auto cubicEaseOut(T p) -> T
 // y = (1/2)((2x-2)^3 + 2) ; [0.5, 1]
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto cubicEaseInOut(T p) -> T
+constexpr auto cubicEaseInOut(T const p) -> T
 {
 	if (p < 0.5) {
 		return 4 * p * p * p;
@@ -87,7 +87,7 @@ constexpr auto cubicEaseInOut(T p) -> T
 // Modeled after the quartic x^4
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto quarticEaseIn(T p) -> T
+constexpr auto quarticEaseIn(T const p) -> T
 {
 	return p * p * p * p;
 }
@@ -95,7 +95,7 @@ constexpr auto quarticEaseIn(T p) -> T
 // Modeled after the quartic y = 1 - (x - 1)^4
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto quarticEaseOut(T p) -> T
+constexpr auto quarticEaseOut(T const p) -> T
 {
 	T f = p - 1;
 	return f * f * f * (1 - p) + 1;
@@ -106,7 +106,7 @@ constexpr auto quarticEaseOut(T p) -> T
 // y = -(1/2)((2x-2)^4 - 2) ; [0.5, 1]
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto quarticEaseInOut(T p) -> T
+constexpr auto quarticEaseInOut(T const p) -> T
 {
 	if (p < 0.5) {
 		return 8 * p * p * p * p;
@@ -119,7 +119,7 @@ constexpr auto quarticEaseInOut(T p) -> T
 // Modeled after the quintic y = x^5
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto quinticEaseIn(T p) -> T
+constexpr auto quinticEaseIn(T const p) -> T
 {
 	return p * p * p * p * p;
 }
@@ -127,7 +127,7 @@ constexpr auto quinticEaseIn(T p) -> T
 // Modeled after the quintic y = (x - 1)^5 + 1
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto quinticEaseOut(T p) -> T
+constexpr auto quinticEaseOut(T const p) -> T
 {
 	T f = p - 1;
 	return f * f * f * f * f + 1;
@@ -138,7 +138,7 @@ constexpr auto quinticEaseOut(T p) -> T
 // y = (1/2)((2x-2)^5 + 2) ; [0.5, 1]
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto quinticEaseInOut(T p) -> T
+constexpr auto quinticEaseInOut(T const p) -> T
 {
 	if (p < 0.5) {
 		return 16 * p * p * p * p * p;
@@ -151,7 +151,7 @@ constexpr auto quinticEaseInOut(T p) -> T
 // Modeled after quarter-cycle of sine wave
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto sineEaseIn(T p) -> T
+constexpr auto sineEaseIn(T const p) -> T
 {
 	return std::sin((p - 1) * Tau_v<T> / 4) + 1;
 }
@@ -159,7 +159,7 @@ constexpr auto sineEaseIn(T p) -> T
 // Modeled after quarter-cycle of sine wave (different phase)
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto sineEaseOut(T p) -> T
+constexpr auto sineEaseOut(T const p) -> T
 {
 	return std::sin(p * Tau_v<T> / 4);
 }
@@ -167,7 +167,7 @@ constexpr auto sineEaseOut(T p) -> T
 // Modeled after half sine wave
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto sineEaseInOut(T p) -> T
+constexpr auto sineEaseInOut(T const p) -> T
 {
 	return 0.5 * (1 - std::cos(p * Tau_v<T> / 2));
 }
@@ -175,7 +175,7 @@ constexpr auto sineEaseInOut(T p) -> T
 // Modeled after shifted quadrant IV of unit circle
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto circularEaseIn(T p) -> T
+constexpr auto circularEaseIn(T const p) -> T
 {
 	return 1 - std::sqrt(1 - (p * p));
 }
@@ -183,7 +183,7 @@ constexpr auto circularEaseIn(T p) -> T
 // Modeled after shifted quadrant II of unit circle
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto circularEaseOut(T p) -> T
+constexpr auto circularEaseOut(T const p) -> T
 {
 	return std::sqrt((2 - p) * p);
 }
@@ -193,7 +193,7 @@ constexpr auto circularEaseOut(T p) -> T
 // y = (1/2)(sqrt(-(2x - 3)*(2x - 1)) + 1) ; [0.5, 1]
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto circularEaseInOut(T p) -> T
+constexpr auto circularEaseInOut(T const p) -> T
 {
 	if (p < 0.5) {
 		return 0.5 * (1 - std::sqrt(1 - 4 * (p * p)));
@@ -205,7 +205,7 @@ constexpr auto circularEaseInOut(T p) -> T
 // Modeled after the exponential function y = 2^(10(x - 1))
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto exponentialEaseIn(T p) -> T
+constexpr auto exponentialEaseIn(T const p) -> T
 {
 	return (p == 0.0) ? p : std::pow(2, 10 * (p - 1));
 }
@@ -213,7 +213,7 @@ constexpr auto exponentialEaseIn(T p) -> T
 // Modeled after the exponential function y = -2^(-10x) + 1
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto exponentialEaseOut(T p) -> T
+constexpr auto exponentialEaseOut(T const p) -> T
 {
 	return (p == 1.0) ? p : 1 - std::pow(2, -10 * p);
 }
@@ -223,7 +223,7 @@ constexpr auto exponentialEaseOut(T p) -> T
 // y = -(1/2)*2^(-10(2x - 1))) + 1 ; [0.5,1]
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto exponentialEaseInOut(T p) -> T
+constexpr auto exponentialEaseInOut(T const p) -> T
 {
 	if (p == 0.0 || p == 1.0)
 		return p;
@@ -238,7 +238,7 @@ constexpr auto exponentialEaseInOut(T p) -> T
 // Modeled after the damped sine wave y = sin(13pi/2*x)*pow(2, 10 * (x - 1))
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto elasticEaseIn(T p) -> T
+constexpr auto elasticEaseIn(T const p) -> T
 {
 	return std::sin(13 * (Tau_v<T> / 4) * p) * std::pow(2, 10 * (p - 1));
 }
@@ -246,7 +246,7 @@ constexpr auto elasticEaseIn(T p) -> T
 // Modeled after the damped sine wave y = sin(-13pi/2*(x + 1))*pow(2, -10x) + 1
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto elasticEaseOut(T p) -> T
+constexpr auto elasticEaseOut(T const p) -> T
 {
 	return std::sin(-13 * (Tau_v<T> / 4) * (p + 1)) * std::pow(2, -10 * p) + 1;
 }
@@ -256,7 +256,7 @@ constexpr auto elasticEaseOut(T p) -> T
 // y = (1/2)*(sin(-13pi/2*((2x-1)+1))*pow(2,-10(2*x-1)) + 2) ; [0.5, 1]
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto elasticEaseInOut(T p) -> T
+constexpr auto elasticEaseInOut(T const p) -> T
 {
 	if(p < 0.5) {
 		return 0.5 * std::sin(13 * (Tau_v<T> / 4) * (2 * p)) * std::pow(2, 10 * ((2 * p) - 1));
@@ -268,7 +268,7 @@ constexpr auto elasticEaseInOut(T p) -> T
 // Modeled after the overshooting cubic y = x^3-x*sin(x*pi)
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto eackEaseIn(T p) -> T
+constexpr auto eackEaseIn(T const p) -> T
 {
 	return p * p * p - p * std::sin(p * Tau_v<T> / 2);
 }
@@ -276,7 +276,7 @@ constexpr auto eackEaseIn(T p) -> T
 // Modeled after overshooting cubic y = 1-((1-x)^3-(1-x)*sin((1-x)*pi))
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto backEaseOut(T p) -> T
+constexpr auto backEaseOut(T const p) -> T
 {
 	T f = 1 - p;
 	return 1 - (f * f * f - f * std::sin(f * Tau_v<T> / 2));
@@ -287,7 +287,7 @@ constexpr auto backEaseOut(T p) -> T
 // y = (1/2)*(1-((1-x)^3-(1-x)*sin((1-x)*pi))+1) ; [0.5, 1]
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto backEaseInOut(T p) -> T
+constexpr auto backEaseInOut(T const p) -> T
 {
 	if (p < 0.5) {
 		T f = 2 * p;
@@ -300,14 +300,14 @@ constexpr auto backEaseInOut(T p) -> T
 
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto bounceEaseIn(T p) -> T
+constexpr auto bounceEaseIn(T const p) -> T
 {
 	return 1 - bounceEaseOut(1 - p);
 }
 
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto bounceEaseOut(T p) -> T
+constexpr auto bounceEaseOut(T const p) -> T
 {
 	if (p < 4/11.0) {
 		return (121 * p * p)/16.0;
@@ -322,7 +322,7 @@ constexpr auto bounceEaseOut(T p) -> T
 
 template<FloatingPoint T>
 [[maybe_unused]]
-constexpr auto bounceEaseInOut(T p) -> T
+constexpr auto bounceEaseInOut(T const p) -> T
 {
 	if (p < 0.5) {
 		return 0.5 * bounceEaseIn(p*2);

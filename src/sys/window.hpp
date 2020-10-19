@@ -67,7 +67,7 @@ struct Window {
 	/// Mutex protecting handle access with unsynchronized GLFW functions
 	mutable std::mutex handleMutex;
 
-	const char* title = nullptr; ///< Text displayed on the window's title bar
+	char const* title = nullptr; ///< Text displayed on the window's title bar
 	std::atomic<ivec2> size; ///< Size of the window in physical pixels
 	std::atomic<float> scale = 0.0f; ///< DPI scaling, where 1.0 is "standard" DPI
 	bool isContextActive = false; ///< Whether the OpenGL context is active on any thread
@@ -84,7 +84,7 @@ struct Window {
 	 * this parameter is ignored and the window is created at desktop resolution
 	 * @remark This function must be called on the main thread.
 	 */
-	void open(const char* title, bool fullscreen = false, ivec2 size = {1280, 720});
+	void open(char const* title, bool fullscreen = false, ivec2 size = {1280, 720});
 
 	/**
 	 * Close an open window. The OpenGL context must be already deactivated.

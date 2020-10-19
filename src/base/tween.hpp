@@ -49,17 +49,17 @@ struct Tween {
 };
 
 template<FloatingPoint T>
-constexpr auto Tween<T>::applyAt(nsec time) const -> Type
+constexpr auto Tween<T>::applyAt(nsec const time) const -> Type
 {
 	if (start >= time)
 		return from;
 	if (start + duration <= time)
 		return to;
 
-	const nsec elapsed = time - start;
-	const Type progress = type(static_cast<Type>(elapsed) / duration);
+	nsec const elapsed = time - start;
+	Type const progress = type(static_cast<Type>(elapsed) / duration);
 
-	const Type span = to - from;
+	Type const span = to - from;
 	return from + span * progress;
 }
 

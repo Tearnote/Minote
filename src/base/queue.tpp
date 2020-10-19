@@ -8,7 +8,7 @@
 namespace minote {
 
 template<typename T, std::size_t N>
-auto queue<T, N>::enqueue(const Element& e) -> bool
+auto queue<T, N>::enqueue(Element const& e) -> bool
 {
 	if (isFull())
 		return false;
@@ -24,7 +24,7 @@ auto queue<T, N>::dequeue() -> Element*
 	if (isEmpty())
 		return nullptr;
 
-	const auto prevTail = tail;
+	auto const prevTail = tail;
 	tail = (tail + 1) % Capacity;
 	return &buffer[prevTail];
 }
@@ -39,7 +39,7 @@ auto queue<T, N>::peek() -> Element*
 }
 
 template<typename T, std::size_t N>
-auto queue<T, N>::peek() const -> const Element*
+auto queue<T, N>::peek() const -> Element const*
 {
 	if (isEmpty())
 		return nullptr;

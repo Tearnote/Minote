@@ -10,7 +10,7 @@
 using namespace minote;
 
 static const color4 MinoColors[MinoSize] = {
-	[MinoNone] = Clear4,
+	[MinoNone] = {1.0f, 1.0f, 1.0f, 0.0f},
 	[MinoI] = {1.0f, 0.0f, 0.0f, 1.0f},
 	[MinoL] = {1.0f, .22f, 0.0f, 1.0f},
 	[MinoO] = {1.0f, 1.0f, 0.0f, 1.0f},
