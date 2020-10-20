@@ -229,7 +229,7 @@ void Texture<F>::upload(std::array<T, N> const& data)
 	ASSERT(Format != PixelFmt::DepthStencil);
 
 	constexpr GLenum channels = [] {
-		if constexpr (std::is_same_v<T, std::uint8_t>)
+		if constexpr (std::is_same_v<T, u8>)
 			return GL_RED;
 		else if constexpr (std::is_same_v<T, u8vec2>)
 			return GL_RG;
@@ -259,7 +259,7 @@ void Texture<F>::upload(T const data[], int const _channels)
 
 	const GLenum channels = [=] {
 		if (!_channels) {
-			if constexpr (std::is_same_v<T, std::uint8_t>)
+			if constexpr (std::is_same_v<T, u8>)
 				return GL_RED;
 			else if constexpr (std::is_same_v<T, u8vec2>)
 				return GL_RG;

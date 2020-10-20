@@ -44,7 +44,7 @@ enum struct PixelFmt : GLint {
 
 template<typename T>
 concept UploadFmt =
-	std::is_same_v<T, std::uint8_t> ||
+	std::is_same_v<T, u8> ||
 	std::is_same_v<T, u8vec2> ||
 	std::is_same_v<T, u8vec3> ||
 	std::is_same_v<T, u8vec4>;
