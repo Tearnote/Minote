@@ -107,7 +107,7 @@ struct GLObject {
 	~GLObject();
 };
 
-template<Trivial T>
+template<TriviallyCopyable T>
 struct VertexBuffer : GLObject {
 
 	using Type = T;

@@ -24,7 +24,6 @@ namespace minote {
 #define ASSERT PPK_ASSERT
 
 // Simple concept library
-
 template<typename T>
 concept Enum = std::is_enum_v<T>;
 
@@ -38,7 +37,21 @@ template<typename T>
 concept Arithmetic = std::is_arithmetic_v<T>;
 
 template<typename T>
-concept Trivial = std::is_trivially_copyable_v<T>;
+concept TriviallyCopyable = std::is_trivially_copyable_v<T>;
+
+template<typename T>
+concept TriviallyConstructible = std::is_trivially_constructible_v<T>;
+
+/**
+ * Template replacement for the C offsetof() macro. Unfortunately, it cannot
+ * be constexpr within the current rules of the language.
+ * @see https://gist.github.com/graphitemaster/494f21190bb2c63c5516
+ */
+template <typename T1, TriviallyConstructible T2>
+inline auto offset_of(T1 T2::*member) -> std::size_t {
+	static T2 obj;
+	return reinterpret_cast<std::size_t>(&(obj.*member)) - reinterpret_cast<std::size_t>(&obj);
+}
 
 /// Conversion of scoped enum to the underlying type, using the unary + operator
 template<Enum T>

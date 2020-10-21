@@ -44,7 +44,7 @@ inline auto getAttachment(Framebuffer const& f, Attachment const attachment) -> 
 
 }
 
-template<Trivial T>
+template<TriviallyCopyable T>
 void VertexBuffer<T>::create(char const* const _name, bool const _dynamic)
 {
 		ASSERT(!id);
@@ -62,7 +62,7 @@ void VertexBuffer<T>::create(char const* const _name, bool const _dynamic)
 		dynamic? "Dynamic" : "Static", name);
 }
 
-template<Trivial T>
+template<TriviallyCopyable T>
 void VertexBuffer<T>::destroy()
 {
 #ifndef NDEBUG
@@ -81,7 +81,7 @@ void VertexBuffer<T>::destroy()
 	name = nullptr;
 }
 
-template<Trivial T>
+template<TriviallyCopyable T>
 template<std::size_t N>
 void VertexBuffer<T>::upload(varray<Type, N> data)
 {
@@ -102,7 +102,7 @@ void VertexBuffer<T>::upload(varray<Type, N> data)
 	}
 }
 
-template<Trivial T>
+template<TriviallyCopyable T>
 template<std::size_t N>
 void VertexBuffer<T>::upload(std::array<Type, N> data)
 {
@@ -123,7 +123,7 @@ void VertexBuffer<T>::upload(std::array<Type, N> data)
 	}
 }
 
-template<Trivial T>
+template<TriviallyCopyable T>
 void VertexBuffer<T>::upload(std::size_t elements, Type* data)
 {
 	ASSERT(data);
@@ -144,7 +144,7 @@ void VertexBuffer<T>::upload(std::size_t elements, Type* data)
 	}
 }
 
-template<Trivial T>
+template<TriviallyCopyable T>
 void VertexBuffer<T>::bind() const
 {
 	ASSERT(id);

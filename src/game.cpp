@@ -84,6 +84,7 @@ void game(Window& window)
 	defer { playCleanup(); };
 	particlesInit();
 	defer { particlesCleanup(); };
+	printf("%zu\n", sizeof(vec4));
 
 	// Main loop
 	while (!window.isClosing()) {
