@@ -150,6 +150,14 @@ void Framebuffer::bind()
 	}
 }
 
+void Framebuffer::bindRead() const
+{
+	ASSERT(id);
+	ASSERT(!dirty);
+
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, id);
+}
+
 void Framebuffer::unbind()
 {
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -164,8 +172,8 @@ void Framebuffer::blit(Framebuffer& dst, Framebuffer const& src,
 		ASSERT(detail::getAttachment(dst, Attachment::DepthStencil));
 	}
 
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, src.id);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst.id);
+	src.bindRead();
+	dst.bind();
 	glReadBuffer(+srcBuffer);
 
 	ivec2 const blitSize = src.attachments[detail::attachmentIndex(srcBuffer)]->size;

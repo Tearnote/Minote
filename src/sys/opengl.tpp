@@ -42,6 +42,18 @@ inline auto getAttachment(Framebuffer const& f, Attachment const attachment) -> 
 	return f.attachments[attachmentIndex(attachment)];
 }
 
+template<PixelFmt F>
+auto bindRenderbuffer(Renderbuffer<F>& rb)
+{
+	glBindRenderbuffer(GL_RENDERBUFFER, rb.id);
+}
+
+template<PixelFmt F>
+auto bindRenderbufferMS(RenderbufferMS<F>& rb)
+{
+	glBindRenderbuffer(GL_RENDERBUFFER, rb.id);
+}
+
 template<GLSLType Component, typename T>
 auto setVaoAttribute(VertexArray& vao, GLuint const index,
 	VertexBuffer<T>& buffer, std::ptrdiff_t const offset, bool const instanced)
@@ -247,7 +259,7 @@ void Texture<F>::create(char const* const _name, ivec2 const _size)
 	glObjectLabel(GL_TEXTURE, id, std::strlen(_name), _name);
 #endif //NDEBUG
 	name = _name;
-	glBindTexture(GL_TEXTURE_2D, id);
+	bind();
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	setFilter(Filter::Linear);
@@ -282,7 +294,7 @@ void Texture<F>::setFilter(Filter const _filter)
 	if (filter == _filter)
 		return;
 
-	glBindTexture(GL_TEXTURE_2D, id);
+	bind();
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, +_filter);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, +_filter);
 	filter = _filter;
@@ -296,7 +308,7 @@ void Texture<F>::resize(ivec2 const _size)
 	if (size == _size)
 		return;
 
-	glBindTexture(GL_TEXTURE_2D, id);
+	bind();
 	glTexImage2D(GL_TEXTURE_2D, 0, +Format,
 		_size.x, _size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 	size = _size;
@@ -325,7 +337,7 @@ void Texture<F>::upload(std::array<T, N> const& data)
 		return GL_NONE;
 	}();
 
-	glBindTexture(GL_TEXTURE_2D, id);
+	bind();
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, size.x, size.y,
 		channels, GL_UNSIGNED_BYTE, data.data());
 }
@@ -366,7 +378,7 @@ void Texture<F>::upload(T const data[], int const _channels)
 		}
 	}();
 
-	glBindTexture(GL_TEXTURE_2D, id);
+	bind();
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, size.x, size.y,
 		channels, GL_UNSIGNED_BYTE, data);
 }
@@ -376,7 +388,8 @@ void Texture<F>::bind(TextureUnit const unit)
 {
 	ASSERT(id);
 
-	glActiveTexture(+unit);
+	if (unit != TextureUnit::None)
+		glActiveTexture(+unit);
 	glBindTexture(GL_TEXTURE_2D, id);
 }
 
@@ -426,7 +439,7 @@ void TextureMS<F>::resize(ivec2 const _size)
 	if (size == _size)
 		return;
 
-	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, id);
+	bind();
 	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, +samples, +Format,
 		_size.x, _size.y, GL_TRUE);
 	size = _size;
@@ -437,7 +450,8 @@ void TextureMS<F>::bind(TextureUnit const unit)
 {
 	ASSERT(id);
 
-	glActiveTexture(+unit);
+	if (unit != TextureUnit::None)
+		glActiveTexture(+unit);
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, id);
 }
 
@@ -484,7 +498,7 @@ void Renderbuffer<F>::resize(ivec2 const _size)
 	if (size == _size)
 		return;
 
-	glBindRenderbuffer(GL_RENDERBUFFER, id);
+	detail::bindRenderbuffer(*this);
 	glRenderbufferStorage(GL_RENDERBUFFER, +Format, _size.x, _size.y);
 	size = _size;
 }
@@ -534,7 +548,7 @@ void RenderbufferMS<F>::resize(ivec2 const _size)
 	if (size == _size)
 		return;
 
-	glBindRenderbuffer(GL_RENDERBUFFER, id);
+	detail::bindRenderbufferMS(*this);
 	glRenderbufferStorageMultisample(GL_RENDERBUFFER, +samples, +Format,
 		_size.x, _size.y);
 	size = _size;
@@ -633,7 +647,8 @@ void BufferTexture<T>::bind(TextureUnit unit)
 {
 	ASSERT(id);
 
-	glActiveTexture(+unit);
+	if (unit != TextureUnit::None)
+		glActiveTexture(+unit);
 	glBindTexture(GL_TEXTURE_BUFFER, id);
 }
 
@@ -675,7 +690,6 @@ void Framebuffer::attach(Texture<F>& t, Attachment const attachment)
 	ASSERT(id);
 	ASSERT(t.id);
 	ASSERT(attachment != Attachment::None);
-#ifndef NDEBUG
 	if (t.Format == PixelFmt::DepthStencil)
 		ASSERT(attachment == Attachment::DepthStencil);
 	else
@@ -683,9 +697,9 @@ void Framebuffer::attach(Texture<F>& t, Attachment const attachment)
 	if (samples != Samples::None)
 		ASSERT(samples == Samples::_1);
 	ASSERT(!detail::getAttachment(*this, attachment));
-#endif //NDEBUG
 
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
+	dirty = false; // Prevent checking validity
+	bind();
 	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, +attachment,
 		GL_TEXTURE_2D, t.id, 0);
 	detail::getAttachment(*this, attachment) = &t;
@@ -701,16 +715,15 @@ void Framebuffer::attach(TextureMS<F>& t, Attachment const attachment)
 	ASSERT(id);
 	ASSERT(t.id);
 	ASSERT(attachment != Attachment::None);
-#ifndef NDEBUG
 	if (t.Format == PixelFmt::DepthStencil)
 		ASSERT(attachment == Attachment::DepthStencil);
 	else
 		ASSERT(attachment != Attachment::DepthStencil);
 	if (samples != Samples::None)
 		ASSERT(samples == t.samples);
-#endif //NDEBUG
 
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
+	dirty = false; // Prevent checking validity
+	bind();
 	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, +attachment,
 		GL_TEXTURE_2D_MULTISAMPLE, t.id, 0);
 	detail::getAttachment(*this, attachment) = &t;
@@ -726,16 +739,15 @@ void Framebuffer::attach(Renderbuffer<F>& r, Attachment const attachment)
 	ASSERT(id);
 	ASSERT(r.id);
 	ASSERT(attachment != Attachment::None);
-#ifndef NDEBUG
 	if (r.Format == PixelFmt::DepthStencil)
 		ASSERT(attachment == Attachment::DepthStencil);
 	else
 		ASSERT(attachment != Attachment::DepthStencil);
 	if (samples != Samples::None)
 		ASSERT(samples == Samples::_1);
-#endif //NDEBUG
 
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
+	dirty = false; // Prevent checking validity
+	bind();
 	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, +attachment,
 		GL_RENDERBUFFER, r.id);
 	detail::getAttachment(*this, attachment) = &r;
@@ -751,16 +763,15 @@ void Framebuffer::attach(RenderbufferMS<F>& r, Attachment const attachment)
 	ASSERT(id);
 	ASSERT(r.id);
 	ASSERT(attachment != Attachment::None);
-#ifndef NDEBUG
 	if (r.Format == PixelFmt::DepthStencil)
 		ASSERT(attachment == Attachment::DepthStencil);
 	else
 		ASSERT(attachment != Attachment::DepthStencil);
 	if (samples != Samples::None)
 		ASSERT(samples == r.samples);
-#endif //NDEBUG
 
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
+	dirty = false; // Prevent checking validity
+	bind();
 	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, +attachment,
 		GL_RENDERBUFFER, r.id);
 	detail::getAttachment(*this, attachment) = &r;

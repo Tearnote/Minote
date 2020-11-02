@@ -203,7 +203,7 @@ struct Texture : TextureBase {
 	 * in a shader for reading and/or writing.
 	 * @param unit Texture unit to bind the texture to
 	 */
-	void bind(TextureUnit unit);
+	void bind(TextureUnit unit = TextureUnit::None);
 
 };
 
@@ -244,7 +244,7 @@ struct TextureMS : TextureBase {
 	 * @param unit Texture unit to bind the multisample texture to, from 0 to 15
 	 * inclusive
 	 */
-	void bind(TextureUnit unit);
+	void bind(TextureUnit unit = TextureUnit::None);
 
 };
 
@@ -352,7 +352,7 @@ struct BufferTexture : TextureBase {
 	template<std::size_t N>
 	void upload(std::array<Type, N> data);
 
-	void bind(TextureUnit unit);
+	void bind(TextureUnit unit = TextureUnit::None);
 
 };
 
@@ -450,6 +450,8 @@ struct Framebuffer : GLObject {
 	 * the framebuffer is checked for completeness.
 	 */
 	void bind();
+
+	void bindRead() const;
 
 	/**
 	 * Bind the zero framebuffer, which causes all future draw commands to draw
