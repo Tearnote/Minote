@@ -19,7 +19,7 @@ using namespace minote;
 /// Shader type for MSDF drawing
 struct Msdf : Shader {
 
-	Sampler<Texture> transforms; ///< Buffer texture containing per-string transforms
+	BufferSampler transforms; ///< Buffer texture containing per-string transforms
 	Sampler<Texture> atlas; ///< Font atlas
 	Uniform<mat4> camera;
 	Uniform<mat4> projection;
@@ -57,8 +57,7 @@ static Msdf msdf;
 static VertexArray msdfVao[FontSize] = {};
 static VertexBuffer<GlyphMsdf> msdfGlyphsVbo[FontSize];
 static varray<GlyphMsdf, MaxGlyphs> msdfGlyphs[FontSize]{};
-static BufferTextureStorage msdfTransformsStorage[FontSize] = {0};
-static BufferTexture msdfTransformsTex[FontSize] = {0};
+static BufferTexture<mat4> msdfTransformsTex[FontSize] = {};
 static varray<mat4, MaxStrings> msdfTransforms[FontSize]{};
 
 static bool initialized = false;
@@ -147,8 +146,8 @@ void textInit(void)
 		msdfGlyphVbo.create("msdfGlyphVbo", true);
 	for (auto& vao : msdfVao)
 		vao.create("msdfVao");
-	glGenBuffers(FontSize, msdfTransformsStorage);
-	glGenTextures(FontSize, msdfTransformsTex);
+	for (auto& texture : msdfTransformsTex)
+		texture.create("msdfTransformTex", true);
 
 	for (size_t i = 0; i < FontSize; i += 1) {
 		msdfVao[i].setAttribute(0, msdfGlyphsVbo[i], &GlyphMsdf::position, true);
@@ -156,11 +155,6 @@ void textInit(void)
 		msdfVao[i].setAttribute(2, msdfGlyphsVbo[i], &GlyphMsdf::texBounds, true);
 		msdfVao[i].setAttribute(3, msdfGlyphsVbo[i], &GlyphMsdf::color, true);
 		msdfVao[i].setAttribute(4, msdfGlyphsVbo[i], &GlyphMsdf::transformIndex, true);
-
-		glBindBuffer(GL_TEXTURE_BUFFER, msdfTransformsStorage[i]);
-		glBufferData(GL_TEXTURE_BUFFER, 0, nullptr, GL_STREAM_DRAW);
-		glBindTexture(GL_TEXTURE_BUFFER, msdfTransformsTex[i]);
-		glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, msdfTransformsStorage[i]);
 
 		L.debug("Initialized font %s", FontList[i]);
 	}
@@ -172,8 +166,8 @@ void textCleanup(void)
 {
 	if (!initialized) return;
 
-	glDeleteTextures(FontSize, msdfTransformsTex);
-	glDeleteBuffers(FontSize, msdfTransformsStorage);
+	for (auto& texture : msdfTransformsTex)
+		texture.destroy();
 	for (auto& msdfGlyphVbo : msdfGlyphsVbo)
 		msdfGlyphVbo.destroy();
 	for (auto& vao : msdfVao)
@@ -219,17 +213,12 @@ void textDraw(void)
 		size_t instances = msdfGlyphs[i].size;
 
 		msdfGlyphsVbo[i].upload(msdfGlyphs[i]);
-
-		size_t transformsSize = sizeof(mat4) * msdfTransforms[i].size;
-		glBindBuffer(GL_TEXTURE_BUFFER, msdfTransformsStorage[i]);
-		glBufferData(GL_TEXTURE_BUFFER, transformsSize, nullptr, GL_STREAM_DRAW);
-		glBufferSubData(GL_TEXTURE_BUFFER, 0, transformsSize, msdfTransforms[i].data());
+		msdfTransformsTex[i].upload(msdfTransforms[i]);
 
 		msdf.bind();
 		msdfVao[i].bind();
 		msdf.atlas = fonts[i].atlas;
-		glActiveTexture(+msdf.transforms.unit);
-		glBindTexture(GL_TEXTURE_BUFFER, msdfTransformsTex[i]);
+		msdf.transforms = msdfTransformsTex[i];
 		msdf.projection = worldProjection;
 		msdf.camera = worldCamera;
 		glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, instances);

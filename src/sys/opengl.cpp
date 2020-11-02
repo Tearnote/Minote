@@ -73,6 +73,9 @@ void VertexArray::destroy()
 
 	glDeleteVertexArrays(1, &id);
 	id = 0;
+
+	L.debug(R"(Vertex array "%s" destroyed)", name);
+	name = nullptr;
 }
 
 void VertexArray::bind()
@@ -248,6 +251,24 @@ void Shader::bind() const
 {
 	ASSERT(id);
 	glUseProgram(id);
+}
+
+void BufferSampler::setLocation(Shader const& shader, char const* name,
+	TextureUnit _unit)
+{
+	ASSERT(shader.id);
+	ASSERT(name);
+	ASSERT(_unit != TextureUnit::None);
+
+	location = glGetUniformLocation(shader.id, name);
+	if (location == -1) {
+		L.warn(R"(Failed to get location for sampler "%s")", name);
+		return;
+	}
+
+	shader.bind();
+	glUniform1i(location, +_unit - GL_TEXTURE0);
+	unit = _unit;
 }
 
 }

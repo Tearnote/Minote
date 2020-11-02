@@ -11,12 +11,6 @@
 
 namespace minote {
 
-/// OpenGL buffer texture object ID
-using BufferTexture = GLuint;
-
-/// OpenGL buffer object, for use with buffer textures
-using BufferTextureStorage = GLuint;
-
 /// A type that has an equivalent in GLSL
 template<typename T>
 concept GLSLType =
@@ -122,7 +116,7 @@ template<TriviallyCopyable T, GLenum _target>
 struct BufferBase : GLObject {
 
 	using Type = T;
-	constexpr static GLenum Target = _target;
+	static constexpr GLenum Target = _target;
 
 	bool dynamic = false;
 
@@ -324,6 +318,44 @@ struct RenderbufferMS : TextureBase {
 
 };
 
+template<typename T>
+concept BufferTextureType =
+	std::is_same_v<T, f32> ||
+	std::is_same_v<T, vec2> ||
+	std::is_same_v<T, vec4> ||
+	std::is_same_v<T, u8> ||
+	std::is_same_v<T, u8vec2> ||
+	std::is_same_v<T, u8vec4> ||
+	std::is_same_v<T, u32> ||
+	std::is_same_v<T, uvec2> ||
+	std::is_same_v<T, uvec4> ||
+	std::is_same_v<T, i32> ||
+	std::is_same_v<T, ivec2> ||
+	std::is_same_v<T, ivec4> ||
+	std::is_same_v<T, mat4>;
+
+template<BufferTextureType T>
+struct BufferTexture : TextureBase {
+
+	using Type = T;
+	using StorageBuffer = BufferBase<Type, GL_TEXTURE_BUFFER>;
+
+	StorageBuffer storage;
+
+	void create(char const* name, bool dynamic);
+
+	void destroy();
+
+	template<std::size_t N>
+	void upload(varray<Type, N> data);
+
+	template<std::size_t N>
+	void upload(std::array<Type, N> data);
+
+	void bind(TextureUnit unit);
+
+};
+
 struct VertexArray : GLObject {
 
 	std::array<bool, 16> attributes = {};
@@ -499,6 +531,27 @@ struct Sampler {
 	Sampler(Sampler&&) = delete;
 	inline auto operator=(Sampler const& other) -> Sampler& = delete;
 	auto operator=(Sampler&&) -> Sampler& = delete;
+
+};
+
+struct BufferSampler {
+
+	GLint location = -1;
+	TextureUnit unit = TextureUnit::None;
+
+	void setLocation(Shader const& shader, char const* name, TextureUnit unit = TextureUnit::_0);
+
+	template<BufferTextureType T>
+	void set(BufferTexture<T>& val);
+
+	template<BufferTextureType T>
+	inline auto operator=(BufferTexture<T>& val) -> BufferSampler& { set(val); return *this; }
+
+	BufferSampler() = default;
+	BufferSampler(BufferSampler const&) = delete;
+	BufferSampler(BufferSampler&&) = delete;
+	inline auto operator=(BufferSampler const& other) -> BufferSampler& = delete;
+	auto operator=(BufferSampler&&) -> BufferSampler& = delete;
 
 };
 

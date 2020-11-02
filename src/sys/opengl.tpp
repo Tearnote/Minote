@@ -79,7 +79,7 @@ auto setVaoAttribute(VertexArray& vao, GLuint const index,
 			std::is_same_v<Component, ivec3> ||
 			std::is_same_v<Component, ivec4>)
 			return GL_INT;
-			ASSERT(false, "Invalid GLSL type");
+		L.fail("Invalid vertex array component type");
 		return 0;
 	}();
 
@@ -540,6 +540,103 @@ void RenderbufferMS<F>::resize(ivec2 const _size)
 	size = _size;
 }
 
+template<BufferTextureType T>
+void BufferTexture<T>::create(char const* const _name, bool const dynamic)
+{
+	ASSERT(!id);
+	ASSERT(_name);
+
+	glGenTextures(1, &id);
+#ifndef NDEBUG
+	glObjectLabel(GL_TEXTURE, id, std::strlen(_name), _name);
+#endif //NDEBUG
+	name = _name;
+
+	constexpr auto format = []() -> GLenum {
+		if constexpr (std::is_same_v<T, f32>)
+			return GL_R32F;
+		if constexpr (std::is_same_v<T, vec2>)
+			return GL_RG32F;
+		if constexpr (std::is_same_v<T, vec4>)
+			return GL_RGBA32F;
+		if constexpr (std::is_same_v<T, u8>)
+			return GL_R8;
+		if constexpr (std::is_same_v<T, u8vec2>)
+			return GL_RG8;
+		if constexpr (std::is_same_v<T, u8vec4>)
+			return GL_RGBA8;
+		if constexpr (std::is_same_v<T, u32>)
+			return GL_R32UI;
+		if constexpr (std::is_same_v<T, uvec2>)
+			return GL_RG32UI;
+		if constexpr (std::is_same_v<T, uvec4>)
+			return GL_RGBA32UI;
+		if constexpr (std::is_same_v<T, i32>)
+			return GL_R32I;
+		if constexpr (std::is_same_v<T, ivec2>)
+			return GL_RG32I;
+		if constexpr (std::is_same_v<T, ivec4>)
+			return GL_RGBA32I;
+		if constexpr (std::is_same_v<T, mat4>)
+			return GL_RGBA32F;
+		L.fail("Invalid buffer texture type");
+		return 0;
+	}();
+
+	storage.create(_name, dynamic);
+	storage.bind();
+	glBufferData(StorageBuffer::Target, 0, nullptr,
+		dynamic? GL_STREAM_DRAW : GL_STATIC_DRAW);
+	bind(TextureUnit::_0);
+	glTexBuffer(GL_TEXTURE_BUFFER, format, storage.id);
+
+	L.debug(R"(Buffer texture "%s" created)", name);
+}
+
+template<BufferTextureType T>
+void BufferTexture<T>::destroy()
+{
+#ifndef NDEBUG
+	if (!id) {
+		L.warn("Tried to destroy a buffer texture that has not been created");
+		return;
+	}
+#endif //NDEBUG
+
+	glDeleteTextures(1, &id);
+	id = 0;
+	size = {0, 0};
+	storage.destroy();
+
+	L.debug(R"(Buffer texture "%s" destroyed)", name);
+	name = nullptr;
+}
+
+template<BufferTextureType T>
+template<std::size_t N>
+void BufferTexture<T>::upload(varray<Type, N> data)
+{
+	storage.upload(data);
+	size = {N, 1};
+}
+
+template<BufferTextureType T>
+template<std::size_t N>
+void BufferTexture<T>::upload(std::array<Type, N> data)
+{
+	storage.upload(data);
+	size = {N, 1};
+}
+
+template<BufferTextureType T>
+void BufferTexture<T>::bind(TextureUnit unit)
+{
+	ASSERT(id);
+
+	glActiveTexture(+unit);
+	glBindTexture(GL_TEXTURE_BUFFER, id);
+}
+
 template<GLSLType T>
 void VertexArray::setAttribute(GLuint const index, VertexBuffer<T>& buffer, bool const instanced)
 {
@@ -710,7 +807,7 @@ void Uniform<T>::set(Type const val)
 	else if constexpr (std::is_same_v<Type, mat4>)
 		glUniformMatrix4fv(location, 1, false, value_ptr(val));
 	else
-		ASSERT(false); // Unreachable if T concept holds
+		L.fail("Invalid uniform type"); // Unreachable if T concept holds
 }
 
 template<template<PixelFmt> typename T>
@@ -734,6 +831,12 @@ void Sampler<T>::setLocation(Shader const& shader, char const* const name, Textu
 template<template<PixelFmt> typename T>
 template<PixelFmt F>
 void Sampler<T>::set(T<F>& val)
+{
+	val.bind(unit);
+}
+
+template<BufferTextureType T>
+void BufferSampler::set(BufferTexture<T>& val)
 {
 	val.bind(unit);
 }
