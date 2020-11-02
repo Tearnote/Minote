@@ -54,7 +54,7 @@ static constexpr std::size_t MaxGlyphs{1024};
 static constexpr std::size_t MaxStrings{1024};
 
 static Msdf msdf;
-static VertexArray msdfVao[FontSize] = {0};
+static VertexArray msdfVao[FontSize] = {};
 static VertexBuffer<GlyphMsdf> msdfGlyphsVbo[FontSize];
 static varray<GlyphMsdf, MaxGlyphs> msdfGlyphs[FontSize]{};
 static BufferTextureStorage msdfTransformsStorage[FontSize] = {0};
@@ -145,38 +145,17 @@ void textInit(void)
 
 	for (auto& msdfGlyphVbo : msdfGlyphsVbo)
 		msdfGlyphVbo.create("msdfGlyphVbo", true);
-	glGenVertexArrays(FontSize, msdfVao);
+	for (auto& vao : msdfVao)
+		vao.create("msdfVao");
 	glGenBuffers(FontSize, msdfTransformsStorage);
 	glGenTextures(FontSize, msdfTransformsTex);
 
 	for (size_t i = 0; i < FontSize; i += 1) {
-		glBindVertexArray(msdfVao[i]);
-		msdfGlyphsVbo[i].bind();
-
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(GlyphMsdf),
-			(void*)0);
-		glVertexAttribDivisor(0, 1);
-
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GlyphMsdf),
-			(void*)offsetof(GlyphMsdf, size));
-		glVertexAttribDivisor(1, 1);
-
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(GlyphMsdf),
-			(void*)offsetof(GlyphMsdf, texBounds));
-		glVertexAttribDivisor(2, 1);
-
-		glEnableVertexAttribArray(3);
-		glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(GlyphMsdf),
-			(void*)offsetof(GlyphMsdf, color));
-		glVertexAttribDivisor(3, 1);
-
-		glEnableVertexAttribArray(4);
-		glVertexAttribIPointer(4, 1, GL_INT, sizeof(GlyphMsdf),
-			(void*)offsetof(GlyphMsdf, transformIndex));
-		glVertexAttribDivisor(4, 1);
+		msdfVao[i].setAttribute(0, msdfGlyphsVbo[i], &GlyphMsdf::position, true);
+		msdfVao[i].setAttribute(1, msdfGlyphsVbo[i], &GlyphMsdf::size, true);
+		msdfVao[i].setAttribute(2, msdfGlyphsVbo[i], &GlyphMsdf::texBounds, true);
+		msdfVao[i].setAttribute(3, msdfGlyphsVbo[i], &GlyphMsdf::color, true);
+		msdfVao[i].setAttribute(4, msdfGlyphsVbo[i], &GlyphMsdf::transformIndex, true);
 
 		glBindBuffer(GL_TEXTURE_BUFFER, msdfTransformsStorage[i]);
 		glBufferData(GL_TEXTURE_BUFFER, 0, nullptr, GL_STREAM_DRAW);
@@ -197,8 +176,8 @@ void textCleanup(void)
 	glDeleteBuffers(FontSize, msdfTransformsStorage);
 	for (auto& msdfGlyphVbo : msdfGlyphsVbo)
 		msdfGlyphVbo.destroy();
-	glDeleteVertexArrays(FontSize, msdfVao);
-	arrayClear(msdfVao);
+	for (auto& vao : msdfVao)
+		vao.destroy();
 
 	msdf.destroy();
 
@@ -246,8 +225,8 @@ void textDraw(void)
 		glBufferData(GL_TEXTURE_BUFFER, transformsSize, nullptr, GL_STREAM_DRAW);
 		glBufferSubData(GL_TEXTURE_BUFFER, 0, transformsSize, msdfTransforms[i].data());
 
-		glBindVertexArray(msdfVao[i]);
 		msdf.bind();
+		msdfVao[i].bind();
 		msdf.atlas = fonts[i].atlas;
 		glActiveTexture(+msdf.transforms.unit);
 		glBindTexture(GL_TEXTURE_BUFFER, msdfTransformsTex[i]);

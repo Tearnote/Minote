@@ -47,6 +47,41 @@ GLObject::~GLObject()
 #endif //NDEBUG
 }
 
+void VertexArray::create(char const* const _name)
+{
+	ASSERT(!id);
+	ASSERT(_name);
+
+	glGenVertexArrays(1, &id);
+#ifndef NDEBUG
+	glObjectLabel(GL_VERTEX_ARRAY, id, std::strlen(_name), _name);
+#endif //NDEBUG
+	name = _name;
+	attributes.fill(false);
+
+	L.debug(R"(Vertex array "%s" created)", name);
+}
+
+void VertexArray::destroy()
+{
+#ifndef NDEBUG
+	if (!id) {
+		L.warn("Tried to destroy a vertex array that has not been created");
+		return;
+	}
+#endif //NDEBUG
+
+	glDeleteVertexArrays(1, &id);
+	id = 0;
+}
+
+void VertexArray::bind()
+{
+	ASSERT(id);
+
+	glBindVertexArray(id);
+}
+
 void Framebuffer::create(char const* const _name)
 {
 	ASSERT(!id);
@@ -65,7 +100,7 @@ void Framebuffer::destroy()
 {
 #ifndef NDEBUG
 	if (!id) {
-		L.warn("Tried to destroy a multisample renderbuffer that has not been created");
+		L.warn("Tried to destroy a framebuffer that has not been created");
 		return;
 	}
 #endif //NDEBUG

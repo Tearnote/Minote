@@ -11,9 +11,6 @@
 
 namespace minote {
 
-/// OpenGL vertex array object ID
-using VertexArray = GLuint;
-
 /// OpenGL element array object ID
 using ElementArray = GLuint;
 
@@ -22,6 +19,23 @@ using BufferTexture = GLuint;
 
 /// OpenGL buffer object, for use with buffer textures
 using BufferTextureStorage = GLuint;
+
+/// A type that has an equivalent in GLSL
+template<typename T>
+concept GLSLType =
+	std::is_same_v<T, f32> ||
+	std::is_same_v<T, u32> ||
+	std::is_same_v<T, i32> ||
+	std::is_same_v<T, vec2> ||
+	std::is_same_v<T, vec3> ||
+	std::is_same_v<T, vec4> ||
+	std::is_same_v<T, uvec2> ||
+	std::is_same_v<T, uvec3> ||
+	std::is_same_v<T, uvec4> ||
+	std::is_same_v<T, ivec2> ||
+	std::is_same_v<T, ivec3> ||
+	std::is_same_v<T, ivec4> ||
+	std::is_same_v<T, mat4>;
 
 /// Available texture filtering modes
 enum struct Filter : GLint {
@@ -297,6 +311,24 @@ struct RenderbufferMS : TextureBase {
 	 * @param size New size of the multisample renderbuffer storage, in pixels
 	 */
 	void resize(ivec2 size);
+
+};
+
+struct VertexArray : GLObject {
+
+	std::array<bool, 16> attributes = {};
+
+	void create(char const* name);
+
+	void destroy();
+
+	template<GLSLType T>
+	void setAttribute(GLuint index, VertexBuffer<T>& buffer, bool instanced = false);
+
+	template<TriviallyCopyable T, GLSLType U>
+	void setAttribute(GLuint index, VertexBuffer<T>& buffer, U T::*field, bool instanced = false);
+
+	void bind();
 
 };
 

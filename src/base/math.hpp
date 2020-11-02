@@ -30,12 +30,18 @@ namespace minote {
 
 // Base types
 using glm::u8;
+using glm::u32;
+using glm::i32;
+using glm::f32;
 using glm::vec2;
 using glm::vec3;
 using glm::vec4;
 using glm::ivec2;
 using glm::ivec3;
 using glm::ivec4;
+using glm::uvec2;
+using glm::uvec3;
+using glm::uvec4;
 using glm::mat4;
 using glm::u8vec2;
 using glm::u8vec3;
@@ -129,18 +135,5 @@ using glm::convertSRGBToLinear;
 
 // Raw value passing
 using glm::value_ptr;
-
-// Useful concepts
-template<typename T>
-concept GLSLType =
-	std::is_same_v<T, float>
-	|| std::is_same_v<T, int>
-	|| std::is_same_v<T, vec2>
-	|| std::is_same_v<T, vec3>
-	|| std::is_same_v<T, vec4>
-	|| std::is_same_v<T, ivec2>
-	|| std::is_same_v<T, ivec3>
-	|| std::is_same_v<T, ivec4>
-	|| std::is_same_v<T, mat4>;
 
 }

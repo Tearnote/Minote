@@ -65,7 +65,7 @@ static struct nk_buffer commandList = {0};
 static Nuklear nuklear;
 static Texture<PixelFmt::RGBA_u8> nuklearTexture;
 
-static VertexArray nuklearVao = 0;
+static VertexArray nuklearVao;
 static VertexBuffer<VertexNuklear> nuklearVbo;
 static ElementArray nuklearEbo = 0;
 
@@ -167,20 +167,13 @@ void debugInit(void)
 	nuklear.create("nuklear", NuklearVertSrc, NuklearFragSrc);
 
 	// Set up the buffers
-	glGenVertexArrays(1, &nuklearVao);
-	glBindVertexArray(nuklearVao);
 	nuklearVbo.create("nuklearVbo", true);
-	nuklearVbo.bind();
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(VertexNuklear),
-		(void*)0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(VertexNuklear),
-		(void*)offsetof(VertexNuklear, texCoord));
+	nuklearVao.create("nuklearVao");
+	nuklearVao.setAttribute(0, nuklearVbo, &VertexNuklear::pos);
+	nuklearVao.setAttribute(1, nuklearVbo, &VertexNuklear::texCoord);
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE,
-		sizeof(VertexNuklear),
-		(void*)offsetof(VertexNuklear, color));
+		sizeof(VertexNuklear), (void*)offsetof(VertexNuklear, color));
 	glGenBuffers(1, &nuklearEbo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, nuklearEbo);
 	nk_buffer_init_default(&commandList);
@@ -198,8 +191,7 @@ void debugCleanup(void)
 	glDeleteBuffers(1, &nuklearEbo);
 	nuklearEbo = 0;
 	nuklearVbo.destroy();
-	glDeleteVertexArrays(1, &nuklearVao);
-	nuklearVao = 0;
+	nuklearVao.destroy();
 	nuklear.destroy();
 	nuklearTexture.destroy();
 	nk_font_atlas_cleanup(&atlas);
@@ -245,7 +237,7 @@ void debugDraw(Window& window)
 	nuklear.bind();
 	nuklear.atlas = nuklearTexture;
 	nuklear.projection = worldScreenProjection;
-	glBindVertexArray(nuklearVao);
+	nuklearVao.bind();
 
 	nuklearVbo.bind();
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, nuklearEbo);

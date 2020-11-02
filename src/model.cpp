@@ -100,8 +100,7 @@ void modelCleanup(void)
 static void modelDestroyFlat(ModelFlat* m)
 {
 	ASSERT(m);
-	glDeleteVertexArrays(1, &m->vao);
-	m->vao = 0;
+	m->vao.destroy();
 	m->transforms.destroy();
 	m->highlights.destroy();
 	m->tints.destroy();
@@ -119,8 +118,7 @@ static void modelDestroyFlat(ModelFlat* m)
 static void modelDestroyPhong(ModelPhong* m)
 {
 	ASSERT(m);
-	glDeleteVertexArrays(1, &m->vao);
-	m->vao = 0;
+	m->vao.destroy();
 	m->transforms.destroy();
 	m->highlights.destroy();
 	m->tints.destroy();
@@ -147,12 +145,11 @@ static void modelDrawFlat(ModelFlat* m, size_t instances,
 	ASSERT(initialized);
 	ASSERT(m);
 	ASSERT(m->base.type == ModelTypeFlat);
-	ASSERT(m->vao);
 	ASSERT(m->base.name);
 	ASSERT(transforms);
 	if (!instances) return;
 
-	glBindVertexArray(m->vao);
+	m->vao.bind();
 	flat.bind();
 	if (tints) {
 		glEnableVertexAttribArray(2);
@@ -190,12 +187,11 @@ static void modelDrawPhong(ModelPhong* m, size_t instances,
 	ASSERT(initialized);
 	ASSERT(m);
 	ASSERT(m->base.type == ModelTypePhong);
-	ASSERT(m->vao);
 	ASSERT(m->base.name);
 	ASSERT(transforms);
 	if (!instances) return;
 
-	glBindVertexArray(m->vao);
+	m->vao.bind();
 	phong.bind();
 	if (tints) {
 		glEnableVertexAttribArray(3);
@@ -276,42 +272,12 @@ Model* modelCreateFlat(const char* name,
 	m->highlights.create("highlights", true);
 	m->transforms.create("transforms", true);
 
-	m->vertices.bind();
-	glGenVertexArrays(1, &m->vao);
-	glBindVertexArray(m->vao);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexFlat),
-		(void*)0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(VertexFlat),
-		(void*)offsetof(VertexFlat, color));
-	m->tints.bind();
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(color4),
-		(void*)0);
-	glVertexAttribDivisor(2, 1);
-	m->highlights.bind();
-	glEnableVertexAttribArray(3);
-	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(color4),
-		(void*)0);
-	glVertexAttribDivisor(3, 1);
-	m->transforms.bind();
-	glEnableVertexAttribArray(4);
-	glEnableVertexAttribArray(5);
-	glEnableVertexAttribArray(6);
-	glEnableVertexAttribArray(7);
-	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(mat4),
-		(void*)0);
-	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(mat4),
-		(void*)sizeof(vec4));
-	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(mat4),
-		(void*)(sizeof(vec4) * 2));
-	glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(mat4),
-		(void*)(sizeof(vec4) * 3));
-	glVertexAttribDivisor(4, 1);
-	glVertexAttribDivisor(5, 1);
-	glVertexAttribDivisor(6, 1);
-	glVertexAttribDivisor(7, 1);
+	m->vao.create("flatVao");
+	m->vao.setAttribute(0, m->vertices, &VertexFlat::pos);
+	m->vao.setAttribute(1, m->vertices, &VertexFlat::color);
+	m->vao.setAttribute(2, m->tints, true);
+	m->vao.setAttribute(3, m->highlights, true);
+	m->vao.setAttribute(4, m->transforms, true);
 	L.debug("Model %s created", m->base.name);
 	return (Model*)m;
 }
@@ -341,46 +307,13 @@ Model* modelCreatePhong(const char* name,
 	m->highlights.create("highlights", true);
 	m->transforms.create("transforms", true);
 
-	glGenVertexArrays(1, &m->vao);
-	glBindVertexArray(m->vao);
-	m->vertices.bind();
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexPhong),
-		(void*)0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(VertexPhong),
-		(void*)offsetof(VertexPhong, color));
-	m->normals.bind();
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(vec3),
-		(void*)0);
-	m->tints.bind();
-	glEnableVertexAttribArray(3);
-	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(color4),
-		(void*)0);
-	glVertexAttribDivisor(3, 1);
-	m->highlights.bind();
-	glEnableVertexAttribArray(4);
-	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(color4),
-		(void*)0);
-	glVertexAttribDivisor(4, 1);
-	m->transforms.bind();
-	glEnableVertexAttribArray(5);
-	glEnableVertexAttribArray(6);
-	glEnableVertexAttribArray(7);
-	glEnableVertexAttribArray(8);
-	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(mat4),
-		(void*)0);
-	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(mat4),
-		(void*)sizeof(vec4));
-	glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(mat4),
-		(void*)(sizeof(vec4) * 2));
-	glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, sizeof(mat4),
-		(void*)(sizeof(vec4) * 3));
-	glVertexAttribDivisor(5, 1);
-	glVertexAttribDivisor(6, 1);
-	glVertexAttribDivisor(7, 1);
-	glVertexAttribDivisor(8, 1);
+	m->vao.create("phongVao");
+	m->vao.setAttribute(0, m->vertices, &VertexFlat::pos);
+	m->vao.setAttribute(1, m->vertices, &VertexFlat::color);
+	m->vao.setAttribute(2, m->normals);
+	m->vao.setAttribute(3, m->tints, true);
+	m->vao.setAttribute(4, m->highlights, true);
+	m->vao.setAttribute(5, m->transforms, true);
 
 	L.debug("Model %s created", m->base.name);
 	return (Model*)m;
