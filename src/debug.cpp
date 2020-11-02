@@ -67,7 +67,7 @@ static Texture<PixelFmt::RGBA_u8> nuklearTexture;
 
 static VertexArray nuklearVao;
 static VertexBuffer<VertexNuklear> nuklearVbo;
-static ElementArray nuklearEbo = 0;
+static ElementBuffer<u16> nuklearEbo;
 
 static std::atomic<ivec2> cursorPos;
 static std::atomic<bool> leftClick;
@@ -168,14 +168,14 @@ void debugInit(void)
 
 	// Set up the buffers
 	nuklearVbo.create("nuklearVbo", true);
+	nuklearEbo.create("nuklearEbo", true);
 	nuklearVao.create("nuklearVao");
 	nuklearVao.setAttribute(0, nuklearVbo, &VertexNuklear::pos);
 	nuklearVao.setAttribute(1, nuklearVbo, &VertexNuklear::texCoord);
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE,
 		sizeof(VertexNuklear), (void*)offsetof(VertexNuklear, color));
-	glGenBuffers(1, &nuklearEbo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, nuklearEbo);
+	nuklearVao.setElements(nuklearEbo);
 	nk_buffer_init_default(&commandList);
 
 	nuklearEnabled = true;
@@ -188,8 +188,7 @@ void debugCleanup(void)
 	if (!initialized) return;
 
 	nk_buffer_free(&commandList);
-	glDeleteBuffers(1, &nuklearEbo);
-	nuklearEbo = 0;
+	nuklearEbo.destroy();
 	nuklearVbo.destroy();
 	nuklearVao.destroy();
 	nuklear.destroy();
@@ -240,7 +239,7 @@ void debugDraw(Window& window)
 	nuklearVao.bind();
 
 	nuklearVbo.bind();
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, nuklearEbo);
+	nuklearEbo.bind();
 	glBufferData(GL_ARRAY_BUFFER, NUKLEAR_VBO_SIZE, nullptr, GL_STREAM_DRAW);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, NUKLEAR_EBO_SIZE, nullptr,
 		GL_STREAM_DRAW);

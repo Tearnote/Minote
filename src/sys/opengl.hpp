@@ -11,9 +11,6 @@
 
 namespace minote {
 
-/// OpenGL element array object ID
-using ElementArray = GLuint;
-
 /// OpenGL buffer texture object ID
 using BufferTexture = GLuint;
 
@@ -121,10 +118,11 @@ struct GLObject {
 	~GLObject();
 };
 
-template<TriviallyCopyable T>
-struct VertexBuffer : GLObject {
+template<TriviallyCopyable T, GLenum _target>
+struct BufferBase : GLObject {
 
 	using Type = T;
+	constexpr static GLenum Target = _target;
 
 	bool dynamic = false;
 
@@ -145,6 +143,18 @@ struct VertexBuffer : GLObject {
 	void bind() const;
 
 };
+
+template<TriviallyCopyable T>
+using VertexBuffer = BufferBase<T, GL_ARRAY_BUFFER>;
+
+template<typename T>
+concept ElementType =
+	std::is_same_v<T, u8> ||
+	std::is_same_v<T, u16> ||
+	std::is_same_v<T, u32>;
+
+template<ElementType T = u32>
+using ElementBuffer = BufferBase<T, GL_ELEMENT_ARRAY_BUFFER>;
 
 /// Common fields of texture types
 struct TextureBase : GLObject {
@@ -327,6 +337,9 @@ struct VertexArray : GLObject {
 
 	template<TriviallyCopyable T, GLSLType U>
 	void setAttribute(GLuint index, VertexBuffer<T>& buffer, U T::*field, bool instanced = false);
+
+	template<ElementType T>
+	void setElements(ElementBuffer<T>& buffer);
 
 	void bind();
 

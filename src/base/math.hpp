@@ -30,6 +30,7 @@ namespace minote {
 
 // Base types
 using glm::u8;
+using glm::u16;
 using glm::u32;
 using glm::i32;
 using glm::f32;

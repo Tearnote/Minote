@@ -127,8 +127,8 @@ auto setVaoAttribute(VertexArray& vao, GLuint const index,
 
 }
 
-template<TriviallyCopyable T>
-void VertexBuffer<T>::create(char const* const _name, bool const _dynamic)
+template<TriviallyCopyable T, GLenum U>
+void BufferBase<T, U>::create(char const* const _name, bool const _dynamic)
 {
 		ASSERT(!id);
 		ASSERT(_name);
@@ -145,8 +145,8 @@ void VertexBuffer<T>::create(char const* const _name, bool const _dynamic)
 		dynamic? "Dynamic" : "Static", name);
 }
 
-template<TriviallyCopyable T>
-void VertexBuffer<T>::destroy()
+template<TriviallyCopyable T, GLenum U>
+void BufferBase<T, U>::destroy()
 {
 #ifndef NDEBUG
 	if (!id) {
@@ -164,9 +164,9 @@ void VertexBuffer<T>::destroy()
 	name = nullptr;
 }
 
-template<TriviallyCopyable T>
+template<TriviallyCopyable T, GLenum U>
 template<std::size_t N>
-void VertexBuffer<T>::upload(varray<Type, N> data)
+void BufferBase<T, U>::upload(varray<Type, N> data)
 {
 	ASSERT(id);
 	ASSERT(dynamic == true || uploaded == false);
@@ -177,17 +177,17 @@ void VertexBuffer<T>::upload(varray<Type, N> data)
 	GLenum const usage = dynamic? GL_STREAM_DRAW : GL_STATIC_DRAW;
 	GLsizeiptr const size = sizeof(Type) * data.size;
 	if (dynamic && uploaded) {
-		glBufferData(GL_ARRAY_BUFFER, size, nullptr, usage);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, size, data.data());
+		glBufferData(Target, size, nullptr, usage);
+		glBufferSubData(Target, 0, size, data.data());
 	} else {
-		glBufferData(GL_ARRAY_BUFFER, size, data.data(), usage);
+		glBufferData(Target, size, data.data(), usage);
 		uploaded = true;
 	}
 }
 
-template<TriviallyCopyable T>
+template<TriviallyCopyable T, GLenum U>
 template<std::size_t N>
-void VertexBuffer<T>::upload(std::array<Type, N> data)
+void BufferBase<T, U>::upload(std::array<Type, N> data)
 {
 	ASSERT(id);
 	ASSERT(dynamic == false || uploaded == false);
@@ -198,16 +198,16 @@ void VertexBuffer<T>::upload(std::array<Type, N> data)
 	GLenum const usage = dynamic? GL_STREAM_DRAW : GL_STATIC_DRAW;
 	GLsizeiptr const size = sizeof(Type) * N;
 	if (dynamic && uploaded) {
-		glBufferData(GL_ARRAY_BUFFER, size, nullptr, usage);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, size, data.data());
+		glBufferData(Target, size, nullptr, usage);
+		glBufferSubData(Target, 0, size, data.data());
 	} else {
-		glBufferData(GL_ARRAY_BUFFER, size, data.data(), usage);
+		glBufferData(Target, size, data.data(), usage);
 		uploaded = true;
 	}
 }
 
-template<TriviallyCopyable T>
-void VertexBuffer<T>::upload(std::size_t elements, Type* data)
+template<TriviallyCopyable T, GLenum U>
+void BufferBase<T, U>::upload(std::size_t elements, Type* data)
 {
 	ASSERT(data);
 	ASSERT(id);
@@ -219,20 +219,20 @@ void VertexBuffer<T>::upload(std::size_t elements, Type* data)
 	GLenum const usage = dynamic? GL_STREAM_DRAW : GL_STATIC_DRAW;
 	GLsizeiptr const size = sizeof(Type) * elements;
 	if (dynamic && uploaded) {
-		glBufferData(GL_ARRAY_BUFFER, size, nullptr, usage);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, size, data);
+		glBufferData(Target, size, nullptr, usage);
+		glBufferSubData(Target, 0, size, data);
 	} else {
-		glBufferData(GL_ARRAY_BUFFER, size, data, usage);
+		glBufferData(Target, size, data, usage);
 		uploaded = true;
 	}
 }
 
-template<TriviallyCopyable T>
-void VertexBuffer<T>::bind() const
+template<TriviallyCopyable T, GLenum U>
+void BufferBase<T, U>::bind() const
 {
 	ASSERT(id);
 
-	glBindBuffer(GL_ARRAY_BUFFER, id);
+	glBindBuffer(Target, id);
 }
 
 template<PixelFmt F>
@@ -561,6 +561,15 @@ void VertexArray::setAttribute(GLuint const index, VertexBuffer<T>& buffer, U T:
 	ASSERT(id);
 
 	detail::setVaoAttribute<U>(*this, index, buffer, offset_of(field), instanced);
+}
+
+template<ElementType T>
+void VertexArray::setElements(ElementBuffer<T>& buffer)
+{
+	ASSERT(id);
+
+	bind();
+	buffer.bind();
 }
 
 template<PixelFmt F>
