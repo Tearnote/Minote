@@ -153,7 +153,7 @@ using ElementBuffer = BufferBase<T, GL_ELEMENT_ARRAY_BUFFER>;
 /// Common fields of texture types
 struct TextureBase : GLObject {
 
-	ivec2 size = {0, 0}; ///< The texture does not have storage if this is {0, 0}
+	uvec2 size = {0, 0}; ///< The texture does not have storage if this is {0, 0}
 
 };
 
@@ -172,7 +172,7 @@ struct Texture : TextureBase {
 	 * @param name Human-readable name, for logging and debug output
 	 * @param size Initial size of the texture storage, in pixels
 	 */
-	void create(char const* name, ivec2 size);
+	void create(char const* name, uvec2 size);
 
 	/**
 	 * Destroy the OpenGL texture object. Storage and ID are both freed.
@@ -190,7 +190,7 @@ struct Texture : TextureBase {
 	 * and the texture data is garbage again.
 	 * @param size New size of the texture storage, in pixels
 	 */
-	void resize(ivec2 size);
+	void resize(uvec2 size);
 
 	template<UploadFmt T, std::size_t N>
 	void upload(std::array<T, N> const& data);
@@ -223,7 +223,7 @@ struct TextureMS : TextureBase {
 	 * @param size Initial size of the multisample texture storage, in pixels
 	 * @param samples Number of samples per pixel
 	 */
-	void create(char const* name, ivec2 size, Samples samples);
+	void create(char const* name, uvec2 size, Samples samples);
 
 	/**
 	 * Destroy the OpenGL multisample texture object. Storage and ID are both
@@ -236,7 +236,7 @@ struct TextureMS : TextureBase {
 	 * contents are lost, and the texture data is garbage again.
 	 * @param size New size of the multisample texture storage, in pixels
 	 */
-	void resize(ivec2 size);
+	void resize(uvec2 size);
 
 	/**
 	 * Bind the multisample texture to the specified texture unit. This allows
@@ -267,7 +267,7 @@ struct Renderbuffer : TextureBase {
 	 * @param name Human-readable name, for logging and debug output
 	 * @param size Initial size of the renderbuffer storage, in pixels
 	 */
-	void create(char const* name, ivec2 size);
+	void create(char const* name, uvec2 size);
 
 	/**
 	 * Destroy the OpenGL renderbuffer object. Storage and ID are both freed.
@@ -279,7 +279,7 @@ struct Renderbuffer : TextureBase {
 	 * are lost, and the renderbuffer data is garbage again.
 	 * @param size New size of the renderbuffer storage, in pixels
 	 */
-	void resize(ivec2 size);
+	void resize(uvec2 size);
 
 };
 
@@ -301,7 +301,7 @@ struct RenderbufferMS : TextureBase {
 	 * in pixels
 	 * @param samples Number of samples per pixel: 2, 4 or 8
 	 */
-	void create(char const* name, ivec2 size, Samples samples);
+	void create(char const* name, uvec2 size, Samples samples);
 
 	/**
 	 * Destroy the OpenGL multisample renderbuffer object. Storage and ID
@@ -314,7 +314,7 @@ struct RenderbufferMS : TextureBase {
 	 * contents are lost, and the renderbuffer data is garbage again.
 	 * @param size New size of the multisample renderbuffer storage, in pixels
 	 */
-	void resize(ivec2 size);
+	void resize(uvec2 size);
 
 };
 

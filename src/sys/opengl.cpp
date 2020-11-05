@@ -176,7 +176,7 @@ void Framebuffer::blit(Framebuffer& dst, Framebuffer const& src,
 	dst.bind();
 	glReadBuffer(+srcBuffer);
 
-	ivec2 const blitSize = src.attachments[detail::attachmentIndex(srcBuffer)]->size;
+	uvec2 const blitSize = src.attachments[detail::attachmentIndex(srcBuffer)]->size;
 	GLbitfield const mask = GL_COLOR_BUFFER_BIT |
 		(depthStencil? GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT : 0);
 

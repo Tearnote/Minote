@@ -13,6 +13,20 @@ namespace detail {
 
 struct GLState {
 
+	struct GLBlendingMode {
+
+		GLenum src = GL_ONE;
+		GLenum dst = GL_ZERO;
+
+	};
+
+	struct ScissorBox {
+
+		ivec2 pos = {-1, -1};
+		uvec2 size = {0, 0};
+
+	};
+
 	struct TextureUnitState {
 
 		GLuint texture2D = 0;
@@ -21,6 +35,17 @@ struct GLState {
 
 	};
 
+	// Rasterizer features
+	bool blending = false;
+	GLBlendingMode blendingMode;
+	bool culling = false;
+	bool depthTesting = false;
+	GLenum depthMode = GL_LESS;
+	bool scissorTesting = false;
+	ScissorBox scissorBox;
+	bool stencilTesting = false;
+
+	// Object bindings
 	GLuint vertexbuffer = 0;
 	GLuint elementbuffer = 0;
 	GLuint texturebuffer = 0;
@@ -31,6 +56,14 @@ struct GLState {
 	GLuint framebufferRead = 0;
 	GLuint framebufferWrite = 0;
 	GLuint shader = 0;
+
+	void setFeature(GLenum feature, bool state);
+
+	void setBlendingMode(GLBlendingMode mode);
+
+	void setDepthMode(GLenum mode);
+
+	void setScissorBox(ScissorBox box);
 
 	void bindBuffer(GLenum target, GLuint id);
 
@@ -47,6 +80,60 @@ struct GLState {
 	void bindShader(GLuint id);
 
 };
+
+inline void GLState::setFeature(GLenum feature, bool state)
+{
+	auto& featureState = [=, this]() -> bool& {
+		switch (feature) {
+		case GL_BLEND:
+			return blending;
+		case GL_CULL_FACE:
+			return culling;
+		case GL_DEPTH_TEST:
+			return depthTesting;
+		case GL_SCISSOR_TEST:
+			return scissorTesting;
+		case GL_STENCIL_TEST:
+			return stencilTesting;
+		default:
+			L.fail("Unknown rasterizer feature");
+		}
+	}();
+	auto const stateFunc = [=] {
+		if (state)
+			return glDisable;
+		return glEnable;
+	}();
+
+	if (state == featureState) return;
+
+	stateFunc(feature);
+	featureState = state;
+}
+
+inline void GLState::setBlendingMode(GLBlendingMode mode)
+{
+	if (mode.src == blendingMode.src && mode.dst == blendingMode.dst) return;
+
+	glBlendFunc(mode.src, mode.dst);
+	blendingMode = mode;
+}
+
+inline void GLState::setDepthMode(GLenum mode)
+{
+	if (mode == depthMode) return;
+
+	glDepthFunc(mode);
+	depthMode = mode;
+}
+
+inline void GLState::setScissorBox(ScissorBox box)
+{
+	if (box.pos == scissorBox.pos && box.size == scissorBox.size) return;
+
+	glScissor(box.pos.x, box.pos.y, box.size.x, box.size.y);
+	scissorBox = box;
+}
 
 inline void GLState::bindBuffer(GLenum target, GLuint id)
 {
@@ -368,7 +455,7 @@ void BufferBase<T, U>::bind() const
 }
 
 template<PixelFmt F>
-void Texture<F>::create(char const* const _name, ivec2 const _size)
+void Texture<F>::create(char const* const _name, uvec2 const _size)
 {
 	ASSERT(!id);
 	ASSERT(_name);
@@ -421,7 +508,7 @@ void Texture<F>::setFilter(Filter const _filter)
 }
 
 template<PixelFmt F>
-void Texture<F>::resize(ivec2 const _size)
+void Texture<F>::resize(uvec2 const _size)
 {
 	ASSERT(_size.x > 0 && _size.y > 0);
 	ASSERT(id);
@@ -513,7 +600,7 @@ void Texture<F>::bind(TextureUnit const unit)
 }
 
 template<PixelFmt F>
-void TextureMS<F>::create(char const* const _name, ivec2 const _size, Samples const _samples)
+void TextureMS<F>::create(char const* const _name, uvec2 const _size, Samples const _samples)
 {
 	ASSERT(!id);
 	ASSERT(_name);
@@ -551,7 +638,7 @@ void TextureMS<F>::destroy()
 }
 
 template<PixelFmt F>
-void TextureMS<F>::resize(ivec2 const _size)
+void TextureMS<F>::resize(uvec2 const _size)
 {
 	ASSERT(_size.x > 0 && _size.y > 0);
 	ASSERT(id);
@@ -574,7 +661,7 @@ void TextureMS<F>::bind(TextureUnit const unit)
 }
 
 template<PixelFmt F>
-void Renderbuffer<F>::create(char const* const _name, ivec2 const _size)
+void Renderbuffer<F>::create(char const* const _name, uvec2 const _size)
 {
 	ASSERT(!id);
 	ASSERT(_name);
@@ -609,7 +696,7 @@ void Renderbuffer<F>::destroy()
 }
 
 template<PixelFmt F>
-void Renderbuffer<F>::resize(ivec2 const _size)
+void Renderbuffer<F>::resize(uvec2 const _size)
 {
 	ASSERT(_size.x > 0 && _size.y > 0);
 	ASSERT(id);
@@ -622,7 +709,7 @@ void Renderbuffer<F>::resize(ivec2 const _size)
 }
 
 template<PixelFmt F>
-void RenderbufferMS<F>::create(char const* const _name, ivec2 const _size, Samples const _samples)
+void RenderbufferMS<F>::create(char const* const _name, uvec2 const _size, Samples const _samples)
 {
 	ASSERT(!id);
 	ASSERT(_name);
@@ -659,7 +746,7 @@ void RenderbufferMS<F>::destroy()
 }
 
 template<PixelFmt F>
-void RenderbufferMS<F>::resize(ivec2 const _size)
+void RenderbufferMS<F>::resize(uvec2 const _size)
 {
 	ASSERT(_size.x > 0 && _size.y > 0);
 	ASSERT(id);

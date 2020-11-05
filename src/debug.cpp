@@ -270,7 +270,7 @@ void debugDraw(Window& window)
 	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 
 	// Execute draw commands
-	ivec2 screenSize = window.size;
+	uvec2 screenSize = window.size;
 	const struct nk_draw_command* command;
 	const nk_draw_index* offset = nullptr;
 	nk_draw_foreach(command, &nkContext, &commandList) {

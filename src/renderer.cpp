@@ -65,7 +65,7 @@ Framebuffer renderFb;
 Texture<PixelFmt::RGBA_f16> renderFbColor;
 Renderbuffer<PixelFmt::DepthStencil> renderFbDepthStencil;
 
-static ivec2 viewportSize = {}; ///< in pixels
+static uvec2 viewportSize = {}; ///< in pixels
 
 static Model* sync = nullptr; ///< Invisible model used to prevent frame buffering
 
@@ -113,7 +113,7 @@ static void rendererSync(void)
  * matrices and framebuffers as needed.
  * @param size New viewport size in pixels
  */
-static void rendererResize(ivec2 size)
+static void rendererResize(uvec2 size)
 {
 	ASSERT(initialized);
 	ASSERT(size.x > 0);

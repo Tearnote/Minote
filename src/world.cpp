@@ -24,7 +24,7 @@ vec3 worldLightPosition {0}; ///< in world space
 color3 worldLightColor {0};
 color3 worldAmbientColor {0};
 
-static ivec2 currentSize {0};
+static uvec2 currentSize {0};
 static bool initialized = false;
 
 /**
@@ -32,7 +32,7 @@ static bool initialized = false;
  * every frame with the current size of the screen.
  * @param size Current screen size
  */
-static void worldResize(ivec2 size)
+static void worldResize(uvec2 size)
 {
 	ASSERT(size.x > 0);
 	ASSERT(size.y > 0);

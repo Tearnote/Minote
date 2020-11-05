@@ -136,7 +136,7 @@ static Texture<PixelFmt::RGBA_u8> smaaBlendFbColor2;
 static SmaaSeparate smaaSeparate;
 
 static AAMode currentMode = AANone;
-static ivec2 currentSize {0};
+static uvec2 currentSize {0};
 
 static bool initialized = false;
 
@@ -145,7 +145,7 @@ static bool initialized = false;
  * run every frame with the current size of the screen.
  * @param size Current screen size
  */
-static void aaResize(ivec2 size)
+static void aaResize(uvec2 size)
 {
 	ASSERT(size.x > 0);
 	ASSERT(size.y > 0);
