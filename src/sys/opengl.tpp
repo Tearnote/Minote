@@ -13,29 +13,134 @@ namespace detail {
 
 struct GLState {
 
-	TextureUnit textureUnit = TextureUnit::_0;
-	std::array<GLuint, 16> textures = {};
+	struct TextureUnitState {
 
-	void setTextureUnit(TextureUnit unit)
-	{
-		if (unit == TextureUnit::None || unit == textureUnit) return;
+		GLuint texture2D = 0;
+		GLuint texture2DMS = 0;
+		GLuint bufferTexture = 0;
 
-		glActiveTexture(+unit);
-		textureUnit = unit;
-	}
+	};
 
-	void bindTexture(GLenum target, GLuint id)
-	{
-		std::size_t const unitIndex = +textureUnit - GL_TEXTURE0;
-		if (id == textures[unitIndex]) return;
+	GLuint vertexbuffer = 0;
+	GLuint elementbuffer = 0;
+	GLuint texturebuffer = 0;
+	GLuint vertexarray = 0;
+	TextureUnit currentUnit = TextureUnit::_0;
+	std::array<TextureUnitState, 16> textures;
+	GLuint renderbuffer = 0;
+	GLuint framebufferRead = 0;
+	GLuint framebufferWrite = 0;
+	GLuint shader = 0;
 
-		glBindTexture(target, id);
-		textures[unitIndex] = id;
-	}
+	void bindBuffer(GLenum target, GLuint id);
+
+	void bindVertexArray(GLuint id);
+
+	void setTextureUnit(TextureUnit unit);
+
+	void bindTexture(GLenum target, GLuint id);
+
+	void bindRenderbuffer(GLuint id);
+
+	void bindFramebuffer(GLenum target, GLuint id);
+
+	void bindShader(GLuint id);
 
 };
 
-inline thread_local GLState state;
+inline void GLState::bindBuffer(GLenum target, GLuint id)
+{
+	auto& binding = [=, this]() -> GLuint& {
+		switch (target) {
+		case GL_ARRAY_BUFFER:
+			return vertexbuffer;
+		case GL_ELEMENT_ARRAY_BUFFER:
+			return elementbuffer;
+		case GL_TEXTURE_BUFFER:
+			return texturebuffer;
+		default:
+			L.fail("Unknown buffer type");
+		}
+	}();
+
+	if (id == binding) return;
+
+	glBindBuffer(target, id);
+	binding = id;
+}
+
+inline void GLState::bindVertexArray(GLuint id)
+{
+	if (id == vertexarray) return;
+
+	glBindVertexArray(id);
+	vertexarray = id;
+}
+
+inline void GLState::setTextureUnit(TextureUnit unit)
+{
+	if (unit == TextureUnit::None || unit == currentUnit) return;
+
+	glActiveTexture(+unit);
+	currentUnit = unit;
+}
+
+inline void GLState::bindTexture(GLenum target, GLuint id)
+{
+	std::size_t const unitIndex = +currentUnit - GL_TEXTURE0;
+	auto& binding = [=, this]() -> GLuint& {
+		switch (target) {
+		case GL_TEXTURE_2D:
+			return textures[unitIndex].texture2D;
+		case GL_TEXTURE_2D_MULTISAMPLE:
+			return textures[unitIndex].texture2DMS;
+		case GL_TEXTURE_BUFFER:
+			return textures[unitIndex].bufferTexture;
+		default:
+			L.fail("Unknown texture type");
+		}
+	}();
+
+	if (id == binding) return;
+
+	glBindTexture(target, id);
+	binding = id;
+}
+
+inline void GLState::bindRenderbuffer(GLuint id)
+{
+	if (id == renderbuffer) return;
+
+	glBindRenderbuffer(GL_RENDERBUFFER, id);
+	renderbuffer = id;
+}
+
+inline void GLState::bindFramebuffer(GLenum target, GLuint id)
+{
+	auto& binding = [=, this]() -> GLuint& {
+		switch (target) {
+		case GL_READ_FRAMEBUFFER:
+			return framebufferRead;
+		case GL_DRAW_FRAMEBUFFER:
+			return framebufferWrite;
+		default:
+			L.fail("Unknown framebuffer binding");
+		}
+	}();
+	
+	if (id == binding) return;
+	
+	glBindFramebuffer(target, id);
+	binding = id;
+}
+
+inline void GLState::bindShader(GLuint id)
+{
+	if (id == shader) return;
+
+	glUseProgram(id);
+	shader = id;
+}
 
 inline auto attachmentIndex(Attachment const attachment) -> std::size_t
 {
@@ -66,18 +171,6 @@ inline auto getAttachment(Framebuffer& f, Attachment const attachment) -> Textur
 inline auto getAttachment(Framebuffer const& f, Attachment const attachment) -> TextureBase const*
 {
 	return f.attachments[attachmentIndex(attachment)];
-}
-
-template<PixelFmt F>
-auto bindRenderbuffer(Renderbuffer<F>& rb)
-{
-	glBindRenderbuffer(GL_RENDERBUFFER, rb.id);
-}
-
-template<PixelFmt F>
-auto bindRenderbufferMS(RenderbufferMS<F>& rb)
-{
-	glBindRenderbuffer(GL_RENDERBUFFER, rb.id);
 }
 
 template<GLSLType Component, typename T>
@@ -117,8 +210,7 @@ auto setVaoAttribute(VertexArray& vao, GLuint const index,
 			std::is_same_v<Component, ivec3> ||
 			std::is_same_v<Component, ivec4>)
 			return GL_INT;
-		L.fail("Invalid vertex array component type");
-		return 0;
+		L.fail("Unknown vertex array component type");
 	}();
 
 	vao.bind();
@@ -162,6 +254,8 @@ auto setVaoAttribute(VertexArray& vao, GLuint const index,
 	L.debug(R"(Buffer "%s" bound to attribute %d of VAO "%s")",
 		buffer.name, index, vao.name);
 }
+
+inline thread_local GLState state;
 
 }
 
@@ -270,7 +364,7 @@ void BufferBase<T, U>::bind() const
 {
 	ASSERT(id);
 
-	glBindBuffer(Target, id);
+	detail::state.bindBuffer(Target, id);
 }
 
 template<PixelFmt F>
@@ -522,7 +616,7 @@ void Renderbuffer<F>::resize(ivec2 const _size)
 	if (size == _size)
 		return;
 
-	detail::bindRenderbuffer(*this);
+	detail::state.bindRenderbuffer(id);
 	glRenderbufferStorage(GL_RENDERBUFFER, +Format, _size.x, _size.y);
 	size = _size;
 }
@@ -572,7 +666,7 @@ void RenderbufferMS<F>::resize(ivec2 const _size)
 	if (size == _size)
 		return;
 
-	detail::bindRenderbufferMS(*this);
+	detail::state.bindRenderbuffer(id);
 	glRenderbufferStorageMultisample(GL_RENDERBUFFER, +samples, +Format,
 		_size.x, _size.y);
 	size = _size;
@@ -617,8 +711,7 @@ void BufferTexture<T>::create(char const* const _name, bool const dynamic)
 			return GL_RGBA32I;
 		if constexpr (std::is_same_v<T, mat4>)
 			return GL_RGBA32F;
-		L.fail("Invalid buffer texture type");
-		return 0;
+		L.fail("Unknown buffer texture type");
 	}();
 
 	storage.create(_name, dynamic);
@@ -817,31 +910,31 @@ void Uniform<T>::setLocation(Shader const& shader, char const* const name)
 }
 
 template<GLSLType T>
-void Uniform<T>::set(Type const val)
+void Uniform<T>::set(Type const _value)
 {
-	if (location == -1)
-		return;
+	if (location == -1 || _value == value) return;
 
 	if constexpr (std::is_same_v<Type, float>)
-		glUniform1f(location, val);
+		glUniform1f(location, _value);
 	else if constexpr (std::is_same_v<Type, vec2>)
-		glUniform2f(location, val.x, val.y);
+		glUniform2f(location, _value.x, _value.y);
 	else if constexpr (std::is_same_v<Type, vec3>)
-		glUniform3f(location, val.x, val.y, val.z);
+		glUniform3f(location, _value.x, _value.y, _value.z);
 	else if constexpr (std::is_same_v<Type, vec4>)
-		glUniform4f(location, val.x, val.y, val.z, val.w);
+		glUniform4f(location, _value.x, _value.y, _value.z, _value.w);
 	else if constexpr (std::is_same_v<Type, int>)
-		glUniform1i(location, val);
+		glUniform1i(location, _value);
 	else if constexpr (std::is_same_v<Type, ivec2>)
-		glUniform2i(location, val.x, val.y);
+		glUniform2i(location, _value.x, _value.y);
 	else if constexpr (std::is_same_v<Type, ivec3>)
-		glUniform3i(location, val.x, val.y, val.z);
+		glUniform3i(location, _value.x, _value.y, _value.z);
 	else if constexpr (std::is_same_v<Type, ivec4>)
-		glUniform4i(location, val.x, val.y, val.z, val.w);
+		glUniform4i(location, _value.x, _value.y, _value.z, _value.w);
 	else if constexpr (std::is_same_v<Type, mat4>)
-		glUniformMatrix4fv(location, 1, false, value_ptr(val));
+		glUniformMatrix4fv(location, 1, false, value_ptr(_value));
 	else
-		L.fail("Invalid uniform type"); // Unreachable if T concept holds
+		L.fail("Unknown uniform type");
+	value = _value;
 }
 
 template<template<PixelFmt> typename T>

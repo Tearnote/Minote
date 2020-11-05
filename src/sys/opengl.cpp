@@ -82,7 +82,7 @@ void VertexArray::bind()
 {
 	ASSERT(id);
 
-	glBindVertexArray(id);
+	detail::state.bindVertexArray(id);
 }
 
 void Framebuffer::create(char const* const _name)
@@ -122,7 +122,7 @@ void Framebuffer::bind()
 {
 	ASSERT(id);
 
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
+	detail::state.bindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
 
 	if (dirty) {
 		// Call glDrawBuffers with all enabled color framebuffers
@@ -155,12 +155,12 @@ void Framebuffer::bindRead() const
 	ASSERT(id);
 	ASSERT(!dirty);
 
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, id);
+	detail::state.bindFramebuffer(GL_READ_FRAMEBUFFER, id);
 }
 
 void Framebuffer::unbind()
 {
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	detail::state.bindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }
 
 void Framebuffer::blit(Framebuffer& dst, Framebuffer const& src,
@@ -258,7 +258,7 @@ void Shader::destroy()
 void Shader::bind() const
 {
 	ASSERT(id);
-	glUseProgram(id);
+	detail::state.bindShader(id);
 }
 
 void BufferSampler::setLocation(Shader const& shader, char const* name,

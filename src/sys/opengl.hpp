@@ -494,7 +494,7 @@ struct Uniform {
 
 	void setLocation(Shader const& shader, char const* name);
 
-	void set(Type val);
+	void set(Type value);
 
 	inline auto operator=(Type val) -> Uniform<Type>& { set(val); return *this; }
 
