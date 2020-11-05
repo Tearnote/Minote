@@ -11,6 +11,32 @@ namespace minote {
 
 namespace detail {
 
+struct GLState {
+
+	TextureUnit textureUnit = TextureUnit::_0;
+	std::array<GLuint, 16> textures = {};
+
+	void setTextureUnit(TextureUnit unit)
+	{
+		if (unit == TextureUnit::None || unit == textureUnit) return;
+
+		glActiveTexture(+unit);
+		textureUnit = unit;
+	}
+
+	void bindTexture(GLenum target, GLuint id)
+	{
+		std::size_t const unitIndex = +textureUnit - GL_TEXTURE0;
+		if (id == textures[unitIndex]) return;
+
+		glBindTexture(target, id);
+		textures[unitIndex] = id;
+	}
+
+};
+
+inline thread_local GLState state;
+
 inline auto attachmentIndex(Attachment const attachment) -> std::size_t
 {
 	switch(attachment) {
@@ -388,9 +414,8 @@ void Texture<F>::bind(TextureUnit const unit)
 {
 	ASSERT(id);
 
-	if (unit != TextureUnit::None)
-		glActiveTexture(+unit);
-	glBindTexture(GL_TEXTURE_2D, id);
+	detail::state.setTextureUnit(unit);
+	detail::state.bindTexture(GL_TEXTURE_2D, id);
 }
 
 template<PixelFmt F>
@@ -450,9 +475,8 @@ void TextureMS<F>::bind(TextureUnit const unit)
 {
 	ASSERT(id);
 
-	if (unit != TextureUnit::None)
-		glActiveTexture(+unit);
-	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, id);
+	detail::state.setTextureUnit(unit);
+	detail::state.bindTexture(GL_TEXTURE_2D_MULTISAMPLE, id);
 }
 
 template<PixelFmt F>
@@ -647,9 +671,8 @@ void BufferTexture<T>::bind(TextureUnit unit)
 {
 	ASSERT(id);
 
-	if (unit != TextureUnit::None)
-		glActiveTexture(+unit);
-	glBindTexture(GL_TEXTURE_BUFFER, id);
+	detail::state.setTextureUnit(unit);
+	detail::state.bindTexture(GL_TEXTURE_BUFFER, id);
 }
 
 template<GLSLType T>
