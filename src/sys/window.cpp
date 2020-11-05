@@ -5,8 +5,6 @@
 
 #include "window.hpp"
 
-#include <cstdlib>
-#include <atomic>
 #include <mutex>
 #ifdef _WIN32
 #ifndef NOMINMAX
@@ -17,9 +15,6 @@
 #endif //WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif //_WIN32
-#include <GLFW/glfw3.h>
-#include "base/queue.hpp"
-#include "base/util.hpp"
 #include "base/log.hpp"
 #include "debug.hpp"
 
@@ -96,7 +91,7 @@ static void framebufferResizeCallback(GLFWwindow* const handle, int const width,
 	ASSERT(height);
 	auto& window = getWindow(handle);
 
-	ivec2 const newSize = {width, height};
+	uvec2 const newSize = {width, height};
 	window.size = newSize;
 	L.info(R"(Window "%s" resized to %dx%d)", window.title, width, height);
 }
@@ -164,7 +159,7 @@ auto Window::getTime() -> nsec
 	return seconds(glfwGetTime());
 }
 
-void Window::open(char const* const _title, bool const fullscreen, ivec2 const _size)
+void Window::open(char const* const _title, bool const fullscreen, uvec2 const _size)
 {
 	ASSERT(_title);
 	ASSERT(_size.x >= 0 && _size.y >= 0);
@@ -186,7 +181,7 @@ void Window::open(char const* const _title, bool const fullscreen, ivec2 const _
 	glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE); // Declare DPI awareness
 
 	// Create the window handle
-	auto const[wantedSize, monitor] = [=]() -> std::pair<ivec2, GLFWmonitor*> {
+	auto const[wantedSize, monitor] = [=]() -> std::pair<uvec2, GLFWmonitor*> {
 		if (fullscreen) {
 			GLFWmonitor* const monitor = glfwGetPrimaryMonitor();
 			GLFWvidmode const* const mode = glfwGetVideoMode(monitor);
@@ -200,7 +195,7 @@ void Window::open(char const* const _title, bool const fullscreen, ivec2 const _
 		L.fail(R"(Failed to create window "%s": %s)", title, glfwError());
 
 	// Get window properties
-	ivec2 const realSize = [=, this] { // Might be different from wanted size because of DPI scaling
+	uvec2 const realSize = [=, this] { // Might be different from wanted size because of DPI scaling
 		ivec2 s;
 		glfwGetFramebufferSize(handle, &s.x, &s.y);
 		return s;
