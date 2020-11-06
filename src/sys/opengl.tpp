@@ -20,18 +20,30 @@ struct GLState {
 
 	};
 
-	struct ScissorBox {
+	struct GLBox {
 
 		ivec2 pos = {-1, -1};
 		uvec2 size = {0, 0};
 
 	};
 
-	struct TextureUnitState {
+	struct GLTextureUnitState {
 
 		GLuint texture2D = 0;
 		GLuint texture2DMS = 0;
 		GLuint bufferTexture = 0;
+
+	};
+
+	struct GLStencilMode {
+
+		GLenum func = GL_ALWAYS;
+		GLint ref = 0;
+		GLuint mask = 0xFFFF'FFFF;
+
+		GLenum sfail = GL_KEEP;
+		GLenum dpfail = GL_KEEP;
+		GLenum dppass = GL_KEEP;
 
 	};
 
@@ -42,20 +54,11 @@ struct GLState {
 	bool depthTesting = false;
 	GLenum depthMode = GL_LESS;
 	bool scissorTesting = false;
-	ScissorBox scissorBox;
+	GLBox scissorBox;
 	bool stencilTesting = false;
-
-	// Object bindings
-	GLuint vertexbuffer = 0;
-	GLuint elementbuffer = 0;
-	GLuint texturebuffer = 0;
-	GLuint vertexarray = 0;
-	TextureUnit currentUnit = TextureUnit::_0;
-	std::array<TextureUnitState, 16> textures;
-	GLuint renderbuffer = 0;
-	GLuint framebufferRead = 0;
-	GLuint framebufferWrite = 0;
-	GLuint shader = 0;
+	GLStencilMode stencilMode;
+	GLBox viewport;
+	bool colorWrite = true;
 
 	void setFeature(GLenum feature, bool state);
 
@@ -63,7 +66,25 @@ struct GLState {
 
 	void setDepthMode(GLenum mode);
 
-	void setScissorBox(ScissorBox box);
+	void setScissorBox(GLBox box);
+
+	void setStencilMode(GLStencilMode mode);
+
+	void setViewport(GLBox box);
+
+	void setColorWrite(bool state);
+
+	// Object bindings
+	GLuint vertexbuffer = 0;
+	GLuint elementbuffer = 0;
+	GLuint texturebuffer = 0;
+	GLuint vertexarray = 0;
+	TextureUnit currentUnit = TextureUnit::_0;
+	std::array<GLTextureUnitState, 16> textures;
+	GLuint renderbuffer = 0;
+	GLuint framebufferRead = 0;
+	GLuint framebufferWrite = 0;
+	GLuint shader = 0;
 
 	void bindBuffer(GLenum target, GLuint id);
 
@@ -81,7 +102,7 @@ struct GLState {
 
 };
 
-inline void GLState::setFeature(GLenum feature, bool state)
+inline void GLState::setFeature(GLenum const feature, bool const state)
 {
 	auto& featureState = [=, this]() -> bool& {
 		switch (feature) {
@@ -111,7 +132,7 @@ inline void GLState::setFeature(GLenum feature, bool state)
 	featureState = state;
 }
 
-inline void GLState::setBlendingMode(GLBlendingMode mode)
+inline void GLState::setBlendingMode(GLBlendingMode const mode)
 {
 	if (mode.src == blendingMode.src && mode.dst == blendingMode.dst) return;
 
@@ -119,7 +140,7 @@ inline void GLState::setBlendingMode(GLBlendingMode mode)
 	blendingMode = mode;
 }
 
-inline void GLState::setDepthMode(GLenum mode)
+inline void GLState::setDepthMode(GLenum const mode)
 {
 	if (mode == depthMode) return;
 
@@ -127,7 +148,7 @@ inline void GLState::setDepthMode(GLenum mode)
 	depthMode = mode;
 }
 
-inline void GLState::setScissorBox(ScissorBox box)
+inline void GLState::setScissorBox(GLBox const box)
 {
 	if (box.pos == scissorBox.pos && box.size == scissorBox.size) return;
 
@@ -135,7 +156,45 @@ inline void GLState::setScissorBox(ScissorBox box)
 	scissorBox = box;
 }
 
-inline void GLState::bindBuffer(GLenum target, GLuint id)
+inline void GLState::setStencilMode(GLStencilMode const mode)
+{
+	if (mode.func != stencilMode.func ||
+		mode.ref != stencilMode.ref ||
+		mode.mask != stencilMode.mask) {
+		glStencilFunc(mode.func, mode.ref, mode.mask);
+		stencilMode.func = mode.func;
+		stencilMode.ref = mode.ref;
+		stencilMode.mask = mode.mask;
+	}
+
+	if (mode.sfail != stencilMode.sfail ||
+		mode.dpfail != stencilMode.dpfail ||
+		mode.dppass != stencilMode.dppass) {
+		glStencilOp(mode.sfail, mode.dpfail, mode.dppass);
+		stencilMode.sfail = mode.sfail;
+		stencilMode.dpfail = mode.dpfail;
+		stencilMode.dppass = mode.dppass;
+	}
+}
+
+inline void GLState::setViewport(GLBox const box)
+{
+	if (box.pos == viewport.pos && box.size == viewport.size) return;
+
+	glViewport(box.pos.x, box.pos.y, box.size.x, box.size.y);
+	viewport = box;
+}
+
+inline void GLState::setColorWrite(bool const state)
+{
+	if (state == colorWrite) return;
+
+	GLboolean const glState = state? GL_TRUE : GL_FALSE;
+	glColorMask(glState, glState, glState, glState);
+	colorWrite = state;
+}
+
+inline void GLState::bindBuffer(GLenum const target, GLuint const id)
 {
 	auto& binding = [=, this]() -> GLuint& {
 		switch (target) {
@@ -156,7 +215,7 @@ inline void GLState::bindBuffer(GLenum target, GLuint id)
 	binding = id;
 }
 
-inline void GLState::bindVertexArray(GLuint id)
+inline void GLState::bindVertexArray(GLuint const id)
 {
 	if (id == vertexarray) return;
 
@@ -164,7 +223,7 @@ inline void GLState::bindVertexArray(GLuint id)
 	vertexarray = id;
 }
 
-inline void GLState::setTextureUnit(TextureUnit unit)
+inline void GLState::setTextureUnit(TextureUnit const unit)
 {
 	if (unit == TextureUnit::None || unit == currentUnit) return;
 
@@ -172,7 +231,7 @@ inline void GLState::setTextureUnit(TextureUnit unit)
 	currentUnit = unit;
 }
 
-inline void GLState::bindTexture(GLenum target, GLuint id)
+inline void GLState::bindTexture(GLenum const target, GLuint const id)
 {
 	std::size_t const unitIndex = +currentUnit - GL_TEXTURE0;
 	auto& binding = [=, this]() -> GLuint& {
@@ -194,7 +253,7 @@ inline void GLState::bindTexture(GLenum target, GLuint id)
 	binding = id;
 }
 
-inline void GLState::bindRenderbuffer(GLuint id)
+inline void GLState::bindRenderbuffer(GLuint const id)
 {
 	if (id == renderbuffer) return;
 
@@ -202,7 +261,7 @@ inline void GLState::bindRenderbuffer(GLuint id)
 	renderbuffer = id;
 }
 
-inline void GLState::bindFramebuffer(GLenum target, GLuint id)
+inline void GLState::bindFramebuffer(GLenum const target, GLuint const id)
 {
 	auto& binding = [=, this]() -> GLuint& {
 		switch (target) {
@@ -221,7 +280,7 @@ inline void GLState::bindFramebuffer(GLenum target, GLuint id)
 	binding = id;
 }
 
-inline void GLState::bindShader(GLuint id)
+inline void GLState::bindShader(GLuint const id)
 {
 	if (id == shader) return;
 
