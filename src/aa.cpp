@@ -381,17 +381,18 @@ void aaEnd(void)
 	if (currentMode == AANone) return;
 
 	if (currentMode == AAFast) {
-		glDisable(GL_DEPTH_TEST);
-		glDisable(GL_BLEND);
+		detail::state.setFeature(GL_DEPTH_TEST, false);
+		detail::state.setFeature(GL_BLEND, false);
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
 		// SMAA edge detection pass
-		glEnable(GL_STENCIL_TEST);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		detail::state.setFeature(GL_STENCIL_TEST, true);
+		detail::state.setStencilMode({
+			.func = GL_ALWAYS,
+			.dppass = GL_INCR
+		});
 		smaaEdge.bind();
 		smaaEdgeFb.bind();
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-		glStencilMask(0xFF);
 		glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		smaaEdge.image = renderFbColor;
 		renderFbColor.setFilter(Filter::Nearest); // It's ok, we turn it back
@@ -404,8 +405,9 @@ void aaEnd(void)
 		// SMAA blending weight calculation pass
 		smaaBlend.bind();
 		smaaBlendFb.bind();
-		glStencilFunc(GL_EQUAL, 1, 0xFF);
-		glStencilMask(0x00);
+		detail::state.setStencilMode({
+			.func = GL_GREATER
+		});
 		glClear(GL_COLOR_BUFFER_BIT);
 		smaaBlend.edges = smaaEdgeFbColor;
 		smaaBlend.area = smaaArea;
@@ -416,7 +418,7 @@ void aaEnd(void)
 			currentSize.x, currentSize.y
 		};
 		glDrawArrays(GL_TRIANGLES, 0, 3);
-		glDisable(GL_STENCIL_TEST);
+		detail::state.setFeature(GL_STENCIL_TEST, false);
 
 		// SMAA neighbor blending pass
 		smaaNeighbor.bind();
@@ -431,13 +433,13 @@ void aaEnd(void)
 		};
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
-		glEnable(GL_BLEND);
-		glEnable(GL_DEPTH_TEST);
+		detail::state.setFeature(GL_DEPTH_TEST, true);
+		detail::state.setFeature(GL_BLEND, true);
 	}
 
 	if (currentMode == AAComplex) {
-		glDisable(GL_DEPTH_TEST);
-		glDisable(GL_BLEND);
+		detail::state.setFeature(GL_DEPTH_TEST, false);
+		detail::state.setFeature(GL_BLEND, false);
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
 		// SMAA sample separation pass
@@ -447,12 +449,13 @@ void aaEnd(void)
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		// SMAA edge detection pass
-		glEnable(GL_STENCIL_TEST);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		detail::state.setFeature(GL_STENCIL_TEST, true);
+		detail::state.setStencilMode({
+			.func = GL_ALWAYS,
+			.dppass = GL_INCR
+		});
 		smaaEdge.bind();
 		smaaEdgeFb.bind();
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-		glStencilMask(0xFF);
 		glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		smaaEdge.image = smaaSeparateFbColor;
 		smaaSeparateFbColor.setFilter(Filter::Nearest);
@@ -471,8 +474,9 @@ void aaEnd(void)
 		// SMAA blending weight calculation pass
 		smaaBlend.bind();
 		smaaBlendFb.bind();
-		glStencilFunc(GL_EQUAL, 1, 0xFF);
-		glStencilMask(0x00);
+		detail::state.setStencilMode({
+			.func = GL_GREATER
+		});
 		glClear(GL_COLOR_BUFFER_BIT);
 		smaaBlend.edges = smaaEdgeFbColor;
 		smaaBlend.area = smaaArea;
@@ -495,7 +499,7 @@ void aaEnd(void)
 			currentSize.x, currentSize.y
 		};
 		glDrawArrays(GL_TRIANGLES, 0, 3);
-		glDisable(GL_STENCIL_TEST);
+		detail::state.setFeature(GL_STENCIL_TEST, false);
 
 		// SMAA neighbor blending pass
 		smaaNeighbor.bind();
@@ -510,17 +514,16 @@ void aaEnd(void)
 		};
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
-		glEnable(GL_BLEND);
+		detail::state.setFeature(GL_BLEND, true);
 		smaaNeighbor.image = smaaSeparateFbColor2;
 		smaaSeparateFbColor2.setFilter(Filter::Linear);
 		smaaNeighbor.blend = smaaBlendFbColor2;
 		smaaNeighbor.alpha = 0.5f;
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
-		glEnable(GL_DEPTH_TEST);
+		detail::state.setFeature(GL_BLEND, true);
 	}
 
-	if (currentMode == AASimple || currentMode == AAExtreme) {
+	if (currentMode == AASimple || currentMode == AAExtreme)
 		Framebuffer::blit(renderFb, msaaFb);
-	}
 }

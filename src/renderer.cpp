@@ -8,13 +8,7 @@
 #include <functional>
 #include <string.h>
 #include <stdlib.h>
-#include <GLFW/glfw3.h>
-#include "sys/window.hpp"
-#include "sys/opengl.hpp"
 #include "model.hpp"
-#include "base/util.hpp"
-#include "base/time.hpp"
-#include "base/log.hpp"
 
 using namespace minote;
 
@@ -209,12 +203,11 @@ void rendererInit(Window& w)
 
 	// Set up global OpenGL state
 	glfwSwapInterval(1); // Enable vsync
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LEQUAL);
-	glEnable(GL_CULL_FACE);
-	glEnable(GL_MULTISAMPLE);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	detail::state.setFeature(GL_DEPTH_TEST, true);
+	detail::state.setDepthMode(GL_LEQUAL);
+	detail::state.setFeature(GL_CULL_FACE, true);
+	detail::state.setFeature(GL_BLEND, true);
+	detail::state.setBlendingMode({GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA});
 #ifndef NDEBUG
 	glEnable(GL_DEBUG_OUTPUT);
 	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // Our log handling is fast
@@ -269,7 +262,7 @@ void rendererFrameEnd(void)
 {
 	ASSERT(initialized);
 
-	glDisable(GL_BLEND);
+	detail::state.setFeature(GL_BLEND, false);
 	Framebuffer::unbind();
 	delinearize.bind();
 	delinearize.image = renderFbColor;
@@ -277,7 +270,7 @@ void rendererFrameEnd(void)
 	window->flip();
 	if (syncEnabled)
 		rendererSync();
-	glEnable(GL_BLEND);
+	detail::state.setFeature(GL_BLEND, true);
 }
 
 void rendererBlit(Texture<PixelFmt::RGBA_u8>& t, GLfloat boost)

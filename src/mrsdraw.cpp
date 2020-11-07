@@ -452,12 +452,12 @@ static void mrsDrawQueuedBlocks(void)
 	blockTintsOpaque.clear();
 	blockHighlightsOpaque.clear();
 	blockTransformsOpaque.clear();
-	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Depth prepass start
+	detail::state.setColorWrite(false); // Depth prepass start
 	modelDraw(block, blockTransformsAlpha.size,
 		blockTintsAlpha.data(),
 		blockHighlightsAlpha.data(),
 		blockTransformsAlpha.data());
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE); // Depth prepass end
+	detail::state.setColorWrite(true); // Depth prepass end
 	modelDraw(block, blockTransformsAlpha.size,
 		blockTintsAlpha.data(),
 		blockHighlightsAlpha.data(),

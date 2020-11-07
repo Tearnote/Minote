@@ -229,9 +229,9 @@ void debugDraw(Window& window)
 	}
 
 	// Prepare OpenGL state for drawing
-	glDisable(GL_CULL_FACE);
-	glDisable(GL_DEPTH_TEST);
-	glEnable(GL_SCISSOR_TEST);
+	detail::state.setFeature(GL_CULL_FACE, false);
+	detail::state.setFeature(GL_DEPTH_TEST, false);
+	detail::state.setFeature(GL_SCISSOR_TEST, true);
 
 	nuklear.bind();
 	nuklear.atlas = nuklearTexture;
@@ -276,9 +276,10 @@ void debugDraw(Window& window)
 	nk_draw_foreach(command, &nkContext, &commandList) {
 		if (!command->elem_count) continue;
 		nuklear.atlas = *static_cast<Texture<PixelFmt::RGBA_u8>*>(command->texture.ptr);
-		glScissor(command->clip_rect.x,
-			screenSize.y - command->clip_rect.y - command->clip_rect.h,
-			command->clip_rect.w, command->clip_rect.h);
+		detail::state.setScissorBox({
+			{command->clip_rect.x, screenSize.y - command->clip_rect.y - command->clip_rect.h},
+			{command->clip_rect.w, command->clip_rect.h}
+		});
 		glDrawElements(GL_TRIANGLES, (GLsizei)command->elem_count,
 			GL_UNSIGNED_SHORT, offset);
 		offset += command->elem_count;
@@ -287,9 +288,9 @@ void debugDraw(Window& window)
 	nk_buffer_clear(&commandList);
 
 	// Restore default state
-	glDisable(GL_SCISSOR_TEST);
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
+	detail::state.setFeature(GL_CULL_FACE, true);
+	detail::state.setFeature(GL_DEPTH_TEST, true);
+	detail::state.setFeature(GL_SCISSOR_TEST, false);
 }
 
 struct nk_context* nkCtx(void)

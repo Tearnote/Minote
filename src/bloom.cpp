@@ -140,10 +140,10 @@ void bloomApply(void)
 	bloomResize(window->size);
 
 	// Prepare the image for bloom
-	glDisable(GL_BLEND);
-	glDisable(GL_DEPTH_TEST);
+	detail::state.setFeature(GL_BLEND, false);
+	detail::state.setFeature(GL_DEPTH_TEST, false);
 	bloomFb[0].bind();
-	glViewport(0, 0, currentSize.x >> 1, currentSize.y >> 1);
+	detail::state.setViewport({.size = {currentSize.x >> 1, currentSize.y >> 1}});
 	threshold.bind();
 	threshold.image = renderFbColor;
 	threshold.threshold = 1.0f;
@@ -155,7 +155,7 @@ void bloomApply(void)
 	boxBlur.bind();
 	for (size_t i = 0; i < BloomPasses - 1; i += 1) {
 		bloomFb[i + 1].bind();
-		glViewport(0, 0, currentSize.x >> (i + 2), currentSize.y >> (i + 2));
+		detail::state.setViewport({.size = {currentSize.x >> (i + 2), currentSize.y >> (i + 2)}});
 		boxBlur.image = bloomFbColor[i];
 		boxBlur.step = 1.0f;
 		boxBlur.imageTexel = {
@@ -164,11 +164,11 @@ void bloomApply(void)
 		};
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_ONE, GL_ONE);
+	detail::state.setFeature(GL_BLEND, true);
+	detail::state.setBlendingMode({GL_ONE, GL_ONE});
 	for (size_t i = BloomPasses - 2; i < BloomPasses; i -= 1) {
 		bloomFb[i].bind();
-		glViewport(0, 0, currentSize.x >> (i + 1), currentSize.y >> (i + 1));
+		detail::state.setViewport({.size = {currentSize.x >> (i + 1), currentSize.y >> (i + 1)}});
 		boxBlur.image = bloomFbColor[i + 1];
 		boxBlur.step = 0.5f;
 		boxBlur.imageTexel = {
@@ -180,9 +180,9 @@ void bloomApply(void)
 
 	// Draw the bloom on top of the render
 	renderFb.bind();
-	glViewport(0, 0, currentSize.x, currentSize.y);
+	detail::state.setViewport({.size = {currentSize.x, currentSize.y}});
 	rendererBlit(bloomFbColor[0], 1.0f);
 
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_DEPTH_TEST);
+	detail::state.setBlendingMode({GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA});
+	detail::state.setFeature(GL_DEPTH_TEST, true);
 }

@@ -22,7 +22,7 @@ struct GLState {
 
 	struct GLBox {
 
-		ivec2 pos = {-1, -1};
+		ivec2 pos = {0, 0};
 		uvec2 size = {0, 0};
 
 	};
@@ -122,8 +122,8 @@ inline void GLState::setFeature(GLenum const feature, bool const state)
 	}();
 	auto const stateFunc = [=] {
 		if (state)
-			return glDisable;
-		return glEnable;
+			return glEnable;
+		return glDisable;
 	}();
 
 	if (state == featureState) return;

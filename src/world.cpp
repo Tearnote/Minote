@@ -40,7 +40,7 @@ static void worldResize(uvec2 size)
 	currentSize.x = size.x;
 	currentSize.y = size.y;
 
-	glViewport(0, 0, size.x, size.y);
+	detail::state.setViewport({.size = size});
 	worldProjection = perspective(radians(45.0f),
 		(float)size.x / (float)size.y, ProjectionNear, ProjectionFar);
 	worldScreenProjection = ortho(0.0f, (float)size.x, (float)size.y, 0.0f,
