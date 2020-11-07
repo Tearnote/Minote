@@ -100,6 +100,17 @@ struct GLState {
 
 	void bindShader(GLuint id);
 
+	// Object deletion
+	void deleteBuffer(GLenum target, GLuint id);
+
+	void deleteVertexArray(GLuint id);
+
+	void deleteTexture(GLenum target, GLuint id);
+
+	void deleteRenderbuffer(GLuint id);
+
+	void deleteFramebuffer(GLuint id);
+
 };
 
 inline void GLState::setFeature(GLenum const feature, bool const state)
@@ -288,6 +299,70 @@ inline void GLState::bindShader(GLuint const id)
 	shader = id;
 }
 
+inline void GLState::deleteBuffer(GLenum const target, GLuint const id)
+{
+	auto& binding = [=, this]() -> GLuint& {
+		switch (target) {
+		case GL_ARRAY_BUFFER:
+			return vertexbuffer;
+		case GL_ELEMENT_ARRAY_BUFFER:
+			return elementbuffer;
+		case GL_TEXTURE_BUFFER:
+			return texturebuffer;
+		default:
+			L.fail("Unknown buffer type");
+		}
+	}();
+
+	glDeleteBuffers(1, &id);
+	if (id == binding)
+		binding = 0;
+}
+
+inline void GLState::deleteVertexArray(GLuint const id)
+{
+	glDeleteVertexArrays(1, &id);
+	if (id == vertexarray)
+		vertexarray = 0;
+}
+
+inline void GLState::deleteTexture(GLenum const target, GLuint const id)
+{
+	glDeleteTextures(1, &id);
+	for (auto& unit : textures) {
+		auto& binding = [=, &unit]() -> GLuint& {
+			switch (target) {
+			case GL_TEXTURE_2D:
+				return unit.texture2D;
+			case GL_TEXTURE_2D_MULTISAMPLE:
+				return unit.texture2DMS;
+			case GL_TEXTURE_BUFFER:
+				return unit.bufferTexture;
+			default:
+				L.fail("Unknown texture type");
+			}
+		}();
+		if (id == binding)
+			binding = 0;
+	}
+}
+
+inline void GLState::deleteRenderbuffer(GLuint const id)
+{
+	glDeleteRenderbuffers(1, &id);
+	if (id == renderbuffer)
+		renderbuffer = 0;
+}
+
+inline void GLState::deleteFramebuffer(GLuint const id)
+{
+	glDeleteFramebuffers(1, &id);
+	if (id == framebufferRead)
+		framebufferRead = 0;
+	if (id == framebufferWrite)
+		framebufferWrite = 0;
+}
+
 inline auto attachmentIndex(Attachment const attachment) -> std::size_t
 {
 	switch(attachment) {
@@ -433,7 +508,7 @@ void BufferBase<T, U>::destroy()
 	}
 #endif //NDEBUG
 
-	glDeleteBuffers(1, &id);
+	detail::state.deleteBuffer(Target, id);
 	id = 0;
 	dynamic = false;
 	uploaded = false;
@@ -544,7 +619,7 @@ void Texture<F>::destroy()
 	}
 #endif //NDEBUG
 
-	glDeleteTextures(1, &id);
+	detail::state.deleteTexture(GL_TEXTURE_2D, id);
 	id = 0;
 	size = {0, 0};
 	filter = Filter::None;
@@ -687,7 +762,7 @@ void TextureMS<F>::destroy()
 	}
 #endif //NDEBUG
 
-	glDeleteTextures(1, &id);
+	detail::state.deleteTexture(GL_TEXTURE_2D_MULTISAMPLE, id);
 	id = 0;
 	size = {0, 0};
 	samples = Samples::None;
@@ -746,7 +821,7 @@ void Renderbuffer<F>::destroy()
 	}
 #endif //NDEBUG
 
-	glDeleteRenderbuffers(1, &id);
+	detail::state.deleteRenderbuffer(id);
 	id = 0;
 	size = {0, 0};
 
@@ -796,7 +871,7 @@ void RenderbufferMS<F>::destroy()
 	}
 #endif //NDEBUG
 
-	glDeleteRenderbuffers(1, &id);
+	detail::state.deleteRenderbuffer(id);
 	id = 0;
 	size = {0, 0};
 
@@ -880,7 +955,7 @@ void BufferTexture<T>::destroy()
 	}
 #endif //NDEBUG
 
-	glDeleteTextures(1, &id);
+	detail::state.deleteTexture(GL_TEXTURE_BUFFER, id);
 	id = 0;
 	size = {0, 0};
 	storage.destroy();

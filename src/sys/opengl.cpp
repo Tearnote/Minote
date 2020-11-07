@@ -71,7 +71,7 @@ void VertexArray::destroy()
 	}
 #endif //NDEBUG
 
-	glDeleteVertexArrays(1, &id);
+	detail::state.deleteVertexArray(id);
 	id = 0;
 
 	L.debug(R"(Vertex array "%s" destroyed)", name);
@@ -108,7 +108,7 @@ void Framebuffer::destroy()
 	}
 #endif //NDEBUG
 
-	glDeleteFramebuffers(1, &id);
+	detail::state.deleteFramebuffer(id);
 	id = 0;
 	samples = Samples::None;
 	dirty = true;
