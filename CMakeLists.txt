@@ -121,6 +121,7 @@ else()
             lib/glad/debug/khrplatform.h)
 endif()
 
+add_compile_definitions(NK_UINT_DRAW_INDEX)
 add_compile_definitions(PPK_ASSERT_DISABLE_STL)
 add_compile_definitions(PPK_ASSERT_DISABLE_EXCEPTIONS)
 add_compile_definitions(PPK_ASSERT_DISABLE_IGNORE_LINE)

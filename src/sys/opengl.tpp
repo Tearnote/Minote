@@ -20,13 +20,6 @@ struct GLState {
 
 	};
 
-	struct GLBox {
-
-		ivec2 pos = {0, 0};
-		uvec2 size = {0, 0};
-
-	};
-
 	struct GLTextureUnitState {
 
 		GLuint texture2D = 0;
@@ -39,7 +32,6 @@ struct GLState {
 
 		GLenum func = GL_ALWAYS;
 		GLint ref = 0;
-		GLuint mask = 0xFFFF'FFFF;
 
 		GLenum sfail = GL_KEEP;
 		GLenum dpfail = GL_KEEP;
@@ -52,25 +44,25 @@ struct GLState {
 	GLBlendingMode blendingMode;
 	bool culling = false;
 	bool depthTesting = false;
-	GLenum depthMode = GL_LESS;
+	GLenum depthFunc = GL_LESS;
 	bool scissorTesting = false;
-	GLBox scissorBox;
+	AABB<2, i32> scissorBox;
 	bool stencilTesting = false;
 	GLStencilMode stencilMode;
-	GLBox viewport;
+	AABB<2, i32> viewport;
 	bool colorWrite = true;
 
 	void setFeature(GLenum feature, bool state);
 
 	void setBlendingMode(GLBlendingMode mode);
 
-	void setDepthMode(GLenum mode);
+	void setDepthFunc(GLenum func);
 
-	void setScissorBox(GLBox box);
+	void setScissorBox(AABB<2, i32> box);
 
 	void setStencilMode(GLStencilMode mode);
 
-	void setViewport(GLBox box);
+	void setViewport(AABB<2, i32> box);
 
 	void setColorWrite(bool state);
 
@@ -151,17 +143,17 @@ inline void GLState::setBlendingMode(GLBlendingMode const mode)
 	blendingMode = mode;
 }
 
-inline void GLState::setDepthMode(GLenum const mode)
+inline void GLState::setDepthFunc(GLenum func)
 {
-	if (mode == depthMode) return;
+	if (func == depthFunc) return;
 
-	glDepthFunc(mode);
-	depthMode = mode;
+	glDepthFunc(func);
+	depthFunc = func;
 }
 
-inline void GLState::setScissorBox(GLBox const box)
+inline void GLState::setScissorBox(AABB<2, i32> const box)
 {
-	if (box.pos == scissorBox.pos && box.size == scissorBox.size) return;
+	if (box == scissorBox) return;
 
 	glScissor(box.pos.x, box.pos.y, box.size.x, box.size.y);
 	scissorBox = box;
@@ -170,12 +162,10 @@ inline void GLState::setScissorBox(GLBox const box)
 inline void GLState::setStencilMode(GLStencilMode const mode)
 {
 	if (mode.func != stencilMode.func ||
-		mode.ref != stencilMode.ref ||
-		mode.mask != stencilMode.mask) {
-		glStencilFunc(mode.func, mode.ref, mode.mask);
+		mode.ref != stencilMode.ref) {
+		glStencilFunc(mode.func, mode.ref, 0xFFFF'FFFF);
 		stencilMode.func = mode.func;
 		stencilMode.ref = mode.ref;
-		stencilMode.mask = mode.mask;
 	}
 
 	if (mode.sfail != stencilMode.sfail ||
@@ -188,9 +178,9 @@ inline void GLState::setStencilMode(GLStencilMode const mode)
 	}
 }
 
-inline void GLState::setViewport(GLBox const box)
+inline void GLState::setViewport(AABB<2, i32> const box)
 {
-	if (box.pos == viewport.pos && box.size == viewport.size) return;
+	if (box == viewport) return;
 
 	glViewport(box.pos.x, box.pos.y, box.size.x, box.size.y);
 	viewport = box;
@@ -1012,15 +1002,6 @@ void VertexArray::setAttribute(GLuint const index, VertexBuffer<T>& buffer, U T:
 	detail::setVaoAttribute<U>(*this, index, buffer, offset_of(field), instanced);
 }
 
-template<ElementType T>
-void VertexArray::setElements(ElementBuffer<T>& buffer)
-{
-	ASSERT(id);
-
-	bind();
-	buffer.bind();
-}
-
 template<PixelFmt F>
 void Framebuffer::attach(Texture<F>& t, Attachment const attachment)
 {
@@ -1125,6 +1106,7 @@ void Uniform<T>::setLocation(Shader const& shader, char const* const name)
 	ASSERT(name);
 
 	location = glGetUniformLocation(shader.id, name);
+	shaderId = shader.id;
 
 	if (location == -1)
 		L.warn(R"(Failed to get location for uniform "%s")", name);
@@ -1133,8 +1115,9 @@ void Uniform<T>::setLocation(Shader const& shader, char const* const name)
 template<GLSLType T>
 void Uniform<T>::set(Type const _value)
 {
-	if (location == -1 || _value == value) return;
+	if (location == -1 || _value == value || shaderId == 0) return;
 
+	detail::state.bindShader(shaderId);
 	if constexpr (std::is_same_v<Type, float>)
 		glUniform1f(location, _value);
 	else if constexpr (std::is_same_v<Type, vec2>)
@@ -1187,6 +1170,35 @@ template<BufferTextureType T>
 void BufferSampler::set(BufferTexture<T>& val)
 {
 	val.bind(unit);
+}
+
+template<ShaderType T>
+void Draw<T>::draw()
+{
+	ASSERT(shader);
+	ASSERT(framebuffer);
+	// Ensure the element buffer format is GL_UNSIGNED_INT
+	static_assert(std::is_same_v<ElementBuffer::Type, u32>);
+
+	bool const instanced = (instances > 1);
+	bool const indexed = (vertexarray && vertexarray->elements);
+
+	params.set();
+	shader->bind();
+	if (vertexarray)
+		vertexarray->bind();
+	framebuffer->bind();
+
+	if (!instanced && !indexed)
+		glDrawArrays(GL_TRIANGLES, offset, triangles * 3);
+	if (instanced && !indexed)
+		glDrawArraysInstanced(GL_TRIANGLES, offset, triangles * 3, instances);
+	if (!instanced && indexed)
+		glDrawElements(GL_TRIANGLES, triangles * 3,
+			GL_UNSIGNED_INT, reinterpret_cast<GLvoid*>(offset));
+	if (instanced && indexed)
+		glDrawElementsInstanced(GL_TRIANGLES, triangles * 3, GL_UNSIGNED_INT,
+			reinterpret_cast<GLvoid*>(offset * sizeof(u32)), instances);
 }
 
 }

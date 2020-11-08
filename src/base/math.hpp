@@ -137,4 +137,113 @@ using glm::convertSRGBToLinear;
 // Raw value passing
 using glm::value_ptr;
 
+// Compound types
+
+/**
+ * Axis-aligned bounding box, defined by position and size (extending
+ * in positive direction of each axis.)
+ * @tparam Dim Number of dimensions (2 or 3)
+ * @tparam T Underlying type, i32 (size is u32) or f32
+ */
+template<int Dim, typename T>
+struct AABB;
+
+template<>
+struct AABB<2, i32> {
+
+	ivec2 pos = {0, 0};
+	uvec2 size = {0, 0};
+
+	auto operator==(AABB<2, i32> const& other) const -> bool
+	{
+		return pos == other.pos && size == other.size;
+	}
+
+	auto operator!=(AABB<2, i32> const& other) const -> bool
+	{
+		return !(other == *this);
+	}
+
+	[[nodiscard]]
+	auto zero() const -> bool
+	{
+		return pos.x == 0 && pos.y == 0 && size.x == 0 && size.y == 0;
+	}
+
+};
+
+template<>
+struct AABB<3, i32> {
+
+	ivec3 pos = {0, 0, 0};
+	uvec3 size = {0, 0, 0};
+
+	auto operator==(AABB<3, i32> const& other) const -> bool
+	{
+		return pos == other.pos && size == other.size;
+	}
+
+	auto operator!=(AABB<3, i32> const& other) const -> bool
+	{
+		return !(other == *this);
+	}
+
+	[[nodiscard]]
+	auto zero() const -> bool
+	{
+		return pos.x == 0 && pos.y == 0 && pos.z == 0 &&
+			size.x == 0 && size.y == 0 && size.z == 0;
+	}
+
+};
+
+template<>
+struct AABB<2, f32> {
+
+	vec2 pos = {0.0f, 0.0f};
+	vec2 size = {0.0f, 0.0f};
+
+	auto operator==(AABB<2, f32> const& other) const -> bool
+	{
+		return pos == other.pos && size == other.size;
+	}
+
+	auto operator!=(AABB<2, f32> const& other) const -> bool
+	{
+		return !(other == *this);
+	}
+
+	[[nodiscard]]
+	auto zero() const -> bool
+	{
+		return pos.x == 0.0f && pos.y == 0.0f && size.x == 0.0f && size.y == 0.0f;
+	}
+
+};
+
+template<>
+struct AABB<3, f32> {
+
+	vec3 pos = {0, 0, 0};
+	vec3 size = {0, 0, 0};
+
+	auto operator==(AABB<3, f32> const& other) const -> bool
+	{
+		return pos == other.pos && size == other.size;
+	}
+
+	auto operator!=(AABB<3, f32> const& other) const -> bool
+	{
+		return !(other == *this);
+	}
+
+	[[nodiscard]]
+	auto zero() const -> bool
+	{
+		return pos.x == 0.0f && pos.y == 0.0f && pos.z == 0.0f &&
+			size.x == 0.0f && size.y == 0.0f && size.z == 0.0f;
+	}
+
+};
+
 }

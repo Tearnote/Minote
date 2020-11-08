@@ -204,7 +204,7 @@ void rendererInit(Window& w)
 	// Set up global OpenGL state
 	glfwSwapInterval(1); // Enable vsync
 	detail::state.setFeature(GL_DEPTH_TEST, true);
-	detail::state.setDepthMode(GL_LEQUAL);
+	detail::state.setDepthFunc(GL_LEQUAL);
 	detail::state.setFeature(GL_CULL_FACE, true);
 	detail::state.setFeature(GL_BLEND, true);
 	detail::state.setBlendingMode({GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA});

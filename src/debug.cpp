@@ -67,7 +67,7 @@ static Texture<PixelFmt::RGBA_u8> nuklearTexture;
 
 static VertexArray nuklearVao;
 static VertexBuffer<VertexNuklear> nuklearVbo;
-static ElementBuffer<u16> nuklearEbo;
+static ElementBuffer nuklearEbo;
 
 static std::atomic<ivec2> cursorPos;
 static std::atomic<bool> leftClick;
@@ -281,7 +281,7 @@ void debugDraw(Window& window)
 			{command->clip_rect.w, command->clip_rect.h}
 		});
 		glDrawElements(GL_TRIANGLES, (GLsizei)command->elem_count,
-			GL_UNSIGNED_SHORT, offset);
+			GL_UNSIGNED_INT, offset);
 		offset += command->elem_count;
 	}
 	nk_clear(&nkContext);

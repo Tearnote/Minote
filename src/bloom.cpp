@@ -140,16 +140,21 @@ void bloomApply(void)
 	bloomResize(window->size);
 
 	// Prepare the image for bloom
-	detail::state.setFeature(GL_BLEND, false);
-	detail::state.setFeature(GL_DEPTH_TEST, false);
-	bloomFb[0].bind();
-	detail::state.setViewport({.size = {currentSize.x >> 1, currentSize.y >> 1}});
-	threshold.bind();
-	threshold.image = renderFbColor;
-	threshold.threshold = 1.0f;
-	threshold.softKnee = 0.25f;
-	threshold.strength = 1.0f;
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+	Draw<Threshold> dThreshold {
+		.shader = &threshold,
+		.framebuffer = &bloomFb[0],
+		.triangles = 1,
+		.params = {
+			.blending = false,
+			.depthTesting = false,
+			.viewport = {.size = {currentSize.x >> 1, currentSize.y >> 1}}
+		}
+	};
+	dThreshold.shader->image = renderFbColor;
+	dThreshold.shader->threshold = 1.0f;
+	dThreshold.shader->softKnee = 0.25f;
+	dThreshold.shader->strength = 1.0f;
+	dThreshold.draw();
 
 	// Blur the bloom image
 	boxBlur.bind();

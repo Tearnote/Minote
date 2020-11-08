@@ -147,8 +147,7 @@ concept ElementType =
 	std::is_same_v<T, u16> ||
 	std::is_same_v<T, u32>;
 
-template<ElementType T = u32>
-using ElementBuffer = BufferBase<T, GL_ELEMENT_ARRAY_BUFFER>;
+using ElementBuffer = BufferBase<u32, GL_ELEMENT_ARRAY_BUFFER>;
 
 /// Common fields of texture types
 struct TextureBase : GLObject {
@@ -359,6 +358,7 @@ struct BufferTexture : TextureBase {
 struct VertexArray : GLObject {
 
 	std::array<bool, 16> attributes = {};
+	bool elements = false;
 
 	void create(char const* name);
 
@@ -370,8 +370,7 @@ struct VertexArray : GLObject {
 	template<TriviallyCopyable T, GLSLType U>
 	void setAttribute(GLuint index, VertexBuffer<T>& buffer, U T::*field, bool instanced = false);
 
-	template<ElementType T>
-	void setElements(ElementBuffer<T>& buffer);
+	void setElements(ElementBuffer& buffer);
 
 	void bind();
 
@@ -490,6 +489,7 @@ struct Uniform {
 	using Type = T;
 
 	GLint location = -1;
+	GLuint shaderId = 0;
 	Type value = {};
 
 	void setLocation(Shader const& shader, char const* name);
@@ -554,6 +554,84 @@ struct BufferSampler {
 	BufferSampler(BufferSampler&&) = delete;
 	inline auto operator=(BufferSampler const& other) -> BufferSampler& = delete;
 	auto operator=(BufferSampler&&) -> BufferSampler& = delete;
+
+};
+
+enum struct Comparison : GLenum {
+	Never = GL_NEVER,
+	Always = GL_ALWAYS,
+	Equal = GL_EQUAL,
+	Inequal = GL_NOTEQUAL,
+	Lesser = GL_LESS,
+	Greater = GL_GREATER,
+	LesserEqual = GL_LEQUAL,
+	GreaterEqual = GL_GEQUAL
+};
+
+enum struct BlendingOp : GLenum {
+	Zero = GL_ZERO,
+	One = GL_ONE,
+	SrcAlpha = GL_SRC_ALPHA,
+	OneMinusSrcAlpha = GL_ONE_MINUS_SRC_ALPHA
+};
+
+enum struct StencilOp : GLenum {
+	Nothing = GL_KEEP,
+	Clear = GL_ZERO,
+	Set = GL_REPLACE,
+	Increment = GL_INCR,
+	Decrement = GL_DECR,
+	Invert = GL_INVERT
+};
+
+struct DrawParams {
+
+	bool blending = false;
+	struct BlendingMode {
+		BlendingOp src;
+		BlendingOp dst;
+	} blendingMode = { BlendingOp::SrcAlpha, BlendingOp::OneMinusSrcAlpha };
+
+	bool culling = true;
+
+	bool depthTesting = true;
+	Comparison depthFunc = Comparison::LesserEqual;
+
+	bool scissorTesting = false;
+	AABB<2, i32> scissorBox;
+
+	bool stencilTesting = false;
+	struct StencilMode {
+		Comparison func = Comparison::Equal;
+		i32 ref = 0;
+		StencilOp sfail = StencilOp::Nothing;
+		StencilOp dpfail = StencilOp::Nothing;
+		StencilOp dppass = StencilOp::Nothing;
+	} stencilMode;
+
+	AABB<2, i32> viewport;
+
+	bool colorWrite = true;
+
+	void set() const;
+
+};
+
+template<typename T>
+concept ShaderType = std::is_base_of_v<Shader, T>;
+
+template<ShaderType T>
+struct Draw {
+
+	T* shader = nullptr;
+	VertexArray* vertexarray = nullptr;
+	Framebuffer* framebuffer = nullptr;
+	GLsizei triangles = 0;
+	GLsizei instances = 1;
+	GLint offset = 0;
+	DrawParams params;
+
+	void draw();
 
 };
 
