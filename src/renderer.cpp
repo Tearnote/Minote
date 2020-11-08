@@ -12,21 +12,7 @@
 
 using namespace minote;
 
-/// Basic blit function type
-struct Blit : Shader {
-
-	Sampler<Texture> image;
-	Uniform<float> boost;
-
-	void setLocations() override
-	{
-		image.setLocation(*this, "image");
-		boost.setLocation(*this, "boost");
-	}
-};
-
-/// Internal gamma correction shader
-struct Delinearize : Shader {
+struct DelinearizeShader : Shader {
 
 	Sampler<Texture> image;
 
@@ -63,8 +49,18 @@ static uvec2 viewportSize = {}; ///< in pixels
 
 static Model* sync = nullptr; ///< Invisible model used to prevent frame buffering
 
-static Blit blit;
-static Delinearize delinearize;
+BlitShader blitShader;
+static DelinearizeShader delinearizeShader;
+
+static Draw<DelinearizeShader> delinearize = {
+	.shader = &delinearizeShader,
+	.framebuffer = nullptr,
+	.triangles = 1,
+	.params = {
+		.culling = false,
+		.depthTesting = false
+	}
+};
 
 static bool syncEnabled = true;
 
@@ -229,8 +225,8 @@ void rendererInit(Window& w)
 	renderFb.bind();
 
 	// Create built-in shaders
-	blit.create("blit", BlitVertSrc, BlitFragSrc);
-	delinearize.create("delinearize", DelinearizeVertSrc, DelinearizeFragSrc);
+	blitShader.create("blit", BlitVertSrc, BlitFragSrc);
+	delinearizeShader.create("delinearize", DelinearizeVertSrc, DelinearizeFragSrc);
 
 	L.debug("Created renderer for window \"%s\"", window->title);
 }
@@ -240,8 +236,8 @@ void rendererCleanup(void)
 	if (!initialized) return;
 	modelDestroy(sync);
 	sync = nullptr;
-	delinearize.destroy();
-	blit.destroy();
+	delinearizeShader.destroy();
+	blitShader.destroy();
 	renderFbDepthStencil.destroy();
 	renderFbColor.destroy();
 	renderFb.destroy();
@@ -262,31 +258,11 @@ void rendererFrameEnd(void)
 {
 	ASSERT(initialized);
 
-	detail::state.setFeature(GL_BLEND, false);
-	Framebuffer::unbind();
-	delinearize.bind();
-	delinearize.image = renderFbColor;
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+	delinearize.shader->image = renderFbColor;
+	delinearize.draw(*window);
 	window->flip();
 	if (syncEnabled)
 		rendererSync();
-	detail::state.setFeature(GL_BLEND, true);
-}
-
-void rendererBlit(Texture<PixelFmt::RGBA_u8>& t, GLfloat boost)
-{
-	blit.bind();
-	blit.image = t;
-	blit.boost = boost;
-	glDrawArrays(GL_TRIANGLES, 0, 3);
-}
-
-void rendererBlit(Texture<PixelFmt::RGBA_f16>& t, GLfloat boost)
-{
-	blit.bind();
-	blit.image = t;
-	blit.boost = boost;
-	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
 bool rendererGetSync(void)

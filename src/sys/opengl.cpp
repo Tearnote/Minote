@@ -33,7 +33,6 @@ auto compileShaderStage(GLuint const id, char const* const name,
 		L.error(R"(Shader "%s" failed to compile: %s)", name, infoLog.data());
 		return false;
 	}
-	L.debug(R"(Shader "%s" compiled)", name);
 	return true;
 }
 

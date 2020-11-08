@@ -1023,8 +1023,6 @@ void Framebuffer::attach(Texture<F>& t, Attachment const attachment)
 	detail::getAttachment(*this, attachment) = &t;
 	samples = Samples::_1;
 	dirty = true;
-
-	L.debug(R"(Texture "%s" attached to framebuffer "%s")", t.name, name);
 }
 
 template<PixelFmt F>
@@ -1047,8 +1045,6 @@ void Framebuffer::attach(TextureMS<F>& t, Attachment const attachment)
 	detail::getAttachment(*this, attachment) = &t;
 	samples = t.samples;
 	dirty = true;
-
-	L.debug(R"(Multisample texture "%s" attached to framebuffer "%s")", t.name, name);
 }
 
 template<PixelFmt F>
@@ -1071,8 +1067,6 @@ void Framebuffer::attach(Renderbuffer<F>& r, Attachment const attachment)
 	detail::getAttachment(*this, attachment) = &r;
 	samples = Samples::_1;
 	dirty = true;
-
-	L.debug(R"(Renderbuffer "%s" attached to framebuffer "%s")", r.name, name);
 }
 
 template<PixelFmt F>
@@ -1095,8 +1089,6 @@ void Framebuffer::attach(RenderbufferMS<F>& r, Attachment const attachment)
 	detail::getAttachment(*this, attachment) = &r;
 	samples = r.samples;
 	dirty = true;
-
-	L.debug(R"(Multisample renderbuffer "%s" attached to framebuffer "%s")", r.name, name);
 }
 
 template<GLSLType T>
@@ -1173,31 +1165,49 @@ void BufferSampler::set(BufferTexture<T>& val)
 }
 
 template<ShaderType T>
-void Draw<T>::draw()
+void Draw<T>::draw(Window& window)
 {
 	ASSERT(shader);
-	ASSERT(framebuffer);
 	// Ensure the element buffer format is GL_UNSIGNED_INT
 	static_assert(std::is_same_v<ElementBuffer::Type, u32>);
 
 	bool const instanced = (instances > 1);
 	bool const indexed = (vertexarray && vertexarray->elements);
+	auto const vertices = [this]() -> GLsizei {
+		switch (mode) {
+		case DrawMode::Triangles:
+			return triangles * 3;
+		case DrawMode::TriangleStrip:
+			return triangles + 2;
+		default:
+			L.fail("Unknown draw mode");
+		}
+	}();
 
-	params.set();
+	if (params.viewport.zero()) {
+		params.viewport.size = window.size;
+		params.set();
+		params.viewport.size = {0, 0};
+	} else {
+		params.set();
+	}
 	shader->bind();
 	if (vertexarray)
 		vertexarray->bind();
-	framebuffer->bind();
+	if (framebuffer)
+		framebuffer->bind();
+	else
+		Framebuffer::unbind();
 
 	if (!instanced && !indexed)
-		glDrawArrays(GL_TRIANGLES, offset, triangles * 3);
+		glDrawArrays(+mode, offset, vertices);
 	if (instanced && !indexed)
-		glDrawArraysInstanced(GL_TRIANGLES, offset, triangles * 3, instances);
+		glDrawArraysInstanced(+mode, offset, vertices, instances);
 	if (!instanced && indexed)
-		glDrawElements(GL_TRIANGLES, triangles * 3,
-			GL_UNSIGNED_INT, reinterpret_cast<GLvoid*>(offset));
+		glDrawElements(+mode, vertices, GL_UNSIGNED_INT,
+			reinterpret_cast<GLvoid*>(offset * sizeof(u32)));
 	if (instanced && indexed)
-		glDrawElementsInstanced(GL_TRIANGLES, triangles * 3, GL_UNSIGNED_INT,
+		glDrawElementsInstanced(+mode, vertices, GL_UNSIGNED_INT,
 			reinterpret_cast<GLvoid*>(offset * sizeof(u32)), instances);
 }
 

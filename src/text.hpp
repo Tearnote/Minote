@@ -6,6 +6,7 @@
 #ifndef MINOTE_TEXT_H
 #define MINOTE_TEXT_H
 
+#include "sys/window.hpp"
 #include "base/math.hpp"
 #include "fontlist.hpp"
 
@@ -52,6 +53,6 @@ void textQueueDir(FontType font, float size, minote::vec3 pos, minote::vec3 dir,
 /**
  * Render all queued strings on the screen, with as few draw calls as possible.
  */
-void textDraw(void);
+void textDraw(minote::Window& window);
 
 #endif //MINOTE_TEXT_H

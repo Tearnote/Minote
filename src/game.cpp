@@ -105,7 +105,7 @@ void game(Window& window)
 		aaEnd();
 		textQueue(FontJost, 3.0f, {6.05, 1.95, 0}, {1.0f, 1.0f, 1.0f, 0.25f}, "Text test.");
 		textQueue(FontJost, 3.0f, {6, 2, 0}, {0.0f, 0.0f, 0.0f, 1.0f}, "Text test");
-		textDraw();
+		textDraw(window);
 		bloomApply();
 #ifdef MINOTE_DEBUG
 		debugDraw(window);

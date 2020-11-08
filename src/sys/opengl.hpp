@@ -8,6 +8,7 @@
 #include "glad/glad.h"
 #include "base/varray.hpp"
 #include "base/math.hpp"
+#include "sys/window.hpp"
 
 namespace minote {
 
@@ -557,6 +558,11 @@ struct BufferSampler {
 
 };
 
+enum struct DrawMode : GLenum {
+	Triangles = GL_TRIANGLES,
+	TriangleStrip = GL_TRIANGLE_STRIP
+};
+
 enum struct Comparison : GLenum {
 	Never = GL_NEVER,
 	Always = GL_ALWAYS,
@@ -626,12 +632,13 @@ struct Draw {
 	T* shader = nullptr;
 	VertexArray* vertexarray = nullptr;
 	Framebuffer* framebuffer = nullptr;
+	DrawMode mode = DrawMode::Triangles;
 	GLsizei triangles = 0;
 	GLsizei instances = 1;
 	GLint offset = 0;
 	DrawParams params;
 
-	void draw();
+	void draw(Window& window);
 
 };
 

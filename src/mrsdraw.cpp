@@ -649,6 +649,9 @@ void mrsDraw(void)
 	glClearColor(0.0185f, 0.029f, 0.0944f, 1.0f); //TODO make into layer
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	worldAmbientColor = (color3){0.0185f, 0.029f, 0.0944f};
+	detail::state.setFeature(GL_BLEND, true);
+	detail::state.setFeature(GL_DEPTH_TEST, true);
+	detail::state.setFeature(GL_CULL_FACE, true);
 	mrsDrawScene();
 	mrsDrawGuide();
 	mrsQueueField();

@@ -13,11 +13,12 @@
 #include "base/util.hpp"
 #include "font.hpp"
 #include "base/log.hpp"
+#include "renderer.hpp"
 
 using namespace minote;
 
 /// Shader type for MSDF drawing
-struct Msdf : Shader {
+struct MsdfShader : Shader {
 
 	BufferSampler transforms; ///< Buffer texture containing per-string transforms
 	Sampler<Texture> atlas; ///< Font atlas
@@ -35,13 +36,13 @@ struct Msdf : Shader {
 };
 
 /// Single glyph instance for the MSDF shader
-typedef struct GlyphMsdf {
+struct MsdfGlyph {
 	vec2 position; ///< Glyph offset in the string (lower left)
 	vec2 size; ///< Size of the glyph
 	vec4 texBounds; ///< AABB of the atlas UVs
 	color4 color; ///< Glyph color
 	int transformIndex; ///< Index of the string transform from the "transforms" buffer texture
-} GlyphMsdf;
+};
 
 static const GLchar* MsdfVertSrc = (GLchar[]){
 #include "msdf.vert"
@@ -53,12 +54,22 @@ static const GLchar* MsdfFragSrc = (GLchar[]){
 static constexpr std::size_t MaxGlyphs{1024};
 static constexpr std::size_t MaxStrings{1024};
 
-static Msdf msdf;
+static MsdfShader msdfShader;
 static VertexArray msdfVao[FontSize] = {};
-static VertexBuffer<GlyphMsdf> msdfGlyphsVbo[FontSize];
-static varray<GlyphMsdf, MaxGlyphs> msdfGlyphs[FontSize]{};
+static VertexBuffer<MsdfGlyph> msdfGlyphsVbo[FontSize];
+static varray<MsdfGlyph, MaxGlyphs> msdfGlyphs[FontSize]{};
 static BufferTexture<mat4> msdfTransformsTex[FontSize] = {};
 static varray<mat4, MaxStrings> msdfTransforms[FontSize]{};
+
+static Draw<MsdfShader> msdf = {
+	.shader = &msdfShader,
+	.framebuffer = &renderFb,
+	.mode = DrawMode::TriangleStrip,
+	.triangles = 2,
+	.params = {
+		.blending = true
+	}
+};
 
 static bool initialized = false;
 
@@ -140,7 +151,7 @@ void textInit(void)
 {
 	if (initialized) return;
 
-	msdf.create("msdf", MsdfVertSrc, MsdfFragSrc);
+	msdfShader.create("msdf", MsdfVertSrc, MsdfFragSrc);
 
 	for (auto& msdfGlyphVbo : msdfGlyphsVbo)
 		msdfGlyphVbo.create("msdfGlyphVbo", true);
@@ -150,11 +161,11 @@ void textInit(void)
 		texture.create("msdfTransformTex", true);
 
 	for (size_t i = 0; i < FontSize; i += 1) {
-		msdfVao[i].setAttribute(0, msdfGlyphsVbo[i], &GlyphMsdf::position, true);
-		msdfVao[i].setAttribute(1, msdfGlyphsVbo[i], &GlyphMsdf::size, true);
-		msdfVao[i].setAttribute(2, msdfGlyphsVbo[i], &GlyphMsdf::texBounds, true);
-		msdfVao[i].setAttribute(3, msdfGlyphsVbo[i], &GlyphMsdf::color, true);
-		msdfVao[i].setAttribute(4, msdfGlyphsVbo[i], &GlyphMsdf::transformIndex, true);
+		msdfVao[i].setAttribute(0, msdfGlyphsVbo[i], &MsdfGlyph::position, true);
+		msdfVao[i].setAttribute(1, msdfGlyphsVbo[i], &MsdfGlyph::size, true);
+		msdfVao[i].setAttribute(2, msdfGlyphsVbo[i], &MsdfGlyph::texBounds, true);
+		msdfVao[i].setAttribute(3, msdfGlyphsVbo[i], &MsdfGlyph::color, true);
+		msdfVao[i].setAttribute(4, msdfGlyphsVbo[i], &MsdfGlyph::transformIndex, true);
 
 		L.debug("Initialized font %s", FontList[i]);
 	}
@@ -173,7 +184,7 @@ void textCleanup(void)
 	for (auto& vao : msdfVao)
 		vao.destroy();
 
-	msdf.destroy();
+	msdfShader.destroy();
 
 	L.debug("Fonts cleaned up");
 	initialized = false;
@@ -203,25 +214,23 @@ void textQueueDir(FontType font, float size, vec3 pos, vec3 dir, vec3 up,
 	va_end(args);
 }
 
-void textDraw(void)
+void textDraw(Window& window)
 {
 	ASSERT(initialized);
 
 	for (size_t i = 0; i < FontSize; i += 1) {
 		if (!msdfGlyphs[i].size) continue;
 
-		size_t instances = msdfGlyphs[i].size;
-
 		msdfGlyphsVbo[i].upload(msdfGlyphs[i]);
 		msdfTransformsTex[i].upload(msdfTransforms[i]);
 
-		msdf.bind();
-		msdfVao[i].bind();
-		msdf.atlas = fonts[i].atlas;
-		msdf.transforms = msdfTransformsTex[i];
-		msdf.projection = worldProjection;
-		msdf.camera = worldCamera;
-		glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, instances);
+		msdf.vertexarray = &msdfVao[i];
+		msdf.instances = msdfGlyphs[i].size;
+		msdf.shader->atlas = fonts[i].atlas;
+		msdf.shader->transforms = msdfTransformsTex[i];
+		msdf.shader->projection = worldProjection;
+		msdf.shader->camera = worldCamera;
+		msdf.draw(window);
 
 		msdfGlyphs[i].clear();
 		msdfTransforms[i].clear();

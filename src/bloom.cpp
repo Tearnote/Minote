@@ -15,8 +15,7 @@ using namespace minote;
 
 #define BloomPasses 6
 
-/// Bloom threshold filter type
-struct Threshold : Shader {
+struct ThresholdShader : Shader {
 
 	Sampler<Texture> image;
 	Uniform<float> threshold;
@@ -33,7 +32,7 @@ struct Threshold : Shader {
 
 };
 
-struct BoxBlur : Shader {
+struct BoxBlurShader : Shader {
 
 	Sampler<Texture> image;
 	Uniform<float> step;
@@ -66,8 +65,40 @@ static Window* window = nullptr;
 
 static Framebuffer bloomFb[BloomPasses];
 static Texture<PixelFmt::RGBA_f16> bloomFbColor[BloomPasses];
-static Threshold threshold;
-static BoxBlur boxBlur;
+static ThresholdShader thresholdShader;
+static BoxBlurShader boxBlurShader;
+
+static Draw<ThresholdShader> threshold {
+	.shader = &thresholdShader,
+	.framebuffer = &bloomFb[0],
+	.triangles = 1,
+	.params = {
+		.culling = false,
+		.depthTesting = false
+	}
+};
+
+static Draw<BoxBlurShader> boxBlur {
+	.shader = &boxBlurShader,
+	.triangles = 1,
+	.params = {
+		.blendingMode = {BlendingOp::One, BlendingOp::One},
+		.culling = false,
+		.depthTesting = false
+	}
+};
+
+static Draw<BlitShader> blit {
+	.shader = &blitShader,
+	.framebuffer = &renderFb,
+	.triangles = 1,
+	.params = {
+		.blending = true,
+		.blendingMode = {BlendingOp::One, BlendingOp::One},
+		.culling = false,
+		.depthTesting = false
+	}
+};
 
 static uvec2 currentSize {0};
 static bool initialized = false;
@@ -114,8 +145,8 @@ void bloomInit(Window& w)
 	for (size_t i = 0; i < BloomPasses; i += 1)
 		bloomFb[i].attach(bloomFbColor[i], Attachment::Color0);
 
-	threshold.create("threshold", ThresholdVertSrc, ThresholdFragSrc);
-	boxBlur.create("boxBlur", BoxBlurVertSrc, BoxBlurFragSrc);
+	thresholdShader.create("threshold", ThresholdVertSrc, ThresholdFragSrc);
+	boxBlurShader.create("boxBlur", BoxBlurVertSrc, BoxBlurFragSrc);
 
 	initialized = true;
 }
@@ -124,8 +155,8 @@ void bloomCleanup(void)
 {
 	if (!initialized) return;
 
-	boxBlur.destroy();
-	threshold.destroy();
+	boxBlurShader.destroy();
+	thresholdShader.destroy();
 	for (size_t i = BloomPasses - 1; i < BloomPasses; i -= 1) {
 		bloomFbColor[i].destroy();
 		bloomFb[i].destroy();
@@ -140,54 +171,47 @@ void bloomApply(void)
 	bloomResize(window->size);
 
 	// Prepare the image for bloom
-	Draw<Threshold> dThreshold {
-		.shader = &threshold,
-		.framebuffer = &bloomFb[0],
-		.triangles = 1,
-		.params = {
-			.blending = false,
-			.depthTesting = false,
-			.viewport = {.size = {currentSize.x >> 1, currentSize.y >> 1}}
-		}
-	};
-	dThreshold.shader->image = renderFbColor;
-	dThreshold.shader->threshold = 1.0f;
-	dThreshold.shader->softKnee = 0.25f;
-	dThreshold.shader->strength = 1.0f;
-	dThreshold.draw();
+	threshold.params.viewport = {.size = {currentSize.x >> 1, currentSize.y >> 1}};
+	threshold.shader->image = renderFbColor;
+	threshold.shader->threshold = 1.0f;
+	threshold.shader->softKnee = 0.25f;
+	threshold.shader->strength = 1.0f;
+	threshold.draw(*window);
 
 	// Blur the bloom image
-	boxBlur.bind();
 	for (size_t i = 0; i < BloomPasses - 1; i += 1) {
-		bloomFb[i + 1].bind();
-		detail::state.setViewport({.size = {currentSize.x >> (i + 2), currentSize.y >> (i + 2)}});
-		boxBlur.image = bloomFbColor[i];
-		boxBlur.step = 1.0f;
-		boxBlur.imageTexel = {
+		boxBlur.framebuffer = &bloomFb[i + 1];
+		boxBlur.params.viewport = {.size = {
+			currentSize.x >> (i + 2),
+			currentSize.y >> (i + 2)
+		}};
+		boxBlur.params.blending = false;
+		boxBlur.shader->image = bloomFbColor[i];
+		boxBlur.shader->step = 1.0f;
+		boxBlur.shader->imageTexel = {
 			1.0 / (float)(currentSize.x >> (i + 1)),
 			1.0 / (float)(currentSize.y >> (i + 1))
 		};
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		boxBlur.draw(*window);
 	}
-	detail::state.setFeature(GL_BLEND, true);
-	detail::state.setBlendingMode({GL_ONE, GL_ONE});
 	for (size_t i = BloomPasses - 2; i < BloomPasses; i -= 1) {
-		bloomFb[i].bind();
-		detail::state.setViewport({.size = {currentSize.x >> (i + 1), currentSize.y >> (i + 1)}});
-		boxBlur.image = bloomFbColor[i + 1];
-		boxBlur.step = 0.5f;
-		boxBlur.imageTexel = {
+		boxBlur.framebuffer = &bloomFb[i];
+		boxBlur.params.viewport = {.size = {
+			currentSize.x >> (i + 1),
+			currentSize.y >> (i + 1)
+		}};
+		boxBlur.params.blending = true;
+		boxBlur.shader->image = bloomFbColor[i + 1];
+		boxBlur.shader->step = 0.5f;
+		boxBlur.shader->imageTexel = {
 			1.0 / (float)(currentSize.x >> (i + 2)),
 			1.0 / (float)(currentSize.y >> (i + 2))
 		};
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		boxBlur.draw(*window);
 	}
 
 	// Draw the bloom on top of the render
-	renderFb.bind();
-	detail::state.setViewport({.size = {currentSize.x, currentSize.y}});
-	rendererBlit(bloomFbColor[0], 1.0f);
-
-	detail::state.setBlendingMode({GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA});
-	detail::state.setFeature(GL_DEPTH_TEST, true);
+	blit.shader->image = bloomFbColor[0];
+	blit.shader->boost = 1.0f;
+	blit.draw(*window);
 }

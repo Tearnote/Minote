@@ -11,9 +11,22 @@
 #include "sys/window.hpp"
 #include "sys/opengl.hpp"
 
+struct BlitShader : minote::Shader {
+
+	minote::Sampler<minote::Texture> image;
+	minote::Uniform<float> boost;
+
+	void setLocations() override
+	{
+		image.setLocation(*this, "image");
+		boost.setLocation(*this, "boost");
+	}
+};
+
 extern minote::Framebuffer renderFb;
 extern minote::Texture<minote::PixelFmt::RGBA_f16> renderFbColor;
 extern minote::Renderbuffer<minote::PixelFmt::DepthStencil> renderFbDepthStencil;
+extern BlitShader blitShader;
 
 /**
  * Initialize the renderer system. windowInit() must have been called first.
@@ -40,16 +53,6 @@ void rendererFrameBegin(void);
  * display's next vertical refresh.
  */
 void rendererFrameEnd(void);
-
-/**
- * Draws a ::Texture on top of the current framebuffer. Uses whatever blending
- * and other options are currently active, making it useful for more purposes
- * than built-in blitting.
- * @param src The ::Texture object
- * @param boost Color multiplier
- */
-void rendererBlit(minote::Texture<minote::PixelFmt::RGBA_u8>& t, GLfloat boost);
-void rendererBlit(minote::Texture<minote::PixelFmt::RGBA_f16>& t, GLfloat boost);
 
 /**
  * Retrieves the current status of the synchronization feature, which prevents
