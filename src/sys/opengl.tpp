@@ -234,7 +234,7 @@ inline void GLState::setTextureUnit(TextureUnit const unit)
 
 inline void GLState::bindTexture(GLenum const target, GLuint const id)
 {
-	std::size_t const unitIndex = +currentUnit - GL_TEXTURE0;
+	size_t const unitIndex = +currentUnit - GL_TEXTURE0;
 	auto& binding = [=, this]() -> GLuint& {
 		switch (target) {
 		case GL_TEXTURE_2D:
@@ -353,7 +353,7 @@ inline void GLState::deleteFramebuffer(GLuint const id)
 		framebufferWrite = 0;
 }
 
-inline auto attachmentIndex(Attachment const attachment) -> std::size_t
+inline auto attachmentIndex(Attachment const attachment) -> size_t
 {
 	switch(attachment) {
 	case Attachment::DepthStencil:
@@ -508,7 +508,7 @@ void BufferBase<T, _target>::destroy()
 }
 
 template<TriviallyCopyable T, GLenum _target>
-template<template<TriviallyCopyable, std::size_t> typename Arr, std::size_t N>
+template<template<TriviallyCopyable, size_t> typename Arr, size_t N>
 	requires ArrayContainer<Arr, T, N>
 void BufferBase<T, _target>::upload(Arr<Type, N> const& data)
 {
@@ -529,7 +529,7 @@ void BufferBase<T, _target>::upload(Arr<Type, N> const& data)
 }
 
 template<TriviallyCopyable T, GLenum _target>
-void BufferBase<T, _target>::upload(std::size_t elements, Type data[])
+void BufferBase<T, _target>::upload(size_t elements, Type data[])
 {
 	ASSERT(data);
 	ASSERT(id);
@@ -625,7 +625,7 @@ void Texture<F>::resize(uvec2 const _size)
 }
 
 template<PixelFmt F>
-template<template<UploadFmt, std::size_t> typename Arr, UploadFmt T, std::size_t N>
+template<template<UploadFmt, size_t> typename Arr, UploadFmt T, size_t N>
 	requires ArrayContainer<Arr, T, N>
 void Texture<F>::upload(Arr<T, N> const& data)
 {
@@ -935,7 +935,7 @@ void BufferTexture<T>::destroy()
 }
 
 template<BufferTextureType T>
-template<template<BufferTextureType, std::size_t> typename Arr, std::size_t N>
+template<template<BufferTextureType, size_t> typename Arr, size_t N>
 	requires ArrayContainer<Arr, T, N>
 void BufferTexture<T>::upload(Arr<T, N> data)
 {

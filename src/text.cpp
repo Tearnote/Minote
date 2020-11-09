@@ -51,8 +51,8 @@ static const GLchar* MsdfFragSrc = (GLchar[]){
 #include "msdf.frag"
 	'\0'};
 
-static constexpr std::size_t MaxGlyphs{1024};
-static constexpr std::size_t MaxStrings{1024};
+static constexpr size_t MaxGlyphs{1024};
+static constexpr size_t MaxStrings{1024};
 
 static MsdfShader msdfShader;
 static VertexArray msdfVao[FontSize] = {};

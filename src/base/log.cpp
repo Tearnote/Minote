@@ -21,7 +21,7 @@ static constexpr char LogLevelStrings[][+Log::Level::Size] = {
 };
 
 /// Messages longer than this will be truncated
-static constexpr std::size_t MaxMessageLen = 2048;
+static constexpr size_t MaxMessageLen = 2048;
 
 /**
  * Write a preformatted log message to a specified output.

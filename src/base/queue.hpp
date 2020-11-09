@@ -12,15 +12,15 @@
 
 namespace minote {
 
-template<typename T, std::size_t N>
+template<typename T, size_t N>
 struct queue {
 
 	using Element = T;
-	static constexpr std::size_t Capacity = N;
+	static constexpr size_t Capacity = N;
 
 	array<Element, Capacity> buffer = {}; ///< Ring buffer of elements
-	std::size_t head = 0; ///< Index of the first empty space to enqueue into
-	std::size_t tail = 0; ///< Index of the next element to dequeue
+	size_t head = 0; ///< Index of the first empty space to enqueue into
+	size_t tail = 0; ///< Index of the next element to dequeue
 
 	/**
 	 * Add an element to the back of the queue. If there is no space, nothing

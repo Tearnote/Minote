@@ -14,8 +14,8 @@
 
 using namespace minote;
 
-static constexpr std::size_t BlocksMax{512};
-static constexpr std::size_t BordersMax{1024};
+static constexpr size_t BlocksMax{512};
+static constexpr size_t BordersMax{1024};
 
 static Model* scene = nullptr;
 static Model* guide = nullptr;

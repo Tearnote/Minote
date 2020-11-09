@@ -7,7 +7,7 @@
 
 namespace minote {
 
-template<typename T, std::size_t N>
+template<typename T, size_t N>
 auto queue<T, N>::enqueue(Element const& e) -> bool
 {
 	if (isFull())
@@ -18,7 +18,7 @@ auto queue<T, N>::enqueue(Element const& e) -> bool
 	return true;
 }
 
-template<typename T, std::size_t N>
+template<typename T, size_t N>
 auto queue<T, N>::dequeue() -> Element*
 {
 	if (isEmpty())
@@ -29,7 +29,7 @@ auto queue<T, N>::dequeue() -> Element*
 	return &buffer[prevTail];
 }
 
-template<typename T, std::size_t N>
+template<typename T, size_t N>
 auto queue<T, N>::peek() -> Element*
 {
 	if (isEmpty())
@@ -38,7 +38,7 @@ auto queue<T, N>::peek() -> Element*
 	return &buffer[tail];
 }
 
-template<typename T, std::size_t N>
+template<typename T, size_t N>
 auto queue<T, N>::peek() const -> Element const*
 {
 	if (isEmpty())
@@ -47,19 +47,19 @@ auto queue<T, N>::peek() const -> Element const*
 	return &buffer[tail];
 }
 
-template<typename T, std::size_t N>
+template<typename T, size_t N>
 auto queue<T, N>::isEmpty() const -> bool
 {
 	return head == tail;
 }
 
-template<typename T, std::size_t N>
+template<typename T, size_t N>
 auto queue<T, N>::isFull() const -> bool
 {
 	return (head + 1) % Capacity == tail;
 }
 
-template<typename T, std::size_t N>
+template<typename T, size_t N>
 void queue<T, N>::clear()
 {
 	head = tail;

@@ -127,11 +127,11 @@ struct BufferBase : GLObject {
 
 	void destroy();
 
-	template<template<TriviallyCopyable, std::size_t> typename Arr, std::size_t N>
+	template<template<TriviallyCopyable, size_t> typename Arr, size_t N>
 		requires ArrayContainer<Arr, Type, N>
 	void upload(Arr<Type, N> const& data);
 
-	void upload(std::size_t elements, Type data[]); //TODO remove
+	void upload(size_t elements, Type data[]); //TODO remove
 
 	void bind() const;
 
@@ -190,7 +190,7 @@ struct Texture : TextureBase {
 	 */
 	void resize(uvec2 size);
 
-	template<template<UploadFmt, std::size_t> typename Arr, UploadFmt T, std::size_t N>
+	template<template<UploadFmt, size_t> typename Arr, UploadFmt T, size_t N>
 		requires ArrayContainer<Arr, T, N>
 	void upload(Arr<T, N> const& data);
 
@@ -345,7 +345,7 @@ struct BufferTexture : TextureBase {
 
 	void destroy();
 
-	template<template<BufferTextureType, std::size_t> typename Arr, std::size_t N>
+	template<template<BufferTextureType, size_t> typename Arr, size_t N>
 		requires ArrayContainer<Arr, Type, N>
 	void upload(Arr<Type, N> data);
 

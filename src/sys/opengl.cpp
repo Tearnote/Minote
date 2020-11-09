@@ -136,8 +136,8 @@ void Framebuffer::bind()
 		// Call glDrawBuffers with all enabled color framebuffers
 		auto const[enabledBuffers, enabledSize] = [this] {
 			array<GLenum, 16> buffers = {};
-			std::size_t size = 0;
-			for (std::size_t i = 0; i < 16; i += 1) {
+			size_t size = 0;
+			for (size_t i = 0; i < 16; i += 1) {
 				if (!attachments[i])
 					continue;
 				buffers[size] = i + GL_COLOR_ATTACHMENT0;

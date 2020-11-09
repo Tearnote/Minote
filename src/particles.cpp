@@ -32,7 +32,7 @@ typedef struct Particle {
 	EasingFunction<float> ease; ///< Easing profile of the particle progress
 } Particle;
 
-constexpr std::size_t MaxParticles{4096};
+constexpr size_t MaxParticles{4096};
 
 static varray<Particle, MaxParticles> particles{};
 static Rng rng{};

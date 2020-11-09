@@ -17,6 +17,9 @@
 
 namespace minote {
 
+// Bring std::size_t into scope, because it's used extremely often
+using std::size_t;
+
 /// Make the DEFER feature from scope_guard more keyword-like
 #define defer DEFER
 
@@ -48,9 +51,9 @@ concept TriviallyConstructible = std::is_trivially_constructible_v<T>;
  * @see https://gist.github.com/graphitemaster/494f21190bb2c63c5516
  */
 template <typename T1, TriviallyConstructible T2>
-inline auto offset_of(T1 T2::*member) -> std::size_t {
+inline auto offset_of(T1 T2::*member) -> size_t {
 	static T2 obj;
-	return reinterpret_cast<std::size_t>(&(obj.*member)) - reinterpret_cast<std::size_t>(&obj);
+	return reinterpret_cast<size_t>(&(obj.*member)) - reinterpret_cast<size_t>(&obj);
 }
 
 /// Conversion of scoped enum to the underlying type, using the unary + operator
@@ -139,7 +142,7 @@ inline auto stringOrNull(char const* const str) -> char const*
  * @return Pointer to allocated memory
  */
 template<typename T>
-auto allocate(std::size_t const count = 1) -> T*
+auto allocate(size_t const count = 1) -> T*
 {
 	ASSERT(count);
 	auto* const result = static_cast<T*>(std::calloc(count, sizeof(T)));
@@ -159,7 +162,7 @@ auto allocate(std::size_t const count = 1) -> T*
  * @param newSize New number of elements to allocate memory for
  */
 template<typename T>
-void reallocate(T*& buffer, std::size_t const newCount)
+void reallocate(T*& buffer, size_t const newCount)
 {
 	ASSERT(newCount);
 	auto* const result = static_cast<T*>(std::realloc(buffer, sizeof(T) * newCount));

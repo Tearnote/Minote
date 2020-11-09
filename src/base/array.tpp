@@ -10,7 +10,7 @@
 
 namespace minote {
 
-template<typename T, std::size_t N>
+template<typename T, size_t N>
 auto varray<T, N>::produce() -> Element*
 {
 	if (_size == Capacity)
@@ -20,8 +20,8 @@ auto varray<T, N>::produce() -> Element*
 	return &buffer[_size - 1];
 }
 
-template<typename T, std::size_t N>
-void varray<T, N>::remove(std::size_t index)
+template<typename T, size_t N>
+void varray<T, N>::remove(size_t index)
 {
 	ASSERT(index < _size);
 	if (index < _size - 1) {
@@ -32,8 +32,8 @@ void varray<T, N>::remove(std::size_t index)
 	_size -= 1;
 }
 
-template<typename T, std::size_t N>
-void varray<T, N>::removeSwap(std::size_t index)
+template<typename T, size_t N>
+void varray<T, N>::removeSwap(size_t index)
 {
 	ASSERT(index < _size);
 	if (index < _size - 1)
@@ -41,33 +41,33 @@ void varray<T, N>::removeSwap(std::size_t index)
 	_size -= 1;
 }
 
-template<typename T, std::size_t N>
+template<typename T, size_t N>
 void varray<T, N>::clear()
 {
 	_size = 0;
 }
 
-template<typename T, std::size_t N>
-auto varray<T, N>::operator[](std::size_t index) -> Element&
+template<typename T, size_t N>
+auto varray<T, N>::operator[](size_t index) -> Element&
 {
 	ASSERT(index < _size);
 	return buffer[index];
 }
 
-template<typename T, std::size_t N>
-auto varray<T, N>::operator[](std::size_t index) const -> Element const&
+template<typename T, size_t N>
+auto varray<T, N>::operator[](size_t index) const -> Element const&
 {
 	ASSERT(index < _size);
 	return buffer[index];
 }
 
-template<typename T, std::size_t N>
+template<typename T, size_t N>
 auto varray<T, N>::data() -> Element*
 {
 	return buffer.data();
 }
 
-template<typename T, std::size_t N>
+template<typename T, size_t N>
 auto varray<T, N>::data() const -> Element const*
 {
 	return buffer.data();
