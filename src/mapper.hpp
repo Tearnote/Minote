@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "base/varray.hpp"
+#include "base/array.hpp"
 #include "base/queue.hpp"
 #include "base/time.hpp"
 #include "sys/window.hpp"

@@ -9,7 +9,7 @@
 #define MINOTE_MRS_H
 
 #include "mrsdraw.hpp"
-#include "base/varray.hpp"
+#include "base/array.hpp"
 #include "mapper.hpp"
 #include "mino.hpp"
 #include "base/util.hpp"

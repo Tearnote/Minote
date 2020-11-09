@@ -435,7 +435,7 @@ static void mrsUpdateInputs(const varray<Action, 64>& inputs)
 {
 	// Update raw inputs
 	if (mrsTet.state != TetrionOutro) {
-		for (size_t i = 0; i < inputs.size; i += 1) {
+		for (size_t i = 0; i < inputs.size(); i += 1) {
 			const Action& in = inputs[i];
 			mrsTet.player.actionMapRaw[+in.type] = (in.state == Action::State::Pressed);
 		}

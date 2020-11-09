@@ -6,7 +6,7 @@
 #pragma once
 
 #include "glad/glad.h"
-#include "base/varray.hpp"
+#include "base/array.hpp"
 #include "base/math.hpp"
 #include "sys/window.hpp"
 
@@ -127,11 +127,9 @@ struct BufferBase : GLObject {
 
 	void destroy();
 
-	template<std::size_t N>
-	void upload(varray<Type, N> data);
-
-	template<std::size_t N>
-	void upload(std::array<Type, N> data);
+	template<template<TriviallyCopyable, std::size_t> typename Arr, std::size_t N>
+		requires ArrayContainer<Arr, Type, N>
+	void upload(Arr<Type, N> const& data);
 
 	void upload(std::size_t elements, Type data[]); //TODO remove
 
@@ -192,8 +190,9 @@ struct Texture : TextureBase {
 	 */
 	void resize(uvec2 size);
 
-	template<UploadFmt T, std::size_t N>
-	void upload(std::array<T, N> const& data);
+	template<template<UploadFmt, std::size_t> typename Arr, UploadFmt T, std::size_t N>
+		requires ArrayContainer<Arr, T, N>
+	void upload(Arr<T, N> const& data);
 
 	template<UploadFmt T>
 	void upload(T const data[], int channels = 0); //TODO make safe
@@ -346,11 +345,9 @@ struct BufferTexture : TextureBase {
 
 	void destroy();
 
-	template<std::size_t N>
-	void upload(varray<Type, N> data);
-
-	template<std::size_t N>
-	void upload(std::array<Type, N> data);
+	template<template<BufferTextureType, std::size_t> typename Arr, std::size_t N>
+		requires ArrayContainer<Arr, Type, N>
+	void upload(Arr<Type, N> data);
 
 	void bind(TextureUnit unit = TextureUnit::None);
 
@@ -358,7 +355,7 @@ struct BufferTexture : TextureBase {
 
 struct VertexArray : GLObject {
 
-	std::array<bool, 16> attributes = {};
+	array<bool, 16> attributes = {};
 	bool elements = false;
 
 	void create(char const* name);
@@ -383,7 +380,7 @@ struct Framebuffer : GLObject {
 
 	Samples samples = Samples::None; ///< Sample count of all attachments needs to match
 	bool dirty = true; ///< Is a glDrawBuffers call and completeness check needed?
-	std::array<TextureBase const*, 17> attachments = {};
+	array<TextureBase const*, 17> attachments = {};
 
 	/**
 	 * Create an OpenGL ID for the framebuffer. This needs to be called before

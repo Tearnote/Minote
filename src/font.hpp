@@ -9,7 +9,7 @@
 #include <hb.h>
 #include "fontlist.hpp"
 #include "sys/opengl.hpp"
-#include "base/varray.hpp"
+#include "base/array.hpp"
 
 /// Single glyph of a font alas
 typedef struct FontAtlasGlyph {

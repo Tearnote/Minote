@@ -7,7 +7,7 @@
 
 #include <time.h>
 #include "cephes/protos.h"
-#include "base/varray.hpp"
+#include "base/array.hpp"
 #include "model.hpp"
 #include "base/util.hpp"
 
@@ -68,7 +68,7 @@ void particlesUpdate(void)
 {
 	ASSERT(initialized);
 
-	size_t numParticles = particles.size;
+	size_t numParticles = particles.size();
 	nsec currentTime = Window::getTime();
 
 	for (size_t i = numParticles - 1; i < numParticles; i -= 1) {
@@ -84,7 +84,7 @@ void particlesDraw(void)
 
 	double fresnelConst = sqrt(4.0 / Tau);
 
-	size_t numParticles = particles.size;
+	size_t numParticles = particles.size();
 	if (!numParticles) return;
 
 	for (size_t i = 0; i < numParticles; i += 1) {
@@ -146,8 +146,8 @@ void particlesDraw(void)
 		*transform = glm::scale(rotated, {1.0f - progress, 1.0f, 1.0f});
 	}
 
-	numParticles = particleTransforms.size;
-	ASSERT(particleTints.size == particleTransforms.size);
+	numParticles = particleTransforms.size();
+	ASSERT(particleTints.size() == particleTransforms.size());
 
 	modelDraw(particle, numParticles,
 		particleTints.data(),

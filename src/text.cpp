@@ -8,7 +8,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include "sys/opengl.hpp"
-#include "base/varray.hpp"
+#include "base/array.hpp"
 #include "world.hpp"
 #include "base/util.hpp"
 #include "font.hpp"
@@ -136,7 +136,7 @@ static void textQueueV(FontType font, float size, vec3 pos, vec3 dir, vec3 up,
 			glyph->texBounds.w =
 				atlasChar->atlasTop / (float)fonts[font].atlas.size.y;
 			glyph->color = color;
-			glyph->transformIndex = msdfTransforms[font].size - 1;
+			glyph->transformIndex = msdfTransforms[font].size() - 1;
 
 			// Advance position
 			cursor.x += xAdvance;
@@ -219,13 +219,13 @@ void textDraw(Window& window)
 	ASSERT(initialized);
 
 	for (size_t i = 0; i < FontSize; i += 1) {
-		if (!msdfGlyphs[i].size) continue;
+		if (!msdfGlyphs[i].size()) continue;
 
 		msdfGlyphsVbo[i].upload(msdfGlyphs[i]);
 		msdfTransformsTex[i].upload(msdfTransforms[i]);
 
 		msdf.vertexarray = &msdfVao[i];
-		msdf.instances = msdfGlyphs[i].size;
+		msdf.instances = msdfGlyphs[i].size();
 		msdf.shader->atlas = fonts[i].atlas;
 		msdf.shader->transforms = msdfTransformsTex[i];
 		msdf.shader->projection = worldProjection;

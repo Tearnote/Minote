@@ -18,6 +18,7 @@
 #include <windows.h>
 #endif //_WIN32
 #include "sys/window.hpp"
+#include "base/array.hpp"
 #include "base/log.hpp"
 #include "debug.hpp"
 #include "game.hpp"
@@ -59,7 +60,7 @@ auto main(int, char*[]) -> int
 	Window::init();
 	defer { Window::cleanup(); };
 	auto const windowTitle = [] {
-		std::array<char, 64> title = {};
+		array<char, 64> title = {};
 		std::snprintf(title.data(), title.size(), "%s %s", AppName, AppVersion);
 		return title;
 	}();

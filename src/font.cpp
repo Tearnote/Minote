@@ -94,7 +94,7 @@ void fontInit(void)
 				&atlasChar.atlasRight, &atlasChar.atlasTop);
 			if (parsed == 0 || parsed == EOF)
 				break;
-			ASSERT(index == fonts[i].metrics.size);
+			ASSERT(index == fonts[i].metrics.size());
 
 			auto* const nextChar = fonts[i].metrics.produce();
 			if (!nextChar)

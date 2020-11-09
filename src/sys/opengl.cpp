@@ -26,7 +26,7 @@ auto compileShaderStage(GLuint const id, char const* const name,
 	}();
 	if (compileStatus == GL_FALSE) {
 		auto const infoLog = [=] {
-			std::array<GLchar, 2048> log = {};
+			array<GLchar, 2048> log = {};
 			glGetShaderInfoLog(id, log.size(), nullptr, log.data());
 			return log;
 		}();
@@ -135,7 +135,7 @@ void Framebuffer::bind()
 	if (dirty) {
 		// Call glDrawBuffers with all enabled color framebuffers
 		auto const[enabledBuffers, enabledSize] = [this] {
-			std::array<GLenum, 16> buffers = {};
+			array<GLenum, 16> buffers = {};
 			std::size_t size = 0;
 			for (std::size_t i = 0; i < 16; i += 1) {
 				if (!attachments[i])
@@ -231,7 +231,7 @@ void Shader::create(char const* _name, char const* vertSrc, char const* fragSrc)
 	}();
 	if (linkStatus == GL_FALSE) {
 		auto const infoLog = [this] {
-			std::array<GLchar, 2048> log = {};
+			array<GLchar, 2048> log = {};
 			glGetProgramInfoLog(id, log.size(), nullptr, log.data());
 			return log;
 		}();

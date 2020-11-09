@@ -72,7 +72,7 @@ struct GLState {
 	GLuint texturebuffer = 0;
 	GLuint vertexarray = 0;
 	TextureUnit currentUnit = TextureUnit::_0;
-	std::array<GLTextureUnitState, 16> textures;
+	array<GLTextureUnitState, 16> textures;
 	GLuint renderbuffer = 0;
 	GLuint framebufferRead = 0;
 	GLuint framebufferWrite = 0;
@@ -470,8 +470,8 @@ inline thread_local GLState state;
 
 }
 
-template<TriviallyCopyable T, GLenum U>
-void BufferBase<T, U>::create(char const* const _name, bool const _dynamic)
+template<TriviallyCopyable T, GLenum _target>
+void BufferBase<T, _target>::create(char const* const _name, bool const _dynamic)
 {
 		ASSERT(!id);
 		ASSERT(_name);
@@ -488,8 +488,8 @@ void BufferBase<T, U>::create(char const* const _name, bool const _dynamic)
 		dynamic? "Dynamic" : "Static", name);
 }
 
-template<TriviallyCopyable T, GLenum U>
-void BufferBase<T, U>::destroy()
+template<TriviallyCopyable T, GLenum _target>
+void BufferBase<T, _target>::destroy()
 {
 #ifndef NDEBUG
 	if (!id) {
@@ -507,18 +507,18 @@ void BufferBase<T, U>::destroy()
 	name = nullptr;
 }
 
-template<TriviallyCopyable T, GLenum U>
-template<std::size_t N>
-void BufferBase<T, U>::upload(varray<Type, N> data)
+template<TriviallyCopyable T, GLenum _target>
+template<template<TriviallyCopyable, std::size_t> typename Arr, std::size_t N>
+	requires ArrayContainer<Arr, T, N>
+void BufferBase<T, _target>::upload(Arr<Type, N> const& data)
 {
 	ASSERT(id);
 	ASSERT(dynamic == true || uploaded == false);
-	if(!data.size)
-		return;
+	if(!data.size()) return;
 
 	bind();
 	GLenum const usage = dynamic? GL_STREAM_DRAW : GL_STATIC_DRAW;
-	GLsizeiptr const size = sizeof(Type) * data.size;
+	GLsizeiptr const size = sizeof(Type) * data.size();
 	if (dynamic && uploaded) {
 		glBufferData(Target, size, nullptr, usage);
 		glBufferSubData(Target, 0, size, data.data());
@@ -528,29 +528,8 @@ void BufferBase<T, U>::upload(varray<Type, N> data)
 	}
 }
 
-template<TriviallyCopyable T, GLenum U>
-template<std::size_t N>
-void BufferBase<T, U>::upload(std::array<Type, N> data)
-{
-	ASSERT(id);
-	ASSERT(dynamic == false || uploaded == false);
-	if (!data.size())
-		return;
-
-	bind();
-	GLenum const usage = dynamic? GL_STREAM_DRAW : GL_STATIC_DRAW;
-	GLsizeiptr const size = sizeof(Type) * N;
-	if (dynamic && uploaded) {
-		glBufferData(Target, size, nullptr, usage);
-		glBufferSubData(Target, 0, size, data.data());
-	} else {
-		glBufferData(Target, size, data.data(), usage);
-		uploaded = true;
-	}
-}
-
-template<TriviallyCopyable T, GLenum U>
-void BufferBase<T, U>::upload(std::size_t elements, Type* data)
+template<TriviallyCopyable T, GLenum _target>
+void BufferBase<T, _target>::upload(std::size_t elements, Type data[])
 {
 	ASSERT(data);
 	ASSERT(id);
@@ -570,8 +549,8 @@ void BufferBase<T, U>::upload(std::size_t elements, Type* data)
 	}
 }
 
-template<TriviallyCopyable T, GLenum U>
-void BufferBase<T, U>::bind() const
+template<TriviallyCopyable T, GLenum _target>
+void BufferBase<T, _target>::bind() const
 {
 	ASSERT(id);
 
@@ -646,8 +625,9 @@ void Texture<F>::resize(uvec2 const _size)
 }
 
 template<PixelFmt F>
-template<UploadFmt T, std::size_t N>
-void Texture<F>::upload(std::array<T, N> const& data)
+template<template<UploadFmt, std::size_t> typename Arr, UploadFmt T, std::size_t N>
+	requires ArrayContainer<Arr, T, N>
+void Texture<F>::upload(Arr<T, N> const& data)
 {
 	ASSERT(data.size() == size.x * size.y);
 	ASSERT(id);
@@ -955,16 +935,9 @@ void BufferTexture<T>::destroy()
 }
 
 template<BufferTextureType T>
-template<std::size_t N>
-void BufferTexture<T>::upload(varray<Type, N> data)
-{
-	storage.upload(data);
-	size = {N, 1};
-}
-
-template<BufferTextureType T>
-template<std::size_t N>
-void BufferTexture<T>::upload(std::array<Type, N> data)
+template<template<BufferTextureType, std::size_t> typename Arr, std::size_t N>
+	requires ArrayContainer<Arr, T, N>
+void BufferTexture<T>::upload(Arr<T, N> data)
 {
 	storage.upload(data);
 	size = {N, 1};

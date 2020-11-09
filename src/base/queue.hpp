@@ -7,7 +7,7 @@
 #pragma once
 
 #include <cstdlib>
-#include <array>
+#include "base/array.hpp"
 #include "base/util.hpp"
 
 namespace minote {
@@ -18,7 +18,7 @@ struct queue {
 	using Element = T;
 	static constexpr std::size_t Capacity = N;
 
-	std::array<Element, Capacity> buffer = {}; ///< Ring buffer of elements
+	array<Element, Capacity> buffer = {}; ///< Ring buffer of elements
 	std::size_t head = 0; ///< Index of the first empty space to enqueue into
 	std::size_t tail = 0; ///< Index of the next element to dequeue
 

@@ -133,7 +133,7 @@ set(SOURCES
         src/base/math.hpp
         src/base/time.hpp src/base/time.cpp
         src/base/log.hpp src/base/log.cpp
-        src/base/varray.hpp src/base/varray.tpp
+        src/base/array.hpp src/base/array.tpp
         src/base/queue.hpp src/base/queue.tpp
         src/base/ease.hpp
         src/base/tween.hpp

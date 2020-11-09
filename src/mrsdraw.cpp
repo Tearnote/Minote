@@ -440,12 +440,12 @@ static void mrsQueuePreview(void)
  */
 static void mrsDrawQueuedBlocks(void)
 {
-	ASSERT(blockTransformsOpaque.size == blockHighlightsOpaque.size);
-	ASSERT(blockTransformsOpaque.size == blockTintsOpaque.size);
-	ASSERT(blockTransformsAlpha.size == blockHighlightsAlpha.size);
-	ASSERT(blockTransformsAlpha.size == blockTintsAlpha.size);
+	ASSERT(blockTransformsOpaque.size() == blockHighlightsOpaque.size());
+	ASSERT(blockTransformsOpaque.size() == blockTintsOpaque.size());
+	ASSERT(blockTransformsAlpha.size() == blockHighlightsAlpha.size());
+	ASSERT(blockTransformsAlpha.size() == blockTintsAlpha.size());
 
-	modelDraw(block, blockTransformsOpaque.size,
+	modelDraw(block, blockTransformsOpaque.size(),
 		blockTintsOpaque.data(),
 		blockHighlightsOpaque.data(),
 		blockTransformsOpaque.data());
@@ -453,12 +453,12 @@ static void mrsDrawQueuedBlocks(void)
 	blockHighlightsOpaque.clear();
 	blockTransformsOpaque.clear();
 	detail::state.setColorWrite(false); // Depth prepass start
-	modelDraw(block, blockTransformsAlpha.size,
+	modelDraw(block, blockTransformsAlpha.size(),
 		blockTintsAlpha.data(),
 		blockHighlightsAlpha.data(),
 		blockTransformsAlpha.data());
 	detail::state.setColorWrite(true); // Depth prepass end
-	modelDraw(block, blockTransformsAlpha.size,
+	modelDraw(block, blockTransformsAlpha.size(),
 		blockTintsAlpha.data(),
 		blockHighlightsAlpha.data(),
 		blockTransformsAlpha.data());
@@ -557,8 +557,8 @@ static void mrsDrawBorder(void)
 				(color4){1.0f, 1.0f, 1.0f, alpha});
 	}
 
-	ASSERT(borderTints.size == borderTransforms.size);
-	modelDraw(border, borderTransforms.size,
+	ASSERT(borderTints.size() == borderTransforms.size());
+	modelDraw(border, borderTransforms.size(),
 		borderTints.data(), nullptr, borderTransforms.data());
 	borderTints.clear();
 	borderTransforms.clear();
