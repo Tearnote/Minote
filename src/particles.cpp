@@ -8,7 +8,7 @@
 #include <time.h>
 #include "cephes/protos.h"
 #include "base/array.hpp"
-#include "model.hpp"
+#include "engine/model.hpp"
 #include "base/util.hpp"
 
 using namespace minote;
@@ -37,31 +37,17 @@ constexpr size_t MaxParticles{4096};
 static varray<Particle, MaxParticles> particles{};
 static Rng rng{};
 
-static Model* particle = nullptr;
-static varray<color4, MaxParticles> particleTints{};
-static varray<glm::mat4, MaxParticles> particleTransforms{};
+static varray<ModelFlat::Instance, MaxParticles> particleInstances;
 
 static bool initialized = false;
 
-#include "meshes/particle.mesh"
 void particlesInit(void)
 {
 	if (initialized) return;
 
 	rng.seed((uint64_t)time(nullptr));
-	particle = modelCreateFlat("particle", particleMeshSize, particleMesh);
 
 	initialized = true;
-}
-
-void particlesCleanup(void)
-{
-	if (!initialized) return;
-
-	modelDestroy(particle);
-	particle = nullptr;
-
-	initialized = false;
 }
 
 void particlesUpdate(void)
@@ -78,20 +64,20 @@ void particlesUpdate(void)
 	}
 }
 
-void particlesDraw(void)
+void particlesDraw(Engine& engine)
 {
 	ASSERT(initialized);
 
 	double fresnelConst = sqrt(4.0 / Tau);
 
-	size_t numParticles = particles.size();
+	size_t const numParticles = particles.size();
 	if (!numParticles) return;
 
 	for (size_t i = 0; i < numParticles; i += 1) {
 		Particle* current = &particles[i];
 		ASSERT(current->spin > 0.0f);
 
-		Tween<float> progressTween = {
+		Tween progressTween = {
 			.from = 0.0f,
 			.to = 1.0f,
 			.start = current->start,
@@ -123,9 +109,9 @@ void particlesDraw(void)
 		if (current->vert == -1)
 			angle *= -1.0f;
 
-		auto* const tint = particleTints.produce();
-		ASSERT(tint);
-		*tint = current->color;
+		auto* const instance = particleInstances.produce();
+		ASSERT(instance);
+		instance->tint = current->color;
 
 		// Shimmer mitigation
 		if (progress > ShimmerFade) {
@@ -133,29 +119,18 @@ void particlesDraw(void)
 			fadeout *= 1.0f / (1.0f - ShimmerFade);
 			fadeout = 1.0f - fadeout;
 			fadeout = cubicEaseIn(fadeout);
-			tint->a *= fadeout;
+			instance->tint.a *= fadeout;
 		}
-
-		auto* const transform = particleTransforms.produce();
-		ASSERT(transform);
-		const glm::mat4 translated = glm::translate(glm::mat4(1.0f),
-			{(float)x, (float)y, current->origin.z});
-		const glm::mat4 rotated = glm::rotate(translated, angle,
-			{0.0f, 0.0f, 1.0f});
-		//mat4x4_rotate_Z(rotated, translated, angle);
-		*transform = glm::scale(rotated, {1.0f - progress, 1.0f, 1.0f});
+		
+		const mat4 translated = make_translate({(float)x, (float)y, current->origin.z});
+		const mat4 rotated = rotate(translated, angle, {0.0f, 0.0f, 1.0f});
+		instance->transform = scale(rotated, {1.0f - progress, 1.0f, 1.0f});
 	}
 
-	numParticles = particleTransforms.size();
-	ASSERT(particleTints.size() == particleTransforms.size());
-
-	modelDraw(particle, numParticles,
-		particleTints.data(),
-		nullptr,
-		particleTransforms.data());
-
-	particleTints.clear();
-	particleTransforms.clear();
+	engine.models.particle.draw(*engine.frame.fb, engine.scene, {
+		.blending = true
+	}, particleInstances);
+	particleInstances.clear();
 }
 
 void particlesGenerate(vec3 position, size_t count, ParticleParams* params)

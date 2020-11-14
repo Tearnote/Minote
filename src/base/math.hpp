@@ -109,17 +109,23 @@ using glm::reflect;
 using glm::perspective;
 using glm::ortho;
 
-template<typename T, glm::qualifier Q>
-constexpr auto make_translate = std::bind(glm::translate<T, Q>, mat4(1.0f),
-	std::placeholders::_1);
+template<typename T = f32, glm::qualifier Q = glm::qualifier::defaultp>
+constexpr auto make_translate(glm::vec<3, T, Q> v) -> glm::mat<4, 4, T, Q>
+{
+	return glm::translate(glm::mat<4, 4, T, Q>(static_cast<T>(1)), v);
+}
 
-template<typename T, glm::qualifier Q>
-constexpr auto make_rotate = std::bind(glm::rotate<T, Q>, mat4(1.0f),
-	std::placeholders::_1, std::placeholders::_2);
+template<typename T = f32, glm::qualifier Q = glm::qualifier::defaultp>
+constexpr auto make_rotate(T angle, glm::vec<3, T, Q> v) -> glm::mat<4, 4, T, Q>
+{
+	return glm::rotate(glm::mat<4, 4, T, Q>(static_cast<T>(1)), angle, v);
+}
 
-template<typename T, glm::qualifier Q>
-constexpr auto make_scale = std::bind(glm::scale<T, Q>, mat4(1.0f),
-	std::placeholders::_1);
+template<typename T = f32, glm::qualifier Q = glm::qualifier::defaultp>
+constexpr auto make_scale(glm::vec<3, T, Q> v) -> glm::mat<4, 4, T, Q>
+{
+	return glm::scale(glm::mat<4, 4, T, Q>(static_cast<T>(1)), v);
+}
 
 // Matrix transforms
 using glm::transpose;

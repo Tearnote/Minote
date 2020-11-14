@@ -6,24 +6,12 @@
 #ifndef MINOTE_MRSDRAW_H
 #define MINOTE_MRSDRAW_H
 
-#include <stdbool.h>
-
-/**
- * Initialize the mrs drawing subsystem. Needs to be called before mrsDraw()
- * can be used.
- */
-void mrsDrawInit(void);
-
-/**
- * Clean up mrs drawing. mrsDraw() cannot be used until mrsDrawInit() is
- * called again.
- */
-void mrsDrawCleanup(void);
+#include "engine/engine.hpp"
 
 /**
  * Draw the mrs sublayer to the screen.
  */
-void mrsDraw(void);
+void mrsDraw(minote::Engine& engine);
 
 /**
  * Reset a newly spawned piece's draw data. Call right after spawning.

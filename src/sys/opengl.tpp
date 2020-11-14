@@ -491,12 +491,7 @@ void BufferBase<T, _target>::create(char const* const _name, bool const _dynamic
 template<TriviallyCopyable T, GLenum _target>
 void BufferBase<T, _target>::destroy()
 {
-#ifndef NDEBUG
-	if (!id) {
-		L.warn("Tried to destroy a vertex buffer that has not been created");
-		return;
-	}
-#endif //NDEBUG
+	ASSERT(id);
 
 	detail::state.deleteBuffer(Target, id);
 	id = 0;
@@ -581,12 +576,7 @@ void Texture<F>::create(char const* const _name, uvec2 const _size)
 template<PixelFmt F>
 void Texture<F>::destroy()
 {
-#ifndef NDEBUG
-	if (!id) {
-		L.warn("Tried to destroy a texture that has not been created");
-		return;
-	}
-#endif //NDEBUG
+	ASSERT(id);
 
 	detail::state.deleteTexture(GL_TEXTURE_2D, id);
 	id = 0;
@@ -725,12 +715,7 @@ void TextureMS<F>::create(char const* const _name, uvec2 const _size, Samples co
 template<PixelFmt F>
 void TextureMS<F>::destroy()
 {
-#ifndef NDEBUG
-	if (!id) {
-		L.warn("Tried to destroy a multisample texture that has not been created");
-		return;
-	}
-#endif //NDEBUG
+	ASSERT(id);
 
 	detail::state.deleteTexture(GL_TEXTURE_2D_MULTISAMPLE, id);
 	id = 0;
@@ -784,12 +769,7 @@ void Renderbuffer<F>::create(char const* const _name, uvec2 const _size)
 template<PixelFmt F>
 void Renderbuffer<F>::destroy()
 {
-#ifndef NDEBUG
-	if (!id) {
-		L.warn("Tried to destroy a renderbuffer that has not been created");
-		return;
-	}
-#endif //NDEBUG
+	ASSERT(id);
 
 	detail::state.deleteRenderbuffer(id);
 	id = 0;
@@ -834,12 +814,7 @@ void RenderbufferMS<F>::create(char const* const _name, uvec2 const _size, Sampl
 template<PixelFmt F>
 void RenderbufferMS<F>::destroy()
 {
-#ifndef NDEBUG
-	if (!id) {
-		L.warn("Tried to destroy a multisample renderbuffer that has not been created");
-		return;
-	}
-#endif //NDEBUG
+	ASSERT(id);
 
 	detail::state.deleteRenderbuffer(id);
 	id = 0;
@@ -918,12 +893,7 @@ void BufferTexture<T>::create(char const* const _name, bool const dynamic)
 template<BufferTextureType T>
 void BufferTexture<T>::destroy()
 {
-#ifndef NDEBUG
-	if (!id) {
-		L.warn("Tried to destroy a buffer texture that has not been created");
-		return;
-	}
-#endif //NDEBUG
+	ASSERT(id);
 
 	detail::state.deleteTexture(GL_TEXTURE_BUFFER, id);
 	id = 0;
@@ -1138,8 +1108,9 @@ void BufferSampler::set(BufferTexture<T>& val)
 }
 
 template<ShaderType T>
-void Draw<T>::draw(Window& window)
+void Draw<T>::draw(Window* window)
 {
+	ASSERT(window || framebuffer || !params.viewport.zero());
 	ASSERT(shader);
 	// Ensure the element buffer format is GL_UNSIGNED_INT
 	static_assert(std::is_same_v<ElementBuffer::Type, u32>);
@@ -1158,7 +1129,7 @@ void Draw<T>::draw(Window& window)
 	}();
 
 	if (params.viewport.zero()) {
-		params.viewport.size = window.size;
+		params.viewport.size = framebuffer? framebuffer->size() : window->size.load();
 		params.set();
 		params.viewport.size = {0, 0};
 	} else {

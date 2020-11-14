@@ -6,7 +6,7 @@
 #ifndef MINOTE_DEBUG_H
 #define MINOTE_DEBUG_H
 
-#include "sys/window.hpp"
+#include "engine/engine.hpp"
 
 // Nuklear configuration
 #define NK_INCLUDE_FIXED_TYPES
@@ -57,7 +57,7 @@ void debugUpdate(void);
  * Draw all pending debug windows to the screen. This needs to be called
  * at least once per frame if Nuklear is being used.
  */
-void debugDraw(minote::Window& window);
+void debugDraw(minote::Engine& engine);
 
 /**
  * Retrieve the Nuklear context for use with nk_* functions.

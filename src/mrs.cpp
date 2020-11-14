@@ -409,8 +409,6 @@ void mrsInit(void)
 
 	mrsTet.state = TetrionReady;
 
-	mrsDrawInit();
-
 	initialized = true;
 	L.debug("Mrs initialized");
 }
@@ -419,7 +417,6 @@ void mrsCleanup(void)
 {
 	if (!initialized) return;
 
-	mrsDrawCleanup();
 	fieldDestroy(mrsTet.field);
 	mrsTet.field = nullptr;
 

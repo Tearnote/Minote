@@ -6,7 +6,7 @@
 #include "play.hpp"
 
 #include "sys/window.hpp"
-#include "mapper.hpp"
+#include "engine/mapper.hpp"
 #include "mrs.hpp"
 #include "base/log.hpp"
 
@@ -68,8 +68,8 @@ void playUpdate(Window& window, Mapper& mapper)
 	}
 }
 
-void playDraw(void)
+void playDraw(Engine& engine)
 {
 	ASSERT(initialized);
-	mrsDraw();
+	mrsDraw(engine);
 }

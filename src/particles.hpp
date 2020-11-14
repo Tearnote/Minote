@@ -11,6 +11,7 @@
 #include "base/tween.hpp"
 #include "base/ease.hpp"
 #include "base/time.hpp"
+#include "engine/engine.hpp"
 
 /// Details of a particle effect
 typedef struct ParticleParams {
@@ -33,12 +34,6 @@ typedef struct ParticleParams {
 void particlesInit(void);
 
 /**
- * Cleanup the particles layer. No other particles function can be used until
- * particlesInit() is called again.
- */
-void particlesCleanup(void);
-
-/**
  * Update active particles to remove expired ones.
  */
 void particlesUpdate(void);
@@ -46,7 +41,7 @@ void particlesUpdate(void);
 /**
  * Draw all active particles to the screen at their current position.
  */
-void particlesDraw(void);
+void particlesDraw(minote::Engine& engine);
 
 /**
  * Generate particles with specific parameters.

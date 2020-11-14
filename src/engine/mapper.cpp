@@ -1,9 +1,9 @@
 /**
- * Implementation of mapper.hpp
+ * Implementation of engine/mapper.hpp
  * @file
  */
 
-#include "mapper.hpp"
+#include "engine/mapper.hpp"
 
 #include "base/log.hpp"
 

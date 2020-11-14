@@ -38,8 +38,8 @@ pkg_search_module(HARFBUZZ REQUIRED harfbuzz)
 pkg_search_module(GLM REQUIRED glm)
 
 add_compile_definitions(GLFW_INCLUDE_NONE)
-add_compile_definitions(GLM_FORCE_ALIGNED_GENTYPES)
-add_compile_definitions(GLM_FORCE_DEFAULT_ALIGNED_GENTYPES)
+#add_compile_definitions(GLM_FORCE_ALIGNED_GENTYPES)
+#add_compile_definitions(GLM_FORCE_DEFAULT_ALIGNED_GENTYPES)
 add_compile_definitions(GLM_FORCE_SIZE_T_LENGTH)
 add_compile_definitions(GLM_FORCE_UNRESTRICTED_GENTYPE)
 
@@ -53,7 +53,6 @@ add_subdirectory(lib/msdf-atlas-gen)
 set(GLSL_SOURCES
         src/glsl/flat.vert.glsl src/glsl/flat.frag.glsl
         src/glsl/phong.vert.glsl src/glsl/phong.frag.glsl
-        src/glsl/smaaSeparate.vert.glsl src/glsl/smaaSeparate.frag.glsl
         src/glsl/smaaEdge.vert.glsl src/glsl/smaaEdge.frag.glsl
         src/glsl/smaaBlend.vert.glsl src/glsl/smaaBlend.frag.glsl
         src/glsl/smaaNeighbor.vert.glsl src/glsl/smaaNeighbor.frag.glsl
@@ -129,33 +128,34 @@ add_compile_definitions(PPK_ASSERT_DEFAULT_LEVEL=Error)
 
 set(SOURCES
         src/main.hpp src/main.cpp
-        src/base/util.hpp src/base/util.cpp
-        src/base/math.hpp
-        src/base/time.hpp src/base/time.cpp
         src/base/log.hpp src/base/log.cpp
+        src/base/ease.hpp
+        src/base/math.hpp
+        src/base/util.hpp src/base/util.cpp
+        src/base/time.hpp src/base/time.cpp
+        src/base/tween.hpp
         src/base/array.hpp src/base/array.tpp
         src/base/queue.hpp src/base/queue.tpp
-        src/base/ease.hpp
-        src/base/tween.hpp
         src/sys/window.hpp src/sys/window.cpp
         src/sys/opengl.hpp src/sys/opengl.tpp src/sys/opengl.cpp
         src/game.hpp src/game.cpp
-        src/renderer.hpp src/renderer.cpp
         src/play.hpp src/play.cpp
         src/mino.hpp src/mino.cpp
-        src/mapper.hpp src/mapper.cpp
+        src/engine/mapper.hpp src/engine/mapper.cpp
         src/mrs.hpp src/mrs.cpp
         src/mrsdef.hpp src/mrsdef.cpp
         src/mrsdraw.hpp src/mrsdraw.cpp
-        src/aa.hpp src/aa.cpp
         src/bloom.hpp src/bloom.cpp
-        src/model.hpp src/model.cpp
-        src/world.hpp src/world.cpp
+        src/engine/model.hpp src/engine/model.tpp src/engine/model.cpp
         src/particles.hpp src/particles.cpp
         src/debug.hpp src/debug.cpp
         src/font.hpp src/font.cpp
         src/fontlist.hpp
-        src/text.hpp src/text.cpp)
+        src/text.hpp src/text.cpp
+        src/engine/frame.hpp src/engine/frame.cpp
+        src/store/shaders.hpp src/store/shaders.cpp
+        src/engine/engine.hpp
+        src/engine/scene.hpp src/engine/scene.cpp src/store/models.cpp src/store/models.hpp)
 
 add_executable(Minote ${SOURCES} ${INTERNALLIBS})
 target_compile_options(Minote PRIVATE

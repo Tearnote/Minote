@@ -19,16 +19,16 @@ out vec4 fHighlight;
 out vec3 fNormal; // in view space
 out vec3 fLightPosition; // in view space
 
-uniform mat4 camera;
+uniform mat4 view;
 uniform mat4 projection;
 uniform vec3 lightPosition; // in world space
 
 void main()
 {
-    gl_Position = projection * camera * iModel * vec4(vPosition, 1.0);
-    fPosition = vec3(camera * iModel * vec4(vPosition, 1.0));
-    fNormal = mat3(transpose(inverse(camera * iModel))) * vNormal;
+    gl_Position = projection * view * iModel * vec4(vPosition, 1.0);
+    fPosition = vec3(view * iModel * vec4(vPosition, 1.0));
+    fNormal = mat3(transpose(inverse(view * iModel))) * vNormal;
     fColor = vColor * iTint;
     fHighlight = iHighlight;
-    fLightPosition = vec3(camera * vec4(lightPosition, 1.0));
+    fLightPosition = vec3(view * vec4(lightPosition, 1.0));
 }

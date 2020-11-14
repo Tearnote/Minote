@@ -16,7 +16,7 @@ layout(location = 4) in int iTransformIndex;
 out vec4 fColor;
 out vec2 fTexCoords;
 
-uniform mat4 camera;
+uniform mat4 view;
 uniform mat4 projection;
 uniform samplerBuffer transforms;
 
@@ -32,7 +32,7 @@ void main()
     vec2 stringVertex = vertex * iSize + iPosition;
     vec4 position = vec4(0.0, stringVertex.y, stringVertex.x, 1.0);
 
-    gl_Position = projection * camera * transform * position;
+    gl_Position = projection * view * transform * position;
     fColor = iColor;
     fTexCoords = mix(iTexBounds.xy, iTexBounds.zw, vertex);
 }

@@ -10,7 +10,7 @@
 
 #include "mrsdraw.hpp"
 #include "base/array.hpp"
-#include "mapper.hpp"
+#include "engine/mapper.hpp"
 #include "mino.hpp"
 #include "base/util.hpp"
 

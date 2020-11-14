@@ -7,100 +7,11 @@
 
 #include "smaa/AreaTex.h"
 #include "smaa/SearchTex.h"
-#include "renderer.hpp"
 #include "sys/window.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"
 
 using namespace minote;
-
-struct SmaaSeparate : Shader {
-
-	Sampler<TextureMS> image;
-
-	void setLocations() override
-	{
-		image.setLocation(*this, "image");
-	}
-
-};
-
-struct SmaaEdge : Shader {
-
-	Sampler<Texture> image;
-	Uniform<vec4> screenSize;
-
-	void setLocations() override
-	{
-		image.setLocation(*this, "image");
-		screenSize.setLocation(*this, "screenSize");
-	}
-
-};
-
-struct SmaaBlend : Shader {
-
-	Sampler<Texture> edges;
-	Sampler<Texture> area;
-	Sampler<Texture> search;
-	Uniform<vec4> subsampleIndices;
-	Uniform<vec4> screenSize;
-
-	void setLocations() override
-	{
-		edges.setLocation(*this, "edges", TextureUnit::_0);
-		area.setLocation(*this, "area", TextureUnit::_1);
-		search.setLocation(*this, "search", TextureUnit::_2);
-		subsampleIndices.setLocation(*this, "subsampleIndices");
-		screenSize.setLocation(*this, "screenSize");
-	}
-
-};
-
-struct SmaaNeighbor : Shader {
-
-	Sampler<Texture> image;
-	Sampler<Texture> blend;
-	Uniform<float> alpha;
-	Uniform<vec4> screenSize;
-
-	void setLocations() override
-	{
-		image.setLocation(*this, "image", TextureUnit::_0);
-		blend.setLocation(*this, "blend", TextureUnit::_2);
-		alpha.setLocation(*this, "alpha");
-		screenSize.setLocation(*this, "screenSize");
-	}
-
-};
-
-static const GLchar* SmaaSeparateVertSrc = (GLchar[]){
-#include "smaaSeparate.vert"
-	'\0'};
-static const GLchar* SmaaSeparateFragSrc = (GLchar[]){
-#include "smaaSeparate.frag"
-	'\0'};
-
-static const GLchar* SmaaEdgeVertSrc = (GLchar[]){
-#include "smaaEdge.vert"
-	'\0'};
-static const GLchar* SmaaEdgeFragSrc = (GLchar[]){
-#include "smaaEdge.frag"
-	'\0'};
-
-static const GLchar* SmaaBlendVertSrc = (GLchar[]){
-#include "smaaBlend.vert"
-	'\0'};
-static const GLchar* SmaaBlendFragSrc = (GLchar[]){
-#include "smaaBlend.frag"
-	'\0'};
-
-static const GLchar* SmaaNeighborVertSrc = (GLchar[]){
-#include "smaaNeighbor.vert"
-	'\0'};
-static const GLchar* SmaaNeighborFragSrc = (GLchar[]){
-#include "smaaNeighbor.frag"
-	'\0'};
 
 static Window* window = nullptr;
 
@@ -118,10 +29,6 @@ static Texture<PixelFmt::RGBA_u8> smaaBlendFbColor;
 
 static Texture<PixelFmt::RG_u8> smaaArea;
 static Texture<PixelFmt::R_u8> smaaSearch;
-
-static SmaaEdge smaaEdge;
-static SmaaBlend smaaBlend;
-static SmaaNeighbor smaaNeighbor;
 
 // AAComplex
 static Framebuffer smaaSeparateFb;
@@ -252,10 +159,6 @@ void aaInit(AAMode mode, Window& w)
 		smaaBlendFb.attach(smaaBlendFbColor, Attachment::Color0);
 		smaaBlendFb.attach(smaaEdgeFbDepthStencil, Attachment::DepthStencil);
 
-		smaaEdge.create("smaaEdge", SmaaEdgeVertSrc, SmaaEdgeFragSrc);
-		smaaBlend.create("smaaBlend", SmaaBlendVertSrc, SmaaBlendFragSrc);
-		smaaNeighbor.create("smaaNeighbor", SmaaNeighborVertSrc, SmaaNeighborFragSrc);
-
 		// Load lookup textures
 		u8vec2 areaTexBytesFlipped[AREATEX_SIZE / 2] = {};
 		for (size_t i = 0; i < AREATEX_HEIGHT; i += 1)
@@ -321,13 +224,6 @@ void aaCleanup(void)
 		smaaArea.destroy();
 	if (smaaSearch.id)
 		smaaSearch.destroy();
-
-	if (smaaEdge.id)
-		smaaEdge.destroy();
-	if (smaaBlend.id)
-		smaaBlend.destroy();
-	if (smaaNeighbor.id)
-		smaaNeighbor.destroy();
 
 	if (smaaSeparateFb.id)
 		smaaSeparateFb.destroy();

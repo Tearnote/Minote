@@ -441,6 +441,8 @@ struct Framebuffer : GLObject {
 	template<PixelFmt F>
 	void attach(RenderbufferMS<F>& r, Attachment attachment);
 
+	auto size() -> uvec2;
+
 	/**
 	 * Bind this framebuffer to the OpenGL context, causing all future draw
 	 * commands to render into the framebuffer's attachments. In a debug build,
@@ -635,7 +637,7 @@ struct Draw {
 	GLint offset = 0;
 	DrawParams params;
 
-	void draw(Window& window);
+	void draw(Window* window = nullptr);
 
 };
 

@@ -43,14 +43,14 @@ template<typename T>
 concept TriviallyCopyable = std::is_trivially_copyable_v<T>;
 
 template<typename T>
-concept TriviallyConstructible = std::is_trivially_constructible_v<T>;
+concept ZeroArgConstructible = std::is_constructible_v<T>;
 
 /**
  * Template replacement for the C offsetof() macro. Unfortunately, it cannot
  * be constexpr within the current rules of the language.
  * @see https://gist.github.com/graphitemaster/494f21190bb2c63c5516
  */
-template <typename T1, TriviallyConstructible T2>
+template<typename T1, ZeroArgConstructible T2>
 inline auto offset_of(T1 T2::*member) -> size_t {
 	static T2 obj;
 	return reinterpret_cast<size_t>(&(obj.*member)) - reinterpret_cast<size_t>(&obj);

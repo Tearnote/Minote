@@ -63,12 +63,7 @@ void VertexArray::create(char const* const _name)
 
 void VertexArray::destroy()
 {
-#ifndef NDEBUG
-	if (!id) {
-		L.warn("Tried to destroy a vertex array that has not been created");
-		return;
-	}
-#endif //NDEBUG
+	ASSERT(id);
 
 	detail::state.deleteVertexArray(id);
 	id = 0;
@@ -109,12 +104,7 @@ void Framebuffer::create(char const* const _name)
 
 void Framebuffer::destroy()
 {
-#ifndef NDEBUG
-	if (!id) {
-		L.warn("Tried to destroy a framebuffer that has not been created");
-		return;
-	}
-#endif //NDEBUG
+	ASSERT(id);
 
 	detail::state.deleteFramebuffer(id);
 	id = 0;
@@ -124,6 +114,16 @@ void Framebuffer::destroy()
 
 	L.debug(R"(Framebuffer "%s" destroyed)", name);
 	name = nullptr;
+}
+
+auto Framebuffer::size() -> uvec2
+{
+	uvec2 result = {0, 0};
+	for (auto const* const attachment : attachments) {
+		if (!attachment) continue;
+		result = max(result, attachment->size);
+	}
+	return result;
 }
 
 void Framebuffer::bind()
@@ -250,12 +250,7 @@ void Shader::create(char const* _name, char const* vertSrc, char const* fragSrc)
 
 void Shader::destroy()
 {
-#ifndef NDEBUG
-	if (!id) {
-		L.warn("Tried to destroy a shader that has not been created");
-		return;
-	}
-#endif //NDEBUG
+	ASSERT(id);
 
 	glDeleteProgram(id);
 	id = 0;

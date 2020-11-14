@@ -7,6 +7,7 @@
 #define MINOTE_BLOOM_H
 
 #include "sys/window.hpp"
+#include "engine/engine.hpp"
 
 /**
  * Initialize the bloom filter. Must be called after rendererInit().
@@ -22,6 +23,6 @@ void bloomCleanup(void);
 /**
  * Apply the bloom effect.
  */
-void bloomApply(void);
+void bloomApply(minote::Engine& engine);
 
 #endif //MINOTE_BLOOM_H

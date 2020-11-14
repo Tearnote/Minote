@@ -9,36 +9,20 @@
 #include <atomic>
 #define NK_IMPLEMENTATION
 #include "nuklear/nuklear.h"
-#include "renderer.hpp"
-#include "sys/window.hpp"
-#include "world.hpp"
+#include "sys/opengl.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"
 
 using namespace minote;
 
-#define NUKLEAR_VBO_SIZE 1024 * 1024
-#define NUKLEAR_EBO_SIZE 256 * 1024
+#define NUKLEAR_VBO_SIZE (1024 * 1024)
+#define NUKLEAR_EBO_SIZE (256 * 1024)
 
-/// Nuklear shader type
-struct NuklearShader : Shader {
-
-	Sampler<Texture> atlas;
-	Uniform<mat4> projection;
-
-	void setLocations() override
-	{
-		atlas.setLocation(*this, "atlas");
-		projection.setLocation(*this, "projection");
-	}
-
-};
-
-typedef struct NuklearVertex {
+struct NuklearVertex {
 	vec2 pos;
 	vec2 texCoord;
 	color4 color;
-} NuklearVertex;
+};
 
 static const struct nk_draw_vertex_layout_element nuklearVertexLayout[] = {
 	{NK_VERTEX_POSITION, NK_FORMAT_FLOAT,    offsetof(NuklearVertex, pos)},
@@ -47,30 +31,20 @@ static const struct nk_draw_vertex_layout_element nuklearVertexLayout[] = {
 	{NK_VERTEX_LAYOUT_END}
 };
 
-static const GLchar* NuklearVertSrc = (GLchar[]){
-#include "nuklear.vert"
-	'\0'};
-static const GLchar* NuklearFragSrc = (GLchar[]){
-#include "nuklear.frag"
-	'\0'};
-
 static struct nk_context nkContext = {0};
 
 static struct nk_font_atlas atlas = {};
 static struct nk_draw_null_texture nullTexture = {};
 static struct nk_buffer commandList = {0};
 
-static NuklearShader nuklearShader;
 static Texture<PixelFmt::RGBA_u8> nuklearTexture;
 
 static VertexArray nuklearVao;
 static VertexBuffer<NuklearVertex> nuklearVbo;
 static ElementBuffer nuklearEbo;
 
-static Draw<NuklearShader> nuklear = {
-	.shader = &nuklearShader,
+static Draw<Shaders::Nuklear> nuklear = {
 	.vertexarray = &nuklearVao,
-	.framebuffer = &renderFb,
 	.params = {
 		.blending = true,
 		.culling = false,
@@ -173,9 +147,6 @@ void debugInit(void)
 	table[NK_COLOR_TAB_HEADER] = nk_rgba(48, 83, 111, 255);
 	nk_style_from_table(&nkContext, table);
 
-	// Compile the shader
-	nuklearShader.create("nuklear", NuklearVertSrc, NuklearFragSrc);
-
 	// Set up the buffers
 	nuklearVbo.create("nuklearVbo", true);
 	nuklearEbo.create("nuklearEbo", true);
@@ -201,7 +172,6 @@ void debugCleanup(void)
 	nuklearEbo.destroy();
 	nuklearVbo.destroy();
 	nuklearVao.destroy();
-	nuklearShader.destroy();
 	nuklearTexture.destroy();
 	nk_font_atlas_cleanup(&atlas);
 	nk_free(&nkContext);
@@ -230,7 +200,7 @@ void debugUpdate(void)
 	nk_input_end(&nkContext);
 }
 
-void debugDraw(Window& window)
+void debugDraw(Engine& engine)
 {
 	ASSERT(initialized);
 	if (!nuklearEnabled) {
@@ -238,8 +208,10 @@ void debugDraw(Window& window)
 		return;
 	}
 
+	nuklear.shader = &engine.shaders.nuklear;
 	nuklear.shader->atlas = nuklearTexture;
-	nuklear.shader->projection = worldScreenProjection;
+	nuklear.shader->projection = engine.scene.projection2D;
+	nuklear.framebuffer = engine.frame.fb;
 
 	nuklearVao.bind();
 	nuklearVbo.bind();
@@ -274,7 +246,7 @@ void debugDraw(Window& window)
 	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 
 	// Execute draw commands
-	uvec2 screenSize = window.size;
+	uvec2 screenSize = engine.window.size;
 	const struct nk_draw_command* command;
 	int offset = 0;
 	nk_draw_foreach(command, &nkContext, &commandList) {
@@ -286,7 +258,7 @@ void debugDraw(Window& window)
 			{command->clip_rect.x, screenSize.y - command->clip_rect.y - command->clip_rect.h},
 			{command->clip_rect.w, command->clip_rect.h}
 		};
-		nuklear.draw(window);
+		nuklear.draw();
 		offset += command->elem_count;
 	}
 	nk_clear(&nkContext);

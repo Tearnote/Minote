@@ -9,31 +9,11 @@
 #include <stdio.h>
 #include "sys/opengl.hpp"
 #include "base/array.hpp"
-#include "world.hpp"
 #include "base/util.hpp"
 #include "font.hpp"
 #include "base/log.hpp"
-#include "renderer.hpp"
 
 using namespace minote;
-
-/// Shader type for MSDF drawing
-struct MsdfShader : Shader {
-
-	BufferSampler transforms; ///< Buffer texture containing per-string transforms
-	Sampler<Texture> atlas; ///< Font atlas
-	Uniform<mat4> camera;
-	Uniform<mat4> projection;
-
-	void setLocations() override
-	{
-		atlas.setLocation(*this, "atlas", TextureUnit::_0);
-		transforms.setLocation(*this, "transforms", TextureUnit::_1);
-		projection.setLocation(*this, "projection");
-		camera.setLocation(*this, "camera");
-	}
-
-};
 
 /// Single glyph instance for the MSDF shader
 struct MsdfGlyph {
@@ -44,26 +24,16 @@ struct MsdfGlyph {
 	int transformIndex; ///< Index of the string transform from the "transforms" buffer texture
 };
 
-static const GLchar* MsdfVertSrc = (GLchar[]){
-#include "msdf.vert"
-	'\0'};
-static const GLchar* MsdfFragSrc = (GLchar[]){
-#include "msdf.frag"
-	'\0'};
-
 static constexpr size_t MaxGlyphs{1024};
 static constexpr size_t MaxStrings{1024};
 
-static MsdfShader msdfShader;
 static VertexArray msdfVao[FontSize] = {};
 static VertexBuffer<MsdfGlyph> msdfGlyphsVbo[FontSize];
 static varray<MsdfGlyph, MaxGlyphs> msdfGlyphs[FontSize]{};
 static BufferTexture<mat4> msdfTransformsTex[FontSize] = {};
 static varray<mat4, MaxStrings> msdfTransforms[FontSize]{};
 
-static Draw<MsdfShader> msdf = {
-	.shader = &msdfShader,
-	.framebuffer = &renderFb,
+static Draw<Shaders::Msdf> msdf = {
 	.mode = DrawMode::TriangleStrip,
 	.triangles = 2,
 	.params = {
@@ -151,8 +121,6 @@ void textInit(void)
 {
 	if (initialized) return;
 
-	msdfShader.create("msdf", MsdfVertSrc, MsdfFragSrc);
-
 	for (auto& msdfGlyphVbo : msdfGlyphsVbo)
 		msdfGlyphVbo.create("msdfGlyphVbo", true);
 	for (auto& vao : msdfVao)
@@ -184,8 +152,6 @@ void textCleanup(void)
 	for (auto& vao : msdfVao)
 		vao.destroy();
 
-	msdfShader.destroy();
-
 	L.debug("Fonts cleaned up");
 	initialized = false;
 }
@@ -214,7 +180,7 @@ void textQueueDir(FontType font, float size, vec3 pos, vec3 dir, vec3 up,
 	va_end(args);
 }
 
-void textDraw(Window& window)
+void textDraw(Engine& engine)
 {
 	ASSERT(initialized);
 
@@ -224,13 +190,15 @@ void textDraw(Window& window)
 		msdfGlyphsVbo[i].upload(msdfGlyphs[i]);
 		msdfTransformsTex[i].upload(msdfTransforms[i]);
 
+		msdf.shader = &engine.shaders.msdf;
 		msdf.vertexarray = &msdfVao[i];
+		msdf.framebuffer = engine.frame.fb;
 		msdf.instances = msdfGlyphs[i].size();
 		msdf.shader->atlas = fonts[i].atlas;
 		msdf.shader->transforms = msdfTransformsTex[i];
-		msdf.shader->projection = worldProjection;
-		msdf.shader->camera = worldCamera;
-		msdf.draw(window);
+		msdf.shader->projection = engine.scene.projection;
+		msdf.shader->view = engine.scene.view;
+		msdf.draw();
 
 		msdfGlyphs[i].clear();
 		msdfTransforms[i].clear();
