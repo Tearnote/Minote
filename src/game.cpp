@@ -170,6 +170,15 @@ void game(Window& window)
 	defer { playCleanup(); };
 	particlesInit();
 
+	Draw<> clear = {
+		.clearColor = true,
+		.clearDepthStencil = true,
+		.clearParams = {
+			.color = {0.0185f, 0.029f, 0.0944f, 1.0f}
+		}
+	};
+	engine.scene.background = engine.scene.ambientLight = {0.0185f, 0.029f, 0.0944f};
+
 	bool hardSync = true;
 	DrawParams syncParams = {
 		.culling = false,
@@ -191,10 +200,8 @@ void game(Window& window)
 		uvec2 const size = window.size;
 		scene.updateMatrices(size);
 		frame.begin(size);
-		frame.fb->bind();
-		glClearColor(0.0185f, 0.029f, 0.0944f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		engine.scene.background = engine.scene.ambientLight = {0.0185f, 0.029f, 0.0944f};
+		clear.framebuffer = frame.fb;
+		clear.draw();
 		playDraw(engine);
 		particlesDraw(engine);
 		frame.resolveAA();

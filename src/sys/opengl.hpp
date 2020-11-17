@@ -469,19 +469,19 @@ struct Framebuffer : GLObject {
 	static void blit(Framebuffer& dst, Framebuffer const& src,
 		Attachment srcBuffer = Attachment::Color0, bool depthStencil = false);
 
-};
+	};
 
-struct Shader : GLObject {
+	struct Shader : GLObject {
 
-	void create(char const* name, char const* vertSrc, char const* fragSrc);
+		void create(char const* name, char const* vertSrc, char const* fragSrc);
 
-	void destroy();
+		void destroy();
 
-	void bind() const;
+		void bind() const;
 
-	virtual void setLocations() = 0;
+		virtual void setLocations() = 0;
 
-};
+	};
 
 template<GLSLType T>
 struct Uniform {
@@ -625,7 +625,7 @@ struct DrawParams {
 template<typename T>
 concept ShaderType = std::is_base_of_v<Shader, T>;
 
-template<ShaderType T>
+template<ShaderType T = Shader>
 struct Draw {
 
 	T* shader = nullptr;
@@ -637,7 +637,15 @@ struct Draw {
 	GLint offset = 0;
 	DrawParams params;
 
-	void draw(Window* window = nullptr);
+	bool clearColor = false;
+	bool clearDepthStencil = false;
+	struct ClearParams {
+		color4 color = {0.0f, 0.0f, 0.0f, 1.0f};
+		f32 depth = 1.0f;
+		u8 stencil = 0;
+	} clearParams;
+
+	void draw();
 
 };
 

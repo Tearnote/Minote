@@ -159,5 +159,6 @@ void bloomApply(Engine& engine)
 	// Draw the bloom on top of the render
 	blit.shader->image = bloomFbColor[0];
 	blit.shader->boost = 1.0f;
-	blit.draw(&engine.window);
+	blit.params.viewport = {.size = engine.window.size};
+	blit.draw();
 }

@@ -51,6 +51,9 @@ struct GLState {
 	GLStencilMode stencilMode;
 	AABB<2, i32> viewport;
 	bool colorWrite = true;
+	color4 clearColor = {0.0f, 0.0f, 0.0f, 0.0f};
+	GLclampf clearDepth = 1.0f;
+	GLint clearStencil = 0;
 
 	void setFeature(GLenum feature, bool state);
 
@@ -65,6 +68,12 @@ struct GLState {
 	void setViewport(AABB<2, i32> box);
 
 	void setColorWrite(bool state);
+
+	void setClearColor(color4 color);
+
+	void setClearDepth(GLclampf depth);
+
+	void setClearStencil(GLint stencil);
 
 	// Object bindings
 	GLuint vertexbuffer = 0;
@@ -193,6 +202,30 @@ inline void GLState::setColorWrite(bool const state)
 	GLboolean const glState = state? GL_TRUE : GL_FALSE;
 	glColorMask(glState, glState, glState, glState);
 	colorWrite = state;
+}
+
+inline void GLState::setClearColor(color4 const color)
+{
+	if (color == clearColor) return;
+
+	glClearColor(color.r, color.g, color.b, color.a);
+	clearColor = color;
+}
+
+inline void GLState::setClearDepth(GLclampf const depth)
+{
+	if (depth == clearDepth) return;
+
+	glClearDepth(depth);
+	clearDepth = depth;
+}
+
+inline void GLState::setClearStencil(GLint const stencil)
+{
+	if (stencil == clearStencil) return;
+
+	glClearStencil(stencil);
+	clearStencil = stencil;
 }
 
 inline void GLState::bindBuffer(GLenum const target, GLuint const id)
@@ -1108,51 +1141,69 @@ void BufferSampler::set(BufferTexture<T>& val)
 }
 
 template<ShaderType T>
-void Draw<T>::draw(Window* window)
+void Draw<T>::draw()
 {
-	ASSERT(window || framebuffer || !params.viewport.zero());
-	ASSERT(shader);
+	ASSERT(shader || clearColor || clearDepthStencil);
 	// Ensure the element buffer format is GL_UNSIGNED_INT
 	static_assert(std::is_same_v<ElementBuffer::Type, u32>);
 
-	bool const instanced = (instances > 1);
-	bool const indexed = (vertexarray && vertexarray->elements);
-	auto const vertices = [this]() -> GLsizei {
-		switch (mode) {
-		case DrawMode::Triangles:
-			return triangles * 3;
-		case DrawMode::TriangleStrip:
-			return triangles + 2;
-		default:
-			L.fail("Unknown draw mode");
-		}
-	}();
-
-	if (params.viewport.zero()) {
-		params.viewport.size = framebuffer? framebuffer->size() : window->size.load();
-		params.set();
-		params.viewport.size = {0, 0};
-	} else {
-		params.set();
-	}
-	shader->bind();
-	if (vertexarray)
-		vertexarray->bind();
 	if (framebuffer)
 		framebuffer->bind();
 	else
 		Framebuffer::unbind();
 
-	if (!instanced && !indexed)
-		glDrawArrays(+mode, offset, vertices);
-	if (instanced && !indexed)
-		glDrawArraysInstanced(+mode, offset, vertices, instances);
-	if (!instanced && indexed)
-		glDrawElements(+mode, vertices, GL_UNSIGNED_INT,
-			reinterpret_cast<GLvoid*>(offset * sizeof(u32)));
-	if (instanced && indexed)
-		glDrawElementsInstanced(+mode, vertices, GL_UNSIGNED_INT,
-			reinterpret_cast<GLvoid*>(offset * sizeof(u32)), instances);
+	if (clearColor || clearDepthStencil) {
+		GLbitfield mask = 0u;
+		if (clearColor) {
+			detail::state.setClearColor(clearParams.color);
+			mask |= GL_COLOR_BUFFER_BIT;
+		}
+		if (clearDepthStencil) {
+			ASSERT(!framebuffer || detail::getAttachment(*framebuffer, Attachment::DepthStencil));
+			detail::state.setClearDepth(clearParams.depth);
+			detail::state.setClearStencil(clearParams.stencil);
+			mask |= GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT;
+		}
+		glClear(mask);
+	}
+
+	if (shader) {
+		ASSERT(framebuffer || !params.viewport.zero());
+		bool const instanced = (instances > 1);
+		bool const indexed = (vertexarray && vertexarray->elements);
+		auto const vertices = [this]() -> GLsizei {
+			switch (mode) {
+			case DrawMode::Triangles:
+				return triangles * 3;
+			case DrawMode::TriangleStrip:
+				return triangles + 2;
+			default:
+				L.fail("Unknown draw mode");
+			}
+		}();
+
+		if (params.viewport.zero()) {
+			params.viewport.size = framebuffer->size();
+			params.set();
+			params.viewport.size = {0, 0};
+		} else {
+			params.set();
+		}
+		shader->bind();
+		if (vertexarray)
+			vertexarray->bind();
+
+		if (!instanced && !indexed)
+			glDrawArrays(+mode, offset, vertices);
+		if (instanced && !indexed)
+			glDrawArraysInstanced(+mode, offset, vertices, instances);
+		if (!instanced && indexed)
+			glDrawElements(+mode, vertices, GL_UNSIGNED_INT,
+				reinterpret_cast<GLvoid*>(offset * sizeof(u32)));
+		if (instanced && indexed)
+			glDrawElementsInstanced(+mode, vertices, GL_UNSIGNED_INT,
+				reinterpret_cast<GLvoid*>(offset * sizeof(u32)), instances);
+	}
 }
 
 }

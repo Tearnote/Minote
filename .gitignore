@@ -9,6 +9,7 @@ doc/*
 
 # Editor config
 .idea/*
+.vscode/*
 
 # Internal notes
 reference/*
