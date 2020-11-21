@@ -1,8 +1,3 @@
-/**
- * Template implementation of varray.hpp
- * @file
- */
-
 #pragma once
 
 #include <cstring>
@@ -13,15 +8,16 @@ namespace minote {
 template<typename T, size_t N>
 auto varray<T, N>::produce() -> Element*
 {
-	if (_size == Capacity)
-		return nullptr;
+	if (_size == Capacity) return nullptr;
 
 	_size += 1;
-	return &buffer[_size - 1];
+	auto* const result = &buffer[_size - 1];
+	std::memset(result, 0, sizeof(Element));
+	return result;
 }
 
 template<typename T, size_t N>
-void varray<T, N>::remove(size_t index)
+void varray<T, N>::remove(size_t const index)
 {
 	ASSERT(index < _size);
 	if (index < _size - 1) {
@@ -33,7 +29,7 @@ void varray<T, N>::remove(size_t index)
 }
 
 template<typename T, size_t N>
-void varray<T, N>::removeSwap(size_t index)
+void varray<T, N>::removeSwap(size_t const index)
 {
 	ASSERT(index < _size);
 	if (index < _size - 1)
@@ -48,14 +44,14 @@ void varray<T, N>::clear()
 }
 
 template<typename T, size_t N>
-auto varray<T, N>::operator[](size_t index) -> Element&
+auto varray<T, N>::operator[](size_t const index) -> Element&
 {
 	ASSERT(index < _size);
 	return buffer[index];
 }
 
 template<typename T, size_t N>
-auto varray<T, N>::operator[](size_t index) const -> Element const&
+auto varray<T, N>::operator[](size_t const index) const -> Element const&
 {
 	ASSERT(index < _size);
 	return buffer[index];

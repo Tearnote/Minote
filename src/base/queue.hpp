@@ -1,12 +1,9 @@
-/**
- * Statically allocated FIFO queue
- * @file
- * Uses a ring buffer as a backing store. All methods are O(1).
- */
+// Minote - base/queue.hpp
+// Static FIFO queue with limited capacity. Uses a ring buffer as storage.
+// All methods are O(1).
 
 #pragma once
 
-#include <cstdlib>
 #include "base/array.hpp"
 #include "base/util.hpp"
 
@@ -15,53 +12,43 @@ namespace minote {
 template<typename T, size_t N>
 struct queue {
 
+	// Type of the queue element
 	using Element = T;
+
+	// Maximum number of elements in the queue plus one
 	static constexpr size_t Capacity = N;
 
-	array<Element, Capacity> buffer = {}; ///< Ring buffer of elements
-	size_t head = 0; ///< Index of the first empty space to enqueue into
-	size_t tail = 0; ///< Index of the next element to dequeue
+	// Ring buffer containing the elements
+	array<Element, Capacity> buffer = {};
 
-	/**
-	 * Add an element to the back of the queue. If there is no space, nothing
-	 * happens.
-	 * @param e Element to add
-	 * @return true if added, false if out of space
-	 */
+	// Index of the first empty slot to enqueue into
+	size_t head = 0;
+
+	// Index of the next element to dequeue
+	size_t tail = 0;
+
+	// Add an element to the back of the queue and return true. If there is
+	// no space, the element is not added and false is returned.
 	auto enqueue(Element const& e) -> bool;
 
-	/**
-	 * Remove and return an element from the front of the queue. If the queue is
-     * empty, nothing happens.
-	 * @return Removed element, or nullptr if queue is empty
-	 */
+	// Remove and return an element from the front of the queue. If the queue is
+    // empty, nullptr is returned.
 	auto dequeue() -> Element*;
 
-	/**
-	 * Return the element from the front of the queue without removing it.
-	 * If the queue is empty, nothing happens.
-	 * @return Peeked element, or nullptr if queue is empty
-	 */
+	// Return the element from the front of the queue without removing it.
+	// If the queue is empty, nullptr is returned.
 	auto peek() -> Element*;
 	auto peek() const -> Element const*;
 
-	/**
-	 * Check whether the queue is empty.
-	 * @return true is empty, false if not empty
-	 */
+	// Return true if the queue is empty, false otherwise.
 	[[nodiscard]]
 	auto isEmpty() const -> bool;
 
-	/**
-	 * Check whether the queue is full.
-	 * @return true if full, false if not full
-	 */
+	// Return true if the queue is full, false otherwise.
 	[[nodiscard]]
 	auto isFull() const -> bool;
 
-	/**
-	 * Clear the queue, setting the number of elements to zero.
-	 */
+	// Clear the queue, setting the number of elements to zero.
 	void clear();
 
 };

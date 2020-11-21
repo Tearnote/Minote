@@ -1,8 +1,3 @@
-/**
- * Implementation of log.hpp
- * @file
- */
-
 #include "log.hpp"
 
 #include <algorithm>
@@ -15,19 +10,16 @@
 
 namespace minote {
 
-/// Mapping from Log::Level to string name
+// Mapping from Log::Level to string name. Keep aligned to 5 chars
 static constexpr char LogLevelStrings[][+Log::Level::Size] = {
 	"", "TRACE", "DEBUG", " INFO", " WARN", "ERROR", " CRIT"
 };
 
-/// Messages longer than this will be truncated
+// Messages longer than this will be truncated
 static constexpr size_t MaxMessageLen = 2048;
 
-/**
- * Write a preformatted log message to a specified output.
- * @param file The output file
- * @param msg Preformatted message, with a newline at the end
- */
+// Write a preformatted log message to a specified output. Does not insert
+// a newline.
 static void logTo(FILE* const file, char const msg[])
 {
 	ASSERT(msg);
@@ -38,23 +30,15 @@ static void logTo(FILE* const file, char const msg[])
 	}
 }
 
-/**
- * The actual log message handling function. Performs level filtering,
- * formatting and output selection.
- * @param log The ::Log object
- * @param level Message level
- * @param fmt Format string in printf syntax
- * @param ap List of arguments to print
- */
+// The actual log message handling function. Performs filtering, formatting
+// and output selection.
 static void logPrio(Log& log, Log::Level const level, char const* const fmt, va_list& ap)
 {
 	ASSERT(fmt);
 	using Level = Log::Level;
 
-	if (level < log.level)
-		return;
-	if (!log.console && !log.file)
-		return;
+	if (level < log.level) return;
+	if (!log.console && !log.file) return;
 
 	char msg[MaxMessageLen] = {};
 
@@ -107,8 +91,7 @@ void Log::enableFile(char const* const filepath)
 	}
 
 	file = std::fopen(filepath, "w");
-	if (file)
-		return;
+	if (file) return;
 
 	// Handle error by forcibly printing it to console
 	auto const consolePrev = console;
@@ -121,13 +104,11 @@ void Log::enableFile(char const* const filepath)
 
 void Log::disableFile()
 {
-	if (!file)
-		return;
+	if (!file) return;
 
 	auto const result = fclose(file);
 	file = nullptr;
-	if (!result)
-		return;
+	if (!result) return;
 
 	// Handle error by forcibly printing it to console
 	auto const consolePrev = console;

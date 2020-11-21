@@ -1,7 +1,5 @@
-/**
- * Smooth transitions between floating-point values
- * @file
- */
+// Minote - base/tween.hpp
+// Smooth transitions between floating-point values
 
 #pragma once
 
@@ -12,38 +10,36 @@
 
 namespace minote {
 
-/**
- * Description of a tween instance. most of the fields need to be filled in
- * manually before use; designated initializer syntax is convenient for this.
- */
+// Description of a tween instance. most of the fields need to be filled in
+// manually before use; designated initializer syntax is convenient for this.
 template<FloatingPoint T = float>
 struct Tween {
 
 	using Type = T;
 
-	Type from = 0.0f; ///< initial value
-	Type to = 1.0f; ///< final value
-	nsec start = 0; ///< time of starting the tween
-	nsec duration = seconds(1); ///< time the tween will take to finish
-	EasingFunction<Type> type = linearInterpolation; ///< easing function to use during the tween
+	// Initial value
+	Type from = 0.0f;
 
-	/**
-	 * Convenience function to replay a tween from the current moment.
-	 */
+	// Final value
+	Type to = 1.0f;
+
+	// Time of starting the tween
+	nsec start = 0;
+
+	// Time the tween will take to finish
+	nsec duration = seconds(1);
+
+	// Easing function to use during the tween
+	EasingFunction<Type> type = linearInterpolation;
+
+	// Convenience function to replay a tween from the current moment.
 	void restart() { start = Window::getTime(); }
 
-	/**
-	 * Calculate the current value of the tween. The return value will
-	 * be clamped if it is outside of the specified time range.
-	 * @return Current tween result
-	 */
+	// Calculate the current value of the tween. The return value will
+	// be clamped if it is outside of the specified time range.
 	auto apply() const -> Type { return applyAt(Window::getTime()); }
 
-	/**
-	 * Calculate the value of the tween for a specified moment in time.
-	 * @param time Timestamp to calculate for
-	 * @return Tween result at specified moment
-	 */
+	// Calculate the value of the tween for a specified moment in time.
 	constexpr auto applyAt(nsec time) const -> Type;
 
 };
@@ -51,10 +47,8 @@ struct Tween {
 template<FloatingPoint T>
 constexpr auto Tween<T>::applyAt(nsec const time) const -> Type
 {
-	if (start >= time)
-		return from;
-	if (start + duration <= time)
-		return to;
+	if (start >= time) return from;
+	if (start + duration <= time) return to;
 
 	nsec const elapsed = time - start;
 	Type const progress = type(static_cast<Type>(elapsed) / duration);

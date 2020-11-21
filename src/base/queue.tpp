@@ -1,8 +1,3 @@
-/**
- * Template implementation of queue.hpp
- * @file
- */
-
 #pragma once
 
 namespace minote {

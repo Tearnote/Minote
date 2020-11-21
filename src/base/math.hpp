@@ -1,8 +1,5 @@
-/**
- * cmath replacement extended with vector and matrix types
- * @file
- * Partial scope import of the GLM library.
- */
+// Minote - base/math.hpp
+// cmath replacement, extended with vector and matrix types from the GLM library
 
 #pragma once
 
@@ -28,12 +25,18 @@
 
 namespace minote {
 
-// Base types
+// *** Base types ***
+
 using glm::u8;
 using glm::u16;
 using glm::u32;
+using glm::u64;
+using glm::i8;
+using glm::i16;
 using glm::i32;
+using glm::i64;
 using glm::f32;
+using glm::f64;
 using glm::vec2;
 using glm::vec3;
 using glm::vec4;
@@ -50,16 +53,16 @@ using glm::u8vec4;
 using color3 = vec3;
 using color4 = vec4;
 
-// Constants
-/**
- * A more correct replacement for pi.
- * @see https://tauday.com/
- */
+// *** Constants ***
+
+// A more correct replacement for pi.
+// See: https://tauday.com/
 template<FloatingPoint T>
 constexpr T Tau_v = 6.283185307179586476925286766559005768L;
 constexpr auto Tau = Tau_v<double>;
 
-// Scalar / component-wise operations
+// *** Scalar / component-wise operations ***
+
 using glm::abs;
 using glm::sign;
 using glm::floor;
@@ -88,16 +91,25 @@ using glm::sin;
 using glm::cos;
 using glm::tan;
 
-/**
- * True modulo operation (as opposed to remainder, which is operator% in C++.)
- * @param num Value
- * @param div Modulo divisor
- * @return Result of modulo (always positive)
- */
+// True modulo operation (as opposed to remainder, which is operator% in C++.)
+// The result is always positive and does not flip direction at zero.
+// Example:
+//  5 mod 4 = 1
+//  4 mod 4 = 0
+//  3 mod 4 = 3
+//  2 mod 4 = 2
+//  1 mod 4 = 1
+//  0 mod 4 = 0
+// -1 mod 4 = 3
+// -2 mod 4 = 2
+// -3 mod 4 = 1
+// -4 mod 4 = 0
+// -5 mod 4 = 3
 template<Integral T>
 constexpr auto tmod(T num, T div) { return num % div + (num % div < 0) * div; }
 
-// Vector operations
+// *** Vector operations ***
+
 using glm::length;
 using glm::distance;
 using glm::dot;
@@ -105,9 +117,11 @@ using glm::cross;
 using glm::normalize;
 using glm::reflect;
 
-// Matrix generation
+// *** Matrix generation ***
+
 using glm::perspective;
 using glm::ortho;
+using glm::lookAt;
 
 template<typename T = f32, glm::qualifier Q = glm::qualifier::defaultp>
 constexpr auto make_translate(glm::vec<3, T, Q> v) -> glm::mat<4, 4, T, Q>
@@ -127,30 +141,29 @@ constexpr auto make_scale(glm::vec<3, T, Q> v) -> glm::mat<4, 4, T, Q>
 	return glm::scale(glm::mat<4, 4, T, Q>(static_cast<T>(1)), v);
 }
 
-// Matrix transforms
+// *** Matrix transforms ***
+
 using glm::transpose;
 using glm::inverse;
 using glm::inverseTranspose;
 using glm::translate;
 using glm::rotate;
 using glm::scale;
-using glm::lookAt;
 
-// Color operations
+// *** Color operations ***
+
 using glm::convertLinearToSRGB;
 using glm::convertSRGBToLinear;
 
-// Raw value passing
+// *** Raw value passing ***
+
 using glm::value_ptr;
 
-// Compound types
+// *** Compound types ***
 
-/**
- * Axis-aligned bounding box, defined by position and size (extending
- * in positive direction of each axis.)
- * @tparam Dim Number of dimensions (2 or 3)
- * @tparam T Underlying type, i32 (size is u32) or f32
- */
+// Axis-aligned bounding box. Contains position and size extending in positive
+// direction of each axis. Parametrized by number of dimensions Dim = 2 or 3
+// and underlying type T = i32 (size becomes u32) or f32.
 template<int Dim, typename T>
 struct AABB;
 

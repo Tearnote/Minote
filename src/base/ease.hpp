@@ -1,9 +1,6 @@
-/**
- * Easing functions, adapted from AHEasing project to constexpr C++
- * @file
- * @see A large portion adapted from https://github.com/warrenm/AHEasing,
- * under WTFPL license.
- */
+// Minote - base/ease.hpp
+// Easing functions, adapted from AHEasing project to constexpr C++
+// See: https://github.com/warrenm/AHEasing, used under WTFPL license
 
 #pragma once
 
@@ -11,6 +8,7 @@
 
 namespace minote {
 
+// Type matching all of the below functions
 template<FloatingPoint T>
 using EasingFunction = auto (*)(T) -> T;
 

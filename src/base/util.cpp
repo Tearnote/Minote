@@ -1,16 +1,6 @@
-/**
- * Implementation of functions required by util.hpp
- * @file
- */
-
 #include "base/util.hpp"
 
-#include <cstring>
 #include "base/log.hpp"
-
-namespace minote {
-
-}
 
 namespace ppk::assert {
 

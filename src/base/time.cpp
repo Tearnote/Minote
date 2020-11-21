@@ -1,8 +1,3 @@
-/**
- * Implementation of time.h
- * @file
- */
-
 #include "base/time.hpp"
 
 #include <thread>
