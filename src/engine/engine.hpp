@@ -1,7 +1,5 @@
-/**
- * A struct bringing together all basic utilities
- * @file
- */
+// Minote - engine/engine.hpp
+// A struct bringing together all basic utilities
 
 #pragma once
 
@@ -14,12 +12,17 @@
 
 namespace minote {
 
+// Must be created using a designated initializer
 struct Engine {
+
+	// *** Global facilities ***
 
 	Window& window;
 	Mapper& mapper;
 	Frame& frame;
 	Scene& scene;
+
+	// *** Content stores ***
 
 	Shaders& shaders;
 	Models& models;

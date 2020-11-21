@@ -197,9 +197,8 @@ void game(Window& window)
 		particlesUpdate();
 
 		// Draw frame
-		uvec2 const size = window.size;
-		scene.updateMatrices(size);
-		frame.begin(size);
+		frame.begin(window.size);
+		scene.updateMatrices(frame.size);
 		clear.framebuffer = frame.fb;
 		clear.draw();
 		playDraw(engine);
@@ -214,8 +213,10 @@ void game(Window& window)
 #endif //MINOTE_DEBUG
 		frame.end();
 		window.flip();
-		if (hardSync)
+		if (hardSync) {
+			syncParams.viewport.size = frame.size;
 			models.sync.draw(*frame.fb, scene, syncParams);
+		}
 	}
 }
 

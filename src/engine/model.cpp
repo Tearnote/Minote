@@ -1,8 +1,3 @@
-/**
- * Implementation of engine/model.hpp
- * @file
- */
-
 #include "engine/model.hpp"
 
 namespace minote {

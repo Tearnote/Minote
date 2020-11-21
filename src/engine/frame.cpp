@@ -1,12 +1,8 @@
-/**
- * Implementation of engine/frame.hpp
- * @file
- */
-
 #include "engine/frame.hpp"
 
 namespace minote {
 
+// Initialize Frame framebuffers and their attachments for a specified AA mode.
 static void createFramebuffers(Frame& frame, uvec2 const size, Samples const _aa)
 {
 	ASSERT(_aa != Samples::None);
@@ -26,6 +22,7 @@ static void createFramebuffers(Frame& frame, uvec2 const size, Samples const _aa
 	}
 }
 
+// Destroy all of a Frame's framebuffers and their attachments.
 static void destroyFramebuffers(Frame& frame)
 {
 	if (frame.fb)
@@ -89,7 +86,7 @@ void Frame::changeAA(Samples const _aa)
 void Frame::resolveAA()
 {
 	ASSERT(aa != Samples::None);
-	if(aa == Samples::_1) return;
+	if (aa == Samples::_1) return;
 	ASSERT(fb == &msfb);
 
 	Framebuffer::blit(ssfb, msfb, Attachment::Color0, true);
@@ -97,15 +94,15 @@ void Frame::resolveAA()
 	fb = &ssfb;
 }
 
-void Frame::begin(uvec2 const size)
+void Frame::begin(uvec2 const _size)
 {
 	ASSERT(aa != Samples::None);
 
-	color.resize(size);
-	depthStencil.resize(size);
+	color.resize(_size);
+	depthStencil.resize(_size);
 	if (aa != Samples::_1) {
-		colorMS.resize(size);
-		depthStencilMS.resize(size);
+		colorMS.resize(_size);
+		depthStencilMS.resize(_size);
 	}
 
 	if (aa == Samples::_1)
@@ -113,7 +110,7 @@ void Frame::begin(uvec2 const size)
 	else
 		fb = &msfb;
 
-	delinearize.params.viewport = {.size = size};
+	size = _size;
 }
 
 void Frame::end()
@@ -124,7 +121,10 @@ void Frame::end()
 		resolveAA();
 
 	delinearize.shader->image = color;
+	delinearize.params.viewport = {.size = size};
 	delinearize.draw();
+
+	fb = nullptr;
 }
 
 }

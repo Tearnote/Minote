@@ -1,14 +1,10 @@
-/**
- * Template implementation of engine/model.hpp
- * @file
- */
-
 #include "engine/model.hpp"
 
 namespace minote {
 
 namespace detail {
 
+// Generate normals in-place for an array of vertices.
 template<template<TriviallyCopyable, size_t> typename Arr, size_t N>
 	requires ArrayContainer<Arr, ModelPhong::Vertex, N>
 void generatePhongNormals(Arr<ModelPhong::Vertex, N>& vertices)

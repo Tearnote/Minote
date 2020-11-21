@@ -1,8 +1,3 @@
-/**
- * Implementation of engine/mapper.hpp
- * @file
- */
-
 #include "engine/mapper.hpp"
 
 #include "base/log.hpp"
@@ -11,6 +6,11 @@ namespace minote {
 
 void Mapper::mapKeyInputs(Window& window)
 {
+	if (actions.isFull()) {
+		L.warn("Mapper queue full");
+		return;
+	}
+
 	while (const auto keyOpt = window.dequeueInput()) {
 		const auto key = keyOpt.value();
 
@@ -47,8 +47,7 @@ void Mapper::mapKeyInputs(Window& window)
 				return Action::Type::None;
 			}
 		}();
-		if (type == Action::Type::None)
-			continue; // Key not recognized
+		if (type == Action::Type::None) continue; // Key not recognized
 
 		const auto state = [=] {
 			switch (key.state) {
@@ -69,9 +68,11 @@ void Mapper::mapKeyInputs(Window& window)
 			.state = state,
 			.timestamp = timestamp
 		};
-		if (!actions.enqueue(newAction))
-			L.warn("Mapper queue full, key input #%d %s dropped",
-				+type, state == Action::State::Pressed ? "press" : "release");
+		actions.enqueue(newAction);
+		if (actions.isFull()) {
+			L.warn("Mapper queue full");
+			return;
+		}
 	}
 }
 

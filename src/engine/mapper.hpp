@@ -1,7 +1,5 @@
-/**
- * Converter of raw inputs from user devices into game actions
- * @file
- */
+// Minote - engine/mapper.hpp
+// Converter of raw inputs from user devices into game actions
 
 #pragma once
 
@@ -12,7 +10,7 @@
 
 namespace minote {
 
-/// A user input event, translated to ingame action
+// A user input event, translated to ingame action
 struct Action {
 
 	enum struct Type {
@@ -30,36 +28,29 @@ struct Action {
 		Pressed, Released
 	};
 
-	Type type = Type::None; ///< The virtual button related to the event
-	State state = State::None; ///< What happened to the button
-	nsec timestamp = 0; ///< Time when event occured
+	Type type = Type::None;
+	State state = State::None;
+	nsec timestamp = 0;
 
 };
 
 struct Mapper {
 
-	queue<Action, 64> actions; ///< Processed inputs, ready to be retrieved
+	// Processed inputs, ready to be retrieved with peek/dequeueAction()
+	queue<Action, 64> actions;
 
-	/**
-	 * Dequeue all pending keyboard inputs from the given input and insert
-	 * them as actions to this mapper's queue.
-	 * @param window Window to process. Will end up with an empty input queue,
-	 * unless mapper queue is full
-	 */
+	// Dequeue all pending keyboard inputs from the given Window, translate
+	// them to actions and insert them into the actions queue. If the actions
+	// queue is full, the given Window's input queue will still have all of
+	// the unprocessed inputs.
 	void mapKeyInputs(Window& window);
 
-	/**
-	 * Remove and return the most recent Action. If the queue is empty, nothing
-	 * happens.
-	 * @return Most recent Action, or nullopt if queue empty
-	 */
+	// Remove and return the most recent Action. If the queue is empty, nullptr
+	// is returned instead.
 	auto dequeueAction() -> Action*;
 
-	/**
-	 * Return the most recent Action without removing it. If the queue is empty,
-	 * nothing happens.
-	 * @return Most recent Action, or nullopt if queue empty
-	 */
+	// Return the most recent Action without removing it. If the queue is empty,
+	// nullptr is returned instead.
 	[[nodiscard]]
 	auto peekAction() -> Action*;
 	[[nodiscard]]

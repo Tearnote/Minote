@@ -1,8 +1,3 @@
-/**
- * Implementation of engine/scene.hpp
- * @file
- */
-
 #include "engine/scene.hpp"
 
 namespace minote {
