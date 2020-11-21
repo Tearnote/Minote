@@ -1,3 +1,6 @@
+// Minote - glsl/util.glslh
+// Useful functions for use in multiple shaders
+
 // https://rauwendaal.net/2014/06/14/rendering-a-screen-covering-triangle-in-opengl/
 vec2 triangleVertex(int vertexID, out vec2 texCoords)
 {

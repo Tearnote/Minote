@@ -1,9 +1,6 @@
-/**
- * Blit fragment shader
- * @file
- * Basic fullscreen blit function. Generates its own vertices, just draw
- * 3 vertices with no buffers attached.
- */
+// Minote - glsl/blit.frag.glsl
+// Basic fullscreen blit. Generates its own vertices, just draw 3 vertices
+// with no buffers attached.
 
 #version 330 core
 

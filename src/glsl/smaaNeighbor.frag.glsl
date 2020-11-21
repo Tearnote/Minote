@@ -1,8 +1,6 @@
-/**
- * SMAA neighborhood blending fragment shader
- * @file
- * Adapted from https://github.com/turol/smaaDemo
- */
+// Minote - glsl/smaaNeighbor.frag.glsl
+// SMAA neighborhood blending stage.
+// Adapted from https://github.com/turol/smaaDemo
 
 #version 330 core
 

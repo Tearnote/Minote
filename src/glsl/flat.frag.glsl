@@ -1,8 +1,5 @@
-/**
- * Flat shading fragment shader
- * @file
- * No lighting, just constant color + per-instance tint.
- */
+// Minote - glsl/flat.frag.glsl
+// Draw vertices with no lighting, just constant color + per-instance tint.
 
 #version 330 core
 

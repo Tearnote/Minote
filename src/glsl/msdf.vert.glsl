@@ -1,9 +1,6 @@
-/**
- * MSDF vertex shader
- * @file
- * Multi-channel signed distance field drawing, used for sharp text at any
- * zoom level.
- */
+// Minote - src/msdf.vert.glsl
+// Multi-channel signed distance field rendering, used for sharp text at any
+// zoom level. Performs its own antialiasing - do not use a MSAA target.
 
 #version 330 core
 

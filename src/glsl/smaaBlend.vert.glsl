@@ -1,8 +1,6 @@
-/**
- * SMAA blending weight calculation vertex shader
- * @file
- * Adapted from https://github.com/turol/smaaDemo
- */
+// Minote - glsl/smaaBlend.vert.glsl
+// SMAA blending weight calculation stage.
+// Adapted from https://github.com/turol/smaaDemo
 
 #version 330 core
 

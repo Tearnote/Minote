@@ -1,8 +1,6 @@
-/**
- * SMAA edge detection vertex shader
- * @file
- * Adapted from https://github.com/turol/smaaDemo
- */
+// Minote - glsl/smaaEdge.vert.glsl
+// SMAA edge detection stage.
+// Adapted from https://github.com/turol/smaaDemo
 
 #version 330 core
 

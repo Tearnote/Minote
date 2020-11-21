@@ -1,8 +1,6 @@
-/**
- * Phong shading fragment shader
- * @file
- * Basic Phong lighting model with one light source and per-instance tint.
- */
+// Minote - glsl/phong.frag.glsl
+// Basic Phong-Blinn lighting model with one light source and per-instance tint.
+// Fragment stage inputs are transformed to view space.
 
 #version 330 core
 

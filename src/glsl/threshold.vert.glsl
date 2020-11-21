@@ -1,9 +1,6 @@
-/**
- * HDR threshold vertex shader
- * @file
- * Shifts the brightness of the image with a smooth function, ensuring all HDR
- * pixels are within LDR range.
- */
+// Minote - glsl/threshold.vert.glsl
+// Shifts the brightness of the image with a smooth function, ensuring all HDR
+// pixels are within LDR range.
 
 #version 330 core
 

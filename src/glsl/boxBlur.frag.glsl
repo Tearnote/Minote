@@ -1,9 +1,6 @@
-/**
- * Box blur fragment shader
- * @file
- * Basic fullscreen blit function. Generates its own vertices, just draw
- * 3 vertices with no buffers attached.
- */
+// Minote - glsl/boxBlur.frag.glsl
+// Blurs an input image by sampling 4 points diagonally. Generates its own
+// vertices - just draw 3 triangles with no buffers attached.
 
 #version 330 core
 

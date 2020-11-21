@@ -1,8 +1,6 @@
-/**
- * SMAA blending weight calculation fragment shader
- * @file
- * Adapted from https://github.com/turol/smaaDemo
- */
+// Minote - glsl/smaaBlend.frag.glsl
+// SMAA blending weight calculation stage.
+// Adapted from https://github.com/turol/smaaDemo
 
 #version 330 core
 

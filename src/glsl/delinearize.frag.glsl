@@ -1,9 +1,6 @@
-/**
- * Delinearize fragment shader
- * @file
- * Blits a texture with gamma correction. No vertices needed, render as a single
- * triangle.
- */
+// Minote - glsl/delinearize.frag.glsl
+// Blits a texture with gamma correction. Generates its own vertices, just draw
+// 3 vertices with no buffers attached.
 
 #version 330 core
 

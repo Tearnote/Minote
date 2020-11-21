@@ -1,8 +1,6 @@
-/**
- * Phong shading vertex shader
- * @file
- * Basic Phong lighting model with one light source and per-instance tint.
- */
+// Minote - glsl/phong.vert.glsl
+// Basic Phong-Blinn lighting model with one light source and per-instance tint.
+// Fragment stage inputs are transformed to view space.
 
 #version 330 core
 
@@ -13,15 +11,15 @@ layout(location = 3) in vec4 iTint;
 layout(location = 4) in vec4 iHighlight;
 layout(location = 5) in mat4 iModel;
 
-out vec3 fPosition; // in view space
+out vec3 fPosition;
 out vec4 fColor;
 out vec4 fHighlight;
-out vec3 fNormal; // in view space
-out vec3 fLightPosition; // in view space
+out vec3 fNormal;
+out vec3 fLightPosition;
 
 uniform mat4 view;
 uniform mat4 projection;
-uniform vec3 lightPosition; // in world space
+uniform vec3 lightPosition;
 
 void main()
 {

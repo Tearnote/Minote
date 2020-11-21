@@ -1,9 +1,6 @@
-/**
- * MSDF fragment shader
- * @file
- * Multi-channel signed distance field drawing, used for sharp text at any
- * zoom level.
- */
+// Minote - src/msdf.frag.glsl
+// Multi-channel signed distance field rendering, used for sharp text at any
+// zoom level. Performs its own antialiasing - do not use a MSAA target.
 
 #version 330 core
 
@@ -12,7 +9,7 @@ in vec2 fTexCoords;
 
 out vec4 outColor;
 
-uniform sampler2D atlas;
+uniform sampler2D atlas; // Do not use mipmapping
 
 float median(float r, float g, float b) {
     return max(min(r, g), min(max(r, g), b));

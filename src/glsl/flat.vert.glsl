@@ -1,8 +1,5 @@
-/**
- * Flat shading vertex shader
- * @file
- * No lighting, just constant color + per-instance tint.
- */
+// Minote - glsl/flat.vert.glsl
+// Draw vertices with no lighting, just constant color + per-instance tint.
 
 #version 330 core
 

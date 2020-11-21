@@ -1,8 +1,5 @@
-/**
- * Nuklear vertex shader
- * @file
- * Renders the output of Nuklear's vertex buffer generator.
- */
+// Minote - glsl/nuklear.vert.glsl
+// Renders the output of Nuklear's vertex buffer generator.
 
 #version 330
 

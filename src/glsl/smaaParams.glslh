@@ -1,3 +1,6 @@
+// Minote - glsl/smaaParams.glslh
+// A file that includes SMAA source with custom quality parameters.
+
 #define SMAA_THRESHOLD 0.05
 #define SMAA_MAX_SEARCH_STEPS 16
 #define SMAA_MAX_SEARCH_STEPS_DIAG 8
