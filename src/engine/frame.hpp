@@ -3,7 +3,9 @@
 
 #pragma once
 
-#include "sys/opengl.hpp"
+#include "sys/opengl/framebuffer.hpp"
+#include "sys/opengl/texture.hpp"
+#include "sys/opengl/draw.hpp"
 #include "store/shaders.hpp"
 
 namespace minote {

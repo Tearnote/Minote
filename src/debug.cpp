@@ -9,7 +9,11 @@
 #include <atomic>
 #define NK_IMPLEMENTATION
 #include "nuklear/nuklear.h"
-#include "sys/opengl.hpp"
+#include "sys/opengl/vertexarray.hpp"
+#include "sys/opengl/texture.hpp"
+#include "sys/opengl/buffer.hpp"
+#include "sys/opengl/shader.hpp"
+#include "sys/opengl/draw.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"
 

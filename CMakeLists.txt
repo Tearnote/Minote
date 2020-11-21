@@ -137,25 +137,33 @@ set(SOURCES
         src/base/array.hpp src/base/array.tpp
         src/base/queue.hpp src/base/queue.tpp
         src/sys/window.hpp src/sys/window.cpp
-        src/sys/opengl.hpp src/sys/opengl.tpp src/sys/opengl.cpp
+        src/sys/opengl/base.hpp src/sys/opengl/base.cpp
+        src/sys/opengl/buffer.hpp src/sys/opengl/buffer.tpp
+        src/sys/opengl/state.hpp src/sys/opengl/state.cpp
+        src/sys/opengl/vertexarray.hpp src/sys/opengl/vertexarray.tpp src/sys/opengl/vertexarray.cpp
+        src/sys/opengl/texture.hpp src/sys/opengl/texture.tpp
+        src/sys/opengl/shader.hpp src/sys/opengl/shader.tpp src/sys/opengl/shader.cpp
+        src/sys/opengl/framebuffer.hpp src/sys/opengl/framebuffer.tpp src/sys/opengl/framebuffer.cpp
+        src/sys/opengl/draw.hpp src/sys/opengl/draw.tpp src/sys/opengl/draw.cpp
+        src/engine/mapper.hpp src/engine/mapper.cpp
+        src/engine/model.hpp src/engine/model.tpp src/engine/model.cpp
+        src/engine/frame.hpp src/engine/frame.cpp
+        src/engine/scene.hpp src/engine/scene.cpp
+        src/engine/engine.hpp
+        src/store/shaders.hpp src/store/shaders.cpp
+        src/store/models.hpp src/store/models.cpp
         src/game.hpp src/game.cpp
         src/play.hpp src/play.cpp
         src/mino.hpp src/mino.cpp
-        src/engine/mapper.hpp src/engine/mapper.cpp
         src/mrs.hpp src/mrs.cpp
         src/mrsdef.hpp src/mrsdef.cpp
         src/mrsdraw.hpp src/mrsdraw.cpp
         src/bloom.hpp src/bloom.cpp
-        src/engine/model.hpp src/engine/model.tpp src/engine/model.cpp
         src/particles.hpp src/particles.cpp
         src/debug.hpp src/debug.cpp
         src/font.hpp src/font.cpp
         src/fontlist.hpp
-        src/text.hpp src/text.cpp
-        src/engine/frame.hpp src/engine/frame.cpp
-        src/store/shaders.hpp src/store/shaders.cpp
-        src/engine/engine.hpp
-        src/engine/scene.hpp src/engine/scene.cpp src/store/models.cpp src/store/models.hpp)
+        src/text.hpp src/text.cpp)
 
 add_executable(Minote ${SOURCES} ${INTERNALLIBS})
 target_compile_options(Minote PRIVATE

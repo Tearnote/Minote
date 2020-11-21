@@ -18,15 +18,14 @@
 #include "base/log.hpp"
 #include "debug.hpp"
 
-using namespace minote;
+namespace minote {
 
-static thread_local Window* activeContext = nullptr;
+// The window with its OpenGL context active on current thread
+static thread_local Window const* activeContext = nullptr;
 
-/**
- * Retrieve the GLFW description of the most recently encountered error,
- * and clear the GLFW error state.
- * @return Error description string literal. Use ASAP, before the next GLFW call
- */
+// Retrieve the GLFW description of the most recently encountered error
+// and clear the GLFW error state. The description must be used before the next
+// GLFW call.
 static auto glfwError() -> char const*
 {
 	char const* description = nullptr;
@@ -37,30 +36,18 @@ static auto glfwError() -> char const*
 	return description;
 }
 
-/**
- * Trivial function to retrieve the Window from raw GLFW handle by user pointer.
- * @param handle Raw GLFW window
- * @return Window previously provided to the handle by glfwSetWindowUserPointer()
- */
+// Retrieve the Window from raw GLFW handle by user pointer.
 static auto getWindow(GLFWwindow* handle) -> Window&
 {
 	ASSERT(handle);
 	return *reinterpret_cast<Window*>(glfwGetWindowUserPointer(handle));
 }
 
-/**
- * Function to run on each keypress event. The key event is added to the queue.
- * @param handle Raw GLFW window
- * @param key Platform-independent key identifier
- * @param scancode Platform-dependent keycode
- * @param state GLFW_PRESS or GLFW_RELEASE
- * @param mods Bitmask of active modifier keys (ctrl, shift etc.)
- */
+// Function to run on each keypress event. The event is added to the queue.
 static void keyCallback(GLFWwindow* const handle, int const key, int, int const state, int)
 {
 	ASSERT(handle);
-	if (state == GLFW_REPEAT)
-		return; // Key repeat is not used
+	if (state == GLFW_REPEAT) return; // Key repeat is not used
 	auto& window = getWindow(handle);
 
 	Window::KeyInput input = {
@@ -77,13 +64,8 @@ static void keyCallback(GLFWwindow* const handle, int const key, int, int const 
 			window.title, key, state == GLFW_PRESS ? "press" : "release");
 }
 
-/**
- * Function to run when the window is resized. The new size is kept for later
- * retrieval, most likely by the renderer.
- * @param handle Raw GLFW window
- * @param width New window width in pixels
- * @param height New window height in pixels
- */
+// Function to run when the window is resized. The new size is kept for later
+// retrieval, such as by Frame::begin().
 static void framebufferResizeCallback(GLFWwindow* const handle, int const width, int const height)
 {
 	ASSERT(handle);
@@ -96,25 +78,19 @@ static void framebufferResizeCallback(GLFWwindow* const handle, int const width,
 	L.info(R"(Window "%s" resized to %dx%d)", window.title, width, height);
 }
 
-/**
- * Function to run when the window is rescaled. This might happen when dragging
- * it to a display with different DPI scaling, or at startup. The new scale
- * is saved for later retrieval.
- * @param handle Raw GLFW window
- * @param xScale New window scale, with 1.0 being "normal"
- * @param yScale Unused. This appears to be 0.0 sometimes so we ignore it
- */
+// Function to run when the window is rescaled. This might happen when dragging
+// it to a display with different DPI scaling, or at startup. The new scale
+// is saved for later retrieval.
 static void windowScaleCallback(GLFWwindow* const handle, float const xScale, float)
 {
 	ASSERT(handle);
 	ASSERT(xScale);
+	// yScale seems to sometimes be 0.0, so it is not reliable
 	auto& window = getWindow(handle);
 
 	window.scale = xScale;
 	L.info(R"(Window "%s" DPI scaling changed to %f)", window.title, xScale);
 }
-
-namespace minote {
 
 void Window::init()
 {
@@ -165,7 +141,8 @@ void Window::open(char const* const _title, bool const fullscreen, uvec2 const _
 	ASSERT(_size.x >= 0 && _size.y >= 0);
 	ASSERT(initialized);
 
-	// Set up context params
+	// *** Set up context params ***
+
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -180,7 +157,8 @@ void Window::open(char const* const _title, bool const fullscreen, uvec2 const _
 	glfwWindowHint(GLFW_STENCIL_BITS, 0); // Same
 	glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE); // Declare DPI awareness
 
-	// Create the window handle
+	// *** Create the window handle ***
+
 	auto const[wantedSize, monitor] = [=]() -> std::pair<uvec2, GLFWmonitor*> {
 		if (fullscreen) {
 			GLFWmonitor* const monitor = glfwGetPrimaryMonitor();
@@ -194,7 +172,8 @@ void Window::open(char const* const _title, bool const fullscreen, uvec2 const _
 	if (!handle)
 		L.fail(R"(Failed to create window "%s": %s)", title, glfwError());
 
-	// Get window properties
+	// *** Get window properties ***
+
 	uvec2 const realSize = [=, this] { // Might be different from wanted size because of DPI scaling
 		ivec2 s;
 		glfwGetFramebufferSize(handle, &s.x, &s.y);
@@ -209,7 +188,8 @@ void Window::open(char const* const _title, bool const fullscreen, uvec2 const _
 	scale = _scale;
 	title = _title;
 
-	// Set up window callbacks
+	// *** Set up window callbacks ***
+
 	glfwSetWindowUserPointer(handle, this);
 #ifndef MINOTE_DEBUG
 	glfwSetInputMode(handle, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);

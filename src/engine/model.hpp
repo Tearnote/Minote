@@ -3,7 +3,10 @@
 
 #pragma once
 
-#include "sys/opengl.hpp"
+#include "sys/opengl/vertexarray.hpp"
+#include "sys/opengl/framebuffer.hpp"
+#include "sys/opengl/buffer.hpp"
+#include "sys/opengl/draw.hpp"
 #include "engine/scene.hpp"
 #include "store/shaders.hpp"
 

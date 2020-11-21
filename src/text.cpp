@@ -7,7 +7,11 @@
 
 #include <stdarg.h>
 #include <stdio.h>
-#include "sys/opengl.hpp"
+#include "sys/opengl/vertexarray.hpp"
+#include "sys/opengl/texture.hpp"
+#include "sys/opengl/shader.hpp"
+#include "sys/opengl/buffer.hpp"
+#include "sys/opengl/draw.hpp"
 #include "base/array.hpp"
 #include "base/util.hpp"
 #include "font.hpp"

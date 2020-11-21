@@ -7,7 +7,10 @@
 
 #include "glad/glad.h"
 #include "sys/window.hpp"
-#include "sys/opengl.hpp"
+#include "sys/opengl/framebuffer.hpp"
+#include "sys/opengl/texture.hpp"
+#include "sys/opengl/shader.hpp"
+#include "sys/opengl/draw.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"
 #include "store/shaders.hpp"

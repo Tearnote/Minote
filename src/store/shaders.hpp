@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "sys/opengl.hpp"
+#include "sys/opengl/shader.hpp"
 
 namespace minote {
 
