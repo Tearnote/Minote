@@ -10,6 +10,7 @@
 
 namespace minote {
 
+// Index of the framebuffer attachment
 enum struct Attachment : GLenum {
 	None = GL_NONE,
 	DepthStencil = GL_DEPTH_STENCIL_ATTACHMENT,
@@ -31,98 +32,78 @@ enum struct Attachment : GLenum {
 	Color15 = GL_COLOR_ATTACHMENT15,
 };
 
-/// OpenGL framebuffer. Proxy object that allows drawing into textures
-/// and renderbuffers from within shaders.
+// Framebuffer object wrapper. Proxy object that allows drawing into textures
+// and renderbuffers using shaders.
 struct Framebuffer : GLObject {
 
-	Samples samples = Samples::None; ///< Sample count of all attachments needs to match
-	bool dirty = true; ///< Is a glDrawBuffers call and completeness check needed?
+	// Sample count of the attachments; all attachments need to match
+	Samples samples = Samples::None;
+
+	// Whether the attachment setup has been modified since the last draw
+	// If true, all color attachment will be enabled for drawing
+	// and a completeness check will be executed
+	bool dirty = true;
+
+	// Register of attached textures. Empty attachments are nullptr. Ordered
+	// with an internal method.
 	array<TextureBase const*, 17> attachments = {};
 
-	/**
-	 * Create an OpenGL ID for the framebuffer. This needs to be called before
-	 * the framebuffer can be used. The object has no textures attached
-	 * by default, and needs to have at least one color attachment attached
-	 * to satisfy completeness requirements.
-	 * @param name Human-readable name, for logging and debug output
-	 */
+	// Initialize the framebuffer object. The object has no textures attached
+	// by default, and needs to have at least one color attachment attached
+	// to satisfy completeness requirements.
 	void create(char const* name);
 
-	/**
-	 * Destroy the OpenGL framebuffer object. The ID is released, but attached
-	 * objects continue to exist.
-	 */
+	// Destroy the framebuffer object. The FBO itself is released, but attached
+	// objects continue to exist.
 	void destroy();
 
-	/**
-	 * Attach a texture to a specified attachment point. All future attachments
-	 * must not be multisample. The DepthStencil attachment can only hold
-	 * a texture with a DepthStencil pixel format. Attachments cannot
-	 * be overwritten.
-	 * @param t Texture to attach
-	 * @param attachment Attachment point to attach to
-	 */
+	// Attach a texture to a specified attachment point. All future attachments
+	// must not be multisampled. The DepthStencil attachment can only hold
+	// a texture with a DepthStencil pixel format. Attachments cannot
+	// be overwritten.
 	template<PixelFmt F>
 	void attach(Texture<F>& t, Attachment attachment);
 
-	/**
-	 * Attach a multisample texture to a specified attachment point. All future
-	 * attachments must have the same number of samples. The DepthStencil
-	 * attachment can only hold a texture with a DepthStencil pixel format.
-	 * Attachments cannot be overwritten.
-	 * @param t Multisample texture to attach
-	 * @param attachment Attachment point to attach to
-	 */
+	// Attach a multisample texture to a specified attachment point. All future
+	// attachments must have the same number of samples. The DepthStencil
+	// attachment can only hold a texture with a DepthStencil pixel format.
+	// Attachments cannot be overwritten.
 	template<PixelFmt F>
 	void attach(TextureMS<F>& t, Attachment attachment);
 
-	/**
-	 * Attach a renderbuffer to a specified attachment point. All future
-	 * attachments must not be multisample. The DepthStencil attachment can only
-	 * hold a renderbuffer with a DepthStencil pixel format. Attachments
-	 * cannot be overwritten.
-	 * @param t Renderbuffer to attach
-	 * @param attachment Attachment point to attach to
-	 */
+	// Attach a renderbuffer to a specified attachment point. All future
+	// attachments must not be multisampled. The DepthStencil attachment can
+	// only hold a renderbuffer with a DepthStencil pixel format. Attachments
+	// cannot be overwritten.
 	template<PixelFmt F>
 	void attach(Renderbuffer<F>& r, Attachment attachment);
 
-	/**
-	 * Attach a multisample renderbuffer to a specified attachment point.
-	 * All future attachments must have the same number of samples.
-	 * The DepthStencil attachment can only hold a renderbuffer
-	 * with a DepthStencil pixel format. Attachments cannot be overwritten.
-	 * @param t Multisample renderbuffer to attach
-	 * @param attachment Attachment point to attach to
-	 */
+	// Attach a multisample renderbuffer to a specified attachment point.
+	// All future attachments must have the same number of samples.
+	// The DepthStencil attachment can only hold a renderbuffer
+	// with a DepthStencil pixel format. Attachments cannot be overwritten.
 	template<PixelFmt F>
 	void attach(RenderbufferMS<F>& r, Attachment attachment);
 
+	// Return the size of the biggest attached texture.
 	auto size() -> uvec2;
 
-	/**
-	 * Bind this framebuffer to the OpenGL context, causing all future draw
-	 * commands to render into the framebuffer's attachments. In a debug build,
-	 * the framebuffer is checked for completeness.
-	 */
+	// Bind this framebuffer to the OpenGL context, causing all future draw
+	// commands to render into the framebuffer's attachments. In a debug build,
+	// the framebuffer is checked for completeness.
 	void bind();
 
+	// Bind this framebuffer to the read target. Only useful for reading pixels
+	// and blitting.
 	void bindRead() const;
 
-	/**
-	 * Bind the zero framebuffer, which causes all future draw commands to draw
-	 * to the window surface.
-	 */
+	// Bind the zero framebuffer, which causes all future draw commands to draw
+	// to the backbuffer.
 	static void unbind();
 
-	/**
-	 * Copy the contents of one framebuffer to another. MSAA resolve
-	 * is performed if required.
-	 * @param dst Destination framebuffer
-	 * @param src Source framebuffer
-	 * @param srcBuffer The attachment in src to read from
-	 * @param depthStencil Whether to blit the DepthStencil attachment
-	 */
+	// Copy the contents of one framebuffer to another. MSAA resolve
+	// is performed if required. If depthStencil is true, the DS contents
+	// will also be copied.
 	static void blit(Framebuffer& dst, Framebuffer const& src,
 		Attachment srcBuffer = Attachment::Color0, bool depthStencil = false);
 

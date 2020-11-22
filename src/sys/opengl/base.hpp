@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include "glad/glad.h"
 #include "base/math.hpp"
 
 namespace minote {
@@ -28,8 +27,11 @@ concept GLSLType =
 // Common fields of all OpenGL object types
 struct GLObject {
 
-	GLuint id = 0; ///< The object has not been created if this is 0
-	char const* name = nullptr; ///< Human-readable name, used in logging
+	// Internal object ID, the object has not been created if this is 0
+	u32 id = 0;
+
+	// Human-readable name, used in logging and OpenGL debug context
+	char const* name = nullptr;
 
 	~GLObject();
 };

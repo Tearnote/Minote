@@ -1,6 +1,5 @@
 #include "sys/opengl/base.hpp"
 
-#include "base/util.hpp"
 #include "base/log.hpp"
 
 namespace minote {

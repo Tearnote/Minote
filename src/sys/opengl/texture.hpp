@@ -11,7 +11,14 @@
 
 namespace minote {
 
-// Valid texture upload format
+// Texture filtering mode
+enum struct Filter : GLint {
+	None = GL_NONE,
+	Nearest = GL_NEAREST,
+	Linear = GL_LINEAR
+};
+
+// A texture upload format
 template<typename T>
 concept UploadFmt =
 	std::is_same_v<T, u8> ||
@@ -19,14 +26,7 @@ concept UploadFmt =
 	std::is_same_v<T, u8vec3> ||
 	std::is_same_v<T, u8vec4>;
 
-/// Available texture filtering modes
-enum struct Filter : GLint {
-	None = GL_NONE,
-	Nearest = GL_NEAREST,
-	Linear = GL_LINEAR
-};
-
-/// Available internal pixel formats
+// Internal pixel format
 enum struct PixelFmt : GLint {
 	None = GL_NONE,
 	R_u8 = GL_R8,
@@ -38,6 +38,7 @@ enum struct PixelFmt : GLint {
 	DepthStencil = GL_DEPTH24_STENCIL8
 };
 
+// Number of samples per pixel
 enum struct Samples : GLsizei {
 	None = 0,
 	_1 = 1,
@@ -46,6 +47,7 @@ enum struct Samples : GLsizei {
 	_8 = 8
 };
 
+// Index of a GPU texture unit
 enum struct TextureUnit : GLenum {
 	None = 0,
 	_0 = GL_TEXTURE0,
@@ -66,175 +68,134 @@ enum struct TextureUnit : GLenum {
 	_15 = GL_TEXTURE15,
 };
 
-/// Common fields of texture types
+// Common fields of texture types
 struct TextureBase : GLObject {
 
-	uvec2 size = {0, 0}; ///< The texture does not have storage if this is {0, 0}
+	// Size of the texture's storage. {0, 0} means no storage
+	uvec2 size = {0, 0};
 
 };
 
-/// Standard 2D texture, usable for reading and writing inside shaders
+// Standard 2D texture, usable for reading and writing inside shaders
 template<PixelFmt F>
 struct Texture : TextureBase {
 
+	// Internal pixel format
 	static constexpr auto Format = F;
 
+	// Active filtering mode
 	Filter filter = Filter::None;
 
-	/**
-	 * Create an OpenGL ID for the texture. This needs to be called before
-	 * the texture can be used. Storage is allocated by default, and filled
-	 * with garbage data. The default filtering mode is Linear.
-	 * @param name Human-readable name, for logging and debug output
-	 * @param size Initial size of the texture storage, in pixels
-	 */
+	// Initialize the texture object and allocate storage for it. Storage
+	// contents are initially undefined. The default filtering mode is Linear.
 	void create(char const* name, uvec2 size);
 
-	/**
-	 * Destroy the OpenGL texture object. Storage and ID are both freed.
-	 */
+	// Destroy the OpenGL texture object and its storage.
 	void destroy();
 
-	/**
-	 * Set the filtering mode for the texture.
-	 * @param filter New filtering mode
-	 */
+	// Set the filtering mode for the texture.
 	void setFilter(Filter filter);
 
-	/**
-	 * Recreate the texture's storage with new size. Previous contents are lost,
-	 * and the texture data is garbage again.
-	 * @param size New size of the texture storage, in pixels
-	 */
+	// Recreate the texture's storage with new size. Previous contents are lost,
+	// and the texture data is undefined again.
 	void resize(uvec2 size);
 
+	// Upload pixel data to texture storage. Each channel must be of type u8,
+	// and the number of u8vec components decides the number of channels.
+	// The array must have (size.x * size.y) elements.
 	template<template<UploadFmt, size_t> typename Arr, UploadFmt T, size_t N>
-	requires ArrayContainer<Arr, T, N>
+		requires ArrayContainer<Arr, T, N>
 	void upload(Arr<T, N> const& data);
 
 	template<UploadFmt T>
 	void upload(T const data[], int channels = 0); //TODO make safe
 
-	/**
-	 * Bind the texture to the specified texture unit. This allows it to be used
-	 * in a shader for reading and/or writing.
-	 * @param unit Texture unit to bind the texture to
-	 */
+	// Bind the texture to the specified texture unit. This allows it to be used
+	// in a shader for reading and/or writing. Unit None binds to the previously
+	// selected unit.
 	void bind(TextureUnit unit = TextureUnit::None);
 
 };
 
-/// OpenGL multisample 2D texture. Allows for drawing antialiased shapes
+// Multisample 2D texture, used in multisampled draws
 template<PixelFmt F>
 struct TextureMS : TextureBase {
 
+	// Internal pixel format
 	static constexpr auto Format = F;
 
+	// Number of samples per pixel
 	Samples samples = Samples::None;
 
-	/**
-	 * Create an OpenGL ID for the multisample texture. This needs to be called
-	 * before the texture can be used. Storage is allocated by default,
-	 * and filled with garbage data.
-	 * @param name Human-readable name, for logging and debug output
-	 * @param size Initial size of the multisample texture storage, in pixels
-	 * @param samples Number of samples per pixel
-	 */
+	// Initialize the multisample texture object and allocate storage for it.
+	// Storage contents are initially undefined.
 	void create(char const* name, uvec2 size, Samples samples);
 
-	/**
-	 * Destroy the OpenGL multisample texture object. Storage and ID are both
-	 * freed.
-	 */
+	// Destroy the OpenGL multisample texture object and its storage.
 	void destroy();
 
-	/**
-	 * Recreate the multisample texture's storage with new size. Previous
-	 * contents are lost, and the texture data is garbage again.
-	 * @param size New size of the multisample texture storage, in pixels
-	 */
+	// Recreate the texture's storage with new size. Previous contents are lost,
+	// and the texture data is undefined again.
 	void resize(uvec2 size);
 
-	/**
-	 * Bind the multisample texture to the specified texture unit. This allows
-	 * it to be used in a shader for reading and/or writing.
-	 * @param unit Texture unit to bind the multisample texture to, from 0 to 15
-	 * inclusive
-	 */
+	// Bind the texture to the specified texture unit. This allows it to be used
+	// in a shader for reading and/or writing. Unit None binds to the previously
+	// selected unit.
 	void bind(TextureUnit unit = TextureUnit::None);
 
 };
 
-/// Concept for any texture type that can be read in a shader
+// A texture type that can be read in a shader
 template<typename T>
 concept GLSLTexture =
-std::is_same_v<T, Texture<T::Format>> ||
+	std::is_same_v<T, Texture<T::Format>> ||
 	std::is_same_v<T, TextureMS<T::Format>>;
 
-/// OpenGL renderbuffer. Operates faster than a texture, but cannot be read
+// Renderbuffer object. Operates faster than a texture, but cannot be read
 template<PixelFmt F>
 struct Renderbuffer : TextureBase {
 
+	// Internal pixel format
 	static constexpr auto Format = F;
 
-	/**
-	 * Create an OpenGL ID for the renderbuffer. This needs to be called before
-	 * the renderbuffer can be used. Storage is allocated by default, and filled
-	 * with garbage data.
-	 * @param name Human-readable name, for logging and debug output
-	 * @param size Initial size of the renderbuffer storage, in pixels
-	 */
+	// Initialize the renderbuffer object and allocate storage for it.
+	// Storage contents are initially undefined.
 	void create(char const* name, uvec2 size);
 
-	/**
-	 * Destroy the OpenGL renderbuffer object. Storage and ID are both freed.
-	 */
+	// Destroy the OpenGL renderbuffer object and its storage.
 	void destroy();
 
-	/**
-	 * Recreate the renderbuffer's storage with new size. Previous contents
-	 * are lost, and the renderbuffer data is garbage again.
-	 * @param size New size of the renderbuffer storage, in pixels
-	 */
+	// Recreate the renderbuffer's storage with new size. Previous contents
+	// are lost, and the renderbuffer data is undefined again.
 	void resize(uvec2 size);
 
 };
 
-/// OpenGL multisample renderbuffer. Operates faster than a multisample texture,
-/// but cannot be read
+// Multisample renderbuffer object. Operates faster than a multisample texture,
+// but cannot be read
 template<PixelFmt F>
 struct RenderbufferMS : TextureBase {
 
+	// Internal pixel format
 	static constexpr auto Format = F;
 
+	// Number of samples per pixel
 	Samples samples = Samples::None;
 
-	/**
-	 * Create an OpenGL ID for the multisample renderbuffer. This needs
-	 * to be called before the renderbuffer can be used. Storage is allocated
-	 * by default, and filled with garbage data.
-	 * @param name Human-readable name, for logging and debug output
-	 * @param size Initial size of the multisample renderbuffer storage,
-	 * in pixels
-	 * @param samples Number of samples per pixel: 2, 4 or 8
-	 */
+	// Initialize the multisample renderbuffer object and allocate storage
+	// for it. Storage contents are initially undefined.
 	void create(char const* name, uvec2 size, Samples samples);
 
-	/**
-	 * Destroy the OpenGL multisample renderbuffer object. Storage and ID
-	 * are both freed.
-	 */
+	// Destroy the OpenGL multisample renderbuffer object and its storage.
 	void destroy();
 
-	/**
-	 * Recreate the multisample renderbuffer's storage with new size. Previous
-	 * contents are lost, and the renderbuffer data is garbage again.
-	 * @param size New size of the multisample renderbuffer storage, in pixels
-	 */
+	// Recreate the multisample renderbuffer's storage with new size. Previous
+	// contents are lost, and the renderbuffer data is undefined again.
 	void resize(uvec2 size);
 
 };
 
+// A pixel format of a buffer texture
 template<typename T>
 concept BufferTextureType =
 	std::is_same_v<T, f32> ||
@@ -251,22 +212,39 @@ concept BufferTextureType =
 	std::is_same_v<T, ivec4> ||
 	std::is_same_v<T, mat4>;
 
+// Buffer texture object. Serves as a 1D texture that can only be read
+// via texelFetch(). A buffer object is used as storage, and very large sizes
+// are supported.
 template<BufferTextureType T>
 struct BufferTexture : TextureBase {
 
+	// Format of the stored data
 	using Type = T;
+
+	// Buffer specialization for the buffer texture's internal storage
 	using StorageBuffer = BufferBase<Type, GL_TEXTURE_BUFFER>;
 
+	// Buffer object used as storage
 	StorageBuffer storage;
 
+	// Create the buffer texture; the storage is empty by default. Set dynamic
+	// to true if you want to upload pixel data more than once (data streaming.)
 	void create(char const* name, bool dynamic);
 
+	// Destroy the OpenGL buffer texture object and its storage buffer.
 	void destroy();
 
+	// Upload new data to the texture, replacing previous data. The texture
+	// is resized to fit the new data, and the previous storage is orphaned.
+	// New size of the texture is (1, N). Pixel formats without a GLSL type
+	// equivalent are normalized to f32.
 	template<template<BufferTextureType, size_t> typename Arr, size_t N>
-	requires ArrayContainer<Arr, Type, N>
+		requires ArrayContainer<Arr, Type, N>
 	void upload(Arr<Type, N> data);
 
+	// Bind the buffer texture to the specified texture unit. This allows it
+	// to be used in a shader for reading and/or writing. Unit None binds
+	// to the previously selected unit.
 	void bind(TextureUnit unit = TextureUnit::None);
 
 };

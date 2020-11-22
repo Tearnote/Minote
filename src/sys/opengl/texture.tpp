@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstring>
 #include "base/log.hpp"
 #include "sys/opengl/state.hpp"
 

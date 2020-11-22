@@ -6,6 +6,7 @@ namespace minote {
 
 namespace detail {
 
+// Convert an Attachment value to attachments array index.
 inline auto attachmentIndex(Attachment const attachment) -> size_t
 {
 	switch(attachment) {
@@ -21,12 +22,7 @@ inline auto attachmentIndex(Attachment const attachment) -> size_t
 	}
 }
 
-/**
- * Helper function to retrieve a texture pointer at a specified attachment point
- * @param f Framebuffer object
- * @param attachment Attachment point
- * @return The pointer to texture at given attachment point (can be nullptr)
- */
+// Retrieve a texture pointer at a specified attachment point.
 inline auto getAttachment(Framebuffer& f, Attachment const attachment) -> TextureBase const*&
 {
 	return f.attachments[attachmentIndex(attachment)];

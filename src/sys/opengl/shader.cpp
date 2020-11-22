@@ -4,6 +4,7 @@
 
 namespace minote {
 
+// Compile a single shader stage. Returns false if compilation failed.
 static auto compileShaderStage(GLuint const id, char const* const name,
 	char const* const source) -> bool
 {

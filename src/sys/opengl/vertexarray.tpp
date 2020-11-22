@@ -8,6 +8,7 @@ namespace minote {
 
 namespace detail {
 
+// Set the VAO attribute to a vertex buffer pointer.
 template<GLSLType Component, typename T>
 auto setVaoAttribute(VertexArray& vao, GLuint const index,
 	VertexBuffer<T>& buffer, std::ptrdiff_t const offset, bool const instanced)
