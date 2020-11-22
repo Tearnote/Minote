@@ -216,7 +216,7 @@ void mrsDraw(Engine& engine)
 {
 	// Draw field scene
 	f32 const sceneBoost = comboFade.apply();
-	engine.models.scene.draw(*engine.frame.fb, engine.scene, {
+	engine.models.field.draw(*engine.frame.fb, engine.scene, {
 		.blending = true
 	}, {
 		.tint = {sceneBoost, sceneBoost, sceneBoost, 1.0f}

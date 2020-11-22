@@ -1,7 +1,6 @@
-/**
- * Storage for all available shaders
- * @file
- */
+// Minote - store/shaders.hpp
+// Storage for all available shaders. For more information on the shaders,
+// look at the individual GLSL source files.
 
 #pragma once
 
@@ -185,8 +184,11 @@ struct Shaders {
 
 	} msdf;
 
+	// Create the shader objects. The shaders are compiled and uniforms located.
+	// After this call, they are ready for use in any Draw.
 	void create();
 
+	// Clean up all shader objects.
 	void destroy();
 
 };

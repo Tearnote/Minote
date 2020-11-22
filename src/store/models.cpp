@@ -1,8 +1,3 @@
-/**
- * Implementation of store/models.hpp
- * @file
- */
-
 #include "models.hpp"
 
 namespace minote {
@@ -800,7 +795,7 @@ void Models::create(Shaders& shaders)
 {
 	sync.create("sync", shaders, syncMesh);
 	block.create("block", shaders, blockMesh, blockMaterial, true);
-	scene.create("scene", shaders, sceneMesh);
+	field.create("scene", shaders, sceneMesh);
 	guide.create("guide", shaders, guideMesh);
 	border.create("border", shaders, borderMesh);
 	particle.create("particle", shaders, particleMesh);
@@ -810,7 +805,7 @@ void Models::destroy()
 {
 	sync.destroy();
 	block.destroy();
-	scene.destroy();
+	field.destroy();
 	guide.destroy();
 	border.destroy();
 	particle.destroy();

@@ -1,8 +1,3 @@
-/**
- * Implementation of store/shaders.hpp
- * @file
- */
-
 #include "store/shaders.hpp"
 
 namespace minote {
