@@ -1,8 +1,3 @@
-/**
- * Game entry point
- * @file
- */
-
 #include "main.hpp"
 
 #include <cstdlib>
@@ -17,23 +12,21 @@
 #endif //NOMINMAX
 #include <windows.h>
 #endif //_WIN32
-#include "sys/window.hpp"
 #include "base/array.hpp"
 #include "base/log.hpp"
+#include "sys/window.hpp"
 #include "debug.hpp"
 #include "game.hpp"
 
 using namespace minote; // Because we can't namespace main()
 
-/**
- * Entry point function. Initializes systems and spawns other threads. Itself
- * becomes the input handling thread.
- * @return EXIT_SUCCESS on successful execution, EXIT_FAILURE on a handled
- * critical error, other values on unhandled error
- */
+// Entry point function. Initializes systems and spawns other threads. Itself
+// becomes the input handling thread. Returns EXIT_SUCCESS on successful
+// execution, EXIT_FAILURE on a handled critical error, other values
+// on unhandled error
 auto main(int, char*[]) -> int
 {
-	// Initialization
+	// *** Initialization ***
 
 	// Locale and Unicode
 	std::setlocale(LC_ALL, ""); // Use system locale
@@ -71,11 +64,13 @@ auto main(int, char*[]) -> int
 	debugInputSetup(window);
 #endif //MINOTE_DEBUG
 
-	// Spawn game thread
+	// *** Thread startup ***
+
+	// Game thread
 	std::thread gameThread(game, std::ref(window));
 	defer { gameThread.join(); };
 
-	// Input loop
+	// Input thread loop
 	while (!window.isClosing()) {
 		Window::poll();
 		sleepFor(milliseconds(1));

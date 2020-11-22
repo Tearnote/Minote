@@ -1,7 +1,5 @@
-/**
- * Application-wide definitions and globals
- * @file
- */
+// Minote - main.hpp
+// Welcome!
 
 #pragma once
 

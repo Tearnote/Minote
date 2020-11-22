@@ -1,8 +1,3 @@
-/**
- * Implementation of game.hpp
- * @file
- */
-
 #include "game.hpp"
 
 #include "engine/engine.hpp"
@@ -20,14 +15,8 @@
 namespace minote {
 
 #ifndef NDEBUG
-/**
- * Error callback forwarding OpenGL debug context errors to the logging system.
- * @param source
- * @param type
- * @param severity
- * @param message
- * @see https://www.khronos.org/opengl/wiki/Debug_Output#Message_Components
- */
+// Error callback forwarding OpenGL debug context errors to the logging system.
+// See: https://www.khronos.org/opengl/wiki/Debug_Output#Message_Components
 static void APIENTRY debugMessageCallback(GLenum const source,
 	GLenum const type, GLuint, GLenum const severity, GLsizei,
 	GLchar const* const message, void const*)
@@ -94,9 +83,7 @@ static void APIENTRY debugMessageCallback(GLenum const source,
 }
 #endif //NDEBUG
 
-/**
- * Temporary replacement for a settings menu.
- */
+// Temporary replacement for a settings menu.
 static void gameDebug(Frame& frame, bool& sync)
 {
 	if (nk_begin(nkCtx(), "Settings", nk_rect(1070, 30, 180, 220),
@@ -119,7 +106,8 @@ static void gameDebug(Frame& frame, bool& sync)
 
 void game(Window& window)
 {
-	// OpenGL setup
+	// *** OpenGL setup ***
+
 	window.activateContext();
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 		L.fail("Failed to initialize OpenGL");
@@ -130,7 +118,8 @@ void game(Window& window)
 	glDebugMessageCallback(debugMessageCallback, nullptr);
 #endif //NDEBUG
 
-	// Initialization
+	// *** Engine initialization ***
+
 	Mapper mapper;
 
 	Shaders shaders;
@@ -185,7 +174,8 @@ void game(Window& window)
 		.depthTesting = false
 	};
 
-	// Main loop
+	// *** Main loop ***
+
 	while (!window.isClosing()) {
 		// Update state
 		mapper.mapKeyInputs(window);
