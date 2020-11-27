@@ -9,6 +9,7 @@
 #include "engine/frame.hpp"
 #include "store/shaders.hpp"
 #include "store/models.hpp"
+#include "store/fonts.hpp"
 
 namespace minote {
 
@@ -26,6 +27,7 @@ struct Engine {
 
 	Shaders& shaders;
 	Models& models;
+	Fonts& fonts;
 
 };
 

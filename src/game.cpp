@@ -9,7 +9,7 @@
 #include "bloom.hpp"
 #include "debug.hpp"
 #include "play.hpp"
-#include "font.hpp"
+#include "store/fonts.hpp"
 #include "text.hpp"
 
 namespace minote {
@@ -136,17 +136,20 @@ void game(Window& window)
 	models.create(shaders);
 	defer { models.destroy(); };
 
+	Fonts fonts;
+	fonts.create();
+	defer { fonts.destroy(); };
+
 	Engine engine = {
 		.window = window,
 		.mapper = mapper,
 		.frame = frame,
 		.scene = scene,
 		.shaders = shaders,
-		.models = models
+		.models = models,
+		.fonts = fonts
 	};
 
-	fontInit();
-	defer { fontCleanup(); };
 	textInit();
 	defer { textCleanup(); };
 	bloomInit(window);
@@ -194,8 +197,8 @@ void game(Window& window)
 		playDraw(engine);
 		particlesDraw(engine);
 		frame.resolveAA();
-		textQueue(FontJost, 3.0f, {6.05, 1.95, 0}, {1.0f, 1.0f, 1.0f, 0.25f}, "Text test.");
-		textQueue(FontJost, 3.0f, {6, 2, 0}, {0.0f, 0.0f, 0.0f, 1.0f}, "Text test");
+		textQueue(fonts.jost, 3.0f, {6.05, 1.95, 0}, {1.0f, 1.0f, 1.0f, 0.25f}, "Text test.");
+		textQueue(fonts.jost, 3.0f, {6, 2, 0}, {0.0f, 0.0f, 0.0f, 1.0f}, "Text test");
 		textDraw(engine);
 		bloomApply(engine);
 #ifdef MINOTE_DEBUG

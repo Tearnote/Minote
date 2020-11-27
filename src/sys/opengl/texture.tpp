@@ -99,7 +99,7 @@ void Texture<F>::upload(Arr<T, N> const& data)
 
 template<PixelFmt F>
 template<UploadFmt T>
-void Texture<F>::upload(T const data[], int const _channels)
+void Texture<F>::upload(T const data[], size_t const dataLen, int const _channels)
 {
 	ASSERT(data);
 	ASSERT(_channels >= 0 && _channels <= 4);
@@ -132,6 +132,8 @@ void Texture<F>::upload(T const data[], int const _channels)
 			}
 		}
 	}();
+
+	ASSERT(dataLen == size.x * size.y * _channels);
 
 	bind();
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, size.x, size.y,

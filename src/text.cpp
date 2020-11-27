@@ -14,7 +14,7 @@
 #include "sys/opengl/draw.hpp"
 #include "base/array.hpp"
 #include "base/util.hpp"
-#include "font.hpp"
+#include "store/fonts.hpp"
 #include "base/log.hpp"
 
 using namespace minote;
@@ -31,11 +31,12 @@ struct MsdfGlyph {
 static constexpr size_t MaxGlyphs{1024};
 static constexpr size_t MaxStrings{1024};
 
-static VertexArray msdfVao[FontSize] = {};
-static VertexBuffer<MsdfGlyph> msdfGlyphsVbo[FontSize];
-static varray<MsdfGlyph, MaxGlyphs> msdfGlyphs[FontSize]{};
-static BufferTexture<mat4> msdfTransformsTex[FontSize] = {};
-static varray<mat4, MaxStrings> msdfTransforms[FontSize]{};
+static VertexArray msdfVao = {};
+static VertexBuffer<MsdfGlyph> msdfGlyphsVbo;
+static varray<MsdfGlyph, MaxGlyphs> msdfGlyphs{};
+static BufferTexture<mat4> msdfTransformsTex = {};
+static varray<mat4, MaxStrings> msdfTransforms{};
+static Font* msdfFont = nullptr;
 
 static Draw<Shaders::Msdf> msdf = {
 	.mode = DrawMode::TriangleStrip,
@@ -47,7 +48,7 @@ static Draw<Shaders::Msdf> msdf = {
 
 static bool initialized = false;
 
-static void textQueueV(FontType font, float size, vec3 pos, vec3 dir, vec3 up,
+static void textQueueV(Font& font, float size, vec3 pos, vec3 dir, vec3 up,
 	color4 color, const char* fmt, va_list args)
 {
 	hb_buffer_t* text{nullptr};
@@ -65,10 +66,10 @@ static void textQueueV(FontType font, float size, vec3 pos, vec3 dir, vec3 up,
 		hb_buffer_set_direction(text, HB_DIRECTION_LTR);
 		hb_buffer_set_script(text, HB_SCRIPT_LATIN);
 		hb_buffer_set_language(text, hb_language_from_string("en", -1));
-		hb_shape(fonts[font].hbFont, text, nullptr, 0);
+		hb_shape(font.hbFont, text, nullptr, 0);
 
 		// Construct the string transform
-		auto* const transform = msdfTransforms[font].produce();
+		auto* const transform = msdfTransforms.produce();
 		if (!transform)
 			break;
 		vec3 eye = vec3(pos.x, pos.y, pos.z) - vec3(dir.x, dir.y, dir.z);
@@ -84,33 +85,33 @@ static void textQueueV(FontType font, float size, vec3 pos, vec3 dir, vec3 up,
 			&glyphCount);
 		vec2 cursor {0};
 		for (size_t i = 0; i < glyphCount; i += 1) {
-			auto* const glyph = msdfGlyphs[font].produce();
+			auto* const glyph = msdfGlyphs.produce();
 			if (!glyph)
 				break;
 
 			// Calculate glyph information
 			size_t id = glyphInfo[i].codepoint;
-			FontAtlasGlyph* atlasChar = &fonts[font].metrics[id];
-			float xOffset = glyphPos[i].x_offset / 1024.0f;
-			float yOffset = glyphPos[i].y_offset / 1024.0f;
+			Font::Glyph* atlasChar = &font.metrics[id];
+			vec2 offset = {
+				glyphPos[i].x_offset / 1024.0f,
+				glyphPos[i].y_offset / 1024.0f
+			};
 			float xAdvance = glyphPos[i].x_advance / 1024.0f;
 			float yAdvance = glyphPos[i].y_advance / 1024.0f;
 
 			// Fill in draw data
-			glyph->position.x = cursor.x + xOffset + atlasChar->charLeft;
-			glyph->position.y = cursor.y + yOffset + atlasChar->charBottom;
-			glyph->size.x = atlasChar->charRight - atlasChar->charLeft;
-			glyph->size.y = atlasChar->charTop - atlasChar->charBottom;
+			glyph->position = cursor + offset + atlasChar->glyph.pos;
+			glyph->size = atlasChar->glyph.size;
 			glyph->texBounds.x =
-				atlasChar->atlasLeft / (float)fonts[font].atlas.size.x;
+				atlasChar->msdf.pos.x / (float)font.atlas.size.x;
 			glyph->texBounds.y =
-				atlasChar->atlasBottom / (float)fonts[font].atlas.size.y;
+				atlasChar->msdf.pos.y / (float)font.atlas.size.y;
 			glyph->texBounds.z =
-				atlasChar->atlasRight / (float)fonts[font].atlas.size.x;
+				atlasChar->msdf.size.x / (float)font.atlas.size.x;
 			glyph->texBounds.w =
-				atlasChar->atlasTop / (float)fonts[font].atlas.size.y;
+				atlasChar->msdf.size.y / (float)font.atlas.size.y;
 			glyph->color = color;
-			glyph->transformIndex = msdfTransforms[font].size() - 1;
+			glyph->transformIndex = msdfTransforms.size() - 1;
 
 			// Advance position
 			cursor.x += xAdvance;
@@ -119,28 +120,23 @@ static void textQueueV(FontType font, float size, vec3 pos, vec3 dir, vec3 up,
 	} while(false);
 
 	hb_buffer_destroy(text);
+
+	msdfFont = &font;
 }
 
 void textInit(void)
 {
 	if (initialized) return;
 
-	for (auto& msdfGlyphVbo : msdfGlyphsVbo)
-		msdfGlyphVbo.create("msdfGlyphVbo", true);
-	for (auto& vao : msdfVao)
-		vao.create("msdfVao");
-	for (auto& texture : msdfTransformsTex)
-		texture.create("msdfTransformTex", true);
+	msdfGlyphsVbo.create("msdfGlyphVbo", true);
+	msdfVao.create("msdfVao");
+	msdfTransformsTex.create("msdfTransformTex", true);
 
-	for (size_t i = 0; i < FontSize; i += 1) {
-		msdfVao[i].setAttribute(0, msdfGlyphsVbo[i], &MsdfGlyph::position, true);
-		msdfVao[i].setAttribute(1, msdfGlyphsVbo[i], &MsdfGlyph::size, true);
-		msdfVao[i].setAttribute(2, msdfGlyphsVbo[i], &MsdfGlyph::texBounds, true);
-		msdfVao[i].setAttribute(3, msdfGlyphsVbo[i], &MsdfGlyph::color, true);
-		msdfVao[i].setAttribute(4, msdfGlyphsVbo[i], &MsdfGlyph::transformIndex, true);
-
-		L.debug("Initialized font %s", FontList[i]);
-	}
+	msdfVao.setAttribute(0, msdfGlyphsVbo, &MsdfGlyph::position, true);
+	msdfVao.setAttribute(1, msdfGlyphsVbo, &MsdfGlyph::size, true);
+	msdfVao.setAttribute(2, msdfGlyphsVbo, &MsdfGlyph::texBounds, true);
+	msdfVao.setAttribute(3, msdfGlyphsVbo, &MsdfGlyph::color, true);
+	msdfVao.setAttribute(4, msdfGlyphsVbo, &MsdfGlyph::transformIndex, true);
 
 	initialized = true;
 }
@@ -149,18 +145,14 @@ void textCleanup(void)
 {
 	if (!initialized) return;
 
-	for (auto& texture : msdfTransformsTex)
-		texture.destroy();
-	for (auto& msdfGlyphVbo : msdfGlyphsVbo)
-		msdfGlyphVbo.destroy();
-	for (auto& vao : msdfVao)
-		vao.destroy();
+	msdfTransformsTex.destroy();
+	msdfGlyphsVbo.destroy();
+	msdfVao.destroy();
 
-	L.debug("Fonts cleaned up");
 	initialized = false;
 }
 
-void textQueue(FontType font, float size, vec3 pos, color4 color, const char* fmt, ...)
+void textQueue(Font& font, float size, vec3 pos, color4 color, const char* fmt, ...)
 {
 	ASSERT(initialized);
 	ASSERT(fmt);
@@ -172,7 +164,7 @@ void textQueue(FontType font, float size, vec3 pos, color4 color, const char* fm
 	va_end(args);
 }
 
-void textQueueDir(FontType font, float size, vec3 pos, vec3 dir, vec3 up,
+void textQueueDir(Font& font, float size, vec3 pos, vec3 dir, vec3 up,
 	color4 color, const char* fmt, ...)
 {
 	ASSERT(initialized);
@@ -188,23 +180,21 @@ void textDraw(Engine& engine)
 {
 	ASSERT(initialized);
 
-	for (size_t i = 0; i < FontSize; i += 1) {
-		if (!msdfGlyphs[i].size()) continue;
+	if (!msdfGlyphs.size()) return;
 
-		msdfGlyphsVbo[i].upload(msdfGlyphs[i]);
-		msdfTransformsTex[i].upload(msdfTransforms[i]);
+	msdfGlyphsVbo.upload(msdfGlyphs);
+	msdfTransformsTex.upload(msdfTransforms);
 
-		msdf.shader = &engine.shaders.msdf;
-		msdf.vertexarray = &msdfVao[i];
-		msdf.framebuffer = engine.frame.fb;
-		msdf.instances = msdfGlyphs[i].size();
-		msdf.shader->atlas = fonts[i].atlas;
-		msdf.shader->transforms = msdfTransformsTex[i];
-		msdf.shader->projection = engine.scene.projection;
-		msdf.shader->view = engine.scene.view;
-		msdf.draw();
+	msdf.shader = &engine.shaders.msdf;
+	msdf.vertexarray = &msdfVao;
+	msdf.framebuffer = engine.frame.fb;
+	msdf.instances = msdfGlyphs.size();
+	msdf.shader->atlas = msdfFont->atlas;
+	msdf.shader->transforms = msdfTransformsTex;
+	msdf.shader->projection = engine.scene.projection;
+	msdf.shader->view = engine.scene.view;
+	msdf.draw();
 
-		msdfGlyphs[i].clear();
-		msdfTransforms[i].clear();
-	}
+	msdfGlyphs.clear();
+	msdfTransforms.clear();
 }

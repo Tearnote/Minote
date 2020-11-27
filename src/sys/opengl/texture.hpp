@@ -107,8 +107,11 @@ struct Texture : TextureBase {
 		requires ArrayContainer<Arr, T, N>
 	void upload(Arr<T, N> const& data);
 
+	// The C-style array version. data length is expected to be
+	// (size.x * size.y * channels) bytes long. If channels is 0, its value
+	// is guessed from the uvec component count.
 	template<UploadFmt T>
-	void upload(T const data[], int channels = 0); //TODO make safe
+	void upload(T const data[], size_t dataLen, int channels = 0);
 
 	// Bind the texture to the specified texture unit. This allows it to be used
 	// in a shader for reading and/or writing. Unit None binds to the previously

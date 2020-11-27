@@ -31,5 +31,5 @@ void main()
 
     gl_Position = projection * view * transform * position;
     fColor = iColor;
-    fTexCoords = mix(iTexBounds.xy, iTexBounds.zw, vertex);
+    fTexCoords = mix(iTexBounds.xy, iTexBounds.xy + iTexBounds.zw, vertex);
 }

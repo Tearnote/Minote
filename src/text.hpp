@@ -8,7 +8,7 @@
 
 #include "base/math.hpp"
 #include "engine/engine.hpp"
-#include "fontlist.hpp"
+#include "engine/font.hpp"
 
 /**
  * Initialize text drawing. Must be called after fontInit().
@@ -32,7 +32,7 @@ void textCleanup(void);
  * @param fmt Format string
  * @param ... Any additional arguments for string replacement
  */
-void textQueue(FontType font, float size, minote::vec3 pos, minote::color4 color,
+void textQueue(minote::Font& font, float size, minote::vec3 pos, minote::color4 color,
 	const char* fmt, ...);
 
 /**
@@ -47,7 +47,7 @@ void textQueue(FontType font, float size, minote::vec3 pos, minote::color4 color
  * @param fmt Format string
  * @param ... Any additional arguments for string replacement
  */
-void textQueueDir(FontType font, float size, minote::vec3 pos, minote::vec3 dir, minote::vec3 up,
+void textQueueDir(minote::Font& font, float size, minote::vec3 pos, minote::vec3 dir, minote::vec3 up,
 	minote::color4 color, const char* fmt, ...);
 
 /**

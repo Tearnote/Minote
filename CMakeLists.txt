@@ -152,6 +152,7 @@ set(SOURCES
         src/engine/engine.hpp
         src/store/shaders.hpp src/store/shaders.cpp
         src/store/models.hpp src/store/models.cpp
+        src/store/fonts.hpp src/store/fonts.cpp
         src/game.hpp src/game.cpp
         src/play.hpp src/play.cpp
         src/mino.hpp src/mino.cpp
@@ -161,9 +162,7 @@ set(SOURCES
         src/bloom.hpp src/bloom.cpp
         src/particles.hpp src/particles.cpp
         src/debug.hpp src/debug.cpp
-        src/font.hpp src/font.cpp
-        src/fontlist.hpp
-        src/text.hpp src/text.cpp)
+        src/text.hpp src/text.cpp src/engine/font.cpp src/engine/font.hpp)
 
 add_executable(Minote ${SOURCES} ${INTERNALLIBS})
 target_compile_options(Minote PRIVATE
