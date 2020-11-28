@@ -63,23 +63,23 @@ static void APIENTRY debugMessageCallback(GLenum const source,
 			return "unknown";
 		}
 	}();
-	auto const logFunc = [=] {
+	auto const logLevel = [=] {
 		switch (severity) {
 		case GL_DEBUG_SEVERITY_HIGH:
-			return &Log::error;
+			return Log::Level::Error;
 		case GL_DEBUG_SEVERITY_MEDIUM:
-			return &Log::warn;
+			return Log::Level::Warn;
 		case GL_DEBUG_SEVERITY_LOW:
-			return &Log::info;
+			return Log::Level::Info;
 		case GL_DEBUG_SEVERITY_NOTIFICATION:
-			return &Log::debug;
+			return Log::Level::Debug;
 		default:
-			L.warn("Unknown OpenGL message severity %d", severity);
-			return &Log::warn;
+			L.warn("Unknown OpenGL message severity {}", severity);
+			return Log::Level::Warn;
 		}
 	}();
 
-	std::invoke(logFunc, L, "[OpenGL][%s] %s: %s", sourceStr, typeStr, message);
+	L.log(logLevel, "[OpenGL][{}] {}: {}", sourceStr, typeStr, message);
 }
 #endif //NDEBUG
 

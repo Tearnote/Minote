@@ -60,7 +60,7 @@ static void keyCallback(GLFWwindow* const handle, int const key, int, int const 
 	auto const success = window.inputs.enqueue(input);
 	window.inputsMutex.unlock();
 	if (!success)
-		L.warn(R"(Window "%s" input queue is full, key #%d %s dropped)",
+		L.warn(R"(Window "{}" input queue is full, key #{} {} dropped)",
 			window.title, key, state == GLFW_PRESS ? "press" : "release");
 }
 
@@ -75,7 +75,7 @@ static void framebufferResizeCallback(GLFWwindow* const handle, int const width,
 
 	uvec2 const newSize = {width, height};
 	window.size = newSize;
-	L.info(R"(Window "%s" resized to %dx%d)", window.title, width, height);
+	L.info(R"(Window "{}" resized to {}x{})", window.title, width, height);
 }
 
 // Function to run when the window is rescaled. This might happen when dragging
@@ -89,7 +89,7 @@ static void windowScaleCallback(GLFWwindow* const handle, float const xScale, fl
 	auto& window = getWindow(handle);
 
 	window.scale = xScale;
-	L.info(R"(Window "%s" DPI scaling changed to %f)", window.title, xScale);
+	L.info(R"(Window "{}" DPI scaling changed to {})", window.title, xScale);
 }
 
 void Window::init()
@@ -97,7 +97,7 @@ void Window::init()
 	ASSERT(!initialized);
 
 	if (glfwInit() == GLFW_FALSE)
-		L.fail("Failed to initialize GLFW: %s", glfwError());
+		L.fail("Failed to initialize GLFW: {}", glfwError());
 #ifdef _WIN32
 	if (timeBeginPeriod(1) != TIMERR_NOERROR)
 		L.fail("Failed to initialize Windows timer");
@@ -170,7 +170,7 @@ void Window::open(char const* const _title, bool const fullscreen, uvec2 const _
 	}();
 	handle = glfwCreateWindow(wantedSize.x, wantedSize.y, _title, monitor, nullptr);
 	if (!handle)
-		L.fail(R"(Failed to create window "%s": %s)", title, glfwError());
+		L.fail(R"(Failed to create window "{}": {})", title, glfwError());
 
 	// *** Get window properties ***
 
@@ -198,7 +198,7 @@ void Window::open(char const* const _title, bool const fullscreen, uvec2 const _
 	glfwSetFramebufferSizeCallback(handle, framebufferResizeCallback);
 	glfwSetWindowContentScaleCallback(handle, windowScaleCallback);
 
-	L.info(R"(Window "%s" created at %dx%d *%f%s)",
+	L.info(R"(Window "{}" created at {}x{} *{}{})",
 		stringOrNull(_title), realSize.x, realSize.y, _scale, fullscreen ? " fullscreen" : "");
 }
 
@@ -206,12 +206,12 @@ void Window::close()
 {
 #ifndef NDEBUG
 	if (!initialized) {
-		L.warn(R"(Tried to close window "%s" without initialized windowing)",
+		L.warn(R"(Tried to close window "{}" without initialized windowing)",
 			stringOrNull(title));
 		return;
 	}
 	if (!handle) {
-		L.warn(R"(Tried to close window "%s" which is not open)",
+		L.warn(R"(Tried to close window "{}" which is not open)",
 			stringOrNull(title));
 		return;
 	}
@@ -220,7 +220,7 @@ void Window::close()
 	glfwDestroyWindow(handle);
 	handle = nullptr;
 
-	L.info(R"(Window "%s" closed)", stringOrNull(title));
+	L.info(R"(Window "{}" closed)", stringOrNull(title));
 }
 
 auto Window::isClosing() const -> bool
@@ -240,7 +240,7 @@ void Window::requestClose()
 	handleMutex.lock();
 	glfwSetWindowShouldClose(handle, true);
 	handleMutex.unlock();
-	L.info(R"(Window "%s" close requested)", stringOrNull(title));
+	L.info(R"(Window "{}" close requested)", stringOrNull(title));
 }
 
 void Window::flip()
@@ -261,29 +261,29 @@ void Window::activateContext()
 	glfwMakeContextCurrent(handle);
 	isContextActive = true;
 	activeContext = this;
-	L.debug(R"(Window "%s" OpenGL context activated)", stringOrNull(title));
+	L.debug(R"(Window "{}" OpenGL context activated)", stringOrNull(title));
 }
 
 void Window::deactivateContext()
 {
 #ifndef NDEBUG
 	if (!initialized) {
-		L.warn(R"(Tried to deactivate context of window "%s" without initialized windowing)",
+		L.warn(R"(Tried to deactivate context of window "{}" without initialized windowing)",
 			stringOrNull(title));
 		return;
 	}
 	if (!handle) {
-		L.warn(R"(Tried to deactivate context of window "%s" which is not open)",
+		L.warn(R"(Tried to deactivate context of window "{}" which is not open)",
 			stringOrNull(title));
 		return;
 	}
 	if (!isContextActive) {
-		L.warn(R"(Tried to deactivate context of window "%s" without an active context)",
+		L.warn(R"(Tried to deactivate context of window "{}" without an active context)",
 			stringOrNull(title));
 		return;
 	}
 	if (activeContext != this) {
-		L.warn(R"(Tried to deactivate context of window "%s" on the wrong thread)",
+		L.warn(R"(Tried to deactivate context of window "{}" on the wrong thread)",
 			stringOrNull(title));
 		return;
 	}
@@ -292,7 +292,7 @@ void Window::deactivateContext()
 	glfwMakeContextCurrent(nullptr);
 	isContextActive = false;
 	activeContext = nullptr;
-	L.debug(R"(Window "%s" OpenGL context deactivated)", stringOrNull(title));
+	L.debug(R"(Window "{}" OpenGL context deactivated)", stringOrNull(title));
 }
 
 auto Window::dequeueInput() -> std::optional<KeyInput>
@@ -328,7 +328,7 @@ Window::~Window()
 {
 #ifndef NDEBUG
 	if(handle)
-		L.warn(R"(Window "%s" was never closed)", stringOrNull(title));
+		L.warn(R"(Window "{}" was never closed)", stringOrNull(title));
 #endif //NDEBUG
 }
 

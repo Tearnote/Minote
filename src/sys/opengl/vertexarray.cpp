@@ -20,7 +20,7 @@ void VertexArray::create(char const* const _name)
 	name = _name;
 	attributes.fill(false);
 
-	L.debug(R"(Vertex array "%s" created)", name);
+	L.debug(R"(Vertex array "{}" created)", name);
 }
 
 void VertexArray::destroy()
@@ -30,7 +30,7 @@ void VertexArray::destroy()
 	detail::state.deleteVertexArray(id);
 	id = 0;
 
-	L.debug(R"(Vertex array "%s" destroyed)", name);
+	L.debug(R"(Vertex array "{}" destroyed)", name);
 	name = nullptr;
 }
 

@@ -59,7 +59,7 @@ void Frame::create(uvec2 const size, Shaders& shaders, Samples const _aa)
 	};
 
 	aa = _aa;
-	L.debug("Frame created with MSAA %dx", +aa);
+	L.debug("Frame created with MSAA {}x", +aa);
 }
 
 void Frame::destroy()

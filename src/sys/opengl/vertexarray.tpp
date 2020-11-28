@@ -87,7 +87,7 @@ auto setVaoAttribute(VertexArray& vao, GLuint const index,
 
 	}
 
-	L.debug(R"(Buffer "%s" bound to attribute %d of VAO "%s")",
+	L.debug(R"(Buffer "{}" bound to attribute {} of VAO "{}")",
 		buffer.name, index, vao.name);
 }
 

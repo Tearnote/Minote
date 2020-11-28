@@ -20,7 +20,7 @@ BufferBase<T, _target>::create(char const* const _name, bool const _dynamic)
 	name = _name;
 	dynamic = _dynamic;
 
-	L.debug(R"(%s vertex buffer "%s" created)",
+	L.debug(R"({} vertex buffer "{}" created)",
 		dynamic ? "Dynamic" : "Static", name);
 }
 
@@ -34,7 +34,7 @@ void BufferBase<T, _target>::destroy()
 	dynamic = false;
 	uploaded = false;
 
-	L.debug(R"(Vertex buffer "%s" destroyed)", name);
+	L.debug(R"(Vertex buffer "{}" destroyed)", name);
 	name = nullptr;
 }
 

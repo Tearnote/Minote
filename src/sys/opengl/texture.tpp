@@ -24,7 +24,7 @@ void Texture<F>::create(char const* const _name, uvec2 const _size)
 	setFilter(Filter::Linear);
 	resize(_size);
 
-	L.debug(R"(Texture "%s" created)", name);
+	L.debug(R"(Texture "{}" created)", name);
 }
 
 template<PixelFmt F>
@@ -37,7 +37,7 @@ void Texture<F>::destroy()
 	size = {0, 0};
 	filter = Filter::None;
 
-	L.debug(R"(Texture "%s" destroyed)", name);
+	L.debug(R"(Texture "{}" destroyed)", name);
 	name = nullptr;
 }
 
@@ -165,7 +165,7 @@ void TextureMS<F>::create(char const* const _name, uvec2 const _size, Samples co
 	samples = _samples;
 	resize(_size);
 
-	L.debug(R"(Multisample texture "%s" created)", name);
+	L.debug(R"(Multisample texture "{}" created)", name);
 }
 
 template<PixelFmt F>
@@ -178,7 +178,7 @@ void TextureMS<F>::destroy()
 	size = {0, 0};
 	samples = Samples::None;
 
-	L.debug(R"(Multisample texture "%s" destroyed)", name);
+	L.debug(R"(Multisample texture "{}" destroyed)", name);
 	name = nullptr;
 }
 
@@ -219,7 +219,7 @@ void Renderbuffer<F>::create(char const* const _name, uvec2 const _size)
 	name = _name;
 	resize(_size);
 
-	L.debug(R"(Renderbuffer "%s" created)", name);
+	L.debug(R"(Renderbuffer "{}" created)", name);
 }
 
 template<PixelFmt F>
@@ -231,7 +231,7 @@ void Renderbuffer<F>::destroy()
 	id = 0;
 	size = {0, 0};
 
-	L.debug(R"(Renderbuffer "%s" destroyed)", name);
+	L.debug(R"(Renderbuffer "{}" destroyed)", name);
 	name = nullptr;
 }
 
@@ -264,7 +264,7 @@ void RenderbufferMS<F>::create(char const* const _name, uvec2 const _size, Sampl
 	samples = _samples;
 	resize(_size);
 
-	L.debug(R"(Multisample renderbuffer "%s" created)", name);
+	L.debug(R"(Multisample renderbuffer "{}" created)", name);
 }
 
 template<PixelFmt F>
@@ -276,7 +276,7 @@ void RenderbufferMS<F>::destroy()
 	id = 0;
 	size = {0, 0};
 
-	L.debug(R"(Multisample renderbuffer "%s" destroyed)", name);
+	L.debug(R"(Multisample renderbuffer "{}" destroyed)", name);
 	name = nullptr;
 }
 
@@ -343,7 +343,7 @@ void BufferTexture<T>::create(char const* const _name, bool const dynamic)
 	bind(TextureUnit::_0);
 	glTexBuffer(GL_TEXTURE_BUFFER, format, storage.id);
 
-	L.debug(R"(Buffer texture "%s" created)", name);
+	L.debug(R"(Buffer texture "{}" created)", name);
 }
 
 template<BufferTextureType T>
@@ -356,7 +356,7 @@ void BufferTexture<T>::destroy()
 	size = {0, 0};
 	storage.destroy();
 
-	L.debug(R"(Buffer texture "%s" destroyed)", name);
+	L.debug(R"(Buffer texture "{}" destroyed)", name);
 	name = nullptr;
 }
 

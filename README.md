@@ -19,6 +19,7 @@ Requires:
 - [`GLFW`](https://www.glfw.org/) 3.3
 - [`HarfBuzz`](http://harfbuzz.org/)
 - [`glm`](https://glm.g-truc.net/)
+- [`fmt`](https://fmt.dev/)
 
 ### Included libraries
 - [`glad`](https://glad.dav1d.de/) loader generated on 2020-10-10,

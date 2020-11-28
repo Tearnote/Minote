@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <clocale>
 #include <thread>
+#include <fmt/format.h>
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN 1
@@ -28,10 +29,7 @@ auto main(int, char*[]) -> int
 {
 	// *** Initialization ***
 
-	// Locale and Unicode
-	std::setlocale(LC_ALL, ""); // Use system locale
-	std::setlocale(LC_NUMERIC, "C"); // Switch to predictable number format
-	std::setlocale(LC_TIME, "C"); // Switch to predictable datetime format
+	// Unicode support
 #ifdef _WIN32
 	SetConsoleOutputCP(65001); // Set Windows cmd encoding to UTF-8
 #endif //_WIN32
@@ -39,24 +37,19 @@ auto main(int, char*[]) -> int
 	// Global logging
 #ifndef NDEBUG
 	L.level = Log::Level::Trace;
-	constexpr char logfile[] = "minote.log";
+	constexpr char logfile[] = "minote-debug.log";
 #else //NDEBUG
 	L.level = Log::Level::Info;
-	constexpr char logfile[] = "minote-debug.log";
+	constexpr char logfile[] = "minote.log";
 #endif //NDEBUG
 	L.console = true;
 	L.enableFile(logfile);
-	defer { L.disableFile(); };
-	L.info("Starting up %s %s", AppName, AppVersion);
+	L.info("Starting up {} {}", AppName, AppVersion);
 
 	// Window creation
 	Window::init();
 	defer { Window::cleanup(); };
-	auto const windowTitle = [] {
-		array<char, 64> title = {};
-		std::snprintf(title.data(), title.size(), "%s %s", AppName, AppVersion);
-		return title;
-	}();
+	auto const windowTitle = fmt::format("{} {}", AppName, AppVersion);
 	Window window;
 	window.open(windowTitle.data());
 	defer { window.close(); };

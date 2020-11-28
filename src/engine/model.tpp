@@ -47,7 +47,7 @@ void ModelFlat::create(char const* _name, Shaders& shaders,
 	drawcall.triangles = N / 3;
 
 	name = _name;
-	L.debug(R"(Model "%s" created)", name);
+	L.debug(R"(Model "{}" created)", name);
 }
 
 template<template<TriviallyCopyable, size_t> typename Arr, size_t N>
@@ -98,7 +98,7 @@ void ModelPhong::create(char const* _name, Shaders& shaders,
 	drawcall.triangles = N / 3;
 
 	name = _name;
-	L.debug(R"(Model "%s" created)", name);
+	L.debug(R"(Model "{}" created)", name);
 }
 
 template<template<TriviallyCopyable, size_t> typename Arr, size_t N>

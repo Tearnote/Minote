@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdio>
+#include <fmt/format.h>
 
 namespace minote {
 
@@ -39,42 +40,46 @@ struct Log {
 	// Log a Trace level message. Meant for "printf debugging", do not leave any
 	// trace() calls in committed code.
 	// Example: pos.x = 3, pos.y = 7
-	[[gnu::format(printf, 2, 3)]]
-	void trace(char const* fmt, ...);
+	template<typename S, typename... Args>
+	void trace(const S& fmt, Args&&... args);
 
 	// Log a Debug level message. Meant for diagnostic information that only
 	// makes sense to a developer.
 	// Example: Shader compilation successful
-	[[gnu::format(printf, 2, 3)]]
-	void debug(char const* fmt, ...);
+	template<typename S, typename... Args>
+	void debug(const S& fmt, Args&&... args);
 
 	// Log an Info level message. Meant for information that is understandable
 	// by an inquisitive end user.
 	// Example: Player settings saved to database
-	[[gnu::format(printf, 2, 3)]]
-	void info(char const* fmt, ...);
+	template<typename S, typename... Args>
+	void info(const S& fmt, Args&&... args);
 
 	// Log a Warn level message. Meant for failures that cause a subsystem
 	// to run in a limited capacity.
 	// Example: Could not load texture
-	[[gnu::format(printf, 2, 3)]]
-	void warn(char const* fmt, ...);
+	template<typename S, typename... Args>
+	void warn(const S& fmt, Args&&... args);
 
 	// Log an Error level message. Meant for failures that a subsystem cannot
 	// recover from.
 	// Example: Could not find any audio device
-	[[gnu::format(printf, 2, 3)]]
-	void error(char const* fmt, ...);
+	template<typename S, typename... Args>
+	void error(const S& fmt, Args&&... args);
 
 	// Log a Crit level message. Meant for failures that the entire application
 	// cannot recover from.
 	// Example: Failed to initialize OpenGL
-	[[gnu::format(printf, 2, 3)]]
-	void crit(char const* fmt, ...);
+	template<typename S, typename... Args>
+	void crit(const S& fmt, Args&&... args);
 
 	// Log a Crit level message and exit the application immediately.
-	[[gnu::format(printf, 2, 3)]] [[noreturn]]
-	void fail(char const* fmt, ...);
+	template<typename S, typename... Args>
+	[[noreturn]]
+	void fail(const S& fmt, Args&&... args);
+
+	template<typename S, typename... Args>
+	void log(Log::Level const level, S const& fmt, Args&& ... args);
 
 	~Log();
 
@@ -84,3 +89,5 @@ struct Log {
 inline Log L;
 
 }
+
+#include "log.tpp"

@@ -11,7 +11,7 @@ void ModelFlat::destroy()
 	vao.destroy();
 	drawcall = {};
 
-	L.debug(R"(Model "%s" destroyed)", name);
+	L.debug(R"(Model "{}" destroyed)", name);
 	name = nullptr;
 }
 
@@ -44,7 +44,7 @@ void ModelPhong::destroy()
 	vao.destroy();
 	drawcall = {};
 
-	L.debug(R"(Model "%s" destroyed)", name);
+	L.debug(R"(Model "{}" destroyed)", name);
 	name = nullptr;
 }
 

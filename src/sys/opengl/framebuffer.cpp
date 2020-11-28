@@ -17,7 +17,7 @@ void Framebuffer::create(char const* const _name)
 #endif //NDEBUG
 	name = _name;
 
-	L.debug(R"(Framebuffer "%s" created)", name);
+	L.debug(R"(Framebuffer "{}" created)", name);
 }
 
 void Framebuffer::destroy()
@@ -30,7 +30,7 @@ void Framebuffer::destroy()
 	dirty = true;
 	attachments.fill(nullptr);
 
-	L.debug(R"(Framebuffer "%s" destroyed)", name);
+	L.debug(R"(Framebuffer "{}" destroyed)", name);
 	name = nullptr;
 }
 
@@ -69,7 +69,7 @@ void Framebuffer::bind()
 #ifndef NDEBUG
 		// Check framebuffer correctness
 		if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-			L.error(R"(Framebuffer "%s" validity check failed)", name);
+			L.error(R"(Framebuffer "{}" validity check failed)", name);
 #endif //NDEBUG
 
 		dirty = false;

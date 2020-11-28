@@ -36,6 +36,7 @@ pkg_search_module(GLFW REQUIRED glfw3)
 pkg_search_module(FREETYPE REQUIRED freetype2)
 pkg_search_module(HARFBUZZ REQUIRED harfbuzz)
 pkg_search_module(GLM REQUIRED glm)
+pkg_search_module(FMT REQUIRED fmt)
 
 add_compile_definitions(GLFW_INCLUDE_NONE)
 #add_compile_definitions(GLM_FORCE_ALIGNED_GENTYPES)
@@ -179,6 +180,7 @@ target_include_directories(Minote PRIVATE ${GLFW_INCLUDE_DIRS})
 target_include_directories(Minote PRIVATE ${HARFBUZZ_INCLUDE_DIRS})
 target_include_directories(Minote PRIVATE ${FREETYPE_INCLUDE_DIRS})
 target_include_directories(Minote PRIVATE ${GLM_INCLUDE_DIRS})
+target_include_directories(Minote PRIVATE ${FMT_INCLUDE_DIRS})
 
 # Linker settings
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -187,6 +189,11 @@ endif()
 
 # Link the game
 target_link_libraries(Minote ${GLFW_STATIC_LIBRARIES})
+target_link_libraries(Minote ${GLM_STATIC_LIBRARIES})
+target_link_libraries(Minote ${FMT_STATIC_LIBRARIES})
+if(WIN32)
+    target_link_libraries(Minote winmm)
+endif()
 
 # https://github.com/google/brotli/issues/795
 list(TRANSFORM HARFBUZZ_STATIC_LIBRARIES REPLACE "brotlidec" "brotlidec-static")
@@ -195,6 +202,3 @@ list(TRANSFORM HARFBUZZ_STATIC_LIBRARIES REPLACE "brotlicommon" "brotlicommon-st
 list(TRANSFORM FREETYPE_STATIC_LIBRARIES REPLACE "brotlicommon" "brotlicommon-static")
 target_link_libraries(Minote ${HARFBUZZ_STATIC_LIBRARIES})
 target_link_libraries(Minote ${FREETYPE_STATIC_LIBRARIES})
-if(WIN32)
-    target_link_libraries(Minote winmm)
-endif()

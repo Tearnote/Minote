@@ -9,7 +9,7 @@ void Fonts::create()
 	ASSERT(!freetype);
 
 	if (FT_Error const err = FT_Init_FreeType(&freetype)) {
-		L.error("Failed to initialize Freetype: error %d", err);
+		L.error("Failed to initialize Freetype: error {}", err);
 		return;
 	}
 

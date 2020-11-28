@@ -14,7 +14,7 @@ void Uniform<T>::setLocation(Shader const& shader, char const* const name)
 	shaderId = shader.id;
 
 	if (location == -1)
-		L.warn(R"(Failed to get location for uniform "%s")", name);
+		L.warn(R"(Failed to get location for uniform "{}")", name);
 }
 
 template<GLSLType T>
@@ -55,7 +55,7 @@ void Sampler<T>::setLocation(Shader const& shader, char const* const name, Textu
 
 	location = glGetUniformLocation(shader.id, name);
 	if (location == -1) {
-		L.warn(R"(Failed to get location for sampler "%s")", name);
+		L.warn(R"(Failed to get location for sampler "{}")", name);
 		return;
 	}
 

@@ -14,7 +14,7 @@ inline auto attachmentIndex(Attachment const attachment) -> size_t
 		return 16;
 #ifndef NDEBUG
 	case Attachment::None:
-		L.warn("Invalid attachment index %d", +attachment);
+		L.warn("Invalid attachment index {}", +attachment);
 		return -1;
 #endif //NDEBUG
 	default:

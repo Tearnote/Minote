@@ -22,14 +22,14 @@ void Font::create(FT_Library freetype, char const* const _name, char const* cons
 
 	FT_Face ftFace = nullptr;
 	if (auto const err = FT_New_Face(freetype, fontPath, 0, &ftFace)) {
-		L.error(R"(Failed to open font file at %s for font "%s": error %d)",
+		L.error(R"(Failed to open font file at {} for font "{}": error {})",
 			fontPath, _name, err);
 		return;
 	}
 	defer { FT_Done_Face(ftFace); };
 
 	if (auto const err = FT_Set_Char_Size(ftFace, 0, 1024, 0, 0)) {
-		L.error(R"(Failed to set font "%s" char size: error %d)", _name, err);
+		L.error(R"(Failed to set font "{}" char size: error {})", _name, err);
 		return;
 	}
 	hbFont = hb_ft_font_create_referenced(ftFace);
@@ -44,7 +44,7 @@ void Font::create(FT_Library freetype, char const* const _name, char const* cons
 	stbi_set_flip_vertically_on_load(true);
 	u8* atlasData = stbi_load(atlasPath, &size.x, &size.y, &channels, 0);
 	if (!atlasData) {
-		L.error(R"(Failed to load font atlas at %s for font "%s": %s)",
+		L.error(R"(Failed to load font atlas at {} for font "{}": {})",
 			atlasPath, _name, stbi_failure_reason());
 		destroy();
 		return;
@@ -61,7 +61,7 @@ void Font::create(FT_Library freetype, char const* const _name, char const* cons
 	std::snprintf(metricsPath, MaxPathLen, "%s.csv", path);
 	std::FILE* const metricsFile = std::fopen(metricsPath, "r");
 	if (!metricsFile) {
-		L.error(R"(Failed to load font metrics at %s for font "%s": %s)",
+		L.error(R"(Failed to load font metrics at {} for font "{}": {})",
 			metricsPath, _name, std::strerror(errno));
 		destroy();
 		return;
@@ -89,7 +89,7 @@ void Font::create(FT_Library freetype, char const* const _name, char const* cons
 	}
 
 	name = _name;
-	L.info(R"(Font "%s" loaded)", name);
+	L.info(R"(Font "{}" loaded)", name);
 }
 
 void Font::destroy()
@@ -102,7 +102,7 @@ void Font::destroy()
 		atlas.destroy();
 	metrics.clear();
 
-	L.info(R"(Font "%s" cleaned up)", stringOrNull(name));
+	L.info(R"(Font "{}" cleaned up)", stringOrNull(name));
 	name = nullptr;
 }
 

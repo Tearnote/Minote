@@ -26,7 +26,7 @@ static auto compileShaderStage(GLuint const id, char const* const name,
 			glGetShaderInfoLog(id, log.size(), nullptr, log.data());
 			return log;
 		}();
-		L.error(R"(Shader "%s" failed to compile: %s)", name, infoLog.data());
+		L.error(R"(Shader "{}" failed to compile: {})", name, infoLog.data());
 		return false;
 	}
 	return true;
@@ -74,7 +74,7 @@ void Shader::create(char const* _name, char const* vertSrc, char const* fragSrc)
 			glGetProgramInfoLog(id, log.size(), nullptr, log.data());
 			return log;
 		}();
-		L.error(R"(Shader "%s" failed to link: %s)", _name, infoLog.data());
+		L.error(R"(Shader "{}" failed to link: {})", _name, infoLog.data());
 		glDeleteProgram(id);
 		id = 0;
 		return;
@@ -84,7 +84,7 @@ void Shader::create(char const* _name, char const* vertSrc, char const* fragSrc)
 
 	setLocations();
 
-	L.info(R"(Shader "%s" created)", name);
+	L.info(R"(Shader "{}" created)", name);
 }
 
 void Shader::destroy()
@@ -93,7 +93,7 @@ void Shader::destroy()
 
 	glDeleteProgram(id);
 	id = 0;
-	L.debug(R"(Shader "%s" destroyed)", name);
+	L.debug(R"(Shader "{}" destroyed)", name);
 	name = nullptr;
 }
 
@@ -112,7 +112,7 @@ void BufferSampler::setLocation(Shader const& shader, char const* name,
 
 	location = glGetUniformLocation(shader.id, name);
 	if (location == -1) {
-		L.warn(R"(Failed to get location for sampler "%s")", name);
+		L.warn(R"(Failed to get location for sampler "{}")", name);
 		return;
 	}
 
