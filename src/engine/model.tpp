@@ -61,7 +61,7 @@ void ModelFlat::draw(Framebuffer& fb, Scene const& scene,
 	drawcall.shader->view = scene.view;
 	drawcall.shader->projection = scene.projection;
 	drawcall.framebuffer = &fb;
-	drawcall.instances = N;
+	drawcall.instances = _instances.size();
 	drawcall.params = params;
 	drawcall.draw();
 }

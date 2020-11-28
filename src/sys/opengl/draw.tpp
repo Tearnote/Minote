@@ -5,8 +5,6 @@ namespace minote {
 template<ShaderType T>
 void Draw<T>::draw()
 {
-	ASSERT(shader || clearColor || clearDepthStencil);
-
 	if (framebuffer)
 		framebuffer->bind();
 	else
@@ -27,7 +25,7 @@ void Draw<T>::draw()
 		glClear(mask);
 	}
 
-	if (shader) {
+	if (shader && instances > 0) {
 		ASSERT(framebuffer || !params.viewport.zero());
 		bool const instanced = (instances > 1);
 		bool const indexed = (vertexarray && vertexarray->elementBits);
