@@ -21,22 +21,13 @@
 #include <glm/gtc/color_space.hpp>
 #include <glm/gtc/type_precision.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include "base/concept.hpp"
 #include "base/util.hpp"
 
 namespace minote {
 
 // *** Base types ***
 
-using glm::u8;
-using glm::u16;
-using glm::u32;
-using glm::u64;
-using glm::i8;
-using glm::i16;
-using glm::i32;
-using glm::i64;
-using glm::f32;
-using glm::f64;
 using glm::vec2;
 using glm::vec3;
 using glm::vec4;
@@ -57,9 +48,9 @@ using color4 = vec4;
 
 // A more correct replacement for pi.
 // See: https://tauday.com/
-template<FloatingPoint T>
+template<floating_point T>
 constexpr T Tau_v = 6.283185307179586476925286766559005768L;
-constexpr auto Tau = Tau_v<double>;
+constexpr auto Tau = Tau_v<f64>;
 
 // *** Scalar / component-wise operations ***
 
@@ -105,7 +96,7 @@ using glm::tan;
 // -3 mod 4 = 1
 // -4 mod 4 = 0
 // -5 mod 4 = 3
-template<Integral T>
+template<integral T>
 constexpr auto tmod(T num, T div) { return num % div + (num % div < 0) * div; }
 
 // *** Vector operations ***
@@ -192,6 +183,30 @@ struct AABB<2, i32> {
 };
 
 template<>
+struct AABB<2, f32> {
+
+	vec2 pos = {0.0f, 0.0f};
+	vec2 size = {0.0f, 0.0f};
+
+	auto operator==(AABB<2, f32> const& other) const -> bool
+	{
+		return pos == other.pos && size == other.size;
+	}
+
+	auto operator!=(AABB<2, f32> const& other) const -> bool
+	{
+		return !(other == *this);
+	}
+
+	[[nodiscard]]
+	auto zero() const -> bool
+	{
+		return pos.x == 0.0f && pos.y == 0.0f && size.x == 0.0f && size.y == 0.0f;
+	}
+
+};
+
+template<>
 struct AABB<3, i32> {
 
 	ivec3 pos = {0, 0, 0};
@@ -212,30 +227,6 @@ struct AABB<3, i32> {
 	{
 		return pos.x == 0 && pos.y == 0 && pos.z == 0 &&
 			size.x == 0 && size.y == 0 && size.z == 0;
-	}
-
-};
-
-template<>
-struct AABB<2, f32> {
-
-	vec2 pos = {0.0f, 0.0f};
-	vec2 size = {0.0f, 0.0f};
-
-	auto operator==(AABB<2, f32> const& other) const -> bool
-	{
-		return pos == other.pos && size == other.size;
-	}
-
-	auto operator!=(AABB<2, f32> const& other) const -> bool
-	{
-		return !(other == *this);
-	}
-
-	[[nodiscard]]
-	auto zero() const -> bool
-	{
-		return pos.x == 0.0f && pos.y == 0.0f && size.x == 0.0f && size.y == 0.0f;
 	}
 
 };

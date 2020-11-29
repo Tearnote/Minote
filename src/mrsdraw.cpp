@@ -5,6 +5,7 @@
 
 #include "mrsdraw.hpp"
 
+#include "sys/glfw.hpp"
 #include "engine/engine.hpp"
 #include "particles.hpp"
 #include "mrsdef.hpp"
@@ -371,7 +372,7 @@ void mrsDraw(Engine& engine)
 		mrsTet.player.state == PlayerSpawned) &&
 		mrsTet.player.gravity < MrsSubGrid && // Don't show if the game is too fast for it to help
 			(!mrsTet.player.lockDelay ||
-			(Window::getTime() < playerPosY.start + playerPosY.duration)) // Don't show if player is on the ground
+			(Glfw::getTime() < playerPosY.start + playerPosY.duration)) // Don't show if player is on the ground
 		) {
 		ivec2 ghostPos = mrsTet.player.pos;
 		while (!pieceOverlapsField(&mrsTet.player.shape, {

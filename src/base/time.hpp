@@ -3,33 +3,31 @@
 
 #pragma once
 
-#include "base/math.hpp"
+#include <ctime>
 #include "base/util.hpp"
 
 namespace minote {
+
+// Importing standard time functions and types
+using std::time;
+using std::localtime;
+using std::time_t;
+using std::tm;
 
 // Count of nanoseconds, the main type used for timekeeping. The upper limit
 // is about 290 years.
 using nsec = i64;
 
-// Format string for printing nsec values
-#define PRInsec PRId64
-
 // Create an nsec value out of a number of seconds.
-template <Arithmetic T>
+template <arithmetic T>
 constexpr auto seconds(T const t) -> nsec {
 	return t * 1'000'000'000LL;
 }
 
 // Create an nsec value out of a number of milliseconds.
-template <Arithmetic T>
+template <arithmetic T>
 constexpr auto milliseconds(T const t) -> nsec {
 	return t * 1'000'000LL;
 }
-
-// Sleep the thread for the specific duration. Keep in mind that on Windows this
-// will be at least 1ms and might have strong jitter.
-// This function is thread-safe.
-void sleepFor(nsec duration);
 
 }

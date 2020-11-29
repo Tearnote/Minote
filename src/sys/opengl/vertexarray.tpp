@@ -105,7 +105,7 @@ void VertexArray::setAttribute(GLuint const index, VertexBuffer<T>& buffer,
 	detail::setVaoAttribute<T>(*this, index, buffer, 0, instanced);
 }
 
-template<TriviallyCopyable T, GLSLType U>
+template<copy_constructible T, GLSLType U>
 void VertexArray::setAttribute(GLuint const index, VertexBuffer<T>& buffer,
 	U T::*field, bool const instanced)
 {

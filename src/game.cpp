@@ -109,6 +109,7 @@ void game(Window& window)
 	// *** OpenGL setup ***
 
 	window.activateContext();
+	defer { window.deactivateContext(); };
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 		L.fail("Failed to initialize OpenGL");
 	glfwSwapInterval(1); // Enable vsync

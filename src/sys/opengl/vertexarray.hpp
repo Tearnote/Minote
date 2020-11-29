@@ -37,7 +37,7 @@ struct VertexArray : GLObject {
 	// of GLSL types. Set instanced to true to advance the pointer per instance
 	// instead of per vertex. mat4 attributes take up 4 indexes,
 	// from index to index+3.
-	template<TriviallyCopyable T, GLSLType U>
+	template<copy_constructible T, GLSLType U>
 	void setAttribute(GLuint index, VertexBuffer<T>& buffer, U T::*field, bool instanced = false);
 
 	// Set the element buffer binding.

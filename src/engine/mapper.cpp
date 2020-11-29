@@ -1,6 +1,7 @@
 #include "engine/mapper.hpp"
 
 #include "base/log.hpp"
+#include "sys/glfw.hpp"
 
 namespace minote {
 
@@ -61,7 +62,7 @@ void Mapper::mapKeyInputs(Window& window)
 			}
 		}();
 
-		const auto timestamp = Window::getTime();
+		const auto timestamp = Glfw::getTime();
 
 		const Action newAction = {
 			.type = type,

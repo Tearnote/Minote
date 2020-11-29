@@ -6,6 +6,7 @@
 #include "play.hpp"
 
 #include "sys/window.hpp"
+#include "sys/glfw.hpp"
 #include "engine/mapper.hpp"
 #include "mrs.hpp"
 #include "base/log.hpp"
@@ -24,7 +25,7 @@ void playInit(void)
 {
 	if (initialized) return;
 
-	nextUpdate = Window::getTime() + MrsUpdateTick;
+	nextUpdate = Glfw::getTime() + MrsUpdateTick;
 	mrsInit();
 
 	initialized = true;
@@ -46,7 +47,7 @@ void playUpdate(Window& window, Mapper& mapper)
 	ASSERT(initialized);
 
 	// Update as many times as we need to catch up
-	while (nextUpdate <= Window::getTime()) {
+	while (nextUpdate <= Glfw::getTime()) {
 		while (const auto* const action = mapper.peekAction()) { // Exhaust all actions...
 			if (action->timestamp <= nextUpdate) {
 				auto* const nextAction = collectedInputs.produce();

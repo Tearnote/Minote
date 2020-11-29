@@ -8,8 +8,10 @@
 #include <time.h>
 #include "cephes/protos.h"
 #include "base/array.hpp"
+#include "sys/glfw.hpp"
 #include "engine/model.hpp"
 #include "base/util.hpp"
+#include "base/rng.hpp"
 
 using namespace minote;
 
@@ -55,7 +57,7 @@ void particlesUpdate(void)
 	ASSERT(initialized);
 
 	size_t numParticles = particles.size();
-	nsec currentTime = Window::getTime();
+	nsec currentTime = Glfw::getTime();
 
 	for (size_t i = numParticles - 1; i < numParticles; i -= 1) {
 		Particle* currentParticle = &particles[i];
@@ -121,7 +123,7 @@ void particlesDraw(Engine& engine)
 			fadeout = cubicEaseIn(fadeout);
 			instance->tint.a *= fadeout;
 		}
-		
+
 		const mat4 translated = make_translate({(float)x, (float)y, current->origin.z});
 		const mat4 rotated = rotate(translated, angle, {0.0f, 0.0f, 1.0f});
 		instance->transform = scale(rotated, {1.0f - progress, 1.0f, 1.0f});
@@ -147,7 +149,7 @@ void particlesGenerate(vec3 position, size_t count, ParticleParams* params)
 		newParticle->origin = position;
 		newParticle->color = params->color;
 
-		newParticle->start = Window::getTime();
+		newParticle->start = Glfw::getTime();
 		newParticle->duration = params->durationMin + rng.randFloat()
 			* (double)(params->durationMax - params->durationMin);
 		newParticle->ease = params->ease;

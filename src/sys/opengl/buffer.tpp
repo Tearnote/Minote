@@ -5,7 +5,7 @@
 
 namespace minote {
 
-template<TriviallyCopyable T, GLenum _target>
+template<copy_constructible T, GLenum _target>
 void
 BufferBase<T, _target>::create(char const* const _name, bool const _dynamic)
 {
@@ -24,7 +24,7 @@ BufferBase<T, _target>::create(char const* const _name, bool const _dynamic)
 		dynamic ? "Dynamic" : "Static", name);
 }
 
-template<TriviallyCopyable T, GLenum _target>
+template<copy_constructible T, GLenum _target>
 void BufferBase<T, _target>::destroy()
 {
 	ASSERT(id);
@@ -38,8 +38,8 @@ void BufferBase<T, _target>::destroy()
 	name = nullptr;
 }
 
-template<TriviallyCopyable T, GLenum _target>
-template<template<TriviallyCopyable, size_t> typename Arr, size_t N>
+template<copy_constructible T, GLenum _target>
+template<template<copy_constructible, size_t> typename Arr, size_t N>
 	requires ArrayContainer<Arr, T, N>
 void BufferBase<T, _target>::upload(Arr<Type, N> const& data)
 {
@@ -59,7 +59,7 @@ void BufferBase<T, _target>::upload(Arr<Type, N> const& data)
 	}
 }
 
-template<TriviallyCopyable T, GLenum _target>
+template<copy_constructible T, GLenum _target>
 void BufferBase<T, _target>::upload(size_t elements, Type data[])
 {
 	ASSERT(data);
@@ -80,7 +80,7 @@ void BufferBase<T, _target>::upload(size_t elements, Type data[])
 	}
 }
 
-template<TriviallyCopyable T, GLenum _target>
+template<copy_constructible T, GLenum _target>
 void BufferBase<T, _target>::bind() const
 {
 	ASSERT(id);

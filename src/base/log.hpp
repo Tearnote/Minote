@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <cstdio>
 #include "base/util.hpp"
+#include "base/io.hpp"
 
 namespace minote {
 
@@ -27,10 +27,10 @@ struct Log {
 	bool console = false;
 
 	// File handle to write messages into, or nullptr for disabled file logging
-	std::FILE* file = nullptr;
+	FILE* file = nullptr;
 
 	// Enable logging to a file. The file will be created if missing.
-	void enableFile(fs::path const& file);
+	void enableFile(path const& file);
 
 	// Disable logging to a file, cleanly closing any currently open logfile.
 	void disableFile();

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "base/string.hpp"
 #include "base/util.hpp"
 
 namespace minote {

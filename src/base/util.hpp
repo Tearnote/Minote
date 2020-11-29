@@ -1,43 +1,49 @@
 // Minote - base/util.hpp
-// Useful objects, functions and constants to compliment the standard library
+// Basic and universally useful C++ utilities
 
 #pragma once
 
-#include <string_view>
 #include <type_traits>
-#include <filesystem>
-#include <fstream>
+#include <functional>
+#include <optional>
 #include <cstdint>
 #include <cstdlib> // Provide free()
 #include <cstring>
-#include <vector>
 #include <cstdio>
-#include <array>
 #include "scope_guard/scope_guard.hpp"
 #include "PPK_ASSERT/ppk_assert.h"
-#include "pcg/pcg_basic.h"
+#include "base/concept.hpp"
 
 namespace minote {
 
-// *** Core concepts ***
+// *** Standard imports ***
 
-template<typename T>
-concept Enum = std::is_enum_v<T>;
+// Basic types
+using u8 = std::uint8_t;
+using u16 = std::uint16_t;
+using u32 = std::uint32_t;
+using u64 = std::uint64_t;
+using i8 = std::int8_t;
+using i16 = std::int16_t;
+using i32 = std::int32_t;
+using i64 = std::int64_t;
+using f32 = float;
+using f64 = double;
 
-template<typename T>
-concept FloatingPoint = std::is_floating_point_v<T>;
+// Used every time the size of a container is stored. Should be a keyword really
+using std::size_t;
 
-template<typename T>
-concept Integral = std::is_integral_v<T>;
+// Reference wrapper. Required to use references in thread constructor,
+// containers, etc
+using std::ref;
+using std::cref;
 
-template<typename T>
-concept Arithmetic = std::is_arithmetic_v<T>;
+// Used for returning by value when lack of value is possible
+using std::optional;
+using std::nullopt;
 
-template<typename T>
-concept TriviallyCopyable = std::is_trivially_copyable_v<T>;
-
-template<typename T>
-concept ZeroArgConstructible = std::is_constructible_v<T>;
+// Immediately close the application
+using std::exit;
 
 // *** Language features ***
 
@@ -51,7 +57,7 @@ concept ZeroArgConstructible = std::is_constructible_v<T>;
 // be constexpr within the current rules of the language.
 // Example: offset_of(&Point::x)
 // See: https://gist.github.com/graphitemaster/494f21190bb2c63c5516
-template<typename T1, ZeroArgConstructible T2>
+template<typename T1, default_initializable T2>
 inline auto offset_of(T1 T2::*member) -> size_t
 {
 	static T2 obj;
@@ -59,64 +65,13 @@ inline auto offset_of(T1 T2::*member) -> size_t
 }
 
 // Conversion of scoped enum to the underlying type, using the unary + operator
-template<Enum T>
+template<enum_type T>
 constexpr auto operator+(T e)
 {
-	return static_cast<std::underlying_type_t<T>>(e);
+return static_cast<std::underlying_type_t<T>>(e);
 }
 
-// *** Standard library imports ***
-
-// Used every time the size of a container is stored. Should be a keyword really
-using std::size_t;
-
-// Standard container for static storage
-using std::array;
-
-// Standard container for dynamic storage
-using std::vector;
-
-// Enable usage of standard literals
-using namespace std::literals;
-
-// Safer, UTF-8 only replacement to const char*
-using std::string_view;
-
-// Easier access to filesystem types
-namespace fs = std::filesystem;
-
 // *** Various utilities ***
-
-// PCG pseudorandom number generator
-struct Rng {
-
-	// Internal state of the RNG. The .inc field must always be odd
-	pcg32_random_t state = {0, 1};
-
-	// Seed the generator with any 64bit value. The generated sequence will
-	// always be the same for any given seed.
-	void seed(std::uint64_t const seed)
-	{
-		pcg32_srandom_r(&state, seed, 'M' * 'i' + 'n' * 'o' + 't' * 'e');
-	}
-
-	// Return a random positive integer, up to a bound (exclusive). RNG state
-    // is advanced by one step.
-	auto randInt(std::uint32_t const bound) -> std::uint32_t
-	{
-		ASSERT(bound >= 1);
-		return pcg32_boundedrand_r(&state, bound);
-	}
-
-	// Return a random floating-point value between 0.0 (inclusive) and 1.0
-    // (exclusive). RNG state is advanced by one step.
-	template<FloatingPoint T = float>
-	auto randFloat() -> T
-	{
-		return ldexp(static_cast<T>(pcg32_random_r(&state)), -32);
-	}
-
-};
 
 // Return the "NULL" string literal if passed argument is nullptr, otherwise
 // return the argument.

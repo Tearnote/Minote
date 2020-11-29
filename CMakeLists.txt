@@ -133,7 +133,7 @@ set(SOURCES
         src/base/ease.hpp
         src/base/math.hpp
         src/base/util.hpp src/base/util.cpp
-        src/base/time.hpp src/base/time.cpp
+        src/base/time.hpp
         src/base/tween.hpp
         src/base/array.hpp src/base/array.tpp
         src/base/queue.hpp src/base/queue.tpp
@@ -163,7 +163,7 @@ set(SOURCES
         src/bloom.hpp src/bloom.cpp
         src/particles.hpp src/particles.cpp
         src/debug.hpp src/debug.cpp
-        src/text.hpp src/text.cpp src/engine/font.cpp src/engine/font.hpp)
+        src/text.hpp src/text.cpp src/engine/font.cpp src/engine/font.hpp src/sys/glfw.cpp src/sys/glfw.hpp src/base/string.hpp src/base/thread.hpp src/base/concept.hpp src/base/rng.hpp src/base/io.hpp src/base/thread.cpp src/base/math_io.hpp)
 
 add_executable(Minote ${SOURCES} ${INTERNALLIBS})
 target_compile_options(Minote PRIVATE

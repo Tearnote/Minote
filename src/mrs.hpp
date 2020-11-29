@@ -13,6 +13,7 @@
 #include "engine/mapper.hpp"
 #include "mino.hpp"
 #include "base/util.hpp"
+#include "base/rng.hpp"
 
 /// Frequency of game logic updates, simulated by semi-threading, in Hz
 #define MrsUpdateFrequency 60.0

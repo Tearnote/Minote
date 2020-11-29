@@ -1,9 +1,8 @@
 #pragma once
 
-#include <cstdio>
-#include <ctime>
-#include <fmt/format.h>
-#include <fmt/chrono.h>
+#include <stdexcept>
+#include "base/string.hpp"
+#include "base/array.hpp"
 #include "base/util.hpp"
 
 namespace minote {
@@ -19,9 +18,9 @@ constexpr auto LogLevelStrings = array{
 // a newline.
 inline void logTo(FILE* const file, string_view msg) try
 {
-	fmt::print(file, msg);
+	print(file, msg);
 } catch (std::runtime_error& e) {
-	fmt::print(stderr, "Failed to write to logfile: {}\n", e.what());
+	print(stderr, "Failed to write to logfile: {}\n", e.what());
 }
 
 }
@@ -69,7 +68,7 @@ void Log::fail(S const& fmt, Args&& ... args)
 #ifdef __GNUC__
 	__builtin_trap();
 #endif //__GNUC__
-	std::exit(EXIT_FAILURE);
+	exit(EXIT_FAILURE);
 }
 
 template<typename S, typename... Args>
@@ -78,25 +77,25 @@ void Log::log(Log::Level const _level, S const& fmt, Args&&... args)
 	if (_level < level) return;
 	if (!console && !file) return;
 
-	fmt::basic_memory_buffer<char, 256> msg;
+	memory_buffer msg;
 
 	// Insert timestamp and level
-	auto const now = std::time(nullptr);
-	auto const localnow = *std::localtime(&now);
-	fmt::format_to(msg, "{:%H:%M:%S} [{}] ", localnow, detail::LogLevelStrings[+level]);
+	auto const now = time(nullptr);
+	auto const localnow = *localtime(&now);
+	format_to(msg, "{:%H:%M:%S} [{}] ", localnow, detail::LogLevelStrings[+level]);
 
 	// Insert formatted message
-	fmt::format_to(msg, fmt, args...);
-	fmt::format_to(msg, "\n\0"sv); // Finalize
+	format_to(msg, fmt, args...);
+	format_to(msg, "\n\0"sv); // Finalize
 
 	// Print constructed message to all enabled targets
 	if (console) {
 		if (level >= Level::Warn) {
 			// Ensure previously written messages are not interleaved
-			std::fflush(stdout);
+			fflush(stdout);
 			detail::logTo(stderr, msg.data());
 			// Ensure message is written, in case the application crashes
-			std::fflush(stderr);
+			fflush(stderr);
 		} else {
 			detail::logTo(stdout, msg.data());
 		}
@@ -106,8 +105,8 @@ void Log::log(Log::Level const _level, S const& fmt, Args&&... args)
 		detail::logTo(file, msg.data());
 		// Ensure message is written, in case the application crashes
 		if (level >= Level::Warn) {
-			if (std::fflush(file) == EOF) {
-				std::perror("Failed to write into logfile");
+			if (fflush(file) == EOF) {
+				perror("Failed to write into logfile");
 				errno = 0;
 			}
 		}

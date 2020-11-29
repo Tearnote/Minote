@@ -5,7 +5,7 @@ namespace minote {
 namespace detail {
 
 // Generate normals in-place for an array of vertices.
-template<template<TriviallyCopyable, size_t> typename Arr, size_t N>
+template<template<copy_constructible, size_t> typename Arr, size_t N>
 	requires ArrayContainer<Arr, ModelPhong::Vertex, N>
 void generatePhongNormals(Arr<ModelPhong::Vertex, N>& vertices)
 {
@@ -25,7 +25,7 @@ void generatePhongNormals(Arr<ModelPhong::Vertex, N>& vertices)
 
 }
 
-template<template<TriviallyCopyable, size_t> typename Arr, size_t N>
+template<template<copy_constructible, size_t> typename Arr, size_t N>
 	requires ArrayContainer<Arr, ModelFlat::Vertex, N>
 void ModelFlat::create(char const* _name, Shaders& shaders,
 		Arr<Vertex, N> const& _vertices)
@@ -50,7 +50,7 @@ void ModelFlat::create(char const* _name, Shaders& shaders,
 	L.debug(R"(Model "{}" created)", name);
 }
 
-template<template<TriviallyCopyable, size_t> typename Arr, size_t N>
+template<template<copy_constructible, size_t> typename Arr, size_t N>
 	requires ArrayContainer<Arr, ModelFlat::Instance, N>
 void ModelFlat::draw(Framebuffer& fb, Scene const& scene,
 	DrawParams const& params, Arr<Instance, N> const& _instances)
@@ -66,7 +66,7 @@ void ModelFlat::draw(Framebuffer& fb, Scene const& scene,
 	drawcall.draw();
 }
 
-template<template<TriviallyCopyable, size_t> typename Arr, size_t N>
+template<template<copy_constructible, size_t> typename Arr, size_t N>
 	requires ArrayContainer<Arr, ModelPhong::Vertex, N>
 void ModelPhong::create(char const* _name, Shaders& shaders,
 		Arr<Vertex, N> const& _vertices, Material _material,
@@ -101,7 +101,7 @@ void ModelPhong::create(char const* _name, Shaders& shaders,
 	L.debug(R"(Model "{}" created)", name);
 }
 
-template<template<TriviallyCopyable, size_t> typename Arr, size_t N>
+template<template<copy_constructible, size_t> typename Arr, size_t N>
 	requires ArrayContainer<Arr, ModelPhong::Instance, N>
 void ModelPhong::draw(Framebuffer& fb, Scene const& scene,
 	DrawParams const& params, Arr<Instance, N> const& _instances)

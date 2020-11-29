@@ -4,6 +4,7 @@
 #pragma once
 
 #include "glad/glad.h"
+#include "base/concept.hpp"
 #include "base/array.hpp"
 #include "base/util.hpp"
 #include "sys/opengl/base.hpp"
@@ -11,7 +12,7 @@
 namespace minote {
 
 // Generic buffer object. Use one of the template specializations below
-template<TriviallyCopyable T, GLenum _target>
+template<copy_constructible T, GLenum _target>
 struct BufferBase : GLObject {
 
 	// Element type that is being stored by the buffer
@@ -35,7 +36,7 @@ struct BufferBase : GLObject {
 
 	// Upload new data to the GPU buffer, replacing previous data. The buffer
 	// is resized to fit the new data, and the previous storage is orphaned.
-	template<template<TriviallyCopyable, size_t> typename Arr, size_t N>
+	template<template<copy_constructible, size_t> typename Arr, size_t N>
 		requires ArrayContainer<Arr, Type, N>
 	void upload(Arr<Type, N> const& data);
 
@@ -47,7 +48,7 @@ struct BufferBase : GLObject {
 };
 
 // Buffer object for storing per-vertex data (VBO)
-template<TriviallyCopyable T>
+template<copy_constructible T>
 using VertexBuffer = BufferBase<T, GL_ARRAY_BUFFER>;
 
 // Valid underlying type for an element buffer
