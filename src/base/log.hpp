@@ -6,6 +6,7 @@
 
 #include <cstdio>
 #include <fmt/format.h>
+#include "base/util.hpp"
 
 namespace minote {
 
@@ -27,12 +28,12 @@ struct Log {
 	bool console = false;
 
 	// File handle to write messages into, or nullptr for disabled file logging
-	FILE* file = nullptr;
+	std::FILE* file = nullptr;
 
 	// Enable logging to a file. The file will be created if missing. Remember
 	// to call disableFile() when finished, so that the file can be closed
 	// properly.
-	void enableFile(char const* filepath);
+	void enableFile(path const& file);
 
 	// Disable logging to a file, cleanly closing the currently open logfile.
 	void disableFile();

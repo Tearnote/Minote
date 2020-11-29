@@ -3,7 +3,10 @@
 
 #pragma once
 
+#include <string_view>
 #include <type_traits>
+#include <filesystem>
+#include <fstream>
 #include <cstdint>
 #include <cstdlib> // Provide free()
 #include <cstring>
@@ -36,10 +39,7 @@ concept ZeroArgConstructible = std::is_constructible_v<T>;
 
 // *** Language features ***
 
-// Bring std::size_t into scope, because it's used extremely often
-using std::size_t;
-
-/// Make the DEFER feature from scope_guard more keyword-like
+// Make the DEFER feature from scope_guard more keyword-like
 #define defer DEFER
 
 // Improved assert() macro from PPK_ASSERT, with printf-like formatting
@@ -60,6 +60,20 @@ template<Enum T>
 constexpr auto operator+(T e) {
 	return static_cast<std::underlying_type_t<T>>(e);
 }
+
+// *** Standard library imports ***
+
+// Used every time the size of a container is stored. Should be a keyword really
+using std::size_t;
+
+// Enable usage of standard literals
+using namespace std::literals;
+
+// Safer, UTF-8 only replacement to const char*
+using std::string_view;
+
+// A distinct type for file paths
+using path = std::filesystem::path;
 
 // *** Various utilities ***
 

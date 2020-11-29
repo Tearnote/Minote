@@ -168,7 +168,7 @@ set(SOURCES
 add_executable(Minote ${SOURCES} ${INTERNALLIBS})
 target_compile_options(Minote PRIVATE
         $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
-        -Wall -Wextra -fno-exceptions -fno-rtti>)
+        -Wall -Wextra -fno-rtti>)
 
 add_dependencies(Minote Preprocess_shaders)
 add_dependencies(Minote Preprocess_fonts)

@@ -37,13 +37,13 @@ auto main(int, char*[]) -> int
 	// Global logging
 #ifndef NDEBUG
 	L.level = Log::Level::Trace;
-	constexpr char logfile[] = "minote-debug.log";
+	auto constexpr Logfile = "minote-debug.log"sv;
 #else //NDEBUG
 	L.level = Log::Level::Info;
-	constexpr char logfile[] = "minote.log";
+	auto constexpr Logfile = u8"minote.log"sv;
 #endif //NDEBUG
 	L.console = true;
-	L.enableFile(logfile);
+	L.enableFile(Logfile);
 	L.info("Starting up {} {}", AppName, AppVersion);
 
 	// Window creation
@@ -51,7 +51,7 @@ auto main(int, char*[]) -> int
 	defer { Window::cleanup(); };
 	auto const windowTitle = fmt::format("{} {}", AppName, AppVersion);
 	Window window;
-	window.open(windowTitle.data());
+	window.open(reinterpret_cast<char const*>(windowTitle.data()));
 	defer { window.close(); };
 #ifdef MINOTE_DEBUG
 	debugInputSetup(window);

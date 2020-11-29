@@ -1,27 +1,23 @@
 #include "log.hpp"
 
-#include <cstring>
-#include <cstdio>
 #include "base/util.hpp"
 
 namespace minote {
 
-void Log::enableFile(char const* const filepath)
+void Log::enableFile(path const& filepath)
 {
-	ASSERT(filepath);
 	if (file) {
-		warn("Not opening logfile %s: already logging to a file", filepath);
+		warn("Not opening logfile %s: already logging to a file", filepath.string());
 		return;
 	}
 
-	file = std::fopen(filepath, "w");
+	file = std::fopen(filepath.string().c_str(), "w");
 	if (file) return;
 
 	// Handle error by forcibly printing it to console
 	auto const consolePrev = console;
 	console = true;
-	error("Failed to open logfile %s for writing: %s",
-		filepath, std::strerror(errno));
+	error("Failed to open logfile %s for writing: %s", filepath.string(), std::strerror(errno));
 	errno = 0;
 	console = consolePrev;
 }
