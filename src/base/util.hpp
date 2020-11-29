@@ -10,7 +10,9 @@
 #include <cstdint>
 #include <cstdlib> // Provide free()
 #include <cstring>
+#include <vector>
 #include <cstdio>
+#include <array>
 #include "scope_guard/scope_guard.hpp"
 #include "PPK_ASSERT/ppk_assert.h"
 #include "pcg/pcg_basic.h"
@@ -50,14 +52,16 @@ concept ZeroArgConstructible = std::is_constructible_v<T>;
 // Example: offset_of(&Point::x)
 // See: https://gist.github.com/graphitemaster/494f21190bb2c63c5516
 template<typename T1, ZeroArgConstructible T2>
-inline auto offset_of(T1 T2::*member) -> size_t {
+inline auto offset_of(T1 T2::*member) -> size_t
+{
 	static T2 obj;
 	return reinterpret_cast<size_t>(&(obj.*member)) - reinterpret_cast<size_t>(&obj);
 }
 
 // Conversion of scoped enum to the underlying type, using the unary + operator
 template<Enum T>
-constexpr auto operator+(T e) {
+constexpr auto operator+(T e)
+{
 	return static_cast<std::underlying_type_t<T>>(e);
 }
 
@@ -66,14 +70,20 @@ constexpr auto operator+(T e) {
 // Used every time the size of a container is stored. Should be a keyword really
 using std::size_t;
 
+// Standard container for static storage
+using std::array;
+
+// Standard container for dynamic storage
+using std::vector;
+
 // Enable usage of standard literals
 using namespace std::literals;
 
 // Safer, UTF-8 only replacement to const char*
 using std::string_view;
 
-// A distinct type for file paths
-using path = std::filesystem::path;
+// Easier access to filesystem types
+namespace fs = std::filesystem;
 
 // *** Various utilities ***
 

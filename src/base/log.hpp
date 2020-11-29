@@ -5,7 +5,6 @@
 #pragma once
 
 #include <cstdio>
-#include <fmt/format.h>
 #include "base/util.hpp"
 
 namespace minote {
@@ -30,12 +29,10 @@ struct Log {
 	// File handle to write messages into, or nullptr for disabled file logging
 	std::FILE* file = nullptr;
 
-	// Enable logging to a file. The file will be created if missing. Remember
-	// to call disableFile() when finished, so that the file can be closed
-	// properly.
-	void enableFile(path const& file);
+	// Enable logging to a file. The file will be created if missing.
+	void enableFile(fs::path const& file);
 
-	// Disable logging to a file, cleanly closing the currently open logfile.
+	// Disable logging to a file, cleanly closing any currently open logfile.
 	void disableFile();
 
 	// Log a Trace level message. Meant for "printf debugging", do not leave any
@@ -80,8 +77,9 @@ struct Log {
 	void fail(const S& fmt, Args&&... args);
 
 	template<typename S, typename... Args>
-	void log(Log::Level const level, S const& fmt, Args&& ... args);
+	void log(Log::Level level, S const& fmt, Args&&... args);
 
+	// Clean up by closing any open logfile.
 	~Log();
 
 };

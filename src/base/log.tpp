@@ -1,9 +1,8 @@
 #pragma once
 
-#include <string_view>
-#include <cstdlib>
 #include <cstdio>
 #include <ctime>
+#include <fmt/format.h>
 #include <fmt/chrono.h>
 #include "base/util.hpp"
 
@@ -11,21 +10,18 @@ namespace minote {
 
 namespace detail {
 
-// Mapping from Log::Level to string name. Keep aligned to 5 chars
-static constexpr char LogLevelStrings[][+Log::Level::Size] = {
-	"", "TRACE", "DEBUG", " INFO", " WARN", "ERROR", " CRIT"
+// Mapping from Log::Level to string name. K eep aligned to 5 chars
+constexpr auto LogLevelStrings = array{
+	""sv, "TRACE"sv, "DEBUG"sv, " INFO"sv, " WARN"sv, "ERROR"sv, " CRIT"sv
 };
 
 // Write a preformatted log message to a specified output. Does not insert
 // a newline.
-inline void logTo(FILE* const file, char const msg[])
+inline void logTo(FILE* const file, string_view msg) try
 {
-		ASSERT(msg);
-
-	if (std::fputs(msg, file) == EOF) {
-		std::perror("Failed to write into logfile");
-		errno = 0;
-	}
+	fmt::print(file, msg);
+} catch (std::runtime_error& e) {
+	fmt::print(stderr, "Failed to write to logfile: {}\n", e.what());
 }
 
 }
@@ -77,9 +73,8 @@ void Log::fail(S const& fmt, Args&& ... args)
 }
 
 template<typename S, typename... Args>
-void Log::log(Log::Level const _level, S const& fmt, Args&& ... args)
+void Log::log(Log::Level const _level, S const& fmt, Args&&... args)
 {
-	using namespace std::literals;
 	if (_level < level) return;
 	if (!console && !file) return;
 

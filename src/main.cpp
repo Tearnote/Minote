@@ -1,7 +1,6 @@
 #include "main.hpp"
 
 #include <cstdlib>
-#include <clocale>
 #include <thread>
 #include <fmt/format.h>
 #ifdef _WIN32
@@ -37,10 +36,10 @@ auto main(int, char*[]) -> int
 	// Global logging
 #ifndef NDEBUG
 	L.level = Log::Level::Trace;
-	auto constexpr Logfile = "minote-debug.log"sv;
+	constexpr auto Logfile = "minote-debug.log"sv;
 #else //NDEBUG
 	L.level = Log::Level::Info;
-	auto constexpr Logfile = u8"minote.log"sv;
+	constexpr auto Logfile = "minote.log"sv;
 #endif //NDEBUG
 	L.console = true;
 	L.enableFile(Logfile);
@@ -60,8 +59,7 @@ auto main(int, char*[]) -> int
 	// *** Thread startup ***
 
 	// Game thread
-	std::thread gameThread(game, std::ref(window));
-	defer { gameThread.join(); };
+	std::jthread gameThread(game, std::ref(window));
 
 	// Input thread loop
 	while (!window.isClosing()) {

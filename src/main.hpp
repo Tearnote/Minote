@@ -7,7 +7,7 @@
 
 namespace minote {
 
-auto constexpr AppName = "Minote"sv;
-auto constexpr AppVersion = "0.0"sv;
+constexpr auto AppName = "Minote"sv;
+constexpr auto AppVersion = "0.0"sv;
 
 }
