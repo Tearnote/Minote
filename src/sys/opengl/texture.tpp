@@ -69,75 +69,41 @@ void Texture<F>::resize(uvec2 const _size)
 }
 
 template<PixelFmt F>
-template<template<UploadFmt, size_t> typename Arr, UploadFmt T, size_t N>
-requires ArrayContainer<Arr, T, N>
-void Texture<F>::upload(Arr<T, N> const& data)
+template<UploadFmt T>
+void Texture<F>::upload(span<T const> const data, int channels)
 {
-	ASSERT(data.size() == size.x * size.y);
 	ASSERT(id);
 	ASSERT(size.x > 0 && size.y > 0);
 	ASSERT(Format != PixelFmt::DepthStencil);
 
-	constexpr GLenum channels = [] {
+	if (!channels) {
 		if constexpr (std::is_same_v<T, u8>)
-			return GL_RED;
+			channels = 1;
 		else if constexpr (std::is_same_v<T, u8vec2>)
-			return GL_RG;
+			channels = 2;
 		else if constexpr (std::is_same_v<T, u8vec3>)
-			return GL_RGB;
+			channels = 3;
 		else if constexpr (std::is_same_v<T, u8vec4>)
-			return GL_RGBA;
+			channels = 4;
 		else
 			ASSERT("Invalid texture upload type");
-		return GL_NONE;
-	}();
-
-	bind();
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, size.x, size.y,
-		channels, GL_UNSIGNED_BYTE, data.data());
-}
-
-template<PixelFmt F>
-template<UploadFmt T>
-void Texture<F>::upload(T const data[], size_t const dataLen, int const _channels)
-{
-	ASSERT(data);
-	ASSERT(_channels >= 0 && _channels <= 4);
-	ASSERT(id);
-	ASSERT(size.x > 0 && size.y > 0);
-	ASSERT(Format != PixelFmt::DepthStencil);
-
-	const GLenum channels = [=] {
-		if (!_channels) {
-			if constexpr (std::is_same_v<T, u8>)
-				return GL_RED;
-			else if constexpr (std::is_same_v<T, u8vec2>)
-				return GL_RG;
-			else if constexpr (std::is_same_v<T, u8vec3>)
-				return GL_RGB;
-			else if constexpr (std::is_same_v<T, u8vec4>)
-				return GL_RGBA;
-			else
-				ASSERT("Invalid texture upload type");
+	}
+	GLenum const glchannels = [=] {
+		switch (channels) {
+		case 1: return GL_RED;
+		case 2: return GL_RG;
+		case 3: return GL_RGB;
+		case 4: return GL_RGBA;
+		default:
+			ASSERT("Invalid texture upload type");
 			return GL_NONE;
-		} else {
-			switch (_channels) {
-			case 1: return GL_RED;
-			case 2: return GL_RG;
-			case 3: return GL_RGB;
-			case 4: return GL_RGBA;
-			default:
-				ASSERT("Invalid texture upload type");
-				return GL_NONE;
-			}
 		}
 	}();
-
-	ASSERT(dataLen == size.x * size.y * _channels);
+	ASSERT(data.size_bytes() == size.x * size.y * channels);
 
 	bind();
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, size.x, size.y,
-		channels, GL_UNSIGNED_BYTE, data);
+		glchannels, GL_UNSIGNED_BYTE, data.data());
 }
 
 template<PixelFmt F>
@@ -361,12 +327,10 @@ void BufferTexture<T>::destroy()
 }
 
 template<BufferTextureType T>
-template<template<BufferTextureType, size_t> typename Arr, size_t N>
-requires ArrayContainer<Arr, T, N>
-void BufferTexture<T>::upload(Arr<T, N> data)
+void BufferTexture<T>::upload(span<Type const> const data)
 {
 	storage.upload(data);
-	size = {N, 1};
+	size = {data.size(), 1};
 }
 
 template<BufferTextureType T>

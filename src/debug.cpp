@@ -114,8 +114,8 @@ void debugInit(void)
 
 	// Upload font atlas to GPU
 	nuklearTexture.create("nuklearTexture", {atlasWidth, atlasHeight});
-	nuklearTexture.upload(reinterpret_cast<u8 const*>(atlasData),
-		atlasWidth * atlasHeight * 4, 4);
+	nuklearTexture.upload(span{reinterpret_cast<u8 const*>(atlasData),
+		static_cast<size_t>(atlasWidth * atlasHeight * 4)}, 4);
 
 	nk_font_atlas_end(&atlas, nk_handle_ptr(&nuklearTexture), &nullTexture);
 	nk_init_default(&nkContext, &atlas.default_font->handle);

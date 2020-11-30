@@ -54,7 +54,7 @@ void Font::create(FT_Library freetype, char const* const _name, char const* cons
 	size_t const atlasDataLen = usize.x * usize.y * channels;
 
 	atlas.create(_name, usize);
-	atlas.upload(atlasData, atlasDataLen, channels);
+	atlas.upload(span<u8 const>{atlasData, atlasDataLen}, channels);
 
 	// *** Parsing the glyph metrics ***
 	char metricsPath[MaxPathLen];
@@ -68,7 +68,7 @@ void Font::create(FT_Library freetype, char const* const _name, char const* cons
 	}
 	defer { fclose(metricsFile); };
 
-	*metrics.produce() = {}; // Empty first element
+	metrics.emplace_back(); // Empty first element
 	while (true) {
 		int index = 0;
 		Glyph glyph = {};
@@ -83,9 +83,7 @@ void Font::create(FT_Library freetype, char const* const _name, char const* cons
 		glyph.glyph.size -= glyph.glyph.pos;
 		glyph.msdf.size -= glyph.msdf.pos;
 
-		auto* const nextGlyph = metrics.produce();
-		if (!nextGlyph) break;
-		*nextGlyph = glyph;
+		metrics.push_back(glyph);
 	}
 
 	name = _name;

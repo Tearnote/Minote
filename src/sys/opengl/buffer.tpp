@@ -39,43 +39,20 @@ void BufferBase<T, _target>::destroy()
 }
 
 template<copy_constructible T, GLenum _target>
-template<template<copy_constructible, size_t> typename Arr, size_t N>
-	requires ArrayContainer<Arr, T, N>
-void BufferBase<T, _target>::upload(Arr<Type, N> const& data)
+void BufferBase<T, _target>::upload(span<Type const> const data)
 {
 	ASSERT(id);
 	ASSERT(dynamic == true || uploaded == false);
-	if (!data.size()) return;
-
-	bind();
-	GLenum const usage = dynamic ? GL_STREAM_DRAW : GL_STATIC_DRAW;
-	GLsizeiptr const size = sizeof(Type) * data.size();
-	if (dynamic && uploaded) {
-		glBufferData(Target, size, nullptr, usage);
-		glBufferSubData(Target, 0, size, data.data());
-	} else {
-		glBufferData(Target, size, data.data(), usage);
-		uploaded = true;
-	}
-}
-
-template<copy_constructible T, GLenum _target>
-void BufferBase<T, _target>::upload(size_t elements, Type data[])
-{
-	ASSERT(data);
-	ASSERT(id);
-	ASSERT(dynamic == true || uploaded == false);
-	if (!elements)
+	if (data.empty())
 		return;
 
 	bind();
 	GLenum const usage = dynamic ? GL_STREAM_DRAW : GL_STATIC_DRAW;
-	GLsizeiptr const size = sizeof(Type) * elements;
 	if (dynamic && uploaded) {
-		glBufferData(Target, size, nullptr, usage);
-		glBufferSubData(Target, 0, size, data);
+		glBufferData(Target, data.size_bytes(), nullptr, usage);
+		glBufferSubData(Target, 0, data.size_bytes(), data.data());
 	} else {
-		glBufferData(Target, size, data, usage);
+		glBufferData(Target, data.size_bytes(), data.data(), usage);
 		uploaded = true;
 	}
 }

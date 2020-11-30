@@ -103,6 +103,6 @@ void mrsCleanup(void);
  * Simulate one frame of gameplay logic.
  * @param inputs List of ::Input events that happened during the frame
  */
-void mrsAdvance(const minote::varray<minote::Action, 64>& inputs);
+void mrsAdvance(minote::vector<minote::Action> const& inputs);
 
 #endif //MINOTE_MRS_H

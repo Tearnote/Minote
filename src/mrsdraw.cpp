@@ -17,9 +17,9 @@ using namespace minote;
 static constexpr size_t MaxBlocks = 512;
 static constexpr size_t MaxBorders = 1024;
 
-static varray<ModelPhong::Instance, MaxBlocks> opaqueBlocks;
-static varray<ModelPhong::Instance, MaxBlocks> transparentBlocks;
-static varray<ModelFlat::Instance, MaxBorders> borders;
+static vector<ModelPhong::Instance> opaqueBlocks{};
+static vector<ModelPhong::Instance> transparentBlocks{};
+static vector<ModelFlat::Instance> borders{};
 
 /// Last player position as seen by the drawing system
 static ivec2 lastPlayerPos = {0, 0};
@@ -159,14 +159,11 @@ static void mrsEffectDrop(void)
 
 static void mrsQueueBorder(vec3 pos, vec3 size, color4 color)
 {
-	auto* const instance = borders.produce();
-	if (!instance)
-		return;
-	*instance = {};
-
-	instance->tint = color;
 	mat4 const transformTemp = make_translate<>(pos);
-	instance->transform = scale(transformTemp, size);
+	borders.push_back({
+		.tint = color,
+		.transform = scale(transformTemp, size)
+	});
 }
 
 static void mrsDebug(void)
@@ -246,18 +243,14 @@ void mrsDraw(Engine& engine)
 
 		bool const opaque = (minoColor(type).a == 1.0f);
 		auto& instances = opaque ? opaqueBlocks : transparentBlocks;
-		auto* const instance = instances.produce();
+		auto& instance = instances.emplace_back();
 
-		if (!instance)
-			break; // Block limit reached, no point continuing
-		*instance = {};
-
-		instance->tint = minoColor(type);
-		instance->tint.r *= MrsFieldDim;
-		instance->tint.g *= MrsFieldDim;
-		instance->tint.b *= MrsFieldDim;
+		instance.tint = minoColor(type);
+		instance.tint.r *= MrsFieldDim;
+		instance.tint.g *= MrsFieldDim;
+		instance.tint.b *= MrsFieldDim;
 		if (pos.y >= MrsFieldHeightVisible)
-			instance->tint.a *= MrsExtraRowDim;
+			instance.tint.a *= MrsExtraRowDim;
 
 		bool playerCell = false;
 		for (size_t j = 0; j < MinosPerPiece; j += 1) {
@@ -269,7 +262,7 @@ void mrsDraw(Engine& engine)
 		}
 		if (playerCell) {
 			f32 const flash = lockFlash.apply();
-			instance->highlight = {MrsLockFlashBrightness,
+			instance.highlight = {MrsLockFlashBrightness,
 			                       MrsLockFlashBrightness,
 			                       MrsLockFlashBrightness, flash};
 		}
@@ -278,7 +271,7 @@ void mrsDraw(Engine& engine)
 			pos.x,
 			static_cast<f32>(pos.y) - static_cast<f32>(linesCleared) * fallProgress
 		};
-		instance->transform = make_translate({
+		instance.transform = make_translate({
 			fpos.x - static_cast<f32>(FieldWidth / 2),
 			fpos.y,
 			0.0f
@@ -348,22 +341,19 @@ void mrsDraw(Engine& engine)
 			// Queue up next mino
 			bool const opaque = (minoColor(mrsTet.player.type).a == 1.0);
 			auto& instances = opaque ? opaqueBlocks : transparentBlocks;
-			auto* const instance = instances.produce();
-			if (!instance)
-				break; // Block limit reached, no point continuing
-			*instance = {};
+			auto& instance = instances.emplace_back();
 
 			// Insert calculated values
-			instance->tint = minoColor(mrsTet.player.type);
+			instance.tint = minoColor(mrsTet.player.type);
 			if (mrsTet.player.lockDelay != 0) {
 				lockDim.restart();
 				lockDim.start -= mrsTet.player.lockDelay * MrsUpdateTick;
 				f32 dim = lockDim.apply();
-				instance->tint.r *= dim;
-				instance->tint.g *= dim;
-				instance->tint.b *= dim;
+				instance.tint.r *= dim;
+				instance.tint.g *= dim;
+				instance.tint.b *= dim;
 			}
-			instance->transform = pieceTransform * minoTransform;
+			instance.transform = pieceTransform * minoTransform;
 		}
 	}
 
@@ -384,14 +374,11 @@ void mrsDraw(Engine& engine)
 		for (size_t i = 0; i < MinosPerPiece; i += 1) {
 			vec2 const pos = mrsTet.player.shape[i] + ghostPos;
 
-			auto* const instance = transparentBlocks.produce();
-			if (!instance)
-				break;
-			*instance = {};
+			auto& instance = transparentBlocks.emplace_back();
 
-			instance->tint = minoColor(mrsTet.player.type);
-			instance->tint.a *= MrsGhostDim;
-			instance->transform = make_translate(
+			instance.tint = minoColor(mrsTet.player.type);
+			instance.tint.a *= MrsGhostDim;
+			instance.transform = make_translate(
 				{pos.x - (signed)(FieldWidth / 2), pos.y, 0.0f});
 		}
 	}
@@ -410,13 +397,10 @@ void mrsDraw(Engine& engine)
 
 			bool const opaque = (minoColor(mrsTet.player.preview).a == 1.0);
 			auto& instances = opaque ? opaqueBlocks : transparentBlocks;
-			auto* const instance = instances.produce();
-			if (!instance)
-				break; // Block limit reached, no point continuing
-			*instance = {};
+			auto& instance = instances.emplace_back();
 
-			instance->tint = minoColor(mrsTet.player.preview);
-			instance->transform = make_translate({pos.x, pos.y, 0.0f});
+			instance.tint = minoColor(mrsTet.player.preview);
+			instance.transform = make_translate({pos.x, pos.y, 0.0f});
 		}
 	}
 

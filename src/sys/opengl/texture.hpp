@@ -102,16 +102,10 @@ struct Texture : TextureBase {
 
 	// Upload pixel data to texture storage. Each channel must be of type u8,
 	// and the number of u8vec components decides the number of channels.
-	// The array must have (size.x * size.y) elements.
-	template<template<UploadFmt, size_t> typename Arr, UploadFmt T, size_t N>
-		requires ArrayContainer<Arr, T, N>
-	void upload(Arr<T, N> const& data);
-
-	// The C-style array version. data length is expected to be
-	// (size.x * size.y * channels) bytes long. If channels is 0, its value
-	// is guessed from the uvec component count.
+	// The optional channels parameter can override vector component detection
+	// for multichannel data stored as u8 arrays.
 	template<UploadFmt T>
-	void upload(T const data[], size_t dataLen, int channels = 0);
+	void upload(span<T const> data, int channels = 0);
 
 	// Bind the texture to the specified texture unit. This allows it to be used
 	// in a shader for reading and/or writing. Unit None binds to the previously
@@ -241,9 +235,7 @@ struct BufferTexture : TextureBase {
 	// is resized to fit the new data, and the previous storage is orphaned.
 	// New size of the texture is (1, N). Pixel formats without a GLSL type
 	// equivalent are normalized to f32.
-	template<template<BufferTextureType, size_t> typename Arr, size_t N>
-		requires ArrayContainer<Arr, Type, N>
-	void upload(Arr<Type, N> data);
+	void upload(span<Type const> data);
 
 	// Bind the buffer texture to the specified texture unit. This allows it
 	// to be used in a shader for reading and/or writing. Unit None binds

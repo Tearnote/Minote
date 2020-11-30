@@ -36,10 +36,10 @@ typedef struct Particle {
 
 constexpr size_t MaxParticles{4096};
 
-static varray<Particle, MaxParticles> particles{};
+static vector<Particle> particles{};
 static Rng rng{};
 
-static varray<ModelFlat::Instance, MaxParticles> particleInstances;
+static vector<ModelFlat::Instance> particleInstances{};
 
 static bool initialized = false;
 
@@ -61,8 +61,10 @@ void particlesUpdate(void)
 
 	for (size_t i = numParticles - 1; i < numParticles; i -= 1) {
 		Particle* currentParticle = &particles[i];
-		if (currentParticle->start + currentParticle->duration < currentTime)
-			particles.removeSwap(i);
+		if (currentParticle->start + currentParticle->duration < currentTime) {
+			particles[i] = particles.back();
+			particles.pop_back();
+		}
 	}
 }
 
@@ -111,9 +113,8 @@ void particlesDraw(Engine& engine)
 		if (current->vert == -1)
 			angle *= -1.0f;
 
-		auto* const instance = particleInstances.produce();
-		ASSERT(instance);
-		instance->tint = current->color;
+		auto& instance = particleInstances.emplace_back();
+		instance.tint = current->color;
 
 		// Shimmer mitigation
 		if (progress > ShimmerFade) {
@@ -121,12 +122,12 @@ void particlesDraw(Engine& engine)
 			fadeout *= 1.0f / (1.0f - ShimmerFade);
 			fadeout = 1.0f - fadeout;
 			fadeout = cubicEaseIn(fadeout);
-			instance->tint.a *= fadeout;
+			instance.tint.a *= fadeout;
 		}
 
 		const mat4 translated = make_translate({(float)x, (float)y, current->origin.z});
 		const mat4 rotated = rotate(translated, angle, {0.0f, 0.0f, 1.0f});
-		instance->transform = scale(rotated, {1.0f - progress, 1.0f, 1.0f});
+		instance.transform = scale(rotated, {1.0f - progress, 1.0f, 1.0f});
 	}
 
 	engine.models.particle.draw(*engine.frame.fb, engine.scene, {
@@ -142,34 +143,32 @@ void particlesGenerate(vec3 position, size_t count, ParticleParams* params)
 	ASSERT(params);
 
 	for (size_t i = 0; i < count; i += 1) {
-		auto* const newParticle = particles.produce();
-		if (!newParticle)
-			return;
+		auto& newParticle = particles.emplace_back();
 
-		newParticle->origin = position;
-		newParticle->color = params->color;
+		newParticle.origin = position;
+		newParticle.color = params->color;
 
-		newParticle->start = Glfw::getTime();
-		newParticle->duration = params->durationMin + rng.randFloat()
+		newParticle.start = Glfw::getTime();
+		newParticle.duration = params->durationMin + rng.randFloat()
 			* (double)(params->durationMax - params->durationMin);
-		newParticle->ease = params->ease;
+		newParticle.ease = params->ease;
 
 		if (params->directionHorz != 0)
-			newParticle->horz = params->directionHorz;
+			newParticle.horz = params->directionHorz;
 		else
-			newParticle->horz = (int)rng.randInt(2) * 2 - 1;
+			newParticle.horz = (int)rng.randInt(2) * 2 - 1;
 		if (params->directionVert != 0)
-			newParticle->vert = params->directionVert;
+			newParticle.vert = params->directionVert;
 		else
-			newParticle->vert = (int)rng.randInt(2) * 2 - 1;
+			newParticle.vert = (int)rng.randInt(2) * 2 - 1;
 
-		newParticle->distance = rng.randFloat();
-		newParticle->distance *= params->distanceMax - params->distanceMin;
-		newParticle->distance += params->distanceMin;
+		newParticle.distance = rng.randFloat();
+		newParticle.distance *= params->distanceMax - params->distanceMin;
+		newParticle.distance += params->distanceMin;
 
-		newParticle->spin = rng.randFloat();
-		newParticle->spin = quarticEaseIn(newParticle->spin);
-		newParticle->spin *= params->spinMax - params->spinMin;
-		newParticle->spin += params->spinMin;
+		newParticle.spin = rng.randFloat();
+		newParticle.spin = quarticEaseIn(newParticle.spin);
+		newParticle.spin *= params->spinMax - params->spinMin;
+		newParticle.spin += params->spinMin;
 	}
 }

@@ -17,7 +17,7 @@ using namespace minote;
 static minote::nsec nextUpdate = 0;
 
 /// List of collectedInputs for the next logic frame to process
-static varray<Action, 64> collectedInputs{};
+static vector<Action> collectedInputs{};
 
 static bool initialized = false;
 
@@ -50,9 +50,7 @@ void playUpdate(Window& window, Mapper& mapper)
 	while (nextUpdate <= Glfw::getTime()) {
 		while (const auto* const action = mapper.peekAction()) { // Exhaust all actions...
 			if (action->timestamp <= nextUpdate) {
-				auto* const nextAction = collectedInputs.produce();
-				ASSERT(nextAction); // This should never be null
-				*nextAction = *action;
+				collectedInputs.push_back(*action);
 				mapper.dequeueAction();
 			} else {
 				break; // ...or abort if we encounter an action from the future

@@ -135,7 +135,7 @@ set(SOURCES
         src/base/util.hpp src/base/util.cpp
         src/base/time.hpp
         src/base/tween.hpp
-        src/base/array.hpp src/base/array.tpp
+        src/base/array.hpp
         src/base/queue.hpp src/base/queue.tpp
         src/sys/window.hpp src/sys/window.cpp
         src/sys/opengl/base.hpp src/sys/opengl/base.cpp
@@ -147,7 +147,7 @@ set(SOURCES
         src/sys/opengl/framebuffer.hpp src/sys/opengl/framebuffer.tpp src/sys/opengl/framebuffer.cpp
         src/sys/opengl/draw.hpp src/sys/opengl/draw.tpp src/sys/opengl/draw.cpp
         src/engine/mapper.hpp src/engine/mapper.cpp
-        src/engine/model.hpp src/engine/model.tpp src/engine/model.cpp
+        src/engine/model.hpp src/engine/model.cpp
         src/engine/frame.hpp src/engine/frame.cpp
         src/engine/scene.hpp src/engine/scene.cpp
         src/engine/engine.hpp

@@ -33,9 +33,9 @@ static constexpr size_t MaxStrings{1024};
 
 static VertexArray msdfVao = {};
 static VertexBuffer<MsdfGlyph> msdfGlyphsVbo;
-static varray<MsdfGlyph, MaxGlyphs> msdfGlyphs{};
+static vector<MsdfGlyph> msdfGlyphs{};
 static BufferTexture<mat4> msdfTransformsTex = {};
-static varray<mat4, MaxStrings> msdfTransforms{};
+static vector<mat4> msdfTransforms{};
 static Font* msdfFont = nullptr;
 
 static Draw<Shaders::Msdf> msdf = {
@@ -69,13 +69,10 @@ static void textQueueV(Font& font, float size, vec3 pos, vec3 dir, vec3 up,
 		hb_shape(font.hbFont, text, nullptr, 0);
 
 		// Construct the string transform
-		auto* const transform = msdfTransforms.produce();
-		if (!transform)
-			break;
 		vec3 eye = vec3(pos.x, pos.y, pos.z) - vec3(dir.x, dir.y, dir.z);
 		mat4 lookat = lookAt(vec3(pos.x, pos.y, pos.z), eye, vec3(up.x, up.y, up.z));
 		mat4 inverted = inverse(lookat);
-		*transform = scale(inverted, {size, size, size});
+		msdfTransforms.push_back(scale(inverted, {size, size, size}));
 
 		// Iterate over glyphs
 		unsigned glyphCount = 0;
@@ -85,9 +82,7 @@ static void textQueueV(Font& font, float size, vec3 pos, vec3 dir, vec3 up,
 			&glyphCount);
 		vec2 cursor {0};
 		for (size_t i = 0; i < glyphCount; i += 1) {
-			auto* const glyph = msdfGlyphs.produce();
-			if (!glyph)
-				break;
+			auto& glyph = msdfGlyphs.emplace_back();
 
 			// Calculate glyph information
 			size_t id = glyphInfo[i].codepoint;
@@ -100,18 +95,18 @@ static void textQueueV(Font& font, float size, vec3 pos, vec3 dir, vec3 up,
 			float yAdvance = glyphPos[i].y_advance / 1024.0f;
 
 			// Fill in draw data
-			glyph->position = cursor + offset + atlasChar->glyph.pos;
-			glyph->size = atlasChar->glyph.size;
-			glyph->texBounds.x =
+			glyph.position = cursor + offset + atlasChar->glyph.pos;
+			glyph.size = atlasChar->glyph.size;
+			glyph.texBounds.x =
 				atlasChar->msdf.pos.x / (float)font.atlas.size.x;
-			glyph->texBounds.y =
+			glyph.texBounds.y =
 				atlasChar->msdf.pos.y / (float)font.atlas.size.y;
-			glyph->texBounds.z =
+			glyph.texBounds.z =
 				atlasChar->msdf.size.x / (float)font.atlas.size.x;
-			glyph->texBounds.w =
+			glyph.texBounds.w =
 				atlasChar->msdf.size.y / (float)font.atlas.size.y;
-			glyph->color = color;
-			glyph->transformIndex = msdfTransforms.size() - 1;
+			glyph.color = color;
+			glyph.transformIndex = msdfTransforms.size() - 1;
 
 			// Advance position
 			cursor.x += xAdvance;

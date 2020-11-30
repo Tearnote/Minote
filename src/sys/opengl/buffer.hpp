@@ -36,11 +36,7 @@ struct BufferBase : GLObject {
 
 	// Upload new data to the GPU buffer, replacing previous data. The buffer
 	// is resized to fit the new data, and the previous storage is orphaned.
-	template<template<copy_constructible, size_t> typename Arr, size_t N>
-		requires ArrayContainer<Arr, Type, N>
-	void upload(Arr<Type, N> const& data);
-
-	void upload(size_t elements, Type data[]); //TODO remove
+	void upload(span<Type const> data);
 
 	// Bind the buffer to the Target binding point.
 	void bind() const;
