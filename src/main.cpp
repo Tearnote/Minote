@@ -62,7 +62,7 @@ auto main(int, char*[]) -> int
 	// Input thread loop
 	while (!window.isClosing()) {
 		glfw.poll();
-		sleepFor(milliseconds(1));
+		sleepFor(1_ms);
 	}
 
 	return EXIT_SUCCESS;

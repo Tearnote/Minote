@@ -1,10 +1,11 @@
 // Minote - base/time.hpp
-// Types and utilities for measuring time
+// Types and utilities for handling time values
 
 #pragma once
 
+#include <chrono>
 #include <ctime>
-#include "base/util.hpp"
+#include "base/concept.hpp"
 
 namespace minote {
 
@@ -14,20 +15,40 @@ using std::localtime;
 using std::time_t;
 using std::tm;
 
-// Count of nanoseconds, the main type used for timekeeping. The upper limit
-// is about 290 years.
-using nsec = i64;
+// Main timestamp/duration type
+using nsec = std::chrono::nanoseconds;
 
-// Create an nsec value out of a number of seconds.
-template <arithmetic T>
-constexpr auto seconds(T const t) -> nsec {
-	return t * 1'000'000'000LL;
+// Create nsec from a count of seconds
+constexpr auto seconds(arithmetic auto val) {
+	return nsec{static_cast<nsec::rep>(val * 1'000'000'000)};
 }
 
-// Create an nsec value out of a number of milliseconds.
-template <arithmetic T>
-constexpr auto milliseconds(T const t) -> nsec {
-	return t * 1'000'000LL;
+// Create nsec from a count of milliseconds
+constexpr auto milliseconds(arithmetic auto val) {
+	return nsec{static_cast<nsec::rep>(val * 1'000'000)};
+}
+
+// Create nsec from second/millisecond literal
+constexpr auto operator""_s(unsigned long long val) { return seconds(val); }
+constexpr auto operator""_s(long double val) { return seconds(val); }
+constexpr auto operator""_ms(unsigned long long val) { return milliseconds(val); }
+constexpr auto operator""_ms(long double val) { return milliseconds(val); }
+
+// If you use nsec's operators with floating-point numbers, the resulting value will
+// be represented with a temporary higher precision type. use round() on the result to bring
+// it back to nsec.
+template<typename Rep, typename Period>
+constexpr auto round(std::chrono::duration<Rep, Period> val) {
+	return std::chrono::round<nsec>(val);
+}
+
+// Compute (left / right) with floating-point instead of integer division.
+template<floating_point T = float>
+constexpr auto ratio(nsec const left, nsec const right) {
+	return static_cast<T>(
+		static_cast<double>(left.count()) /
+		static_cast<double>(right.count())
+	);
 }
 
 }

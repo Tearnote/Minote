@@ -24,10 +24,10 @@ struct Tween {
 	Type to = 1.0f;
 
 	// Time of starting the tween
-	nsec start = 0;
+	nsec start;
 
 	// Time the tween will take to finish
-	nsec duration = seconds(1);
+	nsec duration;
 
 	// Easing function to use during the tween
 	EasingFunction<Type> type = linearInterpolation;
@@ -51,7 +51,7 @@ constexpr auto Tween<T>::applyAt(nsec const time) const -> Type
 	if (start + duration <= time) return to;
 
 	nsec const elapsed = time - start;
-	Type const progress = type(static_cast<Type>(elapsed) / duration);
+	Type const progress = type(ratio(elapsed, duration));
 
 	Type const span = to - from;
 	return from + span * progress;

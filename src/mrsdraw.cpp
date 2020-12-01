@@ -85,8 +85,8 @@ static Tween clearFall = {
 /// Sparks released on line clear
 static ParticleParams particlesClear = {
 	.color = {0.0f, 0.0f, 0.0f, 1.0f}, // runtime
-	.durationMin = seconds(0),
-	.durationMax = seconds(1.5),
+	.durationMin = 0_s,
+	.durationMax = 1.5_s,
 	.distanceMin = 3.2f, // runtime
 	.distanceMax = 6.4f, // runtime
 	.spinMin = 0.001f,
@@ -100,8 +100,8 @@ static ParticleParams particlesClear = {
 /// or finishing line clear thump
 static ParticleParams particlesThump = {
 	.color = {0.6f, 0.6f, 0.6f, 0.8f},
-	.durationMin = seconds(0.4),
-	.durationMax = seconds(0.8),
+	.durationMin = 0.4_s,
+	.durationMax = 0.8_s,
 	.distanceMin = 0.2f,
 	.distanceMax = 1.2f,
 	.spinMin = 0.4f,
@@ -114,8 +114,8 @@ static ParticleParams particlesThump = {
 /// Sparks of a player piece being shifted across the playfield
 static ParticleParams particlesSlide = {
 	.color = {0.0f, 0.4f, 2.0f, 1.0f},
-	.durationMin = seconds(0.3),
-	.durationMax = seconds(0.6),
+	.durationMin = 0.3_s,
+	.durationMax = 0.6_s,
 	.distanceMin = 0.2f,
 	.distanceMax = 1.4f,
 	.spinMin = 0.4f,
@@ -128,8 +128,8 @@ static ParticleParams particlesSlide = {
 /// Sparks of a player piece being DASed across the playfield
 static ParticleParams particlesSlideFast = {
 	.color = {2.0f, 0.4f, 0.0f, 1.0f},
-	.durationMin = seconds(0.25),
-	.durationMax = seconds(0.5),
+	.durationMin = 0.25_s,
+	.durationMax = 0.5_s,
 	.distanceMin = 0.4f,
 	.distanceMax = 2.0f,
 	.spinMin = 0.4f,

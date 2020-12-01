@@ -13,12 +13,14 @@
 #include "engine/mapper.hpp"
 #include "mino.hpp"
 #include "base/util.hpp"
+#include "base/time.hpp"
 #include "base/rng.hpp"
+using minote::operator""_s;
 
 /// Frequency of game logic updates, simulated by semi-threading, in Hz
-#define MrsUpdateFrequency 60.0
+constexpr auto MrsUpdateFrequency = 60;
 /// Inverse of #MrsUpdateFrequency, in ::nsec
-#define MrsUpdateTick static_cast<nsec>(minote::seconds(1) / MrsUpdateFrequency)
+constexpr auto MrsUpdateTick = 1_s / MrsUpdateFrequency;
 
 #define FieldWidth 10u ///< Width of the playfield
 #define FieldHeight 22u ///< Height of the playfield

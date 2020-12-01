@@ -28,9 +28,9 @@ struct Action {
 		Pressed, Released
 	};
 
-	Type type = Type::None;
-	State state = State::None;
-	nsec timestamp = 0;
+	Type type;
+	State state;
+	nsec timestamp;
 
 };
 

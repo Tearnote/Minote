@@ -14,7 +14,7 @@
 using namespace minote;
 
 /// Timestamp of the next game logic update
-static minote::nsec nextUpdate = 0;
+static minote::nsec nextUpdate;
 
 /// List of collectedInputs for the next logic frame to process
 static vector<Action> collectedInputs{};

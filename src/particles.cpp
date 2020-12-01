@@ -149,8 +149,8 @@ void particlesGenerate(vec3 position, size_t count, ParticleParams* params)
 		newParticle.color = params->color;
 
 		newParticle.start = Glfw::getTime();
-		newParticle.duration = params->durationMin + rng.randFloat()
-			* (double)(params->durationMax - params->durationMin);
+		newParticle.duration = round(params->durationMin +
+			(params->durationMax - params->durationMin) * rng.randFloat());
 		newParticle.ease = params->ease;
 
 		if (params->directionHorz != 0)
