@@ -98,7 +98,7 @@ void ModelPhong::create(char const* _name, Shaders& shaders,
 
 	vertices.create("Phong::vertices", false);
 	if (generateNormals) {
-		auto normVertices = vector<Vertex>{_vertices.begin(), _vertices.end()};
+		auto normVertices = dvector<Vertex>{_vertices.begin(), _vertices.end()};
 		generatePhongNormals(normVertices);
 		vertices.upload(normVertices);
 	} else {

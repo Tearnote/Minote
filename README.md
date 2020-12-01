@@ -41,3 +41,5 @@ retrieved on 2020-09-13, in Public Domain.
 on 2020-10-05, used under MIT license.
 - [`PPK_ASSERT`](https://github.com/gpakosz/PPK_ASSERT) retrieved on 2020-10-05,
 used under WTFPL.
+- [`itlib`](https://github.com/iboB/itlib) retrieved on 2020-12-01, used under
+MIT license.

@@ -29,13 +29,13 @@ struct MsdfGlyph {
 };
 
 static constexpr size_t MaxGlyphs{1024};
-static constexpr size_t MaxStrings{1024};
+static constexpr size_t MaxStrings{64};
 
 static VertexArray msdfVao = {};
 static VertexBuffer<MsdfGlyph> msdfGlyphsVbo;
-static vector<MsdfGlyph> msdfGlyphs{};
+static vector<MsdfGlyph, MaxGlyphs> msdfGlyphs;
 static BufferTexture<mat4> msdfTransformsTex = {};
-static vector<mat4> msdfTransforms{};
+static vector<mat4, MaxStrings> msdfTransforms;
 static Font* msdfFont = nullptr;
 
 static Draw<Shaders::Msdf> msdf = {

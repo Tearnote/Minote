@@ -112,7 +112,8 @@ set(INTERNALLIBS
         lib/cephes/const.c lib/cephes/polevl.c lib/cephes/fresnl.c
         lib/stb/stb_image.h lib/stb/stb_image.c
         lib/scope_guard/scope_guard.hpp
-        lib/PPK_ASSERT/ppk_assert.h lib/PPK_ASSERT/ppk_assert.cpp)
+        lib/PPK_ASSERT/ppk_assert.h lib/PPK_ASSERT/ppk_assert.cpp
+        lib/itlib/static_vector.hpp)
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     list(APPEND INTERNALLIBS lib/glad/release/glad.h lib/glad/release/glad.c
             lib/glad/release/khrplatform.h)

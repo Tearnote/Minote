@@ -15,6 +15,8 @@ namespace minote {
 // Loaded font data, containing a glyph atlas and metrics
 struct Font {
 
+	constexpr static size_t MaxGlyphs = 2014;
+
 	// Size metrics of a single glyph
 	struct Glyph {
 
@@ -33,7 +35,7 @@ struct Font {
 	Texture<PixelFmt::RGBA_u8> atlas;
 
 	// Glyph metrics datasheet
-	vector<Glyph> metrics;
+	vector<Glyph, MaxGlyphs> metrics;
 
 	// HarfBuzz font data
 	hb_font_t* hbFont = nullptr;

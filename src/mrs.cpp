@@ -428,7 +428,7 @@ void mrsCleanup(void)
  * Populate and rotate the input arrays for press and hold detection.
  * @param inputs List of this frame's new inputs
  */
-static void mrsUpdateInputs(vector<Action> const& inputs)
+static void mrsUpdateInputs(span<Action> inputs)
 {
 	// Update raw inputs
 	if (mrsTet.state != TetrionOutro) {
@@ -632,7 +632,7 @@ static void mrsUpdateWin(void)
 	//TODO
 }
 
-void mrsAdvance(vector<Action> const& inputs)
+void mrsAdvance(span<Action> inputs)
 {
 	ASSERT(initialized);
 

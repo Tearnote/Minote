@@ -6,11 +6,16 @@
 #include <vector>
 #include <array>
 #include <span>
+#include "itlib/static_vector.hpp"
+#include "base/util.hpp"
 
 namespace minote {
 
 using std::array;
-using std::vector;
+template<typename T, size_t Capacity>
+using vector = itlib::static_vector<T, Capacity>;
+template<typename T>
+using dvector = std::vector<T>;
 using std::span;
 
 }
