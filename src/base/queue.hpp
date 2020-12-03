@@ -5,7 +5,9 @@
 #pragma once
 
 #include <type_traits>
+#include <algorithm>
 #include <iterator>
+#include <memory>
 #include <limits>
 
 namespace minote {
@@ -23,9 +25,10 @@ struct ring_buffer {
 	using difference_type = std::ptrdiff_t;
 	using size_type = std::size_t;
 
-	constexpr ring_buffer(): offset{0}, length{0} {}
+	constexpr ring_buffer() = default;
 	constexpr ring_buffer(ring_buffer const&) = default;
 	~ring_buffer() { clear(); };
+	void swap(ring_buffer& other);
 
 	constexpr auto size() const { return length; }
 	constexpr auto empty() const { return length == 0; }
@@ -56,19 +59,25 @@ struct ring_buffer {
 	void push_back(value_type&& value);
 	void push_front(const_reference value);
 	void push_front(value_type&& value);
+	template<typename... Args>
+	auto emplace_back(Args&&... args) -> reference;
+	template<typename... Args>
+	auto emplace_front(Args&&... args) -> reference;
 	void pop_front();
 	void pop_back();
-	void clear() { while (!empty()) pop_back(); }
+	void clear() { std::destroy_n(begin(), size()); length = 0; }
 
 	constexpr auto operator=(ring_buffer const&) -> ring_buffer& = default;
 	auto operator[](size_type const index) -> reference { return at(index); }
 	auto operator[](size_type const index) const -> const_reference { return at(index); }
+	auto operator==(ring_buffer const& other) const { return std::equal(begin(), end(), other.begin()); }
+	auto operator!=(ring_buffer const&) const -> bool = default;
 
 private:
 
 	typename std::aligned_storage<sizeof(value_type), alignof(value_type)> buffer[Capacity];
-	size_type offset;
-	size_type length;
+	size_type offset{0};
+	size_type length{0};
 
 };
 
