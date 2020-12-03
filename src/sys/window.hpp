@@ -52,7 +52,7 @@ struct Window {
 	bool isContextActive;
 
 	// Queue containing collected keyboard inputs
-	queue<KeyInput, 64> inputs;
+	ring_buffer<KeyInput, 64> inputs;
 
 	// Mutex protecting the inputs queue for thread safety
 	mutable mutex inputsMutex;

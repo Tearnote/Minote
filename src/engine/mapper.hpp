@@ -37,7 +37,7 @@ struct Action {
 struct Mapper {
 
 	// Processed inputs, ready to be retrieved with peek/dequeueAction()
-	queue<Action, 64> actions;
+	ring_buffer<Action, 64> actions;
 
 	// Dequeue all pending keyboard inputs from the given Window, translate
 	// them to actions and insert them into the actions queue. If the actions

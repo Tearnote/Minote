@@ -29,6 +29,13 @@ using namespace minote; // Because we can't namespace main()
 auto main(int, char*[]) -> int
 {
 	ring_buffer<int, 8> r;
+	r.push_back(2);
+	r.push_back(3);
+	r.push_back(4);
+	r.push_front(5);
+	for (auto i: r)
+		L.trace("{}", i);
+
 	// *** Initialization ***
 
 	// Unicode support

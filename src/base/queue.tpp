@@ -20,6 +20,8 @@ struct ring_buffer<T, Capacity>::iterator {
 	using pointer = parent_type::value_type*;
 	using reference = parent_type::reference;
 
+	iterator(parent_type&, size_type);
+
 };
 
 template<typename T, std::size_t Capacity>
@@ -45,14 +47,14 @@ template<typename T, std::size_t Capacity>
 auto ring_buffer<T, Capacity>::at(size_type const i) -> reference {
 	ASSERT(i < length);
 	size_type const index = (offset + i) % capacity();
-	return std::launder(*reinterpret_cast<value_type*>(&buffer[index]));
+	return *std::launder(reinterpret_cast<value_type*>(&buffer[index]));
 }
 
 template<typename T, std::size_t Capacity>
 auto ring_buffer<T, Capacity>::at(size_type const i) const -> const_reference {
 	ASSERT(i < length);
 	size_type const index = (offset + i) % capacity();
-	return std::launder(*reinterpret_cast<value_type const*>(&buffer[index]));
+	return *std::launder(reinterpret_cast<value_type const*>(&buffer[index]));
 }
 
 template<typename T, size_t Capacity>
