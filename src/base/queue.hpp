@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <initializer_list>
 #include <type_traits>
 #include <algorithm>
 #include <iterator>
@@ -25,8 +26,13 @@ struct ring_buffer {
 	using difference_type = std::ptrdiff_t;
 	using size_type = std::size_t;
 
-	constexpr ring_buffer() = default;
-	constexpr ring_buffer(ring_buffer const&) = default;
+	ring_buffer() = default;
+	ring_buffer(ring_buffer const&) = default;
+	explicit ring_buffer(size_type num);
+	ring_buffer(size_type num, value_type const& val);
+	template<typename InputIt>
+	ring_buffer(InputIt first, InputIt last);
+	ring_buffer(std::initializer_list<value_type>);
 	~ring_buffer() { clear(); };
 	void swap(ring_buffer& other);
 
@@ -67,7 +73,8 @@ struct ring_buffer {
 	void pop_back();
 	void clear() { std::destroy_n(begin(), size()); length = 0; }
 
-	constexpr auto operator=(ring_buffer const&) -> ring_buffer& = default;
+	auto operator=(ring_buffer const&) -> ring_buffer& = default;
+	auto operator=(std::initializer_list<value_type>) -> ring_buffer&;
 	auto operator[](size_type const index) -> reference { return at(index); }
 	auto operator[](size_type const index) const -> const_reference { return at(index); }
 	auto operator==(ring_buffer const& other) const { return std::equal(begin(), end(), other.begin()); }

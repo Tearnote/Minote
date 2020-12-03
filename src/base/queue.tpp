@@ -4,8 +4,7 @@
 #include <algorithm>
 #include <utility>
 #include <memory>
-#include "base/util.hpp"
-#include "queue.hpp"
+#include "base/util.hpp" // ASSERT() only
 
 namespace minote {
 
@@ -20,9 +19,37 @@ struct ring_buffer<T, Capacity>::iterator {
 	using pointer = parent_type::value_type*;
 	using reference = parent_type::reference;
 
-	iterator(parent_type&, size_type);
+	iterator(parent_type& p, size_type i): parent{p}, index{i} {}
+
+private:
+
+	parent_type& parent;
+	size_type index;
 
 };
+
+template<typename T, std::size_t Capacity>
+ring_buffer<T, Capacity>::ring_buffer(size_type const num) {
+	for (size_type i = 0; i < num; ++i)
+		emplace_back();
+}
+
+template<typename T, std::size_t Capacity>
+ring_buffer<T, Capacity>::ring_buffer(size_type const num, value_type const& val) {
+	for (size_type i = 0; i < num; ++i)
+		emplace_back(val);
+}
+
+template<typename T, std::size_t Capacity>
+template<typename InputIt>
+ring_buffer<T, Capacity>::ring_buffer(InputIt first, InputIt last) {
+	std::for_each(first, last, [this](auto const& val) { emplace_back(val); });
+}
+
+template<typename T, std::size_t Capacity>
+ring_buffer<T, Capacity>::ring_buffer(std::initializer_list<value_type> il) {
+	std::for_each(il.begin(), il.end(), [this](auto const& val) { emplace_back(val); });
+}
 
 template<typename T, std::size_t Capacity>
 void ring_buffer<T, Capacity>::swap(ring_buffer& other) {
@@ -128,6 +155,12 @@ template<typename T, std::size_t Capacity>
 void ring_buffer<T, Capacity>::pop_back() {
 	std::destroy_at(&back());
 	length -= 1;
+}
+
+template<typename T, std::size_t Capacity>
+auto ring_buffer<T, Capacity>::operator=(std::initializer_list<value_type> il) -> ring_buffer& {
+	clear();
+	std::for_each(il.begin(), il.end(), [this](auto const& val) { emplace_back(val); });
 }
 
 }
