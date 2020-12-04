@@ -19,23 +19,15 @@
 #include "debug.hpp"
 #include "game.hpp"
 
+#include "test.cpp"
 using namespace minote; // Because we can't namespace main()
 
 // Entry point function. Initializes systems and spawns other threads. Itself
 // becomes the input handling thread. Returns EXIT_SUCCESS on successful
 // execution, EXIT_FAILURE on a handled critical error, other values
 // on unhandled error
-#include "base/queue.hpp"
 auto main(int, char*[]) -> int
 {
-	ring_buffer<int, 8> r;
-	r.push_back(2);
-	r.push_back(3);
-	r.push_back(4);
-	r.push_front(5);
-	for (auto i: r)
-		L.trace("{}", i);
-
 	// *** Initialization ***
 
 	// Unicode support
@@ -55,6 +47,8 @@ auto main(int, char*[]) -> int
 	L.enableFile(Logfile);
 	auto const title = fmt::format("{} {}", AppName, AppVersion);
 	L.info("Starting up {}", title);
+
+	test();
 
 	// Window creation
 	Glfw glfw{};

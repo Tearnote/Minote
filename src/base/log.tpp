@@ -19,7 +19,7 @@ constexpr auto LogLevelStrings = array{
 inline void logTo(FILE* const file, string_view msg) try
 {
 	print(file, msg);
-} catch (std::runtime_error& e) {
+} catch (std::runtime_error const& e) {
 	print(stderr, "Failed to write to logfile: {}\n", e.what());
 }
 

@@ -137,7 +137,7 @@ set(SOURCES
         src/base/time.hpp
         src/base/tween.hpp
         src/base/array.hpp
-        src/base/queue.hpp src/base/queue.tpp
+        src/base/ring.hpp src/base/ring.tpp
         src/sys/window.hpp src/sys/window.cpp
         src/sys/opengl/base.hpp src/sys/opengl/base.cpp
         src/sys/opengl/buffer.hpp src/sys/opengl/buffer.tpp

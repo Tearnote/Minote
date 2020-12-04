@@ -4,7 +4,7 @@
 #pragma once
 
 #include "base/array.hpp"
-#include "base/queue.hpp"
+#include "base/ring.hpp"
 #include "base/time.hpp"
 #include "sys/window.hpp"
 
@@ -37,7 +37,7 @@ struct Action {
 struct Mapper {
 
 	// Processed inputs, ready to be retrieved with peek/dequeueAction()
-	ring_buffer<Action, 64> actions;
+	ring<Action, 64> actions;
 
 	// Dequeue all pending keyboard inputs from the given Window, translate
 	// them to actions and insert them into the actions queue. If the actions
@@ -45,16 +45,14 @@ struct Mapper {
 	// the unprocessed inputs.
 	void mapKeyInputs(Window& window);
 
-	// Remove and return the most recent Action. If the queue is empty, nullptr
+	// Remove and return the most recent Action. If the queue is empty, nullopt
 	// is returned instead.
-	auto dequeueAction() -> Action*;
+	auto dequeueAction() -> optional<Action>;
 
 	// Return the most recent Action without removing it. If the queue is empty,
-	// nullptr is returned instead.
+	// nullopt is returned instead.
 	[[nodiscard]]
-	auto peekAction() -> Action*;
-	[[nodiscard]]
-	auto peekAction() const -> const Action*;
+	auto peekAction() -> optional<Action>;
 
 };
 

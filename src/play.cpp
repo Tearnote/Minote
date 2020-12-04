@@ -48,7 +48,7 @@ void playUpdate(Window& window, Mapper& mapper)
 
 	// Update as many times as we need to catch up
 	while (nextUpdate <= Glfw::getTime()) {
-		while (const auto* const action = mapper.peekAction()) { // Exhaust all actions...
+		while (auto const action = mapper.peekAction()) { // Exhaust all actions...
 			if (action->timestamp <= nextUpdate) {
 				collectedInputs.push_back(*action);
 				mapper.dequeueAction();

@@ -7,7 +7,7 @@ namespace minote {
 
 void Mapper::mapKeyInputs(Window& window)
 {
-	if (actions.isFull()) {
+	if (actions.full()) {
 		L.warn("Mapper queue full");
 		return;
 	}
@@ -64,32 +64,32 @@ void Mapper::mapKeyInputs(Window& window)
 
 		const auto timestamp = Glfw::getTime();
 
-		const Action newAction = {
+		actions.push_back({
 			.type = type,
 			.state = state,
 			.timestamp = timestamp
-		};
-		actions.enqueue(newAction);
-		if (actions.isFull()) {
+		});
+		if (actions.full()) {
 			L.warn("Mapper queue full");
 			return;
 		}
 	}
 }
 
-auto Mapper::dequeueAction() -> Action*
+auto Mapper::dequeueAction() -> optional<Action>
 {
-	return actions.dequeue();
+	if (actions.empty()) return nullopt;
+
+	Action action{actions.front()};
+	actions.pop_front();
+	return action;
 }
 
-auto Mapper::peekAction() -> Action*
+auto Mapper::peekAction() -> optional<Action>
 {
-	return actions.peek();
-}
+	if (actions.empty()) return nullopt;
 
-auto Mapper::peekAction() const -> const Action*
-{
-	return actions.peek();
+	return actions.front();
 }
 
 }

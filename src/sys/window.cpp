@@ -39,10 +39,12 @@ static void keyCallback(GLFWwindow* const handle, int const key, int, int const 
 	};
 
 	lock_guard const lock(window.inputsMutex);
-	auto const success = window.inputs.enqueue(input);
-	if (!success)
+	try {
+		window.inputs.push_back(input);
+	} catch (...) {
 		L.warn(R"(Window "{}" input queue is full, key #{} {} dropped)",
-			window.title, key, state == GLFW_PRESS ? "press" : "release");
+			window.title, key, state == GLFW_PRESS? "press" : "release");
+	}
 }
 
 // Function to run when the window is resized. The new size is kept for later
@@ -195,23 +197,19 @@ void Window::deactivateContext()
 auto Window::dequeueInput() -> optional<KeyInput>
 {
 	lock_guard const lock(inputsMutex);
+	if (inputs.empty()) return nullopt;
 
-	auto const* input = inputs.dequeue();
-	if (input)
-		return *input;
-	else
-		return nullopt;
+	KeyInput input{inputs.front()};
+	inputs.pop_front();
+	return input;
 }
 
 auto Window::peekInput() const -> optional<KeyInput>
 {
 	lock_guard const lock(inputsMutex);
+	if (inputs.empty()) return nullopt;
 
-	auto const* input = inputs.peek();
-	if (input)
-		return *input;
-	else
-		return nullopt;
+	return inputs.front();
 }
 
 void Window::clearInput()

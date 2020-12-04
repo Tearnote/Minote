@@ -8,7 +8,7 @@
 
 #include "base/string.hpp"
 #include "base/thread.hpp"
-#include "base/queue.hpp"
+#include "base/ring.hpp"
 #include "base/math.hpp"
 #include "base/time.hpp"
 #include "base/util.hpp"
@@ -52,7 +52,7 @@ struct Window {
 	bool isContextActive;
 
 	// Queue containing collected keyboard inputs
-	ring_buffer<KeyInput, 64> inputs;
+	ring<KeyInput, 64> inputs;
 
 	// Mutex protecting the inputs queue for thread safety
 	mutable mutex inputsMutex;
