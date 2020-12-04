@@ -19,9 +19,7 @@
 #include "debug.hpp"
 #include "game.hpp"
 
-#include "test.cpp"
 using namespace minote; // Because we can't namespace main()
-
 // Entry point function. Initializes systems and spawns other threads. Itself
 // becomes the input handling thread. Returns EXIT_SUCCESS on successful
 // execution, EXIT_FAILURE on a handled critical error, other values
@@ -48,7 +46,15 @@ auto main(int, char*[]) -> int
 	auto const title = fmt::format("{} {}", AppName, AppVersion);
 	L.info("Starting up {}", title);
 
-	test();
+	ring<int, 8> r;
+	r.push_back(1);
+	r.push_front(2);
+	r.push_back(3);
+	r.push_front(4);
+	r.push_back(5);
+	r.push_front(6);
+	for (auto i: r)
+		L.trace("{}", i);
 
 	// Window creation
 	Glfw glfw{};

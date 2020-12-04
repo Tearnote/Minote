@@ -87,7 +87,7 @@ struct ring {
 
 private:
 
-	std::array<typename std::aligned_storage<sizeof(value_type), alignof(value_type)>::type, Capacity> buffer;
+	std::array<std::aligned_storage_t<sizeof(value_type), alignof(value_type)>, Capacity> buffer;
 	size_type offset{0};
 	size_type length{0};
 
@@ -110,7 +110,7 @@ struct ring<T, Capacity>::iter {
 	constexpr iter(parent_type& p, size_type i): parent{p}, index{i} {}
 	constexpr iter(iter const&) = default;
 
-	constexpr auto operator<=>(iter const& other) const { return index <=> other.index; }
+	constexpr auto operator<=>(iter const& other) const {return index <=> other.index; }
 	constexpr auto operator==(iter const& other) const { return index == other.index; }
 	constexpr auto operator!=(iter const& other) const -> bool = default;
 	constexpr auto operator-(iter const& other) const {
