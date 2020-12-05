@@ -1,6 +1,5 @@
 #include "main.hpp"
 
-#include <fmt/format.h>
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN 1
@@ -13,7 +12,9 @@
 #include "base/thread.hpp"
 #include "base/string.hpp"
 #include "base/util.hpp"
+#include "base/time.hpp"
 #include "base/log.hpp"
+#include "base/io.hpp"
 #include "sys/window.hpp"
 #include "sys/glfw.hpp"
 #include "debug.hpp"
@@ -47,16 +48,6 @@ auto main(int, char*[]) -> int
 	auto const title = fmt::format("{} {}", AppName, AppVersion);
 	L.info("Starting up {}", title);
 
-	ring<int, 8> r;
-	r.push_back(1);
-	r.push_front(2);
-	r.push_back(3);
-	r.push_front(4);
-	r.push_back(5);
-	r.push_front(6);
-	for (auto i: r)
-		L.trace("{}", i);
-
 	// Window creation
 	Glfw glfw{};
 	Window window{glfw, title};
@@ -67,7 +58,7 @@ auto main(int, char*[]) -> int
 	// *** Thread startup ***
 
 	// Game thread
-	thread gameThread(game, std::ref(window));
+	thread gameThread(game, ref(window));
 
 	// Input thread loop
 	while (!window.isClosing()) {
