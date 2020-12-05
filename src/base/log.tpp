@@ -83,7 +83,7 @@ void Log::log(Log::Level const _level, S const& fmt, Args&&... args)
 	// Insert timestamp and level
 	auto const now = time(nullptr);
 	auto const localnow = *localtime(&now);
-	format_to(msg, "{:%H:%M:%S} [{}] ", localnow, detail::LogLevelStrings[+level]);
+	format_to(msg, "{:%H:%M:%S} [{}] ", localnow, detail::LogLevelStrings[+_level]);
 
 	// Insert formatted message
 	format_to(msg, fmt, args...);
