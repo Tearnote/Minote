@@ -8,6 +8,7 @@
 
 namespace minote {
 
+// Any enum or enum struct
 template<typename T>
 concept enum_type = std::is_enum_v<T>;
 

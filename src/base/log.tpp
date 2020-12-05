@@ -1,26 +1,27 @@
 #pragma once
 
-#include <stdexcept>
+#include "base/time_io.hpp"
 #include "base/string.hpp"
 #include "base/array.hpp"
 #include "base/util.hpp"
+#include "base/io.hpp"
 
 namespace minote {
 
 namespace detail {
 
-// Mapping from Log::Level to string name. K eep aligned to 5 chars
+// Mapping from Log::Level to string name. Keep aligned to 5 chars
 constexpr auto LogLevelStrings = array{
 	""sv, "TRACE"sv, "DEBUG"sv, " INFO"sv, " WARN"sv, "ERROR"sv, " CRIT"sv
 };
 
 // Write a preformatted log message to a specified output. Does not insert
 // a newline.
-inline void logTo(FILE* const file, string_view msg) try
+inline void logTo(file& f, string_view msg) try
 {
-	print(file, msg);
-} catch (std::runtime_error const& e) {
-	print(stderr, "Failed to write to logfile: {}\n", e.what());
+	print(f, msg);
+} catch (system_error const& e) {
+	print(cerr, R"(Failed to write to logfile "{}": {}\n)", f.where(), e.what());
 }
 
 }
@@ -75,7 +76,7 @@ template<typename S, typename... Args>
 void Log::log(Log::Level const _level, S const& fmt, Args&&... args)
 {
 	if (_level < level) return;
-	if (!console && !file) return;
+	if (!console && !logfile) return;
 
 	memory_buffer msg;
 
@@ -92,24 +93,20 @@ void Log::log(Log::Level const _level, S const& fmt, Args&&... args)
 	if (console) {
 		if (level >= Level::Warn) {
 			// Ensure previously written messages are not interleaved
-			fflush(stdout);
-			detail::logTo(stderr, msg.data());
+			cout.flush();
+			detail::logTo(cerr, msg.data());
 			// Ensure message is written, in case the application crashes
-			fflush(stderr);
+			cerr.flush();
 		} else {
-			detail::logTo(stdout, msg.data());
+			detail::logTo(cout, msg.data());
 		}
 	}
 
-	if (file) {
-		detail::logTo(file, msg.data());
+	if (logfile) {
+		detail::logTo(logfile, msg.data());
 		// Ensure message is written, in case the application crashes
-		if (level >= Level::Warn) {
-			if (fflush(file) == EOF) {
-				perror("Failed to write into logfile");
-				errno = 0;
-			}
-		}
+		if (level >= Level::Warn)
+			logfile.flush();
 	}
 }
 

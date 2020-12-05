@@ -1,5 +1,6 @@
 #include "base/util.hpp"
 
+#include <cstring>
 #include "base/log.hpp"
 
 namespace ppk::assert {

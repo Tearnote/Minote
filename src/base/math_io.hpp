@@ -1,5 +1,5 @@
 // Minote - base/math_io.hpp
-// Printing of math types
+// Formatting of math types
 
 #pragma once
 

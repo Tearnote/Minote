@@ -36,13 +36,14 @@ auto main(int, char*[]) -> int
 	// Global logging
 #ifndef NDEBUG
 	L.level = Log::Level::Trace;
-	constexpr auto Logfile = "minote-debug.log"sv;
+	constexpr auto Logpath = "minote-debug.log"sv;
 #else //NDEBUG
 	L.level = Log::Level::Info;
-	constexpr auto Logfile = "minote.log"sv;
+	constexpr auto Logpath = "minote.log"sv;
 #endif //NDEBUG
 	L.console = true;
-	L.enableFile(Logfile);
+	file logfile{Logpath, "w"};
+	L.enableFile(move(logfile));
 	auto const title = fmt::format("{} {}", AppName, AppVersion);
 	L.info("Starting up {}", title);
 

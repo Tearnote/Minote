@@ -130,41 +130,50 @@ add_compile_definitions(PPK_ASSERT_DEFAULT_LEVEL=Error)
 
 set(SOURCES
         src/main.hpp src/main.cpp
-        src/base/log.hpp src/base/log.cpp
-        src/base/ease.hpp
-        src/base/math.hpp
-        src/base/util.hpp src/base/util.cpp
-        src/base/time.hpp
+        src/base/concept.hpp
+        src/base/math_io.hpp
+        src/base/time_io.hpp
+        src/base/thread.hpp src/base/thread.cpp
+        src/base/string.hpp
         src/base/tween.hpp
         src/base/array.hpp
         src/base/ring.hpp src/base/ring.tpp
-        src/sys/window.hpp src/sys/window.cpp
-        src/sys/opengl/base.hpp src/sys/opengl/base.cpp
-        src/sys/opengl/buffer.hpp src/sys/opengl/buffer.tpp
-        src/sys/opengl/state.hpp src/sys/opengl/state.cpp
+        src/base/util.hpp src/base/util.cpp
+        src/base/ease.hpp
+        src/base/math.hpp
+        src/base/time.hpp
+        src/base/log.hpp src/base/log.cpp
+        src/base/rng.hpp
+        src/base/io.hpp src/base/io.cpp
+        src/sys/opengl/framebuffer.hpp src/sys/opengl/framebuffer.tpp src/sys/opengl/framebuffer.cpp
         src/sys/opengl/vertexarray.hpp src/sys/opengl/vertexarray.tpp src/sys/opengl/vertexarray.cpp
         src/sys/opengl/texture.hpp src/sys/opengl/texture.tpp
         src/sys/opengl/shader.hpp src/sys/opengl/shader.tpp src/sys/opengl/shader.cpp
-        src/sys/opengl/framebuffer.hpp src/sys/opengl/framebuffer.tpp src/sys/opengl/framebuffer.cpp
+        src/sys/opengl/buffer.hpp src/sys/opengl/buffer.tpp
+        src/sys/opengl/state.hpp src/sys/opengl/state.cpp
         src/sys/opengl/draw.hpp src/sys/opengl/draw.tpp src/sys/opengl/draw.cpp
+        src/sys/opengl/base.hpp src/sys/opengl/base.cpp
+        src/sys/window.hpp src/sys/window.cpp
+        src/sys/glfw.hpp src/sys/glfw.cpp
         src/engine/mapper.hpp src/engine/mapper.cpp
         src/engine/model.hpp src/engine/model.cpp
         src/engine/frame.hpp src/engine/frame.cpp
         src/engine/scene.hpp src/engine/scene.cpp
+        src/engine/font.hpp src/engine/font.cpp
         src/engine/engine.hpp
         src/store/shaders.hpp src/store/shaders.cpp
         src/store/models.hpp src/store/models.cpp
         src/store/fonts.hpp src/store/fonts.cpp
+        src/particles.hpp src/particles.cpp
+        src/mrsdraw.hpp src/mrsdraw.cpp
+        src/mrsdef.hpp src/mrsdef.cpp
+        src/bloom.hpp src/bloom.cpp
+        src/debug.hpp src/debug.cpp
+        src/text.hpp src/text.cpp
         src/game.hpp src/game.cpp
         src/play.hpp src/play.cpp
         src/mino.hpp src/mino.cpp
-        src/mrs.hpp src/mrs.cpp
-        src/mrsdef.hpp src/mrsdef.cpp
-        src/mrsdraw.hpp src/mrsdraw.cpp
-        src/bloom.hpp src/bloom.cpp
-        src/particles.hpp src/particles.cpp
-        src/debug.hpp src/debug.cpp
-        src/text.hpp src/text.cpp src/engine/font.cpp src/engine/font.hpp src/sys/glfw.cpp src/sys/glfw.hpp src/base/string.hpp src/base/thread.hpp src/base/concept.hpp src/base/rng.hpp src/base/io.hpp src/base/thread.cpp src/base/math_io.hpp)
+        src/mrs.hpp src/mrs.cpp)
 
 add_executable(Minote ${SOURCES} ${INTERNALLIBS})
 target_compile_options(Minote PRIVATE

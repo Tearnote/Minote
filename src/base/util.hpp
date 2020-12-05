@@ -6,6 +6,7 @@
 #include <type_traits>
 #include <functional>
 #include <optional>
+#include <utility>
 #include <cstdint>
 #include <cstdlib> // Provide free()
 #include <cstring>
@@ -41,6 +42,9 @@ using std::cref;
 // Used for returning by value when lack of value is possible
 using std::optional;
 using std::nullopt;
+
+// Convert to rvalue reference. Used often for ownership transfer and insertion into containers
+using std::move;
 
 // Immediately close the application
 using std::exit;

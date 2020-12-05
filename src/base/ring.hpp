@@ -1,5 +1,5 @@
 // Minote - base/ring.hpp
-// STL-style ring buffer. The storage capacity is bounded and placed on stack - any allocation
+// STL-style ring buffer. The storage capacity is bounded and placed on stack - any push/emplace
 // that goes over the capacity limit will throw a std::out_of_range.
 
 #pragma once

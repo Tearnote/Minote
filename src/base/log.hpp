@@ -21,19 +21,29 @@ struct Log {
 		Error,
 		Crit,
 		Size
-	} level = Level::None;
+	} level{Level::None};
 
 	// If true, messages are printed to stdout (<=Info) or stderr (>=Warn)
-	bool console = false;
+	bool console{false};
 
-	// File handle to write messages into, or nullptr for disabled file logging
-	FILE* file = nullptr;
+	// Create a logger with both file and console logging disabled.
+	Log() noexcept = default;
 
-	// Enable logging to a file. The file will be created if missing.
-	void enableFile(path const& file);
+	// Create a logger that writes into an open file.
+	explicit Log(file&& _logfile) { enableFile(move(_logfile)); }
 
-	// Disable logging to a file, cleanly closing any currently open logfile.
+	// Clean up by closing any open logfile.
+	~Log() { disableFile(); }
+
+	// Enable logging to an open file. A logfile must not already be open.
+	void enableFile(file&& logfile);
+
+	// Disable file logging, cleanly closing any currently open logfile.
 	void disableFile();
+
+	// true if file logging is enabled.
+	[[nodiscard]]
+	auto isFileEnabled() const -> bool { return logfile; }
 
 	// Log a Trace level message. Meant for "printf debugging", do not leave any
 	// trace() calls in committed code.
@@ -76,11 +86,14 @@ struct Log {
 	[[noreturn]]
 	void fail(const S& fmt, Args&&... args);
 
+	// Log a message at the specified level. Useful for mapping of external log level enums.
 	template<typename S, typename... Args>
 	void log(Log::Level level, S const& fmt, Args&&... args);
 
-	// Clean up by closing any open logfile.
-	~Log();
+private:
+
+	// File to write messages into. File logging is disabled if logfile is not open
+	file logfile;
 
 };
 
