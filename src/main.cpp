@@ -43,8 +43,12 @@ auto main(int, char*[]) -> int
 	constexpr auto Logpath = "minote.log"sv;
 #endif //NDEBUG
 	L.console = true;
-	file logfile{Logpath, "w"};
-	L.enableFile(move(logfile));
+	try {
+		file logfile{Logpath, "w"};
+		L.enableFile(move(logfile));
+	} catch (system_error const& e) {
+		L.warn("{}", Logpath, e.what());
+	}
 	auto const title = fmt::format("{} {}", AppName, AppVersion);
 	L.info("Starting up {}", title);
 
