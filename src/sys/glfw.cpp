@@ -15,8 +15,7 @@
 
 namespace minote {
 
-Glfw::Glfw()
-{
+Glfw::Glfw() {
 	DASSERT(!exists);
 
 	if (glfwInit() == GLFW_FALSE)
@@ -27,39 +26,38 @@ Glfw::Glfw()
 #endif //_WIN32
 
 	exists = true;
-	L.info("Windowing initialized");
+	L.info("GLFW initialized");
 }
 
-Glfw::~Glfw()
-{
+Glfw::~Glfw() {
 #ifdef _WIN32
 	timeEndPeriod(1);
 #endif //_WIN32
 	glfwTerminate();
 
 	exists = false;
-	L.debug("Windowing cleaned up");
+	L.debug("GLFW cleaned up");
 }
 
-void Glfw::poll()
-{
+void Glfw::poll() {
 	glfwPollEvents();
 }
 
-auto Glfw::getError() -> string_view
-{
-	char const* description = nullptr;
-	int const code = glfwGetError(&description);
+auto Glfw::getError() -> string_view {
+	char const* description{nullptr};
+	int const code{glfwGetError(&description)};
 	if (code == GLFW_NO_ERROR)
 		return "No error";
 	DASSERT(description);
 	return description;
 }
 
-
-auto Glfw::getTime() -> nsec
-{
+auto Glfw::getTime() -> nsec {
 	return seconds(glfwGetTime());
+}
+
+auto Glfw::getKeyName(Keycode const keycode, Scancode const scancode) const -> string_view {
+	return glfwGetKeyName(+keycode, +scancode)?: "Unknown";
 }
 
 }

@@ -78,7 +78,7 @@ static void bloomResize(uvec2 size)
 void bloomInit(Window& window)
 {
 	if (initialized) return;
-	uvec2 windowSize = window.size;
+	uvec2 windowSize = window.size();
 
 	for (size_t i = 0; i < BloomPasses; i += 1) {
 		uvec2 layerSize = {
@@ -89,7 +89,7 @@ void bloomInit(Window& window)
 		bloomFbColor[i].create("bloomFbColor", layerSize);
 	}
 
-	bloomResize(window.size);
+	bloomResize(windowSize);
 
 	for (size_t i = 0; i < BloomPasses; i += 1)
 		bloomFb[i].attach(bloomFbColor[i], Attachment::Color0);
@@ -112,7 +112,7 @@ void bloomCleanup(void)
 void bloomApply(Engine& engine)
 {
 	DASSERT(initialized);
-	bloomResize(engine.window.size);
+	bloomResize(engine.window.size());
 
 	threshold.shader = &engine.shaders.threshold;
 	boxBlur.shader = &engine.shaders.boxBlur;
@@ -162,6 +162,6 @@ void bloomApply(Engine& engine)
 	// Draw the bloom on top of the render
 	blit.shader->image = bloomFbColor[0];
 	blit.shader->boost = 1.0f;
-	blit.params.viewport = {.size = engine.window.size};
+	blit.params.viewport = {.size = engine.window.size()};
 	blit.draw();
 }

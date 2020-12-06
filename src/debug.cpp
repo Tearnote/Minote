@@ -7,6 +7,7 @@
 #include "debug.hpp"
 
 #include <atomic>
+#include <GLFW/glfw3.h>
 #define NK_IMPLEMENTATION
 #include "nuklear/nuklear.h"
 #include "sys/opengl/vertexarray.hpp"
@@ -94,8 +95,8 @@ void debugInputSetup(Window& window)
 	atomic_init(&cursorPos, ((ivec2){-1, -1}));
 	atomic_init(&leftClick, false);
 	atomic_init(&rightClick, false);
-	glfwSetCursorPosCallback(window.handle, debugCursorPosCallback);
-	glfwSetMouseButtonCallback(window.handle, debugMouseButtonCallback);
+//	glfwSetCursorPosCallback(window.handle, debugCursorPosCallback);
+//	glfwSetMouseButtonCallback(window.handle, debugMouseButtonCallback);
 }
 
 void debugInit(void)
@@ -251,7 +252,7 @@ void debugDraw(Engine& engine)
 	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 
 	// Execute draw commands
-	uvec2 screenSize = engine.window.size;
+	uvec2 screenSize = engine.window.size();
 	const struct nk_draw_command* command;
 	int offset = 0;
 	nk_draw_foreach(command, &nkContext, &commandList) {

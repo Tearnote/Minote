@@ -149,6 +149,7 @@ set(SOURCES
         src/sys/opengl/state.hpp src/sys/opengl/state.cpp
         src/sys/opengl/draw.hpp src/sys/opengl/draw.tpp src/sys/opengl/draw.cpp
         src/sys/opengl/base.hpp src/sys/opengl/base.cpp
+        src/sys/keyboard.hpp src/sys/keyboard.cpp
         src/sys/window.hpp src/sys/window.cpp
         src/sys/glfw.hpp src/sys/glfw.cpp
         src/engine/mapper.hpp src/engine/mapper.cpp

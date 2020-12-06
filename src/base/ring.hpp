@@ -42,7 +42,8 @@ struct ring {
 
 	constexpr auto size() const { return length; }
 	constexpr auto empty() const { return length == 0; }
-	constexpr auto full() const { return length == Capacity; } // Non-standard extension
+	constexpr auto isEmpty() const { return empty(); } // Nonstandard
+	constexpr auto isFull() const { return length == Capacity; } // Nonstandard
 	constexpr auto capacity() const { return Capacity; }
 	constexpr auto max_size() const { return std::numeric_limits<size_type>::max(); }
 

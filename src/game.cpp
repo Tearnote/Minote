@@ -1,5 +1,6 @@
 #include "game.hpp"
 
+#include <GLFW/glfw3.h>
 #include "engine/engine.hpp"
 #include "engine/mapper.hpp"
 #include "engine/model.hpp"
@@ -128,7 +129,7 @@ void game(Window& window)
 	defer { shaders.destroy(); };
 
 	Frame frame;
-	frame.create(window.size, shaders);
+	frame.create(window.size(), shaders);
 	defer { frame.destroy(); };
 
 	Scene scene;
@@ -191,7 +192,7 @@ void game(Window& window)
 		particlesUpdate();
 
 		// Draw frame
-		frame.begin(window.size);
+		frame.begin(window.size());
 		scene.updateMatrices(frame.size);
 		clear.framebuffer = frame.fb;
 		clear.draw();

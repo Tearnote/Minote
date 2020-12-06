@@ -23,11 +23,11 @@ using std::system_error;
 struct file {
 
 	// Create a null object, with no file attached.
-	file() noexcept: handle{nullptr} {}
+	file() noexcept = default;
 
 	// Create the object from an externally opened std::FILE. Ownership of the FILE is assumed.
 	// If the FILE is special and should never be closed, set doNotClose to true.
-	file(FILE* raw, string_view name, bool const doNotClose = false) noexcept:
+	file(std::FILE* raw, string_view name, bool const doNotClose = false) noexcept:
 		handle{raw}, pathStr{name}, noClose{doNotClose} {}
 
 	// Create the object with an immediately attached file.
@@ -60,7 +60,7 @@ struct file {
 	// Do not fclose() or freopen()!
 	operator std::FILE*() { return handle; }
 
-	// Moveable, not copyable.
+	// Moveable, not copyable
 	file(file const&) = delete;
 	auto operator=(file const&) -> file& = delete;
 	file(file&&) noexcept;

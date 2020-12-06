@@ -1,14 +1,6 @@
 #include "window.hpp"
 
-#ifdef _WIN32
-#ifndef NOMINMAX
-#define NOMINMAX 1
-#endif //NOMINMAX
-#ifdef WIN32_LEAN_AND_MEAN
-#undef WIN32_LEAN_AND_MEAN
-#endif //WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#endif //_WIN32
+#include <GLFW/glfw3.h>
 #include "base/math_io.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"
@@ -16,67 +8,68 @@
 namespace minote {
 
 // The window with its OpenGL context active on current thread
-static thread_local Window const* activeContext = nullptr;
+static thread_local Window const* activeContext{nullptr};
 
 // Retrieve the Window from raw GLFW handle by user pointer.
-static auto getWindow(GLFWwindow* handle) -> Window&
-{
+static auto getWindow(GLFWwindow* handle) -> Window& {
 	DASSERT(handle);
 	return *reinterpret_cast<Window*>(glfwGetWindowUserPointer(handle));
 }
 
-// Function to run on each keypress event. The event is added to the queue.
-static void keyCallback(GLFWwindow* const handle, int const key, int, int const state, int)
-{
+void Window::keyCallback(GLFWwindow* const handle,
+	int const rawKeycode, int const rawScancode, int const rawState, int) {
 	DASSERT(handle);
-	if (state == GLFW_REPEAT) return; // Key repeat is not used
-	auto& window = getWindow(handle);
+	if (rawState == GLFW_REPEAT) return; // Key repeat is not used
+	auto& window{getWindow(handle)};
+	using State = KeyInput::State;
 
-	Window::KeyInput const input = {
-		.key = key,
+	Keycode const keycode{rawKeycode};
+	Scancode const scancode{rawScancode};
+	auto const name{window.glfw.getKeyName(keycode, scancode)};
+	State const state{rawState == GLFW_PRESS? State::Pressed : State::Released};
+	KeyInput const input{
+		.keycode = keycode,
+		.scancode = scancode,
+		.name = name,
 		.state = state,
 		.timestamp = Glfw::getTime()
 	};
 
-	lock_guard const lock(window.inputsMutex);
+	lock_guard const lock{window.inputsMutex};
 	try {
 		window.inputs.push_back(input);
 	} catch (...) {
-		L.warn(R"(Window "{}" input queue is full, key #{} {} dropped)",
-			window.title, key, state == GLFW_PRESS? "press" : "release");
+		L.warn(R"(Window "{}" input queue full, key "{}" {} event dropped)",
+			window.title(), name, state == State::Pressed? "press" : "release");
 	}
 }
 
-// Function to run when the window is resized. The new size is kept for later
-// retrieval, such as by Frame::begin().
-static void framebufferResizeCallback(GLFWwindow* const handle, int const width, int const height)
-{
+void Window::framebufferResizeCallback(GLFWwindow* const handle, int const width, int const height) {
 	DASSERT(handle);
 	DASSERT(width);
 	DASSERT(height);
-	auto& window = getWindow(handle);
+	auto& window{getWindow(handle)};
 
-	uvec2 const newSize = {width, height};
-	window.size = newSize;
-	L.info(R"(Window "{}" resized to {})", window.title, newSize);
+	uvec2 const newSize{width, height};
+	window.m_size = newSize;
+	L.info(R"(Window "{}" resized to {})", window.title(), newSize);
 }
 
 // Function to run when the window is rescaled. This might happen when dragging
 // it to a display with different DPI scaling, or at startup. The new scale
 // is saved for later retrieval.
-static void windowScaleCallback(GLFWwindow* const handle, float const xScale, float)
-{
+void Window::windowScaleCallback(GLFWwindow* const handle, float const xScale, float) {
 	DASSERT(handle);
 	DASSERT(xScale);
 	// yScale seems to sometimes be 0.0, so it is not reliable
-	auto& window = getWindow(handle);
+	auto& window{getWindow(handle)};
 
-	window.scale = xScale;
-	L.info(R"(Window "{}" DPI scaling changed to {})", window.title, xScale);
+	window.m_scale = xScale;
+	L.info(R"(Window "{}" DPI scaling changed to {})", window.title(), xScale);
 }
 
-Window::Window(Glfw const&, string_view _title, bool const fullscreen, uvec2 _size)
-{
+Window::Window(Glfw const& _glfw, string_view _title, bool const fullscreen, uvec2 _size) noexcept:
+	glfw{_glfw}, m_title{_title}, isContextActive{false} {
 	DASSERT(_size.x > 0 && _size.y > 0);
 
 	// *** Set up context params ***
@@ -97,11 +90,10 @@ Window::Window(Glfw const&, string_view _title, bool const fullscreen, uvec2 _si
 
 	// *** Create the window handle ***
 
-	title = _title;
-	auto* monitor = glfwGetPrimaryMonitor();
+	auto* monitor{glfwGetPrimaryMonitor()};
 	if (!monitor)
 		L.fail("Failed to query primary monitor: {}", Glfw::getError());
-	auto const* const mode = glfwGetVideoMode(monitor);
+	auto const* const mode{glfwGetVideoMode(monitor)};
 	if (!mode)
 		L.fail("Failed to query video mode: {}", Glfw::getError());
 	if (fullscreen)
@@ -109,24 +101,22 @@ Window::Window(Glfw const&, string_view _title, bool const fullscreen, uvec2 _si
 	else
 		monitor = nullptr;
 
-	handle = glfwCreateWindow(_size.x, _size.y, title.c_str(), monitor, nullptr);
+	handle = glfwCreateWindow(_size.x, _size.y, m_title.c_str(), monitor, nullptr);
 	if (!handle)
-		L.fail(R"(Failed to create window "{}": {})", _title, Glfw::getError());
+		L.fail(R"(Failed to create window "{}": {})", title(), Glfw::getError());
 
 	// *** Set window properties ***
-
-	isContextActive = false;
 
 	// Real size might be different from requested size because of DPI scaling
 	ivec2 realSize;
 	glfwGetFramebufferSize(handle, &realSize.x, &realSize.y);
-	if  (realSize.x == 0 || realSize.y == 0)
-		L.fail(R"(Failed to retrieve window "{}"'s framebuffer size: {})", _title, Glfw::getError());
-	size = realSize;
+	if  (realSize == ivec2{0, 0})
+		L.fail(R"(Failed to retrieve window "{}" framebuffer size: {})", _title, Glfw::getError());
+	m_size = realSize;
 
-	float _scale;
-	glfwGetWindowContentScale(handle, &_scale, nullptr);
-	scale = _scale;
+	float realScale;
+	glfwGetWindowContentScale(handle, &realScale, nullptr);
+	m_scale = realScale;
 
 	// *** Set up window callbacks ***
 
@@ -139,39 +129,34 @@ Window::Window(Glfw const&, string_view _title, bool const fullscreen, uvec2 _si
 	glfwSetWindowContentScaleCallback(handle, windowScaleCallback);
 
 	L.info(R"(Window "{}" created at {} *{}{})",
-		title, size.load(), _scale, fullscreen ? " fullscreen" : "");
+		title(), size(), scale(), fullscreen ? " fullscreen" : "");
 }
 
-Window::~Window()
-{
+Window::~Window() {
 	DASSERT(!isContextActive);
 
 	glfwDestroyWindow(handle);
 
-	L.info(R"(Window "{}" closed)", title);
+	L.info(R"(Window "{}" closed)", title());
 }
 
-auto Window::isClosing() const -> bool
-{
-	lock_guard const lock(handleMutex);
+auto Window::isClosing() const -> bool {
+	lock_guard const lock{handleMutex};
 	return glfwWindowShouldClose(handle);
 }
 
-void Window::requestClose()
-{
-	lock_guard const lock(handleMutex);
+void Window::requestClose() {
+	lock_guard const lock{handleMutex};
 	glfwSetWindowShouldClose(handle, true);
 
-	L.info(R"(Window "{}" close requested)", title);
+	L.info(R"(Window "{}" close requested)", title());
 }
 
-void Window::flip()
-{
+void Window::flip() {
 	glfwSwapBuffers(handle);
 }
 
-void Window::activateContext()
-{
+void Window::activateContext() {
 	DASSERT(!isContextActive);
 	DASSERT(!activeContext);
 
@@ -179,11 +164,10 @@ void Window::activateContext()
 	isContextActive = true;
 	activeContext = this;
 
-	L.debug(R"(Window "{}" OpenGL context activated)", title);
+	L.debug(R"(Window "{}" OpenGL context activated)", title());
 }
 
-void Window::deactivateContext()
-{
+void Window::deactivateContext() {
 	DASSERT(isContextActive);
 	DASSERT(activeContext == this);
 
@@ -191,30 +175,24 @@ void Window::deactivateContext()
 	isContextActive = false;
 	activeContext = nullptr;
 
-	L.debug(R"(Window "{}" OpenGL context deactivated)", title);
+	L.debug(R"(Window "{}" OpenGL context deactivated)", title());
 }
 
-auto Window::dequeueInput() -> optional<KeyInput>
-{
-	lock_guard const lock(inputsMutex);
-	if (inputs.empty()) return nullopt;
-
-	KeyInput input{inputs.front()};
-	inputs.pop_front();
-	return input;
+void Window::popInput() {
+	lock_guard const lock{inputsMutex};
+	if (!inputs.empty())
+		inputs.pop_front();
 }
 
-auto Window::peekInput() const -> optional<KeyInput>
-{
-	lock_guard const lock(inputsMutex);
+auto Window::getInput() const -> optional<KeyInput> {
+	lock_guard const lock{inputsMutex};
 	if (inputs.empty()) return nullopt;
 
 	return inputs.front();
 }
 
-void Window::clearInput()
-{
-	lock_guard const lock(inputsMutex);
+void Window::clearInput() {
+	lock_guard const lock{inputsMutex};
 
 	inputs.clear();
 }

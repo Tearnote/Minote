@@ -1,22 +1,17 @@
 #include "engine/mapper.hpp"
 
+#include <GLFW/glfw3.h>
 #include "base/log.hpp"
-#include "sys/glfw.hpp"
 
 namespace minote {
 
 void Mapper::mapKeyInputs(Window& window)
 {
-	if (actions.full()) {
-		L.warn("Mapper queue full");
-		return;
-	}
-
-	while (const auto keyOpt = window.dequeueInput()) {
+	while (const auto keyOpt = window.getInput()) {
 		const auto key = keyOpt.value();
 
 		const auto type = [=] {
-			switch (key.key) {
+			switch (+key.keycode) {
 			case GLFW_KEY_UP:
 			case GLFW_KEY_W:
 				return Action::Type::Drop;
@@ -50,11 +45,12 @@ void Mapper::mapKeyInputs(Window& window)
 		}();
 		if (type == Action::Type::None) continue; // Key not recognized
 
+		using KeyState = Window::KeyInput::State;
 		const auto state = [=] {
 			switch (key.state) {
-			case GLFW_PRESS:
+			case KeyState::Pressed:
 				return Action::State::Pressed;
-			case GLFW_RELEASE:
+			case KeyState::Released:
 				return Action::State::Released;
 			default:
 				XASSERT(false, "Encountered invalid key state");
@@ -64,15 +60,17 @@ void Mapper::mapKeyInputs(Window& window)
 
 		const auto timestamp = Glfw::getTime();
 
-		actions.push_back({
-			.type = type,
-			.state = state,
-			.timestamp = timestamp
-		});
-		if (actions.full()) {
+		try {
+			actions.push_back({
+				.type = type,
+				.state = state,
+				.timestamp = timestamp
+			});
+		} catch (...) {
 			L.warn("Mapper queue full");
 			return;
 		}
+		window.popInput();
 	}
 }
 

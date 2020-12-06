@@ -3,10 +3,10 @@
 
 #pragma once
 
-#include <GLFW/glfw3.h>
 #include "base/string.hpp"
 #include "base/util.hpp"
 #include "base/time.hpp"
+#include "sys/keyboard.hpp"
 
 namespace minote {
 
@@ -18,30 +18,34 @@ struct Glfw {
 	// Clean up the windowing system.
 	~Glfw();
 
-	// Collect pending events for all open windows and keep them responsive.
-	// Call this as often as your target resolution of user input; at least
-	// 240Hz is recommended.
+	// Collect pending events for all open windows and keep them responsive. Call this as often
+	// as your target resolution of user input; at least 240Hz is recommended.
 	void poll();
 
-	// Retrieve the description of the most recently encountered GLFW error
-	// and clear GLFW error state. The description must be used before the next
-	// GLFW call.
-	// This function can be used from any thread.
+	// Retrieve the description of the most recently encountered GLFW error and clear GLFW error
+	// state. The description must be used before the next GLFW call.
+	// This function can be used from any thread, even without a Glfw instance.
 	static auto getError() -> string_view;
 
-	// Return the time passed since Glfw() was last called. If it was never
-	// called, 0 is returned instead.
+	// Return the time passed since Glfw() was last called. If it was never called, 0
+	// is returned instead.
 	// This function can be used from any thread.
+	[[nodiscard]]
 	static auto getTime() -> nsec;
 
-	// No copying or moving
+	[[nodiscard]]
+	auto getKeyName(Keycode, Scancode) const -> string_view;
+
+	// Not copyable, not movable
 	Glfw(Glfw const&) = delete;
 	auto operator=(Glfw const&) -> Glfw& = delete;
+	Glfw(Glfw&&) = delete;
+	auto operator=(Glfw&&) -> Glfw& = delete;
 
 private:
 
 	// Ensure only one instance can exist
-	inline static bool exists = false;
+	inline static bool exists{false};
 
 };
 
