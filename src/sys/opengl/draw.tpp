@@ -17,7 +17,7 @@ void Draw<T>::draw()
 			mask |= GL_COLOR_BUFFER_BIT;
 		}
 		if (clearDepthStencil) {
-			ASSERT(!framebuffer || detail::getAttachment(*framebuffer, Attachment::DepthStencil));
+			DASSERT(!framebuffer || detail::getAttachment(*framebuffer, Attachment::DepthStencil));
 			detail::state.setClearDepth(clearParams.depth);
 			detail::state.setClearStencil(clearParams.stencil);
 			mask |= GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT;
@@ -26,7 +26,7 @@ void Draw<T>::draw()
 	}
 
 	if (shader && instances > 0) {
-		ASSERT(framebuffer || !params.viewport.zero());
+		DASSERT(framebuffer || !params.viewport.zero());
 		bool const instanced = (instances > 1);
 		bool const indexed = (vertexarray && vertexarray->elementBits);
 		auto const vertices = [this]() -> GLsizei {

@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <utility>
 #include <memory>
-#include "base/util.hpp" // ASSERT() only
+#include "base/util.hpp" // DASSERT() only
 
 namespace minote {
 
@@ -52,14 +52,14 @@ void ring<T, Capacity>::swap(ring& other) {
 
 template<typename T, std::size_t Capacity>
 auto ring<T, Capacity>::at(size_type const i) -> reference {
-	ASSERT(i < length);
+	DASSERT(i < length);
 	size_type const index = (offset + i) % capacity();
 	return *std::launder(reinterpret_cast<value_type*>(&buffer[index]));
 }
 
 template<typename T, std::size_t Capacity>
 auto ring<T, Capacity>::at(size_type const i) const -> const_reference {
-	ASSERT(i < length);
+	DASSERT(i < length);
 	size_type const index = (offset + i) % capacity();
 	return *std::launder(reinterpret_cast<value_type const*>(&buffer[index]));
 }
@@ -125,7 +125,7 @@ auto ring<T, Capacity>::emplace_front(Args&&... args) -> reference {
 
 template<typename T, size_t Capacity>
 void ring<T, Capacity>::pop_front() {
-	ASSERT(length > 0);
+	DASSERT(length > 0);
 
 	std::destroy_at(&front());
 	offset += 1;
@@ -135,7 +135,7 @@ void ring<T, Capacity>::pop_front() {
 
 template<typename T, std::size_t Capacity>
 void ring<T, Capacity>::pop_back() {
-	ASSERT(length > 0);
+	DASSERT(length > 0);
 
 	std::destroy_at(&back());
 	length -= 1;

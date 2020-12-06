@@ -9,8 +9,8 @@ template<copy_constructible T, GLenum _target>
 void
 BufferBase<T, _target>::create(char const* const _name, bool const _dynamic)
 {
-	ASSERT(!id);
-	ASSERT(_name);
+	DASSERT(!id);
+	DASSERT(_name);
 
 	glGenBuffers(1, &id);
 #ifndef NDEBUG
@@ -27,7 +27,7 @@ BufferBase<T, _target>::create(char const* const _name, bool const _dynamic)
 template<copy_constructible T, GLenum _target>
 void BufferBase<T, _target>::destroy()
 {
-	ASSERT(id);
+	DASSERT(id);
 
 	detail::state.deleteBuffer(Target, id);
 	id = 0;
@@ -41,8 +41,8 @@ void BufferBase<T, _target>::destroy()
 template<copy_constructible T, GLenum _target>
 void BufferBase<T, _target>::upload(span<Type const> const data)
 {
-	ASSERT(id);
-	ASSERT(dynamic == true || uploaded == false);
+	DASSERT(id);
+	DASSERT(dynamic == true || uploaded == false);
 	if (data.empty())
 		return;
 
@@ -60,7 +60,7 @@ void BufferBase<T, _target>::upload(span<Type const> const data)
 template<copy_constructible T, GLenum _target>
 void BufferBase<T, _target>::bind() const
 {
-	ASSERT(id);
+	DASSERT(id);
 
 	detail::state.bindBuffer(Target, id);
 }

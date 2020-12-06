@@ -54,8 +54,8 @@ static bool initialized = false;
  */
 static void aaResize(uvec2 size)
 {
-	ASSERT(size.x > 0);
-	ASSERT(size.y > 0);
+	DASSERT(size.x > 0);
+	DASSERT(size.y > 0);
 	if (size.x == currentSize.x && size.y == currentSize.y) return;
 	currentSize.x = size.x;
 	currentSize.y = size.y;
@@ -254,7 +254,7 @@ void aaCleanup(void)
 
 void aaSwitch(AAMode mode)
 {
-	ASSERT(initialized);
+	DASSERT(initialized);
 	if (mode == currentMode) return;
 	aaCleanup();
 	aaInit(mode, *window);
@@ -262,7 +262,7 @@ void aaSwitch(AAMode mode)
 
 void aaBegin(void)
 {
-	ASSERT(initialized);
+	DASSERT(initialized);
 	if (currentMode == AANone) return;
 	aaResize(window->size);
 	if (currentMode == AASimple
@@ -273,7 +273,7 @@ void aaBegin(void)
 
 void aaEnd(void)
 {
-	ASSERT(initialized);
+	DASSERT(initialized);
 	if (currentMode == AANone) return;
 
 	if (currentMode == AAFast) {

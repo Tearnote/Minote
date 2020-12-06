@@ -187,7 +187,7 @@ void debugCleanup(void)
 
 void debugUpdate(void)
 {
-	ASSERT(initialized);
+	DASSERT(initialized);
 
 	if (atomic_load(&rightClick)) {
 		atomic_store(&rightClick, false);
@@ -207,7 +207,7 @@ void debugUpdate(void)
 
 void debugDraw(Engine& engine)
 {
-	ASSERT(initialized);
+	DASSERT(initialized);
 	if (!nuklearEnabled) {
 		nk_clear(&nkContext);
 		return;

@@ -5,7 +5,7 @@ namespace minote {
 // Initialize Frame framebuffers and their attachments for a specified AA mode.
 static void createFramebuffers(Frame& frame, uvec2 const size, Samples const _aa)
 {
-	ASSERT(_aa != Samples::None);
+	DASSERT(_aa != Samples::None);
 
 	frame.ssfb.create("Frame::ssfb");
 	frame.color.create("Frame::color", size);
@@ -43,8 +43,8 @@ static void destroyFramebuffers(Frame& frame)
 
 void Frame::create(uvec2 const size, Shaders& shaders, Samples const _aa)
 {
-	ASSERT(_aa != Samples::None);
-	ASSERT(aa == Samples::None);
+	DASSERT(_aa != Samples::None);
+	DASSERT(aa == Samples::None);
 
 	createFramebuffers(*this, size, _aa);
 
@@ -64,7 +64,7 @@ void Frame::create(uvec2 const size, Shaders& shaders, Samples const _aa)
 
 void Frame::destroy()
 {
-	ASSERT(aa != Samples::None);
+	DASSERT(aa != Samples::None);
 
 	destroyFramebuffers(*this);
 
@@ -74,7 +74,7 @@ void Frame::destroy()
 
 void Frame::changeAA(Samples const _aa)
 {
-	ASSERT(aa != Samples::None);
+	DASSERT(aa != Samples::None);
 	if (aa == _aa) return;
 
 	uvec2 const size = color.size;
@@ -85,9 +85,9 @@ void Frame::changeAA(Samples const _aa)
 
 void Frame::resolveAA()
 {
-	ASSERT(aa != Samples::None);
+	DASSERT(aa != Samples::None);
 	if (aa == Samples::_1) return;
-	ASSERT(fb == &msfb);
+	DASSERT(fb == &msfb);
 
 	Framebuffer::blit(ssfb, msfb, Attachment::Color0, true);
 
@@ -96,7 +96,7 @@ void Frame::resolveAA()
 
 void Frame::begin(uvec2 const _size)
 {
-	ASSERT(aa != Samples::None);
+	DASSERT(aa != Samples::None);
 
 	color.resize(_size);
 	depthStencil.resize(_size);
@@ -115,7 +115,7 @@ void Frame::begin(uvec2 const _size)
 
 void Frame::end()
 {
-	ASSERT(aa != Samples::None);
+	DASSERT(aa != Samples::None);
 
 	if (fb == &msfb)
 		resolveAA();

@@ -17,7 +17,7 @@ namespace minote {
 
 Glfw::Glfw()
 {
-	ASSERT(!exists);
+	DASSERT(!exists);
 
 	if (glfwInit() == GLFW_FALSE)
 		L.fail("Failed to initialize GLFW: {}", getError());
@@ -52,7 +52,7 @@ auto Glfw::getError() -> string_view
 	int const code = glfwGetError(&description);
 	if (code == GLFW_NO_ERROR)
 		return "No error";
-	ASSERT(description);
+	DASSERT(description);
 	return description;
 }
 

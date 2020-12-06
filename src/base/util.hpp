@@ -12,7 +12,7 @@
 #include <cstring>
 #include <cstdio>
 #include "scope_guard/scope_guard.hpp"
-#include "xassert/xassert.h" // Provide ASSERT(), DASSERT(), XASSERT(), set_assert_handler()
+#include "xassert/xassert.h" // Provide DASSERT(), DASSERT(), XASSERT(), set_assert_handler()
 #include "base/concept.hpp"
 
 namespace minote {
@@ -85,7 +85,7 @@ constexpr auto operator+(T e) {
 // to zero.
 template<typename T>
 auto allocate(size_t const count = 1) -> T* {
-	ASSERT(count);
+	DASSERT(count);
 	auto* const result = static_cast<T*>(std::calloc(count, sizeof(T)));
 	if (!result) {
 		std::perror("Could not allocate memory");

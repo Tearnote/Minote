@@ -12,7 +12,7 @@ namespace minote {
 
 // Description of a tween instance. most of the fields need to be filled in manually before use;
 // designated initializer syntax is convenient for this.
-template<floating_point T = float>
+template<floating_point T = f32>
 struct Tween {
 
 	using Type = T;
@@ -43,6 +43,9 @@ struct Tween {
 	constexpr auto applyAt(nsec time) const -> Type;
 
 };
+
+template<typename... T>
+Tween(T...) -> Tween<>;
 
 template<floating_point T>
 constexpr auto Tween<T>::applyAt(nsec const time) const -> Type {

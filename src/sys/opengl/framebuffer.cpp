@@ -8,8 +8,8 @@ namespace minote {
 
 void Framebuffer::create(char const* const _name)
 {
-	ASSERT(!id);
-	ASSERT(_name);
+	DASSERT(!id);
+	DASSERT(_name);
 
 	glGenFramebuffers(1, &id);
 #ifndef NDEBUG
@@ -22,7 +22,7 @@ void Framebuffer::create(char const* const _name)
 
 void Framebuffer::destroy()
 {
-	ASSERT(id);
+	DASSERT(id);
 
 	detail::state.deleteFramebuffer(id);
 	id = 0;
@@ -46,7 +46,7 @@ auto Framebuffer::size() -> uvec2
 
 void Framebuffer::bind()
 {
-	ASSERT(id);
+	DASSERT(id);
 
 	detail::state.bindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
 
@@ -78,8 +78,8 @@ void Framebuffer::bind()
 
 void Framebuffer::bindRead() const
 {
-	ASSERT(id);
-	ASSERT(!dirty);
+	DASSERT(id);
+	DASSERT(!dirty);
 
 	detail::state.bindFramebuffer(GL_READ_FRAMEBUFFER, id);
 }
@@ -92,10 +92,10 @@ void Framebuffer::unbind()
 void Framebuffer::blit(Framebuffer& dst, Framebuffer const& src,
 	Attachment const srcBuffer, bool const depthStencil)
 {
-	ASSERT(detail::getAttachment(src, srcBuffer));
+	DASSERT(detail::getAttachment(src, srcBuffer));
 	if (depthStencil) {
-		ASSERT(detail::getAttachment(src, Attachment::DepthStencil));
-		ASSERT(detail::getAttachment(dst, Attachment::DepthStencil));
+		DASSERT(detail::getAttachment(src, Attachment::DepthStencil));
+		DASSERT(detail::getAttachment(dst, Attachment::DepthStencil));
 	}
 
 	src.bindRead();

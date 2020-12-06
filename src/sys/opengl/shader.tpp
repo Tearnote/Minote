@@ -7,8 +7,8 @@ namespace minote {
 template<GLSLType T>
 void Uniform<T>::setLocation(Shader const& shader, char const* const name)
 {
-	ASSERT(shader.id);
-	ASSERT(name);
+	DASSERT(shader.id);
+	DASSERT(name);
 
 	location = glGetUniformLocation(shader.id, name);
 	shaderId = shader.id;
@@ -49,9 +49,9 @@ void Uniform<T>::set(Type const _value)
 template<template<PixelFmt> typename T>
 void Sampler<T>::setLocation(Shader const& shader, char const* const name, TextureUnit const _unit)
 {
-	ASSERT(shader.id);
-	ASSERT(name);
-	ASSERT(_unit != TextureUnit::None);
+	DASSERT(shader.id);
+	DASSERT(name);
+	DASSERT(_unit != TextureUnit::None);
 
 	location = glGetUniformLocation(shader.id, name);
 	if (location == -1) {

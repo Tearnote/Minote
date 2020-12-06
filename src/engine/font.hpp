@@ -15,7 +15,7 @@ namespace minote {
 // Loaded font data, containing a glyph atlas and metrics
 struct Font {
 
-	constexpr static size_t MaxGlyphs = 2014;
+	constexpr static size_t MaxGlyphs = 1024;
 
 	// Size metrics of a single glyph
 	struct Glyph {

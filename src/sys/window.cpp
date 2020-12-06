@@ -21,14 +21,14 @@ static thread_local Window const* activeContext = nullptr;
 // Retrieve the Window from raw GLFW handle by user pointer.
 static auto getWindow(GLFWwindow* handle) -> Window&
 {
-	ASSERT(handle);
+	DASSERT(handle);
 	return *reinterpret_cast<Window*>(glfwGetWindowUserPointer(handle));
 }
 
 // Function to run on each keypress event. The event is added to the queue.
 static void keyCallback(GLFWwindow* const handle, int const key, int, int const state, int)
 {
-	ASSERT(handle);
+	DASSERT(handle);
 	if (state == GLFW_REPEAT) return; // Key repeat is not used
 	auto& window = getWindow(handle);
 
@@ -51,9 +51,9 @@ static void keyCallback(GLFWwindow* const handle, int const key, int, int const 
 // retrieval, such as by Frame::begin().
 static void framebufferResizeCallback(GLFWwindow* const handle, int const width, int const height)
 {
-	ASSERT(handle);
-	ASSERT(width);
-	ASSERT(height);
+	DASSERT(handle);
+	DASSERT(width);
+	DASSERT(height);
 	auto& window = getWindow(handle);
 
 	uvec2 const newSize = {width, height};
@@ -66,8 +66,8 @@ static void framebufferResizeCallback(GLFWwindow* const handle, int const width,
 // is saved for later retrieval.
 static void windowScaleCallback(GLFWwindow* const handle, float const xScale, float)
 {
-	ASSERT(handle);
-	ASSERT(xScale);
+	DASSERT(handle);
+	DASSERT(xScale);
 	// yScale seems to sometimes be 0.0, so it is not reliable
 	auto& window = getWindow(handle);
 
@@ -77,7 +77,7 @@ static void windowScaleCallback(GLFWwindow* const handle, float const xScale, fl
 
 Window::Window(Glfw const&, string_view _title, bool const fullscreen, uvec2 _size)
 {
-	ASSERT(_size.x > 0 && _size.y > 0);
+	DASSERT(_size.x > 0 && _size.y > 0);
 
 	// *** Set up context params ***
 
@@ -144,7 +144,7 @@ Window::Window(Glfw const&, string_view _title, bool const fullscreen, uvec2 _si
 
 Window::~Window()
 {
-	ASSERT(!isContextActive);
+	DASSERT(!isContextActive);
 
 	glfwDestroyWindow(handle);
 
@@ -172,8 +172,8 @@ void Window::flip()
 
 void Window::activateContext()
 {
-	ASSERT(!isContextActive);
-	ASSERT(!activeContext);
+	DASSERT(!isContextActive);
+	DASSERT(!activeContext);
 
 	glfwMakeContextCurrent(handle);
 	isContextActive = true;
@@ -184,8 +184,8 @@ void Window::activateContext()
 
 void Window::deactivateContext()
 {
-	ASSERT(isContextActive);
-	ASSERT(activeContext == this);
+	DASSERT(isContextActive);
+	DASSERT(activeContext == this);
 
 	glfwMakeContextCurrent(nullptr);
 	isContextActive = false;

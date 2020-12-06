@@ -39,14 +39,14 @@ void spinCounterClockwise(spin* val)
 
 color4 minoColor(mino type)
 {
-	ASSERT(type >= MinoNone && type < MinoSize);
+	DASSERT(type >= MinoNone && type < MinoSize);
 	return MinoColors[type];
 }
 
 void pieceRotate(piece p, spin rotation)
 {
-	ASSERT(p);
-	ASSERT(rotation < SpinSize);
+	DASSERT(p);
+	DASSERT(rotation < SpinSize);
 
 	for (int i = 0; i < rotation; i += 1) { // Repeat as many times as rotations
 		for (size_t j = 0; j < MinosPerPiece; j += 1) { // Rotate each mino
@@ -63,7 +63,7 @@ void pieceRotate(piece p, spin rotation)
 
 Field* fieldCreate(ivec2 size)
 {
-	ASSERT(size.x > 0 && size.y > 0);
+	DASSERT(size.x > 0 && size.y > 0);
 	auto* result = allocate<Field>();
 	result->size.x = size.x;
 	result->size.y = size.y;
@@ -73,7 +73,7 @@ Field* fieldCreate(ivec2 size)
 
 void fieldDestroy(Field* f)
 {
-	ASSERT(f);
+	DASSERT(f);
 	free(f->grid);
 	f->grid = nullptr;
 	free(f);
@@ -82,8 +82,8 @@ void fieldDestroy(Field* f)
 
 void fieldSet(Field* f, ivec2 place, mino value)
 {
-	ASSERT(f);
-	ASSERT(value < MinoSize);
+	DASSERT(f);
+	DASSERT(value < MinoSize);
 	if (place.x < 0 || place.x >= f->size.x) return;
 	if (place.y < 0 || place.y >= f->size.y) return;
 	f->grid[place.y * f->size.x + place.x] = value;
@@ -91,7 +91,7 @@ void fieldSet(Field* f, ivec2 place, mino value)
 
 mino fieldGet(Field* f, ivec2 place)
 {
-	ASSERT(f);
+	DASSERT(f);
 	if (place.x < 0 || place.x >= f->size.x) return MinoGarbage;
 	if (place.y < 0) return MinoGarbage;
 	if (place.y >= f->size.y) return MinoNone;
@@ -100,7 +100,7 @@ mino fieldGet(Field* f, ivec2 place)
 
 void fieldClearRow(Field* f, int row)
 {
-	ASSERT(f);
+	DASSERT(f);
 	for (int x = 0; x < f->size.x; x += 1)
 		fieldSet(f, (ivec2){
 			x,
@@ -110,7 +110,7 @@ void fieldClearRow(Field* f, int row)
 
 void fieldDropRow(Field* f, int row)
 {
-	ASSERT(f);
+	DASSERT(f);
 	for (int y = row; y < f->size.y; y += 1) {
 		for (int x = 0; x < f->size.x; x += 1) {
 			fieldSet(f, (ivec2){
@@ -126,7 +126,7 @@ void fieldDropRow(Field* f, int row)
 
 bool fieldIsRowFull(Field* f, int row)
 {
-	ASSERT(f);
+	DASSERT(f);
 	for (int x = 0; x < f->size.x; x += 1) {
 		if (!fieldGet(f, (ivec2){
 			x,
@@ -139,7 +139,7 @@ bool fieldIsRowFull(Field* f, int row)
 
 bool fieldIsEmpty(Field* f)
 {
-	ASSERT(f);
+	DASSERT(f);
 	for (int y = 0; y < f->size.y; y += 1) {
 		for (int x = 0; x < f->size.x; x += 1) {
 			if (fieldGet(f, (ivec2){
@@ -154,9 +154,9 @@ bool fieldIsEmpty(Field* f)
 
 void fieldStampPiece(Field* f, piece* piece, ivec2 place, mino type)
 {
-	ASSERT(f);
-	ASSERT(piece);
-	ASSERT(type < MinoSize);
+	DASSERT(f);
+	DASSERT(piece);
+	DASSERT(type < MinoSize);
 	for (int i = 0; i < MinosPerPiece; i += 1) {
 		fieldSet(f, (ivec2){
 			place.x + (*piece)[i].x,
@@ -167,8 +167,8 @@ void fieldStampPiece(Field* f, piece* piece, ivec2 place, mino type)
 
 bool pieceOverlapsField(piece* p, ivec2 pPos, Field* field)
 {
-	ASSERT(p);
-	ASSERT(field);
+	DASSERT(p);
+	DASSERT(field);
 	for (size_t i = 0; i < MinosPerPiece; i += 1) {
 		ivec2 cell = {
 			(*p)[i].x + pPos.x,

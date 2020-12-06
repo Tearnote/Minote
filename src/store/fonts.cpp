@@ -6,7 +6,7 @@ namespace minote {
 
 void Fonts::create()
 {
-	ASSERT(!freetype);
+	DASSERT(!freetype);
 
 	if (FT_Error const err = FT_Init_FreeType(&freetype)) {
 		L.error("Failed to initialize Freetype: error {}", err);
@@ -18,7 +18,7 @@ void Fonts::create()
 
 void Fonts::destroy()
 {
-	ASSERT(freetype);
+	DASSERT(freetype);
 
 	jost.destroy();
 

@@ -97,10 +97,10 @@ template<GLSLType T>
 void VertexArray::setAttribute(GLuint const index, VertexBuffer<T>& buffer,
 	bool const instanced)
 {
-	ASSERT(index > 0 || index < attributes.size());
+	DASSERT(index > 0 || index < attributes.size());
 	if constexpr (std::is_same_v<T, mat4>)
-		ASSERT (index + 3 < attributes.size());
-	ASSERT(id);
+		DASSERT (index + 3 < attributes.size());
+	DASSERT(id);
 
 	detail::setVaoAttribute<T>(*this, index, buffer, 0, instanced);
 }
@@ -109,10 +109,10 @@ template<copy_constructible T, GLSLType U>
 void VertexArray::setAttribute(GLuint const index, VertexBuffer<T>& buffer,
 	U T::*field, bool const instanced)
 {
-	ASSERT(index > 0 || index < attributes.size());
+	DASSERT(index > 0 || index < attributes.size());
 	if constexpr (std::is_same_v<U, mat4>)
-		ASSERT (index + 3 < attributes.size());
-	ASSERT(id);
+		DASSERT (index + 3 < attributes.size());
+	DASSERT(id);
 
 	detail::setVaoAttribute<U>(*this, index, buffer, offset_of(field),
 		instanced);
@@ -121,7 +121,7 @@ void VertexArray::setAttribute(GLuint const index, VertexBuffer<T>& buffer,
 template<ElementType T>
 void VertexArray::setElements(ElementBuffer<T>& buffer)
 {
-	ASSERT(id);
+	DASSERT(id);
 
 	bind();
 	buffer.bind();

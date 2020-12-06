@@ -8,9 +8,9 @@ namespace minote {
 static auto compileShaderStage(GLuint const id, char const* const name,
 	char const* const source) -> bool
 {
-	ASSERT(id);
-	ASSERT(name);
-	ASSERT(source);
+	DASSERT(id);
+	DASSERT(name);
+	DASSERT(source);
 
 	glShaderSource(id, 1, &source, nullptr);
 	glCompileShader(id);
@@ -34,10 +34,10 @@ static auto compileShaderStage(GLuint const id, char const* const name,
 
 void Shader::create(char const* _name, char const* vertSrc, char const* fragSrc)
 {
-	ASSERT(!id);
-	ASSERT(_name);
-	ASSERT(vertSrc);
-	ASSERT(fragSrc);
+	DASSERT(!id);
+	DASSERT(_name);
+	DASSERT(vertSrc);
+	DASSERT(fragSrc);
 
 	GLuint const vert = glCreateShader(GL_VERTEX_SHADER);
 #ifndef NDEBUG
@@ -89,7 +89,7 @@ void Shader::create(char const* _name, char const* vertSrc, char const* fragSrc)
 
 void Shader::destroy()
 {
-	ASSERT(id);
+	DASSERT(id);
 
 	glDeleteProgram(id);
 	id = 0;
@@ -99,16 +99,16 @@ void Shader::destroy()
 
 void Shader::bind() const
 {
-	ASSERT(id);
+	DASSERT(id);
 	detail::state.bindShader(id);
 }
 
 void BufferSampler::setLocation(Shader const& shader, char const* name,
 	TextureUnit _unit)
 {
-	ASSERT(shader.id);
-	ASSERT(name);
-	ASSERT(_unit != TextureUnit::None);
+	DASSERT(shader.id);
+	DASSERT(name);
+	DASSERT(_unit != TextureUnit::None);
 
 	location = glGetUniformLocation(shader.id, name);
 	if (location == -1) {

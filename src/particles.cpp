@@ -54,7 +54,7 @@ void particlesInit(void)
 
 void particlesUpdate(void)
 {
-	ASSERT(initialized);
+	DASSERT(initialized);
 
 	size_t numParticles = particles.size();
 	nsec currentTime = Glfw::getTime();
@@ -70,7 +70,7 @@ void particlesUpdate(void)
 
 void particlesDraw(Engine& engine)
 {
-	ASSERT(initialized);
+	DASSERT(initialized);
 
 	double fresnelConst = sqrt(4.0 / Tau);
 
@@ -79,7 +79,7 @@ void particlesDraw(Engine& engine)
 
 	for (size_t i = 0; i < numParticles; i += 1) {
 		Particle* current = &particles[i];
-		ASSERT(current->spin > 0.0f);
+		DASSERT(current->spin > 0.0f);
 
 		Tween progressTween = {
 			.from = 0.0f,
@@ -89,11 +89,11 @@ void particlesDraw(Engine& engine)
 			.type = current->ease
 		};
 		float progress = progressTween.apply();
-		ASSERT(progress >= 0.0f && progress <= 1.0f);
+		DASSERT(progress >= 0.0f && progress <= 1.0f);
 
 		double x;
 		double y;
-		ASSERT(current->spin > 0.0f);
+		DASSERT(current->spin > 0.0f);
 		float distance = progress * current->distance * current->spin;
 		fresnl(distance * fresnelConst, &y, &x);
 		x = x / fresnelConst / current->spin;
@@ -138,9 +138,9 @@ void particlesDraw(Engine& engine)
 
 void particlesGenerate(vec3 position, size_t count, ParticleParams* params)
 {
-	ASSERT(initialized);
-	ASSERT(count);
-	ASSERT(params);
+	DASSERT(initialized);
+	DASSERT(count);
+	DASSERT(params);
 
 	for (size_t i = 0; i < count; i += 1) {
 		auto& newParticle = particles.emplace_back();
