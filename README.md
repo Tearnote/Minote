@@ -2,9 +2,8 @@
 An upcoming puzzle action game, written in C++20.
 
 ## Building
-Continuously tested on Linux (GCC) and Windows (MSYS2 MinGW). Should be
-portable to any platform with OpenGL 3.3 core profile and a recent
-standards-compliant compiler.
+Continuously tested on Windows (MSYS2 MinGW), but should be portable to any
+platform with OpenGL 3.3 core profile and a recent standards-compliant compiler.
 
 Standard CMake build process:
 ```
@@ -39,7 +38,7 @@ on 2020-09-12, used under MIT license.
 retrieved on 2020-09-13, in Public Domain.
 - [`scope_guard`](https://github.com/Neargye/scope_guard) retrieved
 on 2020-10-05, used under MIT license.
-- [`PPK_ASSERT`](https://github.com/gpakosz/PPK_ASSERT) retrieved on 2020-10-05,
-used under WTFPL.
 - [`itlib`](https://github.com/iboB/itlib) retrieved on 2020-12-01, used under
 MIT license.
+- [`xassert`](https://github.com/rg3/xassert) retrieved on 2020-12-06, used
+under CC0 license.

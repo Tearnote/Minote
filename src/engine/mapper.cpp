@@ -57,7 +57,7 @@ void Mapper::mapKeyInputs(Window& window)
 			case GLFW_RELEASE:
 				return Action::State::Released;
 			default:
-				ASSERT(false, "Encountered invalid key state");
+				XASSERT(false, "Encountered invalid key state");
 				return Action::State::None;
 			}
 		}();

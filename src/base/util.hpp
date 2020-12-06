@@ -12,7 +12,7 @@
 #include <cstring>
 #include <cstdio>
 #include "scope_guard/scope_guard.hpp"
-#include "PPK_ASSERT/ppk_assert.h"
+#include "xassert/xassert.h" // Provide ASSERT(), DASSERT(), XASSERT(), set_assert_handler()
 #include "base/concept.hpp"
 
 namespace minote {
@@ -52,9 +52,6 @@ using std::exit;
 
 // Make the DEFER feature from scope_guard more keyword-like
 #define defer DEFER
-
-// Improved assert() macro from PPK_ASSERT, with printf-like formatting
-#define ASSERT PPK_ASSERT
 
 // Template replacement for the C offsetof() macro. Unfortunately, it cannot be constexpr within
 // the current rules of the language.

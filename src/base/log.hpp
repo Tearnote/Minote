@@ -99,6 +99,10 @@ private:
 // Global logger available for convenience
 inline Log L;
 
+// Assert handler that reports the assertion failure to the global logger L before terminating.
+// Register this with set_assert_handler(assertHandler);
+auto assertHandler(char const* expr, char const* file, int line, char const* msg) -> int;
+
 }
 
 #include "log.tpp"

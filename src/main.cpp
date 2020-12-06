@@ -29,6 +29,8 @@ auto main(int, char*[]) -> int
 {
 	// *** Initialization ***
 
+	set_assert_handler(assertHandler);
+
 	// Unicode support
 #ifdef _WIN32
 	SetConsoleOutputCP(65001); // Set Windows cmd encoding to UTF-8
@@ -49,6 +51,7 @@ auto main(int, char*[]) -> int
 	} catch (system_error const& e) {
 		L.warn("{}", Logpath, e.what());
 	}
+
 	auto const title = fmt::format("{} {}", AppName, AppVersion);
 	L.info("Starting up {}", title);
 

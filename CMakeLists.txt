@@ -112,8 +112,8 @@ set(INTERNALLIBS
         lib/cephes/const.c lib/cephes/polevl.c lib/cephes/fresnl.c
         lib/stb/stb_image.h lib/stb/stb_image.c
         lib/scope_guard/scope_guard.hpp
-        lib/PPK_ASSERT/ppk_assert.h lib/PPK_ASSERT/ppk_assert.cpp
-        lib/itlib/static_vector.hpp)
+        lib/itlib/static_vector.hpp
+        lib/xassert/xassert.h lib/xassert/xassert.c)
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     list(APPEND INTERNALLIBS lib/glad/release/glad.h lib/glad/release/glad.c
             lib/glad/release/khrplatform.h)
@@ -123,10 +123,6 @@ else()
 endif()
 
 add_compile_definitions(NK_UINT_DRAW_INDEX)
-add_compile_definitions(PPK_ASSERT_DISABLE_STL)
-add_compile_definitions(PPK_ASSERT_DISABLE_EXCEPTIONS)
-add_compile_definitions(PPK_ASSERT_DISABLE_IGNORE_LINE)
-add_compile_definitions(PPK_ASSERT_DEFAULT_LEVEL=Error)
 
 set(SOURCES
         src/main.hpp src/main.cpp
@@ -138,7 +134,7 @@ set(SOURCES
         src/base/tween.hpp
         src/base/array.hpp
         src/base/ring.hpp src/base/ring.tpp
-        src/base/util.hpp src/base/util.cpp
+        src/base/util.hpp
         src/base/ease.hpp
         src/base/math.hpp
         src/base/time.hpp
