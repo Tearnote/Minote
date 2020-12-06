@@ -15,8 +15,8 @@ using std::mutex;
 using std::lock_guard;
 using std::atomic;
 
-// Sleep the thread for the specific duration. Keep in mind that on Windows this
-// will be at least 1ms and might have strong jitter.
+// Sleep the thread for the specific duration. Keep in mind that on Windows this will be
+// at least 1ms and might have strong jitter.
 // This function is thread-safe.
 void sleepFor(nsec duration);
 

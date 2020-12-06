@@ -30,8 +30,8 @@ struct ring {
 	using difference_type = std::ptrdiff_t;
 	using size_type = std::size_t;
 
-	ring() = default;
-	ring(ring const&) = default;
+	ring() noexcept = default;
+	ring(ring const&) noexcept = default;
 	explicit ring(size_type num);
 	ring(size_type num, value_type const& val);
 	template<typename InputIt>

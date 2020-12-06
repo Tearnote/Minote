@@ -1,5 +1,5 @@
 // Minote - base/string.hpp
-// String types used by the project
+// Imports of string types
 
 #pragma once
 

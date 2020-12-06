@@ -17,8 +17,7 @@ constexpr auto LogLevelStrings = array{
 
 // Write a preformatted log message to a specified output. Does not insert
 // a newline.
-inline void logTo(file& f, string_view msg) try
-{
+inline void logTo(file& f, string_view msg) try {
 	print(f, msg);
 } catch (system_error const& e) {
 	print(cerr, R"(Failed to write to logfile "{}": {}\n)", f.where(), e.what());
@@ -27,44 +26,37 @@ inline void logTo(file& f, string_view msg) try
 }
 
 template<typename S, typename... Args>
-void Log::trace(S const& fmt, Args&& ... args)
-{
+void Log::trace(S const& fmt, Args&& ... args) {
 	log(Level::Trace, fmt, args...);
 }
 
 template<typename S, typename... Args>
-void Log::debug(S const& fmt, Args&& ... args)
-{
+void Log::debug(S const& fmt, Args&& ... args) {
 	log(Level::Debug, fmt, args...);
 }
 
 template<typename S, typename... Args>
-void Log::info(S const& fmt, Args&& ... args)
-{
+void Log::info(S const& fmt, Args&& ... args) {
 	log(Level::Info, fmt, args...);
 }
 
 template<typename S, typename... Args>
-void Log::warn(S const& fmt, Args&& ... args)
-{
+void Log::warn(S const& fmt, Args&& ... args) {
 	log(Level::Warn, fmt, args...);
 }
 
 template<typename S, typename... Args>
-void Log::error(S const& fmt, Args&& ... args)
-{
+void Log::error(S const& fmt, Args&& ... args) {
 	log(Level::Error, fmt, args...);
 }
 
 template<typename S, typename... Args>
-void Log::crit(S const& fmt, Args&& ... args)
-{
+void Log::crit(S const& fmt, Args&& ... args) {
 	log(Level::Crit, fmt, args...);
 }
 
 template<typename S, typename... Args>
-void Log::fail(S const& fmt, Args&& ... args)
-{
+void Log::fail(S const& fmt, Args&& ... args) {
 	crit(fmt, args...);
 #ifdef __GNUC__
 	__builtin_trap();
@@ -73,8 +65,7 @@ void Log::fail(S const& fmt, Args&& ... args)
 }
 
 template<typename S, typename... Args>
-void Log::log(Log::Level const _level, S const& fmt, Args&&... args)
-{
+void Log::log(Log::Level const _level, S const& fmt, Args&&... args) {
 	if (_level < level) return;
 	if (!console && !logfile) return;
 

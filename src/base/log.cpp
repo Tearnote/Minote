@@ -1,13 +1,11 @@
 #include "log.hpp"
 
-#include "base/util.hpp"
 #include "base/io.hpp"
 
 namespace minote {
 
 void Log::enableFile(file&& _logfile) {
-	ASSERT(!logfile);
-	ASSERT(_logfile);
+	if (logfile) disableFile();
 
 	logfile = move(_logfile);
 }
@@ -15,7 +13,7 @@ void Log::enableFile(file&& _logfile) {
 void Log::disableFile() try {
 	logfile.close();
 } catch (system_error const& e) {
-	print(stderr, R"(Could not close logfile "{}": {})", logfile.where(), e.what());
+	print(cerr, R"(Could not close logfile "{}": {})", logfile.where(), e.what());
 }
 
 }

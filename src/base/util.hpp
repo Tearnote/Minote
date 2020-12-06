@@ -34,8 +34,7 @@ using f64 = double;
 // Used every time the size of a container is stored. Should be a keyword really
 using std::size_t;
 
-// Reference wrapper. Required to use references in thread constructor,
-// containers, etc
+// Reference wrapper. Required to use references in thread constructor, containers, etc
 using std::ref;
 using std::cref;
 
@@ -57,32 +56,20 @@ using std::exit;
 // Improved assert() macro from PPK_ASSERT, with printf-like formatting
 #define ASSERT PPK_ASSERT
 
-// Template replacement for the C offsetof() macro. Unfortunately, it cannot
-// be constexpr within the current rules of the language.
+// Template replacement for the C offsetof() macro. Unfortunately, it cannot be constexpr within
+// the current rules of the language.
 // Example: offset_of(&Point::x)
 // See: https://gist.github.com/graphitemaster/494f21190bb2c63c5516
 template<typename T1, default_initializable T2>
-inline auto offset_of(T1 T2::*member) -> size_t
-{
+inline auto offset_of(T1 T2::*member) -> size_t {
 	static T2 obj;
 	return reinterpret_cast<size_t>(&(obj.*member)) - reinterpret_cast<size_t>(&obj);
 }
 
 // Conversion of scoped enum to the underlying type, using the unary + operator
 template<enum_type T>
-constexpr auto operator+(T e)
-{
-return static_cast<std::underlying_type_t<T>>(e);
-}
-
-// *** Various utilities ***
-
-// Return the "NULL" string literal if passed argument is nullptr, otherwise
-// return the argument.
-inline auto stringOrNull(char const* const str) -> char const*
-{
-	if (str) return str;
-	else return "NULL";
+constexpr auto operator+(T e) {
+	return static_cast<std::underlying_type_t<T>>(e);
 }
 
 // *** Deprecated ***
@@ -100,8 +87,7 @@ inline auto stringOrNull(char const* const str) -> char const*
 // Error-checking and type-safe malloc() wrapper. Clears all allocated memory
 // to zero.
 template<typename T>
-auto allocate(size_t const count = 1) -> T*
-{
+auto allocate(size_t const count = 1) -> T* {
 	ASSERT(count);
 	auto* const result = static_cast<T*>(std::calloc(count, sizeof(T)));
 	if (!result) {

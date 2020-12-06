@@ -18,15 +18,16 @@ using std::filesystem::path;
 // An exception thrown on file IO error
 using std::system_error;
 
-// RAII wrapper for C-style file functions. Throws system_error on errors
+// RAII wrapper for C-style file functions. Throws system_error on errors. To avoid constructor
+// and destructor throws, use open() and close() methods manually instead of relying on RAII.
 struct file {
 
 	// Create a null object, with no file attached.
-	file(): handle{nullptr} {}
+	file() noexcept: handle{nullptr} {}
 
 	// Create the object from an externally opened std::FILE. Ownership of the FILE is assumed.
 	// If the FILE is special and should never be closed, set doNotClose to true.
-	file(FILE* raw, string_view name, bool const doNotClose = false):
+	file(FILE* raw, string_view name, bool const doNotClose = false) noexcept:
 		handle{raw}, pathStr{name}, noClose{doNotClose} {}
 
 	// Create the object with an immediately attached file.
@@ -35,7 +36,8 @@ struct file {
 	// Close the attached file if open. May throw on the final buffer flush.
 	~file() noexcept(false) { close(); }
 
-	// Open the file with a given mode (fopen() mode string). Must not be already open.
+	// Open the file with a given mode (fopen() mode string). Any previous attached file
+	// is closed.
 	void open(path const&, char const* mode);
 
 	// Close the attached file if exists. May throw on the final buffer flush.

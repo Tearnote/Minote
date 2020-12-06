@@ -100,7 +100,7 @@ void Font::destroy()
 		atlas.destroy();
 	metrics.clear();
 
-	L.info(R"(Font "{}" cleaned up)", stringOrNull(name));
+	L.info(R"(Font "{}" cleaned up)", name);
 	name = nullptr;
 }
 

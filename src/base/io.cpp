@@ -7,7 +7,7 @@
 namespace minote {
 
 void file::open(path const& path, char const* mode) {
-	ASSERT(!handle);
+	if (handle) close();
 
 	pathStr = path.string();
 	handle = std::fopen(pathStr.c_str(), mode);

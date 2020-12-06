@@ -41,7 +41,7 @@ struct GLState {
 	bool scissorTesting = false;
 
 	// The area that passes the scissor test, in pixels
-	AABB<2, i32> scissorBox;
+	AABB<2, i32> scissorBox = {};
 
 	// Whether stencil testing is enabled
 	bool stencilTesting = false;
@@ -67,7 +67,7 @@ struct GLState {
 	} stencilMode;
 
 	// Size of the rendering viewport
-	AABB<2, i32> viewport;
+	AABB<2, i32> viewport = {};
 
 	// Whether writing to color buffers is enabled
 	bool colorWrite = true;

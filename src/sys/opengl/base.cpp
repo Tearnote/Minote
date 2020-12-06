@@ -8,7 +8,7 @@ GLObject::~GLObject()
 {
 #ifndef NDEBUG
 	if (id)
-		L.warn(R"(OpenGL object "{}" was never destroyed)", stringOrNull(name));
+		L.warn(R"(OpenGL object "{}" was never destroyed)", name);
 #endif //NDEBUG
 }
 

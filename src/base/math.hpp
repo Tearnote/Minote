@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <functional>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -115,21 +114,18 @@ using glm::ortho;
 using glm::lookAt;
 
 template<typename T = f32, glm::qualifier Q = glm::qualifier::defaultp>
-constexpr auto make_translate(glm::vec<3, T, Q> v) -> glm::mat<4, 4, T, Q>
-{
-	return glm::translate(glm::mat<4, 4, T, Q>(static_cast<T>(1)), v);
+constexpr auto make_translate(glm::vec<3, T, Q> v) -> glm::mat<4, 4, T, Q> {
+	return glm::translate(glm::mat<4, 4, T, Q>(1), v);
 }
 
 template<typename T = f32, glm::qualifier Q = glm::qualifier::defaultp>
-constexpr auto make_rotate(T angle, glm::vec<3, T, Q> v) -> glm::mat<4, 4, T, Q>
-{
-	return glm::rotate(glm::mat<4, 4, T, Q>(static_cast<T>(1)), angle, v);
+constexpr auto make_rotate(T angle, glm::vec<3, T, Q> v) -> glm::mat<4, 4, T, Q> {
+	return glm::rotate(glm::mat<4, 4, T, Q>(1), angle, v);
 }
 
 template<typename T = f32, glm::qualifier Q = glm::qualifier::defaultp>
-constexpr auto make_scale(glm::vec<3, T, Q> v) -> glm::mat<4, 4, T, Q>
-{
-	return glm::scale(glm::mat<4, 4, T, Q>(static_cast<T>(1)), v);
+constexpr auto make_scale(glm::vec<3, T, Q> v) -> glm::mat<4, 4, T, Q> {
+	return glm::scale(glm::mat<4, 4, T, Q>(1), v);
 }
 
 // *** Matrix transforms ***
@@ -161,22 +157,14 @@ struct AABB;
 template<>
 struct AABB<2, i32> {
 
-	ivec2 pos = {0, 0};
-	uvec2 size = {0, 0};
+	ivec2 pos;
+	uvec2 size;
 
-	auto operator==(AABB<2, i32> const& other) const -> bool
-	{
-		return pos == other.pos && size == other.size;
-	}
-
-	auto operator!=(AABB<2, i32> const& other) const -> bool
-	{
-		return !(other == *this);
-	}
+	auto operator==(AABB<2, i32> const& other) const -> bool = default;
+	auto operator!=(AABB<2, i32> const& other) const -> bool = default;
 
 	[[nodiscard]]
-	auto zero() const -> bool
-	{
+	auto zero() const -> bool {
 		return pos.x == 0 && pos.y == 0 && size.x == 0 && size.y == 0;
 	}
 
@@ -185,22 +173,14 @@ struct AABB<2, i32> {
 template<>
 struct AABB<2, f32> {
 
-	vec2 pos = {0.0f, 0.0f};
-	vec2 size = {0.0f, 0.0f};
+	vec2 pos;
+	vec2 size;
 
-	auto operator==(AABB<2, f32> const& other) const -> bool
-	{
-		return pos == other.pos && size == other.size;
-	}
-
-	auto operator!=(AABB<2, f32> const& other) const -> bool
-	{
-		return !(other == *this);
-	}
+	auto operator==(AABB<2, f32> const& other) const -> bool = default;
+	auto operator!=(AABB<2, f32> const& other) const -> bool = default;
 
 	[[nodiscard]]
-	auto zero() const -> bool
-	{
+	auto zero() const -> bool {
 		return pos.x == 0.0f && pos.y == 0.0f && size.x == 0.0f && size.y == 0.0f;
 	}
 
@@ -209,22 +189,14 @@ struct AABB<2, f32> {
 template<>
 struct AABB<3, i32> {
 
-	ivec3 pos = {0, 0, 0};
-	uvec3 size = {0, 0, 0};
+	ivec3 pos;
+	uvec3 size;
 
-	auto operator==(AABB<3, i32> const& other) const -> bool
-	{
-		return pos == other.pos && size == other.size;
-	}
-
-	auto operator!=(AABB<3, i32> const& other) const -> bool
-	{
-		return !(other == *this);
-	}
+	auto operator==(AABB<3, i32> const& other) const -> bool = default;
+	auto operator!=(AABB<3, i32> const& other) const -> bool = default;
 
 	[[nodiscard]]
-	auto zero() const -> bool
-	{
+	auto zero() const -> bool {
 		return pos.x == 0 && pos.y == 0 && pos.z == 0 &&
 			size.x == 0 && size.y == 0 && size.z == 0;
 	}
@@ -234,22 +206,14 @@ struct AABB<3, i32> {
 template<>
 struct AABB<3, f32> {
 
-	vec3 pos = {0, 0, 0};
-	vec3 size = {0, 0, 0};
+	vec3 pos;
+	vec3 size;
 
-	auto operator==(AABB<3, f32> const& other) const -> bool
-	{
-		return pos == other.pos && size == other.size;
-	}
-
-	auto operator!=(AABB<3, f32> const& other) const -> bool
-	{
-		return !(other == *this);
-	}
+	auto operator==(AABB<3, f32> const& other) const -> bool = default;
+	auto operator!=(AABB<3, f32> const& other) const -> bool = default;
 
 	[[nodiscard]]
-	auto zero() const -> bool
-	{
+	auto zero() const -> bool {
 		return pos.x == 0.0f && pos.y == 0.0f && pos.z == 0.0f &&
 			size.x == 0.0f && size.y == 0.0f && size.z == 0.0f;
 	}

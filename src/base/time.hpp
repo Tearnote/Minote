@@ -46,8 +46,7 @@ constexpr auto round(std::chrono::duration<Rep, Period> val) {
 template<floating_point T = float>
 constexpr auto ratio(nsec const left, nsec const right) {
 	return static_cast<T>(
-		static_cast<double>(left.count()) /
-		static_cast<double>(right.count())
+		static_cast<double>(left.count()) / static_cast<double>(right.count())
 	);
 }
 
