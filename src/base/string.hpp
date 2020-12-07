@@ -1,5 +1,5 @@
 // Minote - base/string.hpp
-// Imports of string types
+// String types and utilities
 
 #pragma once
 
@@ -41,5 +41,17 @@ private:
 
 // Guaranteed-constexpr string literal hash
 consteval auto operator""_id(char const* str, size_t len) { return ID{{str, len}}; }
+
+}
+
+// Providing std::hash<ID>. The ID is already hashed, so this is an identity function
+namespace std {
+
+template<>
+struct hash<minote::ID> {
+
+	constexpr auto operator()(minote::ID const& id) const -> size_t { return +id; }
+
+};
 
 }

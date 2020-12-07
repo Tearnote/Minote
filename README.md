@@ -42,3 +42,5 @@ on 2020-10-05, used under MIT license.
 MIT license.
 - [`xassert`](https://github.com/rg3/xassert) retrieved on 2020-12-06, used
 under CC0 license.
+- [`robin-hood-hashing`](https://github.com/martinus/robin-hood-hashing)
+retrieved on 2020-12-07, used under MIT license.

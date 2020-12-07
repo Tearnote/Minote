@@ -35,7 +35,7 @@ struct Font {
 	Texture<PixelFmt::RGBA_u8> atlas;
 
 	// Glyph metrics datasheet
-	vector<Glyph, MaxGlyphs> metrics;
+	svector<Glyph, MaxGlyphs> metrics;
 
 	// HarfBuzz font data
 	hb_font_t* hbFont = nullptr;

@@ -36,10 +36,10 @@ typedef struct Particle {
 
 constexpr size_t MaxParticles{4096};
 
-static vector<Particle, MaxParticles> particles{};
+static svector<Particle, MaxParticles> particles{};
 static Rng rng{};
 
-static vector<ModelFlat::Instance, MaxParticles> particleInstances{};
+static svector<ModelFlat::Instance, MaxParticles> particleInstances{};
 
 static bool initialized = false;
 

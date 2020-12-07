@@ -1,6 +1,6 @@
 # Multi-channel signed distance field generator
 
-This is a utility for generating signed distance fields from vector shapes and font glyphs,
+This is a utility for generating signed distance fields from svector shapes and font glyphs,
 which serve as a texture representation that can be used in real-time graphics to efficiently reproduce said shapes.
 Although it can also be used to generate conventional signed distance fields best known from
 [this Valve paper](https://steamcdn-a.akamaihd.net/apps/valve/2007/SIGGRAPH2007_AlphaTestedMagnification.pdf)
@@ -52,7 +52,7 @@ The input can be specified as one of:
  - **-font \<filename.ttf\> \<character code\>** &ndash; to load a glyph from a font file.
    Character code can be expressed as either a decimal (63) or hexadecimal (0x3F) Unicode value, or an ASCII character
    in single quotes ('?').
- - **-svg \<filename.svg\>** &ndash; to load an SVG file. Note that only the last vector path in the file will be used.
+ - **-svg \<filename.svg\>** &ndash; to load an SVG file. Note that only the last svector path in the file will be used.
  - **-shapedesc \<filename.txt\>**, -defineshape \<definition\>, -stdin &ndash; to load a text description of the shape
    from either a file, the next argument, or the standard input, respectively. Its syntax is documented further down.
 

@@ -55,9 +55,6 @@ auto main(int, char*[]) -> int
 	auto const title = fmt::format("{} {}", AppName, AppVersion);
 	L.info("Starting up {}", title);
 
-	L.trace("{}", +"foo"_id);
-	L.trace("{}", +"bar"_id);
-
 	// Window creation
 	Glfw glfw{};
 	Window window{glfw, title};

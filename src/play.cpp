@@ -17,7 +17,7 @@ using namespace minote;
 static minote::nsec nextUpdate;
 
 /// List of collectedInputs for the next logic frame to process
-static vector<Action, 64> collectedInputs;
+static svector<Action, 64> collectedInputs;
 
 static bool initialized = false;
 

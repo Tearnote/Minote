@@ -16,11 +16,11 @@ using std::array;
 
 // Static vector - allocated on stack, capacity limit set at compile time
 template<typename T, size_t Capacity>
-using vector = itlib::static_vector<T, Capacity>;
+using svector = itlib::static_vector<T, Capacity>;
 
 // Dynamic vector - reallocates memory on growth
 template<typename T>
-using dvector = std::vector<T>;
+using vector = std::vector<T>;
 
 // A slice of any contiguous array type
 using std::span;

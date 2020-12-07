@@ -104,16 +104,17 @@ add_dependencies(Preprocess_fonts msdf-atlas-gen)
 
 # Build the game
 set(INTERNALLIBS
+        lib/robin-hood-hashing/robin_hood.h
+        lib/scope_guard/scope_guard.hpp
+        lib/xassert/xassert.h lib/xassert/xassert.c
+        lib/nuklear/nuklear.h
+        lib/cephes/const.c lib/cephes/polevl.c lib/cephes/fresnl.c
+        lib/cephes/protos.h lib/cephes/mconf.h
+        lib/itlib/static_vector.hpp
+        lib/smaa/AreaTex.h lib/smaa/SearchTex.h
         lib/glad/glad.h
         lib/pcg/pcg_basic.h lib/pcg/pcg_basic.c
-        lib/smaa/AreaTex.h lib/smaa/SearchTex.h
-        lib/nuklear/nuklear.h
-        lib/cephes/protos.h lib/cephes/mconf.h
-        lib/cephes/const.c lib/cephes/polevl.c lib/cephes/fresnl.c
-        lib/stb/stb_image.h lib/stb/stb_image.c
-        lib/scope_guard/scope_guard.hpp
-        lib/itlib/static_vector.hpp
-        lib/xassert/xassert.h lib/xassert/xassert.c)
+        lib/stb/stb_image.h lib/stb/stb_image.c)
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     list(APPEND INTERNALLIBS lib/glad/release/glad.h lib/glad/release/glad.c
             lib/glad/release/khrplatform.h)
@@ -126,6 +127,7 @@ add_compile_definitions(NK_UINT_DRAW_INDEX)
 
 set(SOURCES
         src/main.hpp src/main.cpp
+        src/base/hashmap.hpp
         src/base/concept.hpp
         src/base/math_io.hpp
         src/base/time_io.hpp

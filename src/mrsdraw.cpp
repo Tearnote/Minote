@@ -17,9 +17,9 @@ using namespace minote;
 static constexpr size_t MaxBlocks = 512;
 static constexpr size_t MaxBorders = 1024;
 
-static vector<ModelPhong::Instance, MaxBlocks> opaqueBlocks{};
-static vector<ModelPhong::Instance, MaxBlocks> transparentBlocks{};
-static vector<ModelFlat::Instance, MaxBorders> borders{};
+static svector<ModelPhong::Instance, MaxBlocks> opaqueBlocks{};
+static svector<ModelPhong::Instance, MaxBlocks> transparentBlocks{};
+static svector<ModelFlat::Instance, MaxBorders> borders{};
 
 /// Last player position as seen by the drawing system
 static ivec2 lastPlayerPos = {0, 0};
