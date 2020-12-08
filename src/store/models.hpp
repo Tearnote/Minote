@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "base/hashmap.hpp"
+#include "base/string.hpp"
 #include "engine/model.hpp"
 #include "store/shaders.hpp"
 
@@ -28,12 +30,12 @@ struct Models {
 	// A small particle piece to draw in great quantities
 	ModelFlat particle;
 
-	// Create all the models, uploading the vertex data to the GPU. After this
-	// call, they can be freely accessed and used for drawing.
-	void create(Shaders& shaders);
+	// Create all the models, uploading the vertex data to the GPU. After this call, they can
+	// be freely accessed and used for drawing.
+	explicit Models(Shaders& shaders) noexcept;
 
 	// Clean up all game models.
-	void destroy();
+	~Models() noexcept;
 
 };
 

@@ -79,8 +79,7 @@ static constexpr GLchar MsdfFrag[] = {
 #include "msdf.frag"
 	'\0'};
 
-void Shaders::create()
-{
+Shaders::Shaders() noexcept {
 	blit.create("blit", BlitVert, BlitFrag);
 	delinearize.create("delinearize", DelinearizeVert, DelinearizeFrag);
 	threshold.create("threshold", ThresholdVert, ThresholdFrag);
@@ -94,8 +93,7 @@ void Shaders::create()
 	msdf.create("msdf", MsdfVert, MsdfFrag);
 }
 
-void Shaders::destroy()
-{
+Shaders::~Shaders() noexcept {
 	blit.destroy();
 	delinearize.destroy();
 	threshold.destroy();

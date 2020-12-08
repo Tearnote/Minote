@@ -791,8 +791,7 @@ static constexpr auto particleMesh = array<ModelFlat::Vertex, 6> {{
 	}
 }};
 
-void Models::create(Shaders& shaders)
-{
+Models::Models(Shaders& shaders) noexcept {
 	sync.create("sync", shaders, syncMesh);
 	block.create("block", shaders, blockMesh, blockMaterial, true);
 	field.create("scene", shaders, sceneMesh);
@@ -801,8 +800,7 @@ void Models::create(Shaders& shaders)
 	particle.create("particle", shaders, particleMesh);
 }
 
-void Models::destroy()
-{
+Models::~Models() noexcept {
 	sync.destroy();
 	block.destroy();
 	field.destroy();

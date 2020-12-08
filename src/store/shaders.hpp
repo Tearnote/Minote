@@ -186,10 +186,10 @@ struct Shaders {
 
 	// Create the shader objects. The shaders are compiled and uniforms located.
 	// After this call, they are ready for use in any Draw.
-	void create();
+	Shader() noexcept;
 
 	// Clean up all shader objects.
-	void destroy();
+	~Shader() noexcept;
 
 };
 

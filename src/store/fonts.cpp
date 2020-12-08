@@ -4,23 +4,15 @@
 
 namespace minote {
 
-void Fonts::create()
-{
-	DASSERT(!freetype);
+Fonts::Fonts() noexcept {
+	if (FT_Error const err = FT_Init_FreeType(&freetype))
+		L.crit("Failed to initialize Freetype: error {}", err);
 
-	if (FT_Error const err = FT_Init_FreeType(&freetype)) {
-		L.error("Failed to initialize Freetype: error {}", err);
-		return;
-	}
-
-	jost.create(freetype, "jost", "fonts/Jost-500-Medium");
+	fonts["jost"_id].create(freetype, "jost", "fonts/Jost-500-Medium");
 }
 
-void Fonts::destroy()
-{
-	DASSERT(freetype);
-
-	jost.destroy();
+Fonts::~Fonts() noexcept {
+	fonts["jost"_id].destroy();
 
 	if (freetype) {
 		FT_Done_FreeType(freetype);

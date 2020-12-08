@@ -123,24 +123,15 @@ void game(Window& window)
 	// *** Engine initialization ***
 
 	Mapper mapper;
-
 	Shaders shaders;
-	shaders.create();
-	defer { shaders.destroy(); };
 
 	Frame frame;
 	frame.create(window.size(), shaders);
 	defer { frame.destroy(); };
 
 	Scene scene;
-
-	Models models;
-	models.create(shaders);
-	defer { models.destroy(); };
-
+	Models models{shaders};
 	Fonts fonts;
-	fonts.create();
-	defer { fonts.destroy(); };
 
 	Engine engine = {
 		.window = window,
@@ -199,8 +190,8 @@ void game(Window& window)
 		playDraw(engine);
 		particlesDraw(engine);
 		frame.resolveAA();
-		textQueue(fonts.jost, 3.0f, {6.05, 1.95, 0}, {1.0f, 1.0f, 1.0f, 0.25f}, "Text test.");
-		textQueue(fonts.jost, 3.0f, {6, 2, 0}, {0.0f, 0.0f, 0.0f, 1.0f}, "Text test");
+		textQueue(fonts["jost"_id], 3.0f, {6.05, 1.95, 0}, {1.0f, 1.0f, 1.0f, 0.25f}, "Text test.");
+		textQueue(fonts["jost"_id], 3.0f, {6, 2, 0}, {0.0f, 0.0f, 0.0f, 1.0f}, "Text test");
 		textDraw(engine);
 		bloomApply(engine);
 #ifdef MINOTE_DEBUG
