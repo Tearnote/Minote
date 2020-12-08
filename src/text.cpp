@@ -149,8 +149,8 @@ void textCleanup(void)
 
 void textQueue(Font& font, float size, vec3 pos, color4 color, const char* fmt, ...)
 {
-	DASSERT(initialized);
-	DASSERT(fmt);
+	ASSERT(initialized);
+	ASSERT(fmt);
 
 	va_list args;
 	va_start(args, fmt);
@@ -162,8 +162,8 @@ void textQueue(Font& font, float size, vec3 pos, color4 color, const char* fmt, 
 void textQueueDir(Font& font, float size, vec3 pos, vec3 dir, vec3 up,
 	color4 color, const char* fmt, ...)
 {
-	DASSERT(initialized);
-	DASSERT(fmt);
+	ASSERT(initialized);
+	ASSERT(fmt);
 
 	va_list args;
 	va_start(args, fmt);
@@ -173,7 +173,7 @@ void textQueueDir(Font& font, float size, vec3 pos, vec3 dir, vec3 up,
 
 void textDraw(Engine& engine)
 {
-	DASSERT(initialized);
+	ASSERT(initialized);
 
 	if (!msdfGlyphs.size()) return;
 

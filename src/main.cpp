@@ -21,6 +21,13 @@
 #include "game.hpp"
 
 using namespace minote; // Because we can't namespace main()
+
+// Assert handler that throws critical conditions to top level.
+auto assertHandler(char const* expr, char const* file, int line, char const* msg) -> int {
+	throw logic_error{format(R"(Assertion "{}" triggered on line {} in {}{}{})",
+		expr, line, file, msg? ": " : "", msg?: "")};
+}
+
 // Entry point function. Initializes systems and spawns other threads. Itself
 // becomes the input handling thread. Returns EXIT_SUCCESS on successful
 // execution, EXIT_FAILURE on a handled critical error, other values
@@ -56,7 +63,7 @@ auto main(int, char*[]) -> int
 	L.info("Starting up {}", title);
 
 	// Window creation
-	Glfw glfw{};
+	Glfw glfw;
 	Window window{glfw, title};
 #ifdef MINOTE_DEBUG
 	debugInputSetup(window);

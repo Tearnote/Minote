@@ -23,7 +23,7 @@ struct Rng {
 	// Return a random positive integer, up to a bound (exclusive). RNG state
 	// is advanced by one step.
 	auto randInt(u32 const bound) -> u32 {
-		DASSERT(bound >= 1);
+		ASSERT(bound >= 1);
 		return pcg32_boundedrand_r(&state, bound);
 	}
 

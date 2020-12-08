@@ -5,6 +5,7 @@
 
 #include <type_traits>
 #include <functional>
+#include <stdexcept>
 #include <optional>
 #include <utility>
 #include <cstdint>
@@ -12,7 +13,7 @@
 #include <cstring>
 #include <cstdio>
 #include "scope_guard/scope_guard.hpp"
-#include "xassert/xassert.h" // Provide DASSERT(), DASSERT(), XASSERT(), set_assert_handler()
+#include "xassert/xassert.h" // Provide ASSERT(), ASSERT(), XASSERT(), set_assert_handler()
 #include "base/concept.hpp"
 
 namespace minote {
@@ -44,6 +45,10 @@ using std::nullopt;
 
 // Convert to rvalue reference. Used often for ownership transfer and insertion into containers
 using std::move;
+
+// Standard exception types
+using std::logic_error; // Assertion violated
+using std::runtime_error; // Unexpected failure
 
 // Immediately close the application
 using std::exit;
@@ -85,7 +90,7 @@ constexpr auto operator+(T e) {
 // to zero.
 template<typename T>
 auto allocate(size_t const count = 1) -> T* {
-	DASSERT(count);
+	ASSERT(count);
 	auto* const result = static_cast<T*>(std::calloc(count, sizeof(T)));
 	if (!result) {
 		std::perror("Could not allocate memory");

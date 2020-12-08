@@ -80,11 +80,6 @@ struct Log {
 	template<typename S, typename... Args>
 	void crit(const S& fmt, Args&&... args);
 
-	// Log a Crit level message and exit the application immediately.
-	template<typename S, typename... Args>
-	[[noreturn]]
-	void fail(const S& fmt, Args&&... args);
-
 	// Log a message at the specified level. Useful for mapping of external log level enums.
 	template<typename S, typename... Args>
 	void log(Log::Level level, S const& fmt, Args&&... args);
@@ -98,10 +93,6 @@ private:
 
 // Global logger available for convenience
 inline Log L;
-
-// Assert handler that reports the assertion failure to the global logger L before terminating.
-// Register this with set_assert_handler(assertHandler);
-auto assertHandler(char const* expr, char const* file, int line, char const* msg) -> int;
 
 }
 

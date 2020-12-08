@@ -10,8 +10,8 @@ namespace minote {
 
 void VertexArray::create(char const* const _name)
 {
-	DASSERT(!id);
-	DASSERT(_name);
+	ASSERT(!id);
+	ASSERT(_name);
 
 	glGenVertexArrays(1, &id);
 #ifndef NDEBUG
@@ -25,7 +25,7 @@ void VertexArray::create(char const* const _name)
 
 void VertexArray::destroy()
 {
-	DASSERT(id);
+	ASSERT(id);
 
 	detail::state.deleteVertexArray(id);
 	id = 0;
@@ -36,7 +36,7 @@ void VertexArray::destroy()
 
 void VertexArray::bind()
 {
-	DASSERT(id);
+	ASSERT(id);
 
 	detail::state.bindVertexArray(id);
 }

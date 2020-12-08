@@ -5,7 +5,7 @@ namespace minote {
 // Generate normals in-place for an array of vertices.
 static void generatePhongNormals(span<ModelPhong::Vertex> const vertices)
 {
-	DASSERT(vertices.size() % 3 == 0);
+	ASSERT(vertices.size() % 3 == 0);
 
 	for (size_t i = 0; i < vertices.size(); i += 3) {
 		vec3 const& v0 = vertices[i + 0].pos;
@@ -22,8 +22,8 @@ static void generatePhongNormals(span<ModelPhong::Vertex> const vertices)
 void ModelFlat::create(char const* _name, Shaders& shaders,
 	span<Vertex const> const _vertices)
 {
-	DASSERT(_name);
-	DASSERT(_vertices.size() % 3 == 0);
+	ASSERT(_name);
+	ASSERT(_vertices.size() % 3 == 0);
 
 	vertices.create("Flat::vertices", false);
 	vertices.upload(_vertices);
@@ -44,7 +44,7 @@ void ModelFlat::create(char const* _name, Shaders& shaders,
 
 void ModelFlat::destroy()
 {
-	DASSERT(vertices.id);
+	ASSERT(vertices.id);
 
 	vertices.destroy();
 	instances.destroy();
@@ -64,7 +64,7 @@ void ModelFlat::draw(Framebuffer& fb, Scene const& scene,
 void ModelFlat::draw(Framebuffer& fb, Scene const& scene,
 	DrawParams const& params, Instance const& instance)
 {
-	DASSERT(vertices.id);
+	ASSERT(vertices.id);
 
 	instances.upload(array{instance});
 	drawcall.shader->view = scene.view;
@@ -78,7 +78,7 @@ void ModelFlat::draw(Framebuffer& fb, Scene const& scene,
 void ModelFlat::draw(Framebuffer& fb, Scene const& scene,
 	DrawParams const& params, span<Instance const> const _instances)
 {
-	DASSERT(vertices.id);
+	ASSERT(vertices.id);
 
 	instances.upload(_instances);
 	drawcall.shader->view = scene.view;
@@ -93,8 +93,8 @@ void ModelPhong::create(char const* _name, Shaders& shaders,
 	span<Vertex const> const _vertices, Material _material,
 	bool const generateNormals)
 {
-	DASSERT(_name);
-	DASSERT(_vertices.size() % 3 == 0);
+	ASSERT(_name);
+	ASSERT(_vertices.size() % 3 == 0);
 
 	vertices.create("Phong::vertices", false);
 	if (generateNormals) {
@@ -124,7 +124,7 @@ void ModelPhong::create(char const* _name, Shaders& shaders,
 
 void ModelPhong::destroy()
 {
-	DASSERT(vertices.id);
+	ASSERT(vertices.id);
 
 	vertices.destroy();
 	instances.destroy();
@@ -144,7 +144,7 @@ void ModelPhong::draw(Framebuffer& fb, Scene const& scene,
 void ModelPhong::draw(Framebuffer& fb, Scene const& scene,
 	DrawParams const& params, Instance const& instance)
 {
-	DASSERT(vertices.id);
+	ASSERT(vertices.id);
 
 	instances.upload(array{instance});
 	drawcall.shader->view = scene.view;
@@ -164,7 +164,7 @@ void ModelPhong::draw(Framebuffer& fb, Scene const& scene,
 void ModelPhong::draw(Framebuffer& fb, Scene const& scene,
 	DrawParams const& params, span<Instance const> const _instances)
 {
-		DASSERT(vertices.id);
+		ASSERT(vertices.id);
 
 	instances.upload(_instances);
 	drawcall.shader->view = scene.view;

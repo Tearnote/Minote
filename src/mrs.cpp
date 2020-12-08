@@ -107,7 +107,7 @@ static bool tryKicks(spin prevRotation)
  */
 static void rotate(int direction)
 {
-	DASSERT(direction == 1 || direction == -1);
+	ASSERT(direction == 1 || direction == -1);
 	spin prevRotation = mrsTet.player.rotation;
 	ivec2 prevPosition = mrsTet.player.pos;
 
@@ -194,7 +194,7 @@ static void rotate(int direction)
  */
 static void shift(int direction)
 {
-	DASSERT(direction == 1 || direction == -1);
+	ASSERT(direction == 1 || direction == -1);
 	mrsTet.player.pos.x += direction;
 	if (pieceOverlapsField(&mrsTet.player.shape, mrsTet.player.pos, mrsTet.field)) {
 		mrsTet.player.pos.x -= direction;
@@ -216,7 +216,7 @@ static mino randomPiece(void)
 	size_t tokenTotal = 0;
 	for (size_t i = 0; i < MinoGarbage - 1; i += 1)
 		if (mrsTet.player.tokens[i] > 0) tokenTotal += mrsTet.player.tokens[i];
-	DASSERT(tokenTotal);
+	ASSERT(tokenTotal);
 
 	// Create and fill the token list
 	int tokenList[tokenTotal];
@@ -224,12 +224,12 @@ static mino randomPiece(void)
 	for (size_t i = 0; i < MinoGarbage - 1; i += 1) {
 		if (mrsTet.player.tokens[i] <= 0) continue;
 		for (size_t j = 0; j < mrsTet.player.tokens[i]; j += 1) {
-			DASSERT(tokenListIndex < tokenTotal);
+			ASSERT(tokenListIndex < tokenTotal);
 			tokenList[tokenListIndex] = i;
 			tokenListIndex += 1;
 		}
 	}
-	DASSERT(tokenListIndex == tokenTotal);
+	ASSERT(tokenListIndex == tokenTotal);
 
 	// Pick a random token from the list and update the token distribution
 	int picked = tokenList[mrsTet.rng.randInt(tokenTotal)];
@@ -634,7 +634,7 @@ static void mrsUpdateWin(void)
 
 void mrsAdvance(span<Action> inputs)
 {
-	DASSERT(initialized);
+	ASSERT(initialized);
 
 	mrsUpdateInputs(inputs);
 	mrsUpdateState();

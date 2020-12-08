@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstring>
+#include "base/util.hpp"
 #include "base/log.hpp"
 #include "sys/opengl/state.hpp"
 
@@ -9,9 +10,9 @@ namespace minote {
 template<PixelFmt F>
 void Texture<F>::create(char const* const _name, uvec2 const _size)
 {
-	DASSERT(!id);
-	DASSERT(_name);
-	DASSERT(Format != PixelFmt::None);
+	ASSERT(!id);
+	ASSERT(_name);
+	ASSERT(Format != PixelFmt::None);
 
 	glGenTextures(1, &id);
 #ifndef NDEBUG
@@ -30,7 +31,7 @@ void Texture<F>::create(char const* const _name, uvec2 const _size)
 template<PixelFmt F>
 void Texture<F>::destroy()
 {
-	DASSERT(id);
+	ASSERT(id);
 
 	detail::state.deleteTexture(GL_TEXTURE_2D, id);
 	id = 0;
@@ -44,7 +45,7 @@ void Texture<F>::destroy()
 template<PixelFmt F>
 void Texture<F>::setFilter(Filter const _filter)
 {
-	DASSERT(_filter != Filter::None);
+	ASSERT(_filter != Filter::None);
 	if (filter == _filter)
 		return;
 
@@ -57,8 +58,8 @@ void Texture<F>::setFilter(Filter const _filter)
 template<PixelFmt F>
 void Texture<F>::resize(uvec2 const _size)
 {
-	DASSERT(_size.x > 0 && _size.y > 0);
-	DASSERT(id);
+	ASSERT(_size.x > 0 && _size.y > 0);
+	ASSERT(id);
 	if (size == _size)
 		return;
 
@@ -72,9 +73,9 @@ template<PixelFmt F>
 template<UploadFmt T>
 void Texture<F>::upload(span<T const> const data, int channels)
 {
-	DASSERT(id);
-	DASSERT(size.x > 0 && size.y > 0);
-	DASSERT(Format != PixelFmt::DepthStencil);
+	ASSERT(id);
+	ASSERT(size.x > 0 && size.y > 0);
+	ASSERT(Format != PixelFmt::DepthStencil);
 
 	if (!channels) {
 		if constexpr (std::is_same_v<T, u8>)
@@ -86,7 +87,7 @@ void Texture<F>::upload(span<T const> const data, int channels)
 		else if constexpr (std::is_same_v<T, u8vec4>)
 			channels = 4;
 		else
-			DASSERT("Invalid texture upload type");
+			ASSERT("Invalid texture upload type");
 	}
 	GLenum const glchannels = [=] {
 		switch (channels) {
@@ -95,11 +96,11 @@ void Texture<F>::upload(span<T const> const data, int channels)
 		case 3: return GL_RGB;
 		case 4: return GL_RGBA;
 		default:
-			DASSERT("Invalid texture upload type");
+			ASSERT("Invalid texture upload type");
 			return GL_NONE;
 		}
 	}();
-	DASSERT(data.size_bytes() == size.x * size.y * channels);
+	ASSERT(data.size_bytes() == size.x * size.y * channels);
 
 	bind();
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, size.x, size.y,
@@ -109,7 +110,7 @@ void Texture<F>::upload(span<T const> const data, int channels)
 template<PixelFmt F>
 void Texture<F>::bind(TextureUnit const unit)
 {
-	DASSERT(id);
+	ASSERT(id);
 
 	detail::state.setTextureUnit(+unit);
 	detail::state.bindTexture(GL_TEXTURE_2D, id);
@@ -118,10 +119,10 @@ void Texture<F>::bind(TextureUnit const unit)
 template<PixelFmt F>
 void TextureMS<F>::create(char const* const _name, uvec2 const _size, Samples const _samples)
 {
-	DASSERT(!id);
-	DASSERT(_name);
-	DASSERT(Format != PixelFmt::None);
-	DASSERT(+_samples >= 2);
+	ASSERT(!id);
+	ASSERT(_name);
+	ASSERT(Format != PixelFmt::None);
+	ASSERT(+_samples >= 2);
 
 	glGenTextures(1, &id);
 #ifndef NDEBUG
@@ -137,7 +138,7 @@ void TextureMS<F>::create(char const* const _name, uvec2 const _size, Samples co
 template<PixelFmt F>
 void TextureMS<F>::destroy()
 {
-	DASSERT(id);
+	ASSERT(id);
 
 	detail::state.deleteTexture(GL_TEXTURE_2D_MULTISAMPLE, id);
 	id = 0;
@@ -151,8 +152,8 @@ void TextureMS<F>::destroy()
 template<PixelFmt F>
 void TextureMS<F>::resize(uvec2 const _size)
 {
-	DASSERT(_size.x > 0 && _size.y > 0);
-	DASSERT(id);
+	ASSERT(_size.x > 0 && _size.y > 0);
+	ASSERT(id);
 	if (size == _size)
 		return;
 
@@ -165,7 +166,7 @@ void TextureMS<F>::resize(uvec2 const _size)
 template<PixelFmt F>
 void TextureMS<F>::bind(TextureUnit const unit)
 {
-	DASSERT(id);
+	ASSERT(id);
 
 	detail::state.setTextureUnit(+unit);
 	detail::state.bindTexture(GL_TEXTURE_2D_MULTISAMPLE, id);
@@ -174,9 +175,9 @@ void TextureMS<F>::bind(TextureUnit const unit)
 template<PixelFmt F>
 void Renderbuffer<F>::create(char const* const _name, uvec2 const _size)
 {
-	DASSERT(!id);
-	DASSERT(_name);
-	DASSERT(Format != PixelFmt::None);
+	ASSERT(!id);
+	ASSERT(_name);
+	ASSERT(Format != PixelFmt::None);
 
 	glGenRenderbuffers(1, &id);
 #ifndef NDEBUG
@@ -191,7 +192,7 @@ void Renderbuffer<F>::create(char const* const _name, uvec2 const _size)
 template<PixelFmt F>
 void Renderbuffer<F>::destroy()
 {
-	DASSERT(id);
+	ASSERT(id);
 
 	detail::state.deleteRenderbuffer(id);
 	id = 0;
@@ -204,8 +205,8 @@ void Renderbuffer<F>::destroy()
 template<PixelFmt F>
 void Renderbuffer<F>::resize(uvec2 const _size)
 {
-	DASSERT(_size.x > 0 && _size.y > 0);
-	DASSERT(id);
+	ASSERT(_size.x > 0 && _size.y > 0);
+	ASSERT(id);
 	if (size == _size)
 		return;
 
@@ -217,10 +218,10 @@ void Renderbuffer<F>::resize(uvec2 const _size)
 template<PixelFmt F>
 void RenderbufferMS<F>::create(char const* const _name, uvec2 const _size, Samples const _samples)
 {
-	DASSERT(!id);
-	DASSERT(_name);
-	DASSERT(Format != PixelFmt::None);
-	DASSERT(+_samples >= 2);
+	ASSERT(!id);
+	ASSERT(_name);
+	ASSERT(Format != PixelFmt::None);
+	ASSERT(+_samples >= 2);
 
 	glGenRenderbuffers(1, &id);
 #ifndef NDEBUG
@@ -236,7 +237,7 @@ void RenderbufferMS<F>::create(char const* const _name, uvec2 const _size, Sampl
 template<PixelFmt F>
 void RenderbufferMS<F>::destroy()
 {
-	DASSERT(id);
+	ASSERT(id);
 
 	detail::state.deleteRenderbuffer(id);
 	id = 0;
@@ -249,8 +250,8 @@ void RenderbufferMS<F>::destroy()
 template<PixelFmt F>
 void RenderbufferMS<F>::resize(uvec2 const _size)
 {
-	DASSERT(_size.x > 0 && _size.y > 0);
-	DASSERT(id);
+	ASSERT(_size.x > 0 && _size.y > 0);
+	ASSERT(id);
 	if (size == _size)
 		return;
 
@@ -263,8 +264,8 @@ void RenderbufferMS<F>::resize(uvec2 const _size)
 template<BufferTextureType T>
 void BufferTexture<T>::create(char const* const _name, bool const dynamic)
 {
-	DASSERT(!id);
-	DASSERT(_name);
+	ASSERT(!id);
+	ASSERT(_name);
 
 	glGenTextures(1, &id);
 #ifndef NDEBUG
@@ -299,7 +300,7 @@ void BufferTexture<T>::create(char const* const _name, bool const dynamic)
 			return GL_RGBA32I;
 		if constexpr (std::is_same_v<T, mat4>)
 			return GL_RGBA32F;
-		L.fail("Unknown buffer texture type");
+		throw logic_error{"Unknown buffer texture type"};
 	}();
 
 	storage.create(_name, dynamic);
@@ -315,7 +316,7 @@ void BufferTexture<T>::create(char const* const _name, bool const dynamic)
 template<BufferTextureType T>
 void BufferTexture<T>::destroy()
 {
-	DASSERT(id);
+	ASSERT(id);
 
 	detail::state.deleteTexture(GL_TEXTURE_BUFFER, id);
 	id = 0;
@@ -336,7 +337,7 @@ void BufferTexture<T>::upload(span<Type const> const data)
 template<BufferTextureType T>
 void BufferTexture<T>::bind(TextureUnit unit)
 {
-	DASSERT(id);
+	ASSERT(id);
 
 	detail::state.setTextureUnit(+unit);
 	detail::state.bindTexture(GL_TEXTURE_BUFFER, id);

@@ -39,7 +39,7 @@ struct Window {
 	// Open a window with specified parameters on the screen. The OpenGL context is
 	// not activated by default. Size of the window is in logical units. If fullscreen is true,
 	// size is ignored and the window is created at desktop resolution.
-	Window(Glfw const& glfw, string_view title, bool fullscreen = false, uvec2 size = {1280, 720}) noexcept;
+	Window(Glfw const& glfw, string_view title, bool fullscreen = false, uvec2 size = {1280, 720});
 
 	// Close the window. The OpenGL context must be already deactivated.
 	~Window();

@@ -9,9 +9,9 @@ namespace minote {
 
 void Font::create(FT_Library freetype, char const* const _name, char const* const path)
 {
-	DASSERT(freetype);
-	DASSERT(_name);
-	DASSERT(path);
+	ASSERT(freetype);
+	ASSERT(_name);
+	ASSERT(path);
 
 	constexpr size_t MaxPathLen = 256;
 
@@ -79,7 +79,7 @@ void Font::create(FT_Library freetype, char const* const _name, char const* cons
 			&glyph.msdf.pos.x, &glyph.msdf.pos.y,
 			&glyph.msdf.size.x, &glyph.msdf.size.y);
 		if (parsed == 0 || parsed == EOF) break;
-		DASSERT(static_cast<size_t>(index) == metrics.size());
+		ASSERT(static_cast<size_t>(index) == metrics.size());
 		glyph.glyph.size -= glyph.glyph.pos;
 		glyph.msdf.size -= glyph.msdf.pos;
 

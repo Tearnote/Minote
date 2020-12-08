@@ -44,7 +44,7 @@ void playCleanup(void)
 
 void playUpdate(Window& window, Mapper& mapper)
 {
-	DASSERT(initialized);
+	ASSERT(initialized);
 
 	// Update as many times as we need to catch up
 	while (nextUpdate <= Glfw::getTime()) {
@@ -69,6 +69,6 @@ void playUpdate(Window& window, Mapper& mapper)
 
 void playDraw(Engine& engine)
 {
-	DASSERT(initialized);
+	ASSERT(initialized);
 	mrsDraw(engine);
 }

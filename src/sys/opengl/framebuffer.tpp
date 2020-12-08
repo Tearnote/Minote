@@ -38,16 +38,16 @@ inline auto getAttachment(Framebuffer const& f, Attachment const attachment) -> 
 template<PixelFmt F>
 void Framebuffer::attach(Texture<F>& t, Attachment const attachment)
 {
-	DASSERT(id);
-	DASSERT(t.id);
-	DASSERT(attachment != Attachment::None);
+	ASSERT(id);
+	ASSERT(t.id);
+	ASSERT(attachment != Attachment::None);
 	if (t.Format == PixelFmt::DepthStencil)
-		DASSERT(attachment == Attachment::DepthStencil);
+		ASSERT(attachment == Attachment::DepthStencil);
 	else
-		DASSERT(attachment != Attachment::DepthStencil);
+		ASSERT(attachment != Attachment::DepthStencil);
 	if (samples != Samples::None)
-		DASSERT(samples == Samples::_1);
-	DASSERT(!detail::getAttachment(*this, attachment));
+		ASSERT(samples == Samples::_1);
+	ASSERT(!detail::getAttachment(*this, attachment));
 
 	dirty = false; // Prevent checking validity
 	bind();
@@ -61,15 +61,15 @@ void Framebuffer::attach(Texture<F>& t, Attachment const attachment)
 template<PixelFmt F>
 void Framebuffer::attach(TextureMS<F>& t, Attachment const attachment)
 {
-	DASSERT(id);
-	DASSERT(t.id);
-	DASSERT(attachment != Attachment::None);
+	ASSERT(id);
+	ASSERT(t.id);
+	ASSERT(attachment != Attachment::None);
 	if (t.Format == PixelFmt::DepthStencil)
-		DASSERT(attachment == Attachment::DepthStencil);
+		ASSERT(attachment == Attachment::DepthStencil);
 	else
-		DASSERT(attachment != Attachment::DepthStencil);
+		ASSERT(attachment != Attachment::DepthStencil);
 	if (samples != Samples::None)
-		DASSERT(samples == t.samples);
+		ASSERT(samples == t.samples);
 
 	dirty = false; // Prevent checking validity
 	bind();
@@ -83,15 +83,15 @@ void Framebuffer::attach(TextureMS<F>& t, Attachment const attachment)
 template<PixelFmt F>
 void Framebuffer::attach(Renderbuffer<F>& r, Attachment const attachment)
 {
-	DASSERT(id);
-	DASSERT(r.id);
-	DASSERT(attachment != Attachment::None);
+	ASSERT(id);
+	ASSERT(r.id);
+	ASSERT(attachment != Attachment::None);
 	if (r.Format == PixelFmt::DepthStencil)
-		DASSERT(attachment == Attachment::DepthStencil);
+		ASSERT(attachment == Attachment::DepthStencil);
 	else
-		DASSERT(attachment != Attachment::DepthStencil);
+		ASSERT(attachment != Attachment::DepthStencil);
 	if (samples != Samples::None)
-		DASSERT(samples == Samples::_1);
+		ASSERT(samples == Samples::_1);
 
 	dirty = false; // Prevent checking validity
 	bind();
@@ -105,15 +105,15 @@ void Framebuffer::attach(Renderbuffer<F>& r, Attachment const attachment)
 template<PixelFmt F>
 void Framebuffer::attach(RenderbufferMS<F>& r, Attachment const attachment)
 {
-	DASSERT(id);
-	DASSERT(r.id);
-	DASSERT(attachment != Attachment::None);
+	ASSERT(id);
+	ASSERT(r.id);
+	ASSERT(attachment != Attachment::None);
 	if (r.Format == PixelFmt::DepthStencil)
-		DASSERT(attachment == Attachment::DepthStencil);
+		ASSERT(attachment == Attachment::DepthStencil);
 	else
-		DASSERT(attachment != Attachment::DepthStencil);
+		ASSERT(attachment != Attachment::DepthStencil);
 	if (samples != Samples::None)
-		DASSERT(samples == r.samples);
+		ASSERT(samples == r.samples);
 
 	dirty = false; // Prevent checking validity
 	bind();

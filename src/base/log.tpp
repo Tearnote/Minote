@@ -56,15 +56,6 @@ void Log::crit(S const& fmt, Args&& ... args) {
 }
 
 template<typename S, typename... Args>
-void Log::fail(S const& fmt, Args&& ... args) {
-	crit(fmt, args...);
-#ifdef __GNUC__
-	__builtin_trap();
-#endif //__GNUC__
-	exit(EXIT_FAILURE);
-}
-
-template<typename S, typename... Args>
 void Log::log(Log::Level const _level, S const& fmt, Args&&... args) {
 	if (_level < level) return;
 	if (!console && !logfile) return;

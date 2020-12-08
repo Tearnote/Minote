@@ -7,8 +7,8 @@ namespace minote {
 template<GLSLType T>
 void Uniform<T>::setLocation(Shader const& shader, char const* const name)
 {
-	DASSERT(shader.id);
-	DASSERT(name);
+	ASSERT(shader.id);
+	ASSERT(name);
 
 	location = glGetUniformLocation(shader.id, name);
 	shaderId = shader.id;
@@ -42,16 +42,16 @@ void Uniform<T>::set(Type const _value)
 	else if constexpr (std::is_same_v<Type, mat4>)
 		glUniformMatrix4fv(location, 1, false, value_ptr(_value));
 	else
-		L.fail("Unknown uniform type");
+		throw logic_error{"Unknown uniform type"};
 	value = _value;
 }
 
 template<template<PixelFmt> typename T>
 void Sampler<T>::setLocation(Shader const& shader, char const* const name, TextureUnit const _unit)
 {
-	DASSERT(shader.id);
-	DASSERT(name);
-	DASSERT(_unit != TextureUnit::None);
+	ASSERT(shader.id);
+	ASSERT(name);
+	ASSERT(_unit != TextureUnit::None);
 
 	location = glGetUniformLocation(shader.id, name);
 	if (location == -1) {

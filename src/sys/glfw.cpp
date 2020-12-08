@@ -16,13 +16,13 @@
 namespace minote {
 
 Glfw::Glfw() {
-	DASSERT(!exists);
+	ASSERT(!exists);
 
 	if (glfwInit() == GLFW_FALSE)
-		L.fail("Failed to initialize GLFW: {}", getError());
+		throw runtime_error{format("Failed to initialize GLFW: {}", getError())};
 #ifdef _WIN32
 	if (timeBeginPeriod(1) != TIMERR_NOERROR)
-		L.fail("Failed to initialize Windows timer");
+		throw runtime_error{"Failed to initialize Windows timer"};
 #endif //_WIN32
 
 	exists = true;
@@ -48,7 +48,7 @@ auto Glfw::getError() -> string_view {
 	int const code{glfwGetError(&description)};
 	if (code == GLFW_NO_ERROR)
 		return "No error";
-	DASSERT(description);
+	ASSERT(description);
 	return description;
 }
 

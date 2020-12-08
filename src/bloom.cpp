@@ -60,8 +60,8 @@ static bool initialized = false;
  */
 static void bloomResize(uvec2 size)
 {
-	DASSERT(size.x > 0);
-	DASSERT(size.y > 0);
+	ASSERT(size.x > 0);
+	ASSERT(size.y > 0);
 	if (size.x == currentSize.x && size.y == currentSize.y) return;
 	currentSize.x = size.x;
 	currentSize.y = size.y;
@@ -111,7 +111,7 @@ void bloomCleanup(void)
 
 void bloomApply(Engine& engine)
 {
-	DASSERT(initialized);
+	ASSERT(initialized);
 	bloomResize(engine.window.size());
 
 	threshold.shader = &engine.shaders.threshold;

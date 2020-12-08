@@ -19,7 +19,7 @@ void GLState::setFeature(GLenum const feature, bool const state)
 		case GL_STENCIL_TEST:
 			return stencilTesting;
 		default:
-			L.fail("Unknown rasterizer feature");
+			throw logic_error{"Unknown rasterizer feature"};
 		}
 	}();
 	auto const stateFunc = [=] {
@@ -129,7 +129,7 @@ void GLState::bindBuffer(GLenum const target, GLuint const id)
 		case GL_TEXTURE_BUFFER:
 			return texturebuffer;
 		default:
-			L.fail("Unknown buffer type");
+			throw logic_error{"Unknown buffer type"};
 		}
 	}();
 
@@ -167,7 +167,7 @@ void GLState::bindTexture(GLenum const target, GLuint const id)
 		case GL_TEXTURE_BUFFER:
 			return textures[unitIndex].bufferTexture;
 		default:
-			L.fail("Unknown texture type");
+			throw logic_error{"Unknown texture type"};
 		}
 	}();
 
@@ -194,7 +194,7 @@ void GLState::bindFramebuffer(GLenum const target, GLuint const id)
 		case GL_DRAW_FRAMEBUFFER:
 			return framebufferWrite;
 		default:
-			L.fail("Unknown framebuffer binding");
+			throw logic_error{"Unknown framebuffer binding"};
 		}
 	}();
 
@@ -223,7 +223,7 @@ void GLState::deleteBuffer(GLenum const target, GLuint const id)
 		case GL_TEXTURE_BUFFER:
 			return texturebuffer;
 		default:
-			L.fail("Unknown buffer type");
+			throw logic_error{"Unknown buffer type"};
 		}
 	}();
 
@@ -252,7 +252,7 @@ void GLState::deleteTexture(GLenum const target, GLuint const id)
 			case GL_TEXTURE_BUFFER:
 				return unit.bufferTexture;
 			default:
-				L.fail("Unknown texture type");
+				throw logic_error{"Unknown texture type"};
 			}
 		}();
 		if (id == binding)

@@ -12,13 +12,13 @@ static thread_local Window const* activeContext{nullptr};
 
 // Retrieve the Window from raw GLFW handle by user pointer.
 static auto getWindow(GLFWwindow* handle) -> Window& {
-	DASSERT(handle);
+	ASSERT(handle);
 	return *reinterpret_cast<Window*>(glfwGetWindowUserPointer(handle));
 }
 
 void Window::keyCallback(GLFWwindow* const handle,
 	int const rawKeycode, int const rawScancode, int const rawState, int) {
-	DASSERT(handle);
+	ASSERT(handle);
 	if (rawState == GLFW_REPEAT) return; // Key repeat is not used
 	auto& window{getWindow(handle)};
 	using State = KeyInput::State;
@@ -45,9 +45,9 @@ void Window::keyCallback(GLFWwindow* const handle,
 }
 
 void Window::framebufferResizeCallback(GLFWwindow* const handle, int const width, int const height) {
-	DASSERT(handle);
-	DASSERT(width);
-	DASSERT(height);
+	ASSERT(handle);
+	ASSERT(width);
+	ASSERT(height);
 	auto& window{getWindow(handle)};
 
 	uvec2 const newSize{width, height};
@@ -59,8 +59,8 @@ void Window::framebufferResizeCallback(GLFWwindow* const handle, int const width
 // it to a display with different DPI scaling, or at startup. The new scale
 // is saved for later retrieval.
 void Window::windowScaleCallback(GLFWwindow* const handle, float const xScale, float) {
-	DASSERT(handle);
-	DASSERT(xScale);
+	ASSERT(handle);
+	ASSERT(xScale);
 	// yScale seems to sometimes be 0.0, so it is not reliable
 	auto& window{getWindow(handle)};
 
@@ -68,9 +68,9 @@ void Window::windowScaleCallback(GLFWwindow* const handle, float const xScale, f
 	L.info(R"(Window "{}" DPI scaling changed to {})", window.title(), xScale);
 }
 
-Window::Window(Glfw const& _glfw, string_view _title, bool const fullscreen, uvec2 _size) noexcept:
+Window::Window(Glfw const& _glfw, string_view _title, bool const fullscreen, uvec2 _size):
 	glfw{_glfw}, m_title{_title}, isContextActive{false} {
-	DASSERT(_size.x > 0 && _size.y > 0);
+	ASSERT(_size.x > 0 && _size.y > 0);
 
 	// *** Set up context params ***
 
@@ -92,10 +92,10 @@ Window::Window(Glfw const& _glfw, string_view _title, bool const fullscreen, uve
 
 	auto* monitor{glfwGetPrimaryMonitor()};
 	if (!monitor)
-		L.fail("Failed to query primary monitor: {}", Glfw::getError());
+		throw runtime_error{format("Failed to query primary monitor: {}", Glfw::getError())};
 	auto const* const mode{glfwGetVideoMode(monitor)};
 	if (!mode)
-		L.fail("Failed to query video mode: {}", Glfw::getError());
+		throw runtime_error{format("Failed to query video mode: {}", Glfw::getError())};
 	if (fullscreen)
 		_size = {mode->width, mode->height};
 	else
@@ -103,15 +103,15 @@ Window::Window(Glfw const& _glfw, string_view _title, bool const fullscreen, uve
 
 	handle = glfwCreateWindow(_size.x, _size.y, m_title.c_str(), monitor, nullptr);
 	if (!handle)
-		L.fail(R"(Failed to create window "{}": {})", title(), Glfw::getError());
+		throw runtime_error{format(R"(Failed to create window "{}": {})", title(), Glfw::getError())};
 
 	// *** Set window properties ***
 
 	// Real size might be different from requested size because of DPI scaling
 	ivec2 realSize;
 	glfwGetFramebufferSize(handle, &realSize.x, &realSize.y);
-	if  (realSize == ivec2{0, 0})
-		L.fail(R"(Failed to retrieve window "{}" framebuffer size: {})", _title, Glfw::getError());
+	if (realSize == ivec2{0, 0})
+		throw runtime_error{format(R"(Failed to retrieve window "{}" framebuffer size: {})", _title, Glfw::getError())};
 	m_size = realSize;
 
 	float realScale;
@@ -133,7 +133,7 @@ Window::Window(Glfw const& _glfw, string_view _title, bool const fullscreen, uve
 }
 
 Window::~Window() {
-	DASSERT(!isContextActive);
+	ASSERT(!isContextActive);
 
 	glfwDestroyWindow(handle);
 
@@ -157,8 +157,8 @@ void Window::flip() {
 }
 
 void Window::activateContext() {
-	DASSERT(!isContextActive);
-	DASSERT(!activeContext);
+	ASSERT(!isContextActive);
+	ASSERT(!activeContext);
 
 	glfwMakeContextCurrent(handle);
 	isContextActive = true;
@@ -168,8 +168,8 @@ void Window::activateContext() {
 }
 
 void Window::deactivateContext() {
-	DASSERT(isContextActive);
-	DASSERT(activeContext == this);
+	ASSERT(isContextActive);
+	ASSERT(activeContext == this);
 
 	glfwMakeContextCurrent(nullptr);
 	isContextActive = false;

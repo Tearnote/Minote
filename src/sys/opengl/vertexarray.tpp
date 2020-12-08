@@ -46,7 +46,7 @@ auto setVaoAttribute(VertexArray& vao, GLuint const index,
 			std::is_same_v<Component, ivec3> ||
 			std::is_same_v<Component, ivec4>)
 			return GL_INT;
-		L.fail("Unknown vertex array component type");
+		throw logic_error{"Unknown vertex array component type"};
 	}();
 
 	vao.bind();
@@ -97,10 +97,10 @@ template<GLSLType T>
 void VertexArray::setAttribute(GLuint const index, VertexBuffer<T>& buffer,
 	bool const instanced)
 {
-	DASSERT(index > 0 || index < attributes.size());
+	ASSERT(index > 0 || index < attributes.size());
 	if constexpr (std::is_same_v<T, mat4>)
-		DASSERT (index + 3 < attributes.size());
-	DASSERT(id);
+		ASSERT (index + 3 < attributes.size());
+	ASSERT(id);
 
 	detail::setVaoAttribute<T>(*this, index, buffer, 0, instanced);
 }
@@ -109,10 +109,10 @@ template<copy_constructible T, GLSLType U>
 void VertexArray::setAttribute(GLuint const index, VertexBuffer<T>& buffer,
 	U T::*field, bool const instanced)
 {
-	DASSERT(index > 0 || index < attributes.size());
+	ASSERT(index > 0 || index < attributes.size());
 	if constexpr (std::is_same_v<U, mat4>)
-		DASSERT (index + 3 < attributes.size());
-	DASSERT(id);
+		ASSERT (index + 3 < attributes.size());
+	ASSERT(id);
 
 	detail::setVaoAttribute<U>(*this, index, buffer, offset_of(field),
 		instanced);
@@ -121,7 +121,7 @@ void VertexArray::setAttribute(GLuint const index, VertexBuffer<T>& buffer,
 template<ElementType T>
 void VertexArray::setElements(ElementBuffer<T>& buffer)
 {
-	DASSERT(id);
+	ASSERT(id);
 
 	bind();
 	buffer.bind();

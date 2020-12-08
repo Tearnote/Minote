@@ -53,7 +53,7 @@ void Mapper::mapKeyInputs(Window& window)
 			case KeyState::Released:
 				return Action::State::Released;
 			default:
-				XASSERT(false, "Encountered invalid key state");
+				throw logic_error{"Encountered invalid key state"};
 				return Action::State::None;
 			}
 		}();
