@@ -35,7 +35,7 @@ void Window::keyCallback(GLFWwindow* const handle,
 		.timestamp = Glfw::getTime()
 	};
 
-	lock_guard const lock{window.inputsMutex};
+	scoped_lock const lock{window.inputsMutex};
 	try {
 		window.inputs.push_back(input);
 	} catch (...) {
@@ -141,12 +141,14 @@ Window::~Window() {
 }
 
 auto Window::isClosing() const -> bool {
-	lock_guard const lock{handleMutex};
+	scoped_lock const lock{handleMutex};
 	return glfwWindowShouldClose(handle);
 }
 
 void Window::requestClose() {
-	lock_guard const lock{handleMutex};
+	scoped_lock const lock{handleMutex};
+	if (glfwWindowShouldClose(handle)) return;
+
 	glfwSetWindowShouldClose(handle, true);
 
 	L.info(R"(Window "{}" close requested)", title());
@@ -179,20 +181,20 @@ void Window::deactivateContext() {
 }
 
 void Window::popInput() {
-	lock_guard const lock{inputsMutex};
+	scoped_lock const lock{inputsMutex};
 	if (!inputs.empty())
 		inputs.pop_front();
 }
 
 auto Window::getInput() const -> optional<KeyInput> {
-	lock_guard const lock{inputsMutex};
+	scoped_lock const lock{inputsMutex};
 	if (inputs.empty()) return nullopt;
 
 	return inputs.front();
 }
 
 void Window::clearInput() {
-	lock_guard const lock{inputsMutex};
+	scoped_lock const lock{inputsMutex};
 
 	inputs.clear();
 }

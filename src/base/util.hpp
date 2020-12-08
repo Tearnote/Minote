@@ -47,11 +47,9 @@ using std::nullopt;
 using std::move;
 
 // Standard exception types
+using std::exception; // Any exception, for catch-all access to what()
 using std::logic_error; // Assertion violated
 using std::runtime_error; // Unexpected failure
-
-// Immediately close the application
-using std::exit;
 
 // *** Language features ***
 

@@ -12,7 +12,7 @@ namespace minote {
 
 using thread = std::jthread; // Joins thread on destruction
 using std::mutex;
-using std::lock_guard;
+using std::scoped_lock;
 using std::atomic;
 
 // Sleep the thread for the specific duration. Keep in mind that on Windows this will be

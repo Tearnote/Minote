@@ -24,16 +24,17 @@ using namespace minote; // Because we can't namespace main()
 
 // Assert handler that throws critical conditions to top level.
 auto assertHandler(char const* expr, char const* file, int line, char const* msg) -> int {
-	throw logic_error{format(R"(Assertion "{}" triggered on line {} in {}{}{})",
+	auto const str{format(R"(Assertion "{}" triggered on line {} in {}{}{})",
 		expr, line, file, msg? ": " : "", msg?: "")};
+	L.crit(str);
+	throw logic_error{str};
 }
 
 // Entry point function. Initializes systems and spawns other threads. Itself
 // becomes the input handling thread. Returns EXIT_SUCCESS on successful
 // execution, EXIT_FAILURE on a handled critical error, other values
 // on unhandled error
-auto main(int, char*[]) -> int
-{
+auto main(int, char*[]) -> int try {
 	// *** Initialization ***
 
 	set_assert_handler(assertHandler);
@@ -58,21 +59,22 @@ auto main(int, char*[]) -> int
 	} catch (system_error const& e) {
 		L.warn("{}", Logpath, e.what());
 	}
-
-	auto const title = fmt::format("{} {}", AppName, AppVersion);
+	auto const title = format("{} {}", AppName, AppVersion);
 	L.info("Starting up {}", title);
 
 	// Window creation
 	Glfw glfw;
 	Window window{glfw, title};
+
 #ifdef MINOTE_DEBUG
 	debugInputSetup(window);
 #endif //MINOTE_DEBUG
 
-	// *** Thread startup ***
-
-	// Game thread
+	// Thread startup
 	thread gameThread(game, ref(window));
+
+	// Signal other threads to quit if input thread terminates first
+	defer { window.requestClose(); };
 
 	// Input thread loop
 	while (!window.isClosing()) {
@@ -81,4 +83,8 @@ auto main(int, char*[]) -> int
 	}
 
 	return EXIT_SUCCESS;
+} catch (exception const& e) {
+	L.crit("Unhandled exception on main thread: {}", e.what());
+	L.crit("Cannot recover, shutting down. Please report this error to the developer");
+	return EXIT_FAILURE;
 }

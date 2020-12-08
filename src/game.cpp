@@ -105,8 +105,7 @@ static void gameDebug(Frame& frame, bool& sync)
 	nk_end(nkCtx());
 }
 
-void game(Window& window)
-{
+void game(Window& window) try {
 	// *** OpenGL setup ***
 
 	window.activateContext();
@@ -204,6 +203,10 @@ void game(Window& window)
 			models.sync.draw(*frame.fb, scene, syncParams);
 		}
 	}
+} catch (exception const& e) {
+	L.crit("Unhandled exception on game thread: {}", e.what());
+	L.crit("Cannot recover, shutting down. Please report this error to the developer");
+	window.requestClose();
 }
 
 }
