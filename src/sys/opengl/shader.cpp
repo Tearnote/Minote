@@ -1,124 +1,113 @@
 #include "sys/opengl/shader.hpp"
 
-#include "base/log.hpp"
+#include "glad/glad.h"
+#include "base/array.hpp"
+#include "base/util.hpp"
+#include "base/io.hpp"
+#include "sys/opengl/state.hpp"
 
 namespace minote {
 
-// Compile a single shader stage. Returns false if compilation failed.
-static auto compileShaderStage(GLuint const id, char const* const name,
-	char const* const source) -> bool
-{
+// Compile a single shader stage. Throws if compilation failed.
+static void compileShaderStage(u32 id, string_view name, string_view source) {
 	ASSERT(id);
-	ASSERT(name);
-	ASSERT(source);
 
-	glShaderSource(id, 1, &source, nullptr);
+	// Perform compilation
+	auto const* const str{source.data()};
+	auto const strLen{static_cast<i32>(source.size())};
+	glShaderSource(id, 1, &str, &strLen);
 	glCompileShader(id);
 
-	GLint const compileStatus = [=] {
-		GLint status = 0;
-		glGetShaderiv(id, GL_COMPILE_STATUS, &status);
-		return status;
-	}();
+	// Check for compilation errors
+	i32 compileStatus;
+	glGetShaderiv(id, GL_COMPILE_STATUS, &compileStatus);
 	if (compileStatus == GL_FALSE) {
-		auto const infoLog = [=] {
-			array<GLchar, 2048> log = {};
-			glGetShaderInfoLog(id, log.size(), nullptr, log.data());
-			return log;
-		}();
-		L.error(R"(Shader "{}" failed to compile: {})", name, infoLog.data());
-		return false;
+		i32 infoLogLength;
+		glGetShaderiv(id, GL_INFO_LOG_LENGTH, &infoLogLength);
+		string infoLog;
+		infoLog.reserve(infoLogLength);
+		glGetShaderInfoLog(id, infoLog.size(), nullptr, infoLog.data());
+		throw runtime_error{format(R"(Shader "{}" failed to compile: {})", name, infoLog)};
 	}
-	return true;
 }
 
-void Shader::create(char const* _name, char const* vertSrc, char const* fragSrc)
-{
-	ASSERT(!id);
-	ASSERT(_name);
-	ASSERT(vertSrc);
-	ASSERT(fragSrc);
+Shader::Uniform::Uniform(Shader& _parent, string_view name, u32 type, size_t _size):
+	parent{_parent}, size{_size} {
+	string uname{name};
+	location = glGetUniformLocation(parent.id, uname.c_str());
+	if (location == -1)
+		throw runtime_error{format(R"(Failed to get location for uniform "{}")", name)};
 
-	GLuint const vert = glCreateShader(GL_VERTEX_SHADER);
+	switch (type) {
+	case GL_FLOAT: value.emplace<f32>(); break;
+	case GL_FLOAT_VEC2: value.emplace<vec2>(); break;
+	case GL_FLOAT_VEC3: value.emplace<vec3>(); break;
+	case GL_FLOAT_VEC4: value.emplace<vec4>(); break;
+	default: throw logic_error{format("Unknown uniform type enum {}", type)};
+	}
+}
+
+Shader::Shader(string_view _name, string_view vertSrc, string_view fragSrc): name{_name} {
+	// Create individual shader stage objects
+	u32 const vert = glCreateShader(GL_VERTEX_SHADER);
 #ifndef NDEBUG
-	glObjectLabel(GL_SHADER, vert, std::strlen(_name), _name);
+	glObjectLabel(GL_SHADER, vert, name.size(), name.c_str());
 #endif //NDEBUG
 	defer { glDeleteShader(vert); };
-	GLuint const frag = glCreateShader(GL_FRAGMENT_SHADER);
+	u32 const frag = glCreateShader(GL_FRAGMENT_SHADER);
 #ifndef NDEBUG
-	glObjectLabel(GL_SHADER, frag, std::strlen(_name), _name);
+	glObjectLabel(GL_SHADER, frag, name.size(), name.c_str());
 #endif //NDEBUG
 	defer { glDeleteShader(frag); };
 
-	if (!compileShaderStage(vert, _name, vertSrc))
-		return;
-	if (!compileShaderStage(frag, _name, fragSrc))
-		return;
+	// Compile individual shader stages
+	compileShaderStage(vert, name, vertSrc);
+	compileShaderStage(frag, name, fragSrc);
 
+	// Link shader program
 	id = glCreateProgram();
 #ifndef NDEBUG
-	glObjectLabel(GL_PROGRAM, id, std::strlen(_name), _name);
+	glObjectLabel(GL_PROGRAM, id, name.size(), name.c_str());
 #endif //NDEBUG
 	glAttachShader(id, vert);
 	glAttachShader(id, frag);
-
 	glLinkProgram(id);
-	GLint const linkStatus = [this] {
-		GLint status = 0;
-		glGetProgramiv(id, GL_LINK_STATUS, &status);
-		return status;
-	}();
+
+	// Check for linking errors
+	i32 linkStatus;
+	glGetProgramiv(id, GL_LINK_STATUS, &linkStatus);
 	if (linkStatus == GL_FALSE) {
-		auto const infoLog = [this] {
-			array<GLchar, 2048> log = {};
-			glGetProgramInfoLog(id, log.size(), nullptr, log.data());
-			return log;
-		}();
-		L.error(R"(Shader "{}" failed to link: {})", _name, infoLog.data());
+		i32 infoLogLength;
+		glGetProgramiv(id, GL_INFO_LOG_LENGTH, &infoLogLength);
+		string infoLog;
+		infoLog.reserve(infoLogLength);
+		glGetProgramInfoLog(id, infoLog.size(), nullptr, infoLog.data());
 		glDeleteProgram(id);
-		id = 0;
-		return;
+		throw runtime_error{format(R"(Shader "{}" failed to link: {})", name, infoLog.data())};
 	}
 
-	name = _name;
-
-	setLocations();
-
-	L.info(R"(Shader "{}" created)", name);
+	// Query for uniforms
+	i32 uniformCount;
+	glGetProgramiv(id, GL_ACTIVE_UNIFORMS, &uniformCount);
+	i32 uniformNameLength;
+	glGetProgramiv(id, GL_ACTIVE_UNIFORM_MAX_LENGTH, &uniformNameLength);
+	for (size_t i: iota_view{0, uniformCount}) {
+		i32 size;
+		u32 type;
+		string uname;
+		uname.reserve(uniformNameLength);
+		glGetActiveUniform(id, i, uniformNameLength, nullptr, &size, &type, uname.data());
+		uniforms.emplace(uname, Uniform{*this, uname, type, static_cast<size_t>(size)});
+	}
 }
 
-void Shader::destroy()
-{
-	ASSERT(id);
-
+Shader::~Shader() {
+	if (!id) return;
 	glDeleteProgram(id);
-	id = 0;
-	L.debug(R"(Shader "{}" destroyed)", name);
-	name = nullptr;
 }
 
-void Shader::bind() const
-{
-	ASSERT(id);
+void Shader::bind() const {
 	detail::state.bindShader(id);
-}
-
-void BufferSampler::setLocation(Shader const& shader, char const* name,
-	TextureUnit _unit)
-{
-	ASSERT(shader.id);
-	ASSERT(name);
-	ASSERT(_unit != TextureUnit::None);
-
-	location = glGetUniformLocation(shader.id, name);
-	if (location == -1) {
-		L.warn(R"(Failed to get location for sampler "{}")", name);
-		return;
-	}
-
-	shader.bind();
-	glUniform1i(location, +_unit - GL_TEXTURE0);
-	unit = _unit;
 }
 
 }

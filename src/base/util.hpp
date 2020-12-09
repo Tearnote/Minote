@@ -8,6 +8,8 @@
 #include <stdexcept>
 #include <optional>
 #include <utility>
+#include <variant>
+#include <ranges>
 #include <cstdint>
 #include <cstdlib> // Provide free()
 #include <cstring>
@@ -32,6 +34,9 @@ using i64 = std::int64_t;
 using f32 = float;
 using f64 = double;
 
+// Range iteration
+using std::ranges::iota_view;
+
 // Used every time the size of a container is stored. Should be a keyword really
 using std::size_t;
 
@@ -42,6 +47,9 @@ using std::cref;
 // Used for returning by value when lack of value is possible
 using std::optional;
 using std::nullopt;
+
+// Type-safe union
+using std::variant;
 
 // Convert to rvalue reference. Used often for ownership transfer and insertion into containers
 using std::move;

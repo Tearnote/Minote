@@ -77,4 +77,22 @@ void BufferSampler::set(BufferTexture<T>& val)
 	val.bind(unit);
 }
 
+inline void BufferSampler::setLocation(Shader const& shader, char const* name,
+	TextureUnit _unit)
+{
+	ASSERT(shader.id);
+	ASSERT(name);
+	ASSERT(_unit != TextureUnit::None);
+
+	location = glGetUniformLocation(shader.id, name);
+	if (location == -1) {
+		L.warn(R"(Failed to get location for sampler "{}")", name);
+		return;
+	}
+
+	shader.bind();
+	glUniform1i(location, +_unit - GL_TEXTURE0);
+	unit = _unit;
+}
+
 }
