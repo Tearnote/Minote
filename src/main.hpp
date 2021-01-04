@@ -1,14 +1,13 @@
-// Minote - main.hpp
-// Welcome!
-
 #pragma once
 
-#include "base/string.hpp"
-#include "base/util.hpp"
+#include <string_view>
+#include "base/version.hpp"
 
 namespace minote {
 
-constexpr auto AppName = "Minote"sv;
-constexpr auto AppVersion = "0.0"sv;
+using namespace std::string_view_literals;
+
+constexpr auto AppTitle = "Minote"sv;
+constexpr auto AppVersion = base::Version{0, 0, 0};
 
 }

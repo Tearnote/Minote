@@ -1,0 +1,38 @@
+struct Vertex {
+	vec4 position;
+	vec4 normal;
+	vec4 color;
+};
+
+struct Command {
+	uint vertexCount;
+	uint instanceCount;
+	uint firstVertex;
+	uint firstInstance;
+	uint material;
+};
+
+#define MATERIAL_FLAT 0
+#define MATERIAL_PHONG 1
+
+struct Instance {
+	mat4 transform;
+};
+
+layout(std140, set = 0, binding = 0) readonly buffer Vertices {
+	Vertex data[];
+} vertices;
+
+layout(set = 0, binding = 1) uniform World {
+	mat4 view;
+	mat4 projection;
+	mat4 viewProjection;
+} world;
+
+layout(std140, set = 1, binding = 0) readonly buffer Commands {
+	Command data[];
+} commands;
+
+layout(std140, set = 1, binding = 1) readonly buffer Instances {
+	Instance data[];
+} instances;

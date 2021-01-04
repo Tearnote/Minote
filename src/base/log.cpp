@@ -1,19 +1,22 @@
 #include "log.hpp"
 
-#include "base/io.hpp"
+#include <system_error>
+#include <utility>
+#include <fmt/core.h>
+#include "base/file.hpp"
 
-namespace minote {
+namespace minote::base {
 
 void Log::enableFile(file&& _logfile) {
 	if (logfile) disableFile();
 
-	logfile = move(_logfile);
+	logfile = std::move(_logfile);
 }
 
 void Log::disableFile() try {
 	logfile.close();
-} catch (system_error const& e) {
-	print(cerr, R"(Could not close logfile "{}": {})", logfile.where(), e.what());
+} catch (std::system_error const& e) {
+	fmt::print(cerr, R"(Could not close logfile "{}": {})", logfile.where(), e.what());
 }
 
 }

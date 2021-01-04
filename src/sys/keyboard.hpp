@@ -1,9 +1,6 @@
-// Minote - sys/keyboard.hpp
-// Types used by keyboard events
-
 #pragma once
 
-namespace minote {
+namespace minote::sys {
 
 // Platform-independent keycode. GLFW symbols are inlined to avoid including the header
 // See: https://www.glfw.org/docs/3.3/group__keys.html

@@ -1,14 +1,10 @@
-// Minote - sys/glfw.hpp
-// Encapsulated handling of the GLFW library' global state
-
 #pragma once
 
-#include "base/string.hpp"
-#include "base/util.hpp"
+#include <string_view>
 #include "base/time.hpp"
 #include "sys/keyboard.hpp"
 
-namespace minote {
+namespace minote::sys {
 
 struct Glfw {
 
@@ -25,16 +21,17 @@ struct Glfw {
 	// Retrieve the description of the most recently encountered GLFW error and clear GLFW error
 	// state. The description must be used before the next GLFW call.
 	// This function can be used from any thread, even without a Glfw instance.
-	static auto getError() -> string_view;
+	static auto getError() -> std::string_view;
 
 	// Return the time passed since Glfw() was last called. If it was never called, 0
 	// is returned instead.
 	// This function can be used from any thread.
 	[[nodiscard]]
-	static auto getTime() -> nsec;
+	static auto getTime() -> base::nsec;
 
+	// Return the printable character that a key usually types when pressed.
 	[[nodiscard]]
-	auto getKeyName(Keycode, Scancode) const -> string_view;
+	auto getKeyName(Keycode, Scancode) const -> std::string_view;
 
 	// Not copyable, not movable
 	Glfw(Glfw const&) = delete;
@@ -45,7 +42,7 @@ struct Glfw {
 private:
 
 	// Ensure only one instance can exist
-	inline static bool exists{false};
+	inline static bool exists = false;
 
 };
 

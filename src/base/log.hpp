@@ -1,13 +1,9 @@
-// Minote - base/log.hpp
-// Facility for logging runtime events. Supports log levels and multiple output targets
-// per logger. Blocking and non-threaded, so don't use in large volumes.
-
 #pragma once
 
-#include "base/util.hpp"
-#include "base/io.hpp"
+#include <utility>
+#include "base/file.hpp"
 
-namespace minote {
+namespace minote::base {
 
 struct Log {
 
@@ -21,16 +17,16 @@ struct Log {
 		Error,
 		Crit,
 		Size
-	} level{Level::None};
+	} level = Level::None;
 
 	// If true, messages are printed to stdout (<=Info) or stderr (>=Warn)
-	bool console{false};
+	bool console = false;
 
 	// Create a logger with both file and console logging disabled.
 	Log() noexcept = default;
 
 	// Create a logger that writes into an open file.
-	explicit Log(file&& _logfile) noexcept { enableFile(move(_logfile)); }
+	explicit Log(file&& _logfile) noexcept { enableFile(std::move(_logfile)); }
 
 	// Clean up by closing any open logfile.
 	~Log() noexcept { disableFile(); }
@@ -82,7 +78,13 @@ struct Log {
 
 	// Log a message at the specified level. Useful for mapping of external log level enums.
 	template<typename S, typename... Args>
-	void log(Log::Level level, S const& fmt, Args&&... args);
+	void log(Level level, S const& fmt, Args&&... args);
+
+	// Moveable, not copyable
+	Log(Log const&) = delete;
+	auto operator=(Log const&) -> Log& = delete;
+	Log(Log&&) noexcept = default;
+	auto operator=(Log&&) noexcept -> Log& = default;
 
 private:
 
@@ -96,4 +98,4 @@ inline Log L;
 
 }
 
-#include "log.tpp"
+#include "base/log.tpp"

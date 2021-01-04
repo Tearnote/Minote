@@ -431,7 +431,7 @@ public:
             ROBIN_HOOD_LOG("std::free")
             std::free(ptr);
         } else {
-            ROBIN_HOOD_LOG("add to buffer")
+            ROBIN_HOOD_LOG("add to commandBuffer")
             add(ptr, numBytes);
         }
     }
@@ -1695,7 +1695,7 @@ public:
     // Checks if both tables contain the same entries. Order is irrelevant.
     bool operator==(const Table& other) const {
         ROBIN_HOOD_TRACE(this)
-        if (other.size() != size()) {
+        if (other.m_size() != size()) {
             return false;
         }
         for (auto const& otherEntry : other) {

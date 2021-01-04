@@ -1,13 +1,10 @@
-// Minote - base/hash.hpp
-// Hashmap implementation of choice
-
 #pragma once
 
 #include "robin-hood-hashing/robin_hood.h"
 
-namespace minote {
+namespace minote::base {
 
 template<typename Key, typename T>
-using hashmap = robin_hood::unordered_flat_map<Key, T>;
+using hashmap = robin_hood::unordered_node_map<Key, T>;
 
 }

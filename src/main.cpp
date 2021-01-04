@@ -1,5 +1,10 @@
 #include "main.hpp"
 
+#include <system_error>
+#include <string_view>
+#include <stdexcept>
+#include <utility>
+#include <thread>
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN 1
@@ -9,31 +14,26 @@
 #endif //NOMINMAX
 #include <windows.h>
 #endif //_WIN32
-#include "base/thread.hpp"
-#include "base/string.hpp"
-#include "base/util.hpp"
-#include "base/time.hpp"
+#include "base/version.hpp"
+#include "base/assert.hpp"
+#include "base/file.hpp"
 #include "base/log.hpp"
-#include "base/io.hpp"
 #include "sys/window.hpp"
 #include "sys/glfw.hpp"
-#include "debug.hpp"
 #include "game.hpp"
 
 using namespace minote; // Because we can't namespace main()
+using namespace base;
+using namespace sys;
+using namespace std::string_view_literals;
 
-// Assert handler that throws critical conditions to top level.
 auto assertHandler(char const* expr, char const* file, int line, char const* msg) -> int {
-	auto const str{format(R"(Assertion "{}" triggered on line {} in {}{}{})",
-		expr, line, file, msg? ": " : "", msg?: "")};
+	auto const str = fmt::format(R"(Assertion "{}" triggered on line {} in {}{}{})",
+		expr, line, file, msg? ": " : "", msg?: "");
 	L.crit(str);
-	throw logic_error{str};
+	throw std::logic_error{str};
 }
 
-// Entry point function. Initializes systems and spawns other threads. Itself
-// becomes the input handling thread. Returns EXIT_SUCCESS on successful
-// execution, EXIT_FAILURE on a handled critical error, other values
-// on unhandled error
 auto main(int, char*[]) -> int try {
 	// *** Initialization ***
 
@@ -45,45 +45,39 @@ auto main(int, char*[]) -> int try {
 #endif //_WIN32
 
 	// Global logging
-#ifndef NDEBUG
 	L.level = Log::Level::Trace;
+#ifndef NDEBUG
+	L.console = true;
 	constexpr auto Logpath = "minote-debug.log"sv;
 #else //NDEBUG
-	L.level = Log::Level::Info;
 	constexpr auto Logpath = "minote.log"sv;
 #endif //NDEBUG
-	L.console = true;
 	try {
-		file logfile{Logpath, "w"};
-		L.enableFile(move(logfile));
-	} catch (system_error const& e) {
+		auto logfile = file{Logpath, "w"};
+		L.enableFile(std::move(logfile));
+	} catch (std::system_error const& e) {
 		L.warn("{}", Logpath, e.what());
 	}
-	auto const title = format("{} {}", AppName, AppVersion);
-	L.info("Starting up {}", title);
+
+	L.info("Starting up {} {}", AppTitle, AppVersion);
 
 	// Window creation
 	Glfw glfw;
-	Window window{glfw, title};
+	auto window = Window{glfw, AppTitle, false, {960, 540}};
 
-#ifdef MINOTE_DEBUG
-	debugInputSetup(window);
-#endif //MINOTE_DEBUG
+	// *** Thread startup ***
 
-	// Thread startup
-	thread gameThread(game, ref(window));
-
-	// Signal other threads to quit if input thread terminates first
-	defer { window.requestClose(); };
+	// Game thread
+	auto gameThread = std::jthread{game, std::ref(glfw), std::ref(window)};
 
 	// Input thread loop
 	while (!window.isClosing()) {
 		glfw.poll();
-		sleepFor(1_ms);
+		std::this_thread::sleep_for(1_ms);
 	}
 
 	return EXIT_SUCCESS;
-} catch (exception const& e) {
+} catch (std::exception const& e) {
 	L.crit("Unhandled exception on main thread: {}", e.what());
 	L.crit("Cannot recover, shutting down. Please report this error to the developer");
 	return EXIT_FAILURE;

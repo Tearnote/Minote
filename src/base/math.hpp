@@ -1,85 +1,15 @@
-// Minote - base/math.hpp
-// cmath replacement, extended with vector and matrix types from the GLM library
-
 #pragma once
 
+#include <concepts>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
-#include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
-#include <glm/common.hpp>
-#include <glm/exponential.hpp>
-#include <glm/trigonometric.hpp>
-#include <glm/geometric.hpp>
 #include <glm/matrix.hpp>
-#include <glm/ext/scalar_common.hpp>
-#include <glm/ext/vector_common.hpp>
 #include <glm/ext/matrix_transform.hpp>
-#include <glm/ext/matrix_clip_space.hpp>
-#include <glm/gtc/matrix_inverse.hpp>
-#include <glm/gtc/color_space.hpp>
-#include <glm/gtc/type_precision.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include "base/concept.hpp"
-#include "base/util.hpp"
+#include <fmt/format.h>
+#include "base/types.hpp"
 
-namespace minote {
-
-// *** Base types ***
-
-using glm::vec2;
-using glm::vec3;
-using glm::vec4;
-using glm::ivec2;
-using glm::ivec3;
-using glm::ivec4;
-using glm::uvec2;
-using glm::uvec3;
-using glm::uvec4;
-using glm::mat4;
-using glm::u8vec2;
-using glm::u8vec3;
-using glm::u8vec4;
-using color3 = vec3;
-using color4 = vec4;
-
-// *** Constants ***
-
-// A more correct replacement for pi.
-// See: https://tauday.com/
-template<floating_point T>
-constexpr T Tau_v = 6.283185307179586476925286766559005768L;
-constexpr auto Tau = Tau_v<f64>;
-
-// *** Scalar / component-wise operations ***
-
-using glm::abs;
-using glm::sign;
-using glm::floor;
-using glm::trunc;
-using glm::round;
-using glm::ceil;
-using glm::fract;
-using glm::min;
-using glm::max;
-using glm::clamp;
-using glm::repeat;
-using glm::mix;
-using glm::step;
-using glm::smoothstep;
-using glm::fma;
-using glm::ldexp;
-using glm::pow;
-using glm::exp;
-using glm::log;
-using glm::exp2;
-using glm::log2;
-using glm::sqrt;
-using glm::radians;
-using glm::degrees;
-using glm::sin;
-using glm::cos;
-using glm::tan;
+namespace minote::base {
 
 // True modulo operation (as opposed to remainder, which is operator% in C++.)
 // The result is always positive and does not flip direction at zero.
@@ -95,23 +25,10 @@ using glm::tan;
 // -3 mod 4 = 1
 // -4 mod 4 = 0
 // -5 mod 4 = 3
-template<integral T>
+template<std::integral T>
 constexpr auto tmod(T num, T div) { return num % div + (num % div < 0) * div; }
 
-// *** Vector operations ***
-
-using glm::length;
-using glm::distance;
-using glm::dot;
-using glm::cross;
-using glm::normalize;
-using glm::reflect;
-
-// *** Matrix generation ***
-
-using glm::perspective;
-using glm::ortho;
-using glm::lookAt;
+// Matrix generation shorthands
 
 template<typename T = f32, glm::qualifier Q = glm::qualifier::defaultp>
 constexpr auto make_translate(glm::vec<3, T, Q> v) -> glm::mat<4, 4, T, Q> {
@@ -128,26 +45,6 @@ constexpr auto make_scale(glm::vec<3, T, Q> v) -> glm::mat<4, 4, T, Q> {
 	return glm::scale(glm::mat<4, 4, T, Q>(1), v);
 }
 
-// *** Matrix transforms ***
-
-using glm::transpose;
-using glm::inverse;
-using glm::inverseTranspose;
-using glm::translate;
-using glm::rotate;
-using glm::scale;
-
-// *** Color operations ***
-
-using glm::convertLinearToSRGB;
-using glm::convertSRGBToLinear;
-
-// *** Raw value passing ***
-
-using glm::value_ptr;
-
-// *** Compound types ***
-
 // Axis-aligned bounding box. Contains position and size extending in positive
 // direction of each axis. Parametrized by number of dimensions Dim = 2 or 3
 // and underlying type T = i32 (size becomes u32) or f32.
@@ -157,8 +54,8 @@ struct AABB;
 template<>
 struct AABB<2, i32> {
 
-	ivec2 pos;
-	uvec2 size;
+	glm::ivec2 pos;
+	glm::uvec2 size;
 
 	auto operator==(AABB<2, i32> const& other) const -> bool = default;
 	auto operator!=(AABB<2, i32> const& other) const -> bool = default;
@@ -173,8 +70,8 @@ struct AABB<2, i32> {
 template<>
 struct AABB<2, f32> {
 
-	vec2 pos;
-	vec2 size;
+	glm::vec2 pos;
+	glm::vec2 size;
 
 	auto operator==(AABB<2, f32> const& other) const -> bool = default;
 	auto operator!=(AABB<2, f32> const& other) const -> bool = default;
@@ -189,8 +86,8 @@ struct AABB<2, f32> {
 template<>
 struct AABB<3, i32> {
 
-	ivec3 pos;
-	uvec3 size;
+	glm::ivec3 pos;
+	glm::uvec3 size;
 
 	auto operator==(AABB<3, i32> const& other) const -> bool = default;
 	auto operator!=(AABB<3, i32> const& other) const -> bool = default;
@@ -206,8 +103,8 @@ struct AABB<3, i32> {
 template<>
 struct AABB<3, f32> {
 
-	vec3 pos;
-	vec3 size;
+	glm::vec3 pos;
+	glm::vec3 size;
 
 	auto operator==(AABB<3, f32> const& other) const -> bool = default;
 	auto operator!=(AABB<3, f32> const& other) const -> bool = default;
@@ -220,4 +117,123 @@ struct AABB<3, f32> {
 
 };
 
+struct vec_formatter {
+
+	constexpr auto parse(fmt::format_parse_context& ctx) {
+		auto it = ctx.begin();
+		auto end = ctx.end();
+		while (true) {
+			if (it == end || *it == '}')
+				break;
+			if (*it == 's') {
+				size = true;
+				++it;
+				continue;
+			}
+			throw fmt::format_error("invalid format");
+		}
+		return it;
+	}
+
+protected:
+
+	bool size{false};
+
+};
+
+template<typename T>
+struct vec2_formatter: vec_formatter {
+
+	template<typename FormatContext>
+	auto format(const T& val, FormatContext& ctx) {
+		if (size)
+			return fmt::format_to(ctx.out(), "{}x{}", val.x, val.y);
+		else
+			return fmt::format_to(ctx.out(), "({}, {})", val.x, val.y);
+	}
+
+};
+
+template<typename T>
+struct vec3_formatter: vec_formatter {
+
+	template<typename FormatContext>
+	auto format(const T& val, FormatContext& ctx) {
+		if (size)
+			return fmt::format_to(ctx.out(), "{}x{}", val.x, val.y, val.z);
+		else
+			return fmt::format_to(ctx.out(), "({}, {})", val.x, val.y, val.z);
+	}
+
+};
+
+template<typename T>
+struct vec4_formatter: vec_formatter {
+
+	template<typename FormatContext>
+	auto format(const T& val, FormatContext& ctx) {
+		if (size)
+			return fmt::format_to(ctx.out(), "{}x{}", val.x, val.y, val.z, val.w);
+		else
+			return fmt::format_to(ctx.out(), "({}, {}, {}, {})", val.x, val.y, val.z, val.w);
+	}
+
+};
+
+template<typename T>
+struct aabb_formatter {
+
+	constexpr auto parse(fmt::format_parse_context& ctx) {
+		auto it = ctx.begin();
+		auto end = ctx.end();
+		if (it != end && *it != '}')
+			throw fmt::format_error("invalid format");
+		return it;
+	}
+
+	template<typename FormatContext>
+	auto format(const T& val, FormatContext& ctx) {
+		return fmt::format_to(ctx.out(), "({}, {})",
+			val.pos, val.m_size);
+	}
+
+};
+
 }
+
+template<>
+struct fmt::formatter<glm::vec2>: minote::base::vec2_formatter<glm::vec2> {};
+template<>
+struct fmt::formatter<glm::ivec2>: minote::base::vec2_formatter<glm::ivec2> {};
+template<>
+struct fmt::formatter<glm::uvec2>: minote::base::vec2_formatter<glm::uvec2> {};
+template<>
+struct fmt::formatter<glm::u8vec2>: minote::base::vec2_formatter<glm::u8vec2> {};
+template<>
+struct fmt::formatter<glm::vec3>: minote::base::vec3_formatter<glm::vec3> {};
+template<>
+struct fmt::formatter<glm::ivec3>: minote::base::vec3_formatter<glm::ivec3> {};
+template<>
+struct fmt::formatter<glm::uvec3>: minote::base::vec3_formatter<glm::uvec3> {};
+template<>
+struct fmt::formatter<glm::u8vec3>: minote::base::vec3_formatter<glm::u8vec3> {};
+template<>
+struct fmt::formatter<glm::vec4>: minote::base::vec4_formatter<glm::vec4> {};
+template<>
+struct fmt::formatter<glm::ivec4>: minote::base::vec4_formatter<glm::ivec4> {};
+template<>
+struct fmt::formatter<glm::uvec4>: minote::base::vec4_formatter<glm::uvec4> {};
+template<>
+struct fmt::formatter<glm::u8vec4>: minote::base::vec4_formatter<glm::u8vec4> {};
+template<>
+struct fmt::formatter<minote::base::AABB<2, minote::base::i32>>:
+	minote::base::aabb_formatter<minote::base::AABB<2, minote::base::i32>> {};
+template<>
+struct fmt::formatter<minote::base::AABB<2, minote::base::u32>>:
+	minote::base::aabb_formatter<minote::base::AABB<2, minote::base::u32>> {};
+template<>
+struct fmt::formatter<minote::base::AABB<3, minote::base::i32>>:
+	minote::base::aabb_formatter<minote::base::AABB<3, minote::base::i32>> {};
+template<>
+struct fmt::formatter<minote::base::AABB<3, minote::base::u32>>:
+	minote::base::aabb_formatter<minote::base::AABB<3, minote::base::u32>> {};

@@ -1,19 +1,11 @@
-// Minote - base/time.hpp
-// Types and utilities for handling time values
-
 #pragma once
 
+#include <concepts>
 #include <chrono>
-#include <ctime>
-#include "base/concept.hpp"
+#include "base/concepts.hpp"
+#include "base/types.hpp"
 
-namespace minote {
-
-// Importing standard time functions and types
-using std::time;
-using std::localtime;
-using std::time_t;
-using std::tm;
+namespace minote::base {
 
 // Main timestamp/duration type
 using nsec = std::chrono::nanoseconds;
@@ -43,7 +35,7 @@ constexpr auto round(std::chrono::duration<Rep, Period> val) {
 }
 
 // Compute (left / right) with floating-point instead of integer division.
-template<floating_point T = float>
+template<std::floating_point T = f32>
 constexpr auto ratio(nsec const left, nsec const right) {
 	return static_cast<T>(
 		static_cast<double>(left.count()) / static_cast<double>(right.count())
