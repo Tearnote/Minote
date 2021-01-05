@@ -19,7 +19,7 @@ struct PipelineBuilder {
 	VkPipelineMultisampleStateCreateInfo multisampleStateCI;
 	VkPipelineLayout layout;
 
-	auto build(VkDevice device, VkRenderPass pass) -> VkPipeline;
+	auto build(VkDevice device, VkRenderPass pass, base::u32 subpass = 0) -> VkPipeline;
 
 };
 

@@ -52,8 +52,8 @@ struct Engine {
 		VkSwapchainKHR swapchain = nullptr;
 		sys::vk::Image msColor;
 		VkImageView msColorView;
-//		sys::vk::Image ssColor;
-//		VkImageView ssColorView;
+		sys::vk::Image ssColor;
+		VkImageView ssColorView;
 		sys::vk::Image depthStencil;
 		VkImageView depthStencilView;
 		VkSampleCountFlagBits sampleCount;
@@ -103,6 +103,11 @@ struct Engine {
 
 	TechniqueSet techniques;
 	MeshBuffer meshes;
+
+	VkPipeline passthrough;
+	VkPipelineLayout passthroughLayout;
+	sys::vk::Shader passthroughShader;
+	PerFrame<VkDescriptorSet> passthroughDescriptorSet;
 
 	Engine(sys::Glfw&, sys::Window&, std::string_view name, base::Version appVersion);
 	~Engine();

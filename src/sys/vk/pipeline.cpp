@@ -7,7 +7,7 @@ namespace minote::sys::vk {
 
 using namespace base;
 
-auto PipelineBuilder::build(VkDevice device, VkRenderPass pass) -> VkPipeline {
+auto PipelineBuilder::build(VkDevice device, VkRenderPass pass, u32 subpass) -> VkPipeline {
 	auto const viewportStateCI = VkPipelineViewportStateCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
 		.viewportCount = 1,
@@ -44,6 +44,7 @@ auto PipelineBuilder::build(VkDevice device, VkRenderPass pass) -> VkPipeline {
 		.pDynamicState = &dynamicStateCI,
 		.layout = layout,
 		.renderPass = pass,
+		.subpass = subpass,
 	};
 
 	VkPipeline result;
