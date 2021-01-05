@@ -39,7 +39,7 @@ struct Engine {
 
 	};
 
-	struct SwapchainFb {
+	struct Surface {
 
 		sys::vk::Image color;
 		VkImageView colorView;
@@ -50,11 +50,16 @@ struct Engine {
 	struct Swapchain {
 
 		VkSwapchainKHR swapchain = nullptr;
+		sys::vk::Image msColor;
+		VkImageView msColorView;
+//		sys::vk::Image ssColor;
+//		VkImageView ssColorView;
 		sys::vk::Image depthStencil;
 		VkImageView depthStencilView;
+		VkSampleCountFlagBits sampleCount;
 		VkFormat format;
 		VkExtent2D extent;
-		std::vector<SwapchainFb> fbs;
+		std::vector<Surface> surfaces;
 		VkRenderPass renderPass;
 		base::i64 expiry;
 

@@ -142,7 +142,7 @@ void Engine::render() {
 			VK(result);
 		break;
 	}
-	auto& images = swapchain.fbs[swapchainImageIndex];
+	auto& images = swapchain.surfaces[swapchainImageIndex];
 
 	// Wait until the GPU is free
 	VK(vkWaitForFences(device, 1, &frame.renderFence, true, (1_s).count()));
@@ -719,7 +719,7 @@ void Engine::initSwapchain(VkSwapchainKHR old) {
 	};
 	VK(vkCreateSwapchainKHR(device, &swapchainCI, nullptr, &swapchain.swapchain));
 
-	// Retrieve swapchain images and details
+	// Retrieve swapchain images
 	swapchain.format = surfaceFormat.format;
 	u32 swapchainImageCount;
 	vkGetSwapchainImagesKHR(device, swapchain.swapchain, &swapchainImageCount, nullptr);
@@ -730,36 +730,66 @@ void Engine::initSwapchain(VkSwapchainKHR old) {
 			.image = img,
 			.format = swapchain.format,
 		};
-		swapchain.fbs.push_back({
+		swapchain.surfaces.push_back({
 			.color = color,
 			.colorView = vk::createImageView(device, color, VK_IMAGE_ASPECT_COLOR_BIT),
 		});
 	}
+
+	// Create the render target
+	auto const supportedSampleCount = deviceProperties.limits.framebufferColorSampleCounts & deviceProperties.limits.framebufferDepthSampleCounts;
+	if (SampleCount & supportedSampleCount) {
+		swapchain.sampleCount = SampleCount;
+	} else {
+		L.warn("Requested antialiasing mode MSAA {}x not supported; defaulting to no AA", SampleCount);
+		swapchain.sampleCount = VK_SAMPLE_COUNT_1_BIT;
+	}
+	swapchain.msColor = vk::createImage(allocator, /*ColorFormat*/swapchain.format,
+		VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+		swapchain.extent, swapchain.sampleCount);
+	swapchain.msColorView = vk::createImageView(device, swapchain.msColor,
+		VK_IMAGE_ASPECT_COLOR_BIT);
+//	swapchain.ssColor = vk::createImage(allocator, /*ColorFormat*/swapchain.format,
+//		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, swapchain.extent, VK_SAMPLE_COUNT_1_BIT);
+//	swapchain.ssColorView = vk::createImageView(device, swapchain.ssColor,
+//		VK_IMAGE_ASPECT_COLOR_BIT);
 	swapchain.depthStencil = vk::createImage(allocator, DepthFormat,
-		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, swapchain.extent);
-	swapchain.depthStencilView = vk::createImageView(device, swapchain.depthStencil, VK_IMAGE_ASPECT_DEPTH_BIT);
+		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+		swapchain.extent, swapchain.sampleCount);
+	swapchain.depthStencilView = vk::createImageView(device, swapchain.depthStencil,
+		VK_IMAGE_ASPECT_DEPTH_BIT);
 
 	// Create the default render pass
 	auto const rpAttachments = std::to_array<VkAttachmentDescription>({
-		{
-			.format = swapchain.format,
-			.samples = VK_SAMPLE_COUNT_1_BIT,
+		{ // MSAA color
+			.format = swapchain.msColor.format,
+			.samples = swapchain.sampleCount,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
 			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
 			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+			.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		},
-		{
-			.format = DepthFormat,
-			.samples = VK_SAMPLE_COUNT_1_BIT,
+		{ // MSAA depth
+			.format = swapchain.depthStencil.format,
+			.samples = swapchain.sampleCount,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
 			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
 			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 			.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		},
+		{ // Resolve
+			.format = swapchain.format,
+			.samples = VK_SAMPLE_COUNT_1_BIT,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
 		},
 	});
 	auto const colorAttachmentRef = VkAttachmentReference{
@@ -770,10 +800,15 @@ void Engine::initSwapchain(VkSwapchainKHR old) {
 		.attachment = 1,
 		.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 	};
+	auto const resolveAttachmentRef = VkAttachmentReference{
+		.attachment = 2,
+		.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+	};
 	auto const subpass = VkSubpassDescription{
 		.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
 		.colorAttachmentCount = 1,
 		.pColorAttachments = &colorAttachmentRef,
+		.pResolveAttachments = &resolveAttachmentRef,
 		.pDepthStencilAttachment = &depthAttachmentRef,
 	};
 	auto const renderPassCI = VkRenderPassCreateInfo{
@@ -786,10 +821,12 @@ void Engine::initSwapchain(VkSwapchainKHR old) {
 	VK(vkCreateRenderPass(device, &renderPassCI, nullptr, &swapchain.renderPass));
 
 	// Create the swapchain framebuffers
-	for (auto& fb: swapchain.fbs) {
+	for (auto& fb: swapchain.surfaces) {
 		auto const fbAttachments = std::to_array<VkImageView>({
-			fb.colorView,
+			swapchain.msColorView,
 			swapchain.depthStencilView,
+			fb.colorView,
+//			swapchain.ssColorView,
 		});
 		auto const framebufferCI = VkFramebufferCreateInfo{
 			.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -804,7 +841,7 @@ void Engine::initSwapchain(VkSwapchainKHR old) {
 	}
 
 	L.info("Created a Vulkan swapchain at {}x{} with {} images",
-		swapchain.extent.width, swapchain.extent.height, swapchain.fbs.size());
+		swapchain.extent.width, swapchain.extent.height, swapchain.surfaces.size());
 }
 
 void Engine::initFrames() {
@@ -849,7 +886,7 @@ void Engine::initFrames() {
 		VK(vkCreateSemaphore(device, &semaphoreCI, nullptr, &frame.presentSemaphore));
 	}
 
-	// Create the transfer queue related objects
+	// Create the transfer queue
 	commandPoolCI.queueFamilyIndex = transferQueueFamilyIndex;
 	VK(vkCreateCommandPool(device, &commandPoolCI, nullptr, &transferCommandPool));
 	fenceCI.flags = 0;
@@ -905,23 +942,27 @@ void Engine::initContent() {
 		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
 		vk::makePipelineColorBlendAttachmentState(false),
 		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
-		vk::makePipelineMultisampleStateCI());
+		vk::makePipelineMultisampleStateCI(swapchain.sampleCount));
 	techniques.addTechnique("transparent"_id, device, allocator, descriptorPool, swapchain.renderPass,
 		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, false),
 		vk::makePipelineColorBlendAttachmentState(true),
 		vk::makePipelineDepthStencilStateCI(true, false, VK_COMPARE_OP_LESS_OR_EQUAL),
-		vk::makePipelineMultisampleStateCI());
+		vk::makePipelineMultisampleStateCI(swapchain.sampleCount));
 }
 
 void Engine::destroySwapchain(Swapchain& sc) {
 	vkDestroyRenderPass(device, sc.renderPass, nullptr);
-	for (auto& img: sc.fbs) {
+	for (auto& img: sc.surfaces) {
 		vkDestroyFramebuffer(device, img.framebuffer, nullptr);
 		vkDestroyImageView(device, img.colorView, nullptr);
 	}
 	vkDestroyImageView(device, sc.depthStencilView, nullptr);
 	vmaDestroyImage(allocator, sc.depthStencil.image, sc.depthStencil.allocation);
-	sc.fbs.clear();
+//	vkDestroyImageView(device, sc.ssColorView, nullptr);
+//	vmaDestroyImage(allocator, sc.ssColor.image, sc.ssColor.allocation);
+	vkDestroyImageView(device, sc.msColorView, nullptr);
+	vmaDestroyImage(allocator, sc.msColor.image, sc.msColor.allocation);
+	sc.surfaces.clear();
 	vkDestroySwapchainKHR(device, sc.swapchain, nullptr);
 }
 

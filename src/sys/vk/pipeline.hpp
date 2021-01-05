@@ -68,11 +68,10 @@ constexpr auto makePipelineRasterizationStateCI(VkPolygonMode polygonMode, bool 
 	};
 }
 
-constexpr auto makePipelineMultisampleStateCI() {
+constexpr auto makePipelineMultisampleStateCI(VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT) {
 	return VkPipelineMultisampleStateCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-		.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
-		.minSampleShading = 1.0f,
+		.rasterizationSamples = sampleCount,
 	};
 }
 

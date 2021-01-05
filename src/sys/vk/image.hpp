@@ -13,7 +13,8 @@ struct Image {
 
 };
 
-auto createImage(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usage, VkExtent2D size) -> Image;
+auto createImage(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usage,
+	VkExtent2D size, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT) -> Image;
 
 auto createImageView(VkDevice device, Image& image, VkImageAspectFlags aspect) -> VkImageView;
 

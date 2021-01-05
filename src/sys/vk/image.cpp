@@ -6,7 +6,8 @@
 
 namespace minote::sys::vk {
 
-auto createImage(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usage, VkExtent2D size) -> Image {
+auto createImage(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usage,
+	VkExtent2D size, VkSampleCountFlagBits sampleCount) -> Image {
 	auto const extent = VkExtent3D{size.width, size.height, 1};
 	auto const imageCreateCI = VkImageCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -15,7 +16,7 @@ auto createImage(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usag
 		.extent = extent,
 		.mipLevels = 1,
 		.arrayLayers = 1,
-		.samples = VK_SAMPLE_COUNT_1_BIT,
+		.samples = sampleCount,
 		.tiling = VK_IMAGE_TILING_OPTIMAL,
 		.usage = usage,
 	};
