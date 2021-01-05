@@ -124,21 +124,27 @@ void Engine::queueScene() {
 	auto& transparentIndirect = techniques.getTechniqueIndirect("transparent"_id, frameIndex);
 	opaqueIndirect.reset();
 	transparentIndirect.reset();
-	opaqueIndirect.enqueue(meshes.getMeshDescriptor("block"_id), Material::Phong,
+	opaqueIndirect.enqueue(meshes.getMeshDescriptor("block"_id),
 		std::to_array<IndirectBuffer::Instance>({
 			{.transform = model},
-		}));
-	transparentIndirect.enqueue(meshes.getMeshDescriptor("scene"_id), Material::Flat,
+		}),
+		Material::Phong, MaterialData{.phong = {
+			.ambient = 0.2f,
+			.diffuse = 0.9f,
+			.specular = 0.4f,
+			.shine = 24.0f,
+		}});
+	transparentIndirect.enqueue(meshes.getMeshDescriptor("scene"_id),
 		std::to_array<IndirectBuffer::Instance>({
 			{.transform = model2},
 			{.transform = model3},
-		}));
+		}), Material::Flat);
 }
 
 void Engine::render() {
 	// Get the next frame
 	auto frameIndex = frameCounter % FramesInFlight;
-	auto& frame = frames[frameCounter % FramesInFlight];
+	auto& frame = frames[frameIndex];
 
 	// Get the next swapchain image
 	u32 swapchainImageIndex;

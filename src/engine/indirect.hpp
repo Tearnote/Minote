@@ -17,6 +17,7 @@ struct IndirectBuffer {
 
 		VkDrawIndirectCommand base;
 		Material material;
+		MaterialData materialData;
 
 	};
 
@@ -30,7 +31,8 @@ struct IndirectBuffer {
 
 	void destroy(VmaAllocator allocator);
 
-	void enqueue(MeshBuffer::Descriptor const& mesh, Material material, std::span<Instance const> instances);
+	void enqueue(MeshBuffer::Descriptor const& mesh, std::span<Instance const> instances,
+		Material material, MaterialData const& materialData = {});
 
 	auto size() { return m_commandQueue.size(); }
 

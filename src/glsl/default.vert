@@ -1,10 +1,11 @@
 #version 460
 
 layout(location = 0) out flat uint material;
-layout(location = 1) out vec4 f_position;
-layout(location = 2) out vec4 f_color;
-layout(location = 3) out vec4 f_normal;
-layout(location = 4) out vec4 f_lightPosition; // in view space
+layout(location = 1) out flat uint drawID;
+layout(location = 2) out vec4 f_position;
+layout(location = 3) out vec4 f_color;
+layout(location = 4) out vec4 f_normal;
+layout(location = 5) out vec4 f_lightPosition; // in view space
 
 #include "world.glslh"
 
@@ -14,7 +15,8 @@ void main() {
 	const vec4 v_color = vertices.data[gl_VertexIndex].color;
 	const mat4 i_transform = instances.data[gl_InstanceIndex].transform;
 
-	material = commands.data[gl_DrawID].material;
+	drawID = gl_DrawID;
+	material = commands.data[drawID].material;
 
 	switch (material) {
 

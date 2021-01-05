@@ -34,7 +34,8 @@ void IndirectBuffer::destroy(VmaAllocator allocator) {
 	m_commandQueue.shrink_to_fit();
 }
 
-void IndirectBuffer::enqueue(MeshBuffer::Descriptor const& mesh, Material material, std::span<Instance const> instances) {
+void IndirectBuffer::enqueue(MeshBuffer::Descriptor const& mesh, std::span<Instance const> instances,
+	Material material, MaterialData const& materialData) {
 	ASSERT(m_commandBuffer.buffer && m_commandBuffer.allocation);
 	ASSERT(m_instanceBuffer.buffer && m_instanceBuffer.allocation);
 
@@ -51,6 +52,7 @@ void IndirectBuffer::enqueue(MeshBuffer::Descriptor const& mesh, Material materi
 			.firstInstance = static_cast<u32>(m_instanceQueue.size()),
 		},
 		.material = material,
+		.materialData = materialData,
 	});
 	m_instanceQueue.insert(m_instanceQueue.end(), instances.begin(), instances.end());
 }

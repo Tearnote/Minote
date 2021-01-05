@@ -1,10 +1,11 @@
 #version 460
 
 layout(location = 0) in flat uint material;
-layout(location = 1) in vec4 f_position;
-layout(location = 2) in vec4 f_color;
-layout(location = 3) in vec4 f_normal;
-layout(location = 4) in vec4 f_lightPosition; // in view space
+layout(location = 1) in flat uint drawID;
+layout(location = 2) in vec4 f_position;
+layout(location = 3) in vec4 f_color;
+layout(location = 4) in vec4 f_normal;
+layout(location = 5) in vec4 f_lightPosition; // in view space
 
 layout(location = 0) out vec4 out_color;
 
@@ -18,10 +19,10 @@ void main() {
 		break;
 
 	case MATERIAL_PHONG:
-		const float ambient = 0.2;
-		const float diffuse = 0.9;
-		const float specular = 0.4;
-		const float shine = 24.0;
+		float ambient = phongData.data[drawID].ambient;
+		float diffuse = phongData.data[drawID].diffuse;
+		float specular = phongData.data[drawID].specular;
+		float shine = phongData.data[drawID].shine;
 
 		vec4 normal = normalize(f_normal);
 		vec4 lightDirection = normalize(f_lightPosition - f_position);
