@@ -222,6 +222,9 @@ void Engine::render() {
 		.view = yFlip * view,
 		.projection = projection,
 		.viewProjection = projection * yFlip * view,
+		.lightPosition = glm::vec4{-4.0f, 8.0f, -4.0f, 1.0f},
+		.lightColor = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f},
+		.ambientColor = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f},
 	});
 
 	auto const viewport = VkViewport{

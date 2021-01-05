@@ -1,6 +1,8 @@
 #pragma once
 
 #include <array>
+#include <glm/mat4x4.hpp>
+#include <glm/vec4.hpp>
 #include "VulkanMemoryAllocator/vma.h"
 #include "volk/volk.h"
 #include "base/hashmap.hpp"
@@ -25,6 +27,9 @@ struct TechniqueSet {
 		glm::mat4 view;
 		glm::mat4 projection;
 		glm::mat4 viewProjection;
+		glm::vec4 lightPosition;
+		glm::vec4 lightColor;
+		glm::vec4 ambientColor;
 
 	};
 

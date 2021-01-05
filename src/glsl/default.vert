@@ -1,8 +1,10 @@
 #version 460
 
 layout(location = 0) out flat uint material;
-layout(location = 1) out vec4 f_color;
-layout(location = 2) out vec4 f_normal;
+layout(location = 1) out vec4 f_position;
+layout(location = 2) out vec4 f_color;
+layout(location = 3) out vec4 f_normal;
+layout(location = 4) out vec4 f_lightPosition; // in view space
 
 #include "world.glslh"
 
@@ -17,14 +19,16 @@ void main() {
 	switch (material) {
 
 	case MATERIAL_FLAT:
-		gl_Position = world.viewProjection * i_transform * vec4(v_position.xyz, 1.0);
+		gl_Position = world.viewProjection * i_transform * v_position;
 		f_color = v_color;
 		break;
 
 	case MATERIAL_PHONG:
-		gl_Position = world.viewProjection * i_transform * vec4(v_position.xyz, 1.0);
+		gl_Position = world.viewProjection * i_transform * v_position;
+		f_position = world.view * i_transform * v_position;
 		f_color = v_color;
-		f_normal = v_normal;
+		f_normal = vec4(mat3(transpose(inverse(world.view * i_transform))) * v_normal.xyz, 0.0);
+		f_lightPosition = world.view * world.lightPosition;
 		break;
 
 	}
