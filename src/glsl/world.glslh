@@ -20,11 +20,6 @@ struct Instance {
 #define MATERIAL_PHONG 1
 
 struct PhongData {
-	uint vertexCount;
-	uint instanceCount;
-	uint firstVertex;
-	uint firstInstance;
-	uint material;
 	float ambient;
 	float diffuse;
 	float specular;
@@ -48,10 +43,10 @@ layout(std140, set = 1, binding = 0) readonly buffer Commands {
 	Command data[];
 } commands;
 
-layout(std140, set = 1, binding = 0) readonly buffer PhongCommands {
-	PhongData data[];
-} phongData;
-
 layout(std140, set = 1, binding = 1) readonly buffer Instances {
 	Instance data[];
 } instances;
+
+layout(std140, set = 1, binding = 2) readonly buffer PhongDatas {
+	PhongData data[];
+} phongData;
