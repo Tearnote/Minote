@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <glm/trigonometric.hpp>
 #include "volk/volk.h"
 #include "base/util.hpp"
 
@@ -15,6 +16,9 @@ static constexpr auto MaxInstances = 16'384_zu;
 static constexpr auto SampleCount = VK_SAMPLE_COUNT_4_BIT;
 static constexpr auto ColorFormat = VK_FORMAT_B10G11R11_UFLOAT_PACK32;
 static constexpr auto DepthFormat = VK_FORMAT_D16_UNORM;
+static constexpr auto VerticalFov = glm::radians(70.0f);
+static constexpr auto NearPlane = 0.1f;
+static constexpr auto FarPlane = 200.0f;
 
 template<typename T>
 using PerFrame = std::array<T, FramesInFlight>;

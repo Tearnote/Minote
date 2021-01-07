@@ -106,6 +106,10 @@ Engine::~Engine() {
 }
 
 void Engine::queueScene() {
+	world.lightPosition = glm::vec4{-4.0f, 8.0f, -4.0f, 1.0f};
+	world.lightColor = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
+	world.ambientColor = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
+
 	auto const modelTranslation = make_translate(glm::vec3{-0.5f, -0.5f, -0.5f});
 	auto const modelRotation = make_rotate(glm::radians(90.0f), glm::vec3{1.0f, 0.0f, 0.0f});
 	auto const modelSpin = make_rotate(ratio(Glfw::getTime(), 1_s), glm::vec3{0.0f, 1.0f, 0.0f});
@@ -219,19 +223,10 @@ void Engine::render() {
 
 	// START OBJECT DRAWING
 
-	auto const view = glm::lookAt(glm::vec3{0.0f, 2.0f, -2.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 0.0f});
-	auto const yFlip = make_scale(glm::vec3{1.0f, -1.0f, 1.0f});
-	auto const projection = glm::perspective(glm::radians(70.0f),
-		static_cast<f32>(swapchain.extent.width) / static_cast<f32>(swapchain.extent.height),
-		0.1f, 200.0f);
-	uploadToCpuBuffer(allocator, techniques.getWorldConstants(frameIndex), TechniqueSet::World{
-		.view = yFlip * view,
-		.projection = projection,
-		.viewProjection = projection * yFlip * view,
-		.lightPosition = glm::vec4{-4.0f, 8.0f, -4.0f, 1.0f},
-		.lightColor = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f},
-		.ambientColor = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f},
-	});
+	world.setViewProjection(glm::uvec2{swapchain.extent.width, swapchain.extent.height},
+		VerticalFov, NearPlane, FarPlane,
+		{0.0f, 2.0f, -2.0f}, {0.0f, 1.0f, 0.0f});
+	uploadToCpuBuffer(allocator, techniques.getWorldConstants(frameIndex), world);
 
 	auto const viewport = VkViewport{
 		.width = static_cast<f32>(swapchain.extent.width),

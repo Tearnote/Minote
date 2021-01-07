@@ -16,6 +16,7 @@
 #include "sys/window.hpp"
 #include "sys/glfw.hpp"
 #include "engine/technique.hpp"
+#include "engine/world.hpp"
 #include "engine/base.hpp"
 #include "engine/mesh.hpp"
 
@@ -103,6 +104,7 @@ struct Engine {
 
 	TechniqueSet techniques;
 	MeshBuffer meshes;
+	World world;
 
 	VkPipeline passthrough;
 	VkPipelineLayout passthroughLayout;

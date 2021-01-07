@@ -3,6 +3,7 @@
 #include <utility>
 #include "base/zip_view.hpp"
 #include "sys/vk/pipeline.hpp"
+#include "engine/world.hpp"
 
 namespace minote::engine {
 

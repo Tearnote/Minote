@@ -120,7 +120,7 @@ set(SOURCES
         src/mesh/block.hpp
         src/mesh/scene.hpp
         src/game.hpp src/game.cpp
-        src/main.hpp src/main.cpp)
+        src/main.hpp src/main.cpp src/engine/world.hpp)
 
 add_executable(Minote ${SOURCES} ${INTERNALLIBS})
 add_dependencies(Minote Compile_shaders)

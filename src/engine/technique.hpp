@@ -22,17 +22,6 @@ namespace minote::engine {
 // The shader and all relevant buffers are owned by this object.
 struct TechniqueSet {
 
-	struct World {
-
-		glm::mat4 view;
-		glm::mat4 projection;
-		glm::mat4 viewProjection;
-		glm::vec4 lightPosition;
-		glm::vec4 lightColor;
-		glm::vec4 ambientColor;
-
-	};
-
 	struct Technique {
 
 		VkPipeline pipeline;
