@@ -2,7 +2,9 @@
 
 #include <string_view>
 #include <string>
+#include <span>
 #include <glm/mat4x4.hpp>
+#include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 #include "VulkanMemoryAllocator/vma.h"
 #include "volk/volk.h"
@@ -30,15 +32,19 @@ using namespace base::literals;
 
 struct Engine {
 
-	struct Frame {
+	Engine(sys::Glfw&, sys::Window&, std::string_view name, base::Version appVersion);
+	~Engine();
 
-		VkCommandPool commandPool;
-		VkCommandBuffer commandBuffer;
-		VkSemaphore renderSemaphore;
-		VkSemaphore presentSemaphore;
-		VkFence renderFence;
+	void setBackground(glm::vec3 color);
+	void setLightSource(glm::vec3 position, glm::vec3 color);
+	void setCamera(glm::vec3 eye, glm::vec3 center, glm::vec3 up = {0.0f, 1.0f, 0.0f});
 
-	};
+	void enqueueDraw(base::ID mesh, base::ID technique, std::span<Instance const> instances,
+		Material material, MaterialData const& materialData = {});
+
+	void render();
+
+private:
 
 	struct Surface {
 
@@ -64,6 +70,22 @@ struct Engine {
 		VkRenderPass renderPass;
 		base::i64 expiry;
 
+	};
+
+	struct Frame {
+
+		VkCommandPool commandPool;
+		VkCommandBuffer commandBuffer;
+		VkSemaphore renderSemaphore;
+		VkSemaphore presentSemaphore;
+		VkFence renderFence;
+
+	};
+
+	struct Camera {
+		glm::vec3 eye;
+		glm::vec3 center;
+		glm::vec3 up;
 	};
 
 	std::string name;
@@ -104,15 +126,13 @@ struct Engine {
 
 	TechniqueSet techniques;
 	MeshBuffer meshes;
+	Camera camera;
 	World world;
 
 	VkPipeline passthrough;
 	VkPipelineLayout passthroughLayout;
 	sys::vk::Shader passthroughShader;
 	PerFrame<VkDescriptorSet> passthroughDescriptorSet;
-
-	Engine(sys::Glfw&, sys::Window&, std::string_view name, base::Version appVersion);
-	~Engine();
 
 	[[nodiscard]]
 	auto uniquePresentQueue() const {
@@ -123,11 +143,6 @@ struct Engine {
 	auto uniqueTransferQueue() const {
 		return (transferQueueFamilyIndex != graphicsQueueFamilyIndex);
 	}
-
-	void queueScene();
-	void render();
-
-private:
 
 	void initInstance(base::Version appVersion);
 	void initPhysicalDevice();

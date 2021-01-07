@@ -11,6 +11,14 @@
 
 namespace minote::engine {
 
+struct Instance {
+
+	glm::mat4 transform;
+	glm::vec4 tint = {1.0f, 1.0f, 1.0f, 1.0f};
+	glm::vec4 highlight = {0.0f, 0.0f, 0.0f, 0.0f};
+
+};
+
 struct IndirectBuffer {
 
 	struct Command {
@@ -18,14 +26,6 @@ struct IndirectBuffer {
 		VkDrawIndirectCommand base;
 		Material material;
 		MaterialData materialData;
-
-	};
-
-	struct Instance {
-
-		glm::mat4 transform;
-		glm::vec4 tint = {1.0f, 1.0f, 1.0f, 1.0f};
-		glm::vec4 highlight = {0.0f, 0.0f, 0.0f, 0.0f};
 
 	};
 

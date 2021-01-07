@@ -105,44 +105,28 @@ Engine::~Engine() {
 	L.info("Vulkan cleaned up");
 }
 
-void Engine::queueScene() {
-	world.lightPosition = glm::vec4{-4.0f, 8.0f, -4.0f, 1.0f};
-	world.lightColor = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-	world.ambientColor = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
+void Engine::setBackground(glm::vec3 color) {
+	world.ambientColor = glm::vec4{color, 1.0f};
+}
 
-	auto const modelTranslation = make_translate(glm::vec3{-0.5f, -0.5f, -0.5f});
-	auto const modelRotation = make_rotate(glm::radians(90.0f), glm::vec3{1.0f, 0.0f, 0.0f});
-	auto const modelSpin = make_rotate(ratio(Glfw::getTime(), 1_s), glm::vec3{0.0f, 1.0f, 0.0f});
-	auto const modelTranslationBack = make_translate(glm::vec3{0.0f, 0.0f, 0.5f});
-	auto const model = modelTranslationBack * modelSpin * modelRotation * modelTranslation;
+void Engine::setLightSource(glm::vec3 position, glm::vec3 color) {
+	world.lightPosition = glm::vec4{position, 1.0f};
+	world.lightColor = glm::vec4{color, 1.0f};
+}
 
-	auto const modelTranslation2 = make_translate(glm::vec3{-1.5f, 0.0f, 0.0f});
-	auto const modelScale = make_scale(glm::vec3{0.1f, 0.1f, 0.1f});
-	auto const model2 = modelTranslation2 * modelSpin * modelScale;
+void Engine::setCamera(glm::vec3 eye, glm::vec3 center, glm::vec3 up) {
+	camera = Camera{
+		.eye = eye,
+		.center = center,
+		.up = up,
+	};
+}
 
-	auto const modelTranslation3 = make_translate(glm::vec3{1.5f, 0.0f, 0.0f});
-	auto const model3 = modelTranslation3 * modelSpin * modelScale;
-
-	auto frameIndex = frameCounter % FramesInFlight;
-	auto& opaqueIndirect = techniques.getTechniqueIndirect("opaque"_id, frameIndex);
-	auto& transparentIndirect = techniques.getTechniqueIndirect("transparent"_id, frameIndex);
-	opaqueIndirect.reset();
-	transparentIndirect.reset();
-	opaqueIndirect.enqueue(meshes.getMeshDescriptor("block"_id),
-		std::to_array<IndirectBuffer::Instance>({
-			{.transform = model},
-		}),
-		Material::Phong, MaterialData{.phong = {
-			.ambient = 0.2f,
-			.diffuse = 0.9f,
-			.specular = 0.4f,
-			.shine = 24.0f,
-		}});
-	transparentIndirect.enqueue(meshes.getMeshDescriptor("scene"_id),
-		std::to_array<IndirectBuffer::Instance>({
-			{.transform = model2},
-			{.transform = model3},
-		}), Material::Flat);
+void Engine::enqueueDraw(ID mesh, ID technique, std::span<Instance const> instances,
+	Material material, MaterialData const& materialData) {
+	auto const frameIndex = frameCounter % FramesInFlight;
+	auto& indirect = techniques.getTechniqueIndirect(technique, frameIndex);
+	indirect.enqueue(meshes.getMeshDescriptor(mesh), instances, material, materialData);
 }
 
 void Engine::render() {
@@ -175,9 +159,24 @@ void Engine::render() {
 	auto& transparent = techniques.getTechnique("transparent"_id);
 	auto& transparentIndirect = techniques.getTechniqueIndirect("transparent"_id, frameIndex);
 
-	// Upload draw data to the GPU
+	// Prepare and upload draw data to the GPU
 	opaqueIndirect.upload(allocator);
 	transparentIndirect.upload(allocator);
+
+	world.setViewProjection(glm::uvec2{swapchain.extent.width, swapchain.extent.height},
+		VerticalFov, NearPlane, FarPlane,
+		camera.eye, camera.center, camera.up);
+	uploadToCpuBuffer(allocator, techniques.getWorldConstants(frameIndex), world);
+
+	auto const viewport = VkViewport{
+		.width = static_cast<f32>(swapchain.extent.width),
+		.height = static_cast<f32>(swapchain.extent.height),
+		.minDepth = 0.0f,
+		.maxDepth = 1.0f,
+	};
+	auto const scissor = VkRect2D{
+		.extent = swapchain.extent,
+	};
 
 	// Rebind descriptors
 	auto const passthroughImageInfo = VkDescriptorImageInfo{
@@ -204,7 +203,7 @@ void Engine::render() {
 
 	// Compute clear color
 	auto const clearValues = std::to_array<VkClearValue>({
-		{ .color = { .float32 = {0.8f, 0.8f, 0.8f, 1.0f}}},
+		{ .color = { .float32 = {world.ambientColor.r, world.ambientColor.g, world.ambientColor.b, world.ambientColor.a} }},
 		{ .depthStencil = { .depth = 1.0f }},
 	});
 
@@ -222,21 +221,6 @@ void Engine::render() {
 	vkCmdBeginRenderPass(frame.commandBuffer, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 	// START OBJECT DRAWING
-
-	world.setViewProjection(glm::uvec2{swapchain.extent.width, swapchain.extent.height},
-		VerticalFov, NearPlane, FarPlane,
-		{0.0f, 2.0f, -2.0f}, {0.0f, 1.0f, 0.0f});
-	uploadToCpuBuffer(allocator, techniques.getWorldConstants(frameIndex), world);
-
-	auto const viewport = VkViewport{
-		.width = static_cast<f32>(swapchain.extent.width),
-		.height = static_cast<f32>(swapchain.extent.height),
-		.minDepth = 0.0f,
-		.maxDepth = 1.0f,
-	};
-	auto const scissor = VkRect2D{
-		.extent = swapchain.extent,
-	};
 
 	vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, opaque.pipeline);
 	vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -312,8 +296,10 @@ void Engine::render() {
 		oldSwapchains.pop_front();
 	}
 
-	// Advance
+	// Advance, cleanup
 	frameCounter += 1;
+	opaqueIndirect.reset();
+	transparentIndirect.reset();
 }
 
 void Engine::initInstance(Version appVersion) {
