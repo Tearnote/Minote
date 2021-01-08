@@ -11,6 +11,8 @@
 
 namespace minote::gfx {
 
+using namespace base;
+
 struct Instance {
 
 	glm::mat4 transform;
@@ -29,7 +31,7 @@ struct IndirectBuffer {
 
 	};
 
-	void create(VmaAllocator allocator, base::size_t maxCommands, base::size_t maxInstances);
+	void create(VmaAllocator allocator, size_t maxCommands, size_t maxInstances);
 
 	void destroy(VmaAllocator allocator);
 

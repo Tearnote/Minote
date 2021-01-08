@@ -9,6 +9,8 @@
 
 namespace minote::gfx {
 
+using namespace base;
+
 struct World {
 
 	glm::mat4 view;
@@ -18,13 +20,12 @@ struct World {
 	glm::vec4 lightColor;
 	glm::vec4 ambientColor;
 
-	void setViewProjection(glm::uvec2 viewport, base::f32 fovy, base::f32 zNear, base::f32 zFar,
+	void setViewProjection(glm::uvec2 viewport, f32 fovy, f32 zNear, f32 zFar,
 		glm::vec3 eye, glm::vec3 center, glm::vec3 up = {0.0f, 1.0f, 0.0f}) {
 		auto const rawview = glm::lookAt(eye, center, up);
 		auto const yFlip = base::make_scale(glm::vec3{1.0f, -1.0f, 1.0f});
 		projection = glm::perspective(fovy,
-			static_cast<base::f32>(viewport.x) / static_cast<base::f32>(viewport.y),
-			zNear, zFar);
+			static_cast<f32>(viewport.x) / static_cast<f32>(viewport.y), zNear, zFar);
 		view = yFlip * rawview;
 		viewProjection = projection * view;
 	}

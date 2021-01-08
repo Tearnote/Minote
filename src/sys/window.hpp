@@ -15,6 +15,8 @@ struct GLFWwindow; // Avoid GLFW header
 
 namespace minote::sys {
 
+using namespace base;
+
 struct Window {
 
 	// Keyboard keypress event information
@@ -27,7 +29,7 @@ struct Window {
 			Pressed,
 			Released
 		} state;
-		base::nsec timestamp;
+		nsec timestamp;
 
 	};
 
@@ -41,7 +43,7 @@ struct Window {
 
 	// Window property accessors
 	auto size() -> glm::uvec2 { return m_size; }
-	auto scale() -> base::f32 { return m_scale; }
+	auto scale() -> f32 { return m_scale; }
 	auto title() -> std::string_view { return m_title; }
 
 	// Check if window close has been requested by application (via requestClose()) or
@@ -87,14 +89,14 @@ private:
 	std::string m_title;
 
 	// Queue of collected keyboard inputs
-	base::ring<KeyInput, InputQueueSize> inputs;
+	ring<KeyInput, InputQueueSize> inputs;
 	mutable std::mutex inputsMutex;
 
 	// Size in physical pixels
 	std::atomic<glm::uvec2> m_size;
 
 	// DPI scaling, where 1.0 is "standard" DPI
-	std::atomic<base::f32> m_scale;
+	std::atomic<f32> m_scale;
 
 	// Function to run on each keypress event. The event is added to the queue.
 	static void keyCallback(GLFWwindow*, int, int, int, int);

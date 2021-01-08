@@ -15,6 +15,8 @@
 
 namespace minote::gfx {
 
+using namespace base;
+
 // A collection of pipelines for object drawing. While all materials are drawn with a single
 // ubershader, multiple pipelines are still required to handle different requirements such as
 // rasterizer state. These pipelines will be called techniques, as every material can
@@ -35,7 +37,7 @@ struct TechniqueSet {
 
 	void destroy(VkDevice device, VmaAllocator allocator);
 
-	void addTechnique(base::ID id, VkDevice device, VmaAllocator allocator,
+	void addTechnique(ID id, VkDevice device, VmaAllocator allocator,
 		VkDescriptorPool descriptorPool, VkRenderPass renderPass,
 		VkPipelineRasterizationStateCreateInfo rasterizationStateCI,
 		VkPipelineColorBlendAttachmentState colorBlendAttachmentState,
@@ -44,13 +46,13 @@ struct TechniqueSet {
 
 	auto getPipelineLayout() { return m_pipelineLayout; }
 
-	auto getWorldConstants(base::i64 frameIndex) -> sys::vk::Buffer& {
+	auto getWorldConstants(i64 frameIndex) -> sys::vk::Buffer& {
 		return m_worldConstants[frameIndex];
 	}
 
-	auto getTechnique(base::ID id) -> Technique& { return m_techniques.at(id); }
+	auto getTechnique(ID id) -> Technique& { return m_techniques.at(id); }
 
-	auto getTechniqueIndirect(base::ID id, base::i64 frameIndex) -> IndirectBuffer& {
+	auto getTechniqueIndirect(ID id, i64 frameIndex) -> IndirectBuffer& {
 		return getTechnique(id).indirect[frameIndex];
 	}
 
@@ -60,7 +62,7 @@ private:
 	PerFrame<VkDescriptorSet> m_worldDescriptorSet;
 	PerFrame<sys::vk::Buffer> m_worldConstants;
 	VkPipelineLayout m_pipelineLayout;
-	base::hashmap<base::ID, Technique> m_techniques;
+	hashmap<ID, Technique> m_techniques;
 
 };
 

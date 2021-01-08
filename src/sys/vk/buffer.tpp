@@ -8,7 +8,9 @@
 
 namespace minote::sys::vk {
 
-template<base::trivially_copyable T>
+using namespace base;
+
+template<trivially_copyable T>
 void uploadToCpuBuffer(VmaAllocator allocator, Buffer& buffer, T const& data) {
 	ASSERT(buffer.size >= sizeof(T));
 
@@ -18,7 +20,7 @@ void uploadToCpuBuffer(VmaAllocator allocator, Buffer& buffer, T const& data) {
 	vmaUnmapMemory(allocator, buffer.allocation);
 }
 
-template<base::trivially_copyable T>
+template<trivially_copyable T>
 void uploadToCpuBuffer(VmaAllocator allocator, Buffer& buffer, std::span<T const> data) {
 	ASSERT(buffer.size >= data.size_bytes());
 

@@ -6,6 +6,8 @@
 
 namespace minote::sys {
 
+using namespace base;
+
 struct Glfw {
 
 	// Initialize the windowing system and relevant OS-specific bits.
@@ -27,7 +29,7 @@ struct Glfw {
 	// is returned instead.
 	// This function can be used from any thread.
 	[[nodiscard]]
-	static auto getTime() -> base::nsec;
+	static auto getTime() -> nsec;
 
 	// Return the printable character that a key usually types when pressed.
 	[[nodiscard]]

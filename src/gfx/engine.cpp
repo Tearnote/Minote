@@ -33,7 +33,7 @@ namespace minote::gfx {
 
 using namespace base;
 using namespace base::literals;
-using namespace sys;
+namespace vk = sys::vk;
 namespace ranges = std::ranges;
 using namespace std::string_literals;
 
@@ -57,7 +57,7 @@ static constexpr auto codeToVersion(u32 code) -> Version {
 	};
 }
 
-Engine::Engine(Glfw&, Window& _window, std::string_view _name, Version appVersion):
+Engine::Engine(sys::Glfw&, sys::Window& _window, std::string_view _name, Version appVersion):
 	name{_name}, window{_window}, frameCounter{0} {
 	initInstance(appVersion);
 	initPhysicalDevice();

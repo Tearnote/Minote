@@ -8,21 +8,23 @@
 
 namespace minote::sys::vk {
 
+using namespace base;
+
 struct Buffer {
 
 	VkBuffer buffer;
 	VmaAllocation allocation;
-	base::size_t size;
+	size_t size;
 
 };
 
-auto createBuffer(VmaAllocator allocator, base::size_t size,
+auto createBuffer(VmaAllocator allocator, size_t size,
 	VkBufferUsageFlags usage, VmaMemoryUsage memUsage) -> Buffer;
 
-template<base::trivially_copyable T>
+template<trivially_copyable T>
 void uploadToCpuBuffer(VmaAllocator allocator, Buffer& buffer, T const& data);
 
-template<base::trivially_copyable T>
+template<trivially_copyable T>
 void uploadToCpuBuffer(VmaAllocator allocator, Buffer& buffer, std::span<T const> data);
 
 }

@@ -39,15 +39,6 @@ struct Mapper {
 	// input queue will still have all of the unprocessed inputs.
 	void collectKeyInputs(sys::Window& window);
 
-	// Remove and return the most recent Action. If the queue is empty, nullopt is returned
-	// instead.
-	auto dequeueAction() -> std::optional<Action>;
-
-	// Return the most recent Action without removing it. If the queue is empty, nullopt
-	// is returned instead.
-	[[nodiscard]]
-	auto peekAction() -> std::optional<Action>;
-
 private:
 
 	// Processed inputs, ready to be retrieved with peek/dequeueAction()

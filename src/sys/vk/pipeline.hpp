@@ -8,6 +8,8 @@
 
 namespace minote::sys::vk {
 
+using namespace base;
+
 struct PipelineBuilder {
 
 	std::vector<VkPipelineShaderStageCreateInfo> shaderStageCIs;
@@ -19,7 +21,7 @@ struct PipelineBuilder {
 	VkPipelineMultisampleStateCreateInfo multisampleStateCI;
 	VkPipelineLayout layout;
 
-	auto build(VkDevice device, VkRenderPass pass, base::u32 subpass = 0) -> VkPipeline;
+	auto build(VkDevice device, VkRenderPass pass, u32 subpass = 0) -> VkPipeline;
 
 };
 
@@ -38,9 +40,9 @@ constexpr auto makePipelineVertexInputStateCI(
 	std::span<VkVertexInputAttributeDescription const> vertexAttributes = {}) {
 	return VkPipelineVertexInputStateCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-		.vertexBindingDescriptionCount = static_cast<base::u32>(vertexBindings.size()),
+		.vertexBindingDescriptionCount = static_cast<u32>(vertexBindings.size()),
 		.pVertexBindingDescriptions = vertexBindings.data(),
-		.vertexAttributeDescriptionCount = static_cast<base::u32>(vertexAttributes.size()),
+		.vertexAttributeDescriptionCount = static_cast<u32>(vertexAttributes.size()),
 		.pVertexAttributeDescriptions = vertexAttributes.data(),
 	};
 }
@@ -110,9 +112,9 @@ inline auto createPipelineLayout(VkDevice device, std::span<VkDescriptorSetLayou
 	auto pipelineLayoutCI = VkPipelineLayoutCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
 		.flags = 0,
-		.setLayoutCount = static_cast<base::u32>(descriptorSetLayouts.size()),
+		.setLayoutCount = static_cast<u32>(descriptorSetLayouts.size()),
 		.pSetLayouts = descriptorSetLayouts.data(),
-		.pushConstantRangeCount = static_cast<base::u32>(pushConstants.size()),
+		.pushConstantRangeCount = static_cast<u32>(pushConstants.size()),
 		.pPushConstantRanges = pushConstants.data(),
 	};
 	VkPipelineLayout result;

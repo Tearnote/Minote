@@ -5,7 +5,7 @@
 namespace minote::gfx {
 
 using namespace base;
-using namespace sys;
+namespace vk = sys::vk;
 
 auto MeshBuffer::addMesh(ID id, std::span<Vertex const> mesh) -> Descriptor {
 	ASSERT(!m_buffer.buffer);

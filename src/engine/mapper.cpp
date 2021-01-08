@@ -3,7 +3,6 @@
 #include <stdexcept>
 #include <GLFW/glfw3.h>
 #include "base/util.hpp"
-#include "base/log.hpp"
 #include "sys/glfw.hpp"
 
 namespace minote::engine {
@@ -73,22 +72,6 @@ void Mapper::collectKeyInputs(sys::Window& window) {
 		}
 		return true;
 	});
-}
-
-auto Mapper::dequeueAction() -> std::optional<Action>
-{
-	if (actions.empty()) return std::nullopt;
-
-	Action action{actions.front()};
-	actions.pop_front();
-	return action;
-}
-
-auto Mapper::peekAction() -> std::optional<Action>
-{
-	if (actions.empty()) return std::nullopt;
-
-	return actions.front();
 }
 
 }

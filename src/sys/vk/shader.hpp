@@ -8,6 +8,8 @@
 
 namespace minote::sys::vk {
 
+using namespace base;
+
 struct Shader {
 
 	VkShaderModule vert;
@@ -17,7 +19,7 @@ struct Shader {
 };
 
 auto createShader(VkDevice device,
-	std::span<base::u32 const> vertSrc, std::span<base::u32 const> fragSrc,
+	std::span<u32 const> vertSrc, std::span<u32 const> fragSrc,
 	std::span<VkDescriptorSetLayoutCreateInfo const> layoutCIs) -> Shader;
 
 void destroyShader(VkDevice device, Shader& shader);

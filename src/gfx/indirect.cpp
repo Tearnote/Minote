@@ -7,7 +7,7 @@
 namespace minote::gfx {
 
 using namespace base;
-using namespace sys;
+namespace vk = sys::vk;
 
 void IndirectBuffer::create(VmaAllocator allocator, size_t maxCommands, size_t maxInstances) {
 	ASSERT(!m_commandBuffer.buffer && !m_commandBuffer.allocation);

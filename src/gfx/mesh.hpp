@@ -17,6 +17,8 @@
 
 namespace minote::gfx {
 
+using namespace base;
+
 struct Vertex {
 
 	glm::vec4 position;
@@ -25,11 +27,11 @@ struct Vertex {
 
 };
 
-template<base::size_t N>
+template<size_t N>
 constexpr auto generateNormals(std::array<Vertex, N> mesh) {
 	static_assert(N % 3 == 0);
 
-	base::svector<Vertex, N> result;
+	svector<Vertex, N> result;
 	for (auto iv = mesh.begin(), ov = result.begin(); iv != mesh.end(); iv += 3, ov += 3) {
 		auto v0 = *(iv + 0);
 		auto v1 = *(iv + 1);
@@ -50,16 +52,16 @@ struct MeshBuffer {
 
 	struct Descriptor {
 
-		base::size_t vertexOffset;
-		base::size_t vertexCount;
+		size_t vertexOffset;
+		size_t vertexCount;
 
 	};
 
-	auto addMesh(base::ID id, std::span<const Vertex> mesh) -> Descriptor;
+	auto addMesh(ID id, std::span<const Vertex> mesh) -> Descriptor;
 
 	void upload(VmaAllocator allocator, VkCommandBuffer cmdBuffer, sys::vk::Buffer& staging);
 
-	auto getMeshDescriptor(base::ID id) { return m_descriptors.at(id); }
+	auto getMeshDescriptor(ID id) { return m_descriptors.at(id); }
 
 	void destroy(VmaAllocator allocator);
 
@@ -68,7 +70,7 @@ struct MeshBuffer {
 private:
 
 	std::vector<Vertex> m_vertices;
-	base::hashmap<base::ID, Descriptor> m_descriptors;
+	hashmap<ID, Descriptor> m_descriptors;
 	sys::vk::Buffer m_buffer = {};
 
 };

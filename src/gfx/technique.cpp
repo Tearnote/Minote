@@ -8,7 +8,7 @@
 namespace minote::gfx {
 
 using namespace base;
-using namespace sys;
+namespace vk = sys::vk;
 
 constexpr auto defaultVertSrc = std::to_array<u32>({
 #include "spv/default.vert.spv"

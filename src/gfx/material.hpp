@@ -4,7 +4,9 @@
 
 namespace minote::gfx {
 
-enum struct Material: base::u32 {
+using namespace base;
+
+enum struct Material: u32 {
 	Flat = 0,
 	Phong = 1,
 };

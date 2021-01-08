@@ -24,7 +24,6 @@
 
 using namespace minote; // Because we can't namespace main()
 using namespace base;
-using namespace sys;
 using namespace std::string_view_literals;
 
 auto assertHandler(char const* expr, char const* file, int line, char const* msg) -> int {
@@ -62,8 +61,8 @@ auto main(int, char*[]) -> int try {
 	L.info("Starting up {} {}", AppTitle, AppVersion);
 
 	// Window creation
-	Glfw glfw;
-	auto window = Window{glfw, AppTitle, false, {960, 540}};
+	sys::Glfw glfw;
+	auto window = sys::Window{glfw, AppTitle, false, {960, 540}};
 
 	// *** Thread startup ***
 

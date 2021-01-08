@@ -5,9 +5,10 @@
 
 namespace minote {
 
+using namespace base;
 using namespace std::string_view_literals;
 
 constexpr auto AppTitle = "Minote"sv;
-constexpr auto AppVersion = base::Version{0, 0, 0};
+constexpr auto AppVersion = Version{0, 0, 0};
 
 }

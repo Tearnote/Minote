@@ -28,18 +28,19 @@
 
 namespace minote::gfx {
 
+using namespace base;
 using namespace base::literals;
 
 struct Engine {
 
-	Engine(sys::Glfw&, sys::Window&, std::string_view name, base::Version appVersion);
+	Engine(sys::Glfw&, sys::Window&, std::string_view name, Version appVersion);
 	~Engine();
 
 	void setBackground(glm::vec3 color);
 	void setLightSource(glm::vec3 position, glm::vec3 color);
 	void setCamera(glm::vec3 eye, glm::vec3 center, glm::vec3 up = {0.0f, 1.0f, 0.0f});
 
-	void enqueueDraw(base::ID mesh, base::ID technique, std::span<Instance const> instances,
+	void enqueueDraw(ID mesh, ID technique, std::span<Instance const> instances,
 		Material material, MaterialData const& materialData = {});
 
 	void render();
@@ -68,7 +69,7 @@ private:
 		VkExtent2D extent;
 		std::vector<Surface> surfaces;
 		VkRenderPass renderPass;
-		base::i64 expiry;
+		i64 expiry;
 
 	};
 
@@ -90,7 +91,7 @@ private:
 
 	std::string name;
 	sys::Window& window;
-	base::i64 frameCounter;
+	i64 frameCounter;
 
 	VkInstance instance;
 	std::vector<char const*> instanceExtensions;
@@ -106,9 +107,9 @@ private:
 	std::vector<VkSurfaceFormatKHR> surfaceFormats;
 	std::vector<VkPresentModeKHR> surfacePresentModes;
 	VkSurfaceCapabilitiesKHR surfaceCapabilities;
-	base::u32 graphicsQueueFamilyIndex;
-	base::u32 presentQueueFamilyIndex;
-	base::u32 transferQueueFamilyIndex;
+	u32 graphicsQueueFamilyIndex;
+	u32 presentQueueFamilyIndex;
+	u32 transferQueueFamilyIndex;
 
 	VkDevice device;
 	VkQueue graphicsQueue;
@@ -117,7 +118,7 @@ private:
 	VmaAllocator allocator;
 
 	Swapchain swapchain;
-	base::ring<Swapchain, 16> oldSwapchains;
+	ring<Swapchain, 16> oldSwapchains;
 
 	PerFrame<Frame> frames;
 	VkDescriptorPool descriptorPool;
@@ -144,7 +145,7 @@ private:
 		return (transferQueueFamilyIndex != graphicsQueueFamilyIndex);
 	}
 
-	void initInstance(base::Version appVersion);
+	void initInstance(Version appVersion);
 	void initPhysicalDevice();
 	void initDevice();
 	void initAllocator();
