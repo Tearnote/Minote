@@ -15,7 +15,7 @@
 #include "base/id.hpp"
 #include "sys/vk/buffer.hpp"
 
-namespace minote::engine {
+namespace minote::gfx {
 
 struct Vertex {
 

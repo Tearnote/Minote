@@ -1,4 +1,4 @@
-#include "engine/engine.hpp"
+#include "gfx/engine.hpp"
 
 #include <string_view>
 #include <stdexcept>
@@ -29,7 +29,7 @@
 #include "mesh/block.hpp"
 #include "mesh/scene.hpp"
 
-namespace minote::engine {
+namespace minote::gfx {
 
 using namespace base;
 using namespace base::literals;

@@ -1,11 +1,11 @@
-#include "engine/technique.hpp"
+#include "gfx/technique.hpp"
 
 #include <utility>
 #include "base/zip_view.hpp"
 #include "sys/vk/pipeline.hpp"
-#include "engine/world.hpp"
+#include "gfx/world.hpp"
 
-namespace minote::engine {
+namespace minote::gfx {
 
 using namespace base;
 using namespace sys;

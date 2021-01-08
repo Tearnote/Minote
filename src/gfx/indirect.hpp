@@ -6,10 +6,10 @@
 #include "volk/volk.h"
 #include "base/types.hpp"
 #include "sys/vk/buffer.hpp"
-#include "engine/material.hpp"
-#include "engine/mesh.hpp"
+#include "gfx/material.hpp"
+#include "gfx/mesh.hpp"
 
-namespace minote::engine {
+namespace minote::gfx {
 
 struct Instance {
 

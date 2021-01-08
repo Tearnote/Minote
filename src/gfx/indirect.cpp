@@ -1,10 +1,10 @@
-#include "engine/indirect.hpp"
+#include "gfx/indirect.hpp"
 
 #include "VulkanMemoryAllocator/vma.h"
 #include "sys/vk/buffer.hpp"
 #include "base/assert.hpp"
 
-namespace minote::engine {
+namespace minote::gfx {
 
 using namespace base;
 using namespace sys;

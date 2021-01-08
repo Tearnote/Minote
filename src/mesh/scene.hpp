@@ -1,11 +1,11 @@
 #pragma once
 
 #include <array>
-#include "engine/mesh.hpp"
+#include "gfx/mesh.hpp"
 
 namespace minote::mesh {
 
-constexpr auto Scene = std::to_array<engine::Vertex>({
+constexpr auto Scene = std::to_array<gfx::Vertex>({
 /////////////////////////////////////////////
 // Backplane
 	{

@@ -1,8 +1,8 @@
-#include "engine/mesh.hpp"
+#include "gfx/mesh.hpp"
 
 #include "sys/vk/base.hpp"
 
-namespace minote::engine {
+namespace minote::gfx {
 
 using namespace base;
 using namespace sys;

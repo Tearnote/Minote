@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string_view>
-#include <optional>
 #include <string>
 #include <atomic>
 #include <mutex>
@@ -56,21 +55,12 @@ struct Window {
 	// This function can be used from any thread.
 	void requestClose();
 
-	// Return the oldest keyboard input from the window's input queue. If the queue is empty,
-	// nullopt is returned instead.
-	// This function can be used from any thread.
-	[[nodiscard]]
-	auto getInput() const -> std::optional<KeyInput>;
-
-	// Remove the oldest keyboard input from the window's input queue, if any. Run this often
-	// to keep the queue from filling up and discarding input events.
-	// This function can be used from any thread.
-	void popInput();
-
-	// Clear the window's input queue. This can remove a key release event, so consider every
-	// key unpressed.
-	// This function can be used from any thread.
-	void clearInput();
+	// Run the provided function for every input in the queue. If the function returns false,
+	// the loop is aborted and all remaining inputs (including the one for which the function
+	// returned false) remain in the queue.
+	template<typename F>
+		requires std::predicate<F, KeyInput const&>
+	void processInputs(F func);
 
 	// Provide the raw GLFW handle. While required for certain tasks like Vulkan surface
 	// creation, be careful with any operations that might require synchronization.
@@ -121,3 +111,5 @@ private:
 };
 
 }
+
+#include "sys/window.tpp"

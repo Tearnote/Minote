@@ -1,11 +1,11 @@
 #pragma once
 
 #include <array>
-#include "engine/mesh.hpp"
+#include "gfx/mesh.hpp"
 
 namespace minote::mesh {
 
-constexpr auto Block = std::to_array<engine::Vertex>({
+constexpr auto Block = std::to_array<gfx::Vertex>({
 /////////////////////////////////////////////
 // Top wall
 	{

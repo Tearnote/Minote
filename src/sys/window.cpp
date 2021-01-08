@@ -151,23 +151,4 @@ void Window::requestClose() {
 	L.info(R"(Window "{}" close requested)", title());
 }
 
-void Window::popInput() {
-	auto const lock = std::scoped_lock{inputsMutex};
-	if (!inputs.empty())
-		inputs.pop_front();
-}
-
-auto Window::getInput() const -> std::optional<KeyInput> {
-	auto const lock = std::scoped_lock{inputsMutex};
-	if (inputs.empty()) return std::nullopt;
-
-	return inputs.front();
-}
-
-void Window::clearInput() {
-	auto const lock = std::scoped_lock{inputsMutex};
-
-	inputs.clear();
-}
-
 }

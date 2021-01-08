@@ -9,11 +9,11 @@
 #include "base/id.hpp"
 #include "sys/vk/shader.hpp"
 #include "sys/vk/buffer.hpp"
-#include "engine/indirect.hpp"
-#include "engine/base.hpp"
-#include "engine/mesh.hpp"
+#include "gfx/indirect.hpp"
+#include "gfx/base.hpp"
+#include "gfx/mesh.hpp"
 
-namespace minote::engine {
+namespace minote::gfx {
 
 // A collection of pipelines for object drawing. While all materials are drawn with a single
 // ubershader, multiple pipelines are still required to handle different requirements such as

@@ -2,7 +2,7 @@
 
 #include "base/types.hpp"
 
-namespace minote::engine {
+namespace minote::gfx {
 
 enum struct Material: base::u32 {
 	Flat = 0,

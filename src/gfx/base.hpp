@@ -5,7 +5,7 @@
 #include "volk/volk.h"
 #include "base/util.hpp"
 
-namespace minote::engine {
+namespace minote::gfx {
 
 using namespace base::literals;
 

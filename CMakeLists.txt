@@ -109,18 +109,20 @@ set(SOURCES
         src/sys/vk/image.hpp src/sys/vk/image.cpp
         src/sys/vk/base.hpp
         src/sys/keyboard.hpp src/sys/keyboard.cpp
-        src/sys/window.hpp src/sys/window.cpp
+        src/sys/window.hpp src/sys/window.tpp src/sys/window.cpp
         src/sys/glfw.hpp src/sys/glfw.cpp
-        src/engine/technique.hpp src/engine/technique.cpp
-        src/engine/indirect.hpp src/engine/indirect.cpp
-        src/engine/material.hpp
-        src/engine/engine.hpp src/engine/engine.cpp
-        src/engine/mesh.hpp src/engine/mesh.cpp
-        src/engine/base.hpp
+        src/gfx/technique.hpp src/gfx/technique.cpp
+        src/gfx/indirect.hpp src/gfx/indirect.cpp
+        src/gfx/material.hpp
+        src/gfx/engine.hpp src/gfx/engine.cpp
+        src/gfx/world.hpp
+        src/gfx/mesh.hpp src/gfx/mesh.cpp
+        src/gfx/base.hpp
         src/mesh/block.hpp
         src/mesh/scene.hpp
+        src/engine/mapper.hpp src/engine/mapper.cpp
         src/game.hpp src/game.cpp
-        src/main.hpp src/main.cpp src/engine/world.hpp)
+        src/main.hpp src/main.cpp)
 
 add_executable(Minote ${SOURCES} ${INTERNALLIBS})
 add_dependencies(Minote Compile_shaders)

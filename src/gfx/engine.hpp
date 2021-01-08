@@ -17,16 +17,16 @@
 #include "sys/vk/image.hpp"
 #include "sys/window.hpp"
 #include "sys/glfw.hpp"
-#include "engine/technique.hpp"
-#include "engine/world.hpp"
-#include "engine/base.hpp"
-#include "engine/mesh.hpp"
+#include "gfx/technique.hpp"
+#include "gfx/world.hpp"
+#include "gfx/base.hpp"
+#include "gfx/mesh.hpp"
 
 #ifndef NDEBUG
 #define VK_VALIDATION
 #endif //NDEBUG
 
-namespace minote::engine {
+namespace minote::gfx {
 
 using namespace base::literals;
 

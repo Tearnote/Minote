@@ -7,7 +7,7 @@
 #include "base/types.hpp"
 #include "base/math.hpp"
 
-namespace minote::engine {
+namespace minote::gfx {
 
 struct World {
 
