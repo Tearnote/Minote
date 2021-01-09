@@ -42,7 +42,7 @@ void PlayState::draw(gfx::Engine& engine) {
 				-1.0f,
 			});
 			auto color = minoColor(mino);
-			if (y >= 20) color.a *= 0.9f;
+			if (y >= 20) color.a *= 0.4f;
 			auto& instances = color.a < 1.0f? blockInstancesTransparent : blockInstancesOpaque;
 			instances.emplace_back(gfx::Instance{
 				.transform = translation,
@@ -56,6 +56,9 @@ void PlayState::draw(gfx::Engine& engine) {
 			.specular = 0.4f,
 			.shine = 24.0f,
 		}}
+	);
+	engine.enqueueDraw("block"_id, "transparent_depth_prepass"_id, blockInstancesTransparent,
+		gfx::Material::Flat
 	);
 	engine.enqueueDraw("block"_id, "transparent"_id, blockInstancesTransparent,
 		gfx::Material::Phong, gfx::MaterialData{.phong = {

@@ -156,11 +156,14 @@ void Engine::render() {
 	// Retrieve the techniques in use
 	auto& opaque = techniques.getTechnique("opaque"_id);
 	auto& opaqueIndirect = techniques.getTechniqueIndirect("opaque"_id, frameIndex);
+	auto& transparentDepthPrepass = techniques.getTechnique("transparent_depth_prepass"_id);
+	auto& transparentDepthPrepassIndirect = techniques.getTechniqueIndirect("transparent_depth_prepass"_id, frameIndex);
 	auto& transparent = techniques.getTechnique("transparent"_id);
 	auto& transparentIndirect = techniques.getTechniqueIndirect("transparent"_id, frameIndex);
 
 	// Prepare and upload draw data to the GPU
 	opaqueIndirect.upload(allocator);
+	transparentDepthPrepassIndirect.upload(allocator);
 	transparentIndirect.upload(allocator);
 
 	world.setViewProjection(glm::uvec2{swapchain.extent.width, swapchain.extent.height},
@@ -232,6 +235,16 @@ void Engine::render() {
 
 	vkCmdDrawIndirect(frame.commandBuffer, opaqueIndirect.commandBuffer(), 0, opaqueIndirect.size(), sizeof(IndirectBuffer::Command));
 
+	vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, transparentDepthPrepass.pipeline);
+	vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+		techniques.getPipelineLayout(), 0,
+		transparentDepthPrepass.descriptorSets[frameIndex].size(), transparentDepthPrepass.descriptorSets[frameIndex].data(),
+		0, nullptr);
+	vkCmdSetViewport(frame.commandBuffer, 0, 1, &viewport);
+	vkCmdSetScissor(frame.commandBuffer, 0, 1, &scissor);
+
+	vkCmdDrawIndirect(frame.commandBuffer, transparentDepthPrepassIndirect.commandBuffer(), 0, transparentDepthPrepassIndirect.size(), sizeof(IndirectBuffer::Command));
+
 	vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, transparent.pipeline);
 	vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 		techniques.getPipelineLayout(), 0,
@@ -299,6 +312,7 @@ void Engine::render() {
 	// Advance, cleanup
 	frameCounter += 1;
 	opaqueIndirect.reset();
+	transparentDepthPrepassIndirect.reset();
 	transparentIndirect.reset();
 }
 
@@ -994,6 +1008,11 @@ void Engine::initContent() {
 	techniques.addTechnique("opaque"_id, device, allocator, descriptorPool, swapchain.renderPass,
 		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
 		vk::makePipelineColorBlendAttachmentState(false),
+		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
+		vk::makePipelineMultisampleStateCI(swapchain.sampleCount));
+	techniques.addTechnique("transparent_depth_prepass"_id, device, allocator, descriptorPool, swapchain.renderPass,
+		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
+		vk::makePipelineColorBlendAttachmentState(false, false),
 		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
 		vk::makePipelineMultisampleStateCI(swapchain.sampleCount));
 	techniques.addTechnique("transparent"_id, device, allocator, descriptorPool, swapchain.renderPass,

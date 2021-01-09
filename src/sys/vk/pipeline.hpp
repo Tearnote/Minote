@@ -87,7 +87,7 @@ constexpr auto makePipelineDepthStencilStateCI(bool depthTest, bool depthWrite, 
 	};
 }
 
-constexpr auto makePipelineColorBlendAttachmentState(bool alphaBlending) {
+constexpr auto makePipelineColorBlendAttachmentState(bool alphaBlending, bool colorWrite = true) {
 	if (alphaBlending) {
 		return VkPipelineColorBlendAttachmentState{
 			.blendEnable = VK_TRUE,
@@ -97,13 +97,13 @@ constexpr auto makePipelineColorBlendAttachmentState(bool alphaBlending) {
 			.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
 			.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
 			.alphaBlendOp = VK_BLEND_OP_ADD,
-			.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-				VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+			.colorWriteMask = colorWrite? VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+				VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT : 0u,
 		};
 	} else {
 		return VkPipelineColorBlendAttachmentState{
-			.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-				VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+			.colorWriteMask = colorWrite? VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+				VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT : 0u,
 		};
 	}
 }
