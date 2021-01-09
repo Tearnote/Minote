@@ -46,7 +46,7 @@ void TechniqueSet::create(VkDevice device, VmaAllocator allocator, VkDescriptorP
 		.binding = 0,
 		.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
 		.descriptorCount = 1,
-		.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+		.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 	};
 	auto const instanceBufferBinding = VkDescriptorSetLayoutBinding{
 		.binding = 1,
@@ -54,16 +54,9 @@ void TechniqueSet::create(VkDevice device, VmaAllocator allocator, VkDescriptorP
 		.descriptorCount = 1,
 		.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 	};
-	auto const materialDataBinding = VkDescriptorSetLayoutBinding{
-		.binding = 2,
-		.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-		.descriptorCount = 1,
-		.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-	};
 	auto const drawBindings = std::to_array<VkDescriptorSetLayoutBinding>({
 		drawCommandBinding,
 		instanceBufferBinding,
-		materialDataBinding,
 	});
 	auto const drawDescriptorSetLayoutCI = VkDescriptorSetLayoutCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
@@ -208,23 +201,9 @@ void TechniqueSet::addTechnique(base::ID id, VkDevice device, VmaAllocator alloc
 			.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
 			.pBufferInfo = &instanceBufferInfo,
 		};
-		auto const materialDataInfo = VkDescriptorBufferInfo{
-			.buffer = indirect.commandBuffer(),
-			.offset = sizeof(IndirectBuffer::Command) - sizeof(MaterialData),
-			.range = VK_WHOLE_SIZE,
-		};
-		auto const materialDataWrite = VkWriteDescriptorSet{
-			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-			.dstSet = drawDS,
-			.dstBinding = 2,
-			.descriptorCount = 1,
-			.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-			.pBufferInfo = &materialDataInfo,
-		};
 		auto const indirectBufferWrites = std::to_array<VkWriteDescriptorSet>({
 			indirectBufferWrite,
 			instanceBufferWrite,
-			materialDataWrite,
 		});
 		vkUpdateDescriptorSets(device, indirectBufferWrites.size(), indirectBufferWrites.data(), 0, nullptr);
 	}

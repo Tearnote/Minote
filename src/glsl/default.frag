@@ -19,15 +19,19 @@ void main() {
 
 	case MATERIAL_FLAT:
 
-		out_color = f_color;
-		out_color = vec4(mix(out_color.rgb, i_highlight.rgb, i_highlight.a), out_color.a);
+		vec4 color = f_color;
+		out_color = vec4(mix(color.rgb, i_highlight.rgb, i_highlight.a), color.a);
 		break;
 
 	case MATERIAL_PHONG:
-		const float ambient = phongData.data[drawID].ambient;
-		const float diffuse = phongData.data[drawID].diffuse;
-		const float specular = phongData.data[drawID].specular;
-		const float shine = phongData.data[drawID].shine;
+		const float ambient = phongCommands.data[drawID].ambient;
+		const float diffuse = phongCommands.data[drawID].diffuse;
+		const float specular = phongCommands.data[drawID].specular;
+		const float shine = phongCommands.data[drawID].shine;
+//		const float ambient = 0.2;
+//		const float diffuse = 0.9;
+//		const float specular = 0.4;
+//		const float shine = 24.0;
 
 		vec4 normal = normalize(f_normal);
 		vec4 lightDirection = normalize(f_lightPosition - f_position);
@@ -39,8 +43,8 @@ void main() {
 		vec4 outSpecular = world.lightColor * specular * pow(max(dot(normal, halfwayDirection), 0.0), shine);
 		vec4 lightStrength = outAmbient + outDiffuse + outSpecular;
 
-		out_color = vec4(lightStrength.rgb, 1.0) * f_color;
-		out_color = vec4(mix(out_color.rgb, i_highlight.rgb, i_highlight.a), out_color.a);
+		vec4 litColor = vec4(lightStrength.rgb * f_color.rgb, f_color.a);
+		out_color = vec4(mix(litColor.rgb, i_highlight.rgb, i_highlight.a), litColor.a);
 		break;
 
 	}

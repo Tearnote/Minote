@@ -10,6 +10,7 @@ struct Command {
 	uint firstVertex;
 	uint firstInstance;
 	uint material;
+	float pad[4];
 };
 
 struct Instance {
@@ -21,14 +22,19 @@ struct Instance {
 #define MATERIAL_FLAT 0
 #define MATERIAL_PHONG 1
 
-struct PhongData {
+struct PhongCommand {
+	uint vertexCount;
+	uint instanceCount;
+	uint firstVertex;
+	uint firstInstance;
+	uint material;
 	float ambient;
 	float diffuse;
 	float specular;
 	float shine;
 };
 
-layout(std140, set = 0, binding = 0) readonly buffer Vertices {
+layout(std430, set = 0, binding = 0) readonly buffer Vertices {
 	Vertex data[];
 } vertices;
 
@@ -41,14 +47,14 @@ layout(set = 0, binding = 1) uniform World {
 	vec4 ambientColor;
 } world;
 
-layout(std140, set = 1, binding = 0) readonly buffer Commands {
+layout(std430, set = 1, binding = 0) readonly buffer Commands {
 	Command data[];
 } commands;
 
-layout(std140, set = 1, binding = 1) readonly buffer Instances {
+layout(std430, set = 1, binding = 0) readonly buffer PhongCommands {
+	PhongCommand data[];
+} phongCommands;
+
+layout(std430, set = 1, binding = 1) readonly buffer Instances {
 	Instance data[];
 } instances;
-
-layout(std140, set = 1, binding = 2) readonly buffer PhongDatas {
-	PhongData data[];
-} phongData;

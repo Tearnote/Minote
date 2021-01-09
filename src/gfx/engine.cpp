@@ -997,7 +997,7 @@ void Engine::initContent() {
 		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
 		vk::makePipelineMultisampleStateCI(swapchain.sampleCount));
 	techniques.addTechnique("transparent"_id, device, allocator, descriptorPool, swapchain.renderPass,
-		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, false),
+		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
 		vk::makePipelineColorBlendAttachmentState(true),
 		vk::makePipelineDepthStencilStateCI(true, false, VK_COMPARE_OP_LESS_OR_EQUAL),
 		vk::makePipelineMultisampleStateCI(swapchain.sampleCount));

@@ -39,6 +39,10 @@ struct Mapper {
 	// input queue will still have all of the unprocessed inputs.
 	void collectKeyInputs(sys::Window& window);
 
+	template<typename F>
+		requires std::predicate<F, Action const&>
+	void processActions(F func);
+
 private:
 
 	// Processed inputs, ready to be retrieved with peek/dequeueAction()
@@ -47,3 +51,5 @@ private:
 };
 
 }
+
+#include "engine/mapper.tpp"

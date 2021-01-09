@@ -65,7 +65,7 @@ void Mapper::collectKeyInputs(sys::Window& window) {
 			actions.push_back({
 				.type = type,
 				.state = state,
-				.timestamp = timestamp
+				.timestamp = timestamp,
 			});
 		} catch (...) {
 			throw std::runtime_error{"Mapper queue is full"};

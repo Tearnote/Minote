@@ -1,7 +1,7 @@
 #pragma once
 
+#include <algorithm>
 #include <concepts>
-#include <cstddef>
 #include "base/concepts.hpp"
 #include "base/types.hpp"
 
@@ -18,9 +18,17 @@ inline auto offset_of(T1 T2::*member) -> size_t {
 }
 
 // Align a size to a given boundary.
-constexpr auto alignSize(base::size_t size, base::size_t boundary) -> base::size_t {
+constexpr auto alignSize(size_t size, size_t boundary) -> size_t {
 	if (boundary == 0) return size;
 	return (size + boundary - 1) & ~(boundary - 1);
+}
+
+// Execute n times.
+template<typename F>
+	requires std::invocable<F>
+void repeat(size_t times, F func) {
+	for (size_t i = 0; i < times; i += 1)
+		func();
 }
 
 namespace literals {
