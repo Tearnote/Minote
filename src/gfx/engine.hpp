@@ -137,7 +137,7 @@ private:
 	VkPipeline passthrough;
 	VkPipelineLayout passthroughLayout;
 	sys::vk::Shader passthroughShader;
-	PerFrame<VkDescriptorSet> passthroughDescriptorSet;
+	VkDescriptorSet passthroughDescriptorSet;
 
 	[[nodiscard]]
 	auto uniquePresentQueue() const {

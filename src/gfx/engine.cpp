@@ -182,21 +182,6 @@ void Engine::render() {
 		.extent = swapchain.extent,
 	};
 
-	// Rebind descriptors
-	auto const passthroughImageInfo = VkDescriptorImageInfo{
-		.imageView = swapchain.ssColorView,
-		.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-	};
-	auto const passthroughWrite = VkWriteDescriptorSet{
-		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-		.dstSet = passthroughDescriptorSet[frameIndex],
-		.dstBinding = 0,
-		.descriptorCount = 1,
-		.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
-		.pImageInfo = &passthroughImageInfo,
-	};
-	vkUpdateDescriptorSets(device, 1, &passthroughWrite, 0, nullptr);
-
 	// Start recording commands
 	VK(vkResetCommandBuffer(frame.commandBuffer, 0));
 	auto cmdBeginInfo = VkCommandBufferBeginInfo{
@@ -261,7 +246,7 @@ void Engine::render() {
 	vkCmdNextSubpass(frame.commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
 	vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, passthrough);
 	vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-		passthroughLayout, 0, 1, &passthroughDescriptorSet[frameIndex], 0, nullptr);
+		passthroughLayout, 0, 1, &passthroughDescriptorSet, 0, nullptr);
 	vkCmdSetViewport(frame.commandBuffer, 0, 1, &viewport);
 	vkCmdSetScissor(frame.commandBuffer, 0, 1, &scissor);
 	vkCmdDraw(frame.commandBuffer, 3, 1, 0, 0);
@@ -923,6 +908,7 @@ void Engine::initFrames() {
 	});
 	auto descriptorPoolCI = VkDescriptorPoolCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+		.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
 		.maxSets = 64,
 		.poolSizeCount = static_cast<u32>(descriptorPoolSizes.size()),
 		.pPoolSizes = descriptorPoolSizes.data(),
@@ -1045,8 +1031,21 @@ void Engine::initContent() {
 		.descriptorSetCount = 1,
 		.pSetLayouts = &passthroughShader.descriptorSetLayouts[0],
 	};
-	for (auto& ds: passthroughDescriptorSet)
-		VK(vkAllocateDescriptorSets(device, &passthroughDescriptorSetAI, &ds));
+	VK(vkAllocateDescriptorSets(device, &passthroughDescriptorSetAI, &passthroughDescriptorSet));
+
+	auto const passthroughImageInfo = VkDescriptorImageInfo{
+		.imageView = swapchain.ssColorView,
+		.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+	};
+	auto const passthroughWrite = VkWriteDescriptorSet{
+		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+		.dstSet = passthroughDescriptorSet,
+		.dstBinding = 0,
+		.descriptorCount = 1,
+		.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+		.pImageInfo = &passthroughImageInfo,
+	};
+	vkUpdateDescriptorSets(device, 1, &passthroughWrite, 0, nullptr);
 
 	passthroughLayout = vk::createPipelineLayout(device, std::to_array({
 		passthroughShader.descriptorSetLayouts[0],
@@ -1107,6 +1106,36 @@ void Engine::recreateSwapchain() {
 	auto oldSwapchain = swapchain.swapchain;
 	swapchain = {};
 	initSwapchain(oldSwapchain);
+
+	// Recreate swapchain-dependent descriptor sets
+	delayedOps.emplace_back(DelayedOp{
+		.deadline = frameCounter + FramesInFlight,
+		.func = [this, ds=passthroughDescriptorSet]() mutable {
+			vkFreeDescriptorSets(device, descriptorPool, 1, &ds);
+		},
+	});
+
+	auto const passthroughDescriptorSetAI = VkDescriptorSetAllocateInfo{
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+		.descriptorPool = descriptorPool,
+		.descriptorSetCount = 1,
+		.pSetLayouts = &passthroughShader.descriptorSetLayouts[0],
+	};
+	VK(vkAllocateDescriptorSets(device, &passthroughDescriptorSetAI, &passthroughDescriptorSet));
+
+	auto const passthroughImageInfo = VkDescriptorImageInfo{
+		.imageView = swapchain.ssColorView,
+		.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+	};
+	auto const passthroughWrite = VkWriteDescriptorSet{
+		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+		.dstSet = passthroughDescriptorSet,
+		.dstBinding = 0,
+		.descriptorCount = 1,
+		.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+		.pImageInfo = &passthroughImageInfo,
+	};
+	vkUpdateDescriptorSets(device, 1, &passthroughWrite, 0, nullptr);
 }
 
 #ifdef VK_VALIDATION
