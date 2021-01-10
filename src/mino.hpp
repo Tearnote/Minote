@@ -44,6 +44,7 @@ constexpr auto minoColor(Mino mino) {
 	case Mino::J: return glm::vec4{0.0f, 0.0f, 1.0f, 1.0f};
 	case Mino::S: return glm::vec4{1.0f, 0.0f, 1.0f, 1.0f};
 	case Mino::Garbage: return glm::vec4{.22f, .22f, .22f, 1.0f};
+	default: return glm::vec4{1.0f, 0.0f, 1.0f, 1.0f};
 	}
 }
 

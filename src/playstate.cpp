@@ -10,7 +10,7 @@ PlayState::PlayState() {
 	// something, someday...
 }
 
-void PlayState::tick(std::span<Action const> actions) {
+void PlayState::tick(std::span<Action const>) {
 	std::srand(0);
 	for (auto x: ranges::iota_view{0_zu, m_grid.Width})
 		for (auto y: ranges::iota_view{0_zu, m_grid.Height}) {

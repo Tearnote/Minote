@@ -69,7 +69,6 @@ private:
 		VkExtent2D extent;
 		std::vector<Surface> surfaces;
 		VkRenderPass renderPass;
-		i64 expiry;
 
 	};
 
@@ -89,9 +88,15 @@ private:
 		glm::vec3 up;
 	};
 
+	struct DelayedOp {
+		u64 deadline;
+		std::function<void()> func;
+	};
+
 	std::string name;
 	sys::Window& window;
-	i64 frameCounter;
+	u64 frameCounter;
+	svector<DelayedOp, 64> delayedOps;
 
 	VkInstance instance;
 	std::vector<char const*> instanceExtensions;
@@ -118,7 +123,6 @@ private:
 	VmaAllocator allocator;
 
 	Swapchain swapchain;
-	ring<Swapchain, 16> oldSwapchains;
 
 	PerFrame<Frame> frames;
 	VkDescriptorPool descriptorPool;

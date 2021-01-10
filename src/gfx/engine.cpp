@@ -89,8 +89,9 @@ Engine::~Engine() {
 		vkDestroyCommandPool(device, transferCommandPool, nullptr);
 		vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 		destroySwapchain(swapchain);
-		for (auto& oldsc: oldSwapchains)
-			destroySwapchain(oldsc);
+		for (auto& op: delayedOps)
+			op.func();
+		delayedOps.clear();
 		vmaDestroyAllocator(allocator);
 		vkDestroyDevice(device, nullptr);
 	}
@@ -301,13 +302,16 @@ void Engine::render() {
 	else if (result != VK_SUCCESS)
 		VK(result);
 
-	// Destroy expired swapchains
-	while (!oldSwapchains.empty()) {
-		auto& oldsc = oldSwapchains.front();
-		if (oldsc.expiry > frameCounter) break;
-		destroySwapchain(oldsc);
-		oldSwapchains.pop_front();
-	}
+	// Run delayed ops
+	auto newsize = ranges::remove_if(delayedOps, [this](auto& op) {
+		if (op.deadline == frameCounter) {
+			op.func();
+			return true;
+		} else {
+			return false;
+		}
+	});
+	delayedOps.erase(newsize.begin(), newsize.end());
 
 	// Advance, cleanup
 	frameCounter += 1;
@@ -1096,10 +1100,13 @@ void Engine::recreateSwapchain() {
 	ASSERT(!surfaceFormats.empty() && !surfacePresentModes.empty());
 
 	// Recreate swapchain objects
-	oldSwapchains.emplace_back(std::move(swapchain));
+	delayedOps.emplace_back(DelayedOp{
+		.deadline = frameCounter + FramesInFlight,
+		.func = [this, swapchain=swapchain]() mutable { destroySwapchain(swapchain); },
+	});
+	auto oldSwapchain = swapchain.swapchain;
 	swapchain = {};
-	oldSwapchains.back().expiry = frameCounter + FramesInFlight;
-	initSwapchain(oldSwapchains.back().swapchain);
+	initSwapchain(oldSwapchain);
 }
 
 #ifdef VK_VALIDATION
