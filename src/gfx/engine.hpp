@@ -47,28 +47,38 @@ struct Engine {
 
 private:
 
-	struct Surface {
-
-		sys::vk::Image color;
-		VkImageView colorView;
-		VkFramebuffer framebuffer;
-
-	};
-
 	struct Swapchain {
 
 		VkSwapchainKHR swapchain = nullptr;
+		VkFormat format;
+		VkExtent2D extent = {};
+		std::vector<sys::vk::Image> color;
+		std::vector<VkImageView> colorView;
+
+	};
+
+	struct Present {
+
+		VkRenderPass renderPass;
+		std::vector<VkFramebuffer> framebuffer;
+		VkDescriptorSet descriptorSet;
+		sys::vk::Shader shader;
+		VkPipelineLayout layout;
+		VkPipeline pipeline;
+
+	};
+
+	struct RenderTargets {
+
+		VkSampleCountFlagBits sampleCount;
 		sys::vk::Image msColor;
 		VkImageView msColorView;
 		sys::vk::Image ssColor;
 		VkImageView ssColorView;
 		sys::vk::Image depthStencil;
 		VkImageView depthStencilView;
-		VkSampleCountFlagBits sampleCount;
-		VkFormat format;
-		VkExtent2D extent;
-		std::vector<Surface> surfaces;
-		VkRenderPass renderPass;
+		VkRenderPass objectPass;
+		VkFramebuffer objectFb;
 
 	};
 
@@ -83,14 +93,18 @@ private:
 	};
 
 	struct Camera {
+
+
 		glm::vec3 eye;
 		glm::vec3 center;
 		glm::vec3 up;
 	};
 
 	struct DelayedOp {
+
 		u64 deadline;
 		std::function<void()> func;
+
 	};
 
 	std::string name;
@@ -122,22 +136,19 @@ private:
 	VkQueue transferQueue;
 	VmaAllocator allocator;
 
-	Swapchain swapchain;
-
 	PerFrame<Frame> frames;
 	VkDescriptorPool descriptorPool;
 	VkCommandPool transferCommandPool;
 	VkFence transfersFinished;
 
+	Swapchain swapchain;
+	Present present;
+	RenderTargets targets;
+
 	TechniqueSet techniques;
 	MeshBuffer meshes;
 	Camera camera;
 	World world;
-
-	VkPipeline passthrough;
-	VkPipelineLayout passthroughLayout;
-	sys::vk::Shader passthroughShader;
-	VkDescriptorSet passthroughDescriptorSet;
 
 	[[nodiscard]]
 	auto uniquePresentQueue() const {
@@ -150,15 +161,46 @@ private:
 	}
 
 	void initInstance(Version appVersion);
-	void initPhysicalDevice();
-	void initDevice();
-	void initAllocator();
-	void initSwapchain(VkSwapchainKHR old = nullptr);
-	void initFrames();
-	void initContent();
+	void cleanupInstance();
 
+	void initPhysicalDevice();
+
+	void initDevice();
+	void cleanupDevice();
+
+	void initCommands();
+	void cleanupCommands();
+
+	void initSwapchain();
+	void cleanupSwapchain();
+
+	void initImages();
+	void cleanupImages();
+
+	void initFramebuffers();
+	void cleanupFramebuffers();
+
+	void initBuffers();
+	void cleanupBuffers();
+
+	void initPipelines();
+	void cleanupPipelines();
+
+	void createSwapchain(VkSwapchainKHR old = nullptr);
 	void destroySwapchain(Swapchain&);
 	void recreateSwapchain();
+
+	void createPresentFbs();
+	void destroyPresentFbs(Present&);
+	void createPresentPipeline();
+	void destroyPresentPipeline(Present&);
+	void createPresentPipelineDS();
+	void destroyPresentPipelineDS(Present&);
+
+	void createTargetImages();
+	void destroyTargetImages(RenderTargets&);
+	void createTargetFbs();
+	void destroyTargetFbs(RenderTargets&);
 
 #ifdef VK_VALIDATION
 	static VKAPI_ATTR auto VKAPI_CALL debugCallback(

@@ -47,7 +47,7 @@ add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
 # Compile shaders
 set(SHADER_SOURCES
         src/glsl/default.vert src/glsl/default.frag
-        src/glsl/passthrough.vert src/glsl/passthrough.frag)
+        src/glsl/present.vert src/glsl/present.frag)
 
 foreach (SHADER_PATH ${SHADER_SOURCES})
     get_filename_component(SHADER_FILENAME ${SHADER_PATH} NAME)

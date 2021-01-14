@@ -37,12 +37,12 @@ namespace vk = sys::vk;
 namespace ranges = std::ranges;
 using namespace std::string_literals;
 
-constexpr auto passthroughVertSrc = std::to_array<u32>({
-#include "spv/passthrough.vert.spv"
+constexpr auto presentVertSrc = std::to_array<u32>({
+#include "spv/present.vert.spv"
 });
 
-constexpr auto passthroughFragSrc = std::to_array<u32>({
-#include "spv/passthrough.frag.spv"
+constexpr auto presentFragSrc = std::to_array<u32>({
+#include "spv/present.frag.spv"
 });
 
 static constexpr auto versionToCode(Version version) -> u32 {
@@ -62,10 +62,12 @@ Engine::Engine(sys::Glfw&, sys::Window& _window, std::string_view _name, Version
 	initInstance(appVersion);
 	initPhysicalDevice();
 	initDevice();
-	initAllocator();
+	initCommands();
 	initSwapchain();
-	initFrames();
-	initContent();
+	initImages();
+	initFramebuffers();
+	initBuffers();
+	initPipelines();
 
 	L.info("Vulkan initialized");
 }
@@ -74,33 +76,19 @@ Engine::~Engine() {
 	if (device) {
 		vkDeviceWaitIdle(device);
 
-		vkDestroyPipeline(device, passthrough, nullptr);
-		vkDestroyPipelineLayout(device, passthroughLayout, nullptr);
-		vk::destroyShader(device, passthroughShader);
-		techniques.destroy(device, allocator);
-		meshes.destroy(allocator);
-		vkDestroyFence(device, transfersFinished, nullptr);
-		for (auto& frame: frames) {
-			vkDestroySemaphore(device, frame.renderSemaphore, nullptr);
-			vkDestroySemaphore(device, frame.presentSemaphore, nullptr);
-			vkDestroyFence(device, frame.renderFence, nullptr);
-			vkDestroyCommandPool(device, frame.commandPool, nullptr);
-		}
-		vkDestroyCommandPool(device, transferCommandPool, nullptr);
-		vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-		destroySwapchain(swapchain);
 		for (auto& op: delayedOps)
 			op.func();
-		delayedOps.clear();
-		vmaDestroyAllocator(allocator);
-		vkDestroyDevice(device, nullptr);
+
+		cleanupPipelines();
+		cleanupBuffers();
+		cleanupFramebuffers();
+		cleanupImages();
+		cleanupSwapchain();
+		cleanupCommands();
+		cleanupDevice();
 	}
 	if (instance) {
-		vkDestroySurfaceKHR(instance, surface, nullptr);
-#ifdef VK_VALIDATION
-		vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
-#endif //VK_VALIDATION
-		vkDestroyInstance(instance, nullptr);
+		cleanupInstance();
 	}
 
 	L.info("Vulkan cleaned up");
@@ -148,7 +136,6 @@ void Engine::render() {
 			VK(result);
 		break;
 	}
-	auto& images = swapchain.surfaces[swapchainImageIndex];
 
 	// Wait until the GPU is free
 	VK(vkWaitForFences(device, 1, &frame.renderFence, true, (1_s).count()));
@@ -196,11 +183,11 @@ void Engine::render() {
 		{ .depthStencil = { .depth = 1.0f }},
 	});
 
-	// Start the render pass
+	// Start the object drawing pass
 	VkRenderPassBeginInfo rpBeginInfo{
 		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-		.renderPass = swapchain.renderPass,
-		.framebuffer = images.framebuffer,
+		.renderPass = targets.objectPass,
+		.framebuffer = targets.objectFb,
 		.renderArea = {
 			.extent = swapchain.extent,
 		},
@@ -209,8 +196,7 @@ void Engine::render() {
 	};
 	vkCmdBeginRenderPass(frame.commandBuffer, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-	// START OBJECT DRAWING
-
+	// Opaque object draw
 	vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, opaque.pipeline);
 	vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 		techniques.getPipelineLayout(), 0,
@@ -221,6 +207,7 @@ void Engine::render() {
 
 	vkCmdDrawIndirect(frame.commandBuffer, opaqueIndirect.commandBuffer(), 0, opaqueIndirect.size(), sizeof(IndirectBuffer::Command));
 
+	// Transparent object draw prepass
 	vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, transparentDepthPrepass.pipeline);
 	vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 		techniques.getPipelineLayout(), 0,
@@ -231,6 +218,7 @@ void Engine::render() {
 
 	vkCmdDrawIndirect(frame.commandBuffer, transparentDepthPrepassIndirect.commandBuffer(), 0, transparentDepthPrepassIndirect.size(), sizeof(IndirectBuffer::Command));
 
+	// Transparent object draw
 	vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, transparent.pipeline);
 	vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 		techniques.getPipelineLayout(), 0,
@@ -241,12 +229,24 @@ void Engine::render() {
 
 	vkCmdDrawIndirect(frame.commandBuffer, transparentIndirect.commandBuffer(), 0, transparentIndirect.size(), sizeof(IndirectBuffer::Command));
 
-	// END OBJECT DRAWING
+	// Finish the object drawing pass
+	vkCmdEndRenderPass(frame.commandBuffer);
 
-	vkCmdNextSubpass(frame.commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
-	vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, passthrough);
+	// Start the present pass
+	rpBeginInfo = VkRenderPassBeginInfo{
+		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+		.renderPass = present.renderPass,
+		.framebuffer = present.framebuffer[swapchainImageIndex],
+		.renderArea = {
+			.extent = swapchain.extent,
+		},
+	};
+	vkCmdBeginRenderPass(frame.commandBuffer, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	// Blit the image to screen
+	vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, present.pipeline);
 	vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-		passthroughLayout, 0, 1, &passthroughDescriptorSet, 0, nullptr);
+		present.layout, 0, 1, &present.descriptorSet, 0, nullptr);
 	vkCmdSetViewport(frame.commandBuffer, 0, 1, &viewport);
 	vkCmdSetScissor(frame.commandBuffer, 0, 1, &scissor);
 	vkCmdDraw(frame.commandBuffer, 3, 1, 0, 0);
@@ -420,6 +420,14 @@ void Engine::initInstance(Version appVersion) {
 	VK(glfwCreateWindowSurface(instance, window.handle(), nullptr, &surface));
 
 	L.debug("Vulkan instance created");
+}
+
+void Engine::cleanupInstance() {
+	vkDestroySurfaceKHR(instance, surface, nullptr);
+#ifdef VK_VALIDATION
+	vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+#endif //VK_VALIDATION
+	vkDestroyInstance(instance, nullptr);
 }
 
 void Engine::initPhysicalDevice() {
@@ -650,10 +658,7 @@ void Engine::initDevice() {
 	vkGetDeviceQueue(device, presentQueueFamilyIndex, 0, &presentQueue);
 	vkGetDeviceQueue(device, transferQueueFamilyIndex, 0, &transferQueue);
 
-	L.debug("Vulkan device created");
-}
-
-void Engine::initAllocator() {
+	// Create the allocator
 	auto allocatorFunctions = VmaVulkanFunctions{
 		.vkGetPhysicalDeviceProperties = vkGetPhysicalDeviceProperties,
 		.vkGetPhysicalDeviceMemoryProperties = vkGetPhysicalDeviceMemoryProperties,
@@ -686,9 +691,184 @@ void Engine::initAllocator() {
 		.vulkanApiVersion = VulkanVersion,
 	};
 	VK(vmaCreateAllocator(&allocatorCI, &allocator));
+
+	L.debug("Vulkan device created");
 }
 
-void Engine::initSwapchain(VkSwapchainKHR old) {
+void Engine::cleanupDevice() {
+	vmaDestroyAllocator(allocator);
+	vkDestroyDevice(device, nullptr);
+}
+
+void Engine::initCommands() {
+	// Create the descriptor pool
+	auto const descriptorPoolSizes = std::to_array<VkDescriptorPoolSize>({
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 8 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 8 },
+		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 8 },
+	});
+	auto descriptorPoolCI = VkDescriptorPoolCreateInfo{
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+		.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+		.maxSets = 64,
+		.poolSizeCount = static_cast<u32>(descriptorPoolSizes.size()),
+		.pPoolSizes = descriptorPoolSizes.data(),
+	};
+	VK(vkCreateDescriptorPool(device, &descriptorPoolCI, nullptr, &descriptorPool));
+
+	// Create the graphics command buffers and sync objects
+	auto commandPoolCI = VkCommandPoolCreateInfo{
+		.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+		.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+		.queueFamilyIndex = graphicsQueueFamilyIndex,
+	};
+	auto commandBufferAI = VkCommandBufferAllocateInfo{
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+		.commandBufferCount = 1,
+	};
+	auto fenceCI = VkFenceCreateInfo{
+		.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+		.flags = VK_FENCE_CREATE_SIGNALED_BIT,
+	};
+	auto const semaphoreCI = VkSemaphoreCreateInfo{
+		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+	};
+
+	for (auto& frame: frames) {
+		VK(vkCreateCommandPool(device, &commandPoolCI, nullptr, &frame.commandPool));
+		commandBufferAI.commandPool = frame.commandPool;
+		VK(vkAllocateCommandBuffers(device, &commandBufferAI, &frame.commandBuffer));
+		VK(vkCreateFence(device, &fenceCI, nullptr, &frame.renderFence));
+		VK(vkCreateSemaphore(device, &semaphoreCI, nullptr, &frame.renderSemaphore));
+		VK(vkCreateSemaphore(device, &semaphoreCI, nullptr, &frame.presentSemaphore));
+	}
+
+	// Create the transfer queue
+	commandPoolCI.queueFamilyIndex = transferQueueFamilyIndex;
+	VK(vkCreateCommandPool(device, &commandPoolCI, nullptr, &transferCommandPool));
+	fenceCI.flags = 0;
+	VK(vkCreateFence(device, &fenceCI, nullptr, &transfersFinished));
+}
+
+void Engine::cleanupCommands() {
+	vkDestroyFence(device, transfersFinished, nullptr);
+	vkDestroyCommandPool(device, transferCommandPool, nullptr);
+	for (auto& frame: frames) {
+		vkDestroySemaphore(device, frame.presentSemaphore, nullptr);
+		vkDestroySemaphore(device, frame.renderSemaphore, nullptr);
+		vkDestroyFence(device, frame.renderFence, nullptr);
+		vkDestroyCommandPool(device, frame.commandPool, nullptr);
+	}
+	vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+}
+
+void Engine::initSwapchain() {
+	createSwapchain();
+
+	L.info("Created a Vulkan swapchain at {}x{} with {} images",
+		swapchain.extent.width, swapchain.extent.height, swapchain.color.size());
+}
+
+void Engine::cleanupSwapchain() {
+	destroySwapchain(swapchain);
+}
+
+void Engine::initImages() {
+	createTargetImages();
+}
+
+void Engine::cleanupImages() {
+	destroyTargetImages(targets);
+}
+
+void Engine::initFramebuffers() {
+	createPresentFbs();
+	createTargetFbs();
+}
+
+void Engine::cleanupFramebuffers() {
+	destroyTargetFbs(targets);
+	destroyPresentFbs(present);
+}
+
+void Engine::initBuffers() {
+	// Begin GPU transfers
+	auto commandBufferAI = VkCommandBufferAllocateInfo{
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+		.commandPool = transferCommandPool,
+		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+		.commandBufferCount = 1,
+	};
+	VkCommandBuffer transferCommandBuffer;
+	VK(vkAllocateCommandBuffers(device, &commandBufferAI, &transferCommandBuffer));
+
+	auto commandBufferBI = VkCommandBufferBeginInfo{
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+	};
+	VK(vkBeginCommandBuffer(transferCommandBuffer, &commandBufferBI));
+
+	std::vector<vk::Buffer> stagingBuffers;
+
+	// Create meshes
+	meshes.addMesh("block"_id, generateNormals(mesh::Block));
+	meshes.addMesh("scene"_id, generateNormals(mesh::Scene));
+	meshes.upload(allocator, transferCommandBuffer, stagingBuffers.emplace_back());
+
+	// Finish GPU transfers
+	VK(vkEndCommandBuffer(transferCommandBuffer));
+
+	auto submitInfo = VkSubmitInfo{
+		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		.commandBufferCount = 1,
+		.pCommandBuffers = &transferCommandBuffer,
+	};
+	VK(vkQueueSubmit(transferQueue, 1, &submitInfo, transfersFinished));
+
+	vkWaitForFences(device, 1, &transfersFinished, true, (1_s).count());
+	vkResetFences(device, 1, &transfersFinished);
+
+	vkResetCommandPool(device, transferCommandPool, 0);
+
+	for (auto& buffer: stagingBuffers)
+		vmaDestroyBuffer(allocator, buffer.buffer, buffer.allocation);
+}
+
+void Engine::cleanupBuffers() {
+	meshes.destroy(allocator);
+}
+
+void Engine::initPipelines() {
+	createPresentPipeline();
+	createPresentPipelineDS();
+
+	techniques.create(device, allocator, descriptorPool, meshes);
+	techniques.addTechnique("opaque"_id, device, allocator, descriptorPool, targets.objectPass,
+		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
+		vk::makePipelineColorBlendAttachmentState(false),
+		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
+		vk::makePipelineMultisampleStateCI(targets.sampleCount));
+	techniques.addTechnique("transparent_depth_prepass"_id, device, allocator, descriptorPool, targets.objectPass,
+		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
+		vk::makePipelineColorBlendAttachmentState(false, false),
+		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
+		vk::makePipelineMultisampleStateCI(targets.sampleCount));
+	techniques.addTechnique("transparent"_id, device, allocator, descriptorPool, targets.objectPass,
+		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
+		vk::makePipelineColorBlendAttachmentState(true),
+		vk::makePipelineDepthStencilStateCI(true, false, VK_COMPARE_OP_LESS_OR_EQUAL),
+		vk::makePipelineMultisampleStateCI(targets.sampleCount));
+}
+
+void Engine::cleanupPipelines() {
+	techniques.destroy(device, allocator);
+
+	destroyPresentPipelineDS(present);
+	destroyPresentPipeline(present);
+}
+
+void Engine::createSwapchain(VkSwapchainKHR old) {
 	// Find the best swapchain options
 	auto const surfaceFormat = [&]() -> VkSurfaceFormatKHR {
 		for (auto const& fmt: surfaceFormats) {
@@ -752,331 +932,20 @@ void Engine::initSwapchain(VkSwapchainKHR old) {
 	vkGetSwapchainImagesKHR(device, swapchain.swapchain, &swapchainImageCount, nullptr);
 	auto swapchainImagesRaw = std::vector<VkImage>{swapchainImageCount};
 	vkGetSwapchainImagesKHR(device, swapchain.swapchain, &swapchainImageCount, swapchainImagesRaw.data());
-	for (auto img: swapchainImagesRaw) {
-		auto color = vk::Image{
-			.image = img,
+	swapchain.color.resize(swapchainImagesRaw.size());
+	swapchain.colorView.resize(swapchainImagesRaw.size());
+	for (auto[raw, color, cv]: zip_view{swapchainImagesRaw, swapchain.color, swapchain.colorView}) {
+		color = vk::Image{
+			.image = raw,
 			.format = swapchain.format,
 		};
-		swapchain.surfaces.push_back({
-			.color = color,
-			.colorView = vk::createImageView(device, color, VK_IMAGE_ASPECT_COLOR_BIT),
-		});
+		cv = vk::createImageView(device, color, VK_IMAGE_ASPECT_COLOR_BIT);
 	}
-
-	// Create the render target
-	auto const supportedSampleCount = deviceProperties.limits.framebufferColorSampleCounts & deviceProperties.limits.framebufferDepthSampleCounts;
-	if (SampleCount & supportedSampleCount) {
-		swapchain.sampleCount = SampleCount;
-	} else {
-		L.warn("Requested antialiasing mode MSAA {}x not supported; defaulting to no AA", SampleCount);
-		swapchain.sampleCount = VK_SAMPLE_COUNT_1_BIT;
-	}
-	swapchain.msColor = vk::createImage(allocator, ColorFormat,
-		VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-		swapchain.extent, swapchain.sampleCount);
-	swapchain.msColorView = vk::createImageView(device, swapchain.msColor,
-		VK_IMAGE_ASPECT_COLOR_BIT);
-	swapchain.ssColor = vk::createImage(allocator, ColorFormat,
-		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
-		swapchain.extent, VK_SAMPLE_COUNT_1_BIT);
-	swapchain.ssColorView = vk::createImageView(device, swapchain.ssColor,
-		VK_IMAGE_ASPECT_COLOR_BIT);
-	swapchain.depthStencil = vk::createImage(allocator, DepthFormat,
-		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-		swapchain.extent, swapchain.sampleCount);
-	swapchain.depthStencilView = vk::createImageView(device, swapchain.depthStencil,
-		VK_IMAGE_ASPECT_DEPTH_BIT);
-
-	// Create the default render pass
-	auto const rpAttachments = std::to_array<VkAttachmentDescription>({
-		{ // MSAA color
-			.format = swapchain.msColor.format,
-			.samples = swapchain.sampleCount,
-			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-			.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-		},
-		{ // MSAA depth
-			.format = swapchain.depthStencil.format,
-			.samples = swapchain.sampleCount,
-			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-		},
-		{ // Resolve
-			.format = swapchain.ssColor.format,
-			.samples = VK_SAMPLE_COUNT_1_BIT,
-			.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-		},
-		{ // Present
-			.format = swapchain.format,
-			.samples = VK_SAMPLE_COUNT_1_BIT,
-			.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-		},
-	});
-	auto const colorAttachmentRef = VkAttachmentReference{
-		.attachment = 0,
-		.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-	};
-	auto const depthAttachmentRef = VkAttachmentReference{
-		.attachment = 1,
-		.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-	};
-	auto const resolveAttachmentRef = VkAttachmentReference{
-		.attachment = 2,
-		.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-	};
-	auto const resolvedAttachmentRef = VkAttachmentReference{
-		.attachment = 2,
-		.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-	};
-	auto const presentAttachmentRef = VkAttachmentReference{
-		.attachment = 3,
-		.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-	};
-	auto const subpasses = std::to_array<VkSubpassDescription>({
-		{
-			.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-			.colorAttachmentCount = 1,
-			.pColorAttachments = &colorAttachmentRef,
-			.pResolveAttachments = &resolveAttachmentRef,
-			.pDepthStencilAttachment = &depthAttachmentRef,
-		},
-		{
-			.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-			.inputAttachmentCount = 1,
-			.pInputAttachments = &resolvedAttachmentRef,
-			.colorAttachmentCount = 1,
-			.pColorAttachments = &presentAttachmentRef,
-		},
-	});
-	auto const renderPassCI = VkRenderPassCreateInfo{
-		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-		.attachmentCount = rpAttachments.size(),
-		.pAttachments = rpAttachments.data(),
-		.subpassCount = subpasses.size(),
-		.pSubpasses = subpasses.data(),
-	};
-	VK(vkCreateRenderPass(device, &renderPassCI, nullptr, &swapchain.renderPass));
-
-	// Create the swapchain framebuffers
-	for (auto& fb: swapchain.surfaces) {
-		auto const fbAttachments = std::to_array<VkImageView>({
-			swapchain.msColorView,
-			swapchain.depthStencilView,
-			swapchain.ssColorView,
-			fb.colorView,
-		});
-		auto const framebufferCI = VkFramebufferCreateInfo{
-			.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-			.renderPass = swapchain.renderPass,
-			.attachmentCount = fbAttachments.size(),
-			.pAttachments = fbAttachments.data(),
-			.width = swapchain.extent.width,
-			.height = swapchain.extent.height,
-			.layers = 1,
-		};
-		VK(vkCreateFramebuffer(device, &framebufferCI, nullptr, &fb.framebuffer));
-	}
-
-	L.info("Created a Vulkan swapchain at {}x{} with {} images",
-		swapchain.extent.width, swapchain.extent.height, swapchain.surfaces.size());
-}
-
-void Engine::initFrames() {
-	// Initialize the world descriptor set
-	auto const descriptorPoolSizes = std::to_array<VkDescriptorPoolSize>({
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 8 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 8 },
-		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 8 },
-	});
-	auto descriptorPoolCI = VkDescriptorPoolCreateInfo{
-		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-		.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-		.maxSets = 64,
-		.poolSizeCount = static_cast<u32>(descriptorPoolSizes.size()),
-		.pPoolSizes = descriptorPoolSizes.data(),
-	};
-	VK(vkCreateDescriptorPool(device, &descriptorPoolCI, nullptr, &descriptorPool));
-
-	// Create the graphics command buffers and sync objects
-	auto commandPoolCI = VkCommandPoolCreateInfo{
-		.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-		.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-		.queueFamilyIndex = graphicsQueueFamilyIndex,
-	};
-	auto commandBufferAI = VkCommandBufferAllocateInfo{
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-		.commandBufferCount = 1,
-	};
-	auto fenceCI = VkFenceCreateInfo{
-		.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-		.flags = VK_FENCE_CREATE_SIGNALED_BIT,
-	};
-	auto const semaphoreCI = VkSemaphoreCreateInfo{
-		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-	};
-
-	for (auto& frame: frames) {
-		VK(vkCreateCommandPool(device, &commandPoolCI, nullptr, &frame.commandPool));
-		commandBufferAI.commandPool = frame.commandPool;
-		VK(vkAllocateCommandBuffers(device, &commandBufferAI, &frame.commandBuffer));
-		VK(vkCreateFence(device, &fenceCI, nullptr, &frame.renderFence));
-		VK(vkCreateSemaphore(device, &semaphoreCI, nullptr, &frame.renderSemaphore));
-		VK(vkCreateSemaphore(device, &semaphoreCI, nullptr, &frame.presentSemaphore));
-	}
-
-	// Create the transfer queue
-	commandPoolCI.queueFamilyIndex = transferQueueFamilyIndex;
-	VK(vkCreateCommandPool(device, &commandPoolCI, nullptr, &transferCommandPool));
-	fenceCI.flags = 0;
-	VK(vkCreateFence(device, &fenceCI, nullptr, &transfersFinished));
-}
-
-void Engine::initContent() {
-	// Begin GPU transfers
-	auto commandBufferAI = VkCommandBufferAllocateInfo{
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-		.commandPool = transferCommandPool,
-		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-		.commandBufferCount = 1,
-	};
-	VkCommandBuffer transferCommandBuffer;
-	VK(vkAllocateCommandBuffers(device, &commandBufferAI, &transferCommandBuffer));
-
-	auto commandBufferBI = VkCommandBufferBeginInfo{
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-	};
-	VK(vkBeginCommandBuffer(transferCommandBuffer, &commandBufferBI));
-
-	std::vector<vk::Buffer> stagingBuffers;
-
-	// Create meshes
-	meshes.addMesh("block"_id, generateNormals(mesh::Block));
-	meshes.addMesh("scene"_id, generateNormals(mesh::Scene));
-	meshes.upload(allocator, transferCommandBuffer, stagingBuffers.emplace_back());
-
-	// Finish GPU transfers
-	VK(vkEndCommandBuffer(transferCommandBuffer));
-
-	auto submitInfo = VkSubmitInfo{
-		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		.commandBufferCount = 1,
-		.pCommandBuffers = &transferCommandBuffer,
-	};
-	VK(vkQueueSubmit(transferQueue, 1, &submitInfo, transfersFinished));
-
-	vkWaitForFences(device, 1, &transfersFinished, true, (1_s).count());
-	vkResetFences(device, 1, &transfersFinished);
-
-	vkResetCommandPool(device, transferCommandPool, 0);
-
-	for (auto& buffer: stagingBuffers)
-		vmaDestroyBuffer(allocator, buffer.buffer, buffer.allocation);
-	stagingBuffers.clear();
-
-	// Create the pipelines
-	techniques.create(device, allocator, descriptorPool, meshes);
-	techniques.addTechnique("opaque"_id, device, allocator, descriptorPool, swapchain.renderPass,
-		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
-		vk::makePipelineColorBlendAttachmentState(false),
-		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
-		vk::makePipelineMultisampleStateCI(swapchain.sampleCount));
-	techniques.addTechnique("transparent_depth_prepass"_id, device, allocator, descriptorPool, swapchain.renderPass,
-		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
-		vk::makePipelineColorBlendAttachmentState(false, false),
-		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
-		vk::makePipelineMultisampleStateCI(swapchain.sampleCount));
-	techniques.addTechnique("transparent"_id, device, allocator, descriptorPool, swapchain.renderPass,
-		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
-		vk::makePipelineColorBlendAttachmentState(true),
-		vk::makePipelineDepthStencilStateCI(true, false, VK_COMPARE_OP_LESS_OR_EQUAL),
-		vk::makePipelineMultisampleStateCI(swapchain.sampleCount));
-
-	auto const passthroughImageBinding = VkDescriptorSetLayoutBinding{
-		.binding = 0,
-		.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
-		.descriptorCount = 1,
-		.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-	};
-	auto const passthroughDescriptorSetLayoutCI = VkDescriptorSetLayoutCreateInfo{
-		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-		.bindingCount = 1,
-		.pBindings = &passthroughImageBinding,
-	};
-	passthroughShader = vk::createShader(device, passthroughVertSrc, passthroughFragSrc,
-		std::array{passthroughDescriptorSetLayoutCI});
-
-	auto const passthroughDescriptorSetAI = VkDescriptorSetAllocateInfo{
-		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-		.descriptorPool = descriptorPool,
-		.descriptorSetCount = 1,
-		.pSetLayouts = &passthroughShader.descriptorSetLayouts[0],
-	};
-	VK(vkAllocateDescriptorSets(device, &passthroughDescriptorSetAI, &passthroughDescriptorSet));
-
-	auto const passthroughImageInfo = VkDescriptorImageInfo{
-		.imageView = swapchain.ssColorView,
-		.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-	};
-	auto const passthroughWrite = VkWriteDescriptorSet{
-		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-		.dstSet = passthroughDescriptorSet,
-		.dstBinding = 0,
-		.descriptorCount = 1,
-		.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
-		.pImageInfo = &passthroughImageInfo,
-	};
-	vkUpdateDescriptorSets(device, 1, &passthroughWrite, 0, nullptr);
-
-	passthroughLayout = vk::createPipelineLayout(device, std::to_array({
-		passthroughShader.descriptorSetLayouts[0],
-	}));
-	passthrough = vk::PipelineBuilder{
-		.shaderStageCIs = {
-			vk::makePipelineShaderStageCI(VK_SHADER_STAGE_VERTEX_BIT, passthroughShader.vert),
-			vk::makePipelineShaderStageCI(VK_SHADER_STAGE_FRAGMENT_BIT, passthroughShader.frag),
-		},
-		.vertexInputStateCI = vk::makePipelineVertexInputStateCI(),
-		.inputAssemblyStateCI = vk::makePipelineInputAssemblyStateCI(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST),
-		.rasterizationStateCI = vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, false),
-		.colorBlendAttachmentState = vk::makePipelineColorBlendAttachmentState(false),
-		.depthStencilStateCI = vk::makePipelineDepthStencilStateCI(false, false, VK_COMPARE_OP_ALWAYS),
-		.multisampleStateCI = vk::makePipelineMultisampleStateCI(),
-		.layout = passthroughLayout,
-	}.build(device, swapchain.renderPass, 1);
 }
 
 void Engine::destroySwapchain(Swapchain& sc) {
-	vkDestroyRenderPass(device, sc.renderPass, nullptr);
-	for (auto& img: sc.surfaces) {
-		vkDestroyFramebuffer(device, img.framebuffer, nullptr);
-		vkDestroyImageView(device, img.colorView, nullptr);
-	}
-	vkDestroyImageView(device, sc.depthStencilView, nullptr);
-	vmaDestroyImage(allocator, sc.depthStencil.image, sc.depthStencil.allocation);
-	vkDestroyImageView(device, sc.ssColorView, nullptr);
-	vmaDestroyImage(allocator, sc.ssColor.image, sc.ssColor.allocation);
-	vkDestroyImageView(device, sc.msColorView, nullptr);
-	vmaDestroyImage(allocator, sc.msColor.image, sc.msColor.allocation);
+	for (auto& cv: sc.colorView)
+		vkDestroyImageView(device, cv, nullptr);
 	vkDestroySwapchainKHR(device, sc.swapchain, nullptr);
 }
 
@@ -1098,44 +967,285 @@ void Engine::recreateSwapchain() {
 
 	ASSERT(!surfaceFormats.empty() && !surfacePresentModes.empty());
 
-	// Recreate swapchain objects
+	// Queue up outdated objects for destruction
 	delayedOps.emplace_back(DelayedOp{
 		.deadline = frameCounter + FramesInFlight,
-		.func = [this, swapchain=swapchain]() mutable { destroySwapchain(swapchain); },
-	});
-	auto oldSwapchain = swapchain.swapchain;
-	swapchain = {};
-	initSwapchain(oldSwapchain);
-
-	// Recreate swapchain-dependent descriptor sets
-	delayedOps.emplace_back(DelayedOp{
-		.deadline = frameCounter + FramesInFlight,
-		.func = [this, ds=passthroughDescriptorSet]() mutable {
-			vkFreeDescriptorSets(device, descriptorPool, 1, &ds);
+		.func = [this, swapchain=swapchain, targets=targets, present=present]() mutable {
+			destroyPresentPipelineDS(present);
+			destroyTargetFbs(targets);
+			destroyPresentFbs(present);
+			destroyTargetImages(targets);
+			destroySwapchain(swapchain);
 		},
 	});
 
-	auto const passthroughDescriptorSetAI = VkDescriptorSetAllocateInfo{
+	// Create new objects
+	auto oldSwapchain = swapchain.swapchain;
+	swapchain = {};
+	targets = {};
+	createSwapchain(oldSwapchain);
+	createTargetImages();
+	createPresentFbs();
+	createTargetFbs();
+	createPresentPipelineDS();
+}
+
+void Engine::createPresentFbs() {
+	// Create the present render pass
+	auto const rpAttachments = std::to_array<VkAttachmentDescription>({
+		{ // Source
+			.format = targets.ssColor.format,
+			.samples = VK_SAMPLE_COUNT_1_BIT,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
+			.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			.initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		},
+		{ // Present
+			.format = swapchain.format,
+			.samples = VK_SAMPLE_COUNT_1_BIT,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+		},
+	});
+	auto const sourceAttachmentRef = VkAttachmentReference{
+		.attachment = 0,
+		.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+	};
+	auto const presentAttachmentRef = VkAttachmentReference{
+		.attachment = 1,
+		.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+	};
+	auto const subpass = VkSubpassDescription{
+		.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+		.inputAttachmentCount = 1,
+		.pInputAttachments = &sourceAttachmentRef,
+		.colorAttachmentCount = 1,
+		.pColorAttachments = &presentAttachmentRef,
+	};
+	auto const renderPassCI = VkRenderPassCreateInfo{
+		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+		.attachmentCount = rpAttachments.size(),
+		.pAttachments = rpAttachments.data(),
+		.subpassCount = 1,
+		.pSubpasses = &subpass,
+	};
+	VK(vkCreateRenderPass(device, &renderPassCI, nullptr, &present.renderPass));
+
+	// Create the present framebuffers
+	present.framebuffer.resize(swapchain.color.size());
+	for (auto[fb, cv]: zip_view{present.framebuffer, swapchain.colorView}) {
+		auto const fbAttachments = std::to_array<VkImageView>({
+			targets.ssColorView,
+			cv,
+		});
+		auto const framebufferCI = VkFramebufferCreateInfo{
+			.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+			.renderPass = present.renderPass,
+			.attachmentCount = fbAttachments.size(),
+			.pAttachments = fbAttachments.data(),
+			.width = swapchain.extent.width,
+			.height = swapchain.extent.height,
+			.layers = 1,
+		};
+		VK(vkCreateFramebuffer(device, &framebufferCI, nullptr, &fb));
+	}
+}
+
+void Engine::destroyPresentFbs(Present& p) {
+	for (auto& fb: p.framebuffer)
+		vkDestroyFramebuffer(device, fb, nullptr);
+	vkDestroyRenderPass(device, p.renderPass, nullptr);
+}
+
+void Engine::createPresentPipeline() {
+	auto const presentImageBinding = VkDescriptorSetLayoutBinding{
+		.binding = 0,
+		.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+		.descriptorCount = 1,
+		.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+	};
+	auto const descriptorSetLayoutCI = VkDescriptorSetLayoutCreateInfo{
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+		.bindingCount = 1,
+		.pBindings = &presentImageBinding,
+	};
+	present.shader = vk::createShader(device, presentVertSrc, presentFragSrc,
+		std::array{descriptorSetLayoutCI});
+
+	present.layout = vk::createPipelineLayout(device, std::to_array({
+		present.shader.descriptorSetLayouts[0],
+	}));
+	present.pipeline = vk::PipelineBuilder{
+		.shaderStageCIs = {
+			vk::makePipelineShaderStageCI(VK_SHADER_STAGE_VERTEX_BIT, present.shader.vert),
+			vk::makePipelineShaderStageCI(VK_SHADER_STAGE_FRAGMENT_BIT, present.shader.frag),
+		},
+		.vertexInputStateCI = vk::makePipelineVertexInputStateCI(),
+		.inputAssemblyStateCI = vk::makePipelineInputAssemblyStateCI(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST),
+		.rasterizationStateCI = vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, false),
+		.colorBlendAttachmentState = vk::makePipelineColorBlendAttachmentState(false),
+		.depthStencilStateCI = vk::makePipelineDepthStencilStateCI(false, false, VK_COMPARE_OP_ALWAYS),
+		.multisampleStateCI = vk::makePipelineMultisampleStateCI(),
+		.layout = present.layout,
+	}.build(device, present.renderPass);
+}
+
+void Engine::destroyPresentPipeline(Present& p) {
+	vkDestroyPipeline(device, p.pipeline, nullptr);
+	vkDestroyPipelineLayout(device, p.layout, nullptr);
+	vk::destroyShader(device, p.shader);
+}
+
+void Engine::createPresentPipelineDS() {
+	auto const descriptorSetAI = VkDescriptorSetAllocateInfo{
 		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
 		.descriptorPool = descriptorPool,
 		.descriptorSetCount = 1,
-		.pSetLayouts = &passthroughShader.descriptorSetLayouts[0],
+		.pSetLayouts = &present.shader.descriptorSetLayouts[0],
 	};
-	VK(vkAllocateDescriptorSets(device, &passthroughDescriptorSetAI, &passthroughDescriptorSet));
+	VK(vkAllocateDescriptorSets(device, &descriptorSetAI, &present.descriptorSet));
 
-	auto const passthroughImageInfo = VkDescriptorImageInfo{
-		.imageView = swapchain.ssColorView,
+	auto const descriptorImageInfo = VkDescriptorImageInfo{
+		.imageView = targets.ssColorView,
 		.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 	};
-	auto const passthroughWrite = VkWriteDescriptorSet{
+	auto const writeDS = VkWriteDescriptorSet{
 		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-		.dstSet = passthroughDescriptorSet,
+		.dstSet = present.descriptorSet,
 		.dstBinding = 0,
 		.descriptorCount = 1,
 		.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
-		.pImageInfo = &passthroughImageInfo,
+		.pImageInfo = &descriptorImageInfo,
 	};
-	vkUpdateDescriptorSets(device, 1, &passthroughWrite, 0, nullptr);
+	vkUpdateDescriptorSets(device, 1, &writeDS, 0, nullptr);
+}
+
+void Engine::destroyPresentPipelineDS(Present& p) {
+	vkFreeDescriptorSets(device, descriptorPool, 1, &p.descriptorSet);
+}
+
+void Engine::createTargetImages() {
+	auto const supportedSampleCount = deviceProperties.limits.framebufferColorSampleCounts & deviceProperties.limits.framebufferDepthSampleCounts;
+	if (SampleCount & supportedSampleCount) {
+		targets.sampleCount = SampleCount;
+	} else {
+		L.warn("Requested antialiasing mode MSAA {}x not supported; defaulting to MSAA 2x", SampleCount);
+		targets.sampleCount = VK_SAMPLE_COUNT_2_BIT;
+	}
+	targets.msColor = vk::createImage(allocator, ColorFormat,
+		VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+		swapchain.extent, targets.sampleCount);
+	targets.msColorView = vk::createImageView(device, targets.msColor,
+		VK_IMAGE_ASPECT_COLOR_BIT);
+	targets.ssColor = vk::createImage(allocator, ColorFormat,
+		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+		swapchain.extent, VK_SAMPLE_COUNT_1_BIT);
+	targets.ssColorView = vk::createImageView(device, targets.ssColor,
+		VK_IMAGE_ASPECT_COLOR_BIT);
+	targets.depthStencil = vk::createImage(allocator, DepthFormat,
+		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+		swapchain.extent, targets.sampleCount);
+	targets.depthStencilView = vk::createImageView(device, targets.depthStencil,
+		VK_IMAGE_ASPECT_DEPTH_BIT);
+}
+
+void Engine::destroyTargetImages(RenderTargets& t) {
+	vkDestroyImageView(device, t.depthStencilView, nullptr);
+	vmaDestroyImage(allocator, t.depthStencil.image, t.depthStencil.allocation);
+	vkDestroyImageView(device, t.ssColorView, nullptr);
+	vmaDestroyImage(allocator, t.ssColor.image, t.ssColor.allocation);
+	vkDestroyImageView(device, t.msColorView, nullptr);
+	vmaDestroyImage(allocator, t.msColor.image, t.msColor.allocation);
+}
+
+void Engine::createTargetFbs() {
+	auto const rpAttachments = std::to_array<VkAttachmentDescription>({
+		{ // MSAA color
+			.format = targets.msColor.format,
+			.samples = targets.sampleCount,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+			.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		},
+		{ // MSAA depth
+			.format = targets.depthStencil.format,
+			.samples = targets.sampleCount,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		},
+		{ // Resolve
+			.format = targets.ssColor.format,
+			.samples = VK_SAMPLE_COUNT_1_BIT,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		},
+	});
+	auto const colorAttachmentRef = VkAttachmentReference{
+		.attachment = 0,
+		.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+	};
+	auto const depthAttachmentRef = VkAttachmentReference{
+		.attachment = 1,
+		.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+	};
+	auto const resolveAttachmentRef = VkAttachmentReference{
+		.attachment = 2,
+		.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+	};
+	auto const subpass = VkSubpassDescription{
+		.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+		.colorAttachmentCount = 1,
+		.pColorAttachments = &colorAttachmentRef,
+		.pResolveAttachments = &resolveAttachmentRef,
+		.pDepthStencilAttachment = &depthAttachmentRef,
+	};
+	auto const objectPassCI = VkRenderPassCreateInfo{
+		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+		.attachmentCount = rpAttachments.size(),
+		.pAttachments = rpAttachments.data(),
+		.subpassCount = 1,
+		.pSubpasses = &subpass,
+	};
+	VK(vkCreateRenderPass(device, &objectPassCI, nullptr, &targets.objectPass));
+
+	auto const fbAttachments = std::to_array<VkImageView>({
+		targets.msColorView,
+		targets.depthStencilView,
+		targets.ssColorView,
+	});
+	auto const framebufferCI = VkFramebufferCreateInfo{
+		.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+		.renderPass = targets.objectPass,
+		.attachmentCount = fbAttachments.size(),
+		.pAttachments = fbAttachments.data(),
+		.width = swapchain.extent.width,
+		.height = swapchain.extent.height,
+		.layers = 1,
+	};
+	VK(vkCreateFramebuffer(device, &framebufferCI, nullptr, &targets.objectFb));
+}
+
+void Engine::destroyTargetFbs(RenderTargets& t) {
+	vkDestroyFramebuffer(device, t.objectFb, nullptr);
+	vkDestroyRenderPass(device, t.objectPass, nullptr);
 }
 
 #ifdef VK_VALIDATION
