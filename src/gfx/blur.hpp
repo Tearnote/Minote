@@ -7,11 +7,12 @@ namespace minote::gfx {
 
 using namespace base;
 
-struct GaussParams {
-	std::vector<f32> coefficients;
-	std::vector<f32> offsets;
+struct GaussSample {
+
+	float weight;
+	float offset;
 };
 
-auto generateGaussParams(int radius) -> GaussParams;
+auto generateGaussParams(int radius) -> std::vector<GaussSample>;
 
 }
