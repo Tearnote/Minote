@@ -10,12 +10,12 @@ namespace minote::gfx {
 using namespace base;
 namespace vk = sys::vk;
 
-constexpr auto defaultVertSrc = std::to_array<u32>({
-#include "spv/default.vert.spv"
+constexpr auto objectVertSrc = std::to_array<u32>({
+#include "spv/object.vert.spv"
 });
 
-constexpr auto defaultFragSrc = std::to_array<u32>({
-#include "spv/default.frag.spv"
+constexpr auto objectFragSrc = std::to_array<u32>({
+#include "spv/object.frag.spv"
 });
 
 void TechniqueSet::create(VkDevice device, VmaAllocator allocator, VkDescriptorPool descriptorPool, MeshBuffer& meshBuffer) {
@@ -68,7 +68,7 @@ void TechniqueSet::create(VkDevice device, VmaAllocator allocator, VkDescriptorP
 		worldDescriptorSetLayoutCI,
 		drawDescriptorSetLayoutCI,
 	});
-	m_shader = vk::createShader(device, defaultVertSrc, defaultFragSrc, descriptorSetLayoutCIs);
+	m_shader = vk::createShader(device, objectVertSrc, objectFragSrc, descriptorSetLayoutCIs);
 
 	// Create the world (slot 0) descriptor set
 	auto const worldDescriptorSetAI = VkDescriptorSetAllocateInfo{

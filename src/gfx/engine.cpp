@@ -26,6 +26,7 @@
 #include "sys/vk/base.hpp"
 #include "sys/window.hpp"
 #include "sys/glfw.hpp"
+#include "gfx/blur.hpp"
 #include "mesh/block.hpp"
 #include "mesh/scene.hpp"
 
@@ -37,12 +38,20 @@ namespace vk = sys::vk;
 namespace ranges = std::ranges;
 using namespace std::string_literals;
 
-constexpr auto presentVertSrc = std::to_array<u32>({
-#include "spv/present.vert.spv"
+constexpr auto passthroughVertSrc = std::to_array<u32>({
+#include "spv/passthrough.vert.spv"
 });
 
-constexpr auto presentFragSrc = std::to_array<u32>({
-#include "spv/present.frag.spv"
+constexpr auto passthroughFragSrc = std::to_array<u32>({
+#include "spv/passthrough.frag.spv"
+});
+
+constexpr auto bloomVertSrc = std::to_array<u32>({
+#include "spv/bloom.vert.spv"
+});
+
+constexpr auto bloomFragSrc = std::to_array<u32>({
+#include "spv/bloom.frag.spv"
 });
 
 static constexpr auto versionToCode(Version version) -> u32 {
@@ -63,6 +72,7 @@ Engine::Engine(sys::Glfw&, sys::Window& _window, std::string_view _name, Version
 	initPhysicalDevice();
 	initDevice();
 	initCommands();
+	initSamplers();
 	initSwapchain();
 	initImages();
 	initFramebuffers();
@@ -84,6 +94,7 @@ Engine::~Engine() {
 		cleanupFramebuffers();
 		cleanupImages();
 		cleanupSwapchain();
+		cleanupSamplers();
 		cleanupCommands();
 		cleanupDevice();
 	}
@@ -186,8 +197,8 @@ void Engine::render() {
 	// Start the object drawing pass
 	VkRenderPassBeginInfo rpBeginInfo{
 		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-		.renderPass = targets.objectPass,
-		.framebuffer = targets.objectFb,
+		.renderPass = targets.renderPass,
+		.framebuffer = targets.framebuffer,
 		.renderArea = {
 			.extent = swapchain.extent,
 		},
@@ -195,6 +206,8 @@ void Engine::render() {
 		.pClearValues = clearValues.data(),
 	};
 	vkCmdBeginRenderPass(frame.commandBuffer, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdSetViewport(frame.commandBuffer, 0, 1, &viewport);
+	vkCmdSetScissor(frame.commandBuffer, 0, 1, &scissor);
 
 	// Opaque object draw
 	vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, opaque.pipeline);
@@ -202,8 +215,6 @@ void Engine::render() {
 		techniques.getPipelineLayout(), 0,
 		opaque.descriptorSets[frameIndex].size(), opaque.descriptorSets[frameIndex].data(),
 		0, nullptr);
-	vkCmdSetViewport(frame.commandBuffer, 0, 1, &viewport);
-	vkCmdSetScissor(frame.commandBuffer, 0, 1, &scissor);
 
 	vkCmdDrawIndirect(frame.commandBuffer, opaqueIndirect.commandBuffer(), 0, opaqueIndirect.size(), sizeof(IndirectBuffer::Command));
 
@@ -213,8 +224,6 @@ void Engine::render() {
 		techniques.getPipelineLayout(), 0,
 		transparentDepthPrepass.descriptorSets[frameIndex].size(), transparentDepthPrepass.descriptorSets[frameIndex].data(),
 		0, nullptr);
-	vkCmdSetViewport(frame.commandBuffer, 0, 1, &viewport);
-	vkCmdSetScissor(frame.commandBuffer, 0, 1, &scissor);
 
 	vkCmdDrawIndirect(frame.commandBuffer, transparentDepthPrepassIndirect.commandBuffer(), 0, transparentDepthPrepassIndirect.size(), sizeof(IndirectBuffer::Command));
 
@@ -224,8 +233,6 @@ void Engine::render() {
 		techniques.getPipelineLayout(), 0,
 		transparent.descriptorSets[frameIndex].size(), transparent.descriptorSets[frameIndex].data(),
 		0, nullptr);
-	vkCmdSetViewport(frame.commandBuffer, 0, 1, &viewport);
-	vkCmdSetScissor(frame.commandBuffer, 0, 1, &scissor);
 
 	vkCmdDrawIndirect(frame.commandBuffer, transparentIndirect.commandBuffer(), 0, transparentIndirect.size(), sizeof(IndirectBuffer::Command));
 
@@ -233,7 +240,7 @@ void Engine::render() {
 	vkCmdEndRenderPass(frame.commandBuffer);
 
 	// Synchronize the rendered color image
-	auto const ssColorMemoryBarrier = VkImageMemoryBarrier{
+	auto imageMemoryBarrier = VkImageMemoryBarrier{
 		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 		.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 		.dstAccessMask = VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
@@ -248,9 +255,9 @@ void Engine::render() {
 	};
 	vkCmdPipelineBarrier(frame.commandBuffer,
 		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
-		0, nullptr, 0, nullptr, 1, &ssColorMemoryBarrier);
+		0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 
-	// Start the present pass
+	// Blit the image to screen
 	rpBeginInfo = VkRenderPassBeginInfo{
 		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
 		.renderPass = present.renderPass,
@@ -260,16 +267,10 @@ void Engine::render() {
 		},
 	};
 	vkCmdBeginRenderPass(frame.commandBuffer, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-	// Blit the image to screen
 	vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, present.pipeline);
 	vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 		present.layout, 0, 1, &present.descriptorSet, 0, nullptr);
-	vkCmdSetViewport(frame.commandBuffer, 0, 1, &viewport);
-	vkCmdSetScissor(frame.commandBuffer, 0, 1, &scissor);
 	vkCmdDraw(frame.commandBuffer, 3, 1, 0, 0);
-
-	// Finish the render pass
 	vkCmdEndRenderPass(frame.commandBuffer);
 
 	// Finish recording commands
@@ -721,14 +722,15 @@ void Engine::cleanupDevice() {
 void Engine::initCommands() {
 	// Create the descriptor pool
 	auto const descriptorPoolSizes = std::to_array<VkDescriptorPoolSize>({
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 8 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 8 },
-		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 8 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 16 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16 },
+		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 16 },
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16 },
 	});
 	auto descriptorPoolCI = VkDescriptorPoolCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
 		.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-		.maxSets = 64,
+		.maxSets = 32,
 		.poolSizeCount = static_cast<u32>(descriptorPoolSizes.size()),
 		.pPoolSizes = descriptorPoolSizes.data(),
 	};
@@ -781,6 +783,22 @@ void Engine::cleanupCommands() {
 	vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 }
 
+void Engine::initSamplers() {
+	auto const samplerCI = VkSamplerCreateInfo{
+		.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+		.magFilter = VK_FILTER_LINEAR,
+		.minFilter = VK_FILTER_LINEAR,
+		.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+		.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+		.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+	};
+	VK(vkCreateSampler(device, &samplerCI, nullptr, &linear));
+}
+
+void Engine::cleanupSamplers() {
+	vkDestroySampler(device, linear, nullptr);
+}
+
 void Engine::initSwapchain() {
 	createSwapchain();
 
@@ -827,12 +845,10 @@ void Engine::initBuffers() {
 	};
 	VK(vkBeginCommandBuffer(transferCommandBuffer, &commandBufferBI));
 
+	// Upload buffers to GPU
 	std::vector<vk::Buffer> stagingBuffers;
 
-	// Create meshes
-	meshes.addMesh("block"_id, generateNormals(mesh::Block));
-	meshes.addMesh("scene"_id, generateNormals(mesh::Scene));
-	meshes.upload(allocator, transferCommandBuffer, stagingBuffers.emplace_back());
+	createMeshBuffer(transferCommandBuffer, stagingBuffers);
 
 	// Finish GPU transfers
 	VK(vkEndCommandBuffer(transferCommandBuffer));
@@ -854,7 +870,7 @@ void Engine::initBuffers() {
 }
 
 void Engine::cleanupBuffers() {
-	meshes.destroy(allocator);
+	destroyMeshBuffer();
 }
 
 void Engine::initPipelines() {
@@ -862,19 +878,19 @@ void Engine::initPipelines() {
 	createPresentPipelineDS();
 
 	techniques.create(device, allocator, descriptorPool, meshes);
-	techniques.addTechnique("opaque"_id, device, allocator, descriptorPool, targets.objectPass,
+	techniques.addTechnique("opaque"_id, device, allocator, descriptorPool, targets.renderPass,
 		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
-		vk::makePipelineColorBlendAttachmentState(false),
+		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None),
 		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
 		vk::makePipelineMultisampleStateCI(targets.sampleCount));
-	techniques.addTechnique("transparent_depth_prepass"_id, device, allocator, descriptorPool, targets.objectPass,
+	techniques.addTechnique("transparent_depth_prepass"_id, device, allocator, descriptorPool, targets.renderPass,
 		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
-		vk::makePipelineColorBlendAttachmentState(false, false),
+		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None, false),
 		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
 		vk::makePipelineMultisampleStateCI(targets.sampleCount));
-	techniques.addTechnique("transparent"_id, device, allocator, descriptorPool, targets.objectPass,
+	techniques.addTechnique("transparent"_id, device, allocator, descriptorPool, targets.renderPass,
 		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
-		vk::makePipelineColorBlendAttachmentState(true),
+		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::Normal),
 		vk::makePipelineDepthStencilStateCI(true, false, VK_COMPARE_OP_LESS_OR_EQUAL),
 		vk::makePipelineMultisampleStateCI(targets.sampleCount));
 }
@@ -1094,7 +1110,7 @@ void Engine::createPresentPipeline() {
 		.bindingCount = 1,
 		.pBindings = &presentImageBinding,
 	};
-	present.shader = vk::createShader(device, presentVertSrc, presentFragSrc,
+	present.shader = vk::createShader(device, passthroughVertSrc, passthroughFragSrc,
 		std::array{descriptorSetLayoutCI});
 
 	present.layout = vk::createPipelineLayout(device, std::to_array({
@@ -1108,7 +1124,7 @@ void Engine::createPresentPipeline() {
 		.vertexInputStateCI = vk::makePipelineVertexInputStateCI(),
 		.inputAssemblyStateCI = vk::makePipelineInputAssemblyStateCI(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST),
 		.rasterizationStateCI = vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, false),
-		.colorBlendAttachmentState = vk::makePipelineColorBlendAttachmentState(false),
+		.colorBlendAttachmentState = vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None),
 		.depthStencilStateCI = vk::makePipelineDepthStencilStateCI(false, false, VK_COMPARE_OP_ALWAYS),
 		.multisampleStateCI = vk::makePipelineMultisampleStateCI(),
 		.layout = present.layout,
@@ -1149,6 +1165,16 @@ void Engine::destroyPresentPipelineDS(Present& p) {
 	vkFreeDescriptorSets(device, descriptorPool, 1, &p.descriptorSet);
 }
 
+void Engine::createMeshBuffer(VkCommandBuffer cmdBuf, std::vector<sys::vk::Buffer>& staging) {
+	meshes.addMesh("block"_id, generateNormals(mesh::Block));
+	meshes.addMesh("scene"_id, generateNormals(mesh::Scene));
+	meshes.upload(allocator, cmdBuf, staging.emplace_back());
+}
+
+void Engine::destroyMeshBuffer() {
+	meshes.destroy(allocator);
+}
+
 void Engine::createTargetImages() {
 	auto const supportedSampleCount = deviceProperties.limits.framebufferColorSampleCounts & deviceProperties.limits.framebufferDepthSampleCounts;
 	if (SampleCount & supportedSampleCount) {
@@ -1160,18 +1186,24 @@ void Engine::createTargetImages() {
 	targets.msColor = vk::createImage(allocator, ColorFormat,
 		VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 		swapchain.extent, targets.sampleCount);
+	vk::setDebugName(device, targets.msColor.image, VK_OBJECT_TYPE_IMAGE, "targets.msColor");
 	targets.msColorView = vk::createImageView(device, targets.msColor,
 		VK_IMAGE_ASPECT_COLOR_BIT);
+	vk::setDebugName(device, targets.msColorView, VK_OBJECT_TYPE_IMAGE_VIEW, "targets.msColorView");
 	targets.ssColor = vk::createImage(allocator, ColorFormat,
-		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
 		swapchain.extent, VK_SAMPLE_COUNT_1_BIT);
+	vk::setDebugName(device, targets.ssColor.image, VK_OBJECT_TYPE_IMAGE, "targets.ssColor");
 	targets.ssColorView = vk::createImageView(device, targets.ssColor,
 		VK_IMAGE_ASPECT_COLOR_BIT);
+	vk::setDebugName(device, targets.ssColorView, VK_OBJECT_TYPE_IMAGE_VIEW, "targets.ssColorView");
 	targets.depthStencil = vk::createImage(allocator, DepthFormat,
 		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
 		swapchain.extent, targets.sampleCount);
+	vk::setDebugName(device, targets.depthStencil.image, VK_OBJECT_TYPE_IMAGE, "targets.depthStencil");
 	targets.depthStencilView = vk::createImageView(device, targets.depthStencil,
 		VK_IMAGE_ASPECT_DEPTH_BIT);
+	vk::setDebugName(device, targets.depthStencilView, VK_OBJECT_TYPE_IMAGE_VIEW, "targets.depthStencilView");
 }
 
 void Engine::destroyTargetImages(RenderTargets& t) {
@@ -1235,14 +1267,14 @@ void Engine::createTargetFbs() {
 		.pResolveAttachments = &resolveAttachmentRef,
 		.pDepthStencilAttachment = &depthAttachmentRef,
 	};
-	auto const objectPassCI = VkRenderPassCreateInfo{
+	auto const renderPassCI = VkRenderPassCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
 		.attachmentCount = rpAttachments.size(),
 		.pAttachments = rpAttachments.data(),
 		.subpassCount = 1,
 		.pSubpasses = &subpass,
 	};
-	VK(vkCreateRenderPass(device, &objectPassCI, nullptr, &targets.objectPass));
+	VK(vkCreateRenderPass(device, &renderPassCI, nullptr, &targets.renderPass));
 
 	auto const fbAttachments = std::to_array<VkImageView>({
 		targets.msColorView,
@@ -1251,19 +1283,19 @@ void Engine::createTargetFbs() {
 	});
 	auto const framebufferCI = VkFramebufferCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-		.renderPass = targets.objectPass,
+		.renderPass = targets.renderPass,
 		.attachmentCount = fbAttachments.size(),
 		.pAttachments = fbAttachments.data(),
 		.width = swapchain.extent.width,
 		.height = swapchain.extent.height,
 		.layers = 1,
 	};
-	VK(vkCreateFramebuffer(device, &framebufferCI, nullptr, &targets.objectFb));
+	VK(vkCreateFramebuffer(device, &framebufferCI, nullptr, &targets.framebuffer));
 }
 
 void Engine::destroyTargetFbs(RenderTargets& t) {
-	vkDestroyFramebuffer(device, t.objectFb, nullptr);
-	vkDestroyRenderPass(device, t.objectPass, nullptr);
+	vkDestroyFramebuffer(device, t.framebuffer, nullptr);
+	vkDestroyRenderPass(device, t.renderPass, nullptr);
 }
 
 #ifdef VK_VALIDATION

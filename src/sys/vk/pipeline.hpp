@@ -25,6 +25,12 @@ struct PipelineBuilder {
 
 };
 
+enum struct BlendingMode {
+	None,
+	Normal,
+	Add,
+};
+
 constexpr auto makePipelineShaderStageCI(VkShaderStageFlagBits stage,
 	VkShaderModule shaderModule) {
 	return VkPipelineShaderStageCreateInfo{
@@ -87,13 +93,24 @@ constexpr auto makePipelineDepthStencilStateCI(bool depthTest, bool depthWrite, 
 	};
 }
 
-constexpr auto makePipelineColorBlendAttachmentState(bool alphaBlending, bool colorWrite = true) {
+constexpr auto makePipelineColorBlendAttachmentState(BlendingMode mode, bool colorWrite = true) {
+	bool alphaBlending = (mode != BlendingMode::None);
 	if (alphaBlending) {
+		auto const[src, dst, op] = [=]() -> std::tuple<VkBlendFactor, VkBlendFactor, VkBlendOp> {
+			switch(mode) {
+			case BlendingMode::Normal:
+				return {VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_OP_ADD};
+			case BlendingMode::Add:
+				return {VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ONE, VK_BLEND_OP_ADD};
+			default:;
+			}
+			return {};
+		}();
 		return VkPipelineColorBlendAttachmentState{
 			.blendEnable = VK_TRUE,
-			.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
-			.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-			.colorBlendOp = VK_BLEND_OP_ADD,
+			.srcColorBlendFactor = src,
+			.dstColorBlendFactor = dst,
+			.colorBlendOp = op,
 			.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
 			.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
 			.alphaBlendOp = VK_BLEND_OP_ADD,

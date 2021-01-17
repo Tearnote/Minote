@@ -14,17 +14,15 @@
 #include "base/types.hpp"
 #include "base/util.hpp"
 #include "base/id.hpp"
+#include "sys/vk/buffer.hpp"
 #include "sys/vk/image.hpp"
+#include "sys/vk/base.hpp"
 #include "sys/window.hpp"
 #include "sys/glfw.hpp"
 #include "gfx/technique.hpp"
 #include "gfx/world.hpp"
 #include "gfx/base.hpp"
 #include "gfx/mesh.hpp"
-
-#ifndef NDEBUG
-#define VK_VALIDATION
-#endif //NDEBUG
 
 namespace minote::gfx {
 
@@ -61,10 +59,10 @@ private:
 
 		VkRenderPass renderPass;
 		std::vector<VkFramebuffer> framebuffer;
-		VkDescriptorSet descriptorSet;
 		sys::vk::Shader shader;
 		VkPipelineLayout layout;
 		VkPipeline pipeline;
+		VkDescriptorSet descriptorSet;
 
 	};
 
@@ -77,8 +75,8 @@ private:
 		VkImageView ssColorView;
 		sys::vk::Image depthStencil;
 		VkImageView depthStencilView;
-		VkRenderPass objectPass;
-		VkFramebuffer objectFb;
+		VkRenderPass renderPass;
+		VkFramebuffer framebuffer;
 
 	};
 
@@ -145,6 +143,8 @@ private:
 	Present present;
 	RenderTargets targets;
 
+	VkSampler linear;
+
 	TechniqueSet techniques;
 	MeshBuffer meshes;
 	Camera camera;
@@ -171,6 +171,9 @@ private:
 	void initCommands();
 	void cleanupCommands();
 
+	void initSamplers();
+	void cleanupSamplers();
+
 	void initSwapchain();
 	void cleanupSwapchain();
 
@@ -196,6 +199,9 @@ private:
 	void destroyPresentPipeline(Present&);
 	void createPresentPipelineDS();
 	void destroyPresentPipelineDS(Present&);
+
+	void createMeshBuffer(VkCommandBuffer, std::vector<sys::vk::Buffer>& staging);
+	void destroyMeshBuffer();
 
 	void createTargetImages();
 	void destroyTargetImages(RenderTargets&);
