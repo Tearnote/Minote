@@ -26,7 +26,6 @@
 #include "sys/vk/base.hpp"
 #include "sys/window.hpp"
 #include "sys/glfw.hpp"
-#include "gfx/blur.hpp"
 #include "mesh/block.hpp"
 #include "mesh/scene.hpp"
 
@@ -44,14 +43,6 @@ constexpr auto passthroughVertSrc = std::to_array<u32>({
 
 constexpr auto passthroughFragSrc = std::to_array<u32>({
 #include "spv/passthrough.frag.spv"
-});
-
-constexpr auto bloomVertSrc = std::to_array<u32>({
-#include "spv/bloom.vert.spv"
-});
-
-constexpr auto bloomFragSrc = std::to_array<u32>({
-#include "spv/bloom.frag.spv"
 });
 
 static constexpr auto versionToCode(Version version) -> u32 {

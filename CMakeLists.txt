@@ -116,7 +116,6 @@ set(SOURCES
         src/gfx/material.hpp
         src/gfx/engine.hpp src/gfx/engine.cpp
         src/gfx/world.hpp
-        src/gfx/blur.hpp src/gfx/blur.cpp
         src/gfx/mesh.hpp src/gfx/mesh.cpp
         src/gfx/base.hpp
         src/mesh/block.hpp
