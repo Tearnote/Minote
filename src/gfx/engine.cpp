@@ -133,6 +133,7 @@ void Engine::render() {
 	// Get the next frame
 	auto frameIndex = frameCounter % FramesInFlight;
 	auto& frame = frames[frameIndex];
+	auto cmdBuf = frame.commandBuffer;
 
 	// Get the next swapchain image
 	u32 swapchainImageIndex;
@@ -171,12 +172,12 @@ void Engine::render() {
 	uploadToCpuBuffer(allocator, techniques.getWorldConstants(frameIndex), world);
 
 	// Start recording commands
-	VK(vkResetCommandBuffer(frame.commandBuffer, 0));
+	VK(vkResetCommandBuffer(cmdBuf, 0));
 	auto cmdBeginInfo = VkCommandBufferBeginInfo{
 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
 	};
-	VK(vkBeginCommandBuffer(frame.commandBuffer, &cmdBeginInfo));
+	VK(vkBeginCommandBuffer(cmdBuf, &cmdBeginInfo));
 
 	// Compute clear color
 	auto const clearValues = std::to_array<VkClearValue>({
@@ -195,38 +196,38 @@ void Engine::render() {
 		.clearValueCount = clearValues.size(),
 		.pClearValues = clearValues.data(),
 	};
-	vkCmdBeginRenderPass(frame.commandBuffer, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-	vk::cmdSetArea(frame.commandBuffer, swapchain.extent);
+	vkCmdBeginRenderPass(cmdBuf, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	vk::cmdSetArea(cmdBuf, swapchain.extent);
 
 	// Opaque object draw
-	vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, opaque.pipeline);
-	vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, opaque.pipeline);
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
 		techniques.getPipelineLayout(), 0,
 		opaque.descriptorSets[frameIndex].size(), opaque.descriptorSets[frameIndex].data(),
 		0, nullptr);
 
-	vkCmdDrawIndirect(frame.commandBuffer, opaqueIndirect.commandBuffer(), 0, opaqueIndirect.size(), sizeof(IndirectBuffer::Command));
+	vkCmdDrawIndirect(cmdBuf, opaqueIndirect.commandBuffer(), 0, opaqueIndirect.size(), sizeof(IndirectBuffer::Command));
 
 	// Transparent object draw prepass
-	vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, transparentDepthPrepass.pipeline);
-	vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, transparentDepthPrepass.pipeline);
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
 		techniques.getPipelineLayout(), 0,
 		transparentDepthPrepass.descriptorSets[frameIndex].size(), transparentDepthPrepass.descriptorSets[frameIndex].data(),
 		0, nullptr);
 
-	vkCmdDrawIndirect(frame.commandBuffer, transparentDepthPrepassIndirect.commandBuffer(), 0, transparentDepthPrepassIndirect.size(), sizeof(IndirectBuffer::Command));
+	vkCmdDrawIndirect(cmdBuf, transparentDepthPrepassIndirect.commandBuffer(), 0, transparentDepthPrepassIndirect.size(), sizeof(IndirectBuffer::Command));
 
 	// Transparent object draw
-	vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, transparent.pipeline);
-	vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, transparent.pipeline);
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
 		techniques.getPipelineLayout(), 0,
 		transparent.descriptorSets[frameIndex].size(), transparent.descriptorSets[frameIndex].data(),
 		0, nullptr);
 
-	vkCmdDrawIndirect(frame.commandBuffer, transparentIndirect.commandBuffer(), 0, transparentIndirect.size(), sizeof(IndirectBuffer::Command));
+	vkCmdDrawIndirect(cmdBuf, transparentIndirect.commandBuffer(), 0, transparentIndirect.size(), sizeof(IndirectBuffer::Command));
 
 	// Finish the object drawing pass
-	vkCmdEndRenderPass(frame.commandBuffer);
+	vkCmdEndRenderPass(cmdBuf);
 
 	// Synchronize the rendered color image
 	auto imageMemoryBarrier = VkImageMemoryBarrier{
@@ -242,7 +243,7 @@ void Engine::render() {
 			.layerCount = 1,
 		},
 	};
-	vkCmdPipelineBarrier(frame.commandBuffer,
+	vkCmdPipelineBarrier(cmdBuf,
 		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
 		0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 
@@ -255,7 +256,7 @@ void Engine::render() {
 			.extent = bloom.images[0].size,
 		},
 	};
-	vkCmdBeginRenderPass(frame.commandBuffer, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBeginRenderPass(cmdBuf, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 	auto bloomViewport = VkViewport{
 		.width = static_cast<f32>(bloom.images[0].size.width),
@@ -266,14 +267,14 @@ void Engine::render() {
 	auto bloomScissor = VkRect2D{
 		.extent = bloom.images[0].size,
 	};
-	vkCmdSetViewport(frame.commandBuffer, 0, 1, &bloomViewport);
-	vkCmdSetScissor(frame.commandBuffer, 0, 1, &bloomScissor);
+	vkCmdSetViewport(cmdBuf, 0, 1, &bloomViewport);
+	vkCmdSetScissor(cmdBuf, 0, 1, &bloomScissor);
 
-	vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.down);
-	vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.down);
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
 		bloom.layout, 0, 1, &bloom.sourceDS, 0, nullptr);
-	vkCmdDraw(frame.commandBuffer, 3, 1, 0, 0);
-	vkCmdEndRenderPass(frame.commandBuffer);
+	vkCmdDraw(cmdBuf, 3, 1, 0, 0);
+	vkCmdEndRenderPass(cmdBuf);
 
 	// Synchronize the thresholded image
 	imageMemoryBarrier = VkImageMemoryBarrier{
@@ -289,7 +290,7 @@ void Engine::render() {
 			.layerCount = 1,
 		},
 	};
-	vkCmdPipelineBarrier(frame.commandBuffer,
+	vkCmdPipelineBarrier(cmdBuf,
 		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
 		0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 
@@ -303,13 +304,13 @@ void Engine::render() {
 				.extent = bloom.images[i].size,
 			},
 		};
-		vkCmdBeginRenderPass(frame.commandBuffer, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-		vk::cmdSetArea(frame.commandBuffer, bloom.images[i].size);
-		vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.down);
-		vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+		vkCmdBeginRenderPass(cmdBuf, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vk::cmdSetArea(cmdBuf, bloom.images[i].size);
+		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.down);
+		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
 			bloom.layout, 0, 1, &bloom.imageDS[i - 1], 0, nullptr);
-		vkCmdDraw(frame.commandBuffer, 3, 1, 0, 1);
-		vkCmdEndRenderPass(frame.commandBuffer);
+		vkCmdDraw(cmdBuf, 3, 1, 0, 1);
+		vkCmdEndRenderPass(cmdBuf);
 
 		imageMemoryBarrier = VkImageMemoryBarrier{
 			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -324,7 +325,7 @@ void Engine::render() {
 				.layerCount = 1,
 			},
 		};
-		vkCmdPipelineBarrier(frame.commandBuffer,
+		vkCmdPipelineBarrier(cmdBuf,
 			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
 			0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 	}
@@ -344,7 +345,7 @@ void Engine::render() {
 				.layerCount = 1,
 			},
 		};
-		vkCmdPipelineBarrier(frame.commandBuffer,
+		vkCmdPipelineBarrier(cmdBuf,
 			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
 			0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 
@@ -356,13 +357,13 @@ void Engine::render() {
 				.extent = bloom.images[i].size,
 			},
 		};
-		vkCmdBeginRenderPass(frame.commandBuffer, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-		vk::cmdSetArea(frame.commandBuffer, bloom.images[i].size);
-		vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.up);
-		vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+		vkCmdBeginRenderPass(cmdBuf, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vk::cmdSetArea(cmdBuf, bloom.images[i].size);
+		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.up);
+		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
 			bloom.layout, 0, 1, &bloom.imageDS[i + 1], 0, nullptr);
-		vkCmdDraw(frame.commandBuffer, 3, 1, 0, 2);
-		vkCmdEndRenderPass(frame.commandBuffer);
+		vkCmdDraw(cmdBuf, 3, 1, 0, 2);
+		vkCmdEndRenderPass(cmdBuf);
 
 		imageMemoryBarrier = VkImageMemoryBarrier{
 			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -377,7 +378,7 @@ void Engine::render() {
 				.layerCount = 1,
 			},
 		};
-		vkCmdPipelineBarrier(frame.commandBuffer,
+		vkCmdPipelineBarrier(cmdBuf,
 			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
 			0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 	}
@@ -396,7 +397,7 @@ void Engine::render() {
 			.layerCount = 1,
 		},
 	};
-	vkCmdPipelineBarrier(frame.commandBuffer,
+	vkCmdPipelineBarrier(cmdBuf,
 		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
 		0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 
@@ -409,13 +410,13 @@ void Engine::render() {
 			.extent = targets.ssColor.size,
 		},
 	};
-	vkCmdBeginRenderPass(frame.commandBuffer, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-	vk::cmdSetArea(frame.commandBuffer, swapchain.extent);
-	vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.up);
-	vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+	vkCmdBeginRenderPass(cmdBuf, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	vk::cmdSetArea(cmdBuf, swapchain.extent);
+	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.up);
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
 		bloom.layout, 0, 1, &bloom.imageDS[0], 0, nullptr);
-	vkCmdDraw(frame.commandBuffer, 3, 1, 0, 2);
-	vkCmdEndRenderPass(frame.commandBuffer);
+	vkCmdDraw(cmdBuf, 3, 1, 0, 2);
+	vkCmdEndRenderPass(cmdBuf);
 
 	// Synchronize the rendered color image
 	imageMemoryBarrier = VkImageMemoryBarrier{
@@ -431,7 +432,7 @@ void Engine::render() {
 			.layerCount = 1,
 		},
 	};
-	vkCmdPipelineBarrier(frame.commandBuffer,
+	vkCmdPipelineBarrier(cmdBuf,
 		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
 		0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 
@@ -444,15 +445,15 @@ void Engine::render() {
 			.extent = swapchain.extent,
 		},
 	};
-	vkCmdBeginRenderPass(frame.commandBuffer, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-	vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, present.pipeline);
-	vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+	vkCmdBeginRenderPass(cmdBuf, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, present.pipeline);
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
 		present.layout, 0, 1, &present.descriptorSet, 0, nullptr);
-	vkCmdDraw(frame.commandBuffer, 3, 1, 0, 0);
-	vkCmdEndRenderPass(frame.commandBuffer);
+	vkCmdDraw(cmdBuf, 3, 1, 0, 0);
+	vkCmdEndRenderPass(cmdBuf);
 
 	// Finish recording commands
-	VK(vkEndCommandBuffer(frame.commandBuffer));
+	VK(vkEndCommandBuffer(cmdBuf));
 
 	// Submit commands to the queue
 	VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -462,7 +463,7 @@ void Engine::render() {
 		.pWaitSemaphores = &frame.presentSemaphore,
 		.pWaitDstStageMask = &waitStage,
 		.commandBufferCount = 1,
-		.pCommandBuffers = &frame.commandBuffer,
+		.pCommandBuffers = &cmdBuf,
 		.signalSemaphoreCount = 1,
 		.pSignalSemaphores = &frame.renderSemaphore,
 	};
