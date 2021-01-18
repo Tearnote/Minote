@@ -27,6 +27,7 @@ auto createImage(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usag
 	Image result;
 	VK(vmaCreateImage(allocator, &imageCreateCI, &allocationCI, &result.image, &result.allocation, nullptr));
 	result.format = format;
+	result.samples = sampleCount;
 	result.size = size;
 	return result;
 }

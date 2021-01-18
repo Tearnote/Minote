@@ -1012,6 +1012,8 @@ void Engine::createSwapchain(VkSwapchainKHR old) {
 		color = vk::Image{
 			.image = raw,
 			.format = swapchain.format,
+			.samples = VK_SAMPLE_COUNT_1_BIT,
+			.size = swapchain.extent,
 		};
 		cv = vk::createImageView(device, color, VK_IMAGE_ASPECT_COLOR_BIT);
 	}
@@ -1075,7 +1077,7 @@ void Engine::createPresentFbs() {
 	auto const rpAttachments = std::to_array<VkAttachmentDescription>({
 		{ // Source
 			.format = targets.ssColor.format,
-			.samples = VK_SAMPLE_COUNT_1_BIT,
+			.samples = targets.ssColor.samples,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
 			.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
 			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
@@ -1084,8 +1086,8 @@ void Engine::createPresentFbs() {
 			.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		},
 		{ // Present
-			.format = swapchain.format,
-			.samples = VK_SAMPLE_COUNT_1_BIT,
+			.format = swapchain.color[0].format,
+			.samples = swapchain.color[0].samples,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
 			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
@@ -1265,7 +1267,7 @@ void Engine::createTargetFbs() {
 	auto const rpAttachments = std::to_array<VkAttachmentDescription>({
 		{ // MSAA color
 			.format = targets.msColor.format,
-			.samples = targets.sampleCount,
+			.samples = targets.msColor.samples,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 			.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
 			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
@@ -1275,7 +1277,7 @@ void Engine::createTargetFbs() {
 		},
 		{ // MSAA depth
 			.format = targets.depthStencil.format,
-			.samples = targets.sampleCount,
+			.samples = targets.depthStencil.samples,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
 			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
@@ -1285,7 +1287,7 @@ void Engine::createTargetFbs() {
 		},
 		{ // Resolve
 			.format = targets.ssColor.format,
-			.samples = VK_SAMPLE_COUNT_1_BIT,
+			.samples = targets.ssColor.samples,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
 			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
@@ -1367,8 +1369,8 @@ void Engine::destroyBloomImages(Bloom& b) {
 
 void Engine::createBloomFbs() {
 	auto const downRpAttachment = VkAttachmentDescription{
-		.format = ColorFormat,
-		.samples = VK_SAMPLE_COUNT_1_BIT,
+		.format = bloom.images[0].format,
+		.samples = bloom.images[0].samples,
 		.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
 		.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
@@ -1395,8 +1397,8 @@ void Engine::createBloomFbs() {
 	VK(vkCreateRenderPass(device, &downPassCI, nullptr, &bloom.downPass));
 
 	auto const upRpAttachment = VkAttachmentDescription{
-		.format = ColorFormat,
-		.samples = VK_SAMPLE_COUNT_1_BIT,
+		.format = bloom.images[0].format,
+		.samples = bloom.images[0].samples,
 		.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
 		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
 		.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
