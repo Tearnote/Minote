@@ -23,7 +23,7 @@ void PlayState::draw(gfx::Engine& engine) {
 	// Scene
 	engine.enqueueDraw("scene"_id, "transparent"_id,
 		std::to_array<gfx::Instance>({
-			{.transform = glm::mat4{1.0f}}
+			{.transform = glm::mat4{1.0f}, .tint = glm::vec4{1.2f, 1.2f, 1.2f, 1.0f}}
 		}),
 		gfx::Material::Flat);
 

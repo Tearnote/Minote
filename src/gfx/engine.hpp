@@ -80,6 +80,25 @@ private:
 
 	};
 
+	struct Bloom {
+
+		static constexpr auto Depth = 6_zu;
+
+		std::array<sys::vk::Image, Depth> images;
+		std::array<VkImageView, Depth> imageViews;
+		VkRenderPass downPass;
+		VkRenderPass upPass;
+		std::array<VkFramebuffer, Depth> imageFbs;
+		VkFramebuffer targetFb;
+		sys::vk::Shader shader;
+		VkPipelineLayout layout;
+		VkPipeline down;
+		VkPipeline up;
+		VkDescriptorSet sourceDS;
+		std::array<VkDescriptorSet, Depth> imageDS;
+
+	};
+
 	struct Frame {
 
 		VkCommandPool commandPool;
@@ -142,6 +161,7 @@ private:
 	Swapchain swapchain;
 	Present present;
 	RenderTargets targets;
+	Bloom bloom;
 
 	VkSampler linear;
 
@@ -196,7 +216,7 @@ private:
 	void createPresentFbs();
 	void destroyPresentFbs(Present&);
 	void createPresentPipeline();
-	void destroyPresentPipeline(Present&);
+	void destroyPresentPipeline();
 	void createPresentPipelineDS();
 	void destroyPresentPipelineDS(Present&);
 
@@ -207,6 +227,15 @@ private:
 	void destroyTargetImages(RenderTargets&);
 	void createTargetFbs();
 	void destroyTargetFbs(RenderTargets&);
+
+	void createBloomImages();
+	void destroyBloomImages(Bloom&);
+	void createBloomFbs();
+	void destroyBloomFbs(Bloom&);
+	void createBloomPipelines();
+	void destroyBloomPipelines();
+	void createBloomPipelineDS();
+	void destroyBloomPipelineDS(Bloom&);
 
 #ifdef VK_VALIDATION
 	static VKAPI_ATTR auto VKAPI_CALL debugCallback(

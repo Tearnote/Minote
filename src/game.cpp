@@ -54,7 +54,7 @@ void game(sys::Glfw& glfw, sys::Window& window) try {
 		}
 
 		// Graphics
-		engine.setBackground(glm::vec3{0.8f, 0.8f, 0.8f});
+		engine.setBackground(glm::vec3{0.75f, 0.75f, 0.75f});
 		engine.setLightSource(glm::vec3{-8.0f, 32.0f, 16.0f}, glm::vec3{1.0f, 1.0f, 1.0f});
 		engine.setCamera(glm::vec3{0.0f, 12.0f, 24.0f}, glm::vec3{0.0f, 12.0f, 0.0f});
 

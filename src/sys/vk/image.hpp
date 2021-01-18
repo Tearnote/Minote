@@ -10,6 +10,7 @@ struct Image {
 	VmaAllocation allocation;
 	VkImage image;
 	VkFormat format;
+	VkExtent2D size;
 
 };
 

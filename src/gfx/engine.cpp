@@ -37,16 +37,24 @@ namespace vk = sys::vk;
 namespace ranges = std::ranges;
 using namespace std::string_literals;
 
-constexpr auto passthroughVertSrc = std::to_array<u32>({
-#include "spv/passthrough.vert.spv"
+constexpr auto presentVertSrc = std::to_array<u32>({
+#include "spv/present.vert.spv"
 });
 
-constexpr auto passthroughFragSrc = std::to_array<u32>({
-#include "spv/passthrough.frag.spv"
+constexpr auto presentFragSrc = std::to_array<u32>({
+#include "spv/present.frag.spv"
+});
+
+constexpr auto bloomVertSrc = std::to_array<u32>({
+#include "spv/bloom.vert.spv"
+});
+
+constexpr auto bloomFragSrc = std::to_array<u32>({
+#include "spv/bloom.frag.spv"
 });
 
 static constexpr auto versionToCode(Version version) -> u32 {
-	return (get<0>(version) << 22) + (get<1>(version) << 12) + get<2>(version);
+	return (std::get<0>(version) << 22) + (std::get<1>(version) << 12) + std::get<2>(version);
 }
 
 static constexpr auto codeToVersion(u32 code) -> Version {
@@ -234,6 +242,222 @@ void Engine::render() {
 	auto imageMemoryBarrier = VkImageMemoryBarrier{
 		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 		.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+		.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+		.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		.image = targets.ssColor.image,
+		.subresourceRange = VkImageSubresourceRange{
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.levelCount = 1,
+			.layerCount = 1,
+		},
+	};
+	vkCmdPipelineBarrier(frame.commandBuffer,
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+		0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+
+	// HDR-threshold the color image
+	rpBeginInfo = VkRenderPassBeginInfo{
+		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+		.renderPass = bloom.downPass,
+		.framebuffer = bloom.imageFbs[0],
+		.renderArea = {
+			.extent = bloom.images[0].size,
+		},
+	};
+	vkCmdBeginRenderPass(frame.commandBuffer, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	auto bloomViewport = VkViewport{
+		.width = static_cast<f32>(bloom.images[0].size.width),
+		.height = static_cast<f32>(bloom.images[0].size.height),
+		.minDepth = 0.0f,
+		.maxDepth = 1.0f,
+	};
+	auto bloomScissor = VkRect2D{
+		.extent = bloom.images[0].size,
+	};
+	vkCmdSetViewport(frame.commandBuffer, 0, 1, &bloomViewport);
+	vkCmdSetScissor(frame.commandBuffer, 0, 1, &bloomScissor);
+
+	vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.down);
+	vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+		bloom.layout, 0, 1, &bloom.sourceDS, 0, nullptr);
+	vkCmdDraw(frame.commandBuffer, 3, 1, 0, 0);
+	vkCmdEndRenderPass(frame.commandBuffer);
+
+	// Synchronize the thresholded image
+	imageMemoryBarrier = VkImageMemoryBarrier{
+		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+		.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+		.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+		.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		.image = bloom.images[0].image,
+		.subresourceRange = VkImageSubresourceRange{
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.levelCount = 1,
+			.layerCount = 1,
+		},
+	};
+	vkCmdPipelineBarrier(frame.commandBuffer,
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+		0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+
+	// Progressively downscale the bloom contents
+	for (size_t i = 1; i < Bloom::Depth; i += 1) {
+		rpBeginInfo = VkRenderPassBeginInfo{
+			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+			.renderPass = bloom.downPass,
+			.framebuffer = bloom.imageFbs[i],
+			.renderArea = {
+				.extent = bloom.images[i].size,
+			},
+		};
+		vkCmdBeginRenderPass(frame.commandBuffer, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		bloomViewport = VkViewport{
+			.width = static_cast<f32>(bloom.images[i].size.width),
+			.height = static_cast<f32>(bloom.images[i].size.height),
+			.minDepth = 0.0f,
+			.maxDepth = 1.0f,
+		};
+		bloomScissor = VkRect2D{
+			.extent = bloom.images[i].size,
+		};
+		vkCmdSetViewport(frame.commandBuffer, 0, 1, &bloomViewport);
+		vkCmdSetScissor(frame.commandBuffer, 0, 1, &bloomScissor);
+
+		vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.down);
+		vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+			bloom.layout, 0, 1, &bloom.imageDS[i - 1], 0, nullptr);
+		vkCmdDraw(frame.commandBuffer, 3, 1, 0, 1);
+		vkCmdEndRenderPass(frame.commandBuffer);
+
+		imageMemoryBarrier = VkImageMemoryBarrier{
+			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+			.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+			.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+			.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			.image = bloom.images[i].image,
+			.subresourceRange = VkImageSubresourceRange{
+				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+				.levelCount = 1,
+				.layerCount = 1,
+			},
+		};
+		vkCmdPipelineBarrier(frame.commandBuffer,
+			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+			0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+	}
+
+	// Progressively upscale the bloom contents
+	for (size_t i = Bloom::Depth - 2; i < Bloom::Depth; i -= 1) {
+		imageMemoryBarrier = VkImageMemoryBarrier{
+			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+			.srcAccessMask = 0,
+			.dstAccessMask = 0,
+			.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			.image = bloom.images[i].image,
+			.subresourceRange = VkImageSubresourceRange{
+				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+				.levelCount = 1,
+				.layerCount = 1,
+			},
+		};
+		vkCmdPipelineBarrier(frame.commandBuffer,
+			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+			0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+
+		rpBeginInfo = VkRenderPassBeginInfo{
+			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+			.renderPass = bloom.upPass,
+			.framebuffer = bloom.imageFbs[i],
+			.renderArea = {
+				.extent = bloom.images[i].size,
+			},
+		};
+		vkCmdBeginRenderPass(frame.commandBuffer, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		bloomViewport = VkViewport{
+			.width = static_cast<f32>(bloom.images[i].size.width),
+			.height = static_cast<f32>(bloom.images[i].size.height),
+			.minDepth = 0.0f,
+			.maxDepth = 1.0f,
+		};
+		bloomScissor = VkRect2D{
+			.extent = bloom.images[i].size,
+		};
+		vkCmdSetViewport(frame.commandBuffer, 0, 1, &bloomViewport);
+		vkCmdSetScissor(frame.commandBuffer, 0, 1, &bloomScissor);
+
+		vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.up);
+		vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+			bloom.layout, 0, 1, &bloom.imageDS[i + 1], 0, nullptr);
+		vkCmdDraw(frame.commandBuffer, 3, 1, 0, 2);
+		vkCmdEndRenderPass(frame.commandBuffer);
+
+		imageMemoryBarrier = VkImageMemoryBarrier{
+			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+			.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+			.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+			.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			.image = bloom.images[i].image,
+			.subresourceRange = VkImageSubresourceRange{
+				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+				.levelCount = 1,
+				.layerCount = 1,
+			},
+		};
+		vkCmdPipelineBarrier(frame.commandBuffer,
+			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+			0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+	}
+
+	// Synchronize the rendered color image
+	imageMemoryBarrier = VkImageMemoryBarrier{
+		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+		.srcAccessMask = 0,
+		.dstAccessMask = 0,
+		.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		.image = targets.ssColor.image,
+		.subresourceRange = VkImageSubresourceRange{
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.levelCount = 1,
+			.layerCount = 1,
+		},
+	};
+	vkCmdPipelineBarrier(frame.commandBuffer,
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+		0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+
+	// Apply bloom to rendered color image
+	rpBeginInfo = VkRenderPassBeginInfo{
+		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+		.renderPass = bloom.upPass,
+		.framebuffer = bloom.targetFb,
+		.renderArea = {
+			.extent = targets.ssColor.size,
+		},
+	};
+	vkCmdBeginRenderPass(frame.commandBuffer, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	vkCmdSetViewport(frame.commandBuffer, 0, 1, &viewport);
+	vkCmdSetScissor(frame.commandBuffer, 0, 1, &scissor);
+
+	vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.up);
+	vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+		bloom.layout, 0, 1, &bloom.imageDS[0], 0, nullptr);
+	vkCmdDraw(frame.commandBuffer, 3, 1, 0, 2);
+	vkCmdEndRenderPass(frame.commandBuffer);
+
+	// Synchronize the rendered color image
+	imageMemoryBarrier = VkImageMemoryBarrier{
+		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+		.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 		.dstAccessMask = VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
 		.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -258,6 +482,10 @@ void Engine::render() {
 		},
 	};
 	vkCmdBeginRenderPass(frame.commandBuffer, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	vkCmdSetViewport(frame.commandBuffer, 0, 1, &viewport);
+	vkCmdSetScissor(frame.commandBuffer, 0, 1, &scissor);
+
 	vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, present.pipeline);
 	vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 		present.layout, 0, 1, &present.descriptorSet, 0, nullptr);
@@ -713,15 +941,15 @@ void Engine::cleanupDevice() {
 void Engine::initCommands() {
 	// Create the descriptor pool
 	auto const descriptorPoolSizes = std::to_array<VkDescriptorPoolSize>({
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 16 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16 },
-		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 16 },
-		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 64 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 64 },
+		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 64 },
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 64 },
 	});
 	auto descriptorPoolCI = VkDescriptorPoolCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
 		.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-		.maxSets = 32,
+		.maxSets = 256,
 		.poolSizeCount = static_cast<u32>(descriptorPoolSizes.size()),
 		.pPoolSizes = descriptorPoolSizes.data(),
 	};
@@ -803,18 +1031,22 @@ void Engine::cleanupSwapchain() {
 
 void Engine::initImages() {
 	createTargetImages();
+	createBloomImages();
 }
 
 void Engine::cleanupImages() {
+	destroyBloomImages(bloom);
 	destroyTargetImages(targets);
 }
 
 void Engine::initFramebuffers() {
 	createPresentFbs();
 	createTargetFbs();
+	createBloomFbs();
 }
 
 void Engine::cleanupFramebuffers() {
+	destroyBloomFbs(bloom);
 	destroyTargetFbs(targets);
 	destroyPresentFbs(present);
 }
@@ -867,7 +1099,6 @@ void Engine::cleanupBuffers() {
 void Engine::initPipelines() {
 	createPresentPipeline();
 	createPresentPipelineDS();
-
 	techniques.create(device, allocator, descriptorPool, meshes);
 	techniques.addTechnique("opaque"_id, device, allocator, descriptorPool, targets.renderPass,
 		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
@@ -884,13 +1115,16 @@ void Engine::initPipelines() {
 		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::Normal),
 		vk::makePipelineDepthStencilStateCI(true, false, VK_COMPARE_OP_LESS_OR_EQUAL),
 		vk::makePipelineMultisampleStateCI(targets.sampleCount));
+	createBloomPipelines();
+	createBloomPipelineDS();
 }
 
 void Engine::cleanupPipelines() {
+	destroyBloomPipelineDS(bloom);
+	destroyBloomPipelines();
 	techniques.destroy(device, allocator);
-
 	destroyPresentPipelineDS(present);
-	destroyPresentPipeline(present);
+	destroyPresentPipeline();
 }
 
 void Engine::createSwapchain(VkSwapchainKHR old) {
@@ -995,10 +1229,13 @@ void Engine::recreateSwapchain() {
 	// Queue up outdated objects for destruction
 	delayedOps.emplace_back(DelayedOp{
 		.deadline = frameCounter + FramesInFlight,
-		.func = [this, swapchain=swapchain, targets=targets, present=present]() mutable {
+		.func = [this, swapchain=swapchain, targets=targets, present=present, bloom=bloom]() mutable {
 			destroyPresentPipelineDS(present);
+			destroyBloomPipelineDS(bloom);
+			destroyBloomFbs(bloom);
 			destroyTargetFbs(targets);
 			destroyPresentFbs(present);
+			destroyBloomImages(bloom);
 			destroyTargetImages(targets);
 			destroySwapchain(swapchain);
 		},
@@ -1010,8 +1247,11 @@ void Engine::recreateSwapchain() {
 	targets = {};
 	createSwapchain(oldSwapchain);
 	createTargetImages();
+	createBloomImages();
 	createPresentFbs();
 	createTargetFbs();
+	createBloomFbs();
+	createBloomPipelineDS();
 	createPresentPipelineDS();
 }
 
@@ -1101,7 +1341,7 @@ void Engine::createPresentPipeline() {
 		.bindingCount = 1,
 		.pBindings = &presentImageBinding,
 	};
-	present.shader = vk::createShader(device, passthroughVertSrc, passthroughFragSrc,
+	present.shader = vk::createShader(device, presentVertSrc, presentFragSrc,
 		std::array{descriptorSetLayoutCI});
 
 	present.layout = vk::createPipelineLayout(device, std::to_array({
@@ -1122,10 +1362,10 @@ void Engine::createPresentPipeline() {
 	}.build(device, present.renderPass);
 }
 
-void Engine::destroyPresentPipeline(Present& p) {
-	vkDestroyPipeline(device, p.pipeline, nullptr);
-	vkDestroyPipelineLayout(device, p.layout, nullptr);
-	vk::destroyShader(device, p.shader);
+void Engine::destroyPresentPipeline() {
+	vkDestroyPipeline(device, present.pipeline, nullptr);
+	vkDestroyPipelineLayout(device, present.layout, nullptr);
+	vk::destroyShader(device, present.shader);
 }
 
 void Engine::createPresentPipelineDS() {
@@ -1287,6 +1527,182 @@ void Engine::createTargetFbs() {
 void Engine::destroyTargetFbs(RenderTargets& t) {
 	vkDestroyFramebuffer(device, t.framebuffer, nullptr);
 	vkDestroyRenderPass(device, t.renderPass, nullptr);
+}
+
+void Engine::createBloomImages() {
+	auto extent = swapchain.extent;
+	for (auto[image, iv]: zip_view{bloom.images, bloom.imageViews}) {
+		image = vk::createImage(allocator, ColorFormat,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+			extent, VK_SAMPLE_COUNT_1_BIT);
+		vk::setDebugName(device, image.image, VK_OBJECT_TYPE_IMAGE, fmt::format("bloom.images[{}]", &image - &bloom.images[0]));
+		iv = vk::createImageView(device, image, VK_IMAGE_ASPECT_COLOR_BIT);
+		vk::setDebugName(device, iv, VK_OBJECT_TYPE_IMAGE_VIEW, fmt::format("bloom.imageViews[{}]", &iv - &bloom.imageViews[0]));
+		extent.width = std::max(1u, extent.width >> 1);
+		extent.height = std::max(1u, extent.height >> 1);
+	}
+}
+
+void Engine::destroyBloomImages(Bloom& b) {
+	for (auto[image, iv]: zip_view{b.images, b.imageViews}) {
+		vkDestroyImageView(device, iv, nullptr);
+		vmaDestroyImage(allocator, image.image, image.allocation);
+	}
+}
+
+void Engine::createBloomFbs() {
+	auto const downRpAttachment = VkAttachmentDescription{
+		.format = ColorFormat,
+		.samples = VK_SAMPLE_COUNT_1_BIT,
+		.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+		.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+		.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+		.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+	};
+	auto const attachmentRef = VkAttachmentReference{
+		.attachment = 0,
+		.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+	};
+	auto const subpass = VkSubpassDescription{
+		.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+		.colorAttachmentCount = 1,
+		.pColorAttachments = &attachmentRef,
+	};
+	auto const downPassCI = VkRenderPassCreateInfo{
+		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+		.attachmentCount = 1,
+		.pAttachments = &downRpAttachment,
+		.subpassCount = 1,
+		.pSubpasses = &subpass,
+	};
+	VK(vkCreateRenderPass(device, &downPassCI, nullptr, &bloom.downPass));
+
+	auto const upRpAttachment = VkAttachmentDescription{
+		.format = ColorFormat,
+		.samples = VK_SAMPLE_COUNT_1_BIT,
+		.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
+		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+		.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+		.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+		.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+	};
+	auto const upPassCI = VkRenderPassCreateInfo{
+		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+		.attachmentCount = 1,
+		.pAttachments = &upRpAttachment,
+		.subpassCount = 1,
+		.pSubpasses = &subpass,
+	};
+	VK(vkCreateRenderPass(device, &upPassCI, nullptr, &bloom.upPass));
+
+	auto framebufferCI = VkFramebufferCreateInfo{
+		.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+		.renderPass = bloom.downPass,
+		.attachmentCount = 1,
+		.pAttachments = &targets.ssColorView,
+		.width = targets.ssColor.size.width,
+		.height = targets.ssColor.size.height,
+		.layers = 1,
+	};
+	VK(vkCreateFramebuffer(device, &framebufferCI, nullptr, &bloom.targetFb));
+	for (auto[fb, image, iv]: zip_view{bloom.imageFbs, bloom.images, bloom.imageViews}) {
+		framebufferCI.pAttachments = &iv;
+		framebufferCI.width = image.size.width;
+		framebufferCI.height = image.size.height;
+		VK(vkCreateFramebuffer(device, &framebufferCI, nullptr, &fb));
+	}
+}
+
+void Engine::destroyBloomFbs(Bloom& b) {
+	vkDestroyFramebuffer(device, b.targetFb, nullptr);
+	for (auto fb: b.imageFbs)
+		vkDestroyFramebuffer(device, fb, nullptr);
+	vkDestroyRenderPass(device, b.upPass, nullptr);
+	vkDestroyRenderPass(device, b.downPass, nullptr);
+}
+
+void Engine::createBloomPipelines() {
+	auto const sourceImageBinding = VkDescriptorSetLayoutBinding{
+		.binding = 0,
+		.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		.descriptorCount = 1,
+		.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+		.pImmutableSamplers = &linear,
+	};
+	auto const descriptorSetLayoutCI = VkDescriptorSetLayoutCreateInfo{
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+		.bindingCount = 1,
+		.pBindings = &sourceImageBinding,
+	};
+	bloom.shader = vk::createShader(device, bloomVertSrc, bloomFragSrc,
+		std::array{descriptorSetLayoutCI});
+
+	bloom.layout = vk::createPipelineLayout(device, std::to_array({
+		bloom.shader.descriptorSetLayouts[0],
+	}));
+	auto builder = vk::PipelineBuilder{
+		.shaderStageCIs = {
+			vk::makePipelineShaderStageCI(VK_SHADER_STAGE_VERTEX_BIT, bloom.shader.vert),
+			vk::makePipelineShaderStageCI(VK_SHADER_STAGE_FRAGMENT_BIT, bloom.shader.frag),
+		},
+		.vertexInputStateCI = vk::makePipelineVertexInputStateCI(),
+		.inputAssemblyStateCI = vk::makePipelineInputAssemblyStateCI(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST),
+		.rasterizationStateCI = vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, false),
+		.colorBlendAttachmentState = vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None),
+		.depthStencilStateCI = vk::makePipelineDepthStencilStateCI(false, false, VK_COMPARE_OP_ALWAYS),
+		.multisampleStateCI = vk::makePipelineMultisampleStateCI(),
+		.layout = bloom.layout,
+	};
+	bloom.down = builder.build(device, bloom.downPass);
+	builder.colorBlendAttachmentState = vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::Add);
+	bloom.up = builder.build(device, bloom.upPass);
+}
+
+void Engine::destroyBloomPipelines() {
+	vkDestroyPipeline(device, bloom.up, nullptr);
+	vkDestroyPipeline(device, bloom.down, nullptr);
+	vkDestroyPipelineLayout(device, bloom.layout, nullptr);
+	vk::destroyShader(device, bloom.shader);
+}
+
+void Engine::createBloomPipelineDS() {
+	auto const descriptorSetAI = VkDescriptorSetAllocateInfo{
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+		.descriptorPool = descriptorPool,
+		.descriptorSetCount = 1,
+		.pSetLayouts = &bloom.shader.descriptorSetLayouts[0],
+	};
+	VK(vkAllocateDescriptorSets(device, &descriptorSetAI, &bloom.sourceDS));
+	for (auto& ds: bloom.imageDS)
+		VK(vkAllocateDescriptorSets(device, &descriptorSetAI, &ds));
+
+	auto descriptorImageInfo = VkDescriptorImageInfo{
+		.imageView = targets.ssColorView,
+		.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+	};
+	auto writeDS = VkWriteDescriptorSet{
+		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+		.dstSet = bloom.sourceDS,
+		.dstBinding = 0,
+		.descriptorCount = 1,
+		.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		.pImageInfo = &descriptorImageInfo,
+	};
+	vkUpdateDescriptorSets(device, 1, &writeDS, 0, nullptr);
+	for (auto[ds, iv]: zip_view{bloom.imageDS, bloom.imageViews}) {
+		descriptorImageInfo.imageView = iv;
+		writeDS.dstSet = ds;
+		vkUpdateDescriptorSets(device, 1, &writeDS, 0, nullptr);
+	}
+}
+
+void Engine::destroyBloomPipelineDS(Bloom& b) {
+	for (auto& ds: b.imageDS)
+		vkFreeDescriptorSets(device, descriptorPool, 1, &ds);
+	vkFreeDescriptorSets(device, descriptorPool, 1, &b.sourceDS);
 }
 
 #ifdef VK_VALIDATION
