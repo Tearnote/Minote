@@ -104,6 +104,7 @@ set(SOURCES
         src/base/rng.hpp
         src/base/file.hpp src/base/file.cpp
         src/base/id.hpp
+        src/sys/vk/commands.hpp src/sys/vk/commands.cpp
         src/sys/vk/pipeline.hpp src/sys/vk/pipeline.cpp
         src/sys/vk/buffer.hpp src/sys/vk/buffer.tpp src/sys/vk/buffer.cpp
         src/sys/vk/shader.hpp src/sys/vk/shader.cpp

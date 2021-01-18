@@ -22,6 +22,7 @@
 #include "base/math.hpp"
 #include "base/time.hpp"
 #include "base/log.hpp"
+#include "sys/vk/commands.hpp"
 #include "sys/vk/pipeline.hpp"
 #include "sys/vk/base.hpp"
 #include "sys/window.hpp"
@@ -169,16 +170,6 @@ void Engine::render() {
 		camera.eye, camera.center, camera.up);
 	uploadToCpuBuffer(allocator, techniques.getWorldConstants(frameIndex), world);
 
-	auto const viewport = VkViewport{
-		.width = static_cast<f32>(swapchain.extent.width),
-		.height = static_cast<f32>(swapchain.extent.height),
-		.minDepth = 0.0f,
-		.maxDepth = 1.0f,
-	};
-	auto const scissor = VkRect2D{
-		.extent = swapchain.extent,
-	};
-
 	// Start recording commands
 	VK(vkResetCommandBuffer(frame.commandBuffer, 0));
 	auto cmdBeginInfo = VkCommandBufferBeginInfo{
@@ -205,8 +196,7 @@ void Engine::render() {
 		.pClearValues = clearValues.data(),
 	};
 	vkCmdBeginRenderPass(frame.commandBuffer, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-	vkCmdSetViewport(frame.commandBuffer, 0, 1, &viewport);
-	vkCmdSetScissor(frame.commandBuffer, 0, 1, &scissor);
+	vk::cmdSetArea(frame.commandBuffer, swapchain.extent);
 
 	// Opaque object draw
 	vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, opaque.pipeline);
@@ -314,19 +304,7 @@ void Engine::render() {
 			},
 		};
 		vkCmdBeginRenderPass(frame.commandBuffer, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-		bloomViewport = VkViewport{
-			.width = static_cast<f32>(bloom.images[i].size.width),
-			.height = static_cast<f32>(bloom.images[i].size.height),
-			.minDepth = 0.0f,
-			.maxDepth = 1.0f,
-		};
-		bloomScissor = VkRect2D{
-			.extent = bloom.images[i].size,
-		};
-		vkCmdSetViewport(frame.commandBuffer, 0, 1, &bloomViewport);
-		vkCmdSetScissor(frame.commandBuffer, 0, 1, &bloomScissor);
-
+		vk::cmdSetArea(frame.commandBuffer, bloom.images[i].size);
 		vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.down);
 		vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 			bloom.layout, 0, 1, &bloom.imageDS[i - 1], 0, nullptr);
@@ -379,19 +357,7 @@ void Engine::render() {
 			},
 		};
 		vkCmdBeginRenderPass(frame.commandBuffer, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-		bloomViewport = VkViewport{
-			.width = static_cast<f32>(bloom.images[i].size.width),
-			.height = static_cast<f32>(bloom.images[i].size.height),
-			.minDepth = 0.0f,
-			.maxDepth = 1.0f,
-		};
-		bloomScissor = VkRect2D{
-			.extent = bloom.images[i].size,
-		};
-		vkCmdSetViewport(frame.commandBuffer, 0, 1, &bloomViewport);
-		vkCmdSetScissor(frame.commandBuffer, 0, 1, &bloomScissor);
-
+		vk::cmdSetArea(frame.commandBuffer, bloom.images[i].size);
 		vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.up);
 		vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 			bloom.layout, 0, 1, &bloom.imageDS[i + 1], 0, nullptr);
@@ -444,10 +410,7 @@ void Engine::render() {
 		},
 	};
 	vkCmdBeginRenderPass(frame.commandBuffer, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-	vkCmdSetViewport(frame.commandBuffer, 0, 1, &viewport);
-	vkCmdSetScissor(frame.commandBuffer, 0, 1, &scissor);
-
+	vk::cmdSetArea(frame.commandBuffer, swapchain.extent);
 	vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.up);
 	vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 		bloom.layout, 0, 1, &bloom.imageDS[0], 0, nullptr);
@@ -482,10 +445,6 @@ void Engine::render() {
 		},
 	};
 	vkCmdBeginRenderPass(frame.commandBuffer, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-	vkCmdSetViewport(frame.commandBuffer, 0, 1, &viewport);
-	vkCmdSetScissor(frame.commandBuffer, 0, 1, &scissor);
-
 	vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, present.pipeline);
 	vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 		present.layout, 0, 1, &present.descriptorSet, 0, nullptr);
