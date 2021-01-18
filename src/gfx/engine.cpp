@@ -186,17 +186,7 @@ void Engine::render() {
 	});
 
 	// Start the object drawing pass
-	VkRenderPassBeginInfo rpBeginInfo{
-		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-		.renderPass = targets.renderPass,
-		.framebuffer = targets.framebuffer,
-		.renderArea = {
-			.extent = swapchain.extent,
-		},
-		.clearValueCount = clearValues.size(),
-		.pClearValues = clearValues.data(),
-	};
-	vkCmdBeginRenderPass(cmdBuf, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	vk::cmdBeginRenderPass(cmdBuf, targets.renderPass, targets.framebuffer, swapchain.extent, clearValues);
 	vk::cmdSetArea(cmdBuf, swapchain.extent);
 
 	// Opaque object draw
@@ -236,27 +226,8 @@ void Engine::render() {
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 	// HDR-threshold the color image
-	rpBeginInfo = VkRenderPassBeginInfo{
-		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-		.renderPass = bloom.downPass,
-		.framebuffer = bloom.imageFbs[0],
-		.renderArea = {
-			.extent = bloom.images[0].size,
-		},
-	};
-	vkCmdBeginRenderPass(cmdBuf, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-	auto bloomViewport = VkViewport{
-		.width = static_cast<f32>(bloom.images[0].size.width),
-		.height = static_cast<f32>(bloom.images[0].size.height),
-		.minDepth = 0.0f,
-		.maxDepth = 1.0f,
-	};
-	auto bloomScissor = VkRect2D{
-		.extent = bloom.images[0].size,
-	};
-	vkCmdSetViewport(cmdBuf, 0, 1, &bloomViewport);
-	vkCmdSetScissor(cmdBuf, 0, 1, &bloomScissor);
+	vk::cmdBeginRenderPass(cmdBuf, bloom.downPass, bloom.imageFbs[0], bloom.images[0].size);
+	vk::cmdSetArea(cmdBuf, bloom.images[0].size);
 
 	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.down);
 	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -272,15 +243,7 @@ void Engine::render() {
 
 	// Progressively downscale the bloom contents
 	for (size_t i = 1; i < Bloom::Depth; i += 1) {
-		rpBeginInfo = VkRenderPassBeginInfo{
-			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-			.renderPass = bloom.downPass,
-			.framebuffer = bloom.imageFbs[i],
-			.renderArea = {
-				.extent = bloom.images[i].size,
-			},
-		};
-		vkCmdBeginRenderPass(cmdBuf, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vk::cmdBeginRenderPass(cmdBuf, bloom.downPass, bloom.imageFbs[i], bloom.images[i].size);
 		vk::cmdSetArea(cmdBuf, bloom.images[i].size);
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.down);
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -301,15 +264,7 @@ void Engine::render() {
 			0, 0,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-		rpBeginInfo = VkRenderPassBeginInfo{
-			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-			.renderPass = bloom.upPass,
-			.framebuffer = bloom.imageFbs[i],
-			.renderArea = {
-				.extent = bloom.images[i].size,
-			},
-		};
-		vkCmdBeginRenderPass(cmdBuf, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vk::cmdBeginRenderPass(cmdBuf, bloom.upPass, bloom.imageFbs[i], bloom.images[i].size);
 		vk::cmdSetArea(cmdBuf, bloom.images[i].size);
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.up);
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -330,15 +285,7 @@ void Engine::render() {
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 	// Apply bloom to rendered color image
-	rpBeginInfo = VkRenderPassBeginInfo{
-		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-		.renderPass = bloom.upPass,
-		.framebuffer = bloom.targetFb,
-		.renderArea = {
-			.extent = targets.ssColor.size,
-		},
-	};
-	vkCmdBeginRenderPass(cmdBuf, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	vk::cmdBeginRenderPass(cmdBuf, bloom.upPass, bloom.targetFb, targets.ssColor.size);
 	vk::cmdSetArea(cmdBuf, swapchain.extent);
 	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.up);
 	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -353,15 +300,7 @@ void Engine::render() {
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 	// Blit the image to screen
-	rpBeginInfo = VkRenderPassBeginInfo{
-		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-		.renderPass = present.renderPass,
-		.framebuffer = present.framebuffer[swapchainImageIndex],
-		.renderArea = {
-			.extent = swapchain.extent,
-		},
-	};
-	vkCmdBeginRenderPass(cmdBuf, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	vk::cmdBeginRenderPass(cmdBuf, present.renderPass, present.framebuffer[swapchainImageIndex], swapchain.extent);
 	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, present.pipeline);
 	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
 		present.layout, 0, 1, &present.descriptorSet, 0, nullptr);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <span>
 #include "volk/volk.h"
 #include "sys/vk/image.hpp"
 
@@ -11,5 +12,8 @@ void cmdImageBarrier(VkCommandBuffer cmdBuf, Image const& image, VkImageAspectFl
 	VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
 	VkAccessFlags srcAccess, VkAccessFlags dstAccess,
 	VkImageLayout oldLayout, VkImageLayout newLayout);
+
+void cmdBeginRenderPass(VkCommandBuffer cmdBuf, VkRenderPass renderPass,
+	VkFramebuffer fb, VkExtent2D extent, std::span<VkClearValue const> clearValues = {});
 
 }

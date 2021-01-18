@@ -40,4 +40,19 @@ void cmdImageBarrier(VkCommandBuffer cmdBuf, Image const& image, VkImageAspectFl
 	vkCmdPipelineBarrier(cmdBuf, srcStage, dstStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 }
 
+void cmdBeginRenderPass(VkCommandBuffer cmdBuf, VkRenderPass renderPass, VkFramebuffer fb,
+	VkExtent2D extent, std::span<VkClearValue const> clearValues) {
+	auto const rpBeginInfo = VkRenderPassBeginInfo{
+		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+		.renderPass = renderPass,
+		.framebuffer = fb,
+		.renderArea = {
+			.extent = extent,
+		},
+		.clearValueCount = static_cast<u32>(clearValues.size()),
+		.pClearValues = clearValues.data(),
+	};
+	vkCmdBeginRenderPass(cmdBuf, &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+}
+
 }
