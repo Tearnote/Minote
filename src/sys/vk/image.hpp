@@ -9,15 +9,20 @@ struct Image {
 
 	VmaAllocation allocation;
 	VkImage image;
+	VkImageView view;
 	VkFormat format;
+	VkImageAspectFlags aspect;
 	VkSampleCountFlagBits samples;
 	VkExtent2D size;
 
 };
 
-auto createImage(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usage,
-	VkExtent2D size, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT) -> Image;
+auto createImage(VkDevice device, VmaAllocator allocator, VkFormat format,
+	VkImageAspectFlags aspect, VkImageUsageFlags usage, VkExtent2D size,
+	VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT) -> Image;
 
-auto createImageView(VkDevice device, Image& image, VkImageAspectFlags aspect) -> VkImageView;
+void destroyImage(VkDevice device, VmaAllocator allocator, Image& image);
+
+auto createImageView(VkDevice device, Image& image) -> VkImageView;
 
 }

@@ -6,8 +6,8 @@
 
 namespace minote::sys::vk {
 
-auto createImage(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usage,
-	VkExtent2D size, VkSampleCountFlagBits sampleCount) -> Image {
+auto createImage(VkDevice device, VmaAllocator allocator, VkFormat format, VkImageAspectFlags aspect,
+	VkImageUsageFlags usage, VkExtent2D size, VkSampleCountFlagBits sampleCount) -> Image {
 	auto const extent = VkExtent3D{size.width, size.height, 1};
 	auto const imageCreateCI = VkImageCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -24,22 +24,32 @@ auto createImage(VmaAllocator allocator, VkFormat format, VkImageUsageFlags usag
 		.usage = VMA_MEMORY_USAGE_GPU_ONLY,
 	};
 
-	Image result;
+	auto result = Image {
+		.format = format,
+		.aspect = aspect,
+		.samples = sampleCount,
+		.size = size,
+	};
 	VK(vmaCreateImage(allocator, &imageCreateCI, &allocationCI, &result.image, &result.allocation, nullptr));
-	result.format = format;
-	result.samples = sampleCount;
-	result.size = size;
+	result.view = createImageView(device, result);
 	return result;
 }
 
-auto createImageView(VkDevice device, Image& image, VkImageAspectFlags aspect) -> VkImageView {
+void destroyImage(VkDevice device, VmaAllocator allocator, Image& image) {
+	if (image.allocation)
+		vmaDestroyImage(allocator, image.image, image.allocation);
+	if (image.view)
+		vkDestroyImageView(device, image.view, nullptr);
+}
+
+auto createImageView(VkDevice device, Image& image) -> VkImageView {
 	auto imageViewCI = VkImageViewCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 		.image = image.image,
 		.viewType = VK_IMAGE_VIEW_TYPE_2D,
 		.format = image.format,
 		.subresourceRange = VkImageSubresourceRange{
-			.aspectMask = aspect,
+			.aspectMask = image.aspect,
 			.baseMipLevel = 0,
 			.levelCount = 1,
 			.baseArrayLayer = 0,

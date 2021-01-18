@@ -51,7 +51,6 @@ private:
 		VkFormat format;
 		VkExtent2D extent = {};
 		std::vector<sys::vk::Image> color;
-		std::vector<VkImageView> colorView;
 
 	};
 
@@ -70,11 +69,8 @@ private:
 
 		VkSampleCountFlagBits sampleCount;
 		sys::vk::Image msColor;
-		VkImageView msColorView;
 		sys::vk::Image ssColor;
-		VkImageView ssColorView;
 		sys::vk::Image depthStencil;
-		VkImageView depthStencilView;
 		VkRenderPass renderPass;
 		VkFramebuffer framebuffer;
 
@@ -85,7 +81,6 @@ private:
 		static constexpr auto Depth = 6_zu;
 
 		std::array<sys::vk::Image, Depth> images;
-		std::array<VkImageView, Depth> imageViews;
 		VkRenderPass downPass;
 		VkRenderPass upPass;
 		std::array<VkFramebuffer, Depth> imageFbs;

@@ -1007,21 +1007,21 @@ void Engine::createSwapchain(VkSwapchainKHR old) {
 	auto swapchainImagesRaw = std::vector<VkImage>{swapchainImageCount};
 	vkGetSwapchainImagesKHR(device, swapchain.swapchain, &swapchainImageCount, swapchainImagesRaw.data());
 	swapchain.color.resize(swapchainImagesRaw.size());
-	swapchain.colorView.resize(swapchainImagesRaw.size());
-	for (auto[raw, color, cv]: zip_view{swapchainImagesRaw, swapchain.color, swapchain.colorView}) {
+	for (auto[raw, color]: zip_view{swapchainImagesRaw, swapchain.color}) {
 		color = vk::Image{
 			.image = raw,
 			.format = swapchain.format,
+			.aspect = VK_IMAGE_ASPECT_COLOR_BIT,
 			.samples = VK_SAMPLE_COUNT_1_BIT,
 			.size = swapchain.extent,
 		};
-		cv = vk::createImageView(device, color, VK_IMAGE_ASPECT_COLOR_BIT);
+		color.view = vk::createImageView(device, color);
 	}
 }
 
 void Engine::destroySwapchain(Swapchain& sc) {
-	for (auto& cv: sc.colorView)
-		vkDestroyImageView(device, cv, nullptr);
+	for (auto& image: sc.color)
+		vk::destroyImage(device, allocator, image);
 	vkDestroySwapchainKHR(device, sc.swapchain, nullptr);
 }
 
@@ -1122,10 +1122,10 @@ void Engine::createPresentFbs() {
 
 	// Create the present framebuffers
 	present.framebuffer.resize(swapchain.color.size());
-	for (auto[fb, cv]: zip_view{present.framebuffer, swapchain.colorView}) {
+	for (auto[fb, image]: zip_view{present.framebuffer, swapchain.color}) {
 		auto const fbAttachments = std::to_array<VkImageView>({
-			targets.ssColorView,
-			cv,
+			targets.ssColor.view,
+			image.view,
 		});
 		auto const framebufferCI = VkFramebufferCreateInfo{
 			.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -1195,7 +1195,7 @@ void Engine::createPresentPipelineDS() {
 	VK(vkAllocateDescriptorSets(device, &descriptorSetAI, &present.descriptorSet));
 
 	auto const descriptorImageInfo = VkDescriptorImageInfo{
-		.imageView = targets.ssColorView,
+		.imageView = targets.ssColor.view,
 		.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 	};
 	auto const writeDS = VkWriteDescriptorSet{
@@ -1231,36 +1231,27 @@ void Engine::createTargetImages() {
 		L.warn("Requested antialiasing mode MSAA {}x not supported; defaulting to MSAA 2x", SampleCount);
 		targets.sampleCount = VK_SAMPLE_COUNT_2_BIT;
 	}
-	targets.msColor = vk::createImage(allocator, ColorFormat,
+	targets.msColor = vk::createImage(device, allocator, ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT,
 		VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 		swapchain.extent, targets.sampleCount);
 	vk::setDebugName(device, targets.msColor.image, VK_OBJECT_TYPE_IMAGE, "targets.msColor");
-	targets.msColorView = vk::createImageView(device, targets.msColor,
-		VK_IMAGE_ASPECT_COLOR_BIT);
-	vk::setDebugName(device, targets.msColorView, VK_OBJECT_TYPE_IMAGE_VIEW, "targets.msColorView");
-	targets.ssColor = vk::createImage(allocator, ColorFormat,
+	vk::setDebugName(device, targets.msColor.view, VK_OBJECT_TYPE_IMAGE_VIEW, "targets.msColor.view");
+	targets.ssColor = vk::createImage(device, allocator, ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT,
 		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
 		swapchain.extent, VK_SAMPLE_COUNT_1_BIT);
 	vk::setDebugName(device, targets.ssColor.image, VK_OBJECT_TYPE_IMAGE, "targets.ssColor");
-	targets.ssColorView = vk::createImageView(device, targets.ssColor,
-		VK_IMAGE_ASPECT_COLOR_BIT);
-	vk::setDebugName(device, targets.ssColorView, VK_OBJECT_TYPE_IMAGE_VIEW, "targets.ssColorView");
-	targets.depthStencil = vk::createImage(allocator, DepthFormat,
+	vk::setDebugName(device, targets.ssColor.view, VK_OBJECT_TYPE_IMAGE_VIEW, "targets.ssColor.view");
+	targets.depthStencil = vk::createImage(device, allocator, DepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT,
 		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
 		swapchain.extent, targets.sampleCount);
 	vk::setDebugName(device, targets.depthStencil.image, VK_OBJECT_TYPE_IMAGE, "targets.depthStencil");
-	targets.depthStencilView = vk::createImageView(device, targets.depthStencil,
-		VK_IMAGE_ASPECT_DEPTH_BIT);
-	vk::setDebugName(device, targets.depthStencilView, VK_OBJECT_TYPE_IMAGE_VIEW, "targets.depthStencilView");
+	vk::setDebugName(device, targets.depthStencil.view, VK_OBJECT_TYPE_IMAGE_VIEW, "targets.depthStencil.view");
 }
 
 void Engine::destroyTargetImages(RenderTargets& t) {
-	vkDestroyImageView(device, t.depthStencilView, nullptr);
-	vmaDestroyImage(allocator, t.depthStencil.image, t.depthStencil.allocation);
-	vkDestroyImageView(device, t.ssColorView, nullptr);
-	vmaDestroyImage(allocator, t.ssColor.image, t.ssColor.allocation);
-	vkDestroyImageView(device, t.msColorView, nullptr);
-	vmaDestroyImage(allocator, t.msColor.image, t.msColor.allocation);
+	vk::destroyImage(device, allocator, t.depthStencil);
+	vk::destroyImage(device, allocator, t.ssColor);
+	vk::destroyImage(device, allocator, t.msColor);
 }
 
 void Engine::createTargetFbs() {
@@ -1325,9 +1316,9 @@ void Engine::createTargetFbs() {
 	VK(vkCreateRenderPass(device, &renderPassCI, nullptr, &targets.renderPass));
 
 	auto const fbAttachments = std::to_array<VkImageView>({
-		targets.msColorView,
-		targets.depthStencilView,
-		targets.ssColorView,
+		targets.msColor.view,
+		targets.depthStencil.view,
+		targets.ssColor.view,
 	});
 	auto const framebufferCI = VkFramebufferCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -1348,23 +1339,19 @@ void Engine::destroyTargetFbs(RenderTargets& t) {
 
 void Engine::createBloomImages() {
 	auto extent = swapchain.extent;
-	for (auto[image, iv]: zip_view{bloom.images, bloom.imageViews}) {
-		image = vk::createImage(allocator, ColorFormat,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-			extent, VK_SAMPLE_COUNT_1_BIT);
+	for (auto& image: bloom.images) {
+		image = vk::createImage(device, allocator, ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, extent);
 		vk::setDebugName(device, image.image, VK_OBJECT_TYPE_IMAGE, fmt::format("bloom.images[{}]", &image - &bloom.images[0]));
-		iv = vk::createImageView(device, image, VK_IMAGE_ASPECT_COLOR_BIT);
-		vk::setDebugName(device, iv, VK_OBJECT_TYPE_IMAGE_VIEW, fmt::format("bloom.imageViews[{}]", &iv - &bloom.imageViews[0]));
+		vk::setDebugName(device, image.view, VK_OBJECT_TYPE_IMAGE_VIEW, fmt::format("bloom.images[{}].view", &image - &bloom.images[0]));
 		extent.width = std::max(1u, extent.width >> 1);
 		extent.height = std::max(1u, extent.height >> 1);
 	}
 }
 
 void Engine::destroyBloomImages(Bloom& b) {
-	for (auto[image, iv]: zip_view{b.images, b.imageViews}) {
-		vkDestroyImageView(device, iv, nullptr);
-		vmaDestroyImage(allocator, image.image, image.allocation);
-	}
+	for (auto& image: b.images)
+		vk::destroyImage(device, allocator, image);
 }
 
 void Engine::createBloomFbs() {
@@ -1419,14 +1406,14 @@ void Engine::createBloomFbs() {
 		.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
 		.renderPass = bloom.downPass,
 		.attachmentCount = 1,
-		.pAttachments = &targets.ssColorView,
+		.pAttachments = &targets.ssColor.view,
 		.width = targets.ssColor.size.width,
 		.height = targets.ssColor.size.height,
 		.layers = 1,
 	};
 	VK(vkCreateFramebuffer(device, &framebufferCI, nullptr, &bloom.targetFb));
-	for (auto[fb, image, iv]: zip_view{bloom.imageFbs, bloom.images, bloom.imageViews}) {
-		framebufferCI.pAttachments = &iv;
+	for (auto[fb, image]: zip_view{bloom.imageFbs, bloom.images}) {
+		framebufferCI.pAttachments = &image.view;
 		framebufferCI.width = image.size.width;
 		framebufferCI.height = image.size.height;
 		VK(vkCreateFramebuffer(device, &framebufferCI, nullptr, &fb));
@@ -1497,7 +1484,7 @@ void Engine::createBloomPipelineDS() {
 		VK(vkAllocateDescriptorSets(device, &descriptorSetAI, &ds));
 
 	auto descriptorImageInfo = VkDescriptorImageInfo{
-		.imageView = targets.ssColorView,
+		.imageView = targets.ssColor.view,
 		.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 	};
 	auto writeDS = VkWriteDescriptorSet{
@@ -1509,8 +1496,8 @@ void Engine::createBloomPipelineDS() {
 		.pImageInfo = &descriptorImageInfo,
 	};
 	vkUpdateDescriptorSets(device, 1, &writeDS, 0, nullptr);
-	for (auto[ds, iv]: zip_view{bloom.imageDS, bloom.imageViews}) {
-		descriptorImageInfo.imageView = iv;
+	for (auto[ds, image]: zip_view{bloom.imageDS, bloom.images}) {
+		descriptorImageInfo.imageView = image.view;
 		writeDS.dstSet = ds;
 		vkUpdateDescriptorSets(device, 1, &writeDS, 0, nullptr);
 	}
