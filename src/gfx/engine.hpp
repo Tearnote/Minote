@@ -48,7 +48,6 @@ private:
 	struct Swapchain {
 
 		VkSwapchainKHR swapchain = nullptr;
-		VkFormat format;
 		VkExtent2D extent = {};
 		std::vector<sys::vk::Image> color;
 
@@ -67,7 +66,6 @@ private:
 
 	struct RenderTargets {
 
-		VkSampleCountFlagBits sampleCount;
 		sys::vk::Image msColor;
 		sys::vk::Image ssColor;
 		sys::vk::Image depthStencil;

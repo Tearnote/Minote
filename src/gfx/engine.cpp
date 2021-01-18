@@ -919,17 +919,17 @@ void Engine::initPipelines() {
 		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
 		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None),
 		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
-		vk::makePipelineMultisampleStateCI(targets.sampleCount));
+		vk::makePipelineMultisampleStateCI(targets.msColor.samples));
 	techniques.addTechnique("transparent_depth_prepass"_id, device, allocator, descriptorPool, targets.renderPass,
 		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
 		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None, false),
 		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
-		vk::makePipelineMultisampleStateCI(targets.sampleCount));
+		vk::makePipelineMultisampleStateCI(targets.msColor.samples));
 	techniques.addTechnique("transparent"_id, device, allocator, descriptorPool, targets.renderPass,
 		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
 		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::Normal),
 		vk::makePipelineDepthStencilStateCI(true, false, VK_COMPARE_OP_LESS_OR_EQUAL),
-		vk::makePipelineMultisampleStateCI(targets.sampleCount));
+		vk::makePipelineMultisampleStateCI(targets.msColor.samples));
 	createBloomPipelines();
 	createBloomPipelineDS();
 }
@@ -1001,7 +1001,6 @@ void Engine::createSwapchain(VkSwapchainKHR old) {
 	VK(vkCreateSwapchainKHR(device, &swapchainCI, nullptr, &swapchain.swapchain));
 
 	// Retrieve swapchain images
-	swapchain.format = surfaceFormat.format;
 	u32 swapchainImageCount;
 	vkGetSwapchainImagesKHR(device, swapchain.swapchain, &swapchainImageCount, nullptr);
 	auto swapchainImagesRaw = std::vector<VkImage>{swapchainImageCount};
@@ -1010,7 +1009,7 @@ void Engine::createSwapchain(VkSwapchainKHR old) {
 	for (auto[raw, color]: zip_view{swapchainImagesRaw, swapchain.color}) {
 		color = vk::Image{
 			.image = raw,
-			.format = swapchain.format,
+			.format = surfaceFormat.format,
 			.aspect = VK_IMAGE_ASPECT_COLOR_BIT,
 			.samples = VK_SAMPLE_COUNT_1_BIT,
 			.size = swapchain.extent,
@@ -1225,25 +1224,28 @@ void Engine::destroyMeshBuffer() {
 
 void Engine::createTargetImages() {
 	auto const supportedSampleCount = deviceProperties.limits.framebufferColorSampleCounts & deviceProperties.limits.framebufferDepthSampleCounts;
-	if (SampleCount & supportedSampleCount) {
-		targets.sampleCount = SampleCount;
-	} else {
-		L.warn("Requested antialiasing mode MSAA {}x not supported; defaulting to MSAA 2x", SampleCount);
-		targets.sampleCount = VK_SAMPLE_COUNT_2_BIT;
-	}
+	auto const selectedSampleCount = [=]() {
+		if (SampleCount & supportedSampleCount) {
+			return SampleCount;
+		} else {
+			L.warn("Requested antialiasing mode MSAA {}x not supported; defaulting to MSAA 2x",
+				SampleCount);
+			return VK_SAMPLE_COUNT_2_BIT;
+		}
+	}();
 	targets.msColor = vk::createImage(device, allocator, ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT,
 		VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-		swapchain.extent, targets.sampleCount);
+		swapchain.extent, selectedSampleCount);
 	vk::setDebugName(device, targets.msColor.image, VK_OBJECT_TYPE_IMAGE, "targets.msColor");
 	vk::setDebugName(device, targets.msColor.view, VK_OBJECT_TYPE_IMAGE_VIEW, "targets.msColor.view");
 	targets.ssColor = vk::createImage(device, allocator, ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT,
 		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
-		swapchain.extent, VK_SAMPLE_COUNT_1_BIT);
+		swapchain.extent);
 	vk::setDebugName(device, targets.ssColor.image, VK_OBJECT_TYPE_IMAGE, "targets.ssColor");
 	vk::setDebugName(device, targets.ssColor.view, VK_OBJECT_TYPE_IMAGE_VIEW, "targets.ssColor.view");
 	targets.depthStencil = vk::createImage(device, allocator, DepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT,
 		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-		swapchain.extent, targets.sampleCount);
+		swapchain.extent, selectedSampleCount);
 	vk::setDebugName(device, targets.depthStencil.image, VK_OBJECT_TYPE_IMAGE, "targets.depthStencil");
 	vk::setDebugName(device, targets.depthStencil.view, VK_OBJECT_TYPE_IMAGE_VIEW, "targets.depthStencil.view");
 }
