@@ -6,6 +6,18 @@ namespace minote::sys::vk {
 
 using namespace base;
 
+auto clearColor(glm::vec4 color) -> VkClearValue {
+	return VkClearValue{
+		.color = { .float32 = {color.r, color.g, color.b, color.a} },
+	};
+}
+
+auto clearDepth(f32 depth) -> VkClearValue {
+	return VkClearValue{
+		.depthStencil = { .depth = depth },
+	};
+}
+
 void cmdSetArea(VkCommandBuffer cmdBuf, VkExtent2D size) {
 	auto const viewport = VkViewport{
 		.width = static_cast<f32>(size.width),

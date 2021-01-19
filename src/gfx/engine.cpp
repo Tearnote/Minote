@@ -181,10 +181,10 @@ void Engine::render() {
 	VK(vkBeginCommandBuffer(cmdBuf, &cmdBeginInfo));
 
 	// Compute clear color
-	auto const clearValues = std::to_array<VkClearValue>({
-		{ .color = { .float32 = {world.ambientColor.r, world.ambientColor.g, world.ambientColor.b, world.ambientColor.a} }},
-		{ .depthStencil = { .depth = 1.0f }},
-	});
+	auto const clearValues = std::array{
+		vk::clearColor(world.ambientColor),
+		vk::clearDepth(1.0f),
+	};
 
 	// Start the object drawing pass
 	vk::cmdBeginRenderPass(cmdBuf, targets.renderPass, targets.framebuffer, swapchain.extent, clearValues);
@@ -1074,29 +1074,29 @@ void Engine::recreateSwapchain() {
 
 void Engine::createPresentFbs() {
 	// Create the present render pass
-	present.renderPass = vk::createRenderPass(device, std::to_array<vk::Attachment>({
-		{ // Source
+	present.renderPass = vk::createRenderPass(device, std::array{
+		vk::Attachment{ // Source
 			.type = vk::Attachment::Type::Input,
 			.image = targets.ssColor,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
 			.layoutBefore = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		},
-		{ // Present
+		vk::Attachment{ // Present
 			.type = vk::Attachment::Type::Color,
 			.image = swapchain.color[0],
 			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
 			.layoutDuring = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			.layoutAfter = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
 		},
-	}));
+	});
 
 	// Create the present framebuffers
 	present.framebuffer.resize(swapchain.color.size());
 	for (auto[fb, image]: zip_view{present.framebuffer, swapchain.color}) {
-		fb = vk::createFramebuffer(device, present.renderPass, std::to_array<vk::Image>({
+		fb = vk::createFramebuffer(device, present.renderPass, std::array{
 			targets.ssColor,
 			image,
-		}));
+		});
 	}
 }
 
@@ -1121,9 +1121,9 @@ void Engine::createPresentPipeline() {
 	present.shader = vk::createShader(device, presentVertSrc, presentFragSrc,
 		std::array{descriptorSetLayoutCI});
 
-	present.layout = vk::createPipelineLayout(device, std::to_array({
+	present.layout = vk::createPipelineLayout(device, std::array{
 		present.shader.descriptorSetLayouts[0],
-	}));
+	});
 	present.pipeline = vk::PipelineBuilder{
 		.shaderStageCIs = {
 			vk::makePipelineShaderStageCI(VK_SHADER_STAGE_VERTEX_BIT, present.shader.vert),
@@ -1218,32 +1218,32 @@ void Engine::destroyTargetImages(RenderTargets& t) {
 }
 
 void Engine::createTargetFbs() {
-	targets.renderPass = vk::createRenderPass(device, std::to_array<vk::Attachment>({
-		{
+	targets.renderPass = vk::createRenderPass(device, std::array{
+		vk::Attachment{
 			.type = vk::Attachment::Type::Color,
 			.image = targets.msColor,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 			.layoutDuring = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		},
-		{
+		vk::Attachment{
 			.type = vk::Attachment::Type::DepthStencil,
 			.image = targets.depthStencil,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 			.layoutDuring = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 		},
-		{
+		vk::Attachment{
 			.type = vk::Attachment::Type::Resolve,
 			.image = targets.ssColor,
 			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
 			.layoutDuring = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		},
-	}));
-	targets.framebuffer = vk::createFramebuffer(device, targets.renderPass, std::to_array<vk::Image>({
+	});
+	targets.framebuffer = vk::createFramebuffer(device, targets.renderPass, std::array{
 		targets.msColor,
 		targets.depthStencil,
 		targets.ssColor,
-	}));
+	});
 }
 
 void Engine::destroyTargetFbs(RenderTargets& t) {
@@ -1269,27 +1269,27 @@ void Engine::destroyBloomImages(Bloom& b) {
 }
 
 void Engine::createBloomFbs() {
-	bloom.downPass = vk::createRenderPass(device, std::to_array<vk::Attachment>({
-		{
+	bloom.downPass = vk::createRenderPass(device, std::array{
+		vk::Attachment{
 			.type = vk::Attachment::Type::Color,
 			.image = bloom.images[0],
 			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
 			.layoutDuring = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		},
-	}));
-	bloom.upPass = vk::createRenderPass(device, std::to_array<vk::Attachment>({
-		{
+	});
+	bloom.upPass = vk::createRenderPass(device, std::array{
+		vk::Attachment{
 			.type = vk::Attachment::Type::Color,
 			.image = bloom.images[0],
 			.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
 			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
 			.layoutBefore = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		},
-	}));
+	});
 
-	bloom.targetFb = vk::createFramebuffer(device, bloom.downPass, std::to_array<vk::Image>({targets.ssColor}));
+	bloom.targetFb = vk::createFramebuffer(device, bloom.downPass, std::array{targets.ssColor});
 	for (auto[fb, image]: zip_view{bloom.imageFbs, bloom.images})
-		fb = vk::createFramebuffer(device, bloom.downPass, std::to_array<vk::Image>({image}));
+		fb = vk::createFramebuffer(device, bloom.downPass, std::array{image});
 }
 
 void Engine::destroyBloomFbs(Bloom& b) {
@@ -1316,9 +1316,9 @@ void Engine::createBloomPipelines() {
 	bloom.shader = vk::createShader(device, bloomVertSrc, bloomFragSrc,
 		std::array{descriptorSetLayoutCI});
 
-	bloom.layout = vk::createPipelineLayout(device, std::to_array({
+	bloom.layout = vk::createPipelineLayout(device, std::array{
 		bloom.shader.descriptorSetLayouts[0],
-	}));
+	});
 	auto builder = vk::PipelineBuilder{
 		.shaderStageCIs = {
 			vk::makePipelineShaderStageCI(VK_SHADER_STAGE_VERTEX_BIT, bloom.shader.vert),

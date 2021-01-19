@@ -32,10 +32,10 @@ void TechniqueSet::create(VkDevice device, VmaAllocator allocator, VkDescriptorP
 		.descriptorCount = 1,
 		.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 	};
-	auto const worldBindings = std::to_array<VkDescriptorSetLayoutBinding>({
+	auto const worldBindings = std::array{
 		meshBufferBinding,
 		worldConstantsBinding,
-	});
+	};
 	auto const worldDescriptorSetLayoutCI = VkDescriptorSetLayoutCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
 		.bindingCount = worldBindings.size(),
@@ -54,20 +54,20 @@ void TechniqueSet::create(VkDevice device, VmaAllocator allocator, VkDescriptorP
 		.descriptorCount = 1,
 		.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 	};
-	auto const drawBindings = std::to_array<VkDescriptorSetLayoutBinding>({
+	auto const drawBindings = std::array{
 		drawCommandBinding,
 		instanceBufferBinding,
-	});
+	};
 	auto const drawDescriptorSetLayoutCI = VkDescriptorSetLayoutCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
 		.bindingCount = drawBindings.size(),
 		.pBindings = drawBindings.data(),
 	};
 
-	auto const descriptorSetLayoutCIs = std::to_array<VkDescriptorSetLayoutCreateInfo const>({
+	auto const descriptorSetLayoutCIs = std::array{
 		worldDescriptorSetLayoutCI,
 		drawDescriptorSetLayoutCI,
-	});
+	};
 	m_shader = vk::createShader(device, objectVertSrc, objectFragSrc, descriptorSetLayoutCIs);
 
 	// Create the world (slot 0) descriptor set
@@ -109,18 +109,18 @@ void TechniqueSet::create(VkDevice device, VmaAllocator allocator, VkDescriptorP
 			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 			.pBufferInfo = &worldConstantsInfo,
 		};
-		auto const descriptorWrites = std::to_array<VkWriteDescriptorSet>({
+		auto const descriptorWrites = std::array{
 			meshBufferWrite,
 			worldConstantsWrite,
-		});
+		};
 		vkUpdateDescriptorSets(device, descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 	}
 
 	// Create the pipeline layout
-	m_pipelineLayout = vk::createPipelineLayout(device, std::to_array({
+	m_pipelineLayout = vk::createPipelineLayout(device, std::array{
 		m_shader.descriptorSetLayouts[0],
 		m_shader.descriptorSetLayouts[1],
-	}));
+	});
 }
 
 void TechniqueSet::destroy(VkDevice device, VmaAllocator allocator) {
@@ -201,10 +201,10 @@ void TechniqueSet::addTechnique(base::ID id, VkDevice device, VmaAllocator alloc
 			.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
 			.pBufferInfo = &instanceBufferInfo,
 		};
-		auto const indirectBufferWrites = std::to_array<VkWriteDescriptorSet>({
+		auto const indirectBufferWrites = std::array{
 			indirectBufferWrite,
 			instanceBufferWrite,
-		});
+		};
 		vkUpdateDescriptorSets(device, indirectBufferWrites.size(), indirectBufferWrites.data(), 0, nullptr);
 	}
 

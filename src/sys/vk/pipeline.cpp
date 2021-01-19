@@ -20,10 +20,10 @@ auto PipelineBuilder::build(VkDevice device, VkRenderPass pass, u32 subpass) -> 
 		.attachmentCount = 1,
 		.pAttachments = &colorBlendAttachmentState,
 	};
-	auto const dynamicStates = std::to_array<VkDynamicState>({
+	auto const dynamicStates = std::array{
 		VK_DYNAMIC_STATE_VIEWPORT,
 		VK_DYNAMIC_STATE_SCISSOR,
-	});
+	};
 	auto const dynamicStateCI = VkPipelineDynamicStateCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
 		.dynamicStateCount = dynamicStates.size(),
