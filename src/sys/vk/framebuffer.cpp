@@ -83,4 +83,27 @@ auto createRenderPass(VkDevice device, std::span<Attachment const> attachments) 
 	return result;
 }
 
+auto createFramebuffer(VkDevice device, VkRenderPass renderPass, std::span<Image const> attachments) -> VkFramebuffer {
+	auto const fbSize = attachments[0].size;
+	std::vector<VkImageView> fbAttachments;
+	fbAttachments.reserve(attachments.size());
+	ranges::transform(attachments, std::back_inserter(fbAttachments), [&](auto& image) {
+		ASSERT(fbSize.width == image.size.width && fbSize.height == image.size.height);
+		return image.view;
+	});
+
+	auto const framebufferCI = VkFramebufferCreateInfo{
+		.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+		.renderPass = renderPass,
+		.attachmentCount = static_cast<u32>(fbAttachments.size()),
+		.pAttachments = fbAttachments.data(),
+		.width = fbSize.width,
+		.height = fbSize.height,
+		.layers = 1,
+	};
+	VkFramebuffer result;
+	VK(vkCreateFramebuffer(device, &framebufferCI, nullptr, &result));
+	return result;
+}
+
 }

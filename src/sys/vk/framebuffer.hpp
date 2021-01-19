@@ -28,4 +28,6 @@ struct Attachment {
 
 auto createRenderPass(VkDevice device, std::span<Attachment const> attachments) -> VkRenderPass;
 
+auto createFramebuffer(VkDevice device, VkRenderPass renderPass, std::span<Image const> attachments) -> VkFramebuffer;
+
 }

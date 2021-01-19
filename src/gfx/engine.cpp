@@ -1093,20 +1093,10 @@ void Engine::createPresentFbs() {
 	// Create the present framebuffers
 	present.framebuffer.resize(swapchain.color.size());
 	for (auto[fb, image]: zip_view{present.framebuffer, swapchain.color}) {
-		auto const fbAttachments = std::to_array<VkImageView>({
-			targets.ssColor.view,
-			image.view,
-		});
-		auto const framebufferCI = VkFramebufferCreateInfo{
-			.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-			.renderPass = present.renderPass,
-			.attachmentCount = fbAttachments.size(),
-			.pAttachments = fbAttachments.data(),
-			.width = swapchain.extent.width,
-			.height = swapchain.extent.height,
-			.layers = 1,
-		};
-		VK(vkCreateFramebuffer(device, &framebufferCI, nullptr, &fb));
+		fb = vk::createFramebuffer(device, present.renderPass, std::to_array<vk::Image>({
+			targets.ssColor,
+			image,
+		}));
 	}
 }
 
@@ -1249,22 +1239,11 @@ void Engine::createTargetFbs() {
 			.layoutDuring = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		},
 	}));
-
-	auto const fbAttachments = std::to_array<VkImageView>({
-		targets.msColor.view,
-		targets.depthStencil.view,
-		targets.ssColor.view,
-	});
-	auto const framebufferCI = VkFramebufferCreateInfo{
-		.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-		.renderPass = targets.renderPass,
-		.attachmentCount = fbAttachments.size(),
-		.pAttachments = fbAttachments.data(),
-		.width = swapchain.extent.width,
-		.height = swapchain.extent.height,
-		.layers = 1,
-	};
-	VK(vkCreateFramebuffer(device, &framebufferCI, nullptr, &targets.framebuffer));
+	targets.framebuffer = vk::createFramebuffer(device, targets.renderPass, std::to_array<vk::Image>({
+		targets.msColor,
+		targets.depthStencil,
+		targets.ssColor,
+	}));
 }
 
 void Engine::destroyTargetFbs(RenderTargets& t) {
@@ -1308,22 +1287,9 @@ void Engine::createBloomFbs() {
 		},
 	}));
 
-	auto framebufferCI = VkFramebufferCreateInfo{
-		.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-		.renderPass = bloom.downPass,
-		.attachmentCount = 1,
-		.pAttachments = &targets.ssColor.view,
-		.width = targets.ssColor.size.width,
-		.height = targets.ssColor.size.height,
-		.layers = 1,
-	};
-	VK(vkCreateFramebuffer(device, &framebufferCI, nullptr, &bloom.targetFb));
-	for (auto[fb, image]: zip_view{bloom.imageFbs, bloom.images}) {
-		framebufferCI.pAttachments = &image.view;
-		framebufferCI.width = image.size.width;
-		framebufferCI.height = image.size.height;
-		VK(vkCreateFramebuffer(device, &framebufferCI, nullptr, &fb));
-	}
+	bloom.targetFb = vk::createFramebuffer(device, bloom.downPass, std::to_array<vk::Image>({targets.ssColor}));
+	for (auto[fb, image]: zip_view{bloom.imageFbs, bloom.images})
+		fb = vk::createFramebuffer(device, bloom.downPass, std::to_array<vk::Image>({image}));
 }
 
 void Engine::destroyBloomFbs(Bloom& b) {
