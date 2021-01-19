@@ -20,21 +20,21 @@ constexpr auto objectFragSrc = std::to_array<u32>({
 
 void TechniqueSet::create(VkDevice device, VmaAllocator allocator, VkDescriptorPool descriptorPool, MeshBuffer& meshBuffer) {
 	// Create the ubershader
-	auto const meshBufferBinding = VkDescriptorSetLayoutBinding{
-		.binding = 0,
-		.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-		.descriptorCount = 1,
-		.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-	};
 	auto const worldConstantsBinding = VkDescriptorSetLayoutBinding{
-		.binding = 1,
+		.binding = 0,
 		.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 		.descriptorCount = 1,
 		.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 	};
+	auto const meshBufferBinding = VkDescriptorSetLayoutBinding{
+		.binding = 1,
+		.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+		.descriptorCount = 1,
+		.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+	};
 	auto const worldBindings = std::array{
-		meshBufferBinding,
 		worldConstantsBinding,
+		meshBufferBinding,
 	};
 	auto const worldDescriptorSetLayoutCI = VkDescriptorSetLayoutCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
@@ -85,18 +85,6 @@ void TechniqueSet::create(VkDevice device, VmaAllocator allocator, VkDescriptorP
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
 		// Fill in the world descriptor set
-		auto const meshBufferInfo = VkDescriptorBufferInfo{
-			.buffer = meshBuffer.buffer().buffer,
-			.range = meshBuffer.buffer().size,
-		};
-		auto const meshBufferWrite = VkWriteDescriptorSet{
-			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-			.dstSet = worldDS,
-			.dstBinding = 0,
-			.descriptorCount = 1,
-			.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-			.pBufferInfo = &meshBufferInfo,
-		};
 		auto const worldConstantsInfo = VkDescriptorBufferInfo{
 			.buffer = worldBuf.buffer,
 			.range = sizeof(World),
@@ -104,10 +92,22 @@ void TechniqueSet::create(VkDevice device, VmaAllocator allocator, VkDescriptorP
 		auto const worldConstantsWrite = VkWriteDescriptorSet{
 			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 			.dstSet = worldDS,
-			.dstBinding = 1,
+			.dstBinding = 0,
 			.descriptorCount = 1,
 			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 			.pBufferInfo = &worldConstantsInfo,
+		};
+		auto const meshBufferInfo = VkDescriptorBufferInfo{
+			.buffer = meshBuffer.buffer().buffer,
+			.range = meshBuffer.buffer().size,
+		};
+		auto const meshBufferWrite = VkWriteDescriptorSet{
+			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			.dstSet = worldDS,
+			.dstBinding = 1,
+			.descriptorCount = 1,
+			.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+			.pBufferInfo = &meshBufferInfo,
 		};
 		auto const descriptorWrites = std::array{
 			meshBufferWrite,

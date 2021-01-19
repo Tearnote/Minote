@@ -1,0 +1,41 @@
+#define MATERIAL_FLAT 0
+#define MATERIAL_PHONG 1
+
+struct Command {
+	uint vertexCount;
+	uint instanceCount;
+	uint firstVertex;
+	uint firstInstance;
+	uint material;
+	float pad[4];
+};
+
+struct PhongCommand {
+	uint vertexCount;
+	uint instanceCount;
+	uint firstVertex;
+	uint firstInstance;
+	uint material;
+	float ambient;
+	float diffuse;
+	float specular;
+	float shine;
+};
+
+struct Instance {
+	mat4 transform;
+	vec4 tint;
+	vec4 highlight;
+};
+
+layout(std430, set = 1, binding = 0) readonly buffer Commands {
+	Command data[];
+} commands;
+
+layout(std430, set = 1, binding = 0) readonly buffer PhongCommands {
+	PhongCommand data[];
+} phongCommands;
+
+layout(std430, set = 1, binding = 1) readonly buffer Instances {
+	Instance data[];
+} instances;

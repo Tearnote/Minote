@@ -11,6 +11,7 @@ layout(location = 6) in vec4 f_lightPosition; // in view space
 layout(location = 0) out vec4 out_color;
 
 #include "world.glslh"
+#include "object.glslh"
 
 void main() {
 	const vec4 i_highlight = instances.data[instanceID].highlight;

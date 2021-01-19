@@ -9,6 +9,7 @@ layout(location = 5) out vec4 f_normal;
 layout(location = 6) out vec4 f_lightPosition; // in view space
 
 #include "world.glslh"
+#include "object.glslh"
 
 void main() {
 	drawID = gl_DrawID;
