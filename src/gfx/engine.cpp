@@ -22,6 +22,7 @@
 #include "base/math.hpp"
 #include "base/time.hpp"
 #include "base/log.hpp"
+#include "sys/vk/framebuffer.hpp"
 #include "sys/vk/commands.hpp"
 #include "sys/vk/pipeline.hpp"
 #include "sys/vk/base.hpp"
@@ -1073,51 +1074,21 @@ void Engine::recreateSwapchain() {
 
 void Engine::createPresentFbs() {
 	// Create the present render pass
-	auto const rpAttachments = std::to_array<VkAttachmentDescription>({
+	present.renderPass = vk::createRenderPass(device, std::to_array<vk::Attachment>({
 		{ // Source
-			.format = targets.ssColor.format,
-			.samples = targets.ssColor.samples,
+			.type = vk::Attachment::Type::Input,
+			.image = targets.ssColor,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
-			.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			.layoutBefore = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		},
 		{ // Present
-			.format = swapchain.color[0].format,
-			.samples = swapchain.color[0].samples,
-			.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.type = vk::Attachment::Type::Color,
+			.image = swapchain.color[0],
 			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+			.layoutDuring = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			.layoutAfter = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
 		},
-	});
-	auto const sourceAttachmentRef = VkAttachmentReference{
-		.attachment = 0,
-		.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-	};
-	auto const presentAttachmentRef = VkAttachmentReference{
-		.attachment = 1,
-		.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-	};
-	auto const subpass = VkSubpassDescription{
-		.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-		.inputAttachmentCount = 1,
-		.pInputAttachments = &sourceAttachmentRef,
-		.colorAttachmentCount = 1,
-		.pColorAttachments = &presentAttachmentRef,
-	};
-	auto const renderPassCI = VkRenderPassCreateInfo{
-		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-		.attachmentCount = rpAttachments.size(),
-		.pAttachments = rpAttachments.data(),
-		.subpassCount = 1,
-		.pSubpasses = &subpass,
-	};
-	VK(vkCreateRenderPass(device, &renderPassCI, nullptr, &present.renderPass));
+	}));
 
 	// Create the present framebuffers
 	present.framebuffer.resize(swapchain.color.size());
@@ -1257,65 +1228,27 @@ void Engine::destroyTargetImages(RenderTargets& t) {
 }
 
 void Engine::createTargetFbs() {
-	auto const rpAttachments = std::to_array<VkAttachmentDescription>({
-		{ // MSAA color
-			.format = targets.msColor.format,
-			.samples = targets.msColor.samples,
+	targets.renderPass = vk::createRenderPass(device, std::to_array<vk::Attachment>({
+		{
+			.type = vk::Attachment::Type::Color,
+			.image = targets.msColor,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-			.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			.layoutDuring = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		},
-		{ // MSAA depth
-			.format = targets.depthStencil.format,
-			.samples = targets.depthStencil.samples,
+		{
+			.type = vk::Attachment::Type::DepthStencil,
+			.image = targets.depthStencil,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
 			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+			.layoutDuring = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 		},
-		{ // Resolve
-			.format = targets.ssColor.format,
-			.samples = targets.ssColor.samples,
-			.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+		{
+			.type = vk::Attachment::Type::Resolve,
+			.image = targets.ssColor,
 			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			.layoutDuring = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		},
-	});
-	auto const colorAttachmentRef = VkAttachmentReference{
-		.attachment = 0,
-		.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-	};
-	auto const depthAttachmentRef = VkAttachmentReference{
-		.attachment = 1,
-		.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-	};
-	auto const resolveAttachmentRef = VkAttachmentReference{
-		.attachment = 2,
-		.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-	};
-	auto const subpass = VkSubpassDescription{
-		.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-		.colorAttachmentCount = 1,
-		.pColorAttachments = &colorAttachmentRef,
-		.pResolveAttachments = &resolveAttachmentRef,
-		.pDepthStencilAttachment = &depthAttachmentRef,
-	};
-	auto const renderPassCI = VkRenderPassCreateInfo{
-		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-		.attachmentCount = rpAttachments.size(),
-		.pAttachments = rpAttachments.data(),
-		.subpassCount = 1,
-		.pSubpasses = &subpass,
-	};
-	VK(vkCreateRenderPass(device, &renderPassCI, nullptr, &targets.renderPass));
+	}));
 
 	auto const fbAttachments = std::to_array<VkImageView>({
 		targets.msColor.view,
@@ -1357,52 +1290,23 @@ void Engine::destroyBloomImages(Bloom& b) {
 }
 
 void Engine::createBloomFbs() {
-	auto const downRpAttachment = VkAttachmentDescription{
-		.format = bloom.images[0].format,
-		.samples = bloom.images[0].samples,
-		.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-		.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-		.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-		.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-	};
-	auto const attachmentRef = VkAttachmentReference{
-		.attachment = 0,
-		.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-	};
-	auto const subpass = VkSubpassDescription{
-		.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-		.colorAttachmentCount = 1,
-		.pColorAttachments = &attachmentRef,
-	};
-	auto const downPassCI = VkRenderPassCreateInfo{
-		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-		.attachmentCount = 1,
-		.pAttachments = &downRpAttachment,
-		.subpassCount = 1,
-		.pSubpasses = &subpass,
-	};
-	VK(vkCreateRenderPass(device, &downPassCI, nullptr, &bloom.downPass));
-
-	auto const upRpAttachment = VkAttachmentDescription{
-		.format = bloom.images[0].format,
-		.samples = bloom.images[0].samples,
-		.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
-		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-		.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-		.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-		.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-		.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-	};
-	auto const upPassCI = VkRenderPassCreateInfo{
-		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-		.attachmentCount = 1,
-		.pAttachments = &upRpAttachment,
-		.subpassCount = 1,
-		.pSubpasses = &subpass,
-	};
-	VK(vkCreateRenderPass(device, &upPassCI, nullptr, &bloom.upPass));
+	bloom.downPass = vk::createRenderPass(device, std::to_array<vk::Attachment>({
+		{
+			.type = vk::Attachment::Type::Color,
+			.image = bloom.images[0],
+			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			.layoutDuring = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		},
+	}));
+	bloom.upPass = vk::createRenderPass(device, std::to_array<vk::Attachment>({
+		{
+			.type = vk::Attachment::Type::Color,
+			.image = bloom.images[0],
+			.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
+			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			.layoutBefore = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		},
+	}));
 
 	auto framebufferCI = VkFramebufferCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
