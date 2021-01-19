@@ -107,12 +107,12 @@ Engine::~Engine() {
 }
 
 void Engine::setBackground(glm::vec3 color) {
-	world.ambientColor = glm::vec4{color, 1.0f};
+	world.uniforms.ambientColor = glm::vec4{color, 1.0f};
 }
 
 void Engine::setLightSource(glm::vec3 position, glm::vec3 color) {
-	world.lightPosition = glm::vec4{position, 1.0f};
-	world.lightColor = glm::vec4{color, 1.0f};
+	world.uniforms.lightPosition = glm::vec4{position, 1.0f};
+	world.uniforms.lightColor = glm::vec4{color, 1.0f};
 }
 
 void Engine::setCamera(glm::vec3 eye, glm::vec3 center, glm::vec3 up) {
@@ -170,7 +170,7 @@ void Engine::render() {
 	world.setViewProjection(glm::uvec2{swapchain.extent.width, swapchain.extent.height},
 		VerticalFov, NearPlane, FarPlane,
 		camera.eye, camera.center, camera.up);
-	uploadToCpuBuffer(allocator, techniques.getWorldConstants(frameIndex), world);
+	vk::uploadToCpuBuffer(allocator, techniques.getWorldConstants(frameIndex), world.uniforms);
 
 	// Start recording commands
 	VK(vkResetCommandBuffer(cmdBuf, 0));
@@ -182,7 +182,7 @@ void Engine::render() {
 
 	// Compute clear color
 	auto const clearValues = std::array{
-		vk::clearColor(world.ambientColor),
+		vk::clearColor(world.uniforms.ambientColor),
 		vk::clearDepth(1.0f),
 	};
 
