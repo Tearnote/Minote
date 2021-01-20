@@ -8,10 +8,8 @@
 #include "base/hashmap.hpp"
 #include "base/id.hpp"
 #include "sys/vk/shader.hpp"
-#include "sys/vk/buffer.hpp"
 #include "gfx/indirect.hpp"
 #include "gfx/base.hpp"
-#include "gfx/mesh.hpp"
 
 namespace minote::gfx {
 
@@ -28,27 +26,24 @@ struct TechniqueSet {
 
 		VkPipeline pipeline;
 		PerFrame<VkDescriptorSet> drawDescriptorSet;
-		PerFrame<std::array<VkDescriptorSet, 2>> descriptorSets;
 		PerFrame<IndirectBuffer> indirect;
+
+		auto getDescriptorSet(i64 frameIndex) -> VkDescriptorSet& { return drawDescriptorSet[frameIndex]; }
 
 	};
 
-	void create(VkDevice device, VmaAllocator allocator, VkDescriptorPool descriptorPool, MeshBuffer& meshBuffer);
+	void create(VkDevice device, VkDescriptorSetLayout worldLayout);
 
 	void destroy(VkDevice device, VmaAllocator allocator);
 
-	void addTechnique(ID id, VkDevice device, VmaAllocator allocator,
-		VkDescriptorPool descriptorPool, VkRenderPass renderPass,
+	void addTechnique(ID id, VkDevice device, VmaAllocator allocator, VkRenderPass renderPass,
+		VkDescriptorPool descriptorPool, PerFrame<VkDescriptorSet> worldDescriptorSets,
 		VkPipelineRasterizationStateCreateInfo rasterizationStateCI,
 		VkPipelineColorBlendAttachmentState colorBlendAttachmentState,
 		VkPipelineDepthStencilStateCreateInfo depthStencilStateCI,
 		VkPipelineMultisampleStateCreateInfo multisampleStateCI);
 
 	auto getPipelineLayout() { return m_pipelineLayout; }
-
-	auto getWorldConstants(i64 frameIndex) -> sys::vk::Buffer& {
-		return m_worldConstants[frameIndex];
-	}
 
 	auto getTechnique(ID id) -> Technique& { return m_techniques.at(id); }
 
@@ -59,8 +54,7 @@ struct TechniqueSet {
 private:
 
 	sys::vk::Shader m_shader;
-	PerFrame<VkDescriptorSet> m_worldDescriptorSet;
-	PerFrame<sys::vk::Buffer> m_worldConstants;
+	VkDescriptorSetLayout m_drawDescriptorSetLayout;
 	VkPipelineLayout m_pipelineLayout;
 	hashmap<ID, Technique> m_techniques;
 

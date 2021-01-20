@@ -167,10 +167,10 @@ void Engine::render() {
 	transparentDepthPrepassIndirect.upload(allocator);
 	transparentIndirect.upload(allocator);
 
-	world.setViewProjection(glm::uvec2{swapchain.extent.width, swapchain.extent.height},
+	world.uniforms.setViewProjection(glm::uvec2{swapchain.extent.width, swapchain.extent.height},
 		VerticalFov, NearPlane, FarPlane,
 		camera.eye, camera.center, camera.up);
-	vk::uploadToCpuBuffer(allocator, techniques.getWorldConstants(frameIndex), world.uniforms);
+	world.uploadUniforms(allocator, frameIndex);
 
 	// Start recording commands
 	VK(vkResetCommandBuffer(cmdBuf, 0));
@@ -180,21 +180,21 @@ void Engine::render() {
 	};
 	VK(vkBeginCommandBuffer(cmdBuf, &cmdBeginInfo));
 
-	// Compute clear color
-	auto const clearValues = std::array{
+	// Bind world data
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, techniques.getPipelineLayout(),
+		0, 1, &world.getDescriptorSet(frameIndex), 0, nullptr);
+
+	// Begin drawing objects
+	vk::cmdBeginRenderPass(cmdBuf, targets.renderPass, targets.framebuffer, swapchain.extent, std::array{
 		vk::clearColor(world.uniforms.ambientColor),
 		vk::clearDepth(1.0f),
-	};
-
-	// Start the object drawing pass
-	vk::cmdBeginRenderPass(cmdBuf, targets.renderPass, targets.framebuffer, swapchain.extent, clearValues);
+	});
 	vk::cmdSetArea(cmdBuf, swapchain.extent);
 
 	// Opaque object draw
 	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, opaque.pipeline);
 	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-		techniques.getPipelineLayout(), 0,
-		opaque.descriptorSets[frameIndex].size(), opaque.descriptorSets[frameIndex].data(),
+		techniques.getPipelineLayout(), 1, 1, &opaque.getDescriptorSet(frameIndex),
 		0, nullptr);
 
 	vkCmdDrawIndirect(cmdBuf, opaqueIndirect.commandBuffer(), 0, opaqueIndirect.size(), sizeof(IndirectBuffer::Command));
@@ -202,8 +202,7 @@ void Engine::render() {
 	// Transparent object draw prepass
 	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, transparentDepthPrepass.pipeline);
 	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-		techniques.getPipelineLayout(), 0,
-		transparentDepthPrepass.descriptorSets[frameIndex].size(), transparentDepthPrepass.descriptorSets[frameIndex].data(),
+		techniques.getPipelineLayout(), 1, 1, &transparentDepthPrepass.getDescriptorSet(frameIndex),
 		0, nullptr);
 
 	vkCmdDrawIndirect(cmdBuf, transparentDepthPrepassIndirect.commandBuffer(), 0, transparentDepthPrepassIndirect.size(), sizeof(IndirectBuffer::Command));
@@ -211,8 +210,7 @@ void Engine::render() {
 	// Transparent object draw
 	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, transparent.pipeline);
 	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-		techniques.getPipelineLayout(), 0,
-		transparent.descriptorSets[frameIndex].size(), transparent.descriptorSets[frameIndex].data(),
+		techniques.getPipelineLayout(), 1, 1, &transparent.getDescriptorSet(frameIndex),
 		0, nullptr);
 
 	vkCmdDrawIndirect(cmdBuf, transparentIndirect.commandBuffer(), 0, transparentIndirect.size(), sizeof(IndirectBuffer::Command));
@@ -232,7 +230,7 @@ void Engine::render() {
 
 	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.down);
 	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-		bloom.layout, 0, 1, &bloom.sourceDS, 0, nullptr);
+		bloom.layout, 1, 1, &bloom.sourceDS, 0, nullptr);
 	vkCmdDraw(cmdBuf, 3, 1, 0, 0);
 	vkCmdEndRenderPass(cmdBuf);
 
@@ -248,7 +246,7 @@ void Engine::render() {
 		vk::cmdSetArea(cmdBuf, bloom.images[i].size);
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.down);
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-			bloom.layout, 0, 1, &bloom.imageDS[i - 1], 0, nullptr);
+			bloom.layout, 1, 1, &bloom.imageDS[i - 1], 0, nullptr);
 		vkCmdDraw(cmdBuf, 3, 1, 0, 1);
 		vkCmdEndRenderPass(cmdBuf);
 
@@ -269,7 +267,7 @@ void Engine::render() {
 		vk::cmdSetArea(cmdBuf, bloom.images[i].size);
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.up);
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-			bloom.layout, 0, 1, &bloom.imageDS[i + 1], 0, nullptr);
+			bloom.layout, 1, 1, &bloom.imageDS[i + 1], 0, nullptr);
 		vkCmdDraw(cmdBuf, 3, 1, 0, 2);
 		vkCmdEndRenderPass(cmdBuf);
 
@@ -290,7 +288,7 @@ void Engine::render() {
 	vk::cmdSetArea(cmdBuf, swapchain.extent);
 	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.up);
 	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-		bloom.layout, 0, 1, &bloom.imageDS[0], 0, nullptr);
+		bloom.layout, 1, 1, &bloom.imageDS[0], 0, nullptr);
 	vkCmdDraw(cmdBuf, 3, 1, 0, 2);
 	vkCmdEndRenderPass(cmdBuf);
 
@@ -304,7 +302,7 @@ void Engine::render() {
 	vk::cmdBeginRenderPass(cmdBuf, present.renderPass, present.framebuffer[swapchainImageIndex], swapchain.extent);
 	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, present.pipeline);
 	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-		present.layout, 0, 1, &present.descriptorSet, 0, nullptr);
+		present.layout, 1, 1, &present.descriptorSet, 0, nullptr);
 	vkCmdDraw(cmdBuf, 3, 1, 0, 0);
 	vkCmdEndRenderPass(cmdBuf);
 
@@ -906,27 +904,34 @@ void Engine::initBuffers() {
 
 	for (auto& buffer: stagingBuffers)
 		vmaDestroyBuffer(allocator, buffer.buffer, buffer.allocation);
+
+	// Create CPU to GPU buffers
+	world.create(device, allocator, descriptorPool, meshes);
 }
 
 void Engine::cleanupBuffers() {
+	world.destroy(device, allocator);
 	destroyMeshBuffer();
 }
 
 void Engine::initPipelines() {
 	createPresentPipeline();
 	createPresentPipelineDS();
-	techniques.create(device, allocator, descriptorPool, meshes);
-	techniques.addTechnique("opaque"_id, device, allocator, descriptorPool, targets.renderPass,
+	techniques.create(device, world.getDescriptorSetLayout());
+	techniques.addTechnique("opaque"_id, device, allocator, targets.renderPass,
+		descriptorPool, world.getDescriptorSets(),
 		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
 		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None),
 		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
 		vk::makePipelineMultisampleStateCI(targets.msColor.samples));
-	techniques.addTechnique("transparent_depth_prepass"_id, device, allocator, descriptorPool, targets.renderPass,
+	techniques.addTechnique("transparent_depth_prepass"_id, device, allocator, targets.renderPass,
+		descriptorPool, world.getDescriptorSets(),
 		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
 		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None, false),
 		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
 		vk::makePipelineMultisampleStateCI(targets.msColor.samples));
-	techniques.addTechnique("transparent"_id, device, allocator, descriptorPool, targets.renderPass,
+	techniques.addTechnique("transparent"_id, device, allocator, targets.renderPass,
+		descriptorPool, world.getDescriptorSets(),
 		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
 		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::Normal),
 		vk::makePipelineDepthStencilStateCI(true, false, VK_COMPARE_OP_LESS_OR_EQUAL),
@@ -1118,11 +1123,12 @@ void Engine::createPresentPipeline() {
 		.bindingCount = 1,
 		.pBindings = &presentImageBinding,
 	};
-	present.shader = vk::createShader(device, presentVertSrc, presentFragSrc,
-		std::array{descriptorSetLayoutCI});
+	VK(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &present.descriptorSetLayout));
+	present.shader = vk::createShader(device, presentVertSrc, presentFragSrc);
 
 	present.layout = vk::createPipelineLayout(device, std::array{
-		present.shader.descriptorSetLayouts[0],
+		world.getDescriptorSetLayout(),
+		present.descriptorSetLayout,
 	});
 	present.pipeline = vk::PipelineBuilder{
 		.shaderStageCIs = {
@@ -1143,6 +1149,7 @@ void Engine::destroyPresentPipeline() {
 	vkDestroyPipeline(device, present.pipeline, nullptr);
 	vkDestroyPipelineLayout(device, present.layout, nullptr);
 	vk::destroyShader(device, present.shader);
+	vkDestroyDescriptorSetLayout(device, present.descriptorSetLayout, nullptr);
 }
 
 void Engine::createPresentPipelineDS() {
@@ -1150,7 +1157,7 @@ void Engine::createPresentPipelineDS() {
 		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
 		.descriptorPool = descriptorPool,
 		.descriptorSetCount = 1,
-		.pSetLayouts = &present.shader.descriptorSetLayouts[0],
+		.pSetLayouts = &present.descriptorSetLayout,
 	};
 	VK(vkAllocateDescriptorSets(device, &descriptorSetAI, &present.descriptorSet));
 
@@ -1313,11 +1320,12 @@ void Engine::createBloomPipelines() {
 		.bindingCount = 1,
 		.pBindings = &sourceImageBinding,
 	};
-	bloom.shader = vk::createShader(device, bloomVertSrc, bloomFragSrc,
-		std::array{descriptorSetLayoutCI});
+	VK(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &bloom.descriptorSetLayout));
+	bloom.shader = vk::createShader(device, bloomVertSrc, bloomFragSrc);
 
 	bloom.layout = vk::createPipelineLayout(device, std::array{
-		bloom.shader.descriptorSetLayouts[0],
+		world.getDescriptorSetLayout(),
+		bloom.descriptorSetLayout,
 	});
 	auto builder = vk::PipelineBuilder{
 		.shaderStageCIs = {
@@ -1342,6 +1350,7 @@ void Engine::destroyBloomPipelines() {
 	vkDestroyPipeline(device, bloom.down, nullptr);
 	vkDestroyPipelineLayout(device, bloom.layout, nullptr);
 	vk::destroyShader(device, bloom.shader);
+	vkDestroyDescriptorSetLayout(device, bloom.descriptorSetLayout, nullptr);
 }
 
 void Engine::createBloomPipelineDS() {
@@ -1349,7 +1358,7 @@ void Engine::createBloomPipelineDS() {
 		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
 		.descriptorPool = descriptorPool,
 		.descriptorSetCount = 1,
-		.pSetLayouts = &bloom.shader.descriptorSetLayouts[0],
+		.pSetLayouts = &bloom.descriptorSetLayout,
 	};
 	VK(vkAllocateDescriptorSets(device, &descriptorSetAI, &bloom.sourceDS));
 	for (auto& ds: bloom.imageDS)

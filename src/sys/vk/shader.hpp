@@ -14,13 +14,10 @@ struct Shader {
 
 	VkShaderModule vert;
 	VkShaderModule frag;
-	std::array<VkDescriptorSetLayout, 4> descriptorSetLayouts;
 
 };
 
-auto createShader(VkDevice device,
-	std::span<u32 const> vertSrc, std::span<u32 const> fragSrc,
-	std::span<VkDescriptorSetLayoutCreateInfo const> layoutCIs) -> Shader;
+auto createShader(VkDevice device, std::span<u32 const> vertSrc, std::span<u32 const> fragSrc) -> Shader;
 
 void destroyShader(VkDevice device, Shader& shader);
 

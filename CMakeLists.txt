@@ -118,7 +118,7 @@ set(SOURCES
         src/gfx/indirect.hpp src/gfx/indirect.cpp
         src/gfx/material.hpp
         src/gfx/engine.hpp src/gfx/engine.cpp
-        src/gfx/world.hpp
+        src/gfx/world.hpp src/gfx/world.cpp
         src/gfx/mesh.hpp src/gfx/mesh.cpp
         src/gfx/base.hpp
         src/mesh/block.hpp

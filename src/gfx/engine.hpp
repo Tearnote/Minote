@@ -57,6 +57,7 @@ private:
 
 		VkRenderPass renderPass;
 		std::vector<VkFramebuffer> framebuffer;
+		VkDescriptorSetLayout descriptorSetLayout;
 		sys::vk::Shader shader;
 		VkPipelineLayout layout;
 		VkPipeline pipeline;
@@ -83,6 +84,7 @@ private:
 		VkRenderPass upPass;
 		std::array<VkFramebuffer, Depth> imageFbs;
 		VkFramebuffer targetFb;
+		VkDescriptorSetLayout descriptorSetLayout;
 		sys::vk::Shader shader;
 		VkPipelineLayout layout;
 		VkPipeline down;
