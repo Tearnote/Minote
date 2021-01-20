@@ -1112,18 +1112,12 @@ void Engine::destroyPresentFbs(Present& p) {
 }
 
 void Engine::createPresentPipeline() {
-	auto const presentImageBinding = VkDescriptorSetLayoutBinding{
-		.binding = 0,
-		.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
-		.descriptorCount = 1,
-		.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-	};
-	auto const descriptorSetLayoutCI = VkDescriptorSetLayoutCreateInfo{
-		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-		.bindingCount = 1,
-		.pBindings = &presentImageBinding,
-	};
-	VK(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &present.descriptorSetLayout));
+	present.descriptorSetLayout = vk::createDescriptorSetLayout(device, std::array{
+		vk::Descriptor{
+			.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+			.stages = VK_SHADER_STAGE_FRAGMENT_BIT,
+		},
+	});
 	present.shader = vk::createShader(device, presentVertSrc, presentFragSrc);
 
 	present.layout = vk::createPipelineLayout(device, std::array{
@@ -1308,19 +1302,13 @@ void Engine::destroyBloomFbs(Bloom& b) {
 }
 
 void Engine::createBloomPipelines() {
-	auto const sourceImageBinding = VkDescriptorSetLayoutBinding{
-		.binding = 0,
-		.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-		.descriptorCount = 1,
-		.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-		.pImmutableSamplers = &linear,
-	};
-	auto const descriptorSetLayoutCI = VkDescriptorSetLayoutCreateInfo{
-		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-		.bindingCount = 1,
-		.pBindings = &sourceImageBinding,
-	};
-	VK(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &bloom.descriptorSetLayout));
+	bloom.descriptorSetLayout = vk::createDescriptorSetLayout(device, std::array{
+		vk::Descriptor{
+			.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			.stages = VK_SHADER_STAGE_FRAGMENT_BIT,
+			.sampler = linear,
+		},
+	});
 	bloom.shader = vk::createShader(device, bloomVertSrc, bloomFragSrc);
 
 	bloom.layout = vk::createPipelineLayout(device, std::array{

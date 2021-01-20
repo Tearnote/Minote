@@ -1,6 +1,7 @@
 #include "gfx/world.hpp"
 
 #include "base/zip_view.hpp"
+#include "sys/vk/shader.hpp"
 
 namespace minote::gfx {
 
@@ -10,26 +11,16 @@ namespace vk = sys::vk;
 void World::create(VkDevice device, VmaAllocator allocator, VkDescriptorPool pool,
 	MeshBuffer& meshes) {
 	// Create the world descriptor set layout
-	auto const bindings = std::array{
-		VkDescriptorSetLayoutBinding{ // world uniforms
-			.binding = 0,
-			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-			.descriptorCount = 1,
-			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+	m_worldDescriptorSetLayout = vk::createDescriptorSetLayout(device, std::array{
+		vk::Descriptor{ // world uniforms
+			.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			.stages = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 		},
-		VkDescriptorSetLayoutBinding{ // mesh buffer
-			.binding = 1,
-			.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-			.descriptorCount = 1,
-			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+		vk::Descriptor{ // mesh buffer
+			.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+			.stages = VK_SHADER_STAGE_VERTEX_BIT,
 		},
-	};
-	auto const layoutCI = VkDescriptorSetLayoutCreateInfo{
-		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-		.bindingCount = bindings.size(),
-		.pBindings = bindings.data(),
-	};
-	VK(vkCreateDescriptorSetLayout(device, &layoutCI, nullptr, &m_worldDescriptorSetLayout));
+	});
 
 	// Create the world descriptor sets and world uniform buffers
 	auto const worldDescriptorSetAI = VkDescriptorSetAllocateInfo{

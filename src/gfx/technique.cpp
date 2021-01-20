@@ -21,28 +21,16 @@ void TechniqueSet::create(VkDevice device, VkDescriptorSetLayout worldLayout) {
 	m_shader = vk::createShader(device, objectVertSrc, objectFragSrc);
 
 	// Create the shader-specific descriptor set layout
-	auto const drawCommandBinding = VkDescriptorSetLayoutBinding{
-		.binding = 0,
-		.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-		.descriptorCount = 1,
-		.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-	};
-	auto const instanceBufferBinding = VkDescriptorSetLayoutBinding{
-		.binding = 1,
-		.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-		.descriptorCount = 1,
-		.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-	};
-	auto const drawBindings = std::array{
-		drawCommandBinding,
-		instanceBufferBinding,
-	};
-	auto const drawDescriptorSetLayoutCI = VkDescriptorSetLayoutCreateInfo{
-		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-		.bindingCount = drawBindings.size(),
-		.pBindings = drawBindings.data(),
-	};
-	VK(vkCreateDescriptorSetLayout(device, &drawDescriptorSetLayoutCI, nullptr, &m_drawDescriptorSetLayout));
+	m_drawDescriptorSetLayout = vk::createDescriptorSetLayout(device, std::array{
+		vk::Descriptor{
+			.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+			.stages = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+		},
+		vk::Descriptor{
+			.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+			.stages = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+		},
+	});
 
 	// Create the pipeline layout
 	m_pipelineLayout = vk::createPipelineLayout(device, std::array{
