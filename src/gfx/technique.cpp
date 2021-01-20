@@ -2,6 +2,7 @@
 
 #include <utility>
 #include "base/zip_view.hpp"
+#include "sys/vk/descriptor.hpp"
 #include "sys/vk/pipeline.hpp"
 
 namespace minote::gfx {
@@ -71,14 +72,8 @@ void TechniqueSet::addTechnique(base::ID id, VkDevice device, VmaAllocator alloc
 	}.build(device, renderPass);
 
 	// Create the technique's draw (slot 1) descriptor set
-	auto const drawDescriptorSetAI = VkDescriptorSetAllocateInfo{
-		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-		.descriptorPool = descriptorPool,
-		.descriptorSetCount = 1,
-		.pSetLayouts = &m_drawDescriptorSetLayout,
-	};
 	for (auto[drawDS, world, indirect]: zip_view{result.drawDescriptorSet, worldDescriptorSets, result.indirect}) {
-		VK(vkAllocateDescriptorSets(device, &drawDescriptorSetAI, &drawDS));
+		drawDS = vk::allocateDescriptorSet(device, descriptorPool, m_drawDescriptorSetLayout);
 
 		// Create the indirect buffer
 		indirect.create(allocator, MaxDrawCommands, MaxInstances);

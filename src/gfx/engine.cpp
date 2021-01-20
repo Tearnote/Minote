@@ -23,6 +23,7 @@
 #include "base/time.hpp"
 #include "base/log.hpp"
 #include "sys/vk/framebuffer.hpp"
+#include "sys/vk/descriptor.hpp"
 #include "sys/vk/commands.hpp"
 #include "sys/vk/pipeline.hpp"
 #include "sys/vk/base.hpp"
@@ -1144,13 +1145,7 @@ void Engine::destroyPresentPipeline() {
 }
 
 void Engine::createPresentPipelineDS() {
-	auto const descriptorSetAI = VkDescriptorSetAllocateInfo{
-		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-		.descriptorPool = descriptorPool,
-		.descriptorSetCount = 1,
-		.pSetLayouts = &present.descriptorSetLayout,
-	};
-	VK(vkAllocateDescriptorSets(device, &descriptorSetAI, &present.descriptorSet));
+	present.descriptorSet = vk::allocateDescriptorSet(device, descriptorPool, present.descriptorSetLayout);
 
 	auto const descriptorImageInfo = VkDescriptorImageInfo{
 		.imageView = targets.ssColor.view,
@@ -1336,15 +1331,9 @@ void Engine::destroyBloomPipelines() {
 }
 
 void Engine::createBloomPipelineDS() {
-	auto const descriptorSetAI = VkDescriptorSetAllocateInfo{
-		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-		.descriptorPool = descriptorPool,
-		.descriptorSetCount = 1,
-		.pSetLayouts = &bloom.descriptorSetLayout,
-	};
-	VK(vkAllocateDescriptorSets(device, &descriptorSetAI, &bloom.sourceDS));
+	bloom.sourceDS = vk::allocateDescriptorSet(device, descriptorPool, bloom.descriptorSetLayout);
 	for (auto& ds: bloom.imageDS)
-		VK(vkAllocateDescriptorSets(device, &descriptorSetAI, &ds));
+		ds = vk::allocateDescriptorSet(device, descriptorPool, bloom.descriptorSetLayout);
 
 	auto descriptorImageInfo = VkDescriptorImageInfo{
 		.imageView = targets.ssColor.view,

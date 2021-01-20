@@ -1,7 +1,7 @@
 #include "gfx/world.hpp"
 
 #include "base/zip_view.hpp"
-#include "sys/vk/shader.hpp"
+#include "sys/vk/descriptor.hpp"
 
 namespace minote::gfx {
 
@@ -23,14 +23,8 @@ void World::create(VkDevice device, VmaAllocator allocator, VkDescriptorPool poo
 	});
 
 	// Create the world descriptor sets and world uniform buffers
-	auto const worldDescriptorSetAI = VkDescriptorSetAllocateInfo{
-		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-		.descriptorPool = pool,
-		.descriptorSetCount = 1,
-		.pSetLayouts = &m_worldDescriptorSetLayout,
-	};
 	for (auto[worldDS, worldBuf]: zip_view{m_worldDescriptorSet, m_worldUniforms}) {
-		VK(vkAllocateDescriptorSets(device, &worldDescriptorSetAI, &worldDS));
+		worldDS = vk::allocateDescriptorSet(device, pool, m_worldDescriptorSetLayout);
 		worldBuf = vk::createBuffer(allocator, sizeof(Uniforms),
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 

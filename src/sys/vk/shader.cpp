@@ -1,9 +1,7 @@
 #include "sys/vk/shader.hpp"
 
 #include <algorithm>
-#include <vector>
-#include <ranges>
-#include "base/assert.hpp"
+#include "sys/vk/base.hpp"
 
 namespace minote::sys::vk {
 
@@ -32,29 +30,6 @@ auto createShader(VkDevice device,
 void destroyShader(VkDevice device, Shader& shader) {
 	vkDestroyShaderModule(device, shader.vert, nullptr);
 	vkDestroyShaderModule(device, shader.frag, nullptr);
-}
-
-auto createDescriptorSetLayout(VkDevice device, std::span<Descriptor const> descriptors) -> VkDescriptorSetLayout {
-	std::vector<VkDescriptorSetLayoutBinding> bindings;
-	bindings.reserve(descriptors.size());
-	ranges::transform(descriptors, std::back_inserter(bindings), [&](auto& descriptor) {
-		return VkDescriptorSetLayoutBinding{
-			.binding = static_cast<u32>(bindings.size()),
-			.descriptorType = descriptor.type,
-			.descriptorCount = 1,
-			.stageFlags = descriptor.stages,
-			.pImmutableSamplers = &descriptor.sampler,
-		};
-	});
-
-	auto const layoutCI = VkDescriptorSetLayoutCreateInfo{
-		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-		.bindingCount = static_cast<u32>(bindings.size()),
-		.pBindings = bindings.data(),
-	};
-	VkDescriptorSetLayout result;
-	VK(vkCreateDescriptorSetLayout(device, &layoutCI, nullptr, &result));
-	return result;
 }
 
 }
