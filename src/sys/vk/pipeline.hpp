@@ -4,6 +4,7 @@
 #include <span>
 #include "volk/volk.h"
 #include "base/types.hpp"
+#include "sys/vk/shader.hpp"
 #include "sys/vk/base.hpp"
 
 namespace minote::sys::vk {
@@ -12,7 +13,7 @@ using namespace base;
 
 struct PipelineBuilder {
 
-	std::vector<VkPipelineShaderStageCreateInfo> shaderStageCIs;
+	Shader shader;
 	VkPipelineVertexInputStateCreateInfo vertexInputStateCI;
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCI;
 	VkPipelineRasterizationStateCreateInfo rasterizationStateCI;

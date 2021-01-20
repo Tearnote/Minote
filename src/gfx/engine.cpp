@@ -1125,10 +1125,7 @@ void Engine::createPresentPipeline() {
 		present.descriptorSetLayout,
 	});
 	present.pipeline = vk::PipelineBuilder{
-		.shaderStageCIs = {
-			vk::makePipelineShaderStageCI(VK_SHADER_STAGE_VERTEX_BIT, present.shader.vert),
-			vk::makePipelineShaderStageCI(VK_SHADER_STAGE_FRAGMENT_BIT, present.shader.frag),
-		},
+		.shader = present.shader,
 		.vertexInputStateCI = vk::makePipelineVertexInputStateCI(),
 		.inputAssemblyStateCI = vk::makePipelineInputAssemblyStateCI(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST),
 		.rasterizationStateCI = vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, false),
@@ -1316,10 +1313,7 @@ void Engine::createBloomPipelines() {
 		bloom.descriptorSetLayout,
 	});
 	auto builder = vk::PipelineBuilder{
-		.shaderStageCIs = {
-			vk::makePipelineShaderStageCI(VK_SHADER_STAGE_VERTEX_BIT, bloom.shader.vert),
-			vk::makePipelineShaderStageCI(VK_SHADER_STAGE_FRAGMENT_BIT, bloom.shader.frag),
-		},
+		.shader = bloom.shader,
 		.vertexInputStateCI = vk::makePipelineVertexInputStateCI(),
 		.inputAssemblyStateCI = vk::makePipelineInputAssemblyStateCI(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST),
 		.rasterizationStateCI = vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, false),

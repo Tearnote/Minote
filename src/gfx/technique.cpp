@@ -60,10 +60,7 @@ void TechniqueSet::addTechnique(base::ID id, VkDevice device, VmaAllocator alloc
 
 	// Create the technique's pipeline
 	result.pipeline = vk::PipelineBuilder{
-		.shaderStageCIs = {
-			vk::makePipelineShaderStageCI(VK_SHADER_STAGE_VERTEX_BIT, m_shader.vert),
-			vk::makePipelineShaderStageCI(VK_SHADER_STAGE_FRAGMENT_BIT, m_shader.frag),
-		},
+		.shader = m_shader,
 		.vertexInputStateCI = vk::makePipelineVertexInputStateCI(),
 		.inputAssemblyStateCI = vk::makePipelineInputAssemblyStateCI(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST),
 		.rasterizationStateCI = rasterizationStateCI,

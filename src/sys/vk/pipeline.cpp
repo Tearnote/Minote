@@ -8,6 +8,10 @@ namespace minote::sys::vk {
 using namespace base;
 
 auto PipelineBuilder::build(VkDevice device, VkRenderPass pass, u32 subpass) -> VkPipeline {
+	auto const shaderStageCIs = std::array{
+		makePipelineShaderStageCI(VK_SHADER_STAGE_VERTEX_BIT, shader.vert),
+		makePipelineShaderStageCI(VK_SHADER_STAGE_FRAGMENT_BIT, shader.frag),
+	};
 	auto const viewportStateCI = VkPipelineViewportStateCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
 		.viewportCount = 1,
@@ -32,7 +36,7 @@ auto PipelineBuilder::build(VkDevice device, VkRenderPass pass, u32 subpass) -> 
 
 	auto const pipelineCI = VkGraphicsPipelineCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-		.stageCount = static_cast<u32>(shaderStageCIs.size()),
+		.stageCount = shaderStageCIs.size(),
 		.pStages = shaderStageCIs.data(),
 		.pVertexInputState = &vertexInputStateCI,
 		.pInputAssemblyState = &inputAssemblyStateCI,
