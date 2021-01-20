@@ -198,7 +198,8 @@ void Engine::render() {
 		techniques.getPipelineLayout(), 1, 1, &opaque.getDescriptorSet(frameIndex),
 		0, nullptr);
 
-	vkCmdDrawIndirect(cmdBuf, opaqueIndirect.commandBuffer(), 0, opaqueIndirect.size(), sizeof(IndirectBuffer::Command));
+	vkCmdDrawIndirect(cmdBuf, opaqueIndirect.commandBuffer().buffer, 0,
+		opaqueIndirect.size(), sizeof(IndirectBuffer::Command));
 
 	// Transparent object draw prepass
 	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, transparentDepthPrepass.pipeline);
@@ -206,7 +207,8 @@ void Engine::render() {
 		techniques.getPipelineLayout(), 1, 1, &transparentDepthPrepass.getDescriptorSet(frameIndex),
 		0, nullptr);
 
-	vkCmdDrawIndirect(cmdBuf, transparentDepthPrepassIndirect.commandBuffer(), 0, transparentDepthPrepassIndirect.size(), sizeof(IndirectBuffer::Command));
+	vkCmdDrawIndirect(cmdBuf, transparentDepthPrepassIndirect.commandBuffer().buffer, 0,
+		transparentDepthPrepassIndirect.size(), sizeof(IndirectBuffer::Command));
 
 	// Transparent object draw
 	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, transparent.pipeline);
@@ -214,7 +216,8 @@ void Engine::render() {
 		techniques.getPipelineLayout(), 1, 1, &transparent.getDescriptorSet(frameIndex),
 		0, nullptr);
 
-	vkCmdDrawIndirect(cmdBuf, transparentIndirect.commandBuffer(), 0, transparentIndirect.size(), sizeof(IndirectBuffer::Command));
+	vkCmdDrawIndirect(cmdBuf, transparentIndirect.commandBuffer().buffer, 0,
+		transparentIndirect.size(), sizeof(IndirectBuffer::Command));
 
 	// Finish the object drawing pass
 	vkCmdEndRenderPass(cmdBuf);
@@ -1146,20 +1149,10 @@ void Engine::destroyPresentPipeline() {
 
 void Engine::createPresentPipelineDS() {
 	present.descriptorSet = vk::allocateDescriptorSet(device, descriptorPool, present.descriptorSetLayout);
-
-	auto const descriptorImageInfo = VkDescriptorImageInfo{
-		.imageView = targets.ssColor.view,
-		.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-	};
-	auto const writeDS = VkWriteDescriptorSet{
-		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-		.dstSet = present.descriptorSet,
-		.dstBinding = 0,
-		.descriptorCount = 1,
-		.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
-		.pImageInfo = &descriptorImageInfo,
-	};
-	vkUpdateDescriptorSets(device, 1, &writeDS, 0, nullptr);
+	vk::updateDescriptorSets(device, std::array{
+		vk::makeDescriptorSetImageWrite(present.descriptorSet, 0, targets.ssColor,
+			VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
+	});
 }
 
 void Engine::destroyPresentPipelineDS(Present& p) {
@@ -1335,23 +1328,15 @@ void Engine::createBloomPipelineDS() {
 	for (auto& ds: bloom.imageDS)
 		ds = vk::allocateDescriptorSet(device, descriptorPool, bloom.descriptorSetLayout);
 
-	auto descriptorImageInfo = VkDescriptorImageInfo{
-		.imageView = targets.ssColor.view,
-		.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-	};
-	auto writeDS = VkWriteDescriptorSet{
-		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-		.dstSet = bloom.sourceDS,
-		.dstBinding = 0,
-		.descriptorCount = 1,
-		.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-		.pImageInfo = &descriptorImageInfo,
-	};
-	vkUpdateDescriptorSets(device, 1, &writeDS, 0, nullptr);
+	vk::updateDescriptorSets(device, std::array{
+		vk::makeDescriptorSetImageWrite(bloom.sourceDS, 0, targets.ssColor,
+			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
+	});
 	for (auto[ds, image]: zip_view{bloom.imageDS, bloom.images}) {
-		descriptorImageInfo.imageView = image.view;
-		writeDS.dstSet = ds;
-		vkUpdateDescriptorSets(device, 1, &writeDS, 0, nullptr);
+		vk::updateDescriptorSets(device, std::array{
+			vk::makeDescriptorSetImageWrite(ds, 0, image,
+				VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
+		});
 	}
 }
 

@@ -79,35 +79,10 @@ void TechniqueSet::addTechnique(base::ID id, VkDevice device, VmaAllocator alloc
 		indirect.create(allocator, MaxDrawCommands, MaxInstances);
 
 		// Fill in the draw descriptor set
-		auto const indirectBufferInfo = VkDescriptorBufferInfo{
-			.buffer = indirect.commandBuffer(),
-			.range = VK_WHOLE_SIZE,
-		};
-		auto const indirectBufferWrite = VkWriteDescriptorSet{
-			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-			.dstSet = drawDS,
-			.dstBinding = 0,
-			.descriptorCount = 1,
-			.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-			.pBufferInfo = &indirectBufferInfo,
-		};
-		auto const instanceBufferInfo = VkDescriptorBufferInfo{
-			.buffer = indirect.instanceBuffer(),
-			.range = VK_WHOLE_SIZE,
-		};
-		auto const instanceBufferWrite = VkWriteDescriptorSet{
-			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-			.dstSet = drawDS,
-			.dstBinding = 1,
-			.descriptorCount = 1,
-			.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-			.pBufferInfo = &instanceBufferInfo,
-		};
-		auto const indirectBufferWrites = std::array{
-			indirectBufferWrite,
-			instanceBufferWrite,
-		};
-		vkUpdateDescriptorSets(device, indirectBufferWrites.size(), indirectBufferWrites.data(), 0, nullptr);
+		vk::updateDescriptorSets(device, std::array{
+			vk::makeDescriptorSetBufferWrite(drawDS, 0, indirect.commandBuffer(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER),
+			vk::makeDescriptorSetBufferWrite(drawDS, 1, indirect.instanceBuffer(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER),
+		});
 	}
 
 	m_techniques.emplace(id, std::move(result));

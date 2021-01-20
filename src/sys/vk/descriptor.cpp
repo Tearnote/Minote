@@ -44,4 +44,41 @@ auto allocateDescriptorSet(VkDevice device, VkDescriptorPool pool, VkDescriptorS
 	return result;
 }
 
+auto makeDescriptorSetBufferWrite(VkDescriptorSet target, u32 descriptor, Buffer& buffer, VkDescriptorType type) -> VkWriteDescriptorSet {
+	auto const* const bufferInfo = new VkDescriptorBufferInfo{
+		.buffer = buffer.buffer,
+		.range = buffer.size,
+	};
+	return VkWriteDescriptorSet{
+		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+		.dstSet = target,
+		.dstBinding = descriptor,
+		.descriptorCount = 1,
+		.descriptorType = type,
+		.pBufferInfo = bufferInfo,
+	};
+}
+
+auto makeDescriptorSetImageWrite(VkDescriptorSet target, u32 descriptor, Image& image,
+	VkDescriptorType type, VkImageLayout layout) -> VkWriteDescriptorSet {
+	auto const* const imageInfo = new VkDescriptorImageInfo{
+		.imageView = image.view,
+		.imageLayout = layout,
+	};
+	return VkWriteDescriptorSet{
+		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+		.dstSet = target,
+		.dstBinding = descriptor,
+		.descriptorCount = 1,
+		.descriptorType = type,
+		.pImageInfo = imageInfo,
+	};
+}
+
+void updateDescriptorSets(VkDevice device, std::span<VkWriteDescriptorSet const> writes) {
+	vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
+	for (auto& write: writes)
+		delete write.pBufferInfo;
+}
+
 }

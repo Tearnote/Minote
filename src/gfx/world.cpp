@@ -29,35 +29,10 @@ void World::create(VkDevice device, VmaAllocator allocator, VkDescriptorPool poo
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
 		// Fill in each world descriptor set
-		auto const worldUniformsInfo = VkDescriptorBufferInfo{
-			.buffer = worldBuf.buffer,
-			.range = sizeof(Uniforms),
-		};
-		auto const worldUniformsWrite = VkWriteDescriptorSet{
-			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-			.dstSet = worldDS,
-			.dstBinding = 0,
-			.descriptorCount = 1,
-			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-			.pBufferInfo = &worldUniformsInfo,
-		};
-		auto const meshBufferInfo = VkDescriptorBufferInfo{
-			.buffer = meshes.buffer().buffer,
-			.range = meshes.buffer().size,
-		};
-		auto const meshBufferWrite = VkWriteDescriptorSet{
-			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-			.dstSet = worldDS,
-			.dstBinding = 1,
-			.descriptorCount = 1,
-			.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-			.pBufferInfo = &meshBufferInfo,
-		};
-		auto const descriptorWrites = std::array{
-			meshBufferWrite,
-			worldUniformsWrite,
-		};
-		vkUpdateDescriptorSets(device, descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+		vk::updateDescriptorSets(device, std::array{
+			vk::makeDescriptorSetBufferWrite(worldDS, 0, worldBuf, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER),
+			vk::makeDescriptorSetBufferWrite(worldDS, 1, meshes.buffer(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER),
+		});
 	}
 }
 

@@ -44,9 +44,9 @@ struct IndirectBuffer {
 
 	void upload(VmaAllocator allocator);
 
-	auto commandBuffer() -> VkBuffer& { return m_commandBuffer.buffer; }
+	auto commandBuffer() -> sys::vk::Buffer& { return m_commandBuffer; }
 
-	auto instanceBuffer() -> VkBuffer& { return m_instanceBuffer.buffer; }
+	auto instanceBuffer() -> sys::vk::Buffer& { return m_instanceBuffer; }
 
 private:
 
