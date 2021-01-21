@@ -110,6 +110,7 @@ set(SOURCES
         src/sys/vk/pipeline.hpp src/sys/vk/pipeline.cpp
         src/sys/vk/buffer.hpp src/sys/vk/buffer.tpp src/sys/vk/buffer.cpp
         src/sys/vk/shader.hpp src/sys/vk/shader.cpp
+        src/sys/vk/debug.hpp src/sys/vk/debug.cpp
         src/sys/vk/image.hpp src/sys/vk/image.cpp
         src/sys/vk/base.hpp
         src/sys/keyboard.hpp src/sys/keyboard.cpp

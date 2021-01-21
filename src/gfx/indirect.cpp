@@ -2,6 +2,7 @@
 
 #include "VulkanMemoryAllocator/vma.h"
 #include "sys/vk/buffer.hpp"
+#include "sys/vk/debug.hpp"
 #include "base/assert.hpp"
 
 namespace minote::gfx {
@@ -68,6 +69,11 @@ void IndirectBuffer::upload(VmaAllocator allocator) {
 
 	vk::uploadToCpuBuffer<Command>(allocator, m_commandBuffer, m_commandQueue);
 	vk::uploadToCpuBuffer<Instance>(allocator, m_instanceBuffer, m_instanceQueue);
+}
+
+void IndirectBuffer::setDebugName(VkDevice device, std::string_view name) const {
+	vk::setDebugName(device, m_commandBuffer, fmt::format("{}.m_commandBuffer", name));
+	vk::setDebugName(device, m_instanceBuffer, fmt::format("{}.m_instanceBuffer", name));
 }
 
 }

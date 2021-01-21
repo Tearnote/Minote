@@ -1,9 +1,11 @@
 #include "gfx/technique.hpp"
 
 #include <utility>
+#include <fmt/core.h>
 #include "base/zip_view.hpp"
 #include "sys/vk/descriptor.hpp"
 #include "sys/vk/pipeline.hpp"
+#include "sys/vk/debug.hpp"
 
 namespace minote::gfx {
 
@@ -20,6 +22,7 @@ constexpr auto objectFragSrc = std::to_array<u32>({
 
 void TechniqueSet::create(VkDevice device, VkDescriptorSetLayout worldLayout) {
 	m_shader = vk::createShader(device, objectVertSrc, objectFragSrc);
+	vk::setDebugName(device, m_shader, "TechniqueSet::m_shader");
 
 	// Create the shader-specific descriptor set layout
 	m_drawDescriptorSetLayout = vk::createDescriptorSetLayout(device, std::array{
@@ -32,12 +35,14 @@ void TechniqueSet::create(VkDevice device, VkDescriptorSetLayout worldLayout) {
 			.stages = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 		},
 	});
+	vk::setDebugName(device, m_drawDescriptorSetLayout, "TechniqueSet::m_drawDescriptorSetLayout");
 
 	// Create the pipeline layout
 	m_pipelineLayout = vk::createPipelineLayout(device, std::array{
 		worldLayout,
 		m_drawDescriptorSetLayout,
 	});
+	vk::setDebugName(device, m_pipelineLayout, "TechniqueSet::m_pipelineLayout");
 }
 
 void TechniqueSet::destroy(VkDevice device, VmaAllocator allocator) {
@@ -86,6 +91,17 @@ void TechniqueSet::addTechnique(base::ID id, VkDevice device, VmaAllocator alloc
 	}
 
 	m_techniques.emplace(id, std::move(result));
+}
+
+void TechniqueSet::setTechniqueDebugName(VkDevice device, ID id, std::string_view name) {
+	auto const& technique = m_techniques.at(id);
+	vk::setDebugName(device, technique.pipeline, fmt::format("TechniqueSet[{}].pipeline", name));
+	for (auto[drawDS, indirect]: zip_view{technique.drawDescriptorSet, technique.indirect}) {
+		vk::setDebugName(device, drawDS, fmt::format("TechniqueSet[{}].drawDescriptorSet[{}]",
+			name, &drawDS - &technique.drawDescriptorSet[0]));
+		indirect.setDebugName(device, fmt::format("TechniqueSet[{}].indirect[{}]",
+			name, &indirect - &technique.indirect[0]));
+	}
 }
 
 }

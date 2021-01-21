@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string_view>
 #include <array>
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
@@ -42,6 +43,8 @@ struct TechniqueSet {
 		VkPipelineColorBlendAttachmentState colorBlendAttachmentState,
 		VkPipelineDepthStencilStateCreateInfo depthStencilStateCI,
 		VkPipelineMultisampleStateCreateInfo multisampleStateCI);
+
+	void setTechniqueDebugName(VkDevice device, ID id, std::string_view name);
 
 	auto getPipelineLayout() { return m_pipelineLayout; }
 

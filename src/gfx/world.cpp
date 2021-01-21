@@ -1,7 +1,9 @@
 #include "gfx/world.hpp"
 
+#include <fmt/core.h>
 #include "base/zip_view.hpp"
 #include "sys/vk/descriptor.hpp"
+#include "sys/vk/debug.hpp"
 
 namespace minote::gfx {
 
@@ -44,6 +46,16 @@ void World::destroy(VkDevice device, VmaAllocator allocator) {
 
 void World::uploadUniforms(VmaAllocator allocator, i64 frameIndex) {
 	vk::uploadToCpuBuffer(allocator, m_worldUniforms[frameIndex], uniforms);
+}
+
+void World::setDebugName(VkDevice device) {
+	vk::setDebugName(device, m_worldDescriptorSetLayout, "World::m_worldDescriptorSetLayout");
+	for (auto[worldDS, worldBuf]: zip_view{m_worldDescriptorSet, m_worldUniforms}) {
+		vk::setDebugName(device, worldDS, fmt::format("World::m_worldDescriptorSet[{}]",
+			&worldDS - &m_worldDescriptorSet[0]));
+		vk::setDebugName(device, worldBuf, fmt::format("World::m_worldUniforms[{}]",
+			&worldBuf - &m_worldUniforms[0]));
+	}
 }
 
 }

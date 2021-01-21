@@ -50,6 +50,8 @@ struct World {
 
 	void uploadUniforms(VmaAllocator allocator, i64 frameIndex);
 
+	void setDebugName(VkDevice device);
+
 private:
 
 	VkDescriptorSetLayout m_worldDescriptorSetLayout;

@@ -26,6 +26,7 @@
 #include "sys/vk/descriptor.hpp"
 #include "sys/vk/commands.hpp"
 #include "sys/vk/pipeline.hpp"
+#include "sys/vk/debug.hpp"
 #include "sys/vk/base.hpp"
 #include "sys/window.hpp"
 #include "sys/glfw.hpp"
@@ -708,11 +709,17 @@ void Engine::initDevice() {
 	};
 	VK(vkCreateDevice(physicalDevice, &deviceCI, nullptr, &device));
 	volkLoadDevice(device);
+	vk::setDebugName(device, instance, "instance");
+	vk::setDebugName(device, physicalDevice, "physicalDevice");
+	vk::setDebugName(device, "device");
 
 	// Retrieve device queues
 	vkGetDeviceQueue(device, graphicsQueueFamilyIndex, 0, &graphicsQueue);
 	vkGetDeviceQueue(device, presentQueueFamilyIndex, 0, &presentQueue);
 	vkGetDeviceQueue(device, transferQueueFamilyIndex, 0, &transferQueue);
+	vk::setDebugName(device, graphicsQueue, "graphicsQueue");
+	vk::setDebugName(device, presentQueue, "presentQueue");
+	vk::setDebugName(device, transferQueue, "transferQueue");
 
 	// Create the allocator
 	auto allocatorFunctions = VmaVulkanFunctions{
@@ -772,6 +779,7 @@ void Engine::initCommands() {
 		.pPoolSizes = descriptorPoolSizes.data(),
 	};
 	VK(vkCreateDescriptorPool(device, &descriptorPoolCI, nullptr, &descriptorPool));
+	vk::setDebugName(device, descriptorPool, "descriptorPool");
 
 	// Create the graphics command buffers and sync objects
 	auto commandPoolCI = VkCommandPoolCreateInfo{
@@ -794,18 +802,25 @@ void Engine::initCommands() {
 
 	for (auto& frame: frames) {
 		VK(vkCreateCommandPool(device, &commandPoolCI, nullptr, &frame.commandPool));
+		vk::setDebugName(device, frame.commandPool, fmt::format("frames[{}].commandPool", &frame - &frames[0]));
 		commandBufferAI.commandPool = frame.commandPool;
 		VK(vkAllocateCommandBuffers(device, &commandBufferAI, &frame.commandBuffer));
+		vk::setDebugName(device, frame.commandBuffer, fmt::format("frames[{}].commandBuffer", &frame - &frames[0]));
 		VK(vkCreateFence(device, &fenceCI, nullptr, &frame.renderFence));
+		vk::setDebugName(device, frame.renderFence, fmt::format("frames[{}].renderFence", &frame - &frames[0]));
 		VK(vkCreateSemaphore(device, &semaphoreCI, nullptr, &frame.renderSemaphore));
+		vk::setDebugName(device, frame.renderSemaphore, fmt::format("frames[{}].renderSemaphore", &frame - &frames[0]));
 		VK(vkCreateSemaphore(device, &semaphoreCI, nullptr, &frame.presentSemaphore));
+		vk::setDebugName(device, frame.presentSemaphore, fmt::format("frames[{}].presentSemaphore", &frame - &frames[0]));
 	}
 
 	// Create the transfer queue
 	commandPoolCI.queueFamilyIndex = transferQueueFamilyIndex;
 	VK(vkCreateCommandPool(device, &commandPoolCI, nullptr, &transferCommandPool));
+	vk::setDebugName(device, transferCommandPool, "transferCommandPool");
 	fenceCI.flags = 0;
 	VK(vkCreateFence(device, &fenceCI, nullptr, &transfersFinished));
+	vk::setDebugName(device, transfersFinished, "transfersFinished");
 }
 
 void Engine::cleanupCommands() {
@@ -830,6 +845,7 @@ void Engine::initSamplers() {
 		.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 	};
 	VK(vkCreateSampler(device, &samplerCI, nullptr, &linear));
+	vk::setDebugName(device, linear, "linear");
 }
 
 void Engine::cleanupSamplers() {
@@ -879,6 +895,7 @@ void Engine::initBuffers() {
 	};
 	VkCommandBuffer transferCommandBuffer;
 	VK(vkAllocateCommandBuffers(device, &commandBufferAI, &transferCommandBuffer));
+	vk::setDebugName(device, transferCommandBuffer, "transferCommandBuffer");
 
 	auto commandBufferBI = VkCommandBufferBeginInfo{
 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -911,6 +928,7 @@ void Engine::initBuffers() {
 
 	// Create CPU to GPU buffers
 	world.create(device, allocator, descriptorPool, meshes);
+	world.setDebugName(device);
 }
 
 void Engine::cleanupBuffers() {
@@ -928,18 +946,21 @@ void Engine::initPipelines() {
 		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None),
 		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
 		vk::makePipelineMultisampleStateCI(targets.msColor.samples));
+	techniques.setTechniqueDebugName(device, "opaque"_id, "opaque");
 	techniques.addTechnique("transparent_depth_prepass"_id, device, allocator, targets.renderPass,
 		descriptorPool, world.getDescriptorSets(),
 		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
 		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None, false),
 		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
 		vk::makePipelineMultisampleStateCI(targets.msColor.samples));
+	techniques.setTechniqueDebugName(device, "transparent_depth_prepass"_id, "transparent_depth_prepass");
 	techniques.addTechnique("transparent"_id, device, allocator, targets.renderPass,
 		descriptorPool, world.getDescriptorSets(),
 		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
 		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::Normal),
 		vk::makePipelineDepthStencilStateCI(true, false, VK_COMPARE_OP_LESS_OR_EQUAL),
 		vk::makePipelineMultisampleStateCI(targets.msColor.samples));
+	techniques.setTechniqueDebugName(device, "transparent"_id, "transparent");
 	createBloomPipelines();
 	createBloomPipelineDS();
 }
@@ -1009,6 +1030,7 @@ void Engine::createSwapchain(VkSwapchainKHR old) {
 		.oldSwapchain = old,
 	};
 	VK(vkCreateSwapchainKHR(device, &swapchainCI, nullptr, &swapchain.swapchain));
+	vk::setDebugName(device, swapchain.swapchain, "swapchain");
 
 	// Retrieve swapchain images
 	u32 swapchainImageCount;
@@ -1025,6 +1047,7 @@ void Engine::createSwapchain(VkSwapchainKHR old) {
 			.size = swapchain.extent,
 		};
 		color.view = vk::createImageView(device, color);
+		vk::setDebugName(device, color, fmt::format("swapchain.color[{}]", &color - &swapchain.color[0]));
 	}
 }
 
@@ -1098,6 +1121,7 @@ void Engine::createPresentFbs() {
 			.layoutAfter = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
 		},
 	});
+	vk::setDebugName(device, present.renderPass, "present.renderPass");
 
 	// Create the present framebuffers
 	present.framebuffer.resize(swapchain.color.size());
@@ -1106,6 +1130,7 @@ void Engine::createPresentFbs() {
 			targets.ssColor,
 			image,
 		});
+		vk::setDebugName(device, fb, fmt::format("present.framebuffer[{}]", &fb - &present.framebuffer[0]));
 	}
 }
 
@@ -1122,12 +1147,15 @@ void Engine::createPresentPipeline() {
 			.stages = VK_SHADER_STAGE_FRAGMENT_BIT,
 		},
 	});
+	vk::setDebugName(device, present.descriptorSetLayout, "present.descriptorSetLayout");
 	present.shader = vk::createShader(device, presentVertSrc, presentFragSrc);
+	vk::setDebugName(device, present.shader, "present.shader");
 
 	present.layout = vk::createPipelineLayout(device, std::array{
 		world.getDescriptorSetLayout(),
 		present.descriptorSetLayout,
 	});
+	vk::setDebugName(device, present.layout, "present.layout");
 	present.pipeline = vk::PipelineBuilder{
 		.shader = present.shader,
 		.vertexInputStateCI = vk::makePipelineVertexInputStateCI(),
@@ -1138,6 +1166,7 @@ void Engine::createPresentPipeline() {
 		.multisampleStateCI = vk::makePipelineMultisampleStateCI(),
 		.layout = present.layout,
 	}.build(device, present.renderPass);
+	vk::setDebugName(device, present.pipeline, "present.pipeline");
 }
 
 void Engine::destroyPresentPipeline() {
@@ -1149,6 +1178,7 @@ void Engine::destroyPresentPipeline() {
 
 void Engine::createPresentPipelineDS() {
 	present.descriptorSet = vk::allocateDescriptorSet(device, descriptorPool, present.descriptorSetLayout);
+	vk::setDebugName(device, present.descriptorSet, "present.descriptorSet");
 	vk::updateDescriptorSets(device, std::array{
 		vk::makeDescriptorSetImageWrite(present.descriptorSet, 0, targets.ssColor,
 			VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
@@ -1163,6 +1193,7 @@ void Engine::createMeshBuffer(VkCommandBuffer cmdBuf, std::vector<sys::vk::Buffe
 	meshes.addMesh("block"_id, generateNormals(mesh::Block));
 	meshes.addMesh("scene"_id, generateNormals(mesh::Scene));
 	meshes.upload(allocator, cmdBuf, staging.emplace_back());
+	meshes.setDebugName(device);
 }
 
 void Engine::destroyMeshBuffer() {
@@ -1183,18 +1214,15 @@ void Engine::createTargetImages() {
 	targets.msColor = vk::createImage(device, allocator, ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT,
 		VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 		swapchain.extent, selectedSampleCount);
-	vk::setDebugName(device, targets.msColor.image, VK_OBJECT_TYPE_IMAGE, "targets.msColor");
-	vk::setDebugName(device, targets.msColor.view, VK_OBJECT_TYPE_IMAGE_VIEW, "targets.msColor.view");
+	vk::setDebugName(device, targets.msColor, "targets.msColor");
 	targets.ssColor = vk::createImage(device, allocator, ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT,
 		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
 		swapchain.extent);
-	vk::setDebugName(device, targets.ssColor.image, VK_OBJECT_TYPE_IMAGE, "targets.ssColor");
-	vk::setDebugName(device, targets.ssColor.view, VK_OBJECT_TYPE_IMAGE_VIEW, "targets.ssColor.view");
+	vk::setDebugName(device, targets.ssColor, "targets.ssColor");
 	targets.depthStencil = vk::createImage(device, allocator, DepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT,
 		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
 		swapchain.extent, selectedSampleCount);
-	vk::setDebugName(device, targets.depthStencil.image, VK_OBJECT_TYPE_IMAGE, "targets.depthStencil");
-	vk::setDebugName(device, targets.depthStencil.view, VK_OBJECT_TYPE_IMAGE_VIEW, "targets.depthStencil.view");
+	vk::setDebugName(device, targets.depthStencil, "targets.depthStencil");
 }
 
 void Engine::destroyTargetImages(RenderTargets& t) {
@@ -1225,11 +1253,13 @@ void Engine::createTargetFbs() {
 			.layoutDuring = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		},
 	});
+	vk::setDebugName(device, targets.renderPass, "targets.renderPass");
 	targets.framebuffer = vk::createFramebuffer(device, targets.renderPass, std::array{
 		targets.msColor,
 		targets.depthStencil,
 		targets.ssColor,
 	});
+	vk::setDebugName(device, targets.framebuffer, "targets.framebuffer");
 }
 
 void Engine::destroyTargetFbs(RenderTargets& t) {
@@ -1242,8 +1272,7 @@ void Engine::createBloomImages() {
 	for (auto& image: bloom.images) {
 		image = vk::createImage(device, allocator, ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, extent);
-		vk::setDebugName(device, image.image, VK_OBJECT_TYPE_IMAGE, fmt::format("bloom.images[{}]", &image - &bloom.images[0]));
-		vk::setDebugName(device, image.view, VK_OBJECT_TYPE_IMAGE_VIEW, fmt::format("bloom.images[{}].view", &image - &bloom.images[0]));
+		vk::setDebugName(device, image, fmt::format("bloom.images[{}]", &image - &bloom.images[0]));
 		extent.width = std::max(1u, extent.width >> 1);
 		extent.height = std::max(1u, extent.height >> 1);
 	}
@@ -1263,6 +1292,7 @@ void Engine::createBloomFbs() {
 			.layoutDuring = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		},
 	});
+	vk::setDebugName(device, bloom.downPass, "bloom.downPass");
 	bloom.upPass = vk::createRenderPass(device, std::array{
 		vk::Attachment{
 			.type = vk::Attachment::Type::Color,
@@ -1272,10 +1302,14 @@ void Engine::createBloomFbs() {
 			.layoutBefore = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		},
 	});
+	vk::setDebugName(device, bloom.upPass, "bloom.upPass");
 
 	bloom.targetFb = vk::createFramebuffer(device, bloom.downPass, std::array{targets.ssColor});
-	for (auto[fb, image]: zip_view{bloom.imageFbs, bloom.images})
+	vk::setDebugName(device, bloom.targetFb, "bloom.targetFb");
+	for (auto[fb, image]: zip_view{bloom.imageFbs, bloom.images}) {
 		fb = vk::createFramebuffer(device, bloom.downPass, std::array{image});
+		vk::setDebugName(device, fb, fmt::format("bloom.imageFbs[{}]", &fb - &bloom.imageFbs[0]));
+	}
 }
 
 void Engine::destroyBloomFbs(Bloom& b) {
@@ -1294,12 +1328,15 @@ void Engine::createBloomPipelines() {
 			.sampler = linear,
 		},
 	});
+	vk::setDebugName(device, bloom.descriptorSetLayout, "bloom.descriptorSetLayout");
 	bloom.shader = vk::createShader(device, bloomVertSrc, bloomFragSrc);
+	vk::setDebugName(device, bloom.shader, "bloom.shader");
 
 	bloom.layout = vk::createPipelineLayout(device, std::array{
 		world.getDescriptorSetLayout(),
 		bloom.descriptorSetLayout,
 	});
+	vk::setDebugName(device, bloom.layout, "bloom.layout");
 	auto builder = vk::PipelineBuilder{
 		.shader = bloom.shader,
 		.vertexInputStateCI = vk::makePipelineVertexInputStateCI(),
@@ -1311,8 +1348,10 @@ void Engine::createBloomPipelines() {
 		.layout = bloom.layout,
 	};
 	bloom.down = builder.build(device, bloom.downPass);
+	vk::setDebugName(device, bloom.down, "bloom.down");
 	builder.colorBlendAttachmentState = vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::Add);
 	bloom.up = builder.build(device, bloom.upPass);
+	vk::setDebugName(device, bloom.up, "bloom.up");
 }
 
 void Engine::destroyBloomPipelines() {
@@ -1325,8 +1364,11 @@ void Engine::destroyBloomPipelines() {
 
 void Engine::createBloomPipelineDS() {
 	bloom.sourceDS = vk::allocateDescriptorSet(device, descriptorPool, bloom.descriptorSetLayout);
-	for (auto& ds: bloom.imageDS)
+	vk::setDebugName(device, bloom.sourceDS, "bloom.sourceDS");
+	for (auto& ds: bloom.imageDS) {
 		ds = vk::allocateDescriptorSet(device, descriptorPool, bloom.descriptorSetLayout);
+		vk::setDebugName(device, ds, fmt::format("bloom.imageDS[{}]", &ds - &bloom.imageDS[0]));
+	}
 
 	vk::updateDescriptorSets(device, std::array{
 		vk::makeDescriptorSetImageWrite(bloom.sourceDS, 0, targets.ssColor,

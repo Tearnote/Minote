@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string_view>
 #include <vector>
 #include <glm/mat4x4.hpp>
 #include "VulkanMemoryAllocator/vma.h"
@@ -47,6 +48,8 @@ struct IndirectBuffer {
 	auto commandBuffer() -> sys::vk::Buffer& { return m_commandBuffer; }
 
 	auto instanceBuffer() -> sys::vk::Buffer& { return m_instanceBuffer; }
+
+	void setDebugName(VkDevice device, std::string_view name) const;
 
 private:
 

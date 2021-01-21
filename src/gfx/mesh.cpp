@@ -1,5 +1,6 @@
 #include "gfx/mesh.hpp"
 
+#include "sys/vk/debug.hpp"
 #include "sys/vk/base.hpp"
 
 namespace minote::gfx {
@@ -52,6 +53,10 @@ void MeshBuffer::destroy(VmaAllocator allocator) {
 
 	vmaDestroyBuffer(allocator, m_buffer.buffer, m_buffer.allocation);
 	m_buffer = {};
+}
+
+void MeshBuffer::setDebugName(VkDevice device) {
+	vk::setDebugName(device, m_buffer, "MeshBuffer::m_buffer");
 }
 
 }
