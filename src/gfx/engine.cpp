@@ -145,14 +145,14 @@ void Engine::render() {
 	auto& transparentIndirect = techniques.getTechniqueIndirect("transparent"_id, frameIndex);
 
 	// Prepare and upload draw data to the GPU
-	opaqueIndirect.upload(ctx.allocator);
-	transparentDepthPrepassIndirect.upload(ctx.allocator);
-	transparentIndirect.upload(ctx.allocator);
+	opaqueIndirect.upload(ctx);
+	transparentDepthPrepassIndirect.upload(ctx);
+	transparentIndirect.upload(ctx);
 
 	world.uniforms.setViewProjection(glm::uvec2{swapchain.extent.width, swapchain.extent.height},
 		VerticalFov, NearPlane, FarPlane,
 		camera.eye, camera.center, camera.up);
-	world.uploadUniforms(ctx.allocator, frameIndex);
+	world.uploadUniforms(ctx, frameIndex);
 
 	// Start recording commands
 	VK(vkResetCommandBuffer(cmdBuf, 0));
@@ -343,23 +343,6 @@ void Engine::render() {
 }
 
 void Engine::initCommands() {
-	// Create the descriptor pool
-	auto const descriptorPoolSizes = std::to_array<VkDescriptorPoolSize>({
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 64 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 64 },
-		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 64 },
-		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 64 },
-	});
-	auto descriptorPoolCI = VkDescriptorPoolCreateInfo{
-		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-		.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-		.maxSets = 256,
-		.poolSizeCount = static_cast<u32>(descriptorPoolSizes.size()),
-		.pPoolSizes = descriptorPoolSizes.data(),
-	};
-	VK(vkCreateDescriptorPool(ctx.device, &descriptorPoolCI, nullptr, &descriptorPool));
-	vk::setDebugName(ctx.device, descriptorPool, "descriptorPool");
-
 	// Create the graphics command buffers and sync objects
 	auto commandPoolCI = VkCommandPoolCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
@@ -411,7 +394,6 @@ void Engine::cleanupCommands() {
 		vkDestroyFence(ctx.device, frame.renderFence, nullptr);
 		vkDestroyCommandPool(ctx.device, frame.commandPool, nullptr);
 	}
-	vkDestroyDescriptorPool(ctx.device, descriptorPool, nullptr);
 }
 
 void Engine::initImages() {
@@ -425,13 +407,13 @@ void Engine::initImages() {
 			return VK_SAMPLE_COUNT_2_BIT;
 		}
 	}();
-	targets.init(ctx.device, ctx.allocator, swapchain.extent, ColorFormat, DepthFormat, selectedSampleCount);
+	targets.init(ctx, swapchain.extent, ColorFormat, DepthFormat, selectedSampleCount);
 	createBloomImages();
 }
 
 void Engine::cleanupImages() {
 	destroyBloomImages(bloom);
-	targets.cleanup(ctx.device, ctx.allocator);
+	targets.cleanup(ctx);
 }
 
 void Engine::initFramebuffers() {
@@ -486,40 +468,37 @@ void Engine::initBuffers() {
 		vmaDestroyBuffer(ctx.allocator, buffer.buffer, buffer.allocation);
 
 	// Create CPU to GPU buffers
-	world.create(ctx.device, ctx.allocator, descriptorPool, meshes);
-	world.setDebugName(ctx.device);
+	world.create(ctx, meshes);
+	world.setDebugName(ctx);
 }
 
 void Engine::cleanupBuffers() {
-	world.destroy(ctx.device, ctx.allocator);
+	world.destroy(ctx);
 	destroyMeshBuffer();
 }
 
 void Engine::initPipelines() {
 	createPresentPipeline();
 	createPresentPipelineDS();
-	techniques.create(ctx.device, world.getDescriptorSetLayout());
-	techniques.addTechnique("opaque"_id, ctx.device, ctx.allocator, targets.renderPass,
-		descriptorPool, world.getDescriptorSets(),
+	techniques.create(ctx, world.getDescriptorSetLayout());
+	techniques.addTechnique(ctx, "opaque"_id, targets.renderPass, world.getDescriptorSets(),
 		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
 		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None),
 		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
 		vk::makePipelineMultisampleStateCI(targets.msColor.samples));
-	techniques.setTechniqueDebugName(ctx.device, "opaque"_id, "opaque");
-	techniques.addTechnique("transparent_depth_prepass"_id, ctx.device, ctx.allocator, targets.renderPass,
-		descriptorPool, world.getDescriptorSets(),
+	techniques.setTechniqueDebugName(ctx, "opaque"_id, "opaque");
+	techniques.addTechnique(ctx, "transparent_depth_prepass"_id, targets.renderPass, world.getDescriptorSets(),
 		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
 		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None, false),
 		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
 		vk::makePipelineMultisampleStateCI(targets.msColor.samples));
-	techniques.setTechniqueDebugName(ctx.device, "transparent_depth_prepass"_id, "transparent_depth_prepass");
-	techniques.addTechnique("transparent"_id, ctx.device, ctx.allocator, targets.renderPass,
-		descriptorPool, world.getDescriptorSets(),
+	techniques.setTechniqueDebugName(ctx, "transparent_depth_prepass"_id, "transparent_depth_prepass");
+	techniques.addTechnique(ctx, "transparent"_id, targets.renderPass, world.getDescriptorSets(),
 		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
 		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::Normal),
 		vk::makePipelineDepthStencilStateCI(true, false, VK_COMPARE_OP_LESS_OR_EQUAL),
 		vk::makePipelineMultisampleStateCI(targets.msColor.samples));
-	techniques.setTechniqueDebugName(ctx.device, "transparent"_id, "transparent");
+	techniques.setTechniqueDebugName(ctx, "transparent"_id, "transparent");
 	createBloomPipelines();
 	createBloomPipelineDS();
 }
@@ -527,7 +506,7 @@ void Engine::initPipelines() {
 void Engine::cleanupPipelines() {
 	destroyBloomPipelineDS(bloom);
 	destroyBloomPipelines();
-	techniques.destroy(ctx.device, ctx.allocator);
+	techniques.destroy(ctx);
 	destroyPresentPipelineDS(present);
 	destroyPresentPipeline();
 }
@@ -545,7 +524,7 @@ void Engine::refresh() {
 			destroyBloomFbs(bloom);
 			destroyPresentFbs(present);
 			destroyBloomImages(bloom);
-			targets.refreshCleanup(ctx.device, ctx.allocator);
+			targets.refreshCleanup(ctx);
 			swapchain.cleanup(ctx);
 		},
 	});
@@ -555,7 +534,7 @@ void Engine::refresh() {
 	swapchain = {};
 	targets = {};
 	swapchain.init(ctx, oldSwapchain);
-	targets.refreshInit(ctx.device, ctx.allocator, swapchain.extent, ColorFormat, DepthFormat, sampleCount);
+	targets.refreshInit(ctx, swapchain.extent, ColorFormat, DepthFormat, sampleCount);
 	createBloomImages();
 	createPresentFbs();
 	createBloomFbs();
@@ -636,7 +615,7 @@ void Engine::destroyPresentPipeline() {
 }
 
 void Engine::createPresentPipelineDS() {
-	present.descriptorSet = vk::allocateDescriptorSet(ctx.device, descriptorPool, present.descriptorSetLayout);
+	present.descriptorSet = vk::allocateDescriptorSet(ctx.device, ctx.descriptorPool, present.descriptorSetLayout);
 	vk::setDebugName(ctx.device, present.descriptorSet, "present.descriptorSet");
 	vk::updateDescriptorSets(ctx.device, std::array{
 		vk::makeDescriptorSetImageWrite(present.descriptorSet, 0, targets.ssColor,
@@ -645,18 +624,18 @@ void Engine::createPresentPipelineDS() {
 }
 
 void Engine::destroyPresentPipelineDS(Present& p) {
-	vkFreeDescriptorSets(ctx.device, descriptorPool, 1, &p.descriptorSet);
+	vkFreeDescriptorSets(ctx.device, ctx.descriptorPool, 1, &p.descriptorSet);
 }
 
 void Engine::createMeshBuffer(VkCommandBuffer cmdBuf, std::vector<sys::vk::Buffer>& staging) {
 	meshes.addMesh("block"_id, generateNormals(mesh::Block));
 	meshes.addMesh("scene"_id, generateNormals(mesh::Scene));
-	meshes.upload(ctx.allocator, cmdBuf, staging.emplace_back());
-	meshes.setDebugName(ctx.device);
+	meshes.upload(ctx, cmdBuf, staging.emplace_back());
+	meshes.setDebugName(ctx);
 }
 
 void Engine::destroyMeshBuffer() {
-	meshes.destroy(ctx.allocator);
+	meshes.destroy(ctx);
 }
 
 void Engine::createBloomImages() {
@@ -755,10 +734,10 @@ void Engine::destroyBloomPipelines() {
 }
 
 void Engine::createBloomPipelineDS() {
-	bloom.sourceDS = vk::allocateDescriptorSet(ctx.device, descriptorPool, bloom.descriptorSetLayout);
+	bloom.sourceDS = vk::allocateDescriptorSet(ctx.device, ctx.descriptorPool, bloom.descriptorSetLayout);
 	vk::setDebugName(ctx.device, bloom.sourceDS, "bloom.sourceDS");
 	for (auto& ds: bloom.imageDS) {
-		ds = vk::allocateDescriptorSet(ctx.device, descriptorPool, bloom.descriptorSetLayout);
+		ds = vk::allocateDescriptorSet(ctx.device, ctx.descriptorPool, bloom.descriptorSetLayout);
 		vk::setDebugName(ctx.device, ds, fmt::format("bloom.imageDS[{}]", &ds - &bloom.imageDS[0]));
 	}
 
@@ -776,8 +755,8 @@ void Engine::createBloomPipelineDS() {
 
 void Engine::destroyBloomPipelineDS(Bloom& b) {
 	for (auto& ds: b.imageDS)
-		vkFreeDescriptorSets(ctx.device, descriptorPool, 1, &ds);
-	vkFreeDescriptorSets(ctx.device, descriptorPool, 1, &b.sourceDS);
+		vkFreeDescriptorSets(ctx.device, ctx.descriptorPool, 1, &ds);
+	vkFreeDescriptorSets(ctx.device, ctx.descriptorPool, 1, &b.sourceDS);
 }
 
 }

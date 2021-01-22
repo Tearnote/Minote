@@ -20,12 +20,12 @@ constexpr auto objectFragSrc = std::to_array<u32>({
 #include "spv/object.frag.spv"
 });
 
-void TechniqueSet::create(VkDevice device, VkDescriptorSetLayout worldLayout) {
-	m_shader = vk::createShader(device, objectVertSrc, objectFragSrc);
-	vk::setDebugName(device, m_shader, "TechniqueSet::m_shader");
+void TechniqueSet::create(Context& ctx, VkDescriptorSetLayout worldLayout) {
+	m_shader = vk::createShader(ctx.device, objectVertSrc, objectFragSrc);
+	vk::setDebugName(ctx.device, m_shader, "TechniqueSet::m_shader");
 
 	// Create the shader-specific descriptor set layout
-	m_drawDescriptorSetLayout = vk::createDescriptorSetLayout(device, std::array{
+	m_drawDescriptorSetLayout = vk::createDescriptorSetLayout(ctx.device, std::array{
 		vk::Descriptor{
 			.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
 			.stages = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -35,29 +35,29 @@ void TechniqueSet::create(VkDevice device, VkDescriptorSetLayout worldLayout) {
 			.stages = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 		},
 	});
-	vk::setDebugName(device, m_drawDescriptorSetLayout, "TechniqueSet::m_drawDescriptorSetLayout");
+	vk::setDebugName(ctx.device, m_drawDescriptorSetLayout, "TechniqueSet::m_drawDescriptorSetLayout");
 
 	// Create the pipeline layout
-	m_pipelineLayout = vk::createPipelineLayout(device, std::array{
+	m_pipelineLayout = vk::createPipelineLayout(ctx.device, std::array{
 		worldLayout,
 		m_drawDescriptorSetLayout,
 	});
-	vk::setDebugName(device, m_pipelineLayout, "TechniqueSet::m_pipelineLayout");
+	vk::setDebugName(ctx.device, m_pipelineLayout, "TechniqueSet::m_pipelineLayout");
 }
 
-void TechniqueSet::destroy(VkDevice device, VmaAllocator allocator) {
+void TechniqueSet::destroy(Context& ctx) {
 	for (auto[id, tech]: m_techniques) {
 		for (auto& indirect: tech.indirect)
-			indirect.destroy(allocator);
-		vkDestroyPipeline(device, tech.pipeline, nullptr);
+			indirect.destroy(ctx);
+		vkDestroyPipeline(ctx.device, tech.pipeline, nullptr);
 	}
-	vkDestroyPipelineLayout(device, m_pipelineLayout, nullptr);
-	vkDestroyDescriptorSetLayout(device, m_drawDescriptorSetLayout, nullptr);
-	vk::destroyShader(device, m_shader);
+	vkDestroyPipelineLayout(ctx.device, m_pipelineLayout, nullptr);
+	vkDestroyDescriptorSetLayout(ctx.device, m_drawDescriptorSetLayout, nullptr);
+	vk::destroyShader(ctx.device, m_shader);
 }
 
-void TechniqueSet::addTechnique(base::ID id, VkDevice device, VmaAllocator allocator, VkRenderPass renderPass,
-	VkDescriptorPool descriptorPool, PerFrame<VkDescriptorSet> worldDescriptorSets,
+void TechniqueSet::addTechnique(Context& ctx, base::ID id, VkRenderPass renderPass,
+	PerFrame<VkDescriptorSet> worldDescriptorSets,
 	VkPipelineRasterizationStateCreateInfo rasterizationStateCI,
 	VkPipelineColorBlendAttachmentState colorBlendAttachmentState,
 	VkPipelineDepthStencilStateCreateInfo depthStencilStateCI,
@@ -74,17 +74,17 @@ void TechniqueSet::addTechnique(base::ID id, VkDevice device, VmaAllocator alloc
 		.depthStencilStateCI = depthStencilStateCI,
 		.multisampleStateCI = multisampleStateCI,
 		.layout = m_pipelineLayout,
-	}.build(device, renderPass);
+	}.build(ctx.device, renderPass);
 
 	// Create the technique's draw (slot 1) descriptor set
 	for (auto[drawDS, world, indirect]: zip_view{result.drawDescriptorSet, worldDescriptorSets, result.indirect}) {
-		drawDS = vk::allocateDescriptorSet(device, descriptorPool, m_drawDescriptorSetLayout);
+		drawDS = vk::allocateDescriptorSet(ctx.device, ctx.descriptorPool, m_drawDescriptorSetLayout);
 
 		// Create the indirect buffer
-		indirect.create(allocator, MaxDrawCommands, MaxInstances);
+		indirect.create(ctx, MaxDrawCommands, MaxInstances);
 
 		// Fill in the draw descriptor set
-		vk::updateDescriptorSets(device, std::array{
+		vk::updateDescriptorSets(ctx.device, std::array{
 			vk::makeDescriptorSetBufferWrite(drawDS, 0, indirect.commandBuffer(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER),
 			vk::makeDescriptorSetBufferWrite(drawDS, 1, indirect.instanceBuffer(), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER),
 		});
@@ -93,13 +93,13 @@ void TechniqueSet::addTechnique(base::ID id, VkDevice device, VmaAllocator alloc
 	m_techniques.emplace(id, std::move(result));
 }
 
-void TechniqueSet::setTechniqueDebugName(VkDevice device, ID id, std::string_view name) {
+void TechniqueSet::setTechniqueDebugName(Context& ctx, ID id, std::string_view name) {
 	auto const& technique = m_techniques.at(id);
-	vk::setDebugName(device, technique.pipeline, fmt::format("TechniqueSet[{}].pipeline", name));
+	vk::setDebugName(ctx.device, technique.pipeline, fmt::format("TechniqueSet[{}].pipeline", name));
 	for (auto[drawDS, indirect]: zip_view{technique.drawDescriptorSet, technique.indirect}) {
-		vk::setDebugName(device, drawDS, fmt::format("TechniqueSet[{}].drawDescriptorSet[{}]",
+		vk::setDebugName(ctx.device, drawDS, fmt::format("TechniqueSet[{}].drawDescriptorSet[{}]",
 			name, &drawDS - &technique.drawDescriptorSet[0]));
-		indirect.setDebugName(device, fmt::format("TechniqueSet[{}].indirect[{}]",
+		indirect.setDebugName(ctx, fmt::format("TechniqueSet[{}].indirect[{}]",
 			name, &indirect - &technique.indirect[0]));
 	}
 }

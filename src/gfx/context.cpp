@@ -414,10 +414,28 @@ void Context::init(sys::Window& _window, u32 vulkanVersion, std::string_view app
 	};
 	VK(vmaCreateAllocator(&allocatorCI, &allocator));
 
+	// Create the descriptor pool
+	auto const descriptorPoolSizes = std::to_array<VkDescriptorPoolSize>({
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 64 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 64 },
+		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 64 },
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 64 },
+	});
+	auto const descriptorPoolCI = VkDescriptorPoolCreateInfo{
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+		.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+		.maxSets = 256,
+		.poolSizeCount = static_cast<u32>(descriptorPoolSizes.size()),
+		.pPoolSizes = descriptorPoolSizes.data(),
+	};
+	VK(vkCreateDescriptorPool(device, &descriptorPoolCI, nullptr, &descriptorPool));
+	vk::setDebugName(device, descriptorPool, "Context::descriptorPool");
+
 	L.debug("Vulkan device created");
 }
 
 void Context::cleanup() {
+	vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 	vmaDestroyAllocator(allocator);
 	vkDestroyDevice(device, nullptr);
 

@@ -3,6 +3,7 @@
 #include "VulkanMemoryAllocator/vma.h"
 #include "volk/volk.h"
 #include "sys/vk/image.hpp"
+#include "gfx/context.hpp"
 
 namespace minote::gfx {
 
@@ -14,13 +15,11 @@ struct Targets {
 	VkRenderPass renderPass;
 	VkFramebuffer framebuffer;
 
-	void init(VkDevice device, VmaAllocator allocator, VkExtent2D size,
-		VkFormat color, VkFormat depth, VkSampleCountFlagBits samples);
-	void cleanup(VkDevice device, VmaAllocator allocator);
+	void init(Context& ctx, VkExtent2D size, VkFormat color, VkFormat depth, VkSampleCountFlagBits samples);
+	void cleanup(Context& ctx);
 
-	void refreshInit(VkDevice device, VmaAllocator allocator, VkExtent2D size,
-		VkFormat color, VkFormat depth, VkSampleCountFlagBits samples);
-	void refreshCleanup(VkDevice device, VmaAllocator allocator);
+	void refreshInit(Context& ctx, VkExtent2D size, VkFormat color, VkFormat depth, VkSampleCountFlagBits samples);
+	void refreshCleanup(Context& ctx);
 
 };
 

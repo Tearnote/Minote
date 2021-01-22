@@ -8,6 +8,7 @@
 #include "base/types.hpp"
 #include "base/math.hpp"
 #include "sys/vk/buffer.hpp"
+#include "gfx/context.hpp"
 #include "gfx/base.hpp"
 #include "gfx/mesh.hpp"
 
@@ -38,9 +39,9 @@ struct World {
 
 	} uniforms;
 
-	void create(VkDevice device, VmaAllocator allocator, VkDescriptorPool pool, MeshBuffer& meshes);
+	void create(Context& ctx, MeshBuffer& meshes);
 
-	void destroy(VkDevice device, VmaAllocator allocator);
+	void destroy(Context& ctx);
 
 	auto getDescriptorSetLayout() { return m_worldDescriptorSetLayout; }
 
@@ -48,9 +49,9 @@ struct World {
 
 	auto getDescriptorSets() { return m_worldDescriptorSet; }
 
-	void uploadUniforms(VmaAllocator allocator, i64 frameIndex);
+	void uploadUniforms(Context& ctx, i64 frameIndex);
 
-	void setDebugName(VkDevice device);
+	void setDebugName(Context& ctx);
 
 private:
 

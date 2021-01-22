@@ -10,23 +10,23 @@ namespace minote::gfx {
 using namespace base;
 namespace vk = sys::vk;
 
-void IndirectBuffer::create(VmaAllocator allocator, size_t maxCommands, size_t maxInstances) {
+void IndirectBuffer::create(Context& ctx, size_t maxCommands, size_t maxInstances) {
 	ASSERT(!m_commandBuffer.buffer && !m_commandBuffer.allocation);
 	ASSERT(!m_instanceBuffer.buffer && !m_instanceBuffer.allocation);
 
 	m_commandQueue.reserve(maxCommands);
 	m_instanceQueue.reserve(maxInstances);
-	m_commandBuffer = vk::createBuffer(allocator, maxCommands * sizeof(Command),
+	m_commandBuffer = vk::createBuffer(ctx.allocator, maxCommands * sizeof(Command),
 		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
-	m_instanceBuffer = vk::createBuffer(allocator, maxInstances * sizeof(Instance),
+	m_instanceBuffer = vk::createBuffer(ctx.allocator, maxInstances * sizeof(Instance),
 		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 }
 
-void IndirectBuffer::destroy(VmaAllocator allocator) {
+void IndirectBuffer::destroy(Context& ctx) {
 	if (!m_commandBuffer.buffer || !m_commandBuffer.allocation) return;
 
-	vmaDestroyBuffer(allocator, m_instanceBuffer.buffer, m_instanceBuffer.allocation);
-	vmaDestroyBuffer(allocator, m_commandBuffer.buffer, m_commandBuffer.allocation);
+	vmaDestroyBuffer(ctx.allocator, m_instanceBuffer.buffer, m_instanceBuffer.allocation);
+	vmaDestroyBuffer(ctx.allocator, m_commandBuffer.buffer, m_commandBuffer.allocation);
 	m_instanceBuffer = {};
 	m_commandBuffer = {};
 	m_instanceQueue.clear();
@@ -63,17 +63,17 @@ void IndirectBuffer::reset() {
 	m_instanceQueue.clear();
 }
 
-void IndirectBuffer::upload(VmaAllocator allocator) {
+void IndirectBuffer::upload(Context& ctx) {
 	ASSERT(m_commandBuffer.buffer && m_commandBuffer.allocation);
 	ASSERT(m_instanceBuffer.buffer && m_instanceBuffer.allocation);
 
-	vk::uploadToCpuBuffer<Command>(allocator, m_commandBuffer, m_commandQueue);
-	vk::uploadToCpuBuffer<Instance>(allocator, m_instanceBuffer, m_instanceQueue);
+	vk::uploadToCpuBuffer<Command>(ctx.allocator, m_commandBuffer, m_commandQueue);
+	vk::uploadToCpuBuffer<Instance>(ctx.allocator, m_instanceBuffer, m_instanceQueue);
 }
 
-void IndirectBuffer::setDebugName(VkDevice device, std::string_view name) const {
-	vk::setDebugName(device, m_commandBuffer, fmt::format("{}.m_commandBuffer", name));
-	vk::setDebugName(device, m_instanceBuffer, fmt::format("{}.m_instanceBuffer", name));
+void IndirectBuffer::setDebugName(Context& ctx, std::string_view name) const {
+	vk::setDebugName(ctx.device, m_commandBuffer, fmt::format("{}.m_commandBuffer", name));
+	vk::setDebugName(ctx.device, m_instanceBuffer, fmt::format("{}.m_instanceBuffer", name));
 }
 
 }

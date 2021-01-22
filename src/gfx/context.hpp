@@ -41,6 +41,7 @@ struct Context {
 	VkQueue presentQueue;
 	VkQueue transferQueue;
 	VmaAllocator allocator;
+	VkDescriptorPool descriptorPool;
 
 	void init(sys::Window& window, u32 vulkanVersion, std::string_view appName, Version appVersion);
 	void cleanup();

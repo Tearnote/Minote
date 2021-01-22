@@ -8,6 +8,7 @@
 #include "base/types.hpp"
 #include "sys/vk/buffer.hpp"
 #include "gfx/material.hpp"
+#include "gfx/context.hpp"
 #include "gfx/mesh.hpp"
 
 namespace minote::gfx {
@@ -32,9 +33,9 @@ struct IndirectBuffer {
 
 	};
 
-	void create(VmaAllocator allocator, size_t maxCommands, size_t maxInstances);
+	void create(Context& ctx, size_t maxCommands, size_t maxInstances);
 
-	void destroy(VmaAllocator allocator);
+	void destroy(Context& ctx);
 
 	void enqueue(MeshBuffer::Descriptor const& mesh, std::span<Instance const> instances,
 		Material material, MaterialData const& materialData = {});
@@ -43,13 +44,13 @@ struct IndirectBuffer {
 
 	void reset();
 
-	void upload(VmaAllocator allocator);
+	void upload(Context& ctx);
 
 	auto commandBuffer() -> sys::vk::Buffer& { return m_commandBuffer; }
 
 	auto instanceBuffer() -> sys::vk::Buffer& { return m_instanceBuffer; }
 
-	void setDebugName(VkDevice device, std::string_view name) const;
+	void setDebugName(Context& ctx, std::string_view name) const;
 
 private:
 

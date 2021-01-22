@@ -14,6 +14,7 @@
 #include "base/util.hpp"
 #include "base/id.hpp"
 #include "sys/vk/buffer.hpp"
+#include "gfx/context.hpp"
 
 namespace minote::gfx {
 
@@ -59,15 +60,15 @@ struct MeshBuffer {
 
 	auto addMesh(ID id, std::span<const Vertex> mesh) -> Descriptor;
 
-	void upload(VmaAllocator allocator, VkCommandBuffer cmdBuffer, sys::vk::Buffer& staging);
+	void upload(Context& ctx, VkCommandBuffer cmdBuffer, sys::vk::Buffer& staging);
 
 	auto getMeshDescriptor(ID id) { return m_descriptors.at(id); }
 
-	void destroy(VmaAllocator allocator);
+	void destroy(Context& ctx);
 
 	auto buffer() -> sys::vk::Buffer& { return m_buffer; }
 
-	void setDebugName(VkDevice device);
+	void setDebugName(Context& ctx);
 
 private:
 

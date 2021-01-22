@@ -10,6 +10,7 @@
 #include "base/id.hpp"
 #include "sys/vk/shader.hpp"
 #include "gfx/indirect.hpp"
+#include "gfx/context.hpp"
 #include "gfx/base.hpp"
 
 namespace minote::gfx {
@@ -33,18 +34,18 @@ struct TechniqueSet {
 
 	};
 
-	void create(VkDevice device, VkDescriptorSetLayout worldLayout);
+	void create(Context& ctx, VkDescriptorSetLayout worldLayout);
 
-	void destroy(VkDevice device, VmaAllocator allocator);
+	void destroy(Context& ctx);
 
-	void addTechnique(ID id, VkDevice device, VmaAllocator allocator, VkRenderPass renderPass,
-		VkDescriptorPool descriptorPool, PerFrame<VkDescriptorSet> worldDescriptorSets,
+	void addTechnique(Context& ctx, ID id, VkRenderPass renderPass,
+		PerFrame<VkDescriptorSet> worldDescriptorSets,
 		VkPipelineRasterizationStateCreateInfo rasterizationStateCI,
 		VkPipelineColorBlendAttachmentState colorBlendAttachmentState,
 		VkPipelineDepthStencilStateCreateInfo depthStencilStateCI,
 		VkPipelineMultisampleStateCreateInfo multisampleStateCI);
 
-	void setTechniqueDebugName(VkDevice device, ID id, std::string_view name);
+	void setTechniqueDebugName(Context& ctx, ID id, std::string_view name);
 
 	auto getPipelineLayout() { return m_pipelineLayout; }
 

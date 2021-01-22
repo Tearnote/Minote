@@ -92,10 +92,10 @@ private:
 
 	struct Camera {
 
-
 		glm::vec3 eye;
 		glm::vec3 center;
 		glm::vec3 up;
+
 	};
 
 	struct DelayedOp {
@@ -111,7 +111,6 @@ private:
 	Context ctx;
 
 	PerFrame<Frame> frames;
-	VkDescriptorPool descriptorPool;
 	VkCommandPool transferCommandPool;
 	VkFence transfersFinished;
 
