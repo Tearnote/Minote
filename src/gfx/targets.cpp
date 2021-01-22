@@ -22,15 +22,15 @@ void Targets::refreshInit(VkDevice device, VmaAllocator allocator, VkExtent2D si
 	msColor = vk::createImage(device, allocator, color, VK_IMAGE_ASPECT_COLOR_BIT,
 		VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 		size, samples);
-	vk::setDebugName(device, msColor, "targets.msColor");
+	vk::setDebugName(device, msColor, "Targets::msColor");
 	ssColor = vk::createImage(device, allocator, color, VK_IMAGE_ASPECT_COLOR_BIT,
 		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
 		size);
-	vk::setDebugName(device, ssColor, "targets.ssColor");
+	vk::setDebugName(device, ssColor, "Targets::ssColor");
 	depthStencil = vk::createImage(device, allocator, depth, VK_IMAGE_ASPECT_DEPTH_BIT,
 		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
 		size, samples);
-	vk::setDebugName(device, depthStencil, "targets.depthStencil");
+	vk::setDebugName(device, depthStencil, "Targets::depthStencil");
 
 	renderPass = vk::createRenderPass(device, std::array{
 		vk::Attachment{
@@ -53,13 +53,13 @@ void Targets::refreshInit(VkDevice device, VmaAllocator allocator, VkExtent2D si
 			.layoutDuring = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		},
 	});
-	vk::setDebugName(device, renderPass, "targets.renderPass");
+	vk::setDebugName(device, renderPass, "Targets::renderPass");
 	framebuffer = vk::createFramebuffer(device, renderPass, std::array{
 		msColor,
 		depthStencil,
 		ssColor,
 	});
-	vk::setDebugName(device, framebuffer, "targets.framebuffer");
+	vk::setDebugName(device, framebuffer, "Targets::framebuffer");
 }
 
 void Targets::refreshCleanup(VkDevice device, VmaAllocator allocator) {

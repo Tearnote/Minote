@@ -19,6 +19,7 @@
 #include "sys/vk/base.hpp"
 #include "sys/window.hpp"
 #include "sys/glfw.hpp"
+#include "gfx/swapchain.hpp"
 #include "gfx/technique.hpp"
 #include "gfx/context.hpp"
 #include "gfx/targets.hpp"
@@ -46,14 +47,6 @@ struct Engine {
 	void render();
 
 private:
-
-	struct Swapchain {
-
-		VkSwapchainKHR swapchain = nullptr;
-		VkExtent2D extent = {};
-		std::vector<sys::vk::Image> color;
-
-	};
 
 	struct Present {
 
@@ -111,9 +104,7 @@ private:
 
 	};
 
-	std::string name;
-	sys::Window& window;
-	u64 frameCounter;
+	u64 frameCounter = 0;
 	svector<DelayedOp, 64> delayedOps;
 
 	Context ctx;
@@ -141,9 +132,6 @@ private:
 	void initSamplers();
 	void cleanupSamplers();
 
-	void initSwapchain();
-	void cleanupSwapchain();
-
 	void initImages();
 	void cleanupImages();
 
@@ -155,10 +143,7 @@ private:
 
 	void initPipelines();
 	void cleanupPipelines();
-
-	void createSwapchain(VkSwapchainKHR old = nullptr);
-	void destroySwapchain(Swapchain&);
-	void recreateSwapchain();
+	void refresh();
 
 	void createPresentFbs();
 	void destroyPresentFbs(Present&);

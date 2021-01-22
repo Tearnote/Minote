@@ -15,6 +15,9 @@ using namespace base;
 
 struct Context {
 
+	std::string name;
+	sys::Window* window;
+
 	VkInstance instance;
 	std::vector<char const*> instanceExtensions;
 #ifdef VK_VALIDATION

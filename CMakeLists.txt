@@ -116,6 +116,7 @@ set(SOURCES
         src/sys/keyboard.hpp src/sys/keyboard.cpp
         src/sys/window.hpp src/sys/window.tpp src/sys/window.cpp
         src/sys/glfw.hpp src/sys/glfw.cpp
+        src/gfx/swapchain.hpp src/gfx/swapchain.cpp
         src/gfx/technique.hpp src/gfx/technique.cpp
         src/gfx/indirect.hpp src/gfx/indirect.cpp
         src/gfx/material.hpp

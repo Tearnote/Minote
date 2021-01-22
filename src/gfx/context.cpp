@@ -29,7 +29,10 @@ static constexpr auto codeToVersion(u32 code) -> Version {
 	};
 }
 
-void Context::init(sys::Window& window, u32 vulkanVersion, std::string_view appName, Version appVersion) {
+void Context::init(sys::Window& _window, u32 vulkanVersion, std::string_view appName, Version appVersion) {
+	window = &_window;
+	name = std::string{appName};
+
 	if (!glfwVulkanSupported())
 		throw std::runtime_error("Vulkan is not supported by your system");
 
@@ -142,7 +145,7 @@ void Context::init(sys::Window& window, u32 vulkanVersion, std::string_view appN
 #ifdef VK_VALIDATION
 	VK(vkCreateDebugUtilsMessengerEXT(instance, &debugCI, nullptr, &debugMessenger));
 #endif //VK_VALIDATION
-	VK(glfwCreateWindowSurface(instance, window.handle(), nullptr, &surface));
+	VK(glfwCreateWindowSurface(instance, window->handle(), nullptr, &surface));
 
 	L.debug("Vulkan instance created");
 
@@ -365,17 +368,17 @@ void Context::init(sys::Window& window, u32 vulkanVersion, std::string_view appN
 	};
 	VK(vkCreateDevice(physicalDevice, &deviceCI, nullptr, &device));
 	volkLoadDevice(device);
-	vk::setDebugName(device, instance, "instance");
-	vk::setDebugName(device, physicalDevice, "physicalDevice");
-	vk::setDebugName(device, "device");
+	vk::setDebugName(device, instance, "Context::instance");
+	vk::setDebugName(device, physicalDevice, "Context::physicalDevice");
+	vk::setDebugName(device, "Context::device");
 
 	// Retrieve device queues
 	vkGetDeviceQueue(device, graphicsQueueFamilyIndex, 0, &graphicsQueue);
 	vkGetDeviceQueue(device, presentQueueFamilyIndex, 0, &presentQueue);
 	vkGetDeviceQueue(device, transferQueueFamilyIndex, 0, &transferQueue);
-	vk::setDebugName(device, graphicsQueue, "graphicsQueue");
-	vk::setDebugName(device, presentQueue, "presentQueue");
-	vk::setDebugName(device, transferQueue, "transferQueue");
+	vk::setDebugName(device, graphicsQueue, "Context::graphicsQueue");
+	vk::setDebugName(device, presentQueue, "Context::presentQueue");
+	vk::setDebugName(device, transferQueue, "Context::transferQueue");
 
 	// Create the allocator
 	auto const allocatorFunctions = VmaVulkanFunctions{

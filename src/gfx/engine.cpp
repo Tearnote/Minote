@@ -57,12 +57,11 @@ constexpr auto bloomFragSrc = std::to_array<u32>({
 #include "spv/bloom.frag.spv"
 });
 
-Engine::Engine(sys::Glfw&, sys::Window& _window, std::string_view _name, Version appVersion):
-	name{_name}, window{_window}, frameCounter{0} {
+Engine::Engine(sys::Glfw&, sys::Window& window, std::string_view name, Version appVersion) {
 	ctx.init(window, VulkanVersion, name, appVersion);
+	swapchain.init(ctx);
 	initCommands();
 	initSamplers();
-	initSwapchain();
 	initImages();
 	initFramebuffers();
 	initBuffers();
@@ -81,9 +80,9 @@ Engine::~Engine() {
 	cleanupBuffers();
 	cleanupFramebuffers();
 	cleanupImages();
-	cleanupSwapchain();
 	cleanupSamplers();
 	cleanupCommands();
+	swapchain.cleanup(ctx);
 	ctx.cleanup();
 
 	L.info("Vulkan cleaned up");
@@ -125,7 +124,7 @@ void Engine::render() {
 		auto result = vkAcquireNextImageKHR(ctx.device, swapchain.swapchain, std::numeric_limits<u64>::max(),
 			frame.presentSemaphore, nullptr, &swapchainImageIndex);
 		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-			recreateSwapchain();
+			refresh();
 			continue;
 		}
 		if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
@@ -320,8 +319,8 @@ void Engine::render() {
 	};
 	auto result = vkQueuePresentKHR(ctx.presentQueue, &presentInfo);
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
-		window.size() != glm::uvec2{swapchain.extent.width, swapchain.extent.height})
-		recreateSwapchain();
+		ctx.window->size() != glm::uvec2{swapchain.extent.width, swapchain.extent.height})
+		refresh();
 	else if (result != VK_SUCCESS)
 		VK(result);
 
@@ -430,17 +429,6 @@ void Engine::initSamplers() {
 
 void Engine::cleanupSamplers() {
 	vkDestroySampler(ctx.device, linear, nullptr);
-}
-
-void Engine::initSwapchain() {
-	createSwapchain();
-
-	L.info("Created a Vulkan swapchain at {}x{} with {} images",
-		swapchain.extent.width, swapchain.extent.height, swapchain.color.size());
-}
-
-void Engine::cleanupSwapchain() {
-	destroySwapchain(swapchain);
 }
 
 void Engine::initImages() {
@@ -561,91 +549,7 @@ void Engine::cleanupPipelines() {
 	destroyPresentPipeline();
 }
 
-void Engine::createSwapchain(VkSwapchainKHR old) {
-	// Find the best swapchain options
-	auto const surfaceFormat = [&]() -> VkSurfaceFormatKHR {
-		for (auto const& fmt: ctx.surfaceFormats) {
-			if (fmt.format == VK_FORMAT_B8G8R8A8_SRGB &&
-				fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-				return fmt;
-		}
-		return ctx.surfaceFormats[0];
-	}();
-	auto const surfacePresentMode = [&]() -> VkPresentModeKHR {
-		for (auto const mode: ctx.surfacePresentModes) {
-			if (mode == VK_PRESENT_MODE_MAILBOX_KHR)
-				return mode;
-		}
-		return VK_PRESENT_MODE_FIFO_KHR;
-	}();
-	while (true) {
-		if (window.isClosing())
-			throw std::runtime_error{"Window close detected during a resize/minimized state"};
-		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(ctx.physicalDevice, ctx.surface, &ctx.surfaceCapabilities);
-		auto const windowSize = window.size();
-		swapchain.extent = VkExtent2D{
-			.width = std::clamp(windowSize.x,
-				ctx.surfaceCapabilities.minImageExtent.width,
-				ctx.surfaceCapabilities.maxImageExtent.width),
-			.height = std::clamp(windowSize.y,
-				ctx.surfaceCapabilities.minImageExtent.height,
-				ctx.surfaceCapabilities.maxImageExtent.height),
-		};
-		if (swapchain.extent.width != 0 && swapchain.extent.height != 0) break;
-		std::this_thread::sleep_for(10_ms);
-	}
-	auto const maxImageCount = ctx.surfaceCapabilities.maxImageCount?: 256;
-	auto const surfaceImageCount = std::min(ctx.surfaceCapabilities.minImageCount + 1, maxImageCount);
-
-	// Create the swapchain
-	auto const queueIndices = std::array{ctx.graphicsQueueFamilyIndex, ctx.presentQueueFamilyIndex};
-	auto swapchainCI = VkSwapchainCreateInfoKHR{
-		.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-		.surface = ctx.surface,
-		.minImageCount = surfaceImageCount,
-		.imageFormat = surfaceFormat.format,
-		.imageColorSpace = surfaceFormat.colorSpace,
-		.imageExtent = swapchain.extent,
-		.imageArrayLayers = 1,
-		.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-		.imageSharingMode = ctx.uniquePresentQueue()? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE,
-		.queueFamilyIndexCount = static_cast<u32>(ctx.uniquePresentQueue()? queueIndices.size() : 0_zu),
-		.pQueueFamilyIndices = ctx.uniquePresentQueue()? queueIndices.data() : nullptr,
-		.preTransform = ctx.surfaceCapabilities.currentTransform,
-		.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-		.presentMode = surfacePresentMode,
-		.clipped = VK_TRUE,
-		.oldSwapchain = old,
-	};
-	VK(vkCreateSwapchainKHR(ctx.device, &swapchainCI, nullptr, &swapchain.swapchain));
-	vk::setDebugName(ctx.device, swapchain.swapchain, "swapchain");
-
-	// Retrieve swapchain images
-	u32 swapchainImageCount;
-	vkGetSwapchainImagesKHR(ctx.device, swapchain.swapchain, &swapchainImageCount, nullptr);
-	auto swapchainImagesRaw = std::vector<VkImage>{swapchainImageCount};
-	vkGetSwapchainImagesKHR(ctx.device, swapchain.swapchain, &swapchainImageCount, swapchainImagesRaw.data());
-	swapchain.color.resize(swapchainImagesRaw.size());
-	for (auto[raw, color]: zip_view{swapchainImagesRaw, swapchain.color}) {
-		color = vk::Image{
-			.image = raw,
-			.format = surfaceFormat.format,
-			.aspect = VK_IMAGE_ASPECT_COLOR_BIT,
-			.samples = VK_SAMPLE_COUNT_1_BIT,
-			.size = swapchain.extent,
-		};
-		color.view = vk::createImageView(ctx.device, color);
-		vk::setDebugName(ctx.device, color, fmt::format("swapchain.color[{}]", &color - &swapchain.color[0]));
-	}
-}
-
-void Engine::destroySwapchain(Swapchain& sc) {
-	for (auto& image: sc.color)
-		vk::destroyImage(ctx.device, ctx.allocator, image);
-	vkDestroySwapchainKHR(ctx.device, sc.swapchain, nullptr);
-}
-
-void Engine::recreateSwapchain() {
+void Engine::refresh() {
 	// Reobtain ctx.surface details
 	u32 surfaceFormatCount;
 	vkGetPhysicalDeviceSurfaceFormatsKHR(ctx.physicalDevice, ctx.surface, &surfaceFormatCount,
@@ -675,7 +579,7 @@ void Engine::recreateSwapchain() {
 			destroyPresentFbs(present);
 			destroyBloomImages(bloom);
 			targets.refreshCleanup(ctx.device, ctx.allocator);
-			destroySwapchain(swapchain);
+			swapchain.cleanup(ctx);
 		},
 	});
 
@@ -683,7 +587,7 @@ void Engine::recreateSwapchain() {
 	auto oldSwapchain = swapchain.swapchain;
 	swapchain = {};
 	targets = {};
-	createSwapchain(oldSwapchain);
+	swapchain.init(ctx, oldSwapchain);
 	targets.refreshInit(ctx.device, ctx.allocator, swapchain.extent, ColorFormat, DepthFormat, sampleCount);
 	createBloomImages();
 	createPresentFbs();
