@@ -20,6 +20,7 @@
 #include "sys/window.hpp"
 #include "sys/glfw.hpp"
 #include "gfx/technique.hpp"
+#include "gfx/context.hpp"
 #include "gfx/targets.hpp"
 #include "gfx/world.hpp"
 #include "gfx/base.hpp"
@@ -115,29 +116,7 @@ private:
 	u64 frameCounter;
 	svector<DelayedOp, 64> delayedOps;
 
-	VkInstance instance;
-	std::vector<char const*> instanceExtensions;
-#ifdef VK_VALIDATION
-	std::vector<char const*> instanceLayers;
-	VkDebugUtilsMessengerEXT debugMessenger;
-#endif //VK_VALIDATION
-	VkSurfaceKHR surface;
-
-	VkPhysicalDevice physicalDevice;
-	VkPhysicalDeviceProperties deviceProperties;
-	std::vector<char const*> deviceExtensions;
-	std::vector<VkSurfaceFormatKHR> surfaceFormats;
-	std::vector<VkPresentModeKHR> surfacePresentModes;
-	VkSurfaceCapabilitiesKHR surfaceCapabilities;
-	u32 graphicsQueueFamilyIndex;
-	u32 presentQueueFamilyIndex;
-	u32 transferQueueFamilyIndex;
-
-	VkDevice device;
-	VkQueue graphicsQueue;
-	VkQueue presentQueue;
-	VkQueue transferQueue;
-	VmaAllocator allocator;
+	Context ctx;
 
 	PerFrame<Frame> frames;
 	VkDescriptorPool descriptorPool;
@@ -155,24 +134,6 @@ private:
 	MeshBuffer meshes;
 	Camera camera;
 	World world;
-
-	[[nodiscard]]
-	auto uniquePresentQueue() const {
-		return (presentQueueFamilyIndex != graphicsQueueFamilyIndex);
-	}
-
-	[[nodiscard]]
-	auto uniqueTransferQueue() const {
-		return (transferQueueFamilyIndex != graphicsQueueFamilyIndex);
-	}
-
-	void initInstance(Version appVersion);
-	void cleanupInstance();
-
-	void initPhysicalDevice();
-
-	void initDevice();
-	void cleanupDevice();
 
 	void initCommands();
 	void cleanupCommands();
@@ -217,14 +178,6 @@ private:
 	void destroyBloomPipelines();
 	void createBloomPipelineDS();
 	void destroyBloomPipelineDS(Bloom&);
-
-#ifdef VK_VALIDATION
-	static VKAPI_ATTR auto VKAPI_CALL debugCallback(
-		VkDebugUtilsMessageSeverityFlagBitsEXT severityCode,
-		VkDebugUtilsMessageTypeFlagsEXT typeCode,
-		VkDebugUtilsMessengerCallbackDataEXT const* data,
-		void*) -> VkBool32;
-#endif //VK_VALIDATION
 
 };
 
