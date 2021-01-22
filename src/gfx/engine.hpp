@@ -21,6 +21,7 @@
 #include "sys/glfw.hpp"
 #include "gfx/swapchain.hpp"
 #include "gfx/technique.hpp"
+#include "gfx/samplers.hpp"
 #include "gfx/context.hpp"
 #include "gfx/targets.hpp"
 #include "gfx/world.hpp"
@@ -119,7 +120,7 @@ private:
 	Targets targets;
 	Bloom bloom;
 
-	VkSampler linear;
+	Samplers samplers;
 
 	TechniqueSet techniques;
 	MeshBuffer meshes;
@@ -128,9 +129,6 @@ private:
 
 	void initCommands();
 	void cleanupCommands();
-
-	void initSamplers();
-	void cleanupSamplers();
 
 	void initImages();
 	void cleanupImages();

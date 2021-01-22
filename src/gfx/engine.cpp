@@ -61,7 +61,7 @@ Engine::Engine(sys::Glfw&, sys::Window& window, std::string_view name, Version a
 	ctx.init(window, VulkanVersion, name, appVersion);
 	swapchain.init(ctx);
 	initCommands();
-	initSamplers();
+	samplers.init(ctx);
 	initImages();
 	initFramebuffers();
 	initBuffers();
@@ -80,7 +80,7 @@ Engine::~Engine() {
 	cleanupBuffers();
 	cleanupFramebuffers();
 	cleanupImages();
-	cleanupSamplers();
+	samplers.cleanup(ctx);
 	cleanupCommands();
 	swapchain.cleanup(ctx);
 	ctx.cleanup();
@@ -414,23 +414,6 @@ void Engine::cleanupCommands() {
 	vkDestroyDescriptorPool(ctx.device, descriptorPool, nullptr);
 }
 
-void Engine::initSamplers() {
-	auto const samplerCI = VkSamplerCreateInfo{
-		.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-		.magFilter = VK_FILTER_LINEAR,
-		.minFilter = VK_FILTER_LINEAR,
-		.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-		.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-		.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-	};
-	VK(vkCreateSampler(ctx.device, &samplerCI, nullptr, &linear));
-	vk::setDebugName(ctx.device, linear, "linear");
-}
-
-void Engine::cleanupSamplers() {
-	vkDestroySampler(ctx.device, linear, nullptr);
-}
-
 void Engine::initImages() {
 	auto const supportedSampleCount = ctx.deviceProperties.limits.framebufferColorSampleCounts & ctx.deviceProperties.limits.framebufferDepthSampleCounts;
 	auto const selectedSampleCount = [=]() {
@@ -734,7 +717,7 @@ void Engine::createBloomPipelines() {
 		vk::Descriptor{
 			.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 			.stages = VK_SHADER_STAGE_FRAGMENT_BIT,
-			.sampler = linear,
+			.sampler = samplers.linear,
 		},
 	});
 	vk::setDebugName(ctx.device, bloom.descriptorSetLayout, "bloom.descriptorSetLayout");

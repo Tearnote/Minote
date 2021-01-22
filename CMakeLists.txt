@@ -119,6 +119,7 @@ set(SOURCES
         src/gfx/swapchain.hpp src/gfx/swapchain.cpp
         src/gfx/technique.hpp src/gfx/technique.cpp
         src/gfx/indirect.hpp src/gfx/indirect.cpp
+        src/gfx/samplers.hpp src/gfx/samplers.cpp
         src/gfx/material.hpp
         src/gfx/context.hpp src/gfx/context.cpp
         src/gfx/targets.hpp src/gfx/targets.cpp
