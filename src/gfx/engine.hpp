@@ -20,6 +20,7 @@
 #include "sys/window.hpp"
 #include "sys/glfw.hpp"
 #include "gfx/technique.hpp"
+#include "gfx/targets.hpp"
 #include "gfx/world.hpp"
 #include "gfx/base.hpp"
 #include "gfx/mesh.hpp"
@@ -62,16 +63,6 @@ private:
 		VkPipelineLayout layout;
 		VkPipeline pipeline;
 		VkDescriptorSet descriptorSet;
-
-	};
-
-	struct RenderTargets {
-
-		sys::vk::Image msColor;
-		sys::vk::Image ssColor;
-		sys::vk::Image depthStencil;
-		VkRenderPass renderPass;
-		VkFramebuffer framebuffer;
 
 	};
 
@@ -155,7 +146,7 @@ private:
 
 	Swapchain swapchain;
 	Present present;
-	RenderTargets targets;
+	Targets targets;
 	Bloom bloom;
 
 	VkSampler linear;
@@ -217,11 +208,6 @@ private:
 
 	void createMeshBuffer(VkCommandBuffer, std::vector<sys::vk::Buffer>& staging);
 	void destroyMeshBuffer();
-
-	void createTargetImages();
-	void destroyTargetImages(RenderTargets&);
-	void createTargetFbs();
-	void destroyTargetFbs(RenderTargets&);
 
 	void createBloomImages();
 	void destroyBloomImages(Bloom&);

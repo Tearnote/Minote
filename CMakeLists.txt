@@ -119,6 +119,7 @@ set(SOURCES
         src/gfx/technique.hpp src/gfx/technique.cpp
         src/gfx/indirect.hpp src/gfx/indirect.cpp
         src/gfx/material.hpp
+        src/gfx/targets.hpp src/gfx/targets.cpp
         src/gfx/engine.hpp src/gfx/engine.cpp
         src/gfx/world.hpp src/gfx/world.cpp
         src/gfx/mesh.hpp src/gfx/mesh.cpp

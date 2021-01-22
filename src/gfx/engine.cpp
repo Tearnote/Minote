@@ -864,24 +864,32 @@ void Engine::cleanupSwapchain() {
 }
 
 void Engine::initImages() {
-	createTargetImages();
+	auto const supportedSampleCount = deviceProperties.limits.framebufferColorSampleCounts & deviceProperties.limits.framebufferDepthSampleCounts;
+	auto const selectedSampleCount = [=]() {
+		if (SampleCount & supportedSampleCount) {
+			return SampleCount;
+		} else {
+			L.warn("Requested antialiasing mode MSAA {}x not supported; defaulting to MSAA 2x",
+				SampleCount);
+			return VK_SAMPLE_COUNT_2_BIT;
+		}
+	}();
+	targets.init(device, allocator, swapchain.extent, ColorFormat, DepthFormat, selectedSampleCount);
 	createBloomImages();
 }
 
 void Engine::cleanupImages() {
 	destroyBloomImages(bloom);
-	destroyTargetImages(targets);
+	targets.cleanup(device, allocator);
 }
 
 void Engine::initFramebuffers() {
 	createPresentFbs();
-	createTargetFbs();
 	createBloomFbs();
 }
 
 void Engine::cleanupFramebuffers() {
 	destroyBloomFbs(bloom);
-	destroyTargetFbs(targets);
 	destroyPresentFbs(present);
 }
 
@@ -1075,6 +1083,8 @@ void Engine::recreateSwapchain() {
 
 	ASSERT(!surfaceFormats.empty() && !surfacePresentModes.empty());
 
+	auto const sampleCount = targets.msColor.samples;
+
 	// Queue up outdated objects for destruction
 	delayedOps.emplace_back(DelayedOp{
 		.deadline = frameCounter + FramesInFlight,
@@ -1082,10 +1092,9 @@ void Engine::recreateSwapchain() {
 			destroyPresentPipelineDS(present);
 			destroyBloomPipelineDS(bloom);
 			destroyBloomFbs(bloom);
-			destroyTargetFbs(targets);
 			destroyPresentFbs(present);
 			destroyBloomImages(bloom);
-			destroyTargetImages(targets);
+			targets.refreshCleanup(device, allocator);
 			destroySwapchain(swapchain);
 		},
 	});
@@ -1095,10 +1104,9 @@ void Engine::recreateSwapchain() {
 	swapchain = {};
 	targets = {};
 	createSwapchain(oldSwapchain);
-	createTargetImages();
+	targets.refreshInit(device, allocator, swapchain.extent, ColorFormat, DepthFormat, sampleCount);
 	createBloomImages();
 	createPresentFbs();
-	createTargetFbs();
 	createBloomFbs();
 	createBloomPipelineDS();
 	createPresentPipelineDS();
@@ -1198,73 +1206,6 @@ void Engine::createMeshBuffer(VkCommandBuffer cmdBuf, std::vector<sys::vk::Buffe
 
 void Engine::destroyMeshBuffer() {
 	meshes.destroy(allocator);
-}
-
-void Engine::createTargetImages() {
-	auto const supportedSampleCount = deviceProperties.limits.framebufferColorSampleCounts & deviceProperties.limits.framebufferDepthSampleCounts;
-	auto const selectedSampleCount = [=]() {
-		if (SampleCount & supportedSampleCount) {
-			return SampleCount;
-		} else {
-			L.warn("Requested antialiasing mode MSAA {}x not supported; defaulting to MSAA 2x",
-				SampleCount);
-			return VK_SAMPLE_COUNT_2_BIT;
-		}
-	}();
-	targets.msColor = vk::createImage(device, allocator, ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT,
-		VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-		swapchain.extent, selectedSampleCount);
-	vk::setDebugName(device, targets.msColor, "targets.msColor");
-	targets.ssColor = vk::createImage(device, allocator, ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT,
-		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
-		swapchain.extent);
-	vk::setDebugName(device, targets.ssColor, "targets.ssColor");
-	targets.depthStencil = vk::createImage(device, allocator, DepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT,
-		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-		swapchain.extent, selectedSampleCount);
-	vk::setDebugName(device, targets.depthStencil, "targets.depthStencil");
-}
-
-void Engine::destroyTargetImages(RenderTargets& t) {
-	vk::destroyImage(device, allocator, t.depthStencil);
-	vk::destroyImage(device, allocator, t.ssColor);
-	vk::destroyImage(device, allocator, t.msColor);
-}
-
-void Engine::createTargetFbs() {
-	targets.renderPass = vk::createRenderPass(device, std::array{
-		vk::Attachment{
-			.type = vk::Attachment::Type::Color,
-			.image = targets.msColor,
-			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-			.layoutDuring = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-		},
-		vk::Attachment{
-			.type = vk::Attachment::Type::DepthStencil,
-			.image = targets.depthStencil,
-			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-			.layoutDuring = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-		},
-		vk::Attachment{
-			.type = vk::Attachment::Type::Resolve,
-			.image = targets.ssColor,
-			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-			.layoutDuring = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-		},
-	});
-	vk::setDebugName(device, targets.renderPass, "targets.renderPass");
-	targets.framebuffer = vk::createFramebuffer(device, targets.renderPass, std::array{
-		targets.msColor,
-		targets.depthStencil,
-		targets.ssColor,
-	});
-	vk::setDebugName(device, targets.framebuffer, "targets.framebuffer");
-}
-
-void Engine::destroyTargetFbs(RenderTargets& t) {
-	vkDestroyFramebuffer(device, t.framebuffer, nullptr);
-	vkDestroyRenderPass(device, t.renderPass, nullptr);
 }
 
 void Engine::createBloomImages() {
