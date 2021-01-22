@@ -550,23 +550,7 @@ void Engine::cleanupPipelines() {
 }
 
 void Engine::refresh() {
-	// Reobtain ctx.surface details
-	u32 surfaceFormatCount;
-	vkGetPhysicalDeviceSurfaceFormatsKHR(ctx.physicalDevice, ctx.surface, &surfaceFormatCount,
-		nullptr);
-	ctx.surfaceFormats.resize(surfaceFormatCount);
-	vkGetPhysicalDeviceSurfaceFormatsKHR(ctx.physicalDevice, ctx.surface, &surfaceFormatCount,
-		ctx.surfaceFormats.data());
-
-	u32 surfacePresentModeCount;
-	vkGetPhysicalDeviceSurfacePresentModesKHR(ctx.physicalDevice, ctx.surface, &surfacePresentModeCount,
-		nullptr);
-	ctx.surfacePresentModes.resize(surfaceFormatCount);
-	vkGetPhysicalDeviceSurfacePresentModesKHR(ctx.physicalDevice, ctx.surface, &surfacePresentModeCount,
-		ctx.surfacePresentModes.data());
-
-	ASSERT(!ctx.surfaceFormats.empty() && !ctx.surfacePresentModes.empty());
-
+	ctx.refreshSurface();
 	auto const sampleCount = targets.msColor.samples;
 
 	// Queue up outdated objects for destruction

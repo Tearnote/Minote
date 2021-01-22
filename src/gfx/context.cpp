@@ -428,6 +428,24 @@ void Context::cleanup() {
 	vkDestroyInstance(instance, nullptr);
 }
 
+void Context::refreshSurface() {
+	u32 surfaceFormatCount;
+	vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &surfaceFormatCount,
+		nullptr);
+	surfaceFormats.resize(surfaceFormatCount);
+	vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &surfaceFormatCount,
+		surfaceFormats.data());
+
+	u32 surfacePresentModeCount;
+	vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &surfacePresentModeCount,
+		nullptr);
+	surfacePresentModes.resize(surfaceFormatCount);
+	vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &surfacePresentModeCount,
+		surfacePresentModes.data());
+
+	ASSERT(!surfaceFormats.empty() && !surfacePresentModes.empty());
+}
+
 #ifdef VK_VALIDATION
 VKAPI_ATTR auto VKAPI_CALL Context::debugCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT severityCode,
