@@ -1,11 +1,13 @@
 #include "gfx/swapchain.hpp"
 
 #include <thread>
+#include <limits>
 #include "base/zip_view.hpp"
 #include "base/time.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"
 #include "sys/vk/debug.hpp"
+#include "gfx/base.hpp"
 
 namespace minote::gfx {
 
@@ -98,6 +100,13 @@ void Swapchain::cleanup(Context& ctx) {
 	for (auto& image: color)
 		vk::destroyImage(ctx.device, ctx.allocator, image);
 	vkDestroySwapchainKHR(ctx.device, swapchain, nullptr);
+}
+
+auto Swapchain::acquire(Context& ctx, Commands::Frame& frame) -> std::pair<u32, VkResult> {
+	u32 result;
+	auto const error = vkAcquireNextImageKHR(ctx.device, swapchain,
+		std::numeric_limits<u64>::max(), frame.presentSemaphore, nullptr, &result);
+	return {result, error};
 }
 
 }

@@ -33,9 +33,9 @@ struct IndirectBuffer {
 
 	};
 
-	void create(Context& ctx, size_t maxCommands, size_t maxInstances);
+	void init(Context& ctx, size_t maxCommands, size_t maxInstances);
 
-	void destroy(Context& ctx);
+	void cleanup(Context& ctx);
 
 	void enqueue(MeshBuffer::Descriptor const& mesh, std::span<Instance const> instances,
 		Material material, MaterialData const& materialData = {});

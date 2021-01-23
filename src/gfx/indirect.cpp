@@ -10,7 +10,7 @@ namespace minote::gfx {
 using namespace base;
 namespace vk = sys::vk;
 
-void IndirectBuffer::create(Context& ctx, size_t maxCommands, size_t maxInstances) {
+void IndirectBuffer::init(Context& ctx, size_t maxCommands, size_t maxInstances) {
 	ASSERT(!m_commandBuffer.buffer && !m_commandBuffer.allocation);
 	ASSERT(!m_instanceBuffer.buffer && !m_instanceBuffer.allocation);
 
@@ -22,7 +22,7 @@ void IndirectBuffer::create(Context& ctx, size_t maxCommands, size_t maxInstance
 		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 }
 
-void IndirectBuffer::destroy(Context& ctx) {
+void IndirectBuffer::cleanup(Context& ctx) {
 	if (!m_commandBuffer.buffer || !m_commandBuffer.allocation) return;
 
 	vmaDestroyBuffer(ctx.allocator, m_instanceBuffer.buffer, m_instanceBuffer.allocation);

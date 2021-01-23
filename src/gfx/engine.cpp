@@ -155,18 +155,17 @@ void Engine::render() {
 	auto cmdBuf = frame.commandBuffer;
 
 	// Get the next swapchain image
-	u32 swapchainImageIndex;
-	while (true) {
-		auto result = vkAcquireNextImageKHR(ctx.device, swapchain.swapchain, std::numeric_limits<u64>::max(),
-			frame.presentSemaphore, nullptr, &swapchainImageIndex);
-		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-			refresh();
-			continue;
+	auto const swapchainImageIndex = [this, &frame] {
+		while (true) {
+			auto const[result, error] = swapchain.acquire(ctx, frame);
+			if (error == VK_SUCCESS || error == VK_SUBOPTIMAL_KHR)
+				return result;
+			if (error == VK_ERROR_OUT_OF_DATE_KHR)
+				refresh();
+			else
+				VK(error);
 		}
-		if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-			VK(result);
-		break;
-	}
+	}();
 
 	// Wait until the GPU is free
 	VK(vkWaitForFences(ctx.device, 1, &frame.renderFence, true, (1_s).count()));
