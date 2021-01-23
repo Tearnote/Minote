@@ -44,12 +44,35 @@ using namespace std::string_literals;
 Engine::Engine(sys::Glfw&, sys::Window& window, std::string_view name, Version appVersion) {
 	ctx.init(window, VulkanVersion, name, appVersion);
 	swapchain.init(ctx);
-	initCommands();
+	commands.init(ctx);
 	samplers.init(ctx);
 	initImages();
-	initPipelines();
 
-	L.info("Vulkan initialized");
+	techniques.create(ctx, world.getDescriptorSetLayout());
+	techniques.addTechnique(ctx, "opaque"_id, targets.renderPass,
+		world.getDescriptorSets(),
+		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
+		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None),
+		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
+		vk::makePipelineMultisampleStateCI(targets.msColor.samples));
+	techniques.setTechniqueDebugName(ctx, "opaque"_id, "opaque");
+	techniques.addTechnique(ctx, "transparent_depth_prepass"_id, targets.renderPass,
+		world.getDescriptorSets(),
+		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
+		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None, false),
+		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
+		vk::makePipelineMultisampleStateCI(targets.msColor.samples));
+	techniques.setTechniqueDebugName(ctx, "transparent_depth_prepass"_id,
+		"transparent_depth_prepass");
+	techniques.addTechnique(ctx, "transparent"_id, targets.renderPass,
+		world.getDescriptorSets(),
+		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
+		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::Normal),
+		vk::makePipelineDepthStencilStateCI(true, false, VK_COMPARE_OP_LESS_OR_EQUAL),
+		vk::makePipelineMultisampleStateCI(targets.msColor.samples));
+	techniques.setTechniqueDebugName(ctx, "transparent"_id, "transparent");
+
+	L.info("Vulkan engine initialized");
 }
 
 Engine::~Engine() {
@@ -58,10 +81,10 @@ Engine::~Engine() {
 	for (auto& op: delayedOps)
 		op.func();
 
-	cleanupPipelines();
+	techniques.destroy(ctx);
 	cleanupImages();
 	samplers.cleanup(ctx);
-	cleanupCommands();
+	commands.cleanup(ctx);
 	swapchain.cleanup(ctx);
 	ctx.cleanup();
 
@@ -95,7 +118,7 @@ void Engine::enqueueDraw(ID mesh, ID technique, std::span<Instance const> instan
 void Engine::render() {
 	// Get the next frame
 	auto frameIndex = frameCounter % FramesInFlight;
-	auto& frame = frames[frameIndex];
+	auto& frame = commands.frames[frameIndex];
 	auto cmdBuf = frame.commandBuffer;
 
 	// Get the next swapchain image
@@ -322,65 +345,11 @@ void Engine::render() {
 	transparentIndirect.reset();
 }
 
-void Engine::initCommands() {
-	// Create the graphics command buffers and sync objects
-	auto commandPoolCI = VkCommandPoolCreateInfo{
-		.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-		.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-		.queueFamilyIndex = ctx.graphicsQueueFamilyIndex,
-	};
-	auto commandBufferAI = VkCommandBufferAllocateInfo{
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-		.commandBufferCount = 1,
-	};
-	auto fenceCI = VkFenceCreateInfo{
-		.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-		.flags = VK_FENCE_CREATE_SIGNALED_BIT,
-	};
-	auto const semaphoreCI = VkSemaphoreCreateInfo{
-		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-	};
-
-	for (auto& frame: frames) {
-		VK(vkCreateCommandPool(ctx.device, &commandPoolCI, nullptr, &frame.commandPool));
-		vk::setDebugName(ctx.device, frame.commandPool, fmt::format("frames[{}].commandPool", &frame - &frames[0]));
-		commandBufferAI.commandPool = frame.commandPool;
-		VK(vkAllocateCommandBuffers(ctx.device, &commandBufferAI, &frame.commandBuffer));
-		vk::setDebugName(ctx.device, frame.commandBuffer, fmt::format("frames[{}].commandBuffer", &frame - &frames[0]));
-		VK(vkCreateFence(ctx.device, &fenceCI, nullptr, &frame.renderFence));
-		vk::setDebugName(ctx.device, frame.renderFence, fmt::format("frames[{}].renderFence", &frame - &frames[0]));
-		VK(vkCreateSemaphore(ctx.device, &semaphoreCI, nullptr, &frame.renderSemaphore));
-		vk::setDebugName(ctx.device, frame.renderSemaphore, fmt::format("frames[{}].renderSemaphore", &frame - &frames[0]));
-		VK(vkCreateSemaphore(ctx.device, &semaphoreCI, nullptr, &frame.presentSemaphore));
-		vk::setDebugName(ctx.device, frame.presentSemaphore, fmt::format("frames[{}].presentSemaphore", &frame - &frames[0]));
-	}
-
-	// Create the transfer queue
-	commandPoolCI.queueFamilyIndex = ctx.transferQueueFamilyIndex;
-	VK(vkCreateCommandPool(ctx.device, &commandPoolCI, nullptr, &transferCommandPool));
-	vk::setDebugName(ctx.device, transferCommandPool, "transferCommandPool");
-	fenceCI.flags = 0;
-	VK(vkCreateFence(ctx.device, &fenceCI, nullptr, &transfersFinished));
-	vk::setDebugName(ctx.device, transfersFinished, "transfersFinished");
-}
-
-void Engine::cleanupCommands() {
-	vkDestroyFence(ctx.device, transfersFinished, nullptr);
-	vkDestroyCommandPool(ctx.device, transferCommandPool, nullptr);
-	for (auto& frame: frames) {
-		vkDestroySemaphore(ctx.device, frame.presentSemaphore, nullptr);
-		vkDestroySemaphore(ctx.device, frame.renderSemaphore, nullptr);
-		vkDestroyFence(ctx.device, frame.renderFence, nullptr);
-		vkDestroyCommandPool(ctx.device, frame.commandPool, nullptr);
-	}
-}
-
 void Engine::initImages() {
 	// Begin GPU transfers
 	auto commandBufferAI = VkCommandBufferAllocateInfo{
 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-		.commandPool = transferCommandPool,
+		.commandPool = commands.transferCommandPool,
 		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 		.commandBufferCount = 1,
 	};
@@ -407,12 +376,12 @@ void Engine::initImages() {
 		.commandBufferCount = 1,
 		.pCommandBuffers = &transferCommandBuffer,
 	};
-	VK(vkQueueSubmit(ctx.transferQueue, 1, &submitInfo, transfersFinished));
+	VK(vkQueueSubmit(ctx.transferQueue, 1, &submitInfo, commands.transfersFinished));
 
-	vkWaitForFences(ctx.device, 1, &transfersFinished, true, (1_s).count());
-	vkResetFences(ctx.device, 1, &transfersFinished);
+	vkWaitForFences(ctx.device, 1, &commands.transfersFinished, true, (1_s).count());
+	vkResetFences(ctx.device, 1, &commands.transfersFinished);
 
-	vkResetCommandPool(ctx.device, transferCommandPool, 0);
+	vkResetCommandPool(ctx.device, commands.transferCommandPool, 0);
 
 	for (auto& buffer: stagingBuffers)
 		vmaDestroyBuffer(ctx.allocator, buffer.buffer, buffer.allocation);
@@ -443,32 +412,6 @@ void Engine::cleanupImages() {
 
 	world.cleanup(ctx);
 	destroyMeshBuffer();
-}
-
-void Engine::initPipelines() {
-	techniques.create(ctx, world.getDescriptorSetLayout());
-	techniques.addTechnique(ctx, "opaque"_id, targets.renderPass, world.getDescriptorSets(),
-		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
-		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None),
-		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
-		vk::makePipelineMultisampleStateCI(targets.msColor.samples));
-	techniques.setTechniqueDebugName(ctx, "opaque"_id, "opaque");
-	techniques.addTechnique(ctx, "transparent_depth_prepass"_id, targets.renderPass, world.getDescriptorSets(),
-		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
-		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None, false),
-		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
-		vk::makePipelineMultisampleStateCI(targets.msColor.samples));
-	techniques.setTechniqueDebugName(ctx, "transparent_depth_prepass"_id, "transparent_depth_prepass");
-	techniques.addTechnique(ctx, "transparent"_id, targets.renderPass, world.getDescriptorSets(),
-		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
-		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::Normal),
-		vk::makePipelineDepthStencilStateCI(true, false, VK_COMPARE_OP_LESS_OR_EQUAL),
-		vk::makePipelineMultisampleStateCI(targets.msColor.samples));
-	techniques.setTechniqueDebugName(ctx, "transparent"_id, "transparent");
-}
-
-void Engine::cleanupPipelines() {
-	techniques.destroy(ctx);
 }
 
 void Engine::refresh() {

@@ -22,6 +22,7 @@
 #include "gfx/swapchain.hpp"
 #include "gfx/technique.hpp"
 #include "gfx/samplers.hpp"
+#include "gfx/commands.hpp"
 #include "gfx/context.hpp"
 #include "gfx/targets.hpp"
 #include "gfx/present.hpp"
@@ -51,16 +52,6 @@ struct Engine {
 
 private:
 
-	struct Frame {
-
-		VkCommandPool commandPool;
-		VkCommandBuffer commandBuffer;
-		VkSemaphore renderSemaphore;
-		VkSemaphore presentSemaphore;
-		VkFence renderFence;
-
-	};
-
 	struct Camera {
 
 		glm::vec3 eye;
@@ -81,9 +72,7 @@ private:
 
 	Context ctx;
 	Swapchain swapchain;
-	PerFrame<Frame> frames;
-	VkCommandPool transferCommandPool;
-	VkFence transfersFinished;
+	Commands commands;
 
 	Samplers samplers;
 	MeshBuffer meshes;
@@ -95,14 +84,8 @@ private:
 	Bloom bloom;
 	Present present;
 
-	void initCommands();
-	void cleanupCommands();
-
 	void initImages();
 	void cleanupImages();
-
-	void initPipelines();
-	void cleanupPipelines();
 
 	void refresh();
 

@@ -118,6 +118,7 @@ set(SOURCES
         src/sys/glfw.hpp src/sys/glfw.cpp
         src/gfx/swapchain.hpp src/gfx/swapchain.cpp
         src/gfx/technique.hpp src/gfx/technique.cpp
+        src/gfx/commands.hpp src/gfx/commands.cpp
         src/gfx/indirect.hpp src/gfx/indirect.cpp
         src/gfx/samplers.hpp src/gfx/samplers.cpp
         src/gfx/material.hpp
