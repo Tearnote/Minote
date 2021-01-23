@@ -68,8 +68,6 @@ struct MeshBuffer {
 
 	auto buffer() -> sys::vk::Buffer& { return m_buffer; }
 
-	void setDebugName(Context& ctx);
-
 private:
 
 	std::vector<Vertex> m_vertices;

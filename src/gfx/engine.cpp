@@ -49,14 +49,6 @@ constexpr auto presentFragSrc = std::to_array<u32>({
 #include "spv/present.frag.spv"
 });
 
-constexpr auto bloomVertSrc = std::to_array<u32>({
-#include "spv/bloom.vert.spv"
-});
-
-constexpr auto bloomFragSrc = std::to_array<u32>({
-#include "spv/bloom.frag.spv"
-});
-
 Engine::Engine(sys::Glfw&, sys::Window& window, std::string_view name, Version appVersion) {
 	ctx.init(window, VulkanVersion, name, appVersion);
 	swapchain.init(ctx);
@@ -64,7 +56,6 @@ Engine::Engine(sys::Glfw&, sys::Window& window, std::string_view name, Version a
 	samplers.init(ctx);
 	initImages();
 	initFramebuffers();
-	initBuffers();
 	initPipelines();
 
 	L.info("Vulkan initialized");
@@ -77,7 +68,6 @@ Engine::~Engine() {
 		op.func();
 
 	cleanupPipelines();
-	cleanupBuffers();
 	cleanupFramebuffers();
 	cleanupImages();
 	samplers.cleanup(ctx);
@@ -397,36 +387,6 @@ void Engine::cleanupCommands() {
 }
 
 void Engine::initImages() {
-	auto const supportedSampleCount = ctx.deviceProperties.limits.framebufferColorSampleCounts & ctx.deviceProperties.limits.framebufferDepthSampleCounts;
-	auto const selectedSampleCount = [=]() {
-		if (SampleCount & supportedSampleCount) {
-			return SampleCount;
-		} else {
-			L.warn("Requested antialiasing mode MSAA {}x not supported; defaulting to MSAA 2x",
-				SampleCount);
-			return VK_SAMPLE_COUNT_2_BIT;
-		}
-	}();
-	targets.init(ctx, swapchain.extent, ColorFormat, DepthFormat, selectedSampleCount);
-	createBloomImages();
-}
-
-void Engine::cleanupImages() {
-	destroyBloomImages(bloom);
-	targets.cleanup(ctx);
-}
-
-void Engine::initFramebuffers() {
-	createPresentFbs();
-	createBloomFbs();
-}
-
-void Engine::cleanupFramebuffers() {
-	destroyBloomFbs(bloom);
-	destroyPresentFbs(present);
-}
-
-void Engine::initBuffers() {
 	// Begin GPU transfers
 	auto commandBufferAI = VkCommandBufferAllocateInfo{
 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -467,14 +427,38 @@ void Engine::initBuffers() {
 	for (auto& buffer: stagingBuffers)
 		vmaDestroyBuffer(ctx.allocator, buffer.buffer, buffer.allocation);
 
-	// Create CPU to GPU buffers
-	world.create(ctx, meshes);
-	world.setDebugName(ctx);
+	// Init CPU+GPU buffers
+	world.init(ctx, meshes);
+
+	// Init the phases
+	auto const supportedSampleCount = ctx.deviceProperties.limits.framebufferColorSampleCounts & ctx.deviceProperties.limits.framebufferDepthSampleCounts;
+	auto const selectedSampleCount = [=]() {
+		if (SampleCount & supportedSampleCount) {
+			return SampleCount;
+		} else {
+			L.warn("Requested antialiasing mode MSAA {}x not supported; defaulting to MSAA 2x",
+				SampleCount);
+			return VK_SAMPLE_COUNT_2_BIT;
+		}
+	}();
+	targets.init(ctx, swapchain.extent, ColorFormat, DepthFormat, selectedSampleCount);
+	bloom.init(ctx, samplers, world, targets.ssColor, ColorFormat);
 }
 
-void Engine::cleanupBuffers() {
-	world.destroy(ctx);
+void Engine::cleanupImages() {
+	bloom.cleanup(ctx);
+	targets.cleanup(ctx);
+
+	world.cleanup(ctx);
 	destroyMeshBuffer();
+}
+
+void Engine::initFramebuffers() {
+	createPresentFbs();
+}
+
+void Engine::cleanupFramebuffers() {
+	destroyPresentFbs(present);
 }
 
 void Engine::initPipelines() {
@@ -499,13 +483,9 @@ void Engine::initPipelines() {
 		vk::makePipelineDepthStencilStateCI(true, false, VK_COMPARE_OP_LESS_OR_EQUAL),
 		vk::makePipelineMultisampleStateCI(targets.msColor.samples));
 	techniques.setTechniqueDebugName(ctx, "transparent"_id, "transparent");
-	createBloomPipelines();
-	createBloomPipelineDS();
 }
 
 void Engine::cleanupPipelines() {
-	destroyBloomPipelineDS(bloom);
-	destroyBloomPipelines();
 	techniques.destroy(ctx);
 	destroyPresentPipelineDS(present);
 	destroyPresentPipeline();
@@ -520,10 +500,8 @@ void Engine::refresh() {
 		.deadline = frameCounter + FramesInFlight,
 		.func = [this, swapchain=swapchain, targets=targets, present=present, bloom=bloom]() mutable {
 			destroyPresentPipelineDS(present);
-			destroyBloomPipelineDS(bloom);
-			destroyBloomFbs(bloom);
 			destroyPresentFbs(present);
-			destroyBloomImages(bloom);
+			bloom.refreshCleanup(ctx);
 			targets.refreshCleanup(ctx);
 			swapchain.cleanup(ctx);
 		},
@@ -535,10 +513,8 @@ void Engine::refresh() {
 	targets = {};
 	swapchain.init(ctx, oldSwapchain);
 	targets.refreshInit(ctx, swapchain.extent, ColorFormat, DepthFormat, sampleCount);
-	createBloomImages();
+	bloom.refreshInit(ctx, targets.ssColor, ColorFormat);
 	createPresentFbs();
-	createBloomFbs();
-	createBloomPipelineDS();
 	createPresentPipelineDS();
 }
 
@@ -631,132 +607,10 @@ void Engine::createMeshBuffer(VkCommandBuffer cmdBuf, std::vector<sys::vk::Buffe
 	meshes.addMesh("block"_id, generateNormals(mesh::Block));
 	meshes.addMesh("scene"_id, generateNormals(mesh::Scene));
 	meshes.upload(ctx, cmdBuf, staging.emplace_back());
-	meshes.setDebugName(ctx);
 }
 
 void Engine::destroyMeshBuffer() {
 	meshes.destroy(ctx);
-}
-
-void Engine::createBloomImages() {
-	auto extent = swapchain.extent;
-	for (auto& image: bloom.images) {
-		image = vk::createImage(ctx.device, ctx.allocator, ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, extent);
-		vk::setDebugName(ctx.device, image, fmt::format("bloom.images[{}]", &image - &bloom.images[0]));
-		extent.width = std::max(1u, extent.width >> 1);
-		extent.height = std::max(1u, extent.height >> 1);
-	}
-}
-
-void Engine::destroyBloomImages(Bloom& b) {
-	for (auto& image: b.images)
-		vk::destroyImage(ctx.device, ctx.allocator, image);
-}
-
-void Engine::createBloomFbs() {
-	bloom.downPass = vk::createRenderPass(ctx.device, std::array{
-		vk::Attachment{
-			.type = vk::Attachment::Type::Color,
-			.image = bloom.images[0],
-			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-			.layoutDuring = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-		},
-	});
-	vk::setDebugName(ctx.device, bloom.downPass, "bloom.downPass");
-	bloom.upPass = vk::createRenderPass(ctx.device, std::array{
-		vk::Attachment{
-			.type = vk::Attachment::Type::Color,
-			.image = bloom.images[0],
-			.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
-			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-			.layoutBefore = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-		},
-	});
-	vk::setDebugName(ctx.device, bloom.upPass, "bloom.upPass");
-
-	bloom.targetFb = vk::createFramebuffer(ctx.device, bloom.downPass, std::array{targets.ssColor});
-	vk::setDebugName(ctx.device, bloom.targetFb, "bloom.targetFb");
-	for (auto[fb, image]: zip_view{bloom.imageFbs, bloom.images}) {
-		fb = vk::createFramebuffer(ctx.device, bloom.downPass, std::array{image});
-		vk::setDebugName(ctx.device, fb, fmt::format("bloom.imageFbs[{}]", &fb - &bloom.imageFbs[0]));
-	}
-}
-
-void Engine::destroyBloomFbs(Bloom& b) {
-	vkDestroyFramebuffer(ctx.device, b.targetFb, nullptr);
-	for (auto fb: b.imageFbs)
-		vkDestroyFramebuffer(ctx.device, fb, nullptr);
-	vkDestroyRenderPass(ctx.device, b.upPass, nullptr);
-	vkDestroyRenderPass(ctx.device, b.downPass, nullptr);
-}
-
-void Engine::createBloomPipelines() {
-	bloom.descriptorSetLayout = vk::createDescriptorSetLayout(ctx.device, std::array{
-		vk::Descriptor{
-			.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-			.stages = VK_SHADER_STAGE_FRAGMENT_BIT,
-			.sampler = samplers.linear,
-		},
-	});
-	vk::setDebugName(ctx.device, bloom.descriptorSetLayout, "bloom.descriptorSetLayout");
-	bloom.shader = vk::createShader(ctx.device, bloomVertSrc, bloomFragSrc);
-	vk::setDebugName(ctx.device, bloom.shader, "bloom.shader");
-
-	bloom.layout = vk::createPipelineLayout(ctx.device, std::array{
-		world.getDescriptorSetLayout(),
-		bloom.descriptorSetLayout,
-	});
-	vk::setDebugName(ctx.device, bloom.layout, "bloom.layout");
-	auto builder = vk::PipelineBuilder{
-		.shader = bloom.shader,
-		.vertexInputStateCI = vk::makePipelineVertexInputStateCI(),
-		.inputAssemblyStateCI = vk::makePipelineInputAssemblyStateCI(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST),
-		.rasterizationStateCI = vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, false),
-		.colorBlendAttachmentState = vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None),
-		.depthStencilStateCI = vk::makePipelineDepthStencilStateCI(false, false, VK_COMPARE_OP_ALWAYS),
-		.multisampleStateCI = vk::makePipelineMultisampleStateCI(),
-		.layout = bloom.layout,
-	};
-	bloom.down = builder.build(ctx.device, bloom.downPass);
-	vk::setDebugName(ctx.device, bloom.down, "bloom.down");
-	builder.colorBlendAttachmentState = vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::Add);
-	bloom.up = builder.build(ctx.device, bloom.upPass);
-	vk::setDebugName(ctx.device, bloom.up, "bloom.up");
-}
-
-void Engine::destroyBloomPipelines() {
-	vkDestroyPipeline(ctx.device, bloom.up, nullptr);
-	vkDestroyPipeline(ctx.device, bloom.down, nullptr);
-	vkDestroyPipelineLayout(ctx.device, bloom.layout, nullptr);
-	vk::destroyShader(ctx.device, bloom.shader);
-	vkDestroyDescriptorSetLayout(ctx.device, bloom.descriptorSetLayout, nullptr);
-}
-
-void Engine::createBloomPipelineDS() {
-	bloom.sourceDS = vk::allocateDescriptorSet(ctx.device, ctx.descriptorPool, bloom.descriptorSetLayout);
-	vk::setDebugName(ctx.device, bloom.sourceDS, "bloom.sourceDS");
-	for (auto& ds: bloom.imageDS) {
-		ds = vk::allocateDescriptorSet(ctx.device, ctx.descriptorPool, bloom.descriptorSetLayout);
-		vk::setDebugName(ctx.device, ds, fmt::format("bloom.imageDS[{}]", &ds - &bloom.imageDS[0]));
-	}
-
-	vk::updateDescriptorSets(ctx.device, std::array{
-		vk::makeDescriptorSetImageWrite(bloom.sourceDS, 0, targets.ssColor,
-			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
-	});
-	for (auto[ds, image]: zip_view{bloom.imageDS, bloom.images}) {
-		vk::updateDescriptorSets(ctx.device, std::array{
-			vk::makeDescriptorSetImageWrite(ds, 0, image,
-				VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
-		});
-	}
-}
-
-void Engine::destroyBloomPipelineDS(Bloom& b) {
-	for (auto& ds: b.imageDS)
-		vkFreeDescriptorSets(ctx.device, ctx.descriptorPool, 1, &ds);
-	vkFreeDescriptorSets(ctx.device, ctx.descriptorPool, 1, &b.sourceDS);
 }
 
 }

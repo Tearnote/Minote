@@ -124,6 +124,7 @@ set(SOURCES
         src/gfx/context.hpp src/gfx/context.cpp
         src/gfx/targets.hpp src/gfx/targets.cpp
         src/gfx/engine.hpp src/gfx/engine.cpp
+        src/gfx/bloom.hpp src/gfx/bloom.cpp
         src/gfx/world.hpp src/gfx/world.cpp
         src/gfx/mesh.hpp src/gfx/mesh.cpp
         src/gfx/base.hpp

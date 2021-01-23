@@ -24,6 +24,7 @@
 #include "gfx/samplers.hpp"
 #include "gfx/context.hpp"
 #include "gfx/targets.hpp"
+#include "gfx/bloom.hpp"
 #include "gfx/world.hpp"
 #include "gfx/base.hpp"
 #include "gfx/mesh.hpp"
@@ -61,25 +62,6 @@ private:
 
 	};
 
-	struct Bloom {
-
-		static constexpr auto Depth = 6_zu;
-
-		std::array<sys::vk::Image, Depth> images;
-		VkRenderPass downPass;
-		VkRenderPass upPass;
-		std::array<VkFramebuffer, Depth> imageFbs;
-		VkFramebuffer targetFb;
-		VkDescriptorSetLayout descriptorSetLayout;
-		sys::vk::Shader shader;
-		VkPipelineLayout layout;
-		VkPipeline down;
-		VkPipeline up;
-		VkDescriptorSet sourceDS;
-		std::array<VkDescriptorSet, Depth> imageDS;
-
-	};
-
 	struct Frame {
 
 		VkCommandPool commandPool;
@@ -109,22 +91,20 @@ private:
 	svector<DelayedOp, 64> delayedOps;
 
 	Context ctx;
-
+	Swapchain swapchain;
 	PerFrame<Frame> frames;
 	VkCommandPool transferCommandPool;
 	VkFence transfersFinished;
 
-	Swapchain swapchain;
-	Present present;
-	Targets targets;
-	Bloom bloom;
-
 	Samplers samplers;
+	MeshBuffer meshes;
+	World world;
+	Camera camera;
+	Targets targets;
 
 	TechniqueSet techniques;
-	MeshBuffer meshes;
-	Camera camera;
-	World world;
+	Bloom bloom;
+	Present present;
 
 	void initCommands();
 	void cleanupCommands();
@@ -134,9 +114,6 @@ private:
 
 	void initFramebuffers();
 	void cleanupFramebuffers();
-
-	void initBuffers();
-	void cleanupBuffers();
 
 	void initPipelines();
 	void cleanupPipelines();
@@ -151,15 +128,6 @@ private:
 
 	void createMeshBuffer(VkCommandBuffer, std::vector<sys::vk::Buffer>& staging);
 	void destroyMeshBuffer();
-
-	void createBloomImages();
-	void destroyBloomImages(Bloom&);
-	void createBloomFbs();
-	void destroyBloomFbs(Bloom&);
-	void createBloomPipelines();
-	void destroyBloomPipelines();
-	void createBloomPipelineDS();
-	void destroyBloomPipelineDS(Bloom&);
 
 };
 

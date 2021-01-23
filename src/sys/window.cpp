@@ -100,7 +100,7 @@ Window::Window(Glfw const& _glfw, std::string_view _title, bool fullscreen, glm:
 	m_handle = glfwCreateWindow(_size.x, _size.y, m_title.c_str(), monitor, nullptr);
 	if (!m_handle)
 		throw std::runtime_error{
-			fmt::format(R"(Failed to create window "{}": {})", title(), Glfw::getError())};
+			fmt::format(R"(Failed to init window "{}": {})", title(), Glfw::getError())};
 
 	// *** Set window properties ***
 

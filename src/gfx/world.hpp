@@ -39,25 +39,23 @@ struct World {
 
 	} uniforms;
 
-	void create(Context& ctx, MeshBuffer& meshes);
+	void init(Context& ctx, MeshBuffer& meshes);
 
-	void destroy(Context& ctx);
+	void cleanup(Context& ctx);
 
 	auto getDescriptorSetLayout() { return m_worldDescriptorSetLayout; }
 
-	auto getDescriptorSet(i64 frameIndex) -> VkDescriptorSet& { return m_worldDescriptorSet[frameIndex]; }
+	auto getDescriptorSet(i64 frameIndex) -> VkDescriptorSet& { return m_worldDescriptorSets[frameIndex]; }
 
-	auto getDescriptorSets() { return m_worldDescriptorSet; }
+	auto getDescriptorSets() { return m_worldDescriptorSets; }
 
 	void uploadUniforms(Context& ctx, i64 frameIndex);
-
-	void setDebugName(Context& ctx);
 
 private:
 
 	VkDescriptorSetLayout m_worldDescriptorSetLayout;
 	PerFrame<sys::vk::Buffer> m_worldUniforms;
-	PerFrame<VkDescriptorSet> m_worldDescriptorSet;
+	PerFrame<VkDescriptorSet> m_worldDescriptorSets;
 
 };
 

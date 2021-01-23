@@ -41,6 +41,7 @@ void MeshBuffer::upload(Context& ctx, VkCommandBuffer cmdBuffer, vk::Buffer& sta
 
 	m_buffer = vk::createBuffer(ctx.allocator, size,
 		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+	vk::setDebugName(ctx.device, m_buffer, "MeshBuffer::m_buffer");
 
 	auto bufferCopy = VkBufferCopy{
 		.size = size,
@@ -53,10 +54,6 @@ void MeshBuffer::destroy(Context& ctx) {
 
 	vmaDestroyBuffer(ctx.allocator, m_buffer.buffer, m_buffer.allocation);
 	m_buffer = {};
-}
-
-void MeshBuffer::setDebugName(Context& ctx) {
-	vk::setDebugName(ctx.device, m_buffer, "MeshBuffer::m_buffer");
 }
 
 }
