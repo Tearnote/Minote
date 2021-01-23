@@ -41,21 +41,12 @@ namespace vk = sys::vk;
 namespace ranges = std::ranges;
 using namespace std::string_literals;
 
-constexpr auto presentVertSrc = std::to_array<u32>({
-#include "spv/present.vert.spv"
-});
-
-constexpr auto presentFragSrc = std::to_array<u32>({
-#include "spv/present.frag.spv"
-});
-
 Engine::Engine(sys::Glfw&, sys::Window& window, std::string_view name, Version appVersion) {
 	ctx.init(window, VulkanVersion, name, appVersion);
 	swapchain.init(ctx);
 	initCommands();
 	samplers.init(ctx);
 	initImages();
-	initFramebuffers();
 	initPipelines();
 
 	L.info("Vulkan initialized");
@@ -68,7 +59,6 @@ Engine::~Engine() {
 		op.func();
 
 	cleanupPipelines();
-	cleanupFramebuffers();
 	cleanupImages();
 	samplers.cleanup(ctx);
 	cleanupCommands();
@@ -443,9 +433,11 @@ void Engine::initImages() {
 	}();
 	targets.init(ctx, swapchain.extent, ColorFormat, DepthFormat, selectedSampleCount);
 	bloom.init(ctx, samplers, world, targets.ssColor, ColorFormat);
+	present.init(ctx, world, targets.ssColor, swapchain);
 }
 
 void Engine::cleanupImages() {
+	present.cleanup(ctx);
 	bloom.cleanup(ctx);
 	targets.cleanup(ctx);
 
@@ -453,17 +445,7 @@ void Engine::cleanupImages() {
 	destroyMeshBuffer();
 }
 
-void Engine::initFramebuffers() {
-	createPresentFbs();
-}
-
-void Engine::cleanupFramebuffers() {
-	destroyPresentFbs(present);
-}
-
 void Engine::initPipelines() {
-	createPresentPipeline();
-	createPresentPipelineDS();
 	techniques.create(ctx, world.getDescriptorSetLayout());
 	techniques.addTechnique(ctx, "opaque"_id, targets.renderPass, world.getDescriptorSets(),
 		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
@@ -487,8 +469,6 @@ void Engine::initPipelines() {
 
 void Engine::cleanupPipelines() {
 	techniques.destroy(ctx);
-	destroyPresentPipelineDS(present);
-	destroyPresentPipeline();
 }
 
 void Engine::refresh() {
@@ -499,8 +479,7 @@ void Engine::refresh() {
 	delayedOps.emplace_back(DelayedOp{
 		.deadline = frameCounter + FramesInFlight,
 		.func = [this, swapchain=swapchain, targets=targets, present=present, bloom=bloom]() mutable {
-			destroyPresentPipelineDS(present);
-			destroyPresentFbs(present);
+			present.refreshCleanup(ctx);
 			bloom.refreshCleanup(ctx);
 			targets.refreshCleanup(ctx);
 			swapchain.cleanup(ctx);
@@ -514,93 +493,7 @@ void Engine::refresh() {
 	swapchain.init(ctx, oldSwapchain);
 	targets.refreshInit(ctx, swapchain.extent, ColorFormat, DepthFormat, sampleCount);
 	bloom.refreshInit(ctx, targets.ssColor, ColorFormat);
-	createPresentFbs();
-	createPresentPipelineDS();
-}
-
-void Engine::createPresentFbs() {
-	// Create the present render pass
-	present.renderPass = vk::createRenderPass(ctx.device, std::array{
-		vk::Attachment{ // Source
-			.type = vk::Attachment::Type::Input,
-			.image = targets.ssColor,
-			.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
-			.layoutBefore = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		},
-		vk::Attachment{ // Present
-			.type = vk::Attachment::Type::Color,
-			.image = swapchain.color[0],
-			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-			.layoutDuring = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-			.layoutAfter = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-		},
-	});
-	vk::setDebugName(ctx.device, present.renderPass, "present.renderPass");
-
-	// Create the present framebuffers
-	present.framebuffer.resize(swapchain.color.size());
-	for (auto[fb, image]: zip_view{present.framebuffer, swapchain.color}) {
-		fb = vk::createFramebuffer(ctx.device, present.renderPass, std::array{
-			targets.ssColor,
-			image,
-		});
-		vk::setDebugName(ctx.device, fb, fmt::format("present.framebuffer[{}]", &fb - &present.framebuffer[0]));
-	}
-}
-
-void Engine::destroyPresentFbs(Present& p) {
-	for (auto& fb: p.framebuffer)
-		vkDestroyFramebuffer(ctx.device, fb, nullptr);
-	vkDestroyRenderPass(ctx.device, p.renderPass, nullptr);
-}
-
-void Engine::createPresentPipeline() {
-	present.descriptorSetLayout = vk::createDescriptorSetLayout(ctx.device, std::array{
-		vk::Descriptor{
-			.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
-			.stages = VK_SHADER_STAGE_FRAGMENT_BIT,
-		},
-	});
-	vk::setDebugName(ctx.device, present.descriptorSetLayout, "present.descriptorSetLayout");
-	present.shader = vk::createShader(ctx.device, presentVertSrc, presentFragSrc);
-	vk::setDebugName(ctx.device, present.shader, "present.shader");
-
-	present.layout = vk::createPipelineLayout(ctx.device, std::array{
-		world.getDescriptorSetLayout(),
-		present.descriptorSetLayout,
-	});
-	vk::setDebugName(ctx.device, present.layout, "present.layout");
-	present.pipeline = vk::PipelineBuilder{
-		.shader = present.shader,
-		.vertexInputStateCI = vk::makePipelineVertexInputStateCI(),
-		.inputAssemblyStateCI = vk::makePipelineInputAssemblyStateCI(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST),
-		.rasterizationStateCI = vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, false),
-		.colorBlendAttachmentState = vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None),
-		.depthStencilStateCI = vk::makePipelineDepthStencilStateCI(false, false, VK_COMPARE_OP_ALWAYS),
-		.multisampleStateCI = vk::makePipelineMultisampleStateCI(),
-		.layout = present.layout,
-	}.build(ctx.device, present.renderPass);
-	vk::setDebugName(ctx.device, present.pipeline, "present.pipeline");
-}
-
-void Engine::destroyPresentPipeline() {
-	vkDestroyPipeline(ctx.device, present.pipeline, nullptr);
-	vkDestroyPipelineLayout(ctx.device, present.layout, nullptr);
-	vk::destroyShader(ctx.device, present.shader);
-	vkDestroyDescriptorSetLayout(ctx.device, present.descriptorSetLayout, nullptr);
-}
-
-void Engine::createPresentPipelineDS() {
-	present.descriptorSet = vk::allocateDescriptorSet(ctx.device, ctx.descriptorPool, present.descriptorSetLayout);
-	vk::setDebugName(ctx.device, present.descriptorSet, "present.descriptorSet");
-	vk::updateDescriptorSets(ctx.device, std::array{
-		vk::makeDescriptorSetImageWrite(present.descriptorSet, 0, targets.ssColor,
-			VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
-	});
-}
-
-void Engine::destroyPresentPipelineDS(Present& p) {
-	vkFreeDescriptorSets(ctx.device, ctx.descriptorPool, 1, &p.descriptorSet);
+	present.refreshInit(ctx, targets.ssColor, swapchain);
 }
 
 void Engine::createMeshBuffer(VkCommandBuffer cmdBuf, std::vector<sys::vk::Buffer>& staging) {

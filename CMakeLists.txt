@@ -123,6 +123,7 @@ set(SOURCES
         src/gfx/material.hpp
         src/gfx/context.hpp src/gfx/context.cpp
         src/gfx/targets.hpp src/gfx/targets.cpp
+        src/gfx/present.hpp src/gfx/present.cpp
         src/gfx/engine.hpp src/gfx/engine.cpp
         src/gfx/bloom.hpp src/gfx/bloom.cpp
         src/gfx/world.hpp src/gfx/world.cpp

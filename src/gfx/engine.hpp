@@ -24,6 +24,7 @@
 #include "gfx/samplers.hpp"
 #include "gfx/context.hpp"
 #include "gfx/targets.hpp"
+#include "gfx/present.hpp"
 #include "gfx/bloom.hpp"
 #include "gfx/world.hpp"
 #include "gfx/base.hpp"
@@ -49,18 +50,6 @@ struct Engine {
 	void render();
 
 private:
-
-	struct Present {
-
-		VkRenderPass renderPass;
-		std::vector<VkFramebuffer> framebuffer;
-		VkDescriptorSetLayout descriptorSetLayout;
-		sys::vk::Shader shader;
-		VkPipelineLayout layout;
-		VkPipeline pipeline;
-		VkDescriptorSet descriptorSet;
-
-	};
 
 	struct Frame {
 
@@ -112,19 +101,10 @@ private:
 	void initImages();
 	void cleanupImages();
 
-	void initFramebuffers();
-	void cleanupFramebuffers();
-
 	void initPipelines();
 	void cleanupPipelines();
-	void refresh();
 
-	void createPresentFbs();
-	void destroyPresentFbs(Present&);
-	void createPresentPipeline();
-	void destroyPresentPipeline();
-	void createPresentPipelineDS();
-	void destroyPresentPipelineDS(Present&);
+	void refresh();
 
 	void createMeshBuffer(VkCommandBuffer, std::vector<sys::vk::Buffer>& staging);
 	void destroyMeshBuffer();
