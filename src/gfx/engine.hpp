@@ -84,13 +84,7 @@ private:
 	Bloom bloom;
 	Present present;
 
-	void initImages();
-	void cleanupImages();
-
 	void refresh();
-
-	void createMeshBuffer(VkCommandBuffer, std::vector<sys::vk::Buffer>& staging);
-	void destroyMeshBuffer();
 
 };
 

@@ -42,13 +42,39 @@ namespace ranges = std::ranges;
 using namespace std::string_literals;
 
 Engine::Engine(sys::Glfw&, sys::Window& window, std::string_view name, Version appVersion) {
+	// Create essential objects
 	ctx.init(window, VulkanVersion, name, appVersion);
 	swapchain.init(ctx);
 	commands.init(ctx);
-	samplers.init(ctx);
-	initImages();
 
-	techniques.create(ctx, world.getDescriptorSetLayout());
+	// Create rendering infrastructure
+	std::vector<vk::Buffer> stagingBuffers;
+	commands.transfer(ctx, [this, &stagingBuffers](VkCommandBuffer cmdBuf) {
+		meshes.addMesh("block"_id, generateNormals(mesh::Block));
+		meshes.addMesh("scene"_id, generateNormals(mesh::Scene));
+		meshes.upload(ctx, cmdBuf, stagingBuffers.emplace_back());
+	});
+	for (auto& buffer: stagingBuffers)
+		vmaDestroyBuffer(ctx.allocator, buffer.buffer, buffer.allocation);
+
+	samplers.init(ctx);
+	world.init(ctx, meshes);
+
+	auto const supportedSampleCount = ctx.deviceProperties.limits.framebufferColorSampleCounts &
+		ctx.deviceProperties.limits.framebufferDepthSampleCounts;
+	auto const selectedSampleCount = [=]() {
+		if (SampleCount & supportedSampleCount) {
+			return SampleCount;
+		} else {
+			L.warn("Requested antialiasing mode MSAA {}x not supported; defaulting to MSAA 2x",
+				SampleCount);
+			return VK_SAMPLE_COUNT_2_BIT;
+		}
+	}();
+	targets.init(ctx, swapchain.extent, ColorFormat, DepthFormat, selectedSampleCount);
+
+	// Create the pipeline phases
+	techniques.init(ctx, world.getDescriptorSetLayout());
 	techniques.addTechnique(ctx, "opaque"_id, targets.renderPass,
 		world.getDescriptorSets(),
 		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
@@ -62,8 +88,7 @@ Engine::Engine(sys::Glfw&, sys::Window& window, std::string_view name, Version a
 		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None, false),
 		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
 		vk::makePipelineMultisampleStateCI(targets.msColor.samples));
-	techniques.setTechniqueDebugName(ctx, "transparent_depth_prepass"_id,
-		"transparent_depth_prepass");
+	techniques.setTechniqueDebugName(ctx, "transparent_depth_prepass"_id, "transparent_depth_prepass");
 	techniques.addTechnique(ctx, "transparent"_id, targets.renderPass,
 		world.getDescriptorSets(),
 		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
@@ -71,6 +96,9 @@ Engine::Engine(sys::Glfw&, sys::Window& window, std::string_view name, Version a
 		vk::makePipelineDepthStencilStateCI(true, false, VK_COMPARE_OP_LESS_OR_EQUAL),
 		vk::makePipelineMultisampleStateCI(targets.msColor.samples));
 	techniques.setTechniqueDebugName(ctx, "transparent"_id, "transparent");
+
+	bloom.init(ctx, samplers, world, targets.ssColor, ColorFormat);
+	present.init(ctx, world, targets.ssColor, swapchain);
 
 	L.info("Vulkan engine initialized");
 }
@@ -81,14 +109,19 @@ Engine::~Engine() {
 	for (auto& op: delayedOps)
 		op.func();
 
-	techniques.destroy(ctx);
-	cleanupImages();
+	techniques.cleanup(ctx);
+	present.cleanup(ctx);
+	bloom.cleanup(ctx);
+	targets.cleanup(ctx);
+
+	world.cleanup(ctx);
+	meshes.cleanup(ctx);
 	samplers.cleanup(ctx);
 	commands.cleanup(ctx);
 	swapchain.cleanup(ctx);
 	ctx.cleanup();
 
-	L.info("Vulkan cleaned up");
+	L.info("Vulkan engine cleaned up");
 }
 
 void Engine::setBackground(glm::vec3 color) {
@@ -345,75 +378,6 @@ void Engine::render() {
 	transparentIndirect.reset();
 }
 
-void Engine::initImages() {
-	// Begin GPU transfers
-	auto commandBufferAI = VkCommandBufferAllocateInfo{
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-		.commandPool = commands.transferCommandPool,
-		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-		.commandBufferCount = 1,
-	};
-	VkCommandBuffer transferCommandBuffer;
-	VK(vkAllocateCommandBuffers(ctx.device, &commandBufferAI, &transferCommandBuffer));
-	vk::setDebugName(ctx.device, transferCommandBuffer, "transferCommandBuffer");
-
-	auto commandBufferBI = VkCommandBufferBeginInfo{
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-	};
-	VK(vkBeginCommandBuffer(transferCommandBuffer, &commandBufferBI));
-
-	// Upload buffers to GPU
-	std::vector<vk::Buffer> stagingBuffers;
-
-	createMeshBuffer(transferCommandBuffer, stagingBuffers);
-
-	// Finish GPU transfers
-	VK(vkEndCommandBuffer(transferCommandBuffer));
-
-	auto submitInfo = VkSubmitInfo{
-		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		.commandBufferCount = 1,
-		.pCommandBuffers = &transferCommandBuffer,
-	};
-	VK(vkQueueSubmit(ctx.transferQueue, 1, &submitInfo, commands.transfersFinished));
-
-	vkWaitForFences(ctx.device, 1, &commands.transfersFinished, true, (1_s).count());
-	vkResetFences(ctx.device, 1, &commands.transfersFinished);
-
-	vkResetCommandPool(ctx.device, commands.transferCommandPool, 0);
-
-	for (auto& buffer: stagingBuffers)
-		vmaDestroyBuffer(ctx.allocator, buffer.buffer, buffer.allocation);
-
-	// Init CPU+GPU buffers
-	world.init(ctx, meshes);
-
-	// Init the phases
-	auto const supportedSampleCount = ctx.deviceProperties.limits.framebufferColorSampleCounts & ctx.deviceProperties.limits.framebufferDepthSampleCounts;
-	auto const selectedSampleCount = [=]() {
-		if (SampleCount & supportedSampleCount) {
-			return SampleCount;
-		} else {
-			L.warn("Requested antialiasing mode MSAA {}x not supported; defaulting to MSAA 2x",
-				SampleCount);
-			return VK_SAMPLE_COUNT_2_BIT;
-		}
-	}();
-	targets.init(ctx, swapchain.extent, ColorFormat, DepthFormat, selectedSampleCount);
-	bloom.init(ctx, samplers, world, targets.ssColor, ColorFormat);
-	present.init(ctx, world, targets.ssColor, swapchain);
-}
-
-void Engine::cleanupImages() {
-	present.cleanup(ctx);
-	bloom.cleanup(ctx);
-	targets.cleanup(ctx);
-
-	world.cleanup(ctx);
-	destroyMeshBuffer();
-}
-
 void Engine::refresh() {
 	ctx.refreshSurface();
 	auto const sampleCount = targets.msColor.samples;
@@ -437,16 +401,6 @@ void Engine::refresh() {
 	targets.refreshInit(ctx, swapchain.extent, ColorFormat, DepthFormat, sampleCount);
 	bloom.refreshInit(ctx, targets.ssColor, ColorFormat);
 	present.refreshInit(ctx, targets.ssColor, swapchain);
-}
-
-void Engine::createMeshBuffer(VkCommandBuffer cmdBuf, std::vector<sys::vk::Buffer>& staging) {
-	meshes.addMesh("block"_id, generateNormals(mesh::Block));
-	meshes.addMesh("scene"_id, generateNormals(mesh::Scene));
-	meshes.upload(ctx, cmdBuf, staging.emplace_back());
-}
-
-void Engine::destroyMeshBuffer() {
-	meshes.destroy(ctx);
 }
 
 }

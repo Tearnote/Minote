@@ -64,7 +64,7 @@ struct MeshBuffer {
 
 	auto getMeshDescriptor(ID id) { return m_descriptors.at(id); }
 
-	void destroy(Context& ctx);
+	void cleanup(Context& ctx);
 
 	auto buffer() -> sys::vk::Buffer& { return m_buffer; }
 

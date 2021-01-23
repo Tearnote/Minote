@@ -34,9 +34,9 @@ struct TechniqueSet {
 
 	};
 
-	void create(Context& ctx, VkDescriptorSetLayout worldLayout);
+	void init(Context& ctx, VkDescriptorSetLayout worldLayout);
 
-	void destroy(Context& ctx);
+	void cleanup(Context& ctx);
 
 	void addTechnique(Context& ctx, ID id, VkRenderPass renderPass,
 		PerFrame<VkDescriptorSet> worldDescriptorSets,

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include "volk/volk.h"
 #include "gfx/context.hpp"
 #include "gfx/base.hpp"
@@ -25,6 +26,12 @@ struct Commands {
 	void init(Context& ctx);
 	void cleanup(Context& ctx);
 
+	template<typename F>
+		requires std::invocable<F, VkCommandBuffer>
+	void transfer(Context& ctx, F func);
+
 };
 
 }
+
+#include "gfx/commands.tpp"

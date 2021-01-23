@@ -20,7 +20,7 @@ constexpr auto objectFragSrc = std::to_array<u32>({
 #include "spv/object.frag.spv"
 });
 
-void TechniqueSet::create(Context& ctx, VkDescriptorSetLayout worldLayout) {
+void TechniqueSet::init(Context& ctx, VkDescriptorSetLayout worldLayout) {
 	m_shader = vk::createShader(ctx.device, objectVertSrc, objectFragSrc);
 	vk::setDebugName(ctx.device, m_shader, "TechniqueSet::m_shader");
 
@@ -45,10 +45,10 @@ void TechniqueSet::create(Context& ctx, VkDescriptorSetLayout worldLayout) {
 	vk::setDebugName(ctx.device, m_pipelineLayout, "TechniqueSet::m_pipelineLayout");
 }
 
-void TechniqueSet::destroy(Context& ctx) {
+void TechniqueSet::cleanup(Context& ctx) {
 	for (auto[id, tech]: m_techniques) {
 		for (auto& indirect: tech.indirect)
-			indirect.destroy(ctx);
+			indirect.cleanup(ctx);
 		vkDestroyPipeline(ctx.device, tech.pipeline, nullptr);
 	}
 	vkDestroyPipelineLayout(ctx.device, m_pipelineLayout, nullptr);
@@ -81,7 +81,7 @@ void TechniqueSet::addTechnique(Context& ctx, base::ID id, VkRenderPass renderPa
 		drawDS = vk::allocateDescriptorSet(ctx.device, ctx.descriptorPool, m_drawDescriptorSetLayout);
 
 		// Create the indirect buffer
-		indirect.create(ctx, MaxDrawCommands, MaxInstances);
+		indirect.init(ctx, MaxDrawCommands, MaxInstances);
 
 		// Fill in the draw descriptor set
 		vk::updateDescriptorSets(ctx.device, std::array{

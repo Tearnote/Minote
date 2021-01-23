@@ -49,7 +49,7 @@ void MeshBuffer::upload(Context& ctx, VkCommandBuffer cmdBuffer, vk::Buffer& sta
 	vkCmdCopyBuffer(cmdBuffer, staging.buffer, m_buffer.buffer, 1, &bufferCopy);
 }
 
-void MeshBuffer::destroy(Context& ctx) {
+void MeshBuffer::cleanup(Context& ctx) {
 	if (!m_buffer.buffer && !m_buffer.allocation) return;
 
 	vmaDestroyBuffer(ctx.allocator, m_buffer.buffer, m_buffer.allocation);
