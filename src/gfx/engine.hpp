@@ -1,26 +1,17 @@
 #pragma once
 
 #include <string_view>
-#include <string>
 #include <span>
-#include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
-#include <glm/vec4.hpp>
-#include "VulkanMemoryAllocator/vma.h"
-#include "volk/volk.h"
-#include "base/hashmap.hpp"
 #include "base/svector.hpp"
 #include "base/version.hpp"
 #include "base/types.hpp"
-#include "base/util.hpp"
 #include "base/id.hpp"
-#include "sys/vk/buffer.hpp"
-#include "sys/vk/image.hpp"
-#include "sys/vk/base.hpp"
 #include "sys/window.hpp"
 #include "sys/glfw.hpp"
 #include "gfx/swapchain.hpp"
 #include "gfx/technique.hpp"
+#include "gfx/material.hpp"
 #include "gfx/samplers.hpp"
 #include "gfx/commands.hpp"
 #include "gfx/context.hpp"
@@ -29,7 +20,6 @@
 #include "gfx/bloom.hpp"
 #include "gfx/world.hpp"
 #include "gfx/base.hpp"
-#include "gfx/mesh.hpp"
 
 namespace minote::gfx {
 

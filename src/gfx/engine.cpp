@@ -1,35 +1,17 @@
 #include "gfx/engine.hpp"
 
-#include <string_view>
-#include <stdexcept>
 #include <algorithm>
-#include <optional>
-#include <cstring>
 #include <string>
 #include <vector>
-#include <limits>
-#include <thread>
 #include <array>
-#include <glm/gtx/transform.hpp>
-#include <glm/mat4x4.hpp>
-#include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
-#include <GLFW/glfw3.h>
-#include <fmt/core.h>
+#include "VulkanMemoryAllocator/vma.h"
 #include "volk/volk.h"
-#include "base/zip_view.hpp"
 #include "base/types.hpp"
-#include "base/math.hpp"
-#include "base/time.hpp"
 #include "base/log.hpp"
 #include "sys/vk/framebuffer.hpp"
-#include "sys/vk/descriptor.hpp"
 #include "sys/vk/commands.hpp"
 #include "sys/vk/pipeline.hpp"
-#include "sys/vk/debug.hpp"
-#include "sys/vk/base.hpp"
-#include "sys/window.hpp"
-#include "sys/glfw.hpp"
 #include "mesh/block.hpp"
 #include "mesh/scene.hpp"
 
@@ -39,7 +21,6 @@ using namespace base;
 using namespace base::literals;
 namespace vk = sys::vk;
 namespace ranges = std::ranges;
-using namespace std::string_literals;
 
 Engine::Engine(sys::Glfw&, sys::Window& window, std::string_view name, Version appVersion) {
 	// Create essential objects
