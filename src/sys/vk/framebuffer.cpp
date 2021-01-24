@@ -41,7 +41,7 @@ auto createRenderPass(VkDevice device, std::span<Attachment const> attachments) 
 	colorAttachments.reserve(attachments.size());
 	dsAttachments.reserve(1);
 	resolveAttachments.reserve(attachments.size());
-	for(auto i: ranges::iota_view{0_zu, attachments.size()}) {
+	for(auto i: nrange(0_zu, attachments.size())) {
 		auto& vec = [&, i]() -> std::vector<VkAttachmentReference>& {
 			switch (attachments[i].type) {
 			case Attachment::Type::Input: return inputAttachments;

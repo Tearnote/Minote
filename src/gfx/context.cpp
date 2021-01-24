@@ -200,7 +200,7 @@ void Context::init(sys::Window& _window, u32 vulkanVersion, std::string_view app
 			gfxqueue = ranges::distance(queueFamilies.begin(), result);
 
 		// Find first queue family that supports presentation
-		for (u32 familyIndex: ranges::iota_view{0_zu, queueFamilies.size()}) {
+		for (u32 familyIndex: nrange(0_zu, queueFamilies.size())) {
 			VkBool32 presentSupported;
 			VK(vkGetPhysicalDeviceSurfaceSupportKHR(dev, familyIndex, surface,
 				&presentSupported));

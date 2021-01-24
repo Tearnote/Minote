@@ -31,6 +31,34 @@ void repeat(size_t times, F func) {
 		func();
 }
 
+// Numeric range, from start (inclusive) to end (exclusive), with optional step.
+template<arithmetic T>
+constexpr auto nrange(T start, T end, T step = 1) {
+	return std::ranges::iota_view{static_cast<T>(0), (end - start + step - static_cast<T>(1)) / step} |
+		std::views::transform([=](T n) { return n * step + start; });
+}
+
+// Numeric range, from start (inclusive) to end (inclusive), with optional step.
+template<arithmetic T>
+constexpr auto nrange_inc(T start, T end, T step = 1) {
+	return std::ranges::iota_view{static_cast<T>(0), (end - start + step) / step} |
+		std::views::transform([=](T n) { return n * step + start; });
+}
+
+// Reverse numeric range, from start (inclusive) to end (exclusive), with optional step.
+template<arithmetic T>
+constexpr auto rnrange(T start, T end, T step = 1) {
+	return std::ranges::iota_view{static_cast<T>(0), (start - end + step - static_cast<T>(1)) / step} |
+		std::views::transform([=](T n) { return start - n * step; });
+}
+
+// Reverse numeric range, from start (inclusive) to end (inclusive), with optional step.
+template<arithmetic T>
+constexpr auto rnrange_inc(T start, T end, T step = 1) {
+	return std::ranges::iota_view{static_cast<T>(0), (start - end + step) / step} |
+		std::views::transform([=](T n) { return start - n * step; });
+}
+
 namespace literals {
 
 // Conversion of scoped enum to the underlying type, using the unary + operator

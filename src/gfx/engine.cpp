@@ -217,7 +217,7 @@ void Engine::render() {
 				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 			// Progressively downscale the bloom contents
-			for (auto i: ranges::iota_view{1_zu, Bloom::Depth}) {
+			for (auto i: nrange(1_zu, Bloom::Depth)) {
 				vk::cmdBeginRenderPass(cmdBuf, bloom.downPass, bloom.imageFbs[i], bloom.images[i].size);
 				vk::cmdSetArea(cmdBuf, bloom.images[i].size);
 				vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.down);
@@ -233,7 +233,7 @@ void Engine::render() {
 			}
 
 			// Progressively upscale the bloom contents
-			for (size_t i = Bloom::Depth - 2; i < Bloom::Depth; i -= 1) {
+			for (auto i: rnrange_inc(Bloom::Depth - 2, 0_zu, 1_zu)) {
 				vk::cmdImageBarrier(cmdBuf, bloom.images[i], VK_IMAGE_ASPECT_COLOR_BIT,
 					VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 					0, 0,

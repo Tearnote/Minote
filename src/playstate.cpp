@@ -1,6 +1,6 @@
 #include "playstate.hpp"
 
-#include <algorithm>
+#include "base/util.hpp"
 
 namespace minote {
 
@@ -12,9 +12,9 @@ PlayState::PlayState() {
 
 void PlayState::tick(std::span<Action const>) {
 	std::srand(0);
-	for (auto x: ranges::iota_view{0_zu, m_grid.Width})
-		for (auto y: ranges::iota_view{0_zu, m_grid.Height}) {
-			if (std::rand() % 4)
+	for (auto x: nrange(0_zu, m_grid.Width))
+		for (auto y: nrange(0_zu, m_grid.Height)) {
+			if (std::rand() % 2)
 				m_grid.set({x, y}, Mino{static_cast<int>(x + y) % 7});
 		}
 }
@@ -31,8 +31,8 @@ void PlayState::draw(gfx::Engine& engine) {
 	// Blocks
 	svector<gfx::Instance, 512> blockInstancesOpaque;
 	svector<gfx::Instance, 512> blockInstancesTransparent;
-	for (auto x: ranges::iota_view{0_zu, m_grid.Width})
-		for (auto y: ranges::iota_view{0_zu, m_grid.Height}) {
+	for (auto x: nrange(0_zu, m_grid.Width))
+		for (auto y: nrange(0_zu, m_grid.Height)) {
 			auto const minoOpt = m_grid.get({x, y});
 			if (!minoOpt) continue;
 			auto const mino = minoOpt.value();
