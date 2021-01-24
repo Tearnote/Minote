@@ -1,4 +1,4 @@
-#include "engine/mapper.hpp"
+#include "mapper.hpp"
 
 #include <stdexcept>
 #include <GLFW/glfw3.h>

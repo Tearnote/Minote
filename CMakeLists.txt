@@ -132,8 +132,8 @@ set(SOURCES
         src/gfx/base.hpp
         src/mesh/block.hpp
         src/mesh/scene.hpp
-        src/engine/mapper.hpp src/engine/mapper.tpp src/engine/mapper.cpp
         src/playstate.hpp src/playstate.cpp
+        src/mapper.hpp src/mapper.tpp src/mapper.cpp
         src/game.hpp src/game.cpp
         src/main.hpp src/main.cpp
         src/mino.hpp src/mino.tpp)

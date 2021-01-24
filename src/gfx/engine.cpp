@@ -217,7 +217,7 @@ void Engine::render() {
 				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 			// Progressively downscale the bloom contents
-			for (size_t i = 1; i < Bloom::Depth; i += 1) {
+			for (auto i: ranges::iota_view{1_zu, Bloom::Depth}) {
 				vk::cmdBeginRenderPass(cmdBuf, bloom.downPass, bloom.imageFbs[i], bloom.images[i].size);
 				vk::cmdSetArea(cmdBuf, bloom.images[i].size);
 				vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.down);

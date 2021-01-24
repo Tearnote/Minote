@@ -5,7 +5,7 @@
 #include "sys/window.hpp"
 #include "sys/glfw.hpp"
 #include "gfx/engine.hpp"
-#include "engine/mapper.hpp"
+#include "mapper.hpp"
 #include "playstate.hpp"
 #include "main.hpp"
 

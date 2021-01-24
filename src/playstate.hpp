@@ -2,7 +2,7 @@
 
 #include <span>
 #include "gfx/engine.hpp"
-#include "engine/mapper.hpp"
+#include "mapper.hpp"
 #include "mino.hpp"
 
 namespace minote {
