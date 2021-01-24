@@ -144,220 +144,169 @@ void Engine::setCamera(glm::vec3 eye, glm::vec3 center, glm::vec3 up) {
 void Engine::enqueueDraw(ID mesh, ID technique, std::span<Instance const> instances,
 	Material material, MaterialData const& materialData) {
 	auto const frameIndex = frameCounter % FramesInFlight;
-	auto& indirect = techniques.getTechniqueIndirect(technique, frameIndex);
+	auto& indirect = techniques.getTechnique(technique).indirect[frameIndex];
 	indirect.enqueue(meshes.getMeshDescriptor(mesh), instances, material, materialData);
 }
 
 void Engine::render() {
-	// Get the next frame
-	auto frameIndex = frameCounter % FramesInFlight;
-	auto& frame = commands.frames[frameIndex];
-	auto cmdBuf = frame.commandBuffer;
+	commands.render(ctx, swapchain, frameCounter,
+		[this] { refresh(); },
+		[this](Commands::Frame& frame, u32 frameIndex, u32 swapchainImageIndex) {
+			auto cmdBuf = frame.commandBuffer;
 
-	// Get the next swapchain image
-	auto const swapchainImageIndex = [this, &frame] {
-		while (true) {
-			auto const[result, error] = swapchain.acquire(ctx, frame);
-			if (error == VK_SUCCESS || error == VK_SUBOPTIMAL_KHR)
-				return result;
-			if (error == VK_ERROR_OUT_OF_DATE_KHR)
-				refresh();
-			else
-				VK(error);
-		}
-	}();
+			// Retrieve the techniques in use
+			auto& opaque = techniques.getTechnique("opaque"_id);
+			auto& opaqueIndirect = opaque.indirect[frameIndex];
+			auto& transparentPrepass = techniques.getTechnique("transparent_depth_prepass"_id);
+			auto& transparentPrepassIndirect = transparentPrepass.indirect[frameIndex];
+			auto& transparent = techniques.getTechnique("transparent"_id);
+			auto& transparentIndirect = transparent.indirect[frameIndex];
 
-	// Wait until the GPU is free
-	VK(vkWaitForFences(ctx.device, 1, &frame.renderFence, true, (1_s).count()));
-	VK(vkResetFences(ctx.device, 1, &frame.renderFence));
+			// Prepare and upload draw data to the GPU
+			opaqueIndirect.upload(ctx);
+			transparentPrepassIndirect.upload(ctx);
+			transparentIndirect.upload(ctx);
 
-	// Retrieve the techniques in use
-	auto& opaque = techniques.getTechnique("opaque"_id);
-	auto& opaqueIndirect = techniques.getTechniqueIndirect("opaque"_id, frameIndex);
-	auto& transparentDepthPrepass = techniques.getTechnique("transparent_depth_prepass"_id);
-	auto& transparentDepthPrepassIndirect = techniques.getTechniqueIndirect("transparent_depth_prepass"_id, frameIndex);
-	auto& transparent = techniques.getTechnique("transparent"_id);
-	auto& transparentIndirect = techniques.getTechniqueIndirect("transparent"_id, frameIndex);
+			world.uniforms.setViewProjection(glm::uvec2{swapchain.extent.width, swapchain.extent.height},
+				VerticalFov, NearPlane, FarPlane,
+				camera.eye, camera.center, camera.up);
+			world.uploadUniforms(ctx, frameIndex);
 
-	// Prepare and upload draw data to the GPU
-	opaqueIndirect.upload(ctx);
-	transparentDepthPrepassIndirect.upload(ctx);
-	transparentIndirect.upload(ctx);
+			// Bind world data
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, techniques.getPipelineLayout(),
+				0, 1, &world.getDescriptorSet(frameIndex), 0, nullptr);
 
-	world.uniforms.setViewProjection(glm::uvec2{swapchain.extent.width, swapchain.extent.height},
-		VerticalFov, NearPlane, FarPlane,
-		camera.eye, camera.center, camera.up);
-	world.uploadUniforms(ctx, frameIndex);
+			// Begin drawing objects
+			vk::cmdBeginRenderPass(cmdBuf, targets.renderPass, targets.framebuffer, swapchain.extent, std::array{
+				vk::clearColor(world.uniforms.ambientColor),
+				vk::clearDepth(1.0f),
+			});
+			vk::cmdSetArea(cmdBuf, swapchain.extent);
 
-	// Start recording commands
-	VK(vkResetCommandBuffer(cmdBuf, 0));
-	auto cmdBeginInfo = VkCommandBufferBeginInfo{
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-	};
-	VK(vkBeginCommandBuffer(cmdBuf, &cmdBeginInfo));
+			// Opaque object draw
+			vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, opaque.pipeline);
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+				techniques.getPipelineLayout(), 1, 1, &opaque.getDescriptorSet(frameIndex),
+				0, nullptr);
 
-	// Bind world data
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, techniques.getPipelineLayout(),
-		0, 1, &world.getDescriptorSet(frameIndex), 0, nullptr);
+			vkCmdDrawIndirect(cmdBuf, opaqueIndirect.commandBuffer().buffer, 0,
+				opaqueIndirect.size(), sizeof(IndirectBuffer::Command));
 
-	// Begin drawing objects
-	vk::cmdBeginRenderPass(cmdBuf, targets.renderPass, targets.framebuffer, swapchain.extent, std::array{
-		vk::clearColor(world.uniforms.ambientColor),
-		vk::clearDepth(1.0f),
-	});
-	vk::cmdSetArea(cmdBuf, swapchain.extent);
+			// Transparent object draw prepass
+			vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, transparentPrepass.pipeline);
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+				techniques.getPipelineLayout(), 1, 1, &transparentPrepass.getDescriptorSet(frameIndex),
+				0, nullptr);
 
-	// Opaque object draw
-	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, opaque.pipeline);
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-		techniques.getPipelineLayout(), 1, 1, &opaque.getDescriptorSet(frameIndex),
-		0, nullptr);
+			vkCmdDrawIndirect(cmdBuf, transparentPrepassIndirect.commandBuffer().buffer, 0,
+				transparentPrepassIndirect.size(), sizeof(IndirectBuffer::Command));
 
-	vkCmdDrawIndirect(cmdBuf, opaqueIndirect.commandBuffer().buffer, 0,
-		opaqueIndirect.size(), sizeof(IndirectBuffer::Command));
+			// Transparent object draw
+			vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, transparent.pipeline);
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+				techniques.getPipelineLayout(), 1, 1, &transparent.getDescriptorSet(frameIndex),
+				0, nullptr);
 
-	// Transparent object draw prepass
-	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, transparentDepthPrepass.pipeline);
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-		techniques.getPipelineLayout(), 1, 1, &transparentDepthPrepass.getDescriptorSet(frameIndex),
-		0, nullptr);
+			vkCmdDrawIndirect(cmdBuf, transparentIndirect.commandBuffer().buffer, 0,
+				transparentIndirect.size(), sizeof(IndirectBuffer::Command));
 
-	vkCmdDrawIndirect(cmdBuf, transparentDepthPrepassIndirect.commandBuffer().buffer, 0,
-		transparentDepthPrepassIndirect.size(), sizeof(IndirectBuffer::Command));
+			// Finish the object drawing pass
+			vkCmdEndRenderPass(cmdBuf);
 
-	// Transparent object draw
-	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, transparent.pipeline);
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-		techniques.getPipelineLayout(), 1, 1, &transparent.getDescriptorSet(frameIndex),
-		0, nullptr);
+			// Synchronize the rendered color image
+			vk::cmdImageBarrier(cmdBuf, targets.ssColor, VK_IMAGE_ASPECT_COLOR_BIT,
+				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-	vkCmdDrawIndirect(cmdBuf, transparentIndirect.commandBuffer().buffer, 0,
-		transparentIndirect.size(), sizeof(IndirectBuffer::Command));
+			// HDR-threshold the color image
+			vk::cmdBeginRenderPass(cmdBuf, bloom.downPass, bloom.imageFbs[0], bloom.images[0].size);
+			vk::cmdSetArea(cmdBuf, bloom.images[0].size);
 
-	// Finish the object drawing pass
-	vkCmdEndRenderPass(cmdBuf);
+			vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.down);
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+				bloom.layout, 1, 1, &bloom.sourceDS, 0, nullptr);
+			vkCmdDraw(cmdBuf, 3, 1, 0, 0);
+			vkCmdEndRenderPass(cmdBuf);
 
-	// Synchronize the rendered color image
-	vk::cmdImageBarrier(cmdBuf, targets.ssColor, VK_IMAGE_ASPECT_COLOR_BIT,
-		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			// Synchronize the thresholded image
+			vk::cmdImageBarrier(cmdBuf, bloom.images[0], VK_IMAGE_ASPECT_COLOR_BIT,
+				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-	// HDR-threshold the color image
-	vk::cmdBeginRenderPass(cmdBuf, bloom.downPass, bloom.imageFbs[0], bloom.images[0].size);
-	vk::cmdSetArea(cmdBuf, bloom.images[0].size);
+			// Progressively downscale the bloom contents
+			for (size_t i = 1; i < Bloom::Depth; i += 1) {
+				vk::cmdBeginRenderPass(cmdBuf, bloom.downPass, bloom.imageFbs[i], bloom.images[i].size);
+				vk::cmdSetArea(cmdBuf, bloom.images[i].size);
+				vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.down);
+				vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+					bloom.layout, 1, 1, &bloom.imageDS[i - 1], 0, nullptr);
+				vkCmdDraw(cmdBuf, 3, 1, 0, 1);
+				vkCmdEndRenderPass(cmdBuf);
 
-	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.down);
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-		bloom.layout, 1, 1, &bloom.sourceDS, 0, nullptr);
-	vkCmdDraw(cmdBuf, 3, 1, 0, 0);
-	vkCmdEndRenderPass(cmdBuf);
+				vk::cmdImageBarrier(cmdBuf, bloom.images[i], VK_IMAGE_ASPECT_COLOR_BIT,
+					VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			}
 
-	// Synchronize the thresholded image
-	vk::cmdImageBarrier(cmdBuf, bloom.images[0], VK_IMAGE_ASPECT_COLOR_BIT,
-		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			// Progressively upscale the bloom contents
+			for (size_t i = Bloom::Depth - 2; i < Bloom::Depth; i -= 1) {
+				vk::cmdImageBarrier(cmdBuf, bloom.images[i], VK_IMAGE_ASPECT_COLOR_BIT,
+					VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+					0, 0,
+					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-	// Progressively downscale the bloom contents
-	for (size_t i = 1; i < Bloom::Depth; i += 1) {
-		vk::cmdBeginRenderPass(cmdBuf, bloom.downPass, bloom.imageFbs[i], bloom.images[i].size);
-		vk::cmdSetArea(cmdBuf, bloom.images[i].size);
-		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.down);
-		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-			bloom.layout, 1, 1, &bloom.imageDS[i - 1], 0, nullptr);
-		vkCmdDraw(cmdBuf, 3, 1, 0, 1);
-		vkCmdEndRenderPass(cmdBuf);
+				vk::cmdBeginRenderPass(cmdBuf, bloom.upPass, bloom.imageFbs[i], bloom.images[i].size);
+				vk::cmdSetArea(cmdBuf, bloom.images[i].size);
+				vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.up);
+				vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+					bloom.layout, 1, 1, &bloom.imageDS[i + 1], 0, nullptr);
+				vkCmdDraw(cmdBuf, 3, 1, 0, 2);
+				vkCmdEndRenderPass(cmdBuf);
 
-		vk::cmdImageBarrier(cmdBuf, bloom.images[i], VK_IMAGE_ASPECT_COLOR_BIT,
-			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	}
+				vk::cmdImageBarrier(cmdBuf, bloom.images[i], VK_IMAGE_ASPECT_COLOR_BIT,
+					VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			}
 
-	// Progressively upscale the bloom contents
-	for (size_t i = Bloom::Depth - 2; i < Bloom::Depth; i -= 1) {
-		vk::cmdImageBarrier(cmdBuf, bloom.images[i], VK_IMAGE_ASPECT_COLOR_BIT,
-			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-			0, 0,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			// Synchronize the rendered color image
+			vk::cmdImageBarrier(cmdBuf, targets.ssColor, VK_IMAGE_ASPECT_COLOR_BIT,
+				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+				0, 0,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-		vk::cmdBeginRenderPass(cmdBuf, bloom.upPass, bloom.imageFbs[i], bloom.images[i].size);
-		vk::cmdSetArea(cmdBuf, bloom.images[i].size);
-		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.up);
-		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-			bloom.layout, 1, 1, &bloom.imageDS[i + 1], 0, nullptr);
-		vkCmdDraw(cmdBuf, 3, 1, 0, 2);
-		vkCmdEndRenderPass(cmdBuf);
+			// Apply bloom to rendered color image
+			vk::cmdBeginRenderPass(cmdBuf, bloom.upPass, bloom.targetFb, targets.ssColor.size);
+			vk::cmdSetArea(cmdBuf, swapchain.extent);
+			vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.up);
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+				bloom.layout, 1, 1, &bloom.imageDS[0], 0, nullptr);
+			vkCmdDraw(cmdBuf, 3, 1, 0, 2);
+			vkCmdEndRenderPass(cmdBuf);
 
-		vk::cmdImageBarrier(cmdBuf, bloom.images[i], VK_IMAGE_ASPECT_COLOR_BIT,
-			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	}
+			// Synchronize the rendered color image
+			vk::cmdImageBarrier(cmdBuf, targets.ssColor, VK_IMAGE_ASPECT_COLOR_BIT,
+				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-	// Synchronize the rendered color image
-	vk::cmdImageBarrier(cmdBuf, targets.ssColor, VK_IMAGE_ASPECT_COLOR_BIT,
-		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-		0, 0,
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			// Blit the image to screen
+			vk::cmdBeginRenderPass(cmdBuf, present.renderPass, present.framebuffer[swapchainImageIndex], swapchain.extent);
+			vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, present.pipeline);
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+				present.layout, 1, 1, &present.descriptorSet, 0, nullptr);
+			vkCmdDraw(cmdBuf, 3, 1, 0, 0);
+			vkCmdEndRenderPass(cmdBuf);
 
-	// Apply bloom to rendered color image
-	vk::cmdBeginRenderPass(cmdBuf, bloom.upPass, bloom.targetFb, targets.ssColor.size);
-	vk::cmdSetArea(cmdBuf, swapchain.extent);
-	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.up);
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-		bloom.layout, 1, 1, &bloom.imageDS[0], 0, nullptr);
-	vkCmdDraw(cmdBuf, 3, 1, 0, 2);
-	vkCmdEndRenderPass(cmdBuf);
+			// Cleanup
+			opaqueIndirect.reset();
+			transparentPrepassIndirect.reset();
+			transparentIndirect.reset();
 
-	// Synchronize the rendered color image
-	vk::cmdImageBarrier(cmdBuf, targets.ssColor, VK_IMAGE_ASPECT_COLOR_BIT,
-		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-	// Blit the image to screen
-	vk::cmdBeginRenderPass(cmdBuf, present.renderPass, present.framebuffer[swapchainImageIndex], swapchain.extent);
-	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, present.pipeline);
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-		present.layout, 1, 1, &present.descriptorSet, 0, nullptr);
-	vkCmdDraw(cmdBuf, 3, 1, 0, 0);
-	vkCmdEndRenderPass(cmdBuf);
-
-	// Finish recording commands
-	VK(vkEndCommandBuffer(cmdBuf));
-
-	// Submit commands to the queue
-	VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	auto submitInfo = VkSubmitInfo{
-		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		.waitSemaphoreCount = 1,
-		.pWaitSemaphores = &frame.presentSemaphore,
-		.pWaitDstStageMask = &waitStage,
-		.commandBufferCount = 1,
-		.pCommandBuffers = &cmdBuf,
-		.signalSemaphoreCount = 1,
-		.pSignalSemaphores = &frame.renderSemaphore,
-	};
-	VK(vkQueueSubmit(ctx.graphicsQueue, 1, &submitInfo, frame.renderFence));
-
-	// Present the rendered image
-	auto presentInfo = VkPresentInfoKHR{
-		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-		.waitSemaphoreCount = 1,
-		.pWaitSemaphores = &frame.renderSemaphore,
-		.swapchainCount = 1,
-		.pSwapchains = &swapchain.swapchain,
-		.pImageIndices = &swapchainImageIndex,
-	};
-	auto result = vkQueuePresentKHR(ctx.presentQueue, &presentInfo);
-	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
-		ctx.window->size() != glm::uvec2{swapchain.extent.width, swapchain.extent.height})
-		refresh();
-	else if (result != VK_SUCCESS)
-		VK(result);
+		});
 
 	// Run delayed ops
 	auto newsize = ranges::remove_if(delayedOps, [this](auto& op) {
@@ -370,11 +319,8 @@ void Engine::render() {
 	});
 	delayedOps.erase(newsize.begin(), newsize.end());
 
-	// Advance, cleanup
+	// Advance
 	frameCounter += 1;
-	opaqueIndirect.reset();
-	transparentDepthPrepassIndirect.reset();
-	transparentIndirect.reset();
 }
 
 void Engine::refresh() {

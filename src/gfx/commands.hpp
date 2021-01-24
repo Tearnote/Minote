@@ -2,6 +2,7 @@
 
 #include <concepts>
 #include "volk/volk.h"
+#include "gfx/swapchain.hpp"
 #include "gfx/context.hpp"
 #include "gfx/base.hpp"
 
@@ -29,6 +30,11 @@ struct Commands {
 	template<typename F>
 		requires std::invocable<F, VkCommandBuffer>
 	void transfer(Context& ctx, F func);
+
+	template<typename F, typename G>
+		requires std::invocable<F>
+		&& std::invocable<G, Commands::Frame&, u32, u32>
+	void render(Context& ctx, Swapchain& swapchain, u64 frameCount, F refresh, G func);
 
 };
 

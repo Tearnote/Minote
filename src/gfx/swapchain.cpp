@@ -102,11 +102,4 @@ void Swapchain::cleanup(Context& ctx) {
 	vkDestroySwapchainKHR(ctx.device, swapchain, nullptr);
 }
 
-auto Swapchain::acquire(Context& ctx, Commands::Frame& frame) -> std::pair<u32, VkResult> {
-	u32 result;
-	auto const error = vkAcquireNextImageKHR(ctx.device, swapchain,
-		std::numeric_limits<u64>::max(), frame.presentSemaphore, nullptr, &result);
-	return {result, error};
-}
-
 }

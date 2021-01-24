@@ -51,10 +51,6 @@ struct TechniqueSet {
 
 	auto getTechnique(ID id) -> Technique& { return m_techniques.at(id); }
 
-	auto getTechniqueIndirect(ID id, i64 frameIndex) -> IndirectBuffer& {
-		return getTechnique(id).indirect[frameIndex];
-	}
-
 private:
 
 	sys::vk::Shader m_shader;
