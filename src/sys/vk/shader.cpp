@@ -6,7 +6,6 @@
 namespace minote::sys::vk {
 
 using namespace base;
-namespace ranges = std::ranges;
 
 auto createShader(VkDevice device,
 	std::span<u32 const> vertSrc, std::span<u32 const> fragSrc) -> Shader {

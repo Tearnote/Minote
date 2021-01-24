@@ -32,7 +32,10 @@ Engine::Engine(sys::Glfw&, sys::Window& window, std::string_view name, Version a
 	std::vector<vk::Buffer> stagingBuffers;
 	commands.transfer(ctx, [this, &stagingBuffers](VkCommandBuffer cmdBuf) {
 		meshes.addMesh("block"_id, generateNormals(mesh::Block));
-		meshes.addMesh("scene"_id, generateNormals(mesh::Scene));
+		meshes.addMesh("scene_base"_id, generateNormals(mesh::SceneBase));
+		meshes.addMesh("scene_body"_id, generateNormals(mesh::SceneBody));
+		meshes.addMesh("scene_top"_id, generateNormals(mesh::SceneTop));
+		meshes.addMesh("scene_guide"_id, generateNormals(mesh::SceneGuide));
 		meshes.upload(ctx, cmdBuf, stagingBuffers.emplace_back());
 	});
 	for (auto& buffer: stagingBuffers)

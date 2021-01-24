@@ -77,6 +77,8 @@ struct Grid {
 
 	void set(glm::ivec2 position, Mino value);
 
+	auto stackHeight() -> size_t;
+
 private:
 
 	std::array<std::optional<Mino>, Width * Height> m_grid = {};
