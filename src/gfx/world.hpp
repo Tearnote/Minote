@@ -30,7 +30,7 @@ struct World {
 		void setViewProjection(glm::uvec2 viewport, f32 fovy, f32 zNear, f32 zFar,
 			glm::vec3 eye, glm::vec3 center, glm::vec3 up = {0.0f, 1.0f, 0.0f}) {
 			auto const rawview = glm::lookAt(eye, center, up);
-			auto const yFlip = base::make_scale(glm::vec3{1.0f, -1.0f, 1.0f});
+			auto const yFlip = base::make_scale(glm::vec3{-1.0f, -1.0f, 1.0f});
 			projection = glm::perspective(fovy,
 				static_cast<f32>(viewport.x) / static_cast<f32>(viewport.y), zNear, zFar);
 			view = yFlip * rawview;

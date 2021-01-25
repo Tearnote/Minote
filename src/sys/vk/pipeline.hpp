@@ -68,7 +68,7 @@ constexpr auto makePipelineRasterizationStateCI(VkPolygonMode polygonMode, bool 
 		.rasterizerDiscardEnable = VK_FALSE,
 		.polygonMode = polygonMode,
 		.cullMode = culling? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE,
-		.frontFace = VK_FRONT_FACE_CLOCKWISE,
+		.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
 		.depthBiasEnable = VK_FALSE,
 		.depthBiasConstantFactor = 0.0f,
 		.depthBiasClamp = 0.0f,
