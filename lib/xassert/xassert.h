@@ -7,7 +7,7 @@
  *
  * To the extent possible under law, the author(s) have dedicated all copyright
  * and related and neighboring rights to this software to the public domain
- * worldwide. This software is distributed without any warranty. 
+ * worldwide. This software is distributed without any warranty.
  *
  * You should have received a copy of the CC0 Public Domain Dedication along
  * with this software. If not, see
@@ -17,7 +17,10 @@
 typedef int (*assert_ptr_t)(const char *, const char *, int, const char *);
 
 #ifdef __cplusplus
+#include <cstdlib>
 extern "C" {
+#else
+#include <stdlib.h>
 #endif
 assert_ptr_t set_assert_handler(assert_ptr_t);
 extern assert_ptr_t assert_handler_ptr;

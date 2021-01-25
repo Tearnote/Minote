@@ -26,7 +26,7 @@ constexpr auto alignSize(size_t size, size_t boundary) -> size_t {
 // Execute n times.
 template<typename F>
 	requires std::invocable<F>
-void repeat(size_t times, F func) {
+constexpr void repeat(size_t times, F func) {
 	for (size_t i = 0; i < times; i += 1)
 		func();
 }

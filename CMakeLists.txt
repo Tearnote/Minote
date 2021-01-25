@@ -72,7 +72,8 @@ set(INTERNALLIBS
         lib/scope_guard/scope_guard.hpp
         lib/xassert/xassert.h lib/xassert/xassert.c
         lib/volk/volk.h lib/volk/volk.c
-        lib/stb/stb_image.h lib/stb/stb_image.c)
+        lib/stb/stb_image.h lib/stb/stb_image.c
+        lib/pcg/pcg_basic.h lib/pcg/pcg_basic.c)
 
 if(WIN32)
     add_compile_definitions(VK_USE_PLATFORM_WIN32_KHR)

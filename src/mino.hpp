@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdexcept>
 #include <optional>
 #include <array>
 #include <glm/vec2.hpp>
@@ -13,7 +14,7 @@ namespace minote {
 using namespace base;
 using namespace base::literals;
 
-enum struct Mino: int {
+enum struct Mino4: int {
 	I,
 	L,
 	O,
@@ -31,20 +32,32 @@ enum struct Spin: int {
 	_270,
 };
 
-template<size_t N>
-using Piece = std::array<glm::ivec2, N>;
+using Piece4 = std::array<glm::ivec2, 4>;
 
-constexpr auto minoColor(Mino mino) {
+constexpr auto minoColor(Mino4 mino) {
 	switch (mino) {
-	case Mino::I: return glm::vec4{1.0f, 0.0f, 0.0f, 1.0f};
-	case Mino::L: return glm::vec4{1.0f, .22f, 0.0f, 1.0f};
-	case Mino::O: return glm::vec4{1.0f, 1.0f, 0.0f, 1.0f};
-	case Mino::Z: return glm::vec4{0.0f, 1.0f, 0.0f, 1.0f};
-	case Mino::T: return glm::vec4{0.0f, 1.0f, 1.0f, 1.0f};
-	case Mino::J: return glm::vec4{0.0f, 0.0f, 1.0f, 1.0f};
-	case Mino::S: return glm::vec4{1.0f, 0.0f, 1.0f, 1.0f};
-	case Mino::Garbage: return glm::vec4{.22f, .22f, .22f, 1.0f};
+	case Mino4::I: return glm::vec4{1.0f, 0.0f, 0.0f, 1.0f};
+	case Mino4::L: return glm::vec4{1.0f, .22f, 0.0f, 1.0f};
+	case Mino4::O: return glm::vec4{1.0f, 1.0f, 0.0f, 1.0f};
+	case Mino4::Z: return glm::vec4{0.0f, 1.0f, 0.0f, 1.0f};
+	case Mino4::T: return glm::vec4{0.0f, 1.0f, 1.0f, 1.0f};
+	case Mino4::J: return glm::vec4{0.0f, 0.0f, 1.0f, 1.0f};
+	case Mino4::S: return glm::vec4{1.0f, 0.0f, 1.0f, 1.0f};
+	case Mino4::Garbage: return glm::vec4{.22f, .22f, .22f, 1.0f};
 	default: return glm::vec4{1.0f, 0.0f, 1.0f, 1.0f};
+	}
+}
+
+constexpr auto getPiece(Mino4 mino) -> Piece4 {
+	switch(mino) {
+	case Mino4::I: return std::to_array<Piece4::value_type>({{-1, 0}, {0, 0}, {1, 0}, {2, 0}});
+	case Mino4::L: return std::to_array<Piece4::value_type>({{-1, 0}, {0, 0}, {1, 0}, {-1, -1}});
+	case Mino4::O: return std::to_array<Piece4::value_type>({{0, 0}, {1, 0}, {0, -1}, {1, -1}});
+	case Mino4::Z: return std::to_array<Piece4::value_type>({{-1, 0}, {0, 0}, {0, -1}, {1, -1}});
+	case Mino4::T: return std::to_array<Piece4::value_type>({{-1, 0}, {0, 0}, {1, 0}, {0, -1}});
+	case Mino4::J: return std::to_array<Piece4::value_type>({{-1, 0}, {0, 0}, {1, 0}, {1, -1}});
+	case Mino4::S: return std::to_array<Piece4::value_type>({{0, 0}, {1, 0}, {-1, -1}, {0, -1}});
+	default: throw std::logic_error{"Wrong piece type"};
 	}
 }
 
@@ -56,10 +69,9 @@ constexpr auto spinCounterClockwise(Spin s, int times = 1) {
 	return Spin{tmod(+s + times, 4)};
 }
 
-template<size_t N>
-constexpr auto rotatePiece(Piece<N> piece, Spin rotation) -> Piece<N> {
-	Piece<N> result = piece;
-	repeat(+rotation, [=] {
+constexpr auto rotatePiece(Piece4 piece, Spin rotation) -> Piece4 {
+	Piece4 result = piece;
+	repeat(+rotation, [&] {
 		for (auto[src, dst]: zip_view{piece, result})
 			dst = glm::ivec2{-src.y, src.x};
 	});
@@ -73,15 +85,15 @@ struct Grid {
 	static constexpr auto Height = H;
 
 	[[nodiscard]]
-	auto get(glm::ivec2 position) const -> std::optional<Mino>;
+	auto get(glm::ivec2 position) const -> std::optional<Mino4>;
 
-	void set(glm::ivec2 position, Mino value);
+	void set(glm::ivec2 position, Mino4 value);
 
 	auto stackHeight() -> size_t;
 
 private:
 
-	std::array<std::optional<Mino>, Width * Height> m_grid = {};
+	std::array<std::optional<Mino4>, Width * Height> m_grid = {};
 
 };
 

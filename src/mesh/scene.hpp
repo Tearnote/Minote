@@ -289,11 +289,11 @@ constexpr auto SceneGuide = std::to_array<gfx::Vertex>({
 // Column 1 guide
 	{
 		.position = {-5.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.032f}
+		.color = {1.0f, 1.0f, 1.0f, 1.0f}
 	},
 	{
 		.position = {-4.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.032f}
+		.color = {1.0f, 1.0f, 1.0f, 1.0f}
 	},
 	{
 		.position = {-5.0f, 1.0f, -0.99f, 1.0f},
@@ -302,7 +302,7 @@ constexpr auto SceneGuide = std::to_array<gfx::Vertex>({
 /////////////////////////////////////////////
 	{
 		.position = {-4.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.032f}
+		.color = {1.0f, 1.0f, 1.0f, 1.0f}
 	},
 	{
 		.position = {-4.0f, 1.0f, -0.99f, 1.0f},
@@ -316,11 +316,11 @@ constexpr auto SceneGuide = std::to_array<gfx::Vertex>({
 // Column 2 guide
 	{
 		.position = {-4.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.004f}
+		.color = {1.0f, 1.0f, 1.0f, 0.125f}
 	},
 	{
 		.position = {-3.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.004f}
+		.color = {1.0f, 1.0f, 1.0f, 0.125f}
 	},
 	{
 		.position = {-4.0f, 1.0f, -0.99f, 1.0f},
@@ -329,7 +329,7 @@ constexpr auto SceneGuide = std::to_array<gfx::Vertex>({
 /////////////////////////////////////////////
 	{
 		.position = {-3.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.004f}
+		.color = {1.0f, 1.0f, 1.0f, 0.125f}
 	},
 	{
 		.position = {-3.0f, 1.0f, -0.99f, 1.0f},
@@ -343,11 +343,11 @@ constexpr auto SceneGuide = std::to_array<gfx::Vertex>({
 // Column 3 guide
 	{
 		.position = {-3.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.032f}
+		.color = {1.0f, 1.0f, 1.0f, 1.0f}
 	},
 	{
 		.position = {-2.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.032f}
+		.color = {1.0f, 1.0f, 1.0f, 1.0f}
 	},
 	{
 		.position = {-3.0f, 1.0f, -0.99f, 1.0f},
@@ -356,7 +356,7 @@ constexpr auto SceneGuide = std::to_array<gfx::Vertex>({
 /////////////////////////////////////////////
 	{
 		.position = {-2.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.032f}
+		.color = {1.0f, 1.0f, 1.0f, 1.0f}
 	},
 	{
 		.position = {-2.0f, 1.0f, -0.99f, 1.0f},
@@ -370,11 +370,11 @@ constexpr auto SceneGuide = std::to_array<gfx::Vertex>({
 // Column 4 guide
 	{
 		.position = {-2.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.004f}
+		.color = {1.0f, 1.0f, 1.0f, 0.125f}
 	},
 	{
 		.position = {-1.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.004f}
+		.color = {1.0f, 1.0f, 1.0f, 0.125f}
 	},
 	{
 		.position = {-2.0f, 1.0f, -0.99f, 1.0f},
@@ -383,7 +383,7 @@ constexpr auto SceneGuide = std::to_array<gfx::Vertex>({
 /////////////////////////////////////////////
 	{
 		.position = {-1.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.004f}
+		.color = {1.0f, 1.0f, 1.0f, 0.125f}
 	},
 	{
 		.position = {-1.0f, 1.0f, -0.99f, 1.0f},
@@ -397,11 +397,11 @@ constexpr auto SceneGuide = std::to_array<gfx::Vertex>({
 // Column 5 guide
 	{
 		.position = {-1.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.032f}
+		.color = {1.0f, 1.0f, 1.0f, 1.0f}
 	},
 	{
 		.position = {0.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.032f}
+		.color = {1.0f, 1.0f, 1.0f, 1.0f}
 	},
 	{
 		.position = {-1.0f, 1.0f, -0.99f, 1.0f},
@@ -410,7 +410,7 @@ constexpr auto SceneGuide = std::to_array<gfx::Vertex>({
 /////////////////////////////////////////////
 	{
 		.position = {0.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.032f}
+		.color = {1.0f, 1.0f, 1.0f, 1.0f}
 	},
 	{
 		.position = {0.0f, 1.0f, -0.99f, 1.0f},
@@ -424,11 +424,11 @@ constexpr auto SceneGuide = std::to_array<gfx::Vertex>({
 // Column 6 guide
 	{
 		.position = {0.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.004f}
+		.color = {1.0f, 1.0f, 1.0f, 0.125f}
 	},
 	{
 		.position = {1.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.004f}
+		.color = {1.0f, 1.0f, 1.0f, 0.125f}
 	},
 	{
 		.position = {0.0f, 1.0f, -0.99f, 1.0f},
@@ -437,7 +437,7 @@ constexpr auto SceneGuide = std::to_array<gfx::Vertex>({
 /////////////////////////////////////////////
 	{
 		.position = {1.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.004f}
+		.color = {1.0f, 1.0f, 1.0f, 0.125f}
 	},
 	{
 		.position = {1.0f, 1.0f, -0.99f, 1.0f},
@@ -451,11 +451,11 @@ constexpr auto SceneGuide = std::to_array<gfx::Vertex>({
 // Column 7 guide
 	{
 		.position = {1.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.032f}
+		.color = {1.0f, 1.0f, 1.0f, 1.0f}
 	},
 	{
 		.position = {2.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.032f}
+		.color = {1.0f, 1.0f, 1.0f, 1.0f}
 	},
 	{
 		.position = {1.0f, 1.0f, -0.99f, 1.0f},
@@ -464,7 +464,7 @@ constexpr auto SceneGuide = std::to_array<gfx::Vertex>({
 /////////////////////////////////////////////
 	{
 		.position = {2.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.032f}
+		.color = {1.0f, 1.0f, 1.0f, 1.0f}
 	},
 	{
 		.position = {2.0f, 1.0f, -0.99f, 1.0f},
@@ -478,11 +478,11 @@ constexpr auto SceneGuide = std::to_array<gfx::Vertex>({
 // Column 8 guide
 	{
 		.position = {2.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.004f}
+		.color = {1.0f, 1.0f, 1.0f, 0.125f}
 	},
 	{
 		.position = {3.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.004f}
+		.color = {1.0f, 1.0f, 1.0f, 0.125f}
 	},
 	{
 		.position = {2.0f, 1.0f, -0.99f, 1.0f},
@@ -491,7 +491,7 @@ constexpr auto SceneGuide = std::to_array<gfx::Vertex>({
 /////////////////////////////////////////////
 	{
 		.position = {3.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.004f}
+		.color = {1.0f, 1.0f, 1.0f, 0.125f}
 	},
 	{
 		.position = {3.0f, 1.0f, -0.99f, 1.0f},
@@ -505,11 +505,11 @@ constexpr auto SceneGuide = std::to_array<gfx::Vertex>({
 // Column 9 guide
 	{
 		.position = {3.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.032f}
+		.color = {1.0f, 1.0f, 1.0f, 1.0f}
 	},
 	{
 		.position = {4.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.032f}
+		.color = {1.0f, 1.0f, 1.0f, 1.0f}
 	},
 	{
 		.position = {3.0f, 1.0f, -0.99f, 1.0f},
@@ -518,7 +518,7 @@ constexpr auto SceneGuide = std::to_array<gfx::Vertex>({
 /////////////////////////////////////////////
 	{
 		.position = {4.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.032f}
+		.color = {1.0f, 1.0f, 1.0f, 1.0f}
 	},
 	{
 		.position = {4.0f, 1.0f, -0.99f, 1.0f},
@@ -532,11 +532,11 @@ constexpr auto SceneGuide = std::to_array<gfx::Vertex>({
 // Column 10 guide
 	{
 		.position = {4.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.004f}
+		.color = {1.0f, 1.0f, 1.0f, 0.125f}
 	},
 	{
 		.position = {5.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.004f}
+		.color = {1.0f, 1.0f, 1.0f, 0.125f}
 	},
 	{
 		.position = {4.0f, 1.0f, -0.99f, 1.0f},
@@ -545,7 +545,7 @@ constexpr auto SceneGuide = std::to_array<gfx::Vertex>({
 /////////////////////////////////////////////
 	{
 		.position = {5.0f, 0.0f, -0.99f, 1.0f},
-		.color = {1.0f, 1.0f, 1.0f, 0.004f}
+		.color = {1.0f, 1.0f, 1.0f, 0.125f}
 	},
 	{
 		.position = {5.0f, 1.0f, -0.99f, 1.0f},
