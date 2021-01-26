@@ -22,7 +22,10 @@ enum struct Mino4: int {
 	T,
 	J,
 	S,
+	ShapeCount,
+///////////////////
 	Garbage,
+	Count,
 };
 
 enum struct Spin: int {

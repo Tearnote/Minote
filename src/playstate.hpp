@@ -12,6 +12,7 @@ namespace minote {
 struct PlayState {
 
 	using Action = engine::Mapper::Action;
+	using Button = Action::Type;
 
 	PlayState();
 	void tick(std::span<Action const> actions);
@@ -24,18 +25,22 @@ private:
 
 	struct Player {
 
-		std::array<i8, 7> tokens;
-		Mino4 piece;
+		std::array<bool, +Button::Count> pressed;
+		std::array<bool, +Button::Count> held;
+
+		std::array<i8, +Mino4::ShapeCount> tokens;
 		Mino4 preview;
-		Spin spin;
+
 		glm::ivec2 position;
+		Mino4 piece;
+		Spin spin;
 
 	};
 
 	Rng rng;
 
 	Grid<10, 20> grid;
-	Player player;
+	Player p1;
 
 	auto getRandomPiece(Player&) -> Mino4;
 

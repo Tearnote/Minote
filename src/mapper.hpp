@@ -20,12 +20,12 @@ struct Mapper {
 			RotCCW, RotCW, RotCCW2,
 			Skip,
 			Accept, Back,
-			Size
+			Count,
 		};
 
 		enum struct State {
-			None,
-			Pressed, Released
+			Pressed,
+			Released,
 		};
 
 		Type type;

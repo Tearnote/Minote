@@ -25,18 +25,12 @@ void Grid<W, H>::set(glm::ivec2 position, Mino4 value) {
 
 template<size_t W, size_t H>
 auto Grid<W, H>::stackHeight() -> size_t {
-	for (auto y: nrange(0_zu, Height)) {
-		bool occupied = false;
+	for (auto y: rnrange_inc(Height - 1, 0_zu))
 		for (auto x: nrange(0_zu, Width)) {
-			if (get({x, y})) {
-				occupied = true;
-				break;
-			}
+			if (get({x, y}))
+				return y + 1;
 		}
-		if (!occupied)
-			return y;
-	}
-	return Height;
+	return 0;
 }
 
 }

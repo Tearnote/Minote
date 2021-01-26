@@ -1,9 +1,7 @@
 #include "game.hpp"
 
-#include <stdexcept>
+#include <exception>
 #include "base/log.hpp"
-#include "sys/window.hpp"
-#include "sys/glfw.hpp"
 #include "gfx/engine.hpp"
 #include "mapper.hpp"
 #include "playstate.hpp"
