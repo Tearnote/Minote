@@ -22,6 +22,8 @@ private:
 
 	static constexpr auto StartingTokens = 6;
 	static constexpr auto PlayerSpawnPosition = glm::ivec2{4, 5};
+	static constexpr auto AutoshiftTargetInitial = 24;
+	static constexpr auto AutoshiftTargetDecrement = 0.5f;
 
 	struct Player {
 
@@ -34,6 +36,10 @@ private:
 		glm::ivec2 position;
 		Mino4 piece;
 		Spin spin;
+
+		i32 autoshift;
+		i32 autoshiftTarget;
+		i32 autoshiftDirection;
 
 	};
 

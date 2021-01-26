@@ -7,6 +7,8 @@
 #include "base/util.hpp"
 #include "base/math.hpp"
 
+#include "base/log.hpp"
+
 namespace minote {
 
 using namespace base;
@@ -172,10 +174,33 @@ void PlayState::updateActions(std::span<Action const>& actions) {// Collect play
 void PlayState::updateShift() {
 	auto const origPosition = p1.position;
 
+	// Update autoshift
+	if ((p1.held[+Button::Left] && p1.autoshiftDirection == -1) ||
+		(p1.held[+Button::Right] && p1.autoshiftDirection == 1)) {
+		p1.autoshift += 1;
+	} else {
+		p1.autoshift = 0;
+		p1.autoshiftTarget = AutoshiftTargetInitial;
+		if (p1.held[+Button::Left])
+			p1.autoshiftDirection = -1;
+		else if (p1.held[+Button::Right])
+			p1.autoshiftDirection = 1;
+		else
+			p1.autoshiftDirection = 0;
+	}
+
+	// Execute direct shift
 	if (p1.pressed[+Button::Left])
 		p1.position.x -= 1;
 	if (p1.pressed[+Button::Right])
 		p1.position.x += 1;
+
+	// Execute autoshift
+	if (p1.autoshift == p1.autoshiftTarget) {
+		p1.position.x += p1.autoshiftDirection;
+		p1.autoshift = 0;
+		p1.autoshiftTarget = std::ceil(float(p1.autoshiftTarget) * AutoshiftTargetDecrement);
+	}
 
 	if (grid.overlapsPiece(p1.position, minoPiece(p1.piece, p1.spin)))
 		p1.position = origPosition;
