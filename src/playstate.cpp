@@ -24,25 +24,9 @@ PlayState::PlayState():
 }
 
 void PlayState::tick(std::span<Action const> actions) {
-	// Collect player actions
-	p1.pressed.fill(false);
-	for (auto const& action: actions) {
-		auto const state = (action.state == Action::State::Pressed)? true : false;
-		p1.pressed[+action.type] = state;
-		p1.held[+action.type] = state;
-	}
+	updateActions(actions);
+	updateShift();
 
-	// Filter player actions
-	if (p1.held[+Button::Drop] || p1.held[+Button::Lock]) {
-		p1.pressed[+Button::Left] = false;
-		p1.pressed[+Button::Right] = false;
-		p1.held[+Button::Left] = false;
-		p1.held[+Button::Right] = false;
-	}
-	if (p1.held[+Button::Left] && p1.pressed[+Button::Right])
-		p1.held[+Button::Left] = false;
-	if (p1.held[+Button::Right] && p1.pressed[+Button::Left])
-		p1.held[+Button::Right] = false;
 }
 
 void PlayState::draw(gfx::Engine& engine) {
@@ -103,7 +87,7 @@ void PlayState::draw(gfx::Engine& engine) {
 	auto const pieceRotationPost = make_translate({0.5f, 0.5f, -1.0f});
 	auto const pieceTransform = pieceTranslation * pieceRotationPost * pieceRotation * pieceRotationPre;
 
-	for (auto const block: getPiece(p1.piece)) {
+	for (auto const block: minoPiece(p1.piece)) {
 		auto const blockTransform = make_translate({block.x, block.y, 0.0f});
 		blockInstances.emplace_back(gfx::Instance{
 			.transform = pieceTransform * blockTransform,
@@ -162,6 +146,39 @@ void PlayState::spawnPlayer(Player& p) {
 	p.piece = p.preview;
 	p.preview = getRandomPiece(p);
 
+}
+
+void PlayState::updateActions(std::span<Action const>& actions) {// Collect player actions
+	p1.pressed.fill(false);
+	for (auto const& action: actions) {
+		auto const state = (action.state == Action::State::Pressed)? true : false;
+		p1.pressed[+action.type] = state;
+		p1.held[+action.type] = state;
+	}
+
+	// Filter player actions
+	if (p1.held[+Button::Drop] || p1.held[+Button::Lock]) {
+		p1.pressed[+Button::Left] = false;
+		p1.pressed[+Button::Right] = false;
+		p1.held[+Button::Left] = false;
+		p1.held[+Button::Right] = false;
+	}
+	if (p1.held[+Button::Left] && p1.pressed[+Button::Right])
+		p1.held[+Button::Left] = false;
+	if (p1.held[+Button::Right] && p1.pressed[+Button::Left])
+		p1.held[+Button::Right] = false;
+}
+
+void PlayState::updateShift() {
+	auto const origPosition = p1.position;
+
+	if (p1.pressed[+Button::Left])
+		p1.position.x -= 1;
+	if (p1.pressed[+Button::Right])
+		p1.position.x += 1;
+
+	if (grid.overlapsPiece(p1.position, minoPiece(p1.piece, p1.spin)))
+		p1.position = origPosition;
 }
 
 }

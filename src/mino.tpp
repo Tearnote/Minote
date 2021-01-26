@@ -33,4 +33,13 @@ auto Grid<W, H>::stackHeight() -> size_t {
 	return 0;
 }
 
+template<size_t W, size_t H>
+auto Grid<W, H>::overlapsPiece(glm::ivec2 position, Piece4 const& piece) -> bool {
+	for (auto block: piece) {
+		if (get(position + block))
+			return true;
+	}
+	return false;
+}
+
 }

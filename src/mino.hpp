@@ -51,19 +51,6 @@ constexpr auto minoColor(Mino4 mino) {
 	}
 }
 
-constexpr auto getPiece(Mino4 mino) -> Piece4 {
-	switch(mino) {
-	case Mino4::I: return std::to_array<Piece4::value_type>({{-1, 0}, {0, 0}, {1, 0}, {2, 0}});
-	case Mino4::L: return std::to_array<Piece4::value_type>({{-1, 0}, {0, 0}, {1, 0}, {-1, -1}});
-	case Mino4::O: return std::to_array<Piece4::value_type>({{0, 0}, {1, 0}, {0, -1}, {1, -1}});
-	case Mino4::Z: return std::to_array<Piece4::value_type>({{-1, 0}, {0, 0}, {0, -1}, {1, -1}});
-	case Mino4::T: return std::to_array<Piece4::value_type>({{-1, 0}, {0, 0}, {1, 0}, {0, -1}});
-	case Mino4::J: return std::to_array<Piece4::value_type>({{-1, 0}, {0, 0}, {1, 0}, {1, -1}});
-	case Mino4::S: return std::to_array<Piece4::value_type>({{0, 0}, {1, 0}, {-1, -1}, {0, -1}});
-	default: throw std::logic_error{"Wrong piece type"};
-	}
-}
-
 constexpr auto spinClockwise(Spin s, int times = 1) {
 	return Spin{tmod(+s - times, 4)};
 }
@@ -81,6 +68,22 @@ constexpr auto rotatePiece(Piece4 piece, Spin rotation) -> Piece4 {
 	return result;
 }
 
+constexpr auto minoPiece(Mino4 mino, Spin spin = Spin::_0) -> Piece4 {
+	auto const result = [=] {
+		switch(mino) {
+		case Mino4::I: return std::to_array<Piece4::value_type>({{-1, 0}, {0, 0}, {1, 0}, {2, 0}});
+		case Mino4::L: return std::to_array<Piece4::value_type>({{-1, 0}, {0, 0}, {1, 0}, {-1, -1}});
+		case Mino4::O: return std::to_array<Piece4::value_type>({{0, 0}, {1, 0}, {0, -1}, {1, -1}});
+		case Mino4::Z: return std::to_array<Piece4::value_type>({{-1, 0}, {0, 0}, {0, -1}, {1, -1}});
+		case Mino4::T: return std::to_array<Piece4::value_type>({{-1, 0}, {0, 0}, {1, 0}, {0, -1}});
+		case Mino4::J: return std::to_array<Piece4::value_type>({{-1, 0}, {0, 0}, {1, 0}, {1, -1}});
+		case Mino4::S: return std::to_array<Piece4::value_type>({{0, 0}, {1, 0}, {-1, -1}, {0, -1}});
+		default: throw std::logic_error{"Wrong piece type"};
+		}
+	}();
+	return rotatePiece(result, spin);
+}
+
 template<size_t W, size_t H>
 struct Grid {
 
@@ -93,6 +96,8 @@ struct Grid {
 	void set(glm::ivec2 position, Mino4 value);
 
 	auto stackHeight() -> size_t;
+
+	auto overlapsPiece(glm::ivec2 position, Piece4 const& piece) -> bool;
 
 private:
 

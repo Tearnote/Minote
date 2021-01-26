@@ -46,6 +46,8 @@ private:
 
 	void spawnPlayer(Player&);
 
+	void updateActions(std::span<Action const>& actions);
+	void updateShift();
 };
 
 }
