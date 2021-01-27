@@ -29,12 +29,13 @@ private:
 
 		std::array<bool, +Button::Count> pressed;
 		std::array<bool, +Button::Count> held;
+		i32 lastDirection;
 
 		std::array<i8, +Mino4::ShapeCount> tokens;
 		Mino4 preview;
 
 		glm::ivec2 position;
-		Mino4 piece;
+		Mino4 pieceType;
 		Spin spin;
 
 		i32 autoshift;
@@ -52,7 +53,11 @@ private:
 
 	void spawnPlayer(Player&);
 
+	void rotate(i32 direction);
+	void shift(i32 direction);
+
 	void updateActions(std::span<Action const>& actions);
+	void updateRotation();
 	void updateShift();
 };
 

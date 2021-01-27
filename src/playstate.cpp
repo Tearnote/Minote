@@ -27,8 +27,8 @@ PlayState::PlayState():
 
 void PlayState::tick(std::span<Action const> actions) {
 	updateActions(actions);
+	updateRotation();
 	updateShift();
-
 }
 
 void PlayState::draw(gfx::Engine& engine) {
@@ -89,11 +89,11 @@ void PlayState::draw(gfx::Engine& engine) {
 	auto const pieceRotationPost = make_translate({0.5f, 0.5f, -1.0f});
 	auto const pieceTransform = pieceTranslation * pieceRotationPost * pieceRotation * pieceRotationPre;
 
-	for (auto const block: minoPiece(p1.piece)) {
+	for (auto const block: minoPiece(p1.pieceType)) {
 		auto const blockTransform = make_translate({block.x, block.y, 0.0f});
 		blockInstances.emplace_back(gfx::Instance{
 			.transform = pieceTransform * blockTransform,
-			.tint = minoColor(p1.piece),
+			.tint = minoColor(p1.pieceType),
 		});
 	}
 
@@ -142,12 +142,135 @@ auto PlayState::getRandomPiece(Player& p) -> Mino4 {
 }
 
 void PlayState::spawnPlayer(Player& p) {
+	p.pieceType = p.preview;
+	p.preview = getRandomPiece(p);
+
 	p.position = PlayerSpawnPosition;
 	p.position.y += grid.stackHeight();
 	p.spin = Spin::_0;
-	p.piece = p.preview;
-	p.preview = getRandomPiece(p);
 
+}
+
+void PlayState::rotate(i32 direction) {
+	auto const origSpin = p1.spin;
+	auto const origPosition = p1.position;
+
+	p1.spin = spinCounterClockwise(p1.spin, direction);
+
+	// Apply crawl offsets to I
+	if (p1.pieceType == Mino4::I) {
+		if (origSpin == Spin::_0 && p1.spin == Spin::_90)
+			p1.position.y -= 1;
+		if (origSpin == Spin::_90 && p1.spin == Spin::_180)
+			p1.position.y += 1;
+		if (origSpin == Spin::_180 && p1.spin == Spin::_270)
+			p1.position.x -= 1;
+		if (origSpin == Spin::_270 && p1.spin == Spin::_0)
+			p1.position.x -= 1;
+
+		if (origSpin == Spin::_0 && p1.spin == Spin::_270)
+			p1.position.x += 1;
+		if (origSpin == Spin::_270 && p1.spin == Spin::_180)
+			p1.position.x += 1;
+		if (origSpin == Spin::_180 && p1.spin == Spin::_90)
+			p1.position.y -= 1;
+		if (origSpin == Spin::_90 && p1.spin == Spin::_0)
+			p1.position.y += 1;
+	}
+
+	// Apply crawl offsets to S and Z
+	if (p1.pieceType == Mino4::S || p1.pieceType == Mino4::Z) {
+		if (origSpin == Spin::_0 && p1.spin == Spin::_90)
+			p1.position.x -= 1;
+		if (origSpin == Spin::_90 && p1.spin == Spin::_180)
+			p1.position.y -= 1;
+		if (origSpin == Spin::_180 && p1.spin == Spin::_270)
+			p1.position.y += 1;
+		if (origSpin == Spin::_270 && p1.spin == Spin::_0)
+			p1.position.x -= 1;
+
+		if (origSpin == Spin::_0 && p1.spin == Spin::_270)
+			p1.position.x += 1;
+		if (origSpin == Spin::_270 && p1.spin == Spin::_180)
+			p1.position.y -= 1;
+		if (origSpin == Spin::_180 && p1.spin == Spin::_90)
+			p1.position.y += 1;
+		if (origSpin == Spin::_90 && p1.spin == Spin::_0)
+			p1.position.x += 1;
+	}
+
+	// Keep O in place
+	if (p1.pieceType == Mino4::O) {
+		if (origSpin == Spin::_0 && p1.spin == Spin::_90)
+			p1.position.y -= 1;
+		if (origSpin == Spin::_90 && p1.spin == Spin::_180)
+			p1.position.x += 1;
+		if (origSpin == Spin::_180 && p1.spin == Spin::_270)
+			p1.position.y += 1;
+		if (origSpin == Spin::_270 && p1.spin == Spin::_0)
+			p1.position.x -= 1;
+
+		if (origSpin == Spin::_0 && p1.spin == Spin::_270)
+			p1.position.x += 1;
+		if (origSpin == Spin::_270 && p1.spin == Spin::_180)
+			p1.position.y -= 1;
+		if (origSpin == Spin::_180 && p1.spin == Spin::_90)
+			p1.position.x -= 1;
+		if (origSpin == Spin::_90 && p1.spin == Spin::_0)
+			p1.position.y += 1;
+	}
+
+	// Check if any kick succeeds
+	auto const successful = [this] {
+		auto check = [this] {
+			return !grid.overlapsPiece(p1.position, minoPiece(p1.pieceType, p1.spin));
+		};
+
+		// Base position
+		if (check()) return true;
+
+		// I doesn't kick
+		if (p1.pieceType == Mino4::I) return false;
+
+		// Down
+		p1.position.y -= 1;
+		if(check()) return true;
+		p1.position.y += 1;
+
+		// Left/right
+		p1.position.x += p1.lastDirection;
+		if(check()) return true;
+		p1.position.x -= p1.lastDirection * 2;
+		if(check()) return true;
+		p1.position.x += p1.lastDirection;
+
+		// Down + left/right
+		p1.position.y -= 1;
+		p1.position.x += p1.lastDirection;
+		if(check()) return true;
+		p1.position.x -= p1.lastDirection * 2;
+		if(check()) return true;
+		p1.position.x += p1.lastDirection;
+		p1.position.y += 1;
+
+		// Failure
+		return false;
+	}();
+
+	// Restore original state if failed
+	if (!successful) {
+		p1.spin = origSpin;
+		p1.position = origPosition;
+	}
+}
+
+void PlayState::shift(i32 direction) {
+	auto const origPosition = p1.position;
+
+	p1.position.x += direction;
+
+	if (grid.overlapsPiece(p1.position, minoPiece(p1.pieceType, p1.spin)))
+		p1.position = origPosition;
 }
 
 void PlayState::updateActions(std::span<Action const>& actions) {// Collect player actions
@@ -169,11 +292,22 @@ void PlayState::updateActions(std::span<Action const>& actions) {// Collect play
 		p1.held[+Button::Left] = false;
 	if (p1.held[+Button::Right] && p1.pressed[+Button::Left])
 		p1.held[+Button::Right] = false;
+
+	// Update last direction
+	if (p1.pressed[+Button::Left])
+		p1.lastDirection = -1;
+	if (p1.pressed[+Button::Right] || p1.lastDirection == 0)
+		p1.lastDirection = 1;
+}
+
+void PlayState::updateRotation() {
+	if (p1.pressed[+Button::RotCW]) rotate(-1);
+	if (p1.pressed[+Button::RotCCW]) rotate(1);
+	if (p1.pressed[+Button::RotCCW2]) rotate(1);
+
 }
 
 void PlayState::updateShift() {
-	auto const origPosition = p1.position;
-
 	// Update autoshift
 	if ((p1.held[+Button::Left] && p1.autoshiftDirection == -1) ||
 		(p1.held[+Button::Right] && p1.autoshiftDirection == 1)) {
@@ -190,20 +324,15 @@ void PlayState::updateShift() {
 	}
 
 	// Execute direct shift
-	if (p1.pressed[+Button::Left])
-		p1.position.x -= 1;
-	if (p1.pressed[+Button::Right])
-		p1.position.x += 1;
+	if (p1.pressed[+Button::Left]) shift(-1);
+	if (p1.pressed[+Button::Right]) shift(1);
 
 	// Execute autoshift
 	if (p1.autoshift == p1.autoshiftTarget) {
-		p1.position.x += p1.autoshiftDirection;
+		shift(p1.autoshiftDirection);
 		p1.autoshift = 0;
 		p1.autoshiftTarget = std::ceil(float(p1.autoshiftTarget) * AutoshiftTargetDecrement);
 	}
-
-	if (grid.overlapsPiece(p1.position, minoPiece(p1.piece, p1.spin)))
-		p1.position = origPosition;
 }
 
 }

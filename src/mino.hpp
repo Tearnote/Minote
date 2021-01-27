@@ -60,12 +60,14 @@ constexpr auto spinCounterClockwise(Spin s, int times = 1) {
 }
 
 constexpr auto rotatePiece(Piece4 piece, Spin rotation) -> Piece4 {
+	if (rotation == Spin::_0) return piece;
+
 	Piece4 result = piece;
 	repeat(+rotation, [&] {
 		for (auto[src, dst]: zip_view{piece, result})
-			dst = glm::ivec2{-src.y, src.x};
+			dst = {-src.y, src.x};
 	});
-	return result;
+	return rotatePiece(result, Spin(+rotation - 1));
 }
 
 constexpr auto minoPiece(Mino4 mino, Spin spin = Spin::_0) -> Piece4 {
