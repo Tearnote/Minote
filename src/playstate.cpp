@@ -30,6 +30,7 @@ void PlayState::tick(std::span<Action const> actions) {
 	updateShift();
 	updateSpawn();
 	updateGravity();
+	updateDeadline();
 }
 
 void PlayState::draw(gfx::Engine& engine) {
@@ -365,6 +366,11 @@ void PlayState::updateGravity() {
 		grid.stamp(p1.position, minoPiece(p1.pieceType, p1.spin), p1.pieceType);
 		p1.state = Player::State::Respawning;
 	}
+}
+
+void PlayState::updateDeadline() {
+	while (grid.stackHeight() > DeadlineDepth)
+		grid.eraseRow(0);
 }
 
 }

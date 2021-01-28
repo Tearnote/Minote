@@ -103,6 +103,8 @@ struct Grid {
 
 	void stamp(glm::ivec2 position, Piece4 const& piece, Mino4 value);
 
+	void eraseRow(i32 height);
+
 private:
 
 	std::array<std::optional<Mino4>, Width * Height> m_grid = {};

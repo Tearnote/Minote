@@ -25,6 +25,7 @@ private:
 	static constexpr auto AutoshiftTargetInitial = 24;
 	static constexpr auto AutoshiftTargetFactor = 0.5f;
 	static constexpr auto SpawnDelayTarget = 50;
+	static constexpr auto DeadlineDepth = 16;
 
 	struct Player {
 
@@ -71,6 +72,7 @@ private:
 	void updateShift();
 	void updateSpawn();
 	void updateGravity();
+	void updateDeadline();
 };
 
 }
