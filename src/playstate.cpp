@@ -165,17 +165,19 @@ void PlayState::spawnPlayer() {
 
 	p1.position = PlayerSpawnPosition;
 	p1.position.y += grid.stackHeight();
-	p1.spin = [this] {
-		if (p1.held[+Button::RotCCW] || p1.held[+Button::RotCCW2])
-			return Spin::_90;
-		if (p1.held[+Button::RotCW])
-			return Spin::_270;
-		return Spin::_0;
-	}();
+	p1.spin = Spin::_0;
 	p1.state = Player::State::Active;
 	p1.spawnDelay = 0;
-	if (p1.held[+Button::Left] || p1.held[+Button::Right]) // Instant autoshift charge
+
+	// Instant autoshift charge
+	if (p1.held[+Button::Left] || p1.held[+Button::Right])
 		p1.autoshiftTarget = 1;
+
+	// Initial spin
+	if (p1.held[+Button::RotCCW] || p1.held[+Button::RotCCW2])
+		rotate(1);
+	if (p1.held[+Button::RotCW])
+		rotate(-1);
 }
 
 void PlayState::rotate(i32 direction) {
