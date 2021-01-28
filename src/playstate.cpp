@@ -174,6 +174,8 @@ void PlayState::spawnPlayer() {
 	}();
 	p1.state = Player::State::Active;
 	p1.spawnDelay = 0;
+	if (p1.held[+Button::Left] || p1.held[+Button::Right]) // Instant autoshift charge
+		p1.autoshiftTarget = 1;
 }
 
 void PlayState::rotate(i32 direction) {
@@ -350,13 +352,10 @@ void PlayState::updateShift() {
 	if (p1.pressed[+Button::Right]) shift(1);
 
 	// Execute autoshift
-	if (p1.autoshift == p1.autoshiftTarget) {
+	if (p1.autoshift >= p1.autoshiftTarget) {
 		shift(p1.autoshiftDirection);
 		p1.autoshift = 0;
-		if (p1.state == Player::State::Active) // Live piece, use normal autoshift multiplier
-			p1.autoshiftTarget = std::ceil(float(p1.autoshiftTarget) * AutoshiftTargetFactor);
-		else // Otherwise, precharge instantly
-			p1.autoshiftTarget = 1;
+		p1.autoshiftTarget = std::ceil(float(p1.autoshiftTarget) * AutoshiftTargetFactor);
 	}
 }
 
@@ -368,7 +367,7 @@ void PlayState::updateSpawn() {
 	// Respawn
 	if (p1.state == Player::State::Respawning) {
 		p1.spawnDelay += 1;
-		if (p1.spawnDelay == SpawnDelayTarget || p1.pressed[+Button::RotCCW] ||
+		if (p1.spawnDelay >= SpawnDelayTarget || p1.pressed[+Button::RotCCW] ||
 			p1.pressed[+Button::RotCCW2] || p1.pressed[+Button::RotCW] ||
 			p1.pressed[+Button::Drop])
 			spawnPlayer();
