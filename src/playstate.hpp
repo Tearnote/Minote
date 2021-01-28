@@ -27,12 +27,19 @@ private:
 
 	struct Player {
 
+		enum struct State {
+			None,
+			Active,
+		};
+
 		std::array<bool, +Button::Count> pressed;
 		std::array<bool, +Button::Count> held;
 		i32 lastDirection;
 
 		std::array<i8, +Mino4::ShapeCount> tokens;
 		Mino4 preview;
+
+		State state;
 
 		glm::ivec2 position;
 		Mino4 pieceType;
@@ -49,9 +56,9 @@ private:
 	Grid<10, 20> grid;
 	Player p1;
 
-	auto getRandomPiece(Player&) -> Mino4;
+	auto getRandomPiece() -> Mino4;
 
-	void spawnPlayer(Player&);
+	void spawnPlayer();
 
 	void rotate(i32 direction);
 	void shift(i32 direction);
@@ -59,6 +66,7 @@ private:
 	void updateActions(std::span<Action const>& actions);
 	void updateRotation();
 	void updateShift();
+	void updateSpawn();
 };
 
 }

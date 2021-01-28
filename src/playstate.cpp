@@ -19,16 +19,16 @@ PlayState::PlayState():
 	rng.seed(static_cast<u64>(std::time(nullptr)));
 	p1.tokens.fill(StartingTokens);
 	do {
-		p1.preview = getRandomPiece(p1);
+		p1.preview = getRandomPiece();
 	}
 	while (p1.preview == Mino4::O || p1.preview == Mino4::S || p1.preview == Mino4::Z);
-	spawnPlayer(p1);
 }
 
 void PlayState::tick(std::span<Action const> actions) {
 	updateActions(actions);
 	updateRotation();
 	updateShift();
+	updateSpawn();
 }
 
 void PlayState::draw(gfx::Engine& engine) {
@@ -108,11 +108,9 @@ void PlayState::draw(gfx::Engine& engine) {
 	);
 }
 
-auto PlayState::getRandomPiece(Player& p) -> Mino4 {
-	auto& tokens = p.tokens;
-
+auto PlayState::getRandomPiece() -> Mino4 {
 	// Count the number of tokens
-	auto const tokenTotal = std::accumulate(tokens.begin(), tokens.end(), size_t{0},
+	auto const tokenTotal = std::accumulate(p1.tokens.begin(),p1.tokens.end(), size_t{0},
 		[](auto sum, auto val) {
 			val = std::max(i8{0}, val);
 			return sum + val;
@@ -122,8 +120,8 @@ auto PlayState::getRandomPiece(Player& p) -> Mino4 {
 	// Create and fill the token list
 	std::vector<Mino4> tokenList;
 	tokenList.reserve(tokenTotal);
-	for (auto i: nrange(0_zu, tokens.size())) {
-		auto const count = tokens[i];
+	for (auto i: nrange(0_zu, p1.tokens.size())) {
+		auto const count = p1.tokens[i];
 		if (count > 0)
 			tokenList.insert(tokenList.end(), count, Mino4{i});
 	}
@@ -131,24 +129,24 @@ auto PlayState::getRandomPiece(Player& p) -> Mino4 {
 
 	// Pick a random token from the list and update the token distribution
 	auto const picked = tokenList[rng.randInt(tokenTotal)];
-	for (auto i: nrange(0_zu, tokens.size())) {
+	for (auto i: nrange(0_zu, p1.tokens.size())) {
 		if (Mino4{i} == picked)
-			tokens[i] -= tokens.size() - 1;
+			p1.tokens[i] -= p1.tokens.size() - 1;
 		else
-			tokens[i] += 1;
+			p1.tokens[i] += 1;
 	}
 
 	return picked;
 }
 
-void PlayState::spawnPlayer(Player& p) {
-	p.pieceType = p.preview;
-	p.preview = getRandomPiece(p);
+void PlayState::spawnPlayer() {
+	p1.pieceType = p1.preview;
+	p1.preview = getRandomPiece();
 
-	p.position = PlayerSpawnPosition;
-	p.position.y += grid.stackHeight();
-	p.spin = Spin::_0;
-
+	p1.position = PlayerSpawnPosition;
+	p1.position.y += grid.stackHeight();
+	p1.spin = Spin::_0;
+	p1.state = Player::State::Active;
 }
 
 void PlayState::rotate(i32 direction) {
@@ -333,6 +331,11 @@ void PlayState::updateShift() {
 		p1.autoshift = 0;
 		p1.autoshiftTarget = std::ceil(float(p1.autoshiftTarget) * AutoshiftTargetDecrement);
 	}
+}
+
+void PlayState::updateSpawn() {
+	if (p1.state == Player::State::None)
+		spawnPlayer();
 }
 
 }
