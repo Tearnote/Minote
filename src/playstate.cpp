@@ -164,7 +164,13 @@ void PlayState::spawnPlayer() {
 
 	p1.position = PlayerSpawnPosition;
 	p1.position.y += grid.stackHeight();
-	p1.spin = Spin::_0;
+	p1.spin = [this] {
+		if (p1.held[+Button::RotCCW] || p1.held[+Button::RotCCW2])
+			return Spin::_90;
+		if (p1.held[+Button::RotCW])
+			return Spin::_270;
+		return Spin::_0;
+	}();
 	p1.state = Player::State::Active;
 	p1.spawnDelay = 0;
 }
