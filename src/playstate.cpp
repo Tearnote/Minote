@@ -36,28 +36,29 @@ void PlayState::tick(std::span<Action const> actions) {
 void PlayState::draw(gfx::Engine& engine) {
 	// Scene
 	auto const stackHeight = grid.stackHeight();
+	auto const baseline = f32(DeadlineDepth - stackHeight);
 
-	engine.enqueueDraw("scene_base"_id, "transparent"_id, std::array{
+	engine.enqueueDraw("scene_top"_id, "transparent"_id, std::array{
 		gfx::Instance{
-			.transform = glm::mat4{1.0f},
-			.tint = {1.2f, 1.2f, 1.2f, 1.0f},
+			.transform = make_translate({0.0f, DeadlineDepth, 0.0f}) * make_scale({1.0f, 5.1f, 1.0f}),
 		},
 	}, gfx::Material::Flat);
 	engine.enqueueDraw("scene_body"_id, "transparent"_id, std::array{
 		gfx::Instance{
-			.transform = make_translate({0.0f, -0.1f, 0.0f}) * make_scale({1.0f, 0.1f + stackHeight, 1.0f}),
+			.transform = make_translate({0.0f, baseline - 0.1f, 0.0f}) * make_scale({1.0f, 0.1f + stackHeight, 1.0f}),
 			.tint = {1.2f, 1.2f, 1.2f, 1.0f},
-		},
-	}, gfx::Material::Flat);
-	engine.enqueueDraw("scene_top"_id, "transparent"_id, std::array{
-		gfx::Instance{
-			.transform = make_translate({0.0f, stackHeight, 0.0f}) * make_scale({1.0f, 5.1f, 1.0f}),
 		},
 	}, gfx::Material::Flat);
 	engine.enqueueDraw("scene_guide"_id, "transparent"_id, std::array{
 		gfx::Instance{
-			.transform = make_translate({0.0f, -0.1f, 0.0f}) * make_scale({1.0f, 5.1f + stackHeight, 1.0f}),
+			.transform = make_translate({0.0f, baseline - 0.1f, 0.0f}) * make_scale({1.0f, 5.1f + stackHeight, 1.0f}),
 			.tint = {1.0f, 1.0f, 1.0f, 0.02f},
+		},
+	}, gfx::Material::Flat);
+	engine.enqueueDraw("scene_base"_id, "transparent"_id, std::array{
+		gfx::Instance{
+			.transform = make_translate({0.0f, baseline, 0.0f}),
+			.tint = {1.2f, 1.2f, 1.2f, 1.0f},
 		},
 	}, gfx::Material::Flat);
 
@@ -71,7 +72,7 @@ void PlayState::draw(gfx::Engine& engine) {
 
 			auto const translation = make_translate({
 				static_cast<f32>(x) - grid.Width / 2,
-				y,
+				baseline + y,
 				-1.0f,
 			});
 			blockInstances.emplace_back(gfx::Instance{
@@ -84,7 +85,7 @@ void PlayState::draw(gfx::Engine& engine) {
 	if (p1.state == Player::State::Active) {
 		auto const pieceTranslation = make_translate({
 			p1.position.x - i32(grid.Width / 2),
-			p1.position.y,
+			baseline + p1.position.y,
 			0.0f,
 		});
 		auto const pieceRotationPre = make_translate({-0.5f, -0.5f, 0.0f});
@@ -104,7 +105,7 @@ void PlayState::draw(gfx::Engine& engine) {
 	// Preview
 	auto const previewTransform = make_translate({
 		PlayerSpawnPosition.x - i32(grid.Width / 2),
-		PlayerSpawnPosition.y + stackHeight + 3,
+		DeadlineDepth + PlayerSpawnPosition.y + 3,
 		-1.0f,
 	});
 

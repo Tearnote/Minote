@@ -68,14 +68,14 @@ Engine::Engine(sys::Glfw&, sys::Window& window, std::string_view name, Version a
 	techniques.setTechniqueDebugName(ctx, "opaque"_id, "opaque");
 	techniques.addTechnique(ctx, "transparent_depth_prepass"_id, targets.renderPass,
 		world.getDescriptorSets(),
-		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
+		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, false),
 		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None, false),
 		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
 		vk::makePipelineMultisampleStateCI(targets.msColor.samples));
 	techniques.setTechniqueDebugName(ctx, "transparent_depth_prepass"_id, "transparent_depth_prepass");
 	techniques.addTechnique(ctx, "transparent"_id, targets.renderPass,
 		world.getDescriptorSets(),
-		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
+		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, false),
 		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::Normal),
 		vk::makePipelineDepthStencilStateCI(true, false, VK_COMPARE_OP_LESS_OR_EQUAL),
 		vk::makePipelineMultisampleStateCI(targets.msColor.samples));

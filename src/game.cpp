@@ -54,7 +54,7 @@ void game(sys::Glfw& glfw, sys::Window& window) try {
 		// Graphics
 		engine.setBackground({0.75f, 0.75f, 0.75f});
 		engine.setLightSource({-8.0f, 32.0f, 16.0f}, {1.0f, 1.0f, 1.0f});
-		engine.setCamera({0.0f, 10.0f, 24.0f}, {0.0f, 10.0f, 0.0f});
+		engine.setCamera({0.0f, 12.0f, 36.0f}, {0.0f, 12.0f, 0.0f});
 
 		play.draw(engine);
 
