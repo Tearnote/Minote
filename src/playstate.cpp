@@ -367,7 +367,9 @@ void PlayState::updateSpawn() {
 	// Respawn
 	if (p1.state == Player::State::Respawning) {
 		p1.spawnDelay += 1;
-		if (p1.spawnDelay == SpawnDelayTarget)
+		if (p1.spawnDelay == SpawnDelayTarget || p1.pressed[+Button::RotCCW] ||
+			p1.pressed[+Button::RotCCW2] || p1.pressed[+Button::RotCW] ||
+			p1.pressed[+Button::Drop])
 			spawnPlayer();
 	}
 }
