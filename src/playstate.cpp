@@ -29,6 +29,7 @@ void PlayState::tick(std::span<Action const> actions) {
 	updateRotation();
 	updateShift();
 	updateSpawn();
+	updateGravity();
 }
 
 void PlayState::draw(gfx::Engine& engine) {
@@ -79,22 +80,24 @@ void PlayState::draw(gfx::Engine& engine) {
 		}
 
 	// Player
-	auto const pieceTranslation = make_translate({
-		p1.position.x - i32(grid.Width / 2),
-		p1.position.y,
-		0.0f,
-	});
-	auto const pieceRotationPre = make_translate({-0.5f, -0.5f, 0.0f});
-	auto const pieceRotation = make_rotate(+p1.spin * glm::radians(90.0f), {0.0f, 0.0f, 1.0f});
-	auto const pieceRotationPost = make_translate({0.5f, 0.5f, -1.0f});
-	auto const pieceTransform = pieceTranslation * pieceRotationPost * pieceRotation * pieceRotationPre;
-
-	for (auto const block: minoPiece(p1.pieceType)) {
-		auto const blockTransform = make_translate({block.x, block.y, 0.0f});
-		blockInstances.emplace_back(gfx::Instance{
-			.transform = pieceTransform * blockTransform,
-			.tint = minoColor(p1.pieceType),
+	if (p1.state == Player::State::Active) {
+		auto const pieceTranslation = make_translate({
+			p1.position.x - i32(grid.Width / 2),
+			p1.position.y,
+			0.0f,
 		});
+		auto const pieceRotationPre = make_translate({-0.5f, -0.5f, 0.0f});
+		auto const pieceRotation = make_rotate(+p1.spin * glm::radians(90.0f), {0.0f, 0.0f, 1.0f});
+		auto const pieceRotationPost = make_translate({0.5f, 0.5f, -1.0f});
+		auto const pieceTransform = pieceTranslation * pieceRotationPost * pieceRotation * pieceRotationPre;
+
+		for (auto const block: minoPiece(p1.pieceType)) {
+			auto const blockTransform = make_translate({block.x, block.y, 0.0f});
+			blockInstances.emplace_back(gfx::Instance{
+				.transform = pieceTransform * blockTransform,
+				.tint = minoColor(p1.pieceType),
+			});
+		}
 	}
 
 	// Submit
@@ -147,9 +150,12 @@ void PlayState::spawnPlayer() {
 	p1.position.y += grid.stackHeight();
 	p1.spin = Spin::_0;
 	p1.state = Player::State::Active;
+	p1.spawnDelay = 0;
 }
 
 void PlayState::rotate(i32 direction) {
+	if (p1.state != Player::State::Active) return;
+
 	auto const origSpin = p1.spin;
 	auto const origPosition = p1.position;
 
@@ -221,7 +227,7 @@ void PlayState::rotate(i32 direction) {
 	// Check if any kick succeeds
 	auto const successful = [this] {
 		auto check = [this] {
-			return !grid.overlapsPiece(p1.position, minoPiece(p1.pieceType, p1.spin));
+			return !grid.overlaps(p1.position, minoPiece(p1.pieceType, p1.spin));
 		};
 
 		// Base position
@@ -263,11 +269,12 @@ void PlayState::rotate(i32 direction) {
 }
 
 void PlayState::shift(i32 direction) {
+	if (p1.state != Player::State::Active) return;
 	auto const origPosition = p1.position;
 
 	p1.position.x += direction;
 
-	if (grid.overlapsPiece(p1.position, minoPiece(p1.pieceType, p1.spin)))
+	if (grid.overlaps(p1.position, minoPiece(p1.pieceType, p1.spin)))
 		p1.position = origPosition;
 }
 
@@ -280,12 +287,6 @@ void PlayState::updateActions(std::span<Action const>& actions) {// Collect play
 	}
 
 	// Filter player actions
-	if (p1.held[+Button::Drop] || p1.held[+Button::Lock]) {
-		p1.pressed[+Button::Left] = false;
-		p1.pressed[+Button::Right] = false;
-		p1.held[+Button::Left] = false;
-		p1.held[+Button::Right] = false;
-	}
 	if (p1.held[+Button::Left] && p1.pressed[+Button::Right])
 		p1.held[+Button::Left] = false;
 	if (p1.held[+Button::Right] && p1.pressed[+Button::Left])
@@ -329,13 +330,41 @@ void PlayState::updateShift() {
 	if (p1.autoshift == p1.autoshiftTarget) {
 		shift(p1.autoshiftDirection);
 		p1.autoshift = 0;
-		p1.autoshiftTarget = std::ceil(float(p1.autoshiftTarget) * AutoshiftTargetDecrement);
+		if (p1.state == Player::State::Active) // Live piece, use normal autoshift multiplier
+			p1.autoshiftTarget = std::ceil(float(p1.autoshiftTarget) * AutoshiftTargetFactor);
+		else // Otherwise, precharge instantly
+			p1.autoshiftTarget = 1;
 	}
 }
 
 void PlayState::updateSpawn() {
+	// Initial spawn
 	if (p1.state == Player::State::None)
 		spawnPlayer();
+
+	// Respawn
+	if (p1.state == Player::State::Respawning) {
+		p1.spawnDelay += 1;
+		if (p1.spawnDelay == SpawnDelayTarget)
+			spawnPlayer();
+	}
+}
+
+void PlayState::updateGravity() {
+	if (p1.state != Player::State::Active) return;
+
+	// Drop to the lowest position
+	if (p1.held[+Button::Drop] || p1.held[+Button::Lock]) {
+		while (!grid.overlaps(p1.position, minoPiece(p1.pieceType, p1.spin)))
+			p1.position.y -= 1;
+		p1.position.y += 1;
+	}
+
+	// Lock the piece
+	if (p1.held[+Button::Lock]) {
+		grid.stamp(p1.position, minoPiece(p1.pieceType, p1.spin), p1.pieceType);
+		p1.state = Player::State::Respawning;
+	}
 }
 
 }

@@ -23,13 +23,15 @@ private:
 	static constexpr auto StartingTokens = 6;
 	static constexpr auto PlayerSpawnPosition = glm::ivec2{4, 5};
 	static constexpr auto AutoshiftTargetInitial = 24;
-	static constexpr auto AutoshiftTargetDecrement = 0.5f;
+	static constexpr auto AutoshiftTargetFactor = 0.5f;
+	static constexpr auto SpawnDelayTarget = 50;
 
 	struct Player {
 
 		enum struct State {
 			None,
 			Active,
+			Respawning,
 		};
 
 		std::array<bool, +Button::Count> pressed;
@@ -48,6 +50,7 @@ private:
 		i32 autoshift;
 		i32 autoshiftTarget;
 		i32 autoshiftDirection;
+		i32 spawnDelay;
 
 	};
 
@@ -67,6 +70,7 @@ private:
 	void updateRotation();
 	void updateShift();
 	void updateSpawn();
+	void updateGravity();
 };
 
 }

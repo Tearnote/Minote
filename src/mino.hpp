@@ -99,7 +99,9 @@ struct Grid {
 
 	auto stackHeight() -> size_t;
 
-	auto overlapsPiece(glm::ivec2 position, Piece4 const& piece) -> bool;
+	auto overlaps(glm::ivec2 position, Piece4 const& piece) -> bool;
+
+	void stamp(glm::ivec2 position, Piece4 const& piece, Mino4 value);
 
 private:
 

@@ -34,12 +34,18 @@ auto Grid<W, H>::stackHeight() -> size_t {
 }
 
 template<size_t W, size_t H>
-auto Grid<W, H>::overlapsPiece(glm::ivec2 position, Piece4 const& piece) -> bool {
+auto Grid<W, H>::overlaps(glm::ivec2 position, Piece4 const& piece) -> bool {
 	for (auto block: piece) {
 		if (get(position + block))
 			return true;
 	}
 	return false;
+}
+
+template<size_t W, size_t H>
+void Grid<W, H>::stamp(glm::ivec2 position, Piece4 const& piece, Mino4 value) {
+	for (auto block: piece)
+		set(position + block, value);
 }
 
 }
