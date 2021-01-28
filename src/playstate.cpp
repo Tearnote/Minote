@@ -101,6 +101,21 @@ void PlayState::draw(gfx::Engine& engine) {
 		}
 	}
 
+	// Preview
+	auto const previewTransform = make_translate({
+		PlayerSpawnPosition.x - i32(grid.Width / 2),
+		PlayerSpawnPosition.y + stackHeight + 3,
+		-1.0f,
+	});
+
+	for (auto const block: minoPiece(p1.preview)) {
+		auto const blockTransform = make_translate({block.x, block.y, 0.0f});
+		blockInstances.emplace_back(gfx::Instance{
+			.transform = previewTransform * blockTransform,
+			.tint = minoColor(p1.preview),
+		});
+	}
+
 	// Submit
 	engine.enqueueDraw("block"_id, "opaque"_id, blockInstances,
 		gfx::Material::Phong, gfx::MaterialData{.phong = {
