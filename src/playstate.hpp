@@ -23,6 +23,7 @@ private:
 	static constexpr auto StartingTokens = 6;
 	static constexpr auto PlayerSpawnPosition = glm::ivec2{4, 5};
 	static constexpr auto AutoshiftTargetInitial = 24;
+	static constexpr auto AutoshiftTargetMinimum = 2;
 	static constexpr auto AutoshiftTargetFactor = 0.5f;
 	static constexpr auto SpawnDelayTarget = 50;
 	static constexpr auto DeadlineDepth = 16;

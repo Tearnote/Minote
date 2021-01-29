@@ -171,7 +171,7 @@ void PlayState::spawnPlayer() {
 
 	// Instant autoshift charge
 	if (p1.held[+Button::Left] || p1.held[+Button::Right])
-		p1.autoshiftTarget = 1;
+		p1.autoshiftTarget = AutoshiftTargetMinimum;
 
 	// Initial spin
 	if (p1.held[+Button::RotCCW] || p1.held[+Button::RotCCW2])
@@ -357,7 +357,7 @@ void PlayState::updateShift() {
 	if (p1.autoshift >= p1.autoshiftTarget) {
 		shift(p1.autoshiftDirection);
 		p1.autoshift = 0;
-		p1.autoshiftTarget = std::ceil(float(p1.autoshiftTarget) * AutoshiftTargetFactor);
+		p1.autoshiftTarget = std::max(float(p1.autoshiftTarget) * AutoshiftTargetFactor, float(AutoshiftTargetMinimum));
 	}
 }
 
