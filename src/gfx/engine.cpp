@@ -141,15 +141,9 @@ void Engine::render() {
 			// Retrieve the techniques in use
 			auto& opaque = techniques.getTechnique("opaque"_id);
 			auto& opaqueIndirect = opaque.indirect[frameIndex];
-			auto& transparentPrepass = techniques.getTechnique("transparent_depth_prepass"_id);
-			auto& transparentPrepassIndirect = transparentPrepass.indirect[frameIndex];
-			auto& transparent = techniques.getTechnique("transparent"_id);
-			auto& transparentIndirect = transparent.indirect[frameIndex];
 
 			// Prepare and upload draw data to the GPU
 			opaqueIndirect.upload(ctx);
-			transparentPrepassIndirect.upload(ctx);
-			transparentIndirect.upload(ctx);
 
 			world.uniforms.setViewProjection(glm::uvec2{swapchain.extent.width, swapchain.extent.height},
 				VerticalFov, NearPlane, FarPlane,
@@ -175,24 +169,6 @@ void Engine::render() {
 
 			vkCmdDrawIndirect(cmdBuf, opaqueIndirect.commandBuffer().buffer, 0,
 				opaqueIndirect.size(), sizeof(IndirectBuffer::Command));
-
-			// Transparent object draw prepass
-			vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, transparentPrepass.pipeline);
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-				techniques.getPipelineLayout(), 1, 1, &transparentPrepass.getDescriptorSet(frameIndex),
-				0, nullptr);
-
-			vkCmdDrawIndirect(cmdBuf, transparentPrepassIndirect.commandBuffer().buffer, 0,
-				transparentPrepassIndirect.size(), sizeof(IndirectBuffer::Command));
-
-			// Transparent object draw
-			vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, transparent.pipeline);
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-				techniques.getPipelineLayout(), 1, 1, &transparent.getDescriptorSet(frameIndex),
-				0, nullptr);
-
-			vkCmdDrawIndirect(cmdBuf, transparentIndirect.commandBuffer().buffer, 0,
-				transparentIndirect.size(), sizeof(IndirectBuffer::Command));
 
 			// Finish the object drawing pass
 			vkCmdEndRenderPass(cmdBuf);
@@ -287,8 +263,6 @@ void Engine::render() {
 
 			// Cleanup
 			opaqueIndirect.reset();
-			transparentPrepassIndirect.reset();
-			transparentIndirect.reset();
 
 		});
 

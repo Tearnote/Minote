@@ -52,11 +52,57 @@ void game(sys::Glfw& glfw, sys::Window& window) try {
 		}
 
 		// Graphics
-		engine.setBackground({0.75f, 0.75f, 0.75f});
-		engine.setLightSource({-8.0f, 32.0f, 16.0f}, {1.0f, 1.0f, 1.0f});
-		engine.setCamera({0.0f, 12.0f, 36.0f}, {0.0f, 12.0f, 0.0f});
+		engine.setBackground({0.4f, 0.4f, 0.4f});
+		engine.setLightSource({4.0f, 16.0f, -4.0f}, {1.0f, 1.0f, 1.0f});
+		engine.setCamera({0.0f, 12.0f, 24.0f}, {0.0f, 4.0f, 0.0f});
 
-		play.draw(engine);
+		auto const centerTransform = make_translate({-0.5f, -0.5f, -0.5f});
+		auto const rotateTransform = make_rotate(glm::radians(-90.0f), {1.0f, 0.0f, 0.0f});
+		auto const rotateTransformAnim = make_rotate(f32(glm::radians(f64(sys::Glfw::getTime().count()) / 20000000.0)), {0.0f, 1.0f, 0.0f});
+
+		engine.enqueueDraw("block"_id, "opaque"_id, std::array{
+			gfx::Instance{
+				.transform = make_translate({0.0f, -1.0f, 0.0f}) * make_scale({16.0f, 2.0f, 16.0f}) * rotateTransform * centerTransform,
+				.tint = {0.9f, 0.9f, 1.0f, 1.0f},
+			},
+			gfx::Instance{
+				.transform = make_translate({-4.0f, 1.0f, -4.0f}) * make_scale({2.0f, 2.0f, 2.0f}) * rotateTransform * centerTransform,
+				.tint = {0.9f, 0.1f, 0.1f, 1.0f},
+			},
+			gfx::Instance{
+				.transform = make_translate({4.0f, 1.0f, -4.0f}) * make_scale({2.0f, 2.0f, 2.0f}) * rotateTransform * centerTransform,
+				.tint = {0.9f, 0.1f, 0.1f, 1.0f},
+			},
+			gfx::Instance{
+				.transform = make_translate({-4.0f, 1.0f, 4.0f}) * make_scale({2.0f, 2.0f, 2.0f}) * rotateTransform * centerTransform,
+				.tint = {0.9f, 0.1f, 0.1f, 1.0f},
+			},
+			gfx::Instance{
+				.transform = make_translate({4.0f, 1.0f, 4.0f}) * make_scale({2.0f, 2.0f, 2.0f}) * rotateTransform * centerTransform,
+				.tint = {0.9f, 0.1f, 0.1f, 1.0f},
+			},
+			gfx::Instance{
+				.transform = make_translate({2.0f, 1.0f, 0.0f}) * make_scale({2.0f, 2.0f, 2.0f}) * rotateTransform * centerTransform,
+				.tint = {0.1f, 0.5f, 0.1f, 1.0f},
+			},
+			gfx::Instance{
+				.transform = make_translate({2.0f, 2.75f, 0.0f}) * make_scale({2.0f, 2.0f, 2.0f}) * rotateTransform * centerTransform,
+				.tint = {0.1f, 0.7f, 0.1f, 1.0f},
+			},
+			gfx::Instance{
+				.transform = make_translate({2.0f, 4.5f, 0.0f}) * make_scale({2.0f, 2.0f, 2.0f}) * rotateTransform * centerTransform,
+				.tint = {0.1f, 0.9f, 0.1f, 1.0f},
+			},
+			gfx::Instance{
+				.transform = make_translate({-2.0f, 1.5f, 0.0f}) * make_scale({3.0f, 3.0f, 3.0f}) * rotateTransformAnim * rotateTransform * centerTransform,
+				.tint = {0.2f, 0.9f, 0.5f, 1.0f},
+			},
+		}, gfx::Material::Phong, gfx::MaterialData{.phong = {
+			.ambient = 0.1f,
+			.diffuse = 1.0f,
+			.specular = 0.4f,
+			.shine = 24.0f,
+		}});
 
 		engine.render();
 	}
