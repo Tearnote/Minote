@@ -14,13 +14,16 @@ layout(location = 0) out vec4 out_color;
 #include "object.glslh"
 
 void main() {
-	const vec4 i_highlight = instances.data[instanceID].highlight;
+	vec4 i_highlight;
 
 	switch (material) {
+	case MATERIAL_NONE:
+		out_color = vec4(1.0, 0.0, 1.0, 1.0);
+		break;
 
 	case MATERIAL_FLAT:
-
 		vec4 color = f_color;
+		i_highlight = instances.data[instanceID].highlight;
 		out_color = vec4(mix(color.rgb, i_highlight.rgb, i_highlight.a), color.a);
 		break;
 
@@ -29,10 +32,7 @@ void main() {
 		const float diffuse = phongCommands.data[drawID].diffuse;
 		const float specular = phongCommands.data[drawID].specular;
 		const float shine = phongCommands.data[drawID].shine;
-//		const float ambient = 0.2;
-//		const float diffuse = 0.9;
-//		const float specular = 0.4;
-//		const float shine = 24.0;
+		i_highlight = instances.data[instanceID].highlight;
 
 		vec4 normal = normalize(f_normal);
 		vec4 lightDirection = normalize(f_lightPosition - f_position);

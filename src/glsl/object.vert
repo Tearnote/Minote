@@ -24,6 +24,10 @@ void main() {
 
 	switch (material) {
 
+	case MATERIAL_NONE:
+		gl_Position = world.viewProjection * i_transform * v_position;
+		break;
+
 	case MATERIAL_FLAT:
 		gl_Position = world.viewProjection * i_transform * v_position;
 		f_color = v_color * i_tint;

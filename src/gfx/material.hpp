@@ -7,8 +7,9 @@ namespace minote::gfx {
 using namespace base;
 
 enum struct Material: u32 {
-	Flat = 0,
-	Phong = 1,
+	None = 0,
+	Flat = 1,
+	Phong = 2,
 };
 
 union MaterialData {
