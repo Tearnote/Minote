@@ -9,16 +9,15 @@ namespace minote::gfx {
 
 struct Targets {
 
-	sys::vk::Image msColor;
 	sys::vk::Image ssColor;
 	sys::vk::Image depthStencil;
 	VkRenderPass renderPass;
 	VkFramebuffer framebuffer;
 
-	void init(Context& ctx, VkExtent2D size, VkFormat color, VkFormat depth, VkSampleCountFlagBits samples);
+	void init(Context& ctx, VkExtent2D size, VkFormat color, VkFormat depth);
 	void cleanup(Context& ctx);
 
-	void refreshInit(Context& ctx, VkExtent2D size, VkFormat color, VkFormat depth, VkSampleCountFlagBits samples);
+	void refreshInit(Context& ctx, VkExtent2D size, VkFormat color, VkFormat depth);
 	void refreshCleanup(Context& ctx);
 
 };

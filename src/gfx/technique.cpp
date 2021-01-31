@@ -60,8 +60,7 @@ void TechniqueSet::addTechnique(Context& ctx, base::ID id, VkRenderPass renderPa
 	PerFrame<VkDescriptorSet> worldDescriptorSets,
 	VkPipelineRasterizationStateCreateInfo rasterizationStateCI,
 	VkPipelineColorBlendAttachmentState colorBlendAttachmentState,
-	VkPipelineDepthStencilStateCreateInfo depthStencilStateCI,
-	VkPipelineMultisampleStateCreateInfo multisampleStateCI) {
+	VkPipelineDepthStencilStateCreateInfo depthStencilStateCI) {
 	Technique result;
 
 	// Create the technique's pipeline
@@ -72,7 +71,6 @@ void TechniqueSet::addTechnique(Context& ctx, base::ID id, VkRenderPass renderPa
 		.rasterizationStateCI = rasterizationStateCI,
 		.colorBlendAttachmentState = colorBlendAttachmentState,
 		.depthStencilStateCI = depthStencilStateCI,
-		.multisampleStateCI = multisampleStateCI,
 		.layout = m_pipelineLayout,
 	}.build(ctx.device, renderPass);
 

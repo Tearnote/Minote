@@ -17,6 +17,10 @@ auto PipelineBuilder::build(VkDevice device, VkRenderPass pass, u32 subpass) -> 
 		.viewportCount = 1,
 		.scissorCount = 1,
 	};
+	auto const multisampleStateCI = VkPipelineMultisampleStateCreateInfo{
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+		.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+	};
 	auto const colorBlendStateCI = VkPipelineColorBlendStateCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
 		.logicOpEnable = VK_FALSE,

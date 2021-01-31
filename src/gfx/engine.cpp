@@ -43,19 +43,7 @@ Engine::Engine(sys::Glfw&, sys::Window& window, std::string_view name, Version a
 
 	samplers.init(ctx);
 	world.init(ctx, meshes);
-
-	auto const supportedSampleCount = ctx.deviceProperties.limits.framebufferColorSampleCounts &
-		ctx.deviceProperties.limits.framebufferDepthSampleCounts;
-	auto const selectedSampleCount = [=]() {
-		if (SampleCount & supportedSampleCount) {
-			return SampleCount;
-		} else {
-			L.warn("Requested antialiasing mode MSAA {}x not supported; defaulting to MSAA 2x",
-				SampleCount);
-			return VK_SAMPLE_COUNT_2_BIT;
-		}
-	}();
-	targets.init(ctx, swapchain.extent, ColorFormat, DepthFormat, selectedSampleCount);
+	targets.init(ctx, swapchain.extent, ColorFormat, DepthFormat);
 
 	// Create the pipeline phases
 	techniques.init(ctx, world.getDescriptorSetLayout());
@@ -63,22 +51,19 @@ Engine::Engine(sys::Glfw&, sys::Window& window, std::string_view name, Version a
 		world.getDescriptorSets(),
 		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
 		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None),
-		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
-		vk::makePipelineMultisampleStateCI(targets.msColor.samples));
+		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL));
 	techniques.setTechniqueDebugName(ctx, "opaque"_id, "opaque");
 	techniques.addTechnique(ctx, "transparent_depth_prepass"_id, targets.renderPass,
 		world.getDescriptorSets(),
 		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, false),
 		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None, false),
-		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
-		vk::makePipelineMultisampleStateCI(targets.msColor.samples));
+		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL));
 	techniques.setTechniqueDebugName(ctx, "transparent_depth_prepass"_id, "transparent_depth_prepass");
 	techniques.addTechnique(ctx, "transparent"_id, targets.renderPass,
 		world.getDescriptorSets(),
 		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, false),
 		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::Normal),
-		vk::makePipelineDepthStencilStateCI(true, false, VK_COMPARE_OP_LESS_OR_EQUAL),
-		vk::makePipelineMultisampleStateCI(targets.msColor.samples));
+		vk::makePipelineDepthStencilStateCI(true, false, VK_COMPARE_OP_LESS_OR_EQUAL));
 	techniques.setTechniqueDebugName(ctx, "transparent"_id, "transparent");
 
 	bloom.init(ctx, samplers, world, targets.ssColor, ColorFormat);
@@ -283,7 +268,6 @@ void Engine::render() {
 
 void Engine::refresh() {
 	ctx.refreshSurface();
-	auto const sampleCount = targets.msColor.samples;
 
 	// Queue up outdated objects for destruction
 	delayedOps.emplace_back(DelayedOp{
@@ -301,7 +285,7 @@ void Engine::refresh() {
 	swapchain = {};
 	targets = {};
 	swapchain.init(ctx, oldSwapchain);
-	targets.refreshInit(ctx, swapchain.extent, ColorFormat, DepthFormat, sampleCount);
+	targets.refreshInit(ctx, swapchain.extent, ColorFormat, DepthFormat);
 	bloom.refreshInit(ctx, targets.ssColor, ColorFormat);
 	present.refreshInit(ctx, targets.ssColor, swapchain);
 }

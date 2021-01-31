@@ -42,8 +42,7 @@ struct TechniqueSet {
 		PerFrame<VkDescriptorSet> worldDescriptorSets,
 		VkPipelineRasterizationStateCreateInfo rasterizationStateCI,
 		VkPipelineColorBlendAttachmentState colorBlendAttachmentState,
-		VkPipelineDepthStencilStateCreateInfo depthStencilStateCI,
-		VkPipelineMultisampleStateCreateInfo multisampleStateCI);
+		VkPipelineDepthStencilStateCreateInfo depthStencilStateCI);
 
 	void setTechniqueDebugName(Context& ctx, ID id, std::string_view name);
 

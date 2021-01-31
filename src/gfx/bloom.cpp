@@ -48,7 +48,6 @@ void Bloom::init(Context& ctx, Samplers& samplers, World& world, vk::Image& targ
 		.rasterizationStateCI = vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, false),
 		.colorBlendAttachmentState = vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None),
 		.depthStencilStateCI = vk::makePipelineDepthStencilStateCI(false, false, VK_COMPARE_OP_ALWAYS),
-		.multisampleStateCI = vk::makePipelineMultisampleStateCI(),
 		.layout = layout,
 	};
 	down = builder.build(ctx.device, downPass);

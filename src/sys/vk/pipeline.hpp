@@ -19,7 +19,6 @@ struct PipelineBuilder {
 	VkPipelineRasterizationStateCreateInfo rasterizationStateCI;
 	VkPipelineColorBlendAttachmentState colorBlendAttachmentState;
 	VkPipelineDepthStencilStateCreateInfo depthStencilStateCI;
-	VkPipelineMultisampleStateCreateInfo multisampleStateCI;
 	VkPipelineLayout layout;
 
 	auto build(VkDevice device, VkRenderPass pass, u32 subpass = 0) -> VkPipeline;
@@ -74,13 +73,6 @@ constexpr auto makePipelineRasterizationStateCI(VkPolygonMode polygonMode, bool 
 		.depthBiasClamp = 0.0f,
 		.depthBiasSlopeFactor = 0.0f,
 		.lineWidth = 1.0f,
-	};
-}
-
-constexpr auto makePipelineMultisampleStateCI(VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT) {
-	return VkPipelineMultisampleStateCreateInfo{
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-		.rasterizationSamples = sampleCount,
 	};
 }
 

@@ -47,7 +47,6 @@ void Present::init(Context& ctx, World& world, sys::vk::Image& source, Swapchain
 		.rasterizationStateCI = vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, false),
 		.colorBlendAttachmentState = vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None),
 		.depthStencilStateCI = vk::makePipelineDepthStencilStateCI(false, false, VK_COMPARE_OP_ALWAYS),
-		.multisampleStateCI = vk::makePipelineMultisampleStateCI(),
 		.layout = layout,
 	}.build(ctx.device, renderPass);
 	vk::setDebugName(ctx.device, pipeline, "Present::pipeline");
