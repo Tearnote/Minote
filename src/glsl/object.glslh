@@ -1,13 +1,13 @@
-#define MATERIAL_NONE 0
-#define MATERIAL_FLAT 1
-#define MATERIAL_PHONG 2
+#define PASS_NONE 0
+#define PASS_FLAT 1
+#define PASS_PHONG 2
 
 struct Command {
 	uint vertexCount;
 	uint instanceCount;
 	uint firstVertex;
 	uint firstInstance;
-	uint material;
+	uint pass;
 	float pad[4];
 };
 
@@ -16,7 +16,7 @@ struct PhongCommand {
 	uint instanceCount;
 	uint firstVertex;
 	uint firstInstance;
-	uint material;
+	uint pass;
 	float ambient;
 	float diffuse;
 	float specular;

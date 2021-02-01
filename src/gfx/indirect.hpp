@@ -28,8 +28,8 @@ struct IndirectBuffer {
 	struct Command {
 
 		VkDrawIndirectCommand base;
+		Pass pass;
 		Material material;
-		MaterialData materialData;
 
 	};
 
@@ -38,7 +38,7 @@ struct IndirectBuffer {
 	void cleanup(Context& ctx);
 
 	void enqueue(MeshBuffer::Descriptor const& mesh, std::span<Instance const> instances,
-		Material material, MaterialData const& materialData = {});
+		Pass pass, Material material = {});
 
 	auto size() { return m_commandQueue.size(); }
 

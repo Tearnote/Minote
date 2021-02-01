@@ -20,7 +20,7 @@ void game(sys::Glfw& glfw, sys::Window& window) try {
 	engine::Mapper mapper;
 	auto engine = gfx::Engine{glfw, window, AppTitle, AppVersion};
 
-	PlayState play;
+//	PlayState play;
 
 	// *** Main loop ***
 
@@ -47,7 +47,7 @@ void game(sys::Glfw& glfw, sys::Window& window) try {
 				return true;
 			});
 
-			play.tick(updateActions);
+//			play.tick(updateActions);
 			nextUpdate += UpdateTick;
 		}
 
@@ -60,7 +60,7 @@ void game(sys::Glfw& glfw, sys::Window& window) try {
 		auto const rotateTransform = make_rotate(glm::radians(-90.0f), {1.0f, 0.0f, 0.0f});
 		auto const rotateTransformAnim = make_rotate(f32(glm::radians(f64(sys::Glfw::getTime().count()) / 20000000.0)), {0.0f, 1.0f, 0.0f});
 
-		engine.enqueueDraw("block"_id, "opaque"_id, std::array{
+		engine.enqueueLit("block"_id, std::array{
 			gfx::Instance{
 				.transform = make_translate({0.0f, -1.0f, 0.0f}) * make_scale({16.0f, 2.0f, 16.0f}) * rotateTransform * centerTransform,
 				.tint = {0.9f, 0.9f, 1.0f, 1.0f},
@@ -97,12 +97,12 @@ void game(sys::Glfw& glfw, sys::Window& window) try {
 				.transform = make_translate({-2.0f, 1.5f, 0.0f}) * make_scale({3.0f, 3.0f, 3.0f}) * rotateTransformAnim * rotateTransform * centerTransform,
 				.tint = {0.2f, 0.9f, 0.5f, 1.0f},
 			},
-		}, gfx::Material::Phong, gfx::MaterialData{.phong = {
+		}, gfx::Material{
 			.ambient = 0.1f,
 			.diffuse = 1.0f,
 			.specular = 0.4f,
 			.shine = 24.0f,
-		}});
+		});
 
 		engine.render();
 	}

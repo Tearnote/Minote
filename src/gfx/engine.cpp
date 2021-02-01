@@ -110,11 +110,10 @@ void Engine::setCamera(glm::vec3 eye, glm::vec3 center, glm::vec3 up) {
 	};
 }
 
-void Engine::enqueueDraw(ID mesh, ID technique, std::span<Instance const> instances,
-	Material material, MaterialData const& materialData) {
+void Engine::enqueueLit(ID mesh, std::span<Instance const> instances, Material material) {
 	auto const frameIndex = frameCounter % FramesInFlight;
-	auto& indirect = techniques.getTechnique(technique).indirect[frameIndex];
-	indirect.enqueue(meshes.getMeshDescriptor(mesh), instances, material, materialData);
+	auto& indirect = techniques.getTechnique("opaque"_id).indirect[frameIndex];
+	indirect.enqueue(meshes.getMeshDescriptor(mesh), instances, Pass::Phong, material);
 }
 
 void Engine::render() {

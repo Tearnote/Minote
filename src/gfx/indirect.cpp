@@ -36,7 +36,7 @@ void IndirectBuffer::cleanup(Context& ctx) {
 }
 
 void IndirectBuffer::enqueue(MeshBuffer::Descriptor const& mesh, std::span<Instance const> instances,
-	Material material, MaterialData const& materialData) {
+	Pass pass, Material material) {
 	ASSERT(m_commandBuffer.buffer && m_commandBuffer.allocation);
 	ASSERT(m_instanceBuffer.buffer && m_instanceBuffer.allocation);
 
@@ -52,8 +52,8 @@ void IndirectBuffer::enqueue(MeshBuffer::Descriptor const& mesh, std::span<Insta
 			.firstVertex = static_cast<u32>(mesh.vertexOffset),
 			.firstInstance = static_cast<u32>(m_instanceQueue.size()),
 		},
+		.pass = pass,
 		.material = material,
-		.materialData = materialData,
 	});
 	m_instanceQueue.insert(m_instanceQueue.end(), instances.begin(), instances.end());
 }

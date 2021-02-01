@@ -1,6 +1,6 @@
 #version 460
 
-layout(location = 0) out flat uint material;
+layout(location = 0) out flat uint pass;
 layout(location = 1) out flat uint drawID;
 layout(location = 2) out flat uint instanceID;
 layout(location = 3) out vec4 f_position;
@@ -13,7 +13,7 @@ layout(location = 6) out vec4 f_lightPosition; // in view space
 
 void main() {
 	drawID = gl_DrawID;
-	material = commands.data[drawID].material;
+	pass = commands.data[drawID].pass;
 	instanceID = gl_InstanceIndex;
 
 	const vec4 v_position = vertices.data[gl_VertexIndex].position;
@@ -22,18 +22,18 @@ void main() {
 	const mat4 i_transform = instances.data[gl_InstanceIndex].transform;
 	const vec4 i_tint = instances.data[gl_InstanceIndex].tint;
 
-	switch (material) {
+	switch (pass) {
 
-	case MATERIAL_NONE:
+	case PASS_NONE:
 		gl_Position = world.viewProjection * i_transform * v_position;
 		break;
 
-	case MATERIAL_FLAT:
+	case PASS_FLAT:
 		gl_Position = world.viewProjection * i_transform * v_position;
 		f_color = v_color * i_tint;
 		break;
 
-	case MATERIAL_PHONG:
+	case PASS_PHONG:
 		gl_Position = world.viewProjection * i_transform * v_position;
 		f_position = world.view * i_transform * v_position;
 		f_color = v_color * i_tint;

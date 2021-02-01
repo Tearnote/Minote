@@ -1,6 +1,6 @@
 #version 460
 
-layout(location = 0) in flat uint material;
+layout(location = 0) in flat uint pass;
 layout(location = 1) in flat uint drawID;
 layout(location = 2) in flat uint instanceID;
 layout(location = 3) in vec4 f_position;
@@ -16,18 +16,18 @@ layout(location = 0) out vec4 out_color;
 void main() {
 	vec4 i_highlight;
 
-	switch (material) {
-	case MATERIAL_NONE:
+	switch (pass) {
+	case PASS_NONE:
 		out_color = vec4(1.0, 0.0, 1.0, 1.0);
 		break;
 
-	case MATERIAL_FLAT:
+	case PASS_FLAT:
 		vec4 color = f_color;
 		i_highlight = instances.data[instanceID].highlight;
 		out_color = vec4(mix(color.rgb, i_highlight.rgb, i_highlight.a), color.a);
 		break;
 
-	case MATERIAL_PHONG:
+	case PASS_PHONG:
 		const float ambient = phongCommands.data[drawID].ambient;
 		const float diffuse = phongCommands.data[drawID].diffuse;
 		const float specular = phongCommands.data[drawID].specular;
