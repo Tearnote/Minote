@@ -17,11 +17,6 @@ namespace minote::gfx {
 
 using namespace base;
 
-// A collection of pipelines for object drawing. While all materials are drawn with a single
-// ubershader, multiple pipelines are still required to handle different requirements such as
-// rasterizer state. These pipelines will be called techniques, as every material can
-// be rendered using every technique.
-// The shader and all relevant buffers are owned by this object.
 struct TechniqueSet {
 
 	struct Technique {
