@@ -166,7 +166,6 @@ void Context::init(sys::Window& _window, u32 vulkanVersion, std::string_view app
 	auto physicalDevicesFeatures = std::vector<VkPhysicalDeviceFeatures>(deviceCount);
 	auto physicalDevicesExtensions = std::vector<std::vector<VkExtensionProperties>>(deviceCount);
 	auto physicalDevicesGraphicsQueueIndex = std::vector<std::optional<u32>>(deviceCount);
-	auto physicalDevicesPresentQueueIndex = std::vector<std::optional<u32>>(deviceCount);
 	auto physicalDevicesTransferQueueIndex = std::vector<std::optional<u32>>(deviceCount);
 	auto physicalDevicesScore = std::vector<i32>(deviceCount);
 	// The following three can only be queried after confirming that device extensions are available
@@ -174,10 +173,10 @@ void Context::init(sys::Window& _window, u32 vulkanVersion, std::string_view app
 	auto physicalDevicesSurfaceFormats = std::vector<std::vector<VkSurfaceFormatKHR>>(deviceCount);
 	auto physicalDevicesSurfacePresentModes = std::vector<std::vector<VkPresentModeKHR>>(deviceCount);
 	VK(vkEnumeratePhysicalDevices(instance, &deviceCount, physicalDevices.data()));
-	for (auto[dev, prop, feat, ext, gfxqueue, presqueue, tranqueue]:
+	for (auto[dev, prop, feat, ext, gfxqueue, tranqueue]:
 		zip_view{physicalDevices, physicalDevicesProperties, physicalDevicesFeatures,
 		         physicalDevicesExtensions, physicalDevicesGraphicsQueueIndex,
-		         physicalDevicesPresentQueueIndex, physicalDevicesTransferQueueIndex}) {
+		         physicalDevicesTransferQueueIndex}) {
 		vkGetPhysicalDeviceProperties(dev, &prop);
 		vkGetPhysicalDeviceFeatures(dev, &feat);
 
@@ -193,19 +192,13 @@ void Context::init(sys::Window& _window, u32 vulkanVersion, std::string_view app
 		auto queueFamilies = std::vector<VkQueueFamilyProperties>(queueFamilyCount);
 		vkGetPhysicalDeviceQueueFamilyProperties(dev, &queueFamilyCount, queueFamilies.data());
 
-		// Find first queue family that supports graphics
-		if (auto const result = ranges::find_if(queueFamilies, [](auto const& family) -> bool {
-				return family.queueFlags & VK_QUEUE_GRAPHICS_BIT;
-			}); result != queueFamilies.end())
-			gfxqueue = ranges::distance(queueFamilies.begin(), result);
-
-		// Find first queue family that supports presentation
+		// Find first queue family that supports graphics and presentation
 		for (u32 familyIndex: nrange(0_zu, queueFamilies.size())) {
+			bool const graphicsSupported = queueFamilies[familyIndex].queueFlags & VK_QUEUE_GRAPHICS_BIT;
 			VkBool32 presentSupported;
-			VK(vkGetPhysicalDeviceSurfaceSupportKHR(dev, familyIndex, surface,
-				&presentSupported));
-			if (presentSupported) {
-				presqueue = familyIndex;
+			VK(vkGetPhysicalDeviceSurfaceSupportKHR(dev, familyIndex, surface, &presentSupported));
+			if (graphicsSupported && presentSupported) {
+				gfxqueue = familyIndex;
 				break;
 			}
 		}
@@ -217,16 +210,17 @@ void Context::init(sys::Window& _window, u32 vulkanVersion, std::string_view app
 					!(family.queueFlags & VK_QUEUE_COMPUTE_BIT);
 			}); result != queueFamilies.end())
 			tranqueue = ranges::distance(queueFamilies.begin(), result);
+		else
+			tranqueue = gfxqueue;
 	}
 
 	// Query and rate device suitability
 	L.info("Available GPUs:");
-	for (auto[dev, prop, feat, ext, score, gfxqueue, presqueue, tranqueue, surfcap, surffmt, surfmode]:
+	for (auto[dev, prop, feat, ext, score, gfxqueue, tranqueue, surfcap, surffmt, surfmode]:
 		zip_view{physicalDevices, physicalDevicesProperties, physicalDevicesFeatures,
 		         physicalDevicesExtensions, physicalDevicesScore, physicalDevicesGraphicsQueueIndex,
-		         physicalDevicesPresentQueueIndex, physicalDevicesTransferQueueIndex,
-		         physicalDevicesSurfaceCapabilities, physicalDevicesSurfaceFormats,
-		         physicalDevicesSurfacePresentModes}) {
+		         physicalDevicesTransferQueueIndex, physicalDevicesSurfaceCapabilities,
+		         physicalDevicesSurfaceFormats, physicalDevicesSurfacePresentModes}) {
 		L.info("  {}", prop.deviceName);
 
 		// Version check
@@ -277,13 +271,11 @@ void Context::init(sys::Window& _window, u32 vulkanVersion, std::string_view app
 		// Queue family check
 		L.debug("    Graphics queue index: {}",
 			gfxqueue? std::to_string(gfxqueue.value()) : "N/A"s);
-		L.debug("    Presentation queue index: {}",
-			presqueue? std::to_string(presqueue.value()) : "N/A"s);
 		L.debug("    Transfer queue index: {}",
 			tranqueue? std::to_string(tranqueue.value()) : "N/A"s);
-		if (!gfxqueue || !presqueue)
+		if (!gfxqueue)
 			score -= 0x10'00'00;
-		if (tranqueue)
+		if (tranqueue != gfxqueue)
 			score += 0x1'00'00;
 
 		// Physical device type scoring
@@ -320,7 +312,6 @@ void Context::init(sys::Window& _window, u32 vulkanVersion, std::string_view app
 	physicalDevice = physicalDevices[bestDeviceIndex];
 	deviceProperties = physicalDevicesProperties[bestDeviceIndex];
 	graphicsQueueFamilyIndex = physicalDevicesGraphicsQueueIndex[bestDeviceIndex].value();
-	presentQueueFamilyIndex = physicalDevicesPresentQueueIndex[bestDeviceIndex].value();
 	transferQueueFamilyIndex = physicalDevicesTransferQueueIndex[bestDeviceIndex]?
 		physicalDevicesTransferQueueIndex[bestDeviceIndex].value() :
 		graphicsQueueFamilyIndex;
@@ -332,7 +323,7 @@ void Context::init(sys::Window& _window, u32 vulkanVersion, std::string_view app
 
 	// Enumerate required queues
 	std::vector<VkDeviceQueueCreateInfo> queueCIs;
-	queueCIs.reserve(3);
+	queueCIs.reserve(2);
 	auto const queuePriority = 1.0f;
 	auto queueCI = VkDeviceQueueCreateInfo{
 		.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
@@ -341,10 +332,6 @@ void Context::init(sys::Window& _window, u32 vulkanVersion, std::string_view app
 		.pQueuePriorities = &queuePriority,
 	};
 	queueCIs.push_back(queueCI);
-	if (uniquePresentQueue()) {
-		queueCI.queueFamilyIndex = presentQueueFamilyIndex;
-		queueCIs.push_back(queueCI);
-	}
 	if (uniqueTransferQueue()) {
 		queueCI.queueFamilyIndex = transferQueueFamilyIndex;
 		queueCIs.push_back(queueCI);
@@ -374,10 +361,8 @@ void Context::init(sys::Window& _window, u32 vulkanVersion, std::string_view app
 
 	// Retrieve device queues
 	vkGetDeviceQueue(device, graphicsQueueFamilyIndex, 0, &graphicsQueue);
-	vkGetDeviceQueue(device, presentQueueFamilyIndex, 0, &presentQueue);
 	vkGetDeviceQueue(device, transferQueueFamilyIndex, 0, &transferQueue);
 	vk::setDebugName(device, graphicsQueue, "Context::graphicsQueue");
-	vk::setDebugName(device, presentQueue, "Context::presentQueue");
 	vk::setDebugName(device, transferQueue, "Context::transferQueue");
 
 	// Create the allocator

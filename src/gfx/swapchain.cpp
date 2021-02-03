@@ -52,7 +52,6 @@ void Swapchain::init(Context& ctx, VkSwapchainKHR old) {
 	auto const surfaceImageCount = std::min(ctx.surfaceCapabilities.minImageCount + 1, maxImageCount);
 
 	// Create the swapchain
-	auto const queueIndices = std::array{ctx.graphicsQueueFamilyIndex, ctx.presentQueueFamilyIndex};
 	auto const swapchainCI = VkSwapchainCreateInfoKHR{
 		.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
 		.surface = ctx.surface,
@@ -62,9 +61,7 @@ void Swapchain::init(Context& ctx, VkSwapchainKHR old) {
 		.imageExtent = extent,
 		.imageArrayLayers = 1,
 		.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-		.imageSharingMode = ctx.uniquePresentQueue()? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE,
-		.queueFamilyIndexCount = static_cast<u32>(ctx.uniquePresentQueue()? queueIndices.size() : 0_zu),
-		.pQueueFamilyIndices = ctx.uniquePresentQueue()? queueIndices.data() : nullptr,
+		.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
 		.preTransform = ctx.surfaceCapabilities.currentTransform,
 		.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
 		.presentMode = surfacePresentMode,

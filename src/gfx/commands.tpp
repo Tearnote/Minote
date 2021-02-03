@@ -113,7 +113,7 @@ void Commands::render(Context& ctx, Swapchain& swapchain, u64 frameCount, F refr
 		.pSwapchains = &swapchain.swapchain,
 		.pImageIndices = &swapchainImageIndex,
 	};
-	auto result = vkQueuePresentKHR(ctx.presentQueue, &presentInfo);
+	auto result = vkQueuePresentKHR(ctx.graphicsQueue, &presentInfo);
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
 		ctx.window->size() != glm::uvec2{swapchain.extent.width, swapchain.extent.height})
 		refresh();

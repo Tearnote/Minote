@@ -33,12 +33,10 @@ struct Context {
 	std::vector<VkPresentModeKHR> surfacePresentModes;
 	VkSurfaceCapabilitiesKHR surfaceCapabilities;
 	u32 graphicsQueueFamilyIndex;
-	u32 presentQueueFamilyIndex;
 	u32 transferQueueFamilyIndex;
 
 	VkDevice device;
 	VkQueue graphicsQueue;
-	VkQueue presentQueue;
 	VkQueue transferQueue;
 	VmaAllocator allocator;
 	VkDescriptorPool descriptorPool;
@@ -47,11 +45,6 @@ struct Context {
 	void cleanup();
 
 	void refreshSurface();
-
-	[[nodiscard]]
-	auto uniquePresentQueue() const {
-		return (presentQueueFamilyIndex != graphicsQueueFamilyIndex);
-	}
 
 	[[nodiscard]]
 	auto uniqueTransferQueue() const {
