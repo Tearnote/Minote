@@ -30,7 +30,7 @@ Engine::Engine(sys::Glfw&, sys::Window& window, std::string_view name, Version a
 
 	// Create rendering infrastructure
 	std::vector<vk::Buffer> stagingBuffers;
-	commands.transfer(ctx, [this, &stagingBuffers](VkCommandBuffer cmdBuf) {
+	commands.transferAsync(ctx, [this, &stagingBuffers](VkCommandBuffer cmdBuf) {
 		meshes.addMesh("block"_id, generateNormals(mesh::Block));
 		meshes.addMesh("scene_base"_id, generateNormals(mesh::SceneBase));
 		meshes.addMesh("scene_body"_id, generateNormals(mesh::SceneBody));

@@ -29,7 +29,7 @@ struct Commands {
 
 	template<typename F>
 		requires std::invocable<F, VkCommandBuffer>
-	void transfer(Context& ctx, F func);
+	void transferAsync(Context& ctx, F func);
 
 	template<typename F, typename G>
 		requires std::invocable<F>

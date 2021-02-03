@@ -9,7 +9,7 @@ using namespace base;
 
 template<typename F>
 	requires std::invocable<F, VkCommandBuffer>
-void Commands::transfer(Context& ctx, F func) {
+void Commands::transferAsync(Context& ctx, F func) {
 	namespace vk = sys::vk;
 
 	// Start transfer command recording
