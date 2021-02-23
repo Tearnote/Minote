@@ -122,7 +122,7 @@ Window::Window(Glfw const& _glfw, string_view _title, bool const fullscreen, uve
 
 	glfwSetWindowUserPointer(handle, this);
 #ifndef MINOTE_DEBUG
-	glfwSetInputMode(handle, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+	//glfwSetInputMode(handle, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 #endif //MINOTE_DEBUG
 	glfwSetKeyCallback(handle, keyCallback);
 	glfwSetFramebufferSizeCallback(handle, framebufferResizeCallback);

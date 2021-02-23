@@ -66,9 +66,9 @@ auto main(int, char*[]) -> int try {
 	Glfw glfw;
 	Window window{glfw, title};
 
-#ifdef MINOTE_DEBUG
+//#ifdef MINOTE_DEBUG
 	debugInputSetup(window);
-#endif //MINOTE_DEBUG
+//#endif //MINOTE_DEBUG
 
 	// Thread startup
 	thread gameThread(game, ref(window));

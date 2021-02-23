@@ -36,6 +36,9 @@ struct Window {
 
 	};
 
+	// Raw window handle
+	GLFWwindow* handle;
+
 	// Open a window with specified parameters on the screen. The OpenGL context is
 	// not activated by default. Size of the window is in logical units. If fullscreen is true,
 	// size is ignored and the window is created at desktop resolution.
@@ -101,8 +104,6 @@ struct Window {
 
 private:
 
-	// Raw window handle
-	GLFWwindow* handle;
 	mutable mutex handleMutex;
 
 	// Parent library instance

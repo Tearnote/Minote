@@ -95,8 +95,8 @@ void debugInputSetup(Window& window)
 	atomic_init(&cursorPos, ((ivec2){-1, -1}));
 	atomic_init(&leftClick, false);
 	atomic_init(&rightClick, false);
-//	glfwSetCursorPosCallback(window.handle, debugCursorPosCallback);
-//	glfwSetMouseButtonCallback(window.handle, debugMouseButtonCallback);
+	glfwSetCursorPosCallback(window.handle, debugCursorPosCallback);
+	glfwSetMouseButtonCallback(window.handle, debugMouseButtonCallback);
 }
 
 void debugInit(void)
