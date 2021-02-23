@@ -8,6 +8,7 @@ namespace minote {
 void Mapper::mapKeyInputs(Window& window)
 {
 	while (const auto keyOpt = window.getInput()) {
+		window.popInput();
 		const auto key = keyOpt.value();
 
 		const auto type = [=] {
@@ -70,7 +71,6 @@ void Mapper::mapKeyInputs(Window& window)
 			L.warn("Mapper queue full");
 			return;
 		}
-		window.popInput();
 	}
 }
 
