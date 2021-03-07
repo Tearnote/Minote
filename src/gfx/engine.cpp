@@ -141,6 +141,15 @@ void Engine::setup() {
 		}, "object.frag");
 	context->create_named_pipeline("object", objectPci);
 
+	vuk::PipelineBaseCreateInfo lightmapPci;
+	lightmapPci.add_spirv(std::vector<u32>{
+#include "spv/shadowmap.vert.spv"
+		}, "object.vert");
+	lightmapPci.add_spirv(std::vector<u32>{
+#include "spv/shadowmap.frag.spv"
+		}, "object.frag");
+	context->create_named_pipeline("shadowmap", lightmapPci);
+
 	// Load meshes
 	auto blockNorm = generateNormals(mesh::Block);
 	meshes.emplace("block"_id, ptc.create_buffer(
@@ -156,8 +165,10 @@ void Engine::setup() {
 void Engine::render() {
 	// Prepare matrix data
 	world.setViewProjection(glm::uvec2{swapchain->extent.width, swapchain->extent.height},
-		VerticalFov, NearPlane, FarPlane,
+		VerticalFov, NearPlane,
 		camera.eye, camera.center, camera.up);
+	auto lightTransform = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 64.0f) *
+		glm::lookAt(glm::vec3{10.0f, 8.0f, -6.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f});
 
 	// Begin draw
 	auto ifc = context->begin();
@@ -184,23 +195,47 @@ void Engine::render() {
 	// Set up the rendergraph
 	vuk::RenderGraph rg;
 	rg.add_pass({
-		.resources = {"swapchain"_image(vuk::eColorWrite), "depth"_image(vuk::eDepthStencilRW)},
-		.execute = [this, worldBuf, &instanceBufs](vuk::CommandBuffer& command_buffer) {
+		.resources = {"shadowmap"_image(vuk::eDepthStencilRW)},
+		.execute = [this, &instanceBufs, lightTransform](vuk::CommandBuffer& command_buffer) {
 			for (auto&[id, mesh]: meshes) {
 				auto instCount = instances.at(id).size();
 				if (!instCount) continue;
 
+				command_buffer
+					.set_viewport(0, vuk::Rect2D::absolute(0, 0, 512, 512))
+					.set_scissor(0, vuk::Rect2D::absolute(0, 0, 512, 512))
+					.bind_vertex_buffer(0, *mesh, 0, gfx::Vertex::format())
+					.bind_storage_buffer(0, 0, instanceBufs.at(id))
+					.bind_graphics_pipeline("shadowmap");
+				auto* model = command_buffer.map_scratch_uniform_binding<glm::mat4>(0, 1);
+				*model = lightTransform;
+				command_buffer.draw(mesh->size / sizeof(gfx::Vertex), instCount, 0, 0);
+			}
+		},
+	});
+	rg.add_pass({
+		.resources = {"shadowmap"_image(vuk::eFragmentSampled), "swapchain"_image(vuk::eColorWrite), "depth"_image(vuk::eDepthStencilRW)},
+		.execute = [this, worldBuf, &instanceBufs, lightTransform](vuk::CommandBuffer& command_buffer) {
+			for (auto&[id, mesh]: meshes) {
+				auto instCount = instances.at(id).size();
+				if (!instCount) continue;
+
+				auto sampler = vuk::SamplerCreateInfo{};
 				command_buffer
 					.set_viewport(0, vuk::Rect2D::framebuffer())
 					.set_scissor(0, vuk::Rect2D::framebuffer())
 					.bind_uniform_buffer(0, 0, worldBuf)
 					.bind_vertex_buffer(0, *mesh, 0, gfx::Vertex::format())
 					.bind_storage_buffer(0, 1, instanceBufs.at(id))
+					.bind_sampled_image(0, 2, "shadowmap", sampler)
 					.bind_graphics_pipeline("object");
+				auto* model = command_buffer.map_scratch_uniform_binding<glm::mat4>(0, 3);
+				*model = lightTransform;
 				command_buffer.draw(mesh->size / sizeof(gfx::Vertex), instCount, 0, 0);
 			}
 		}
 	});
+	rg.attach_managed("shadowmap", vuk::Format::eD32Sfloat, vuk::Dimension2D::absolute(512, 512), vuk::Samples::e1, vuk::ClearDepthStencil{ 1.0f, 0 });
 	rg.attach_managed("depth", vuk::Format::eD32Sfloat, vuk::Dimension2D::framebuffer(), vuk::Samples::e1, vuk::ClearDepthStencil{ 1.0f, 0 });
 	rg.attach_swapchain("swapchain", swapchain, vuk::ClearColor{world.ambientColor.r, world.ambientColor.g, world.ambientColor.b, world.ambientColor.a});
 	auto erg = std::move(rg).link(ptc);
@@ -238,7 +273,6 @@ void Engine::render() {
 	};
 	context->submit_graphics(submitInfo, ptc.acquire_fence());
 
-	//
 	auto presentInfo = VkPresentInfoKHR{
 		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 		.waitSemaphoreCount = 1,

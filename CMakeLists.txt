@@ -126,6 +126,7 @@ endif()
 # Shader compilation
 set(SHADER_SOURCES
         src/glsl/object.vert src/glsl/object.frag
+        src/glsl/shadowmap.vert src/glsl/shadowmap.frag
         src/glsl/bloom.vert src/glsl/bloom.frag)
 
 foreach (SHADER_PATH ${SHADER_SOURCES})
