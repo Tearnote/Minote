@@ -1,20 +1,13 @@
 #pragma once
 
-#include <cstddef>
 #include <array>
-#include <span>
 #include <glm/geometric.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
-#include "VulkanMemoryAllocator/vma.h"
-#include "volk/volk.h"
-#include "base/hashmap.hpp"
+#include "vuk/CommandBuffer.hpp"
 #include "base/svector.hpp"
 #include "base/types.hpp"
 #include "base/util.hpp"
-#include "base/id.hpp"
-#include "sys/vk/buffer.hpp"
-#include "gfx/context.hpp"
 
 namespace minote::gfx {
 
@@ -25,6 +18,14 @@ struct Vertex {
 	glm::vec4 position;
 	glm::vec4 normal;
 	glm::vec4 color;
+
+	static auto format() -> vuk::Packed {
+		return vuk::Packed{
+			vuk::Format::eR32G32B32A32Sfloat,
+			vuk::Format::eR32G32B32A32Sfloat,
+			vuk::Format::eR32G32B32A32Sfloat,
+		};
+	}
 
 };
 
@@ -48,32 +49,5 @@ constexpr auto generateNormals(std::array<Vertex, N> mesh) {
 	}
 	return result;
 }
-
-struct MeshBuffer {
-
-	struct Descriptor {
-
-		size_t vertexOffset;
-		size_t vertexCount;
-
-	};
-
-	auto addMesh(ID id, std::span<const Vertex> mesh) -> Descriptor;
-
-	void upload(Context& ctx, VkCommandBuffer cmdBuffer, sys::vk::Buffer& staging);
-
-	auto getMeshDescriptor(ID id) { return m_descriptors.at(id); }
-
-	void cleanup(Context& ctx);
-
-	auto buffer() -> sys::vk::Buffer& { return m_buffer; }
-
-private:
-
-	std::vector<Vertex> m_vertices;
-	hashmap<ID, Descriptor> m_descriptors;
-	sys::vk::Buffer m_buffer = {};
-
-};
 
 }

@@ -11,7 +11,7 @@ namespace minote {
 
 struct PlayState {
 
-	using Action = engine::Mapper::Action;
+	using Action = Mapper::Action;
 	using Button = Action::Type;
 
 	PlayState();

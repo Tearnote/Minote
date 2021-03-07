@@ -1,0 +1,6 @@
+[submodule "lib/vk-bootstrap"]
+	path = lib/vk-bootstrap
+	url = https://github.com/charles-lunarg/vk-bootstrap
+[submodule "lib/vuk"]
+	path = lib/vuk
+	url = https://github.com/martty/vuk

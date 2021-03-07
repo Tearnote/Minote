@@ -1,6 +1,6 @@
 #pragma once
 
-namespace minote::engine {
+namespace minote {
 
 template<typename F>
 	requires std::predicate<F, Mapper::Action const&>

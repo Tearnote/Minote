@@ -5,7 +5,7 @@
 #include "base/util.hpp"
 #include "sys/glfw.hpp"
 
-namespace minote::engine {
+namespace minote {
 
 using namespace base;
 using namespace base::literals;

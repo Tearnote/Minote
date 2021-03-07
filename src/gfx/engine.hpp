@@ -1,79 +1,73 @@
 #pragma once
 
-#include <string_view>
+#include <optional>
 #include <span>
-#include <glm/vec3.hpp>
-#include "base/svector.hpp"
-#include "base/version.hpp"
-#include "base/types.hpp"
+#include "VkBootstrap.h"
+#include "volk/volk.h"
+#include "vuk/Context.hpp"
+#include "base/hashmap.hpp"
 #include "base/id.hpp"
 #include "sys/window.hpp"
-#include "sys/glfw.hpp"
-#include "gfx/swapchain.hpp"
-#include "gfx/technique.hpp"
-#include "gfx/material.hpp"
-#include "gfx/samplers.hpp"
-#include "gfx/commands.hpp"
-#include "gfx/context.hpp"
-#include "gfx/targets.hpp"
-#include "gfx/present.hpp"
-#include "gfx/bloom.hpp"
 #include "gfx/world.hpp"
-#include "gfx/base.hpp"
 
 namespace minote::gfx {
 
 using namespace base;
-using namespace base::literals;
+
+#ifndef NDEBUG
+#define VK_VALIDATION
+#endif //NDEBUG
 
 struct Engine {
 
-	Engine(sys::Glfw&, sys::Window&, std::string_view name, Version appVersion);
+	struct Instance {
+
+		glm::mat4 transform = glm::mat4(1.0f);
+		glm::vec4 tint = {1.0f, 1.0f, 1.0f, 1.0f};
+		glm::vec4 highlight = {0.0f, 0.0f, 0.0f, 0.0f};
+
+		f32 ambient;
+		f32 diffuse;
+		f32 specular;
+		f32 shine;
+
+	};
+
+	explicit Engine(sys::Window& window);
 	~Engine();
+
+	void setup();
+	void render();
 
 	void setBackground(glm::vec3 color);
 	void setLightSource(glm::vec3 position, glm::vec3 color);
 	void setCamera(glm::vec3 eye, glm::vec3 center, glm::vec3 up = {0.0f, 1.0f, 0.0f});
 
-	void enqueueLit(ID mesh, std::span<Instance const> instances, Material material);
+	void enqueue(ID mesh, std::span<Instance const> instances);
 
-	void render();
+	Engine(Engine const&) = delete;
+	auto operator=(Engine const&) -> Engine& = delete;
 
 private:
 
-	struct Camera {
+	vkb::Instance instance;
+	VkSurfaceKHR surface;
+	vkb::Device device;
+	vuk::SwapChainRef swapchain;
+	std::optional<vuk::Context> context;
 
+	hashmap<ID, vuk::Unique<vuk::Buffer>> meshes;
+	hashmap<ID, std::vector<Instance>> instances;
+
+	World world;
+	struct Camera {
 		glm::vec3 eye;
 		glm::vec3 center;
 		glm::vec3 up;
+	} camera;
 
-	};
-
-	struct DelayedOp {
-
-		u64 deadline;
-		std::function<void()> func;
-
-	};
-
-	u64 frameCounter = 0;
-	svector<DelayedOp, 64> delayedOps;
-
-	Context ctx;
-	Swapchain swapchain;
-	Commands commands;
-
-	Samplers samplers;
-	MeshBuffer meshes;
-	World world;
-	Camera camera;
-	Targets targets;
-
-	TechniqueSet techniques;
-	Bloom bloom;
-	Present present;
-
-	void refresh();
+	auto createSwapchain(VkSwapchainKHR old = VK_NULL_HANDLE) -> vuk::Swapchain;
+	void refreshSwapchain();
 
 };
 

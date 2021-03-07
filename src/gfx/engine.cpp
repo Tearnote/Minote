@@ -1,105 +1,270 @@
 #include "gfx/engine.hpp"
 
-#include <algorithm>
-#include <string>
-#include <vector>
-#include <array>
-#include <glm/vec4.hpp>
-#include "VulkanMemoryAllocator/vma.h"
+#include <stdexcept>
+#include <cstring>
+#include <GLFW/glfw3.h>
+#include <fmt/core.h>
+#include "VkBootstrap.h"
 #include "volk/volk.h"
-#include "base/types.hpp"
+#include "vuk/CommandBuffer.hpp"
+#include "vuk/RenderGraph.hpp"
+#include "base/assert.hpp"
 #include "base/log.hpp"
-#include "sys/vk/framebuffer.hpp"
-#include "sys/vk/commands.hpp"
-#include "sys/vk/pipeline.hpp"
+#include "gfx/base.hpp"
 #include "mesh/block.hpp"
-#include "mesh/scene.hpp"
+#include "main.hpp"
 
 namespace minote::gfx {
 
 using namespace base;
-using namespace base::literals;
-namespace vk = sys::vk;
-namespace ranges = std::ranges;
 
-Engine::Engine(sys::Glfw&, sys::Window& window, std::string_view name, Version appVersion) {
-	// Create essential objects
-	ctx.init(window, VulkanVersion, name, appVersion);
-	swapchain.init(ctx);
-	commands.init(ctx);
+#ifdef VK_VALIDATION
+VKAPI_ATTR auto VKAPI_CALL debugCallback(
+	VkDebugUtilsMessageSeverityFlagBitsEXT severityCode,
+	VkDebugUtilsMessageTypeFlagsEXT typeCode,
+	VkDebugUtilsMessengerCallbackDataEXT const* data,
+	void*) -> VkBool32 {
+	ASSERT(data);
 
-	// Create rendering infrastructure
-	std::vector<vk::Buffer> stagingBuffers;
-	commands.transferAsync(ctx, [this, &stagingBuffers](VkCommandBuffer cmdBuf) {
-		meshes.addMesh("block"_id, generateNormals(mesh::Block));
-		meshes.addMesh("scene_base"_id, generateNormals(mesh::SceneBase));
-		meshes.addMesh("scene_body"_id, generateNormals(mesh::SceneBody));
-		meshes.addMesh("scene_top"_id, generateNormals(mesh::SceneTop));
-		meshes.addMesh("scene_guide"_id, generateNormals(mesh::SceneGuide));
-		meshes.upload(ctx, cmdBuf, stagingBuffers.emplace_back());
+	auto const severity = [severityCode] {
+		if (severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+			return Log::Level::Error;
+		if (severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+			return Log::Level::Warn;
+		if (severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
+			return Log::Level::Info;
+		if (severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
+			return Log::Level::Debug;
+		throw std::logic_error{fmt::format("Unknown Vulkan diagnostic message severity: #{}", severityCode)};
+	}();
+
+	auto type = [typeCode]() {
+		if (typeCode & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
+			return "[VulkanPerf]";
+		if (typeCode & VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)
+			return "[VulkanSpec]";
+		if (typeCode & VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT)
+			return "[Vulkan]";
+		throw std::logic_error(fmt::format("Unknown Vulkan diagnostic message type: #{}", typeCode));
+	}();
+
+	L.log(severity, "{} {}", type, data->pMessage);
+
+	return VK_FALSE;
+}
+
+#endif //VK_VALIDATION
+
+Engine::Engine(sys::Window& window) {
+	// Create instance
+	auto instanceResult = vkb::InstanceBuilder()
+#ifdef VK_VALIDATION
+		.request_validation_layers()
+		.set_debug_callback(debugCallback)
+#endif //VK_VALIDATION
+		.set_app_name(AppTitle)
+		.set_engine_name("vuk")
+		.require_api_version(1, 2, 0)
+		.set_app_version(0, 0, 1)
+		.build();
+	if (!instanceResult)
+		throw std::runtime_error(fmt::format("Failed to create a Vulkan instance: {}", instanceResult.error().message()));
+	instance = instanceResult.value();
+	volkInitializeCustom(instance.fp_vkGetInstanceProcAddr);
+	volkLoadInstanceOnly(instance.instance);
+	L.debug("Vulkan instance created");
+
+	// Create surface
+	glfwCreateWindowSurface(instance.instance, window.handle(), nullptr, &surface);
+
+	// Select physical device
+	auto physicalDeviceSelectorResult = vkb::PhysicalDeviceSelector(instance)
+		.set_surface(surface)
+		.set_minimum_version(1, 0)
+		.select();
+	if (!physicalDeviceSelectorResult)
+		throw std::runtime_error(fmt::format("Failed to find a suitable GPU for Vulkan: {}", physicalDeviceSelectorResult.error().message()));
+	auto physicalDevice = physicalDeviceSelectorResult.value();
+
+	// Create device
+	VkPhysicalDeviceHostQueryResetFeatures queryReset{
+		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES,
+		.hostQueryReset = VK_TRUE,
+	};
+	auto deviceResult = vkb::DeviceBuilder(physicalDevice)
+		.add_pNext(&queryReset)
+		.build();
+	if (!deviceResult)
+		throw std::runtime_error(fmt::format("Failed to create Vulkan device: {}", deviceResult.error().message()));
+	device = deviceResult.value();
+	volkLoadDevice(device.device);
+	L.debug("Vulkan device created");
+
+	// Get queues
+	auto graphicsQueue = device.get_queue(vkb::QueueType::graphics).value();
+	auto graphicsQueueFamilyIndex = device.get_queue_index(vkb::QueueType::graphics).value();
+	auto transferQueuePresent = device.get_dedicated_queue(vkb::QueueType::present).has_value();
+	auto transferQueue = transferQueuePresent? device.get_dedicated_queue(vkb::QueueType::present).value() : VK_NULL_HANDLE;
+	auto transferQueueFamilyIndex = transferQueuePresent? device.get_dedicated_queue_index(vkb::QueueType::present).value() : VK_QUEUE_FAMILY_IGNORED;
+
+	// Create vuk context
+	context.emplace(vuk::ContextCreateParameters{
+		instance.instance, device.device, physicalDevice.physical_device,
+		graphicsQueue, graphicsQueueFamilyIndex,
+		transferQueue, transferQueueFamilyIndex
 	});
-	for (auto& buffer: stagingBuffers)
-		vmaDestroyBuffer(ctx.allocator, buffer.buffer, buffer.allocation);
 
-	samplers.init(ctx);
-	world.init(ctx, meshes);
-	targets.init(ctx, swapchain.extent, ColorFormat, DepthFormat);
-
-	// Create the pipeline phases
-	techniques.init(ctx, world.getDescriptorSetLayout());
-	techniques.addTechnique(ctx, "opaque"_id, targets.renderPass,
-		world.getDescriptorSets(),
-		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, true),
-		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None),
-		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL));
-	techniques.setTechniqueDebugName(ctx, "opaque"_id, "opaque");
-	techniques.addTechnique(ctx, "transparent_depth_prepass"_id, targets.renderPass,
-		world.getDescriptorSets(),
-		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, false),
-		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::None, false),
-		vk::makePipelineDepthStencilStateCI(true, true, VK_COMPARE_OP_LESS_OR_EQUAL));
-	techniques.setTechniqueDebugName(ctx, "transparent_depth_prepass"_id, "transparent_depth_prepass");
-	techniques.addTechnique(ctx, "transparent"_id, targets.renderPass,
-		world.getDescriptorSets(),
-		vk::makePipelineRasterizationStateCI(VK_POLYGON_MODE_FILL, false),
-		vk::makePipelineColorBlendAttachmentState(vk::BlendingMode::Normal),
-		vk::makePipelineDepthStencilStateCI(true, false, VK_COMPARE_OP_LESS_OR_EQUAL));
-	techniques.setTechniqueDebugName(ctx, "transparent"_id, "transparent");
-
-	bloom.init(ctx, samplers, world, targets.ssColor, ColorFormat);
-	present.init(ctx, world, targets.ssColor, swapchain);
-
-	L.info("Vulkan engine initialized");
+	// Create swapchain
+	swapchain = context->add_swapchain(createSwapchain());
 }
 
 Engine::~Engine() {
-	vkDeviceWaitIdle(ctx.device);
+	context->wait_idle();
+	meshes.clear();
+	context.reset();
+	vkb::destroy_device(device);
+	vkDestroySurfaceKHR(instance.instance, surface, nullptr);
+	vkb::destroy_instance(instance);
+}
 
-	for (auto& op: delayedOps)
-		op.func();
+void Engine::setup() {
+	auto ifc = context->begin();
+	auto ptc = ifc.begin();
 
-	techniques.cleanup(ctx);
-	present.cleanup(ctx);
-	bloom.cleanup(ctx);
-	targets.cleanup(ctx);
+	// Create pipelines
+	vuk::PipelineBaseCreateInfo objectPci;
+	objectPci.add_spirv(std::vector<u32>{
+#include "spv/object.vert.spv"
+		}, "object.vert");
+	objectPci.add_spirv(std::vector<u32>{
+#include "spv/object.frag.spv"
+		}, "object.frag");
+	context->create_named_pipeline("object", objectPci);
 
-	world.cleanup(ctx);
-	meshes.cleanup(ctx);
-	samplers.cleanup(ctx);
-	commands.cleanup(ctx);
-	swapchain.cleanup(ctx);
-	ctx.cleanup();
+	// Load meshes
+	auto blockNorm = generateNormals(mesh::Block);
+	meshes.emplace("block"_id, ptc.create_buffer(
+		vuk::MemoryUsage::eGPUonly,
+		vuk::BufferUsageFlagBits::eVertexBuffer,
+		std::span(blockNorm)).first);
+	instances.emplace("block"_id, std::vector<Instance>());
 
-	L.info("Vulkan engine cleaned up");
+	// Finalize uploads
+	ptc.wait_all_transfers();
+}
+
+void Engine::render() {
+	// Prepare matrix data
+	world.setViewProjection(glm::uvec2{swapchain->extent.width, swapchain->extent.height},
+		VerticalFov, NearPlane, FarPlane,
+		camera.eye, camera.center, camera.up);
+
+	// Begin draw
+	auto ifc = context->begin();
+	auto ptc = ifc.begin();
+
+	// Upload uniform buffers
+	auto worldBuf = ptc.allocate_scratch_buffer(
+		vuk::MemoryUsage::eCPUtoGPU,
+		vuk::BufferUsageFlagBits::eUniformBuffer,
+		sizeof(World), alignof(World));
+	std::memcpy(worldBuf.mapped_ptr, &world, sizeof(world));
+
+	// Upload instances
+	hashmap<ID, vuk::Buffer> instanceBufs;
+	for (auto&[id, inst]: instances) {
+		auto instBuf = ptc.allocate_scratch_buffer(
+			vuk::MemoryUsage::eCPUtoGPU,
+			vuk::BufferUsageFlagBits::eStorageBuffer,
+			sizeof(Instance) * inst.size(), alignof(Instance));
+		std::memcpy(instBuf.mapped_ptr, inst.data(), sizeof(Instance) * inst.size());
+		instanceBufs.emplace(id, instBuf);
+	}
+
+	// Set up the rendergraph
+	vuk::RenderGraph rg;
+	rg.add_pass({
+		.resources = {"swapchain"_image(vuk::eColorWrite), "depth"_image(vuk::eDepthStencilRW)},
+		.execute = [this, worldBuf, &instanceBufs](vuk::CommandBuffer& command_buffer) {
+			for (auto&[id, mesh]: meshes) {
+				auto instCount = instances.at(id).size();
+				if (!instCount) continue;
+
+				command_buffer
+					.set_viewport(0, vuk::Rect2D::framebuffer())
+					.set_scissor(0, vuk::Rect2D::framebuffer())
+					.bind_uniform_buffer(0, 0, worldBuf)
+					.bind_vertex_buffer(0, *mesh, 0, gfx::Vertex::format())
+					.bind_storage_buffer(0, 1, instanceBufs.at(id))
+					.bind_graphics_pipeline("object");
+				command_buffer.draw(mesh->size / sizeof(gfx::Vertex), instCount, 0, 0);
+			}
+		}
+	});
+	rg.attach_managed("depth", vuk::Format::eD32Sfloat, vuk::Dimension2D::framebuffer(), vuk::Samples::e1, vuk::ClearDepthStencil{ 1.0f, 0 });
+	rg.attach_swapchain("swapchain", swapchain, vuk::ClearColor{world.ambientColor.r, world.ambientColor.g, world.ambientColor.b, world.ambientColor.a});
+	auto erg = std::move(rg).link(ptc);
+
+	// Acquire swapchain image
+	auto presentSem = ptc.acquire_semaphore();
+	auto swapchainImageIndex = [&, this] {
+		while (true) {
+			u32 result;
+			VkResult error = vkAcquireNextImageKHR(device.device, swapchain->swapchain, UINT64_MAX, presentSem, VK_NULL_HANDLE, &result);
+			if (error == VK_SUCCESS || error == VK_SUBOPTIMAL_KHR)
+				return result;
+			if (error == VK_ERROR_OUT_OF_DATE_KHR)
+				refreshSwapchain();
+			else
+				throw std::runtime_error(fmt::format("Unable to acquire swapchain image: error {}", error));
+		}
+	}();
+
+	// Build the rendergraph
+	auto commandBuffer = erg.execute(ptc, {{swapchain, swapchainImageIndex}});
+
+	// Submit the command buffer
+	auto renderSem = ptc.acquire_semaphore();
+	VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	auto submitInfo = VkSubmitInfo{
+		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		.waitSemaphoreCount = 1,
+		.pWaitSemaphores = &presentSem,
+		.pWaitDstStageMask = &waitStage,
+		.commandBufferCount = 1,
+		.pCommandBuffers = &commandBuffer,
+		.signalSemaphoreCount = 1,
+		.pSignalSemaphores = &renderSem,
+	};
+	context->submit_graphics(submitInfo, ptc.acquire_fence());
+
+	//
+	auto presentInfo = VkPresentInfoKHR{
+		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+		.waitSemaphoreCount = 1,
+		.pWaitSemaphores = &renderSem,
+		.swapchainCount = 1,
+		.pSwapchains = &swapchain->swapchain,
+		.pImageIndices = &swapchainImageIndex,
+	};
+	auto result = vkQueuePresentKHR(context->graphics_queue, &presentInfo);
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+		refreshSwapchain();
+	else if (result != VK_SUCCESS)
+		throw std::runtime_error(fmt::format("Unable to present to the screen: error {}", result));
+
+	// Clean up
+	for (auto&[id, inst]: instances)
+		inst.clear();
 }
 
 void Engine::setBackground(glm::vec3 color) {
-	world.uniforms.ambientColor = glm::vec4{color, 1.0f};
+	world.ambientColor = glm::vec4{color, 1.0f};
 }
 
 void Engine::setLightSource(glm::vec3 position, glm::vec3 color) {
-	world.uniforms.lightPosition = glm::vec4{position, 1.0f};
-	world.uniforms.lightColor = glm::vec4{color, 1.0f};
+	world.lightPosition = glm::vec4{position, 1.0f};
+	world.lightColor = glm::vec4{color, 1.0f};
 }
 
 void Engine::setCamera(glm::vec3 eye, glm::vec3 center, glm::vec3 up) {
@@ -110,183 +275,41 @@ void Engine::setCamera(glm::vec3 eye, glm::vec3 center, glm::vec3 up) {
 	};
 }
 
-void Engine::enqueueLit(ID mesh, std::span<Instance const> instances, Material material) {
-	auto const frameIndex = frameCounter % FramesInFlight;
-	auto& indirect = techniques.getTechnique("opaque"_id).indirect[frameIndex];
-	indirect.enqueue(meshes.getMeshDescriptor(mesh), instances, Pass::Phong, material);
+void Engine::enqueue(ID mesh, std::span<Instance const> _instances) {
+	auto& vec = instances.at(mesh);
+	vec.insert(vec.end(), _instances.begin(), _instances.end());
 }
 
-void Engine::render() {
-	commands.render(ctx, swapchain, frameCounter,
-		[this] { refresh(); },
-		[this](Commands::Frame& frame, u32 frameIndex, u32 swapchainImageIndex) {
-			auto cmdBuf = frame.commandBuffer;
+auto Engine::createSwapchain(VkSwapchainKHR old) -> vuk::Swapchain {
+	auto vkbswapchainResult = vkb::SwapchainBuilder(device)
+		.set_old_swapchain(old)
+		.set_image_usage_flags(VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+		.build();
+	if (!vkbswapchainResult)
+		throw std::runtime_error(fmt::format("Failed to create the swapchain: {}", vkbswapchainResult.error().message()));
+	auto vkbswapchain = vkbswapchainResult.value();
 
-			// Retrieve the techniques in use
-			auto& opaque = techniques.getTechnique("opaque"_id);
-			auto& opaqueIndirect = opaque.indirect[frameIndex];
-
-			// Prepare and upload draw data to the GPU
-			opaqueIndirect.upload(ctx);
-
-			world.uniforms.setViewProjection(glm::uvec2{swapchain.extent.width, swapchain.extent.height},
-				VerticalFov, NearPlane, FarPlane,
-				camera.eye, camera.center, camera.up);
-			world.uploadUniforms(ctx, frameIndex);
-
-			// Bind world data
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, techniques.getPipelineLayout(),
-				0, 1, &world.getDescriptorSet(frameIndex), 0, nullptr);
-
-			// Begin drawing objects
-			vk::cmdBeginRenderPass(cmdBuf, targets.renderPass, targets.framebuffer, swapchain.extent, std::array{
-				vk::clearColor(world.uniforms.ambientColor),
-				vk::clearDepth(1.0f),
-			});
-			vk::cmdSetArea(cmdBuf, swapchain.extent);
-
-			// Opaque object draw
-			vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, opaque.pipeline);
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-				techniques.getPipelineLayout(), 1, 1, &opaque.getDescriptorSet(frameIndex),
-				0, nullptr);
-
-			vkCmdDrawIndirect(cmdBuf, opaqueIndirect.commandBuffer().buffer, 0,
-				opaqueIndirect.size(), sizeof(IndirectBuffer::Command));
-
-			// Finish the object drawing pass
-			vkCmdEndRenderPass(cmdBuf);
-
-			// Synchronize the rendered color image
-			vk::cmdImageBarrier(cmdBuf, targets.ssColor, VK_IMAGE_ASPECT_COLOR_BIT,
-				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-			// HDR-threshold the color image
-			vk::cmdBeginRenderPass(cmdBuf, bloom.downPass, bloom.imageFbs[0], bloom.images[0].size);
-			vk::cmdSetArea(cmdBuf, bloom.images[0].size);
-
-			vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.down);
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-				bloom.layout, 1, 1, &bloom.sourceDS, 0, nullptr);
-			vkCmdDraw(cmdBuf, 3, 1, 0, 0);
-			vkCmdEndRenderPass(cmdBuf);
-
-			// Synchronize the thresholded image
-			vk::cmdImageBarrier(cmdBuf, bloom.images[0], VK_IMAGE_ASPECT_COLOR_BIT,
-				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-			// Progressively downscale the bloom contents
-			for (auto i: nrange(1_zu, Bloom::Depth)) {
-				vk::cmdBeginRenderPass(cmdBuf, bloom.downPass, bloom.imageFbs[i], bloom.images[i].size);
-				vk::cmdSetArea(cmdBuf, bloom.images[i].size);
-				vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.down);
-				vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-					bloom.layout, 1, 1, &bloom.imageDS[i - 1], 0, nullptr);
-				vkCmdDraw(cmdBuf, 3, 1, 0, 1);
-				vkCmdEndRenderPass(cmdBuf);
-
-				vk::cmdImageBarrier(cmdBuf, bloom.images[i], VK_IMAGE_ASPECT_COLOR_BIT,
-					VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-			}
-
-			// Progressively upscale the bloom contents
-			for (auto i: rnrange_inc(Bloom::Depth - 2, 0_zu, 1_zu)) {
-				vk::cmdImageBarrier(cmdBuf, bloom.images[i], VK_IMAGE_ASPECT_COLOR_BIT,
-					VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-					0, 0,
-					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-				vk::cmdBeginRenderPass(cmdBuf, bloom.upPass, bloom.imageFbs[i], bloom.images[i].size);
-				vk::cmdSetArea(cmdBuf, bloom.images[i].size);
-				vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.up);
-				vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-					bloom.layout, 1, 1, &bloom.imageDS[i + 1], 0, nullptr);
-				vkCmdDraw(cmdBuf, 3, 1, 0, 2);
-				vkCmdEndRenderPass(cmdBuf);
-
-				vk::cmdImageBarrier(cmdBuf, bloom.images[i], VK_IMAGE_ASPECT_COLOR_BIT,
-					VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-			}
-
-			// Synchronize the rendered color image
-			vk::cmdImageBarrier(cmdBuf, targets.ssColor, VK_IMAGE_ASPECT_COLOR_BIT,
-				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-				0, 0,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-			// Apply bloom to rendered color image
-			vk::cmdBeginRenderPass(cmdBuf, bloom.upPass, bloom.targetFb, targets.ssColor.size);
-			vk::cmdSetArea(cmdBuf, swapchain.extent);
-			vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, bloom.up);
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-				bloom.layout, 1, 1, &bloom.imageDS[0], 0, nullptr);
-			vkCmdDraw(cmdBuf, 3, 1, 0, 2);
-			vkCmdEndRenderPass(cmdBuf);
-
-			// Synchronize the rendered color image
-			vk::cmdImageBarrier(cmdBuf, targets.ssColor, VK_IMAGE_ASPECT_COLOR_BIT,
-				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
-				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-			// Blit the image to screen
-			vk::cmdBeginRenderPass(cmdBuf, present.renderPass, present.framebuffer[swapchainImageIndex], swapchain.extent);
-			vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, present.pipeline);
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-				present.layout, 1, 1, &present.descriptorSet, 0, nullptr);
-			vkCmdDraw(cmdBuf, 3, 1, 0, 0);
-			vkCmdEndRenderPass(cmdBuf);
-
-			// Cleanup
-			opaqueIndirect.reset();
-
-		});
-
-	// Run delayed ops
-	auto newsize = ranges::remove_if(delayedOps, [this](auto& op) {
-		if (op.deadline == frameCounter) {
-			op.func();
-			return true;
-		} else {
-			return false;
-		}
-	});
-	delayedOps.erase(newsize.begin(), newsize.end());
-
-	// Advance
-	frameCounter += 1;
+	auto vuksw = vuk::Swapchain{
+		.swapchain = vkbswapchain.swapchain,
+		.surface = surface,
+		.format = vuk::Format(vkbswapchain.image_format),
+		.extent = { vkbswapchain.extent.width, vkbswapchain.extent.height },
+	};
+	auto imgs = vkbswapchain.get_images();
+	auto ivs = vkbswapchain.get_image_views();
+	for (auto& img: *imgs)
+		vuksw.images.emplace_back(img);
+	for (auto& iv: *ivs)
+		vuksw.image_views.emplace_back().payload = iv;
+	return vuksw;
 }
 
-void Engine::refresh() {
-	ctx.refreshSurface();
-
-	// Queue up outdated objects for destruction
-	delayedOps.emplace_back(DelayedOp{
-		.deadline = frameCounter + FramesInFlight,
-		.func = [this, swapchain=swapchain, targets=targets, present=present, bloom=bloom]() mutable {
-			present.refreshCleanup(ctx);
-			bloom.refreshCleanup(ctx);
-			targets.refreshCleanup(ctx);
-			swapchain.cleanup(ctx);
-		},
-	});
-
-	// Create new objects
-	auto oldSwapchain = swapchain.swapchain;
-	swapchain = {};
-	targets = {};
-	swapchain.init(ctx, oldSwapchain);
-	targets.refreshInit(ctx, swapchain.extent, ColorFormat, DepthFormat);
-	bloom.refreshInit(ctx, targets.ssColor, ColorFormat);
-	present.refreshInit(ctx, targets.ssColor, swapchain);
+void Engine::refreshSwapchain() {
+	auto newSwapchain = context->add_swapchain(createSwapchain(swapchain->swapchain));
+	context->remove_swapchain(swapchain);
+	for (auto iv: swapchain->image_views)
+		context->enqueue_destroy(iv);
+	swapchain = newSwapchain;
 }
 
 }

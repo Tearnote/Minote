@@ -5,7 +5,7 @@
 #include "base/time.hpp"
 #include "sys/window.hpp"
 
-namespace minote::engine {
+namespace minote {
 
 using namespace base;
 
