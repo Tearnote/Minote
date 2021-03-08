@@ -8,7 +8,6 @@ layout(location = 2) in vec4 v_color;
 struct Instance {
 	mat4 transform;
 	vec4 tint;
-	vec4 highlight;
 	float ambient;
 	float diffuse;
 	float specular;

@@ -10,7 +10,6 @@ layout(binding = 0) uniform World {
 struct Instance {
 	mat4 transform;
 	vec4 tint;
-	vec4 highlight;
 	float ambient;
 	float diffuse;
 	float specular;

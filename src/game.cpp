@@ -28,6 +28,9 @@ void game(sys::Glfw& glfw, sys::Window& window) try {
 
 	auto nextUpdate = sys::Glfw::getTime();
 
+	auto lightSource = glm::vec3{6.0f, 12.0f, -6.0f};
+	auto held = std::array<bool, 4>{};
+
 	while (!window.isClosing()) {
 		// Input
 		mapper.collectKeyInputs(window);
@@ -46,8 +49,26 @@ void game(sys::Glfw& glfw, sys::Window& window) try {
 				if (action.type == Action::Back)
 					window.requestClose();
 
+				// Quick and dirty camera control
+				if (action.type == Action::Left)
+					held[0] = action.state == Mapper::Action::State::Pressed;
+				if (action.type == Action::Right)
+					held[1] = action.state == Mapper::Action::State::Pressed;
+				if (action.type == Action::Drop)
+					held[2] = action.state == Mapper::Action::State::Pressed;
+				if (action.type == Action::Lock)
+					held[3] = action.state == Mapper::Action::State::Pressed;
+
 				return true;
 			});
+			if (held[0])
+				lightSource.x -= 0.1f;
+			if (held[1])
+				lightSource.x += 0.1f;
+			if (held[2])
+				lightSource.z -= 0.1f;
+			if (held[3])
+				lightSource.z += 0.1f;
 
 //			play.tick(updateActions);
 			nextUpdate += UpdateTick;
@@ -55,7 +76,7 @@ void game(sys::Glfw& glfw, sys::Window& window) try {
 
 		// Graphics
 		engine.setBackground({0.4f, 0.4f, 0.4f});
-		engine.setLightSource({4.0f, 16.0f, -4.0f}, {1.0f, 1.0f, 1.0f});
+		engine.setLightSource(lightSource, {1.0f, 1.0f, 1.0f});
 		engine.setCamera({0.0f, 12.0f, 24.0f}, {0.0f, 4.0f, 0.0f});
 
 		auto const centerTransform = make_translate({-0.5f, -0.5f, -0.5f});
