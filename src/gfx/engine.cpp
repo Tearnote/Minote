@@ -17,6 +17,7 @@
 namespace minote::gfx {
 
 using namespace base;
+using namespace std::string_literals;
 
 #ifdef VK_VALIDATION
 VKAPI_ATTR auto VKAPI_CALL debugCallback(
@@ -181,6 +182,26 @@ void Engine::setup() {
 		}, "blit.frag");
 	context->create_named_pipeline("blit", blitPci);
 
+	vuk::PipelineBaseCreateInfo bloomDownPci;
+	bloomDownPci.add_spirv(std::vector<u32>{
+#include "spv/bloom.vert.spv"
+	}, "bloom.vert");
+	bloomDownPci.add_spirv(std::vector<u32>{
+#include "spv/bloom.frag.spv"
+	}, "bloom.frag");
+	context->create_named_pipeline("bloom_down", bloomDownPci);
+
+	vuk::PipelineBaseCreateInfo bloomUpPci;
+	bloomUpPci.add_spirv(std::vector<u32>{
+#include "spv/bloom.vert.spv"
+		}, "bloom.vert");
+	bloomUpPci.add_spirv(std::vector<u32>{
+#include "spv/bloom.frag.spv"
+		}, "bloom.frag");
+	bloomUpPci.set_blend(vuk::BlendPreset::eAlphaBlend);
+	bloomUpPci.color_blend_attachments[0].dstColorBlendFactor = vuk::BlendFactor::eOne; // Additive
+	context->create_named_pipeline("bloom_up", bloomUpPci);
+
 	// Load meshes
 	auto blockNorm = generateNormals(mesh::Block);
 	meshes.emplace("block"_id, ptc.create_buffer(
@@ -194,13 +215,21 @@ void Engine::setup() {
 }
 
 void Engine::render() {
-	// Prepare matrix data
+	// Prepare per-frame data
 	world.setViewProjection(glm::uvec2{swapchain->extent.width, swapchain->extent.height},
 		VerticalFov, NearPlane,
 		camera.eye, camera.center, camera.up);
 	auto lightTransform = glm::infinitePerspective(glm::radians(120.0f * 12 / glm::length(world.lightPosition)), 1.0f, glm::length(world.lightPosition) / 6.0f) *
 		glm::lookAt(glm::vec3(world.lightPosition), {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f});
 	auto msmSize = vuk::Dimension2D::absolute(1024, 1024);
+	constexpr auto BloomDepth = 6u;
+	auto bloomNames = std::array<std::string, BloomDepth>{};
+	for (auto i = 0u; i < BloomDepth; i += 1)
+		bloomNames[i] = "bloom"s + std::to_string(i);
+	auto swapchainSize = vuk::Dimension2D::absolute(swapchain->extent);
+	auto bloomSizes = std::array<vuk::Dimension2D, BloomDepth>{};
+	for (auto i = 0u; i < BloomDepth; i += 1)
+		bloomSizes[i] = vuk::Dimension2D::absolute(std::max(swapchainSize.extent.width >> i, 1u), std::max(swapchainSize.extent.height >> i, 1u));
 
 	// Begin draw
 	auto ifc = context->begin();
@@ -226,8 +255,7 @@ void Engine::render() {
 
 	// Set up the rendergraph
 	vuk::RenderGraph rg;
-	rg.add_pass({
-		.name = "msm_depth",
+	rg.add_pass({ // MSM depth draw
 		.resources = {"msm_depth"_image(vuk::eDepthStencilRW), "msm_depth_nop"_image(vuk::eColorWrite)},
 		.execute = [&, this](vuk::CommandBuffer& command_buffer) {
 			for (auto&[id, mesh]: meshes) {
@@ -246,8 +274,7 @@ void Engine::render() {
 			}
 		},
 	});
-	rg.add_pass({
-		.name = "msm_moments",
+	rg.add_pass({ // MSM moment extraction
 		.resources = {"msm_depth"_image(vuk::eFragmentSampled), "msm_moments"_image(vuk::eColorWrite)},
 		.execute = [&](vuk::CommandBuffer& command_buffer) {
 			command_buffer
@@ -258,8 +285,7 @@ void Engine::render() {
 			command_buffer.draw(3, 1, 0, 0);
 		},
 	});
-	rg.add_pass({
-		.name = "msm_moments_blurred",
+	rg.add_pass({ // MSM blurring
 		.resources = {"msm_moments"_image(vuk::eFragmentSampled), "msm_moments_blurred"_image(vuk::eColorWrite)},
 		.execute = [&](vuk::CommandBuffer& command_buffer) {
 			command_buffer
@@ -270,8 +296,7 @@ void Engine::render() {
 			command_buffer.draw(3, 1, 0, 0);
 		},
 	});
-	rg.add_pass({
-		.name = "object",
+	rg.add_pass({ // Object draw
 		.resources = {"object_color"_image(vuk::eColorWrite), "object_depth"_image(vuk::eDepthStencilRW), "msm_moments_blurred"_image(vuk::eFragmentSampled)},
 		.execute = [this, worldBuf, &instanceBufs, &lightTransform](vuk::CommandBuffer& command_buffer) {
 			for (auto&[id, mesh]: meshes) {
@@ -299,8 +324,50 @@ void Engine::render() {
 			}
 		}
 	});
-	rg.add_pass({
-		.name = "swapchain_blit",
+	rg.add_pass({ // Bloom threshold
+		.resources = {vuk::Resource(std::string_view(bloomNames[0]), vuk::Resource::Type::eImage, vuk::eColorWrite), "object_resolved"_image(vuk::eFragmentSampled)},
+		.execute = [&](vuk::CommandBuffer& command_buffer) {
+			command_buffer
+				.set_viewport(0, vuk::Rect2D::absolute({}, bloomSizes[0].extent))
+				.set_scissor(0, vuk::Rect2D::absolute({}, bloomSizes[0].extent))
+				.bind_sampled_image(0, 0, "object_resolved", {})
+				.bind_graphics_pipeline("bloom_down");
+			command_buffer.draw(3, 1, 0, 0);
+		},
+	});
+	for (auto i = 1u; i < BloomDepth; i += 1) {
+		rg.add_pass({ // Bloom downscale
+			.resources = {vuk::Resource(std::string_view(bloomNames[i]), vuk::Resource::Type::eImage, vuk::eColorWrite),
+			              vuk::Resource(std::string_view(bloomNames[i-1]), vuk::Resource::Type::eImage, vuk::eFragmentSampled)},
+			.execute = [&](vuk::CommandBuffer& command_buffer) {
+				command_buffer
+					.set_viewport(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
+					.set_scissor(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
+					.bind_sampled_image(0, 0, std::string_view(bloomNames[i-1]), {
+						.magFilter = vuk::Filter::eLinear,
+						.minFilter = vuk::Filter::eLinear})
+					.bind_graphics_pipeline("bloom_down");
+				command_buffer.draw(3, 1, 0, 1);
+			},
+		});
+	}
+//	for (auto i = BloomDepth - 2; i > 0; i -= 1) {
+//		rg.add_pass({ // Bloom upscale
+//			.resources = {vuk::Resource(std::string_view(bloomNames[i]), vuk::Resource::Type::eImage, vuk::eColorWrite),
+//			              vuk::Resource(std::string_view(bloomNames[i+1]), vuk::Resource::Type::eImage, vuk::eFragmentSampled)},
+//			.execute = [&](vuk::CommandBuffer& command_buffer) {
+//				command_buffer
+//					.set_viewport(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
+//					.set_scissor(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
+//					.bind_sampled_image(0, 0, std::string_view(bloomNames[i+1]), {
+//						.magFilter = vuk::Filter::eLinear,
+//						.minFilter = vuk::Filter::eLinear})
+//					.bind_graphics_pipeline("bloom_up");
+//				command_buffer.draw(3, 1, 0, 2);
+//			},
+//		});
+//	}
+	rg.add_pass({ // Swapchain blit
 		.resources = {"swapchain"_image(vuk::eColorWrite), "object_resolved"_image(vuk::eFragmentSampled)},
 		.execute = [](vuk::CommandBuffer& command_buffer) {
 			command_buffer
@@ -312,7 +379,6 @@ void Engine::render() {
 		},
 	});
 
-	auto swapchainSize = vuk::Dimension2D::absolute(swapchain->extent);
 	rg.attach_managed("msm_depth_nop", vuk::Format::eR8Unorm, msmSize, vuk::Samples::e4, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	rg.attach_managed("msm_depth", vuk::Format::eD32Sfloat, msmSize, vuk::Samples::e4, vuk::ClearDepthStencil{1.0f, 0});
 	rg.attach_managed("msm_moments", vuk::Format::eR16G16B16A16Unorm, msmSize, vuk::Samples::e1, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
@@ -321,6 +387,10 @@ void Engine::render() {
 	rg.attach_managed("object_depth", vuk::Format::eD32Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearDepthStencil{ 1.0f, 0 });
 	rg.attach_managed("object_resolved", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e1, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	rg.resolve_resource_into("object_resolved", "object_color");
+	for (auto i = 0u; i < BloomDepth; i += 1) {
+		rg.attach_managed(std::string_view(bloomNames[i]), vuk::Format::eR16G16B16A16Sfloat,
+			bloomSizes[i], vuk::Samples::e1, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
+	}
 	rg.attach_swapchain("swapchain", swapchain, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	auto erg = std::move(rg).link(ptc);
 

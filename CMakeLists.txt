@@ -35,7 +35,6 @@ set(SOURCES
         src/sys/window.hpp src/sys/window.tpp src/sys/window.cpp
         src/sys/glfw.hpp src/sys/glfw.cpp
         src/gfx/engine.hpp src/gfx/engine.cpp
-        #src/gfx/bloom.hpp src/gfx/bloom.cpp
         src/gfx/world.hpp
         src/gfx/mesh.hpp
         src/gfx/base.hpp
