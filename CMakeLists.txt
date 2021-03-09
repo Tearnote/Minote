@@ -125,6 +125,7 @@ endif()
 
 # Shader compilation
 set(SHADER_SOURCES
+        src/glsl/blit.vert src/glsl/blit.frag
         src/glsl/object.vert src/glsl/object.frag
         src/glsl/msmdepth.vert src/glsl/msmdepth.frag
         src/glsl/msmblur.vert src/glsl/msmblur.frag

@@ -169,8 +169,17 @@ void Engine::setup() {
 	objectPci.add_spirv(std::vector<u32>{
 #include "spv/object.frag.spv"
 		}, "object.frag");
-	msmDepthPci.rasterization_state.cullMode = vuk::CullModeFlagBits::eBack;
+	objectPci.rasterization_state.cullMode = vuk::CullModeFlagBits::eBack;
 	context->create_named_pipeline("object", objectPci);
+
+	vuk::PipelineBaseCreateInfo blitPci;
+	blitPci.add_spirv(std::vector<u32>{
+#include "spv/blit.vert.spv"
+		}, "blit.vert");
+	blitPci.add_spirv(std::vector<u32>{
+#include "spv/blit.frag.spv"
+		}, "blit.frag");
+	context->create_named_pipeline("blit", blitPci);
 
 	// Load meshes
 	auto blockNorm = generateNormals(mesh::Block);
@@ -263,7 +272,7 @@ void Engine::render() {
 	});
 	rg.add_pass({
 		.name = "object",
-		.resources = {"swapchain"_image(vuk::eColorWrite), "depth"_image(vuk::eDepthStencilRW), "msm_moments_blurred"_image(vuk::eFragmentSampled)},
+		.resources = {"object_color"_image(vuk::eColorWrite), "object_depth"_image(vuk::eDepthStencilRW), "msm_moments_blurred"_image(vuk::eFragmentSampled)},
 		.execute = [this, worldBuf, &instanceBufs, &lightTransform](vuk::CommandBuffer& command_buffer) {
 			for (auto&[id, mesh]: meshes) {
 				auto instCount = instances.at(id).size();
@@ -290,12 +299,29 @@ void Engine::render() {
 			}
 		}
 	});
-	rg.attach_managed("msm_depth_nop", vuk::Format::eR8Uint, msmSize, vuk::Samples::e4, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
+	rg.add_pass({
+		.name = "swapchain_blit",
+		.resources = {"swapchain"_image(vuk::eColorWrite), "object_resolved"_image(vuk::eFragmentSampled)},
+		.execute = [](vuk::CommandBuffer& command_buffer) {
+			command_buffer
+				.set_viewport(0, vuk::Rect2D::framebuffer())
+				.set_scissor(0, vuk::Rect2D::framebuffer())
+				.bind_sampled_image(0, 0, "object_resolved", {})
+				.bind_graphics_pipeline("blit");
+			command_buffer.draw(3, 1, 0, 0);
+		},
+	});
+
+	auto swapchainSize = vuk::Dimension2D::absolute(swapchain->extent);
+	rg.attach_managed("msm_depth_nop", vuk::Format::eR8Unorm, msmSize, vuk::Samples::e4, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	rg.attach_managed("msm_depth", vuk::Format::eD32Sfloat, msmSize, vuk::Samples::e4, vuk::ClearDepthStencil{1.0f, 0});
 	rg.attach_managed("msm_moments", vuk::Format::eR16G16B16A16Unorm, msmSize, vuk::Samples::e1, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	rg.attach_managed("msm_moments_blurred", vuk::Format::eR16G16B16A16Unorm, msmSize, vuk::Samples::e1, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
-	rg.attach_managed("depth", vuk::Format::eD32Sfloat, vuk::Dimension2D::framebuffer(), vuk::Samples::e1, vuk::ClearDepthStencil{ 1.0f, 0 });
-	rg.attach_swapchain("swapchain", swapchain, vuk::ClearColor{world.ambientColor.r, world.ambientColor.g, world.ambientColor.b, world.ambientColor.a});
+	rg.attach_managed("object_color", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearColor{world.ambientColor.r, world.ambientColor.g, world.ambientColor.b, world.ambientColor.a});
+	rg.attach_managed("object_depth", vuk::Format::eD32Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearDepthStencil{ 1.0f, 0 });
+	rg.attach_managed("object_resolved", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e1, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
+	rg.resolve_resource_into("object_resolved", "object_color");
+	rg.attach_swapchain("swapchain", swapchain, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	auto erg = std::move(rg).link(ptc);
 
 	// Acquire swapchain image
