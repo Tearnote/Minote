@@ -132,35 +132,35 @@ void Engine::setup() {
 	auto ptc = ifc.begin();
 
 	// Create pipelines
-	vuk::PipelineBaseCreateInfo msmdepthPci;
-	msmdepthPci.add_spirv(std::vector<u32>{
+	vuk::PipelineBaseCreateInfo msmDepthPci;
+	msmDepthPci.add_spirv(std::vector<u32>{
 #include "spv/msmdepth.vert.spv"
 	}, "object.vert");
-	msmdepthPci.add_spirv(std::vector<u32>{
+	msmDepthPci.add_spirv(std::vector<u32>{
 #include "spv/msmdepth.frag.spv"
 	}, "object.frag");
-	msmdepthPci.rasterization_state.cullMode = vuk::CullModeFlagBits::eBack;
-	context->create_named_pipeline("msmdepth", msmdepthPci);
+	msmDepthPci.rasterization_state.cullMode = vuk::CullModeFlagBits::eBack;
+	context->create_named_pipeline("msm_depth", msmDepthPci);
 
 	// Create pipelines
-	vuk::PipelineBaseCreateInfo msmmomentsPci;
-	msmmomentsPci.add_spirv(std::vector<u32>{
+	vuk::PipelineBaseCreateInfo msmMomentsPci;
+	msmMomentsPci.add_spirv(std::vector<u32>{
 #include "spv/msmmoments.vert.spv"
 	}, "object.vert");
-	msmmomentsPci.add_spirv(std::vector<u32>{
+	msmMomentsPci.add_spirv(std::vector<u32>{
 #include "spv/msmmoments.frag.spv"
 	}, "object.frag");
-	context->create_named_pipeline("msmmoments", msmmomentsPci);
+	context->create_named_pipeline("msm_moments", msmMomentsPci);
 
 	// Create pipelines
-	vuk::PipelineBaseCreateInfo msmblurPci;
-	msmblurPci.add_spirv(std::vector<u32>{
+	vuk::PipelineBaseCreateInfo msmMomentsBlurredPci;
+	msmMomentsBlurredPci.add_spirv(std::vector<u32>{
 #include "spv/msmblur.vert.spv"
 	}, "object.vert");
-	msmblurPci.add_spirv(std::vector<u32>{
+	msmMomentsBlurredPci.add_spirv(std::vector<u32>{
 #include "spv/msmblur.frag.spv"
 	}, "object.frag");
-	context->create_named_pipeline("msmmomentsblurred", msmblurPci);
+	context->create_named_pipeline("msm_moments_blurred", msmMomentsBlurredPci);
 
 	vuk::PipelineBaseCreateInfo objectPci;
 	objectPci.add_spirv(std::vector<u32>{
@@ -169,7 +169,7 @@ void Engine::setup() {
 	objectPci.add_spirv(std::vector<u32>{
 #include "spv/object.frag.spv"
 		}, "object.frag");
-	msmdepthPci.rasterization_state.cullMode = vuk::CullModeFlagBits::eBack;
+	msmDepthPci.rasterization_state.cullMode = vuk::CullModeFlagBits::eBack;
 	context->create_named_pipeline("object", objectPci);
 
 	// Load meshes
@@ -218,7 +218,8 @@ void Engine::render() {
 	// Set up the rendergraph
 	vuk::RenderGraph rg;
 	rg.add_pass({
-		.resources = {"msmdepth"_image(vuk::eDepthStencilRW), "msmdepth_nop"_image(vuk::eColorWrite)},
+		.name = "msm_depth",
+		.resources = {"msm_depth"_image(vuk::eDepthStencilRW), "msm_depth_nop"_image(vuk::eColorWrite)},
 		.execute = [&, this](vuk::CommandBuffer& command_buffer) {
 			for (auto&[id, mesh]: meshes) {
 				auto instCount = instances.at(id).size();
@@ -229,7 +230,7 @@ void Engine::render() {
 					.set_scissor(0, vuk::Rect2D::absolute(0, 0, msmSize.extent.width, msmSize.extent.height))
 					.bind_vertex_buffer(0, *mesh, 0, gfx::Vertex::format())
 					.bind_storage_buffer(0, 0, instanceBufs.at(id))
-					.bind_graphics_pipeline("msmdepth");
+					.bind_graphics_pipeline("msm_depth");
 				auto* model = command_buffer.map_scratch_uniform_binding<glm::mat4>(0, 1);
 				*model = lightTransform;
 				command_buffer.draw(mesh->size / sizeof(gfx::Vertex), instCount, 0, 0);
@@ -237,29 +238,32 @@ void Engine::render() {
 		},
 	});
 	rg.add_pass({
-		.resources = {"msmdepth"_image(vuk::eFragmentSampled), "msmmoments"_image(vuk::eColorWrite)},
+		.name = "msm_moments",
+		.resources = {"msm_depth"_image(vuk::eFragmentSampled), "msm_moments"_image(vuk::eColorWrite)},
 		.execute = [&](vuk::CommandBuffer& command_buffer) {
 			command_buffer
 				.set_viewport(0, vuk::Rect2D::absolute(0, 0, msmSize.extent.width, msmSize.extent.height))
 				.set_scissor(0, vuk::Rect2D::absolute(0, 0, msmSize.extent.width, msmSize.extent.height))
-				.bind_sampled_image(0, 0, "msmdepth", {})
-				.bind_graphics_pipeline("msmmoments");
+				.bind_sampled_image(0, 0, "msm_depth", {})
+				.bind_graphics_pipeline("msm_moments");
 			command_buffer.draw(3, 1, 0, 0);
 		},
 	});
 	rg.add_pass({
-		.resources = {"msmmoments"_image(vuk::eFragmentSampled), "msmmomentsblurred"_image(vuk::eColorWrite)},
+		.name = "msm_moments_blurred",
+		.resources = {"msm_moments"_image(vuk::eFragmentSampled), "msm_moments_blurred"_image(vuk::eColorWrite)},
 		.execute = [&](vuk::CommandBuffer& command_buffer) {
 			command_buffer
 				.set_viewport(0, vuk::Rect2D::absolute(0, 0, msmSize.extent.width, msmSize.extent.height))
 				.set_scissor(0, vuk::Rect2D::absolute(0, 0, msmSize.extent.width, msmSize.extent.height))
-				.bind_sampled_image(0, 0, "msmmoments", {})
-				.bind_graphics_pipeline("msmmomentsblurred");
+				.bind_sampled_image(0, 0, "msm_moments", {})
+				.bind_graphics_pipeline("msm_moments_blurred");
 			command_buffer.draw(3, 1, 0, 0);
 		},
 	});
 	rg.add_pass({
-		.resources = {"swapchain"_image(vuk::eColorWrite), "depth"_image(vuk::eDepthStencilRW), "msmmomentsblurred"_image(vuk::eFragmentSampled)},
+		.name = "object",
+		.resources = {"swapchain"_image(vuk::eColorWrite), "depth"_image(vuk::eDepthStencilRW), "msm_moments_blurred"_image(vuk::eFragmentSampled)},
 		.execute = [this, worldBuf, &instanceBufs, &lightTransform](vuk::CommandBuffer& command_buffer) {
 			for (auto&[id, mesh]: meshes) {
 				auto instCount = instances.at(id).size();
@@ -278,7 +282,7 @@ void Engine::render() {
 					.bind_uniform_buffer(0, 0, worldBuf)
 					.bind_vertex_buffer(0, *mesh, 0, gfx::Vertex::format())
 					.bind_storage_buffer(0, 1, instanceBufs.at(id))
-					.bind_sampled_image(0, 2, "msmmomentsblurred", sampler)
+					.bind_sampled_image(0, 2, "msm_moments_blurred", sampler)
 					.bind_graphics_pipeline("object");
 				auto* model = command_buffer.map_scratch_uniform_binding<glm::mat4>(0, 3);
 				*model = lightTransform;
@@ -286,10 +290,10 @@ void Engine::render() {
 			}
 		}
 	});
-	rg.attach_managed("msmdepth_nop", vuk::Format::eR8Uint, msmSize, vuk::Samples::e4, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
-	rg.attach_managed("msmdepth", vuk::Format::eD32Sfloat, msmSize, vuk::Samples::e4, vuk::ClearDepthStencil{1.0f, 0});
-	rg.attach_managed("msmmoments", vuk::Format::eR16G16B16A16Unorm, msmSize, vuk::Samples::e1, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
-	rg.attach_managed("msmmomentsblurred", vuk::Format::eR16G16B16A16Unorm, msmSize, vuk::Samples::e1, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
+	rg.attach_managed("msm_depth_nop", vuk::Format::eR8Uint, msmSize, vuk::Samples::e4, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
+	rg.attach_managed("msm_depth", vuk::Format::eD32Sfloat, msmSize, vuk::Samples::e4, vuk::ClearDepthStencil{1.0f, 0});
+	rg.attach_managed("msm_moments", vuk::Format::eR16G16B16A16Unorm, msmSize, vuk::Samples::e1, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
+	rg.attach_managed("msm_moments_blurred", vuk::Format::eR16G16B16A16Unorm, msmSize, vuk::Samples::e1, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	rg.attach_managed("depth", vuk::Format::eD32Sfloat, vuk::Dimension2D::framebuffer(), vuk::Samples::e1, vuk::ClearDepthStencil{ 1.0f, 0 });
 	rg.attach_swapchain("swapchain", swapchain, vuk::ClearColor{world.ambientColor.r, world.ambientColor.g, world.ambientColor.b, world.ambientColor.a});
 	auto erg = std::move(rg).link(ptc);

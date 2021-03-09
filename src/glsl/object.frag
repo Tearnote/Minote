@@ -74,7 +74,7 @@ void main() {
 	moments = mix(moments, vec4(0.0, 0.63, 0.0, 0.63), 6.0e-5);
 	float shadow = ComputeMSMShadowIntensity(moments, lightCoord.z * 2.0 - 1.0);
 	shadow = clamp(shadow / 0.98, 0.0, 1.0);
-	shadow = mix(gain(shadow, 1.0 / fwidth(shadow)), shadow, smoothstep(0.16, 0.12, dot(normal, lightDirection)));
+	shadow = mix(gain(shadow, 1.0 / fwidth(shadow)), shadow, smoothstep(0.2, 0.12, dot(normal, lightDirection)));
 //	shadow = gain(shadow, 1.0 / fwidth(shadow));
 
 	// Phong shading
