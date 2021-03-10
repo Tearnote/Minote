@@ -124,12 +124,13 @@ endif()
 
 # Shader compilation
 set(SHADER_SOURCES
-        src/glsl/blit.vert src/glsl/blit.frag
+        src/glsl/swapchainBlit.vert src/glsl/swapchainBlit.frag
         src/glsl/object.vert src/glsl/object.frag
         src/glsl/msmdepth.vert src/glsl/msmdepth.frag
         src/glsl/msmblur.vert src/glsl/msmblur.frag
         src/glsl/msmmoments.vert src/glsl/msmmoments.frag
-        src/glsl/bloom.vert src/glsl/bloom.frag)
+        src/glsl/bloomThreshold.vert src/glsl/bloomThreshold.frag
+        src/glsl/bloomBlur.vert src/glsl/bloomBlur.frag)
 
 foreach (SHADER_PATH ${SHADER_SOURCES})
     get_filename_component(SHADER_FILENAME ${SHADER_PATH} NAME)

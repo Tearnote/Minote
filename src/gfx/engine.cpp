@@ -136,10 +136,10 @@ void Engine::setup() {
 	vuk::PipelineBaseCreateInfo msmDepthPci;
 	msmDepthPci.add_spirv(std::vector<u32>{
 #include "spv/msmdepth.vert.spv"
-	}, "object.vert");
+	}, "msmdepth.vert");
 	msmDepthPci.add_spirv(std::vector<u32>{
 #include "spv/msmdepth.frag.spv"
-	}, "object.frag");
+	}, "msmdepth.frag");
 	msmDepthPci.rasterization_state.cullMode = vuk::CullModeFlagBits::eBack;
 	context->create_named_pipeline("msm_depth", msmDepthPci);
 
@@ -147,20 +147,20 @@ void Engine::setup() {
 	vuk::PipelineBaseCreateInfo msmMomentsPci;
 	msmMomentsPci.add_spirv(std::vector<u32>{
 #include "spv/msmmoments.vert.spv"
-	}, "object.vert");
+	}, "msmmoments.vert");
 	msmMomentsPci.add_spirv(std::vector<u32>{
 #include "spv/msmmoments.frag.spv"
-	}, "object.frag");
+	}, "msmmoments.frag");
 	context->create_named_pipeline("msm_moments", msmMomentsPci);
 
 	// Create pipelines
 	vuk::PipelineBaseCreateInfo msmMomentsBlurredPci;
 	msmMomentsBlurredPci.add_spirv(std::vector<u32>{
 #include "spv/msmblur.vert.spv"
-	}, "object.vert");
+	}, "msmblur.vert");
 	msmMomentsBlurredPci.add_spirv(std::vector<u32>{
 #include "spv/msmblur.frag.spv"
-	}, "object.frag");
+	}, "msmblur.frag");
 	context->create_named_pipeline("msm_moments_blurred", msmMomentsBlurredPci);
 
 	vuk::PipelineBaseCreateInfo objectPci;
@@ -173,34 +173,46 @@ void Engine::setup() {
 	objectPci.rasterization_state.cullMode = vuk::CullModeFlagBits::eBack;
 	context->create_named_pipeline("object", objectPci);
 
-	vuk::PipelineBaseCreateInfo blitPci;
-	blitPci.add_spirv(std::vector<u32>{
-#include "spv/blit.vert.spv"
+	vuk::PipelineBaseCreateInfo swapchainBlitPci;
+	swapchainBlitPci.add_spirv(std::vector<u32>{
+#include "spv/swapchainBlit.vert.spv"
 		}, "blit.vert");
-	blitPci.add_spirv(std::vector<u32>{
-#include "spv/blit.frag.spv"
+	swapchainBlitPci.add_spirv(std::vector<u32>{
+#include "spv/swapchainBlit.frag.spv"
 		}, "blit.frag");
-	context->create_named_pipeline("blit", blitPci);
+	context->create_named_pipeline("swapchain_blit", swapchainBlitPci);
 
-	vuk::PipelineBaseCreateInfo bloomDownPci;
-	bloomDownPci.add_spirv(std::vector<u32>{
-#include "spv/bloom.vert.spv"
-	}, "bloom.vert");
-	bloomDownPci.add_spirv(std::vector<u32>{
-#include "spv/bloom.frag.spv"
-	}, "bloom.frag");
-	context->create_named_pipeline("bloom_down", bloomDownPci);
+	vuk::PipelineBaseCreateInfo bloomThresholdPci;
+	bloomThresholdPci.add_spirv(std::vector<u32>{
+#include "spv/bloomThreshold.vert.spv"
+	}, "bloomThreshold.vert");
+	bloomThresholdPci.add_spirv(std::vector<u32>{
+#include "spv/bloomThreshold.frag.spv"
+	}, "bloomThreshold.frag");
+	context->create_named_pipeline("bloom_threshold", bloomThresholdPci);
 
-	vuk::PipelineBaseCreateInfo bloomUpPci;
-	bloomUpPci.add_spirv(std::vector<u32>{
-#include "spv/bloom.vert.spv"
-		}, "bloom.vert");
-	bloomUpPci.add_spirv(std::vector<u32>{
-#include "spv/bloom.frag.spv"
-		}, "bloom.frag");
-	bloomUpPci.set_blend(vuk::BlendPreset::eAlphaBlend);
-	bloomUpPci.color_blend_attachments[0].dstColorBlendFactor = vuk::BlendFactor::eOne; // Additive
-	context->create_named_pipeline("bloom_up", bloomUpPci);
+	vuk::PipelineBaseCreateInfo bloomBlurDownPci;
+	bloomBlurDownPci.add_spirv(std::vector<u32>{
+#include "spv/bloomBlur.vert.spv"
+	}, "bloomBlur.vert");
+	bloomBlurDownPci.add_spirv(std::vector<u32>{
+#include "spv/bloomBlur.frag.spv"
+	}, "bloomBlur.frag");
+	context->create_named_pipeline("bloom_blur_down", bloomBlurDownPci);
+
+	vuk::PipelineBaseCreateInfo bloomBlurUpPci;
+	bloomBlurUpPci.add_spirv(std::vector<u32>{
+#include "spv/bloomBlur.vert.spv"
+		}, "bloomBlur.vert");
+	bloomBlurUpPci.add_spirv(std::vector<u32>{
+#include "spv/bloomBlur.frag.spv"
+		}, "bloomBlur.frag");
+	bloomBlurUpPci.set_blend(vuk::BlendPreset::eAlphaBlend);
+	// Turn into additive
+	bloomBlurUpPci.color_blend_attachments[0].srcColorBlendFactor = vuk::BlendFactor::eOne;
+	bloomBlurUpPci.color_blend_attachments[0].dstColorBlendFactor = vuk::BlendFactor::eOne;
+	bloomBlurUpPci.color_blend_attachments[0].dstAlphaBlendFactor = vuk::BlendFactor::eOne;
+	context->create_named_pipeline("bloom_blur_up", bloomBlurUpPci);
 
 	// Load meshes
 	auto blockNorm = generateNormals(mesh::Block);
@@ -256,6 +268,7 @@ void Engine::render() {
 	// Set up the rendergraph
 	vuk::RenderGraph rg;
 	rg.add_pass({ // MSM depth draw
+		.auxiliary_order = 0.0f,
 		.resources = {"msm_depth"_image(vuk::eDepthStencilRW), "msm_depth_nop"_image(vuk::eColorWrite)},
 		.execute = [&, this](vuk::CommandBuffer& command_buffer) {
 			for (auto&[id, mesh]: meshes) {
@@ -275,6 +288,7 @@ void Engine::render() {
 		},
 	});
 	rg.add_pass({ // MSM moment extraction
+		.auxiliary_order = 0.0f,
 		.resources = {"msm_depth"_image(vuk::eFragmentSampled), "msm_moments"_image(vuk::eColorWrite)},
 		.execute = [&](vuk::CommandBuffer& command_buffer) {
 			command_buffer
@@ -286,6 +300,7 @@ void Engine::render() {
 		},
 	});
 	rg.add_pass({ // MSM blurring
+		.auxiliary_order = 0.0f,
 		.resources = {"msm_moments"_image(vuk::eFragmentSampled), "msm_moments_blurred"_image(vuk::eColorWrite)},
 		.execute = [&](vuk::CommandBuffer& command_buffer) {
 			command_buffer
@@ -297,6 +312,7 @@ void Engine::render() {
 		},
 	});
 	rg.add_pass({ // Object draw
+		.auxiliary_order = 0.0f,
 		.resources = {"object_color"_image(vuk::eColorWrite), "object_depth"_image(vuk::eDepthStencilRW), "msm_moments_blurred"_image(vuk::eFragmentSampled)},
 		.execute = [this, worldBuf, &instanceBufs, &lightTransform](vuk::CommandBuffer& command_buffer) {
 			for (auto&[id, mesh]: meshes) {
@@ -325,56 +341,66 @@ void Engine::render() {
 		}
 	});
 	rg.add_pass({ // Bloom threshold
+		.auxiliary_order = 0.0f,
 		.resources = {vuk::Resource(std::string_view(bloomNames[0]), vuk::Resource::Type::eImage, vuk::eColorWrite), "object_resolved"_image(vuk::eFragmentSampled)},
-		.execute = [&](vuk::CommandBuffer& command_buffer) {
+		.execute = [&bloomSizes](vuk::CommandBuffer& command_buffer) {
 			command_buffer
 				.set_viewport(0, vuk::Rect2D::absolute({}, bloomSizes[0].extent))
 				.set_scissor(0, vuk::Rect2D::absolute({}, bloomSizes[0].extent))
 				.bind_sampled_image(0, 0, "object_resolved", {})
-				.bind_graphics_pipeline("bloom_down");
+				.bind_graphics_pipeline("bloom_threshold");
 			command_buffer.draw(3, 1, 0, 0);
 		},
 	});
 	for (auto i = 1u; i < BloomDepth; i += 1) {
 		rg.add_pass({ // Bloom downscale
+			.auxiliary_order = 0.0f,
 			.resources = {vuk::Resource(std::string_view(bloomNames[i]), vuk::Resource::Type::eImage, vuk::eColorWrite),
 			              vuk::Resource(std::string_view(bloomNames[i-1]), vuk::Resource::Type::eImage, vuk::eFragmentSampled)},
-			.execute = [&](vuk::CommandBuffer& command_buffer) {
+			.execute = [i, &bloomSizes, &bloomNames](vuk::CommandBuffer& command_buffer) {
 				command_buffer
 					.set_viewport(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
 					.set_scissor(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
 					.bind_sampled_image(0, 0, std::string_view(bloomNames[i-1]), {
 						.magFilter = vuk::Filter::eLinear,
 						.minFilter = vuk::Filter::eLinear})
-					.bind_graphics_pipeline("bloom_down");
-				command_buffer.draw(3, 1, 0, 1);
+					.bind_graphics_pipeline("bloom_blur_down");
+				auto* stepSize = command_buffer.map_scratch_uniform_binding<f32>(0, 1);
+				*stepSize = 1.0f;
+				command_buffer.draw(3, 1, 0, 0);
 			},
 		});
 	}
-//	for (auto i = BloomDepth - 2; i > 0; i -= 1) {
-//		rg.add_pass({ // Bloom upscale
-//			.resources = {vuk::Resource(std::string_view(bloomNames[i]), vuk::Resource::Type::eImage, vuk::eColorWrite),
-//			              vuk::Resource(std::string_view(bloomNames[i+1]), vuk::Resource::Type::eImage, vuk::eFragmentSampled)},
-//			.execute = [&](vuk::CommandBuffer& command_buffer) {
-//				command_buffer
-//					.set_viewport(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
-//					.set_scissor(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
-//					.bind_sampled_image(0, 0, std::string_view(bloomNames[i+1]), {
-//						.magFilter = vuk::Filter::eLinear,
-//						.minFilter = vuk::Filter::eLinear})
-//					.bind_graphics_pipeline("bloom_up");
-//				command_buffer.draw(3, 1, 0, 2);
-//			},
-//		});
-//	}
+	for (auto i = BloomDepth - 2; i < BloomDepth; i -= 1) {
+		rg.add_pass({ // Bloom upscale
+			.auxiliary_order = 1.0f,
+			.resources = {vuk::Resource(std::string_view(bloomNames[i]), vuk::Resource::Type::eImage, vuk::eColorWrite),
+			              vuk::Resource(std::string_view(bloomNames[i+1]), vuk::Resource::Type::eImage, vuk::eFragmentSampled)},
+			.execute = [i, &bloomSizes, &bloomNames](vuk::CommandBuffer& command_buffer) {
+				command_buffer
+					.set_viewport(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
+					.set_scissor(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
+					.bind_sampled_image(0, 0, std::string_view(bloomNames[i+1]), {
+						.magFilter = vuk::Filter::eLinear,
+						.minFilter = vuk::Filter::eLinear})
+					.bind_graphics_pipeline("bloom_blur_up");
+				auto* stepSize = command_buffer.map_scratch_uniform_binding<f32>(0, 1);
+				*stepSize = 0.5f;
+				command_buffer.draw(3, 1, 0, 0);
+			},
+		});
+	}
 	rg.add_pass({ // Swapchain blit
-		.resources = {"swapchain"_image(vuk::eColorWrite), "object_resolved"_image(vuk::eFragmentSampled)},
-		.execute = [](vuk::CommandBuffer& command_buffer) {
+		.auxiliary_order = 1.0f,
+		.resources = {"swapchain"_image(vuk::eColorWrite), "object_resolved"_image(vuk::eFragmentSampled),
+		              vuk::Resource(std::string_view(bloomNames[0]), vuk::Resource::Type::eImage, vuk::eFragmentSampled)},
+		.execute = [&bloomNames](vuk::CommandBuffer& command_buffer) {
 			command_buffer
 				.set_viewport(0, vuk::Rect2D::framebuffer())
 				.set_scissor(0, vuk::Rect2D::framebuffer())
 				.bind_sampled_image(0, 0, "object_resolved", {})
-				.bind_graphics_pipeline("blit");
+				.bind_sampled_image(0, 1, std::string_view(bloomNames[0]), {})
+				.bind_graphics_pipeline("swapchain_blit");
 			command_buffer.draw(3, 1, 0, 0);
 		},
 	});
