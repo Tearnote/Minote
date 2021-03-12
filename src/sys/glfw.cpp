@@ -2,6 +2,7 @@
 
 #include <string_view>
 #include <stdexcept>
+#include <cassert>
 #ifdef _WIN32
 #ifndef NOMINMAX
 #define NOMINMAX 1
@@ -13,7 +14,6 @@
 #endif //_WIN32
 #include <fmt/core.h>
 #include <GLFW/glfw3.h>
-#include "base/assert.hpp"
 #include "base/time.hpp"
 #include "base/log.hpp"
 
@@ -22,7 +22,7 @@ namespace minote::sys {
 using namespace base;
 
 Glfw::Glfw() {
-	ASSERT(!exists);
+	assert(!exists);
 
 	if (glfwInit() == GLFW_FALSE)
 		throw std::runtime_error{fmt::format("Failed to initialize GLFW: {}", getError())};
@@ -54,7 +54,7 @@ auto Glfw::getError() -> std::string_view {
 	auto const code = glfwGetError(&description);
 	if (code == GLFW_NO_ERROR)
 		return "No error";
-	ASSERT(description);
+	assert(description);
 	return description;
 }
 

@@ -3,6 +3,7 @@
 #include <string_view>
 #include <stdexcept>
 #include <optional>
+#include <cassert>
 #include <mutex>
 #include <glm/vec2.hpp>
 #include <GLFW/glfw3.h>
@@ -10,7 +11,6 @@
 #ifndef IMGUI_DISABLE
 #include "backends/imgui_impl_glfw.h"
 #endif //IMGUI_DISABLE
-#include "base/assert.hpp"
 #include "base/math.hpp"
 #include "base/log.hpp"
 
@@ -20,13 +20,13 @@ using namespace base;
 
 // Retrieve the Window from raw GLFW handle by user pointer.
 static auto getWindow(GLFWwindow* handle) -> Window& {
-	ASSERT(handle);
+	assert(handle);
 	return *reinterpret_cast<Window*>(glfwGetWindowUserPointer(handle));
 }
 
 void Window::keyCallback(GLFWwindow* handle, int rawKeycode, int rawScancode, int rawState,
 	int) {
-	ASSERT(handle);
+	assert(handle);
 	if (rawState == GLFW_REPEAT) return; // Key repeat is not used
 	auto& window = getWindow(handle);
 	using State = KeyInput::State;
@@ -53,9 +53,9 @@ void Window::keyCallback(GLFWwindow* handle, int rawKeycode, int rawScancode, in
 }
 
 void Window::framebufferResizeCallback(GLFWwindow* handle, int width, int height) {
-	ASSERT(handle);
-	ASSERT(width >= 0);
-	ASSERT(height >= 0);
+	assert(handle);
+	assert(width >= 0);
+	assert(height >= 0);
 	auto& window = getWindow(handle);
 
 	auto const newSize = glm::uvec2{width, height};
@@ -67,8 +67,8 @@ void Window::framebufferResizeCallback(GLFWwindow* handle, int width, int height
 // it to a display with different DPI scaling, or at startup. The new scale
 // is saved for later retrieval.
 void Window::windowScaleCallback(GLFWwindow* handle, float xScale, float) {
-	ASSERT(handle);
-	ASSERT(xScale);
+	assert(handle);
+	assert(xScale);
 	// yScale seems to sometimes be 0.0, so it is not reliable
 	auto& window = getWindow(handle);
 
@@ -78,7 +78,7 @@ void Window::windowScaleCallback(GLFWwindow* handle, float xScale, float) {
 
 Window::Window(Glfw const& _glfw, std::string_view _title, bool fullscreen, glm::uvec2 _size):
 	glfw{_glfw}, m_title{_title} {
-	ASSERT(_size.x > 0 && _size.y > 0);
+	assert(_size.x > 0 && _size.y > 0);
 
 	// *** Set up context params ***
 

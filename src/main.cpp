@@ -1,9 +1,9 @@
 #include "main.hpp"
 
 #include <system_error>
-#include <string_view>
 #include <stdexcept>
 #include <utility>
+#include <cassert>
 #include <thread>
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
@@ -15,7 +15,6 @@
 #include <windows.h>
 #endif //_WIN32
 #include "base/version.hpp"
-#include "base/assert.hpp"
 #include "base/file.hpp"
 #include "base/log.hpp"
 #include "sys/window.hpp"
@@ -27,7 +26,6 @@
 
 using namespace minote; // Because we can't namespace main()
 using namespace base;
-using namespace std::string_view_literals;
 
 auto main(int, char*[]) -> int try {
 	// *** Initialization ***
@@ -41,9 +39,9 @@ auto main(int, char*[]) -> int try {
 	L.level = Log::Level::Trace;
 #ifndef NDEBUG
 	L.console = true;
-	constexpr auto Logpath = "minote-debug.log"sv;
+	constexpr auto Logpath = "minote-debug.log";
 #else //NDEBUG
-	constexpr auto Logpath = "minote.log"sv;
+	constexpr auto Logpath = "minote.log";
 #endif //NDEBUG
 	try {
 		auto logfile = file{Logpath, "w"};

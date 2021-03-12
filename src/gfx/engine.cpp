@@ -2,13 +2,13 @@
 
 #include <stdexcept>
 #include <cstring>
+#include <cassert>
 #include <GLFW/glfw3.h>
 #include <fmt/core.h>
 #include "VkBootstrap.h"
 #include "volk/volk.h"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
-#include "base/assert.hpp"
 #include "base/log.hpp"
 #include "gfx/base.hpp"
 #include "mesh/block.hpp"
@@ -25,7 +25,7 @@ VKAPI_ATTR auto VKAPI_CALL debugCallback(
 	VkDebugUtilsMessageTypeFlagsEXT typeCode,
 	VkDebugUtilsMessengerCallbackDataEXT const* data,
 	void*) -> VkBool32 {
-	ASSERT(data);
+	assert(data);
 
 	auto const severity = [severityCode] {
 		if (severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)

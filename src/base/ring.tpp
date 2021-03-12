@@ -3,8 +3,8 @@
 #include <stdexcept>
 #include <algorithm>
 #include <utility>
+#include <cassert>
 #include <memory>
-#include "base/assert.hpp" // ASSERT() only
 
 namespace minote::base {
 
@@ -52,14 +52,14 @@ constexpr void ring<T, Capacity>::swap(ring& other) {
 
 template<typename T, std::size_t Capacity>
 constexpr auto ring<T, Capacity>::at(size_type const i) -> reference {
-	ASSERT(i < length);
+	assert(i < length);
 	size_type const index = (offset + i) % capacity();
 	return *std::launder(reinterpret_cast<value_type*>(&buffer[index]));
 }
 
 template<typename T, std::size_t Capacity>
 constexpr auto ring<T, Capacity>::at(size_type const i) const -> const_reference {
-	ASSERT(i < length);
+	assert(i < length);
 	size_type const index = (offset + i) % capacity();
 	return *std::launder(reinterpret_cast<value_type const*>(&buffer[index]));
 }
@@ -127,7 +127,7 @@ constexpr auto ring<T, Capacity>::emplace_front(Args&&... args) -> reference {
 
 template<typename T, size_t Capacity>
 constexpr void ring<T, Capacity>::pop_front() {
-	ASSERT(length > 0);
+	assert(length > 0);
 
 	std::destroy_at(&front());
 	offset += 1;
@@ -137,7 +137,7 @@ constexpr void ring<T, Capacity>::pop_front() {
 
 template<typename T, std::size_t Capacity>
 constexpr void ring<T, Capacity>::pop_back() {
-	ASSERT(length > 0);
+	assert(length > 0);
 
 	std::destroy_at(&back());
 	length -= 1;
