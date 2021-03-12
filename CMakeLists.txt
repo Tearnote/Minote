@@ -18,7 +18,6 @@ set(SOURCES
         src/base/hashmap.hpp
         src/base/svector.hpp
         src/base/version.hpp
-        src/base/defer.hpp
         src/base/tween.hpp
         src/base/types.hpp
         src/base/ring.hpp src/base/ring.tpp
@@ -51,7 +50,6 @@ set(INTERNALLIBS
         lib/robin-hood-hashing/robin_hood.h
         lib/static_vector/fixed_capacity_vector
         lib/vk-bootstrap/src/VkBootstrap.h lib/vk-bootstrap/src/VkBootstrap.cpp
-        lib/scope_guard/scope_guard.hpp
         $<$<CONFIG:Debug>:
         lib/imgui/imgui.h lib/imgui/imgui.cpp lib/imgui/imconfig.h
         lib/imgui/imgui_internal.h lib/imgui/imgui_draw.cpp lib/imgui/imgui_tables.cpp lib/imgui/imgui_widgets.cpp lib/imgui/imgui_demo.cpp
