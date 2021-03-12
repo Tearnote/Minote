@@ -14,7 +14,7 @@ using namespace base;
 
 constexpr auto UpdateTick = 1_s / 120;
 
-void game(sys::Glfw& glfw, sys::Window& window) try {
+void game(sys::Glfw&, sys::Window& window) try {
 
 	// *** Initialization ***
 
@@ -29,7 +29,6 @@ void game(sys::Glfw& glfw, sys::Window& window) try {
 	auto nextUpdate = sys::Glfw::getTime();
 
 	auto lightSource = glm::vec3{6.0f, 12.0f, -6.0f};
-	auto held = std::array<bool, 4>{};
 
 	while (!window.isClosing()) {
 		// Input
@@ -42,6 +41,11 @@ void game(sys::Glfw& glfw, sys::Window& window) try {
 			mapper.processActions([&](auto const& action) {
 				if (action.timestamp > nextUpdate) return false;
 
+#ifndef IMGUI_DISABLE
+				if (action.state == Mapper::Action::State::Pressed && ImGui::GetIO().WantCaptureKeyboard)
+					return false;
+#endif //IMGUI_DISABLE
+
 				updateActions.push_back(action);
 
 				// Interpret quit events here for now
@@ -49,26 +53,8 @@ void game(sys::Glfw& glfw, sys::Window& window) try {
 				if (action.type == Action::Back)
 					window.requestClose();
 
-				// Quick and dirty camera control
-				if (action.type == Action::Left)
-					held[0] = action.state == Mapper::Action::State::Pressed;
-				if (action.type == Action::Right)
-					held[1] = action.state == Mapper::Action::State::Pressed;
-				if (action.type == Action::Drop)
-					held[2] = action.state == Mapper::Action::State::Pressed;
-				if (action.type == Action::Lock)
-					held[3] = action.state == Mapper::Action::State::Pressed;
-
 				return true;
 			});
-			if (held[0])
-				lightSource.x -= 0.1f;
-			if (held[1])
-				lightSource.x += 0.1f;
-			if (held[2])
-				lightSource.z -= 0.1f;
-			if (held[3])
-				lightSource.z += 0.1f;
 
 //			play.tick(updateActions);
 			nextUpdate += UpdateTick;
@@ -158,6 +144,9 @@ void game(sys::Glfw& glfw, sys::Window& window) try {
 			},
 		});
 
+#ifndef IMGUI_DISABLE
+		ImGui::ShowDemoWindow();
+#endif //IMGUI_DISABLE
 		engine.render();
 	}
 

@@ -36,6 +36,7 @@ set(SOURCES
         src/sys/glfw.hpp src/sys/glfw.cpp
         src/gfx/engine.hpp src/gfx/engine.cpp
         src/gfx/world.hpp
+        src/gfx/imgui.hpp src/gfx/imgui.cpp
         src/gfx/mesh.hpp
         src/gfx/base.hpp
         src/mesh/block.hpp
@@ -53,6 +54,11 @@ set(INTERNALLIBS
         lib/vk-bootstrap/src/VkBootstrap.h lib/vk-bootstrap/src/VkBootstrap.cpp
         lib/scope_guard/scope_guard.hpp
         lib/xassert/xassert.h lib/xassert/xassert.c
+        $<$<CONFIG:Debug>:
+        lib/imgui/imgui.h lib/imgui/imgui.cpp lib/imgui/imconfig.h
+        lib/imgui/imgui_internal.h lib/imgui/imgui_draw.cpp lib/imgui/imgui_tables.cpp lib/imgui/imgui_widgets.cpp lib/imgui/imgui_demo.cpp
+        lib/imgui/backends/imgui_impl_glfw.h lib/imgui/backends/imgui_impl_glfw.cpp
+        >
         lib/volk/volk.h lib/volk/volk.c
         lib/stb/stb_image.h lib/stb/stb_image.c
         lib/pcg/pcg_basic.h lib/pcg/pcg_basic.c)
@@ -64,16 +70,21 @@ set(VUK_USE_SHADERC OFF CACHE BOOL "")
 add_subdirectory(lib/vuk)
 target_compile_definitions(vuk PUBLIC VUK_CUSTOM_VULKAN_HEADER="volk.h")
 target_include_directories(vuk PUBLIC lib/volk)
-
 if(WIN32)
     add_compile_definitions(VK_USE_PLATFORM_WIN32_KHR)
 else()
     add_compile_definitions(VK_USE_PLATFORM_XCB_KHR)
 endif()
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_compile_definitions(IMGUI_DISABLE_WIN32_FUNCTIONS)
+else()
+    add_compile_definitions(IMGUI_DISABLE)
+endif()
 
 add_executable(Minote ${SOURCES} ${INTERNALLIBS})
 target_include_directories(Minote PRIVATE lib)
 target_include_directories(Minote PRIVATE lib/vk-bootstrap/src)
+target_include_directories(Minote PRIVATE lib/imgui)
 target_link_libraries(Minote vuk)
 
 # Build settings
@@ -130,7 +141,8 @@ set(SHADER_SOURCES
         src/glsl/msmblur.vert src/glsl/msmblur.frag
         src/glsl/msmmoments.vert src/glsl/msmmoments.frag
         src/glsl/bloomThreshold.vert src/glsl/bloomThreshold.frag
-        src/glsl/bloomBlur.vert src/glsl/bloomBlur.frag)
+        src/glsl/bloomBlur.vert src/glsl/bloomBlur.frag
+        src/glsl/imgui.vert src/glsl/imgui.frag)
 
 foreach (SHADER_PATH ${SHADER_SOURCES})
     get_filename_component(SHADER_FILENAME ${SHADER_PATH} NAME)

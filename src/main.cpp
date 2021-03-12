@@ -20,23 +20,17 @@
 #include "base/log.hpp"
 #include "sys/window.hpp"
 #include "sys/glfw.hpp"
+#ifndef IMGUI_DISABLE
+#include "backends/imgui_impl_glfw.h"
+#endif //IMGUI_DISABLE
 #include "game.hpp"
 
 using namespace minote; // Because we can't namespace main()
 using namespace base;
 using namespace std::string_view_literals;
 
-auto assertHandler(char const* expr, char const* file, int line, char const* msg) -> int {
-	auto const str = fmt::format(R"(Assertion "{}" triggered on line {} in {}{}{})",
-		expr, line, file, msg? ": " : "", msg?: "");
-	L.crit(str);
-	throw std::logic_error{str};
-}
-
 auto main(int, char*[]) -> int try {
 	// *** Initialization ***
-
-	set_assert_handler(assertHandler);
 
 	// Unicode support
 #ifdef _WIN32
@@ -72,6 +66,10 @@ auto main(int, char*[]) -> int try {
 	// Input thread loop
 	while (!window.isClosing()) {
 		glfw.poll();
+#ifndef IMGUI_DISABLE
+		if (ImGui::GetIO().Fonts->IsBuilt())
+			ImGui_ImplGlfw_NewFrame();
+#endif //IMGUI_DISABLE
 		std::this_thread::sleep_for(1_ms);
 	}
 

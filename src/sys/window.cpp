@@ -7,6 +7,9 @@
 #include <glm/vec2.hpp>
 #include <GLFW/glfw3.h>
 #include <fmt/core.h>
+#ifndef IMGUI_DISABLE
+#include "backends/imgui_impl_glfw.h"
+#endif //IMGUI_DISABLE
 #include "base/assert.hpp"
 #include "base/math.hpp"
 #include "base/log.hpp"
@@ -126,6 +129,14 @@ Window::Window(Glfw const& _glfw, std::string_view _title, bool fullscreen, glm:
 	glfwSetKeyCallback(m_handle, keyCallback);
 	glfwSetFramebufferSizeCallback(m_handle, framebufferResizeCallback);
 	glfwSetWindowContentScaleCallback(m_handle, windowScaleCallback);
+
+	// Initialize imgui input
+#ifndef IMGUI_DISABLE
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGui::StyleColorsDark();
+	ImGui_ImplGlfw_InitForVulkan(m_handle, true);
+#endif //IMGUI_DISABLE
 
 	L.info(R"(Window "{}" created at {:s} *{:.2f}{})",
 		title(), size(), scale(), fullscreen ? " fullscreen" : "");

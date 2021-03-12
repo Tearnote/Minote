@@ -8,6 +8,7 @@
 #include "base/hashmap.hpp"
 #include "base/id.hpp"
 #include "sys/window.hpp"
+#include "gfx/imgui.hpp"
 #include "gfx/world.hpp"
 
 namespace minote::gfx {
@@ -54,6 +55,9 @@ private:
 	vkb::Device device;
 	vuk::SwapChainRef swapchain;
 	std::optional<vuk::Context> context;
+#ifndef IMGUI_DISABLE
+	ImguiData imguiData;
+#endif //IMGUI_DISABLE
 
 	hashmap<ID, vuk::Unique<vuk::Buffer>> meshes;
 	hashmap<ID, std::vector<Instance>> instances;

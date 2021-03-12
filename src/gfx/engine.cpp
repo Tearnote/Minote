@@ -121,7 +121,15 @@ Engine::Engine(sys::Window& window) {
 
 Engine::~Engine() {
 	context->wait_idle();
+#ifndef IMGUI_DISABLE
+	imguiData.font_texture.view.reset();
+	imguiData.font_texture.image.reset();
+#endif //IMGUI_DISABLE
 	meshes.clear();
+	// This performs cleanups for all inflight frames
+	for (auto i = 0u; i < vuk::Context::FC; i++) {
+		context->begin();
+	}
 	context.reset();
 	vkb::destroy_device(device);
 	vkDestroySurfaceKHR(instance.instance, surface, nullptr);
@@ -166,20 +174,20 @@ void Engine::setup() {
 	vuk::PipelineBaseCreateInfo objectPci;
 	objectPci.add_spirv(std::vector<u32>{
 #include "spv/object.vert.spv"
-		}, "object.vert");
+	}, "object.vert");
 	objectPci.add_spirv(std::vector<u32>{
 #include "spv/object.frag.spv"
-		}, "object.frag");
+	}, "object.frag");
 	objectPci.rasterization_state.cullMode = vuk::CullModeFlagBits::eBack;
 	context->create_named_pipeline("object", objectPci);
 
 	vuk::PipelineBaseCreateInfo swapchainBlitPci;
 	swapchainBlitPci.add_spirv(std::vector<u32>{
 #include "spv/swapchainBlit.vert.spv"
-		}, "blit.vert");
+	}, "blit.vert");
 	swapchainBlitPci.add_spirv(std::vector<u32>{
 #include "spv/swapchainBlit.frag.spv"
-		}, "blit.frag");
+	}, "blit.frag");
 	context->create_named_pipeline("swapchain_blit", swapchainBlitPci);
 
 	vuk::PipelineBaseCreateInfo bloomThresholdPci;
@@ -203,10 +211,10 @@ void Engine::setup() {
 	vuk::PipelineBaseCreateInfo bloomBlurUpPci;
 	bloomBlurUpPci.add_spirv(std::vector<u32>{
 #include "spv/bloomBlur.vert.spv"
-		}, "bloomBlur.vert");
+	}, "bloomBlur.vert");
 	bloomBlurUpPci.add_spirv(std::vector<u32>{
 #include "spv/bloomBlur.frag.spv"
-		}, "bloomBlur.frag");
+	}, "bloomBlur.frag");
 	bloomBlurUpPci.set_blend(vuk::BlendPreset::eAlphaBlend);
 	// Turn into additive
 	bloomBlurUpPci.color_blend_attachments[0].srcColorBlendFactor = vuk::BlendFactor::eOne;
@@ -222,8 +230,19 @@ void Engine::setup() {
 		std::span(blockNorm)).first);
 	instances.emplace("block"_id, std::vector<Instance>());
 
+	// Initialize imgui rendering
+#ifndef IMGUI_DISABLE
+	imguiData = ImGui_ImplVuk_Init(ptc);
+	ImGui::GetIO().DisplaySize = ImVec2{f32(swapchain->extent.width), f32(swapchain->extent.height)};
+#endif //IMGUI_DISABLE
+
 	// Finalize uploads
 	ptc.wait_all_transfers();
+
+	// Begin imgui frame so that first-frame calls succeed
+#ifndef IMGUI_DISABLE
+	ImGui::NewFrame();
+#endif //IMGUI_DISABLE
 }
 
 void Engine::render() {
@@ -405,6 +424,11 @@ void Engine::render() {
 		},
 	});
 
+#ifndef IMGUI_DISABLE
+	ImGui::Render();
+	ImGui_ImplVuk_Render(ptc, rg, "swapchain", "swapchain", imguiData, ImGui::GetDrawData());
+#endif //IMGUI_DISABLE
+
 	rg.attach_managed("msm_depth_nop", vuk::Format::eR8Unorm, msmSize, vuk::Samples::e4, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	rg.attach_managed("msm_depth", vuk::Format::eD32Sfloat, msmSize, vuk::Samples::e4, vuk::ClearDepthStencil{1.0f, 0});
 	rg.attach_managed("msm_moments", vuk::Format::eR16G16B16A16Unorm, msmSize, vuk::Samples::e1, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
@@ -470,6 +494,9 @@ void Engine::render() {
 	// Clean up
 	for (auto&[id, inst]: instances)
 		inst.clear();
+#ifndef IMGUI_DISABLE
+	ImGui::NewFrame();
+#endif //IMGUI_DISABLE
 }
 
 void Engine::setBackground(glm::vec3 color) {
@@ -519,11 +546,14 @@ auto Engine::createSwapchain(VkSwapchainKHR old) -> vuk::Swapchain {
 }
 
 void Engine::refreshSwapchain() {
-	auto newSwapchain = context->add_swapchain(createSwapchain(swapchain->swapchain));
-	context->remove_swapchain(swapchain);
 	for (auto iv: swapchain->image_views)
 		context->enqueue_destroy(iv);
+	auto newSwapchain = context->add_swapchain(createSwapchain(swapchain->swapchain));
+	context->remove_swapchain(swapchain);
 	swapchain = newSwapchain;
+#ifndef IMGUI_DISABLE
+	ImGui::GetIO().DisplaySize = ImVec2{f32(swapchain->extent.width), f32(swapchain->extent.height)};
+#endif //IMGUI_DISABLE
 }
 
 }
