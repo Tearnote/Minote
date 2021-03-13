@@ -1,7 +1,6 @@
 #include "base/file.hpp"
 
 #include <system_error>
-#include <utility>
 #include <cstdio>
 #include <fmt/core.h>
 #include "base/util.hpp"
@@ -14,18 +13,16 @@ void file::open(std::filesystem::path const& path, char const* mode) {
 	pathStr = path.string();
 	handle = std::fopen(pathStr.c_str(), mode);
 	if (!handle)
-		throw std::system_error{errno, std::generic_category(),
-		                   fmt::format(R"(Failed to open "{}")", pathStr)};
+		throw std::system_error(errno, std::generic_category(), fmt::format(R"(Failed to open "{}")", pathStr));
 }
 
 void file::close() {
 	if (!handle) return;
 
 	if (!noClose) {
-		auto const result = std::fclose(handle);
+		auto result = std::fclose(handle);
 		if (result)
-			throw std::system_error{errno, std::generic_category(),
-			                   fmt::format(R"(Failed to flush file "{}" on closing)", pathStr)};
+			throw std::system_error(errno, std::generic_category(), fmt::format(R"(Failed to flush file "{}" on closing)", pathStr));
 	}
 	handle = nullptr;
 }
@@ -34,8 +31,7 @@ void file::flush() {
 	if (!handle) return;
 
 	if (std::fflush(handle) == EOF)
-		throw std::system_error{errno, std::generic_category(),
-		                   fmt::format(R"(Failed to flush file "{}")", pathStr)};
+		throw std::system_error(errno, std::generic_category(), fmt::format(R"(Failed to flush file "{}")", pathStr));
 
 }
 

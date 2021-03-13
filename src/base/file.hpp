@@ -18,7 +18,7 @@ struct file {
 	// Create the object from an externally opened std::FILE. Ownership of the FILE is assumed.
 	// If the FILE is special and should never be closed, set doNotClose to true.
 	file(std::FILE* raw, std::string_view name, bool doNotClose = false) noexcept:
-		handle{raw}, pathStr{name}, noClose{doNotClose} {}
+		handle(raw), pathStr(name), noClose(doNotClose) {}
 
 	// Create the object with an immediately attached file.
 	file(std::filesystem::path const& path, char const* mode) { open(path, mode); }
@@ -64,7 +64,7 @@ private:
 
 };
 
-inline static auto cout = file{stdout, "stdout", true};
-inline static auto cerr = file{stderr, "stderr", true};
+inline static auto cout = file(stdout, "stdout", true);
+inline static auto cerr = file(stderr, "stderr", true);
 
 }

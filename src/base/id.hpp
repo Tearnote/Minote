@@ -1,8 +1,6 @@
 #pragma once
 
 #include <string_view>
-#include <algorithm>
-#include <cstddef>
 #include "base/types.hpp"
 
 namespace minote::base {
@@ -11,11 +9,11 @@ namespace minote::base {
 struct ID {
 
 	// Hash string with FNV-1a
-	explicit constexpr ID(std::string_view str): id{Basis} {
-		std::ranges::for_each(str, [this](auto ch){
+	explicit constexpr ID(std::string_view str): id(Basis) {
+		for (auto ch: str) {
 			id ^= ch;
 			id *= Prime;
-		});
+		}
 	}
 
 	constexpr auto operator==(ID const&) const -> bool = default;
@@ -34,7 +32,7 @@ private:
 namespace literals {
 
 // Guaranteed-constexpr string literal hash
-consteval auto operator ""_id(char const* str, size_t len) { return ID{{str, len}}; }
+consteval auto operator ""_id(char const* str, size_t len) { return ID({str, len}); }
 
 }
 
