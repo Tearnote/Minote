@@ -21,7 +21,7 @@ using namespace base;
 // Retrieve the Window from raw GLFW handle by user pointer.
 static auto getWindow(GLFWwindow* handle) -> Window& {
 	assert(handle);
-	return *reinterpret_cast<Window*>(glfwGetWindowUserPointer(handle));
+	return *(Window*)(glfwGetWindowUserPointer(handle));
 }
 
 void Window::keyCallback(GLFWwindow* handle, int rawKeycode, int rawScancode, int rawState,
@@ -31,11 +31,11 @@ void Window::keyCallback(GLFWwindow* handle, int rawKeycode, int rawScancode, in
 	auto& window = getWindow(handle);
 	using State = KeyInput::State;
 
-	auto const keycode = Keycode{rawKeycode};
-	auto const scancode = Scancode{rawScancode};
-	auto const name = window.glfw.getKeyName(keycode, scancode);
-	auto const state = rawState == GLFW_PRESS? State::Pressed : State::Released;
-	auto const input = KeyInput{
+	auto keycode = Keycode(rawKeycode);
+	auto scancode = Scancode(rawScancode);
+	auto name = window.glfw.getKeyName(keycode, scancode);
+	auto state = rawState == GLFW_PRESS? State::Pressed : State::Released;
+	auto input = KeyInput{
 		.keycode = keycode,
 		.scancode = scancode,
 		.name = name,
@@ -43,7 +43,7 @@ void Window::keyCallback(GLFWwindow* handle, int rawKeycode, int rawScancode, in
 		.timestamp = Glfw::getTime()
 	};
 
-	auto const lock = std::scoped_lock{window.inputsMutex};
+	auto lock = std::scoped_lock(window.inputsMutex);
 	try {
 		window.inputs.push_back(input);
 	} catch (...) {
@@ -58,7 +58,7 @@ void Window::framebufferResizeCallback(GLFWwindow* handle, int width, int height
 	assert(height >= 0);
 	auto& window = getWindow(handle);
 
-	auto const newSize = glm::uvec2{width, height};
+	auto newSize = glm::uvec2(width, height);
 	window.m_size = newSize;
 	L.info(R"(Window "{}" resized to {:s})", window.title(), newSize);
 }
@@ -77,7 +77,7 @@ void Window::windowScaleCallback(GLFWwindow* handle, float xScale, float) {
 }
 
 Window::Window(Glfw const& _glfw, std::string_view _title, bool fullscreen, glm::uvec2 _size):
-	glfw{_glfw}, m_title{_title} {
+	glfw(_glfw), m_title(_title) {
 	assert(_size.x > 0 && _size.y > 0);
 
 	// *** Set up context params ***
@@ -89,12 +89,12 @@ Window::Window(Glfw const& _glfw, std::string_view _title, bool fullscreen, glm:
 
 	auto* monitor = glfwGetPrimaryMonitor();
 	if (!monitor)
-		throw std::runtime_error{
-			fmt::format("Failed to query primary monitor: {}", Glfw::getError())};
-	auto const* const mode = glfwGetVideoMode(monitor);
+		throw std::runtime_error(
+			fmt::format("Failed to query primary monitor: {}", Glfw::getError()));
+	auto const* mode = glfwGetVideoMode(monitor);
 	if (!mode)
-		throw std::runtime_error{
-			fmt::format("Failed to query video mode: {}", Glfw::getError())};
+		throw std::runtime_error(
+			fmt::format("Failed to query video mode: {}", Glfw::getError()));
 	if (fullscreen)
 		_size = {mode->width, mode->height};
 	else
@@ -102,21 +102,21 @@ Window::Window(Glfw const& _glfw, std::string_view _title, bool fullscreen, glm:
 
 	m_handle = glfwCreateWindow(_size.x, _size.y, m_title.c_str(), monitor, nullptr);
 	if (!m_handle)
-		throw std::runtime_error{
-			fmt::format(R"(Failed to init window "{}": {})", title(), Glfw::getError())};
+		throw std::runtime_error(
+			fmt::format(R"(Failed to init window "{}": {})", title(), Glfw::getError()));
 
 	// *** Set window properties ***
 
 	// Real size might be different from requested size because of DPI scaling
-	glm::ivec2 realSize;
+	auto realSize = glm::ivec2();
 	glfwGetFramebufferSize(m_handle, &realSize.x, &realSize.y);
-	if (realSize == glm::ivec2{0, 0})
-		throw std::runtime_error{
+	if (realSize == glm::ivec2(0, 0))
+		throw std::runtime_error(
 			fmt::format(R"(Failed to retrieve window "{}" framebuffer size: {})", _title,
-				Glfw::getError())};
+				Glfw::getError()));
 	m_size = realSize;
 
-	float realScale;
+	auto realScale = 0.0f;
 	glfwGetWindowContentScale(m_handle, &realScale, nullptr);
 	m_scale = realScale;
 
@@ -149,12 +149,12 @@ Window::~Window() {
 }
 
 auto Window::isClosing() const -> bool {
-	auto const lock = std::scoped_lock{handleMutex};
+	auto lock = std::scoped_lock(handleMutex);
 	return glfwWindowShouldClose(m_handle);
 }
 
 void Window::requestClose() {
-	auto const lock = std::scoped_lock{handleMutex};
+	auto lock = std::scoped_lock(handleMutex);
 	if (glfwWindowShouldClose(m_handle)) return;
 
 	glfwSetWindowShouldClose(m_handle, true);

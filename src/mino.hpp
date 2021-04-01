@@ -39,39 +39,39 @@ using Piece4 = std::array<glm::ivec2, 4>;
 
 constexpr auto minoColor(Mino4 mino) {
 	switch (mino) {
-	case Mino4::I: return glm::vec4{1.0f, 0.0f, 0.0f, 1.0f};
-	case Mino4::L: return glm::vec4{1.0f, .22f, 0.0f, 1.0f};
-	case Mino4::O: return glm::vec4{1.0f, 1.0f, 0.0f, 1.0f};
-	case Mino4::Z: return glm::vec4{0.0f, 1.0f, 0.0f, 1.0f};
-	case Mino4::T: return glm::vec4{0.0f, 1.0f, 1.0f, 1.0f};
-	case Mino4::J: return glm::vec4{0.0f, 0.0f, 1.0f, 1.0f};
-	case Mino4::S: return glm::vec4{1.0f, 0.0f, 1.0f, 1.0f};
-	case Mino4::Garbage: return glm::vec4{.22f, .22f, .22f, 1.0f};
-	default: return glm::vec4{1.0f, 0.0f, 1.0f, 1.0f};
+	case Mino4::I: return glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+	case Mino4::L: return glm::vec4(1.0f, .22f, 0.0f, 1.0f);
+	case Mino4::O: return glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
+	case Mino4::Z: return glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+	case Mino4::T: return glm::vec4(0.0f, 1.0f, 1.0f, 1.0f);
+	case Mino4::J: return glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
+	case Mino4::S: return glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
+	case Mino4::Garbage: return glm::vec4(.22f, .22f, .22f, 1.0f);
+	default: return glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
 	}
 }
 
 constexpr auto spinClockwise(Spin s, int times = 1) {
-	return Spin{tmod(+s - times, 4)};
+	return Spin(tmod(+s - times, 4));
 }
 
 constexpr auto spinCounterClockwise(Spin s, int times = 1) {
-	return Spin{tmod(+s + times, 4)};
+	return Spin(tmod(+s + times, 4));
 }
 
 constexpr auto rotatePiece(Piece4 piece, Spin rotation) -> Piece4 {
 	if (rotation == Spin::_0) return piece;
 
-	Piece4 result = piece;
+	auto result = piece;
 	repeat(+rotation, [&] {
-		for (auto[src, dst]: zip_view{piece, result})
+		for (auto[src, dst]: zip_view(piece, result))
 			dst = {-src.y, src.x};
 	});
 	return rotatePiece(result, Spin(+rotation - 1));
 }
 
 constexpr auto minoPiece(Mino4 mino, Spin spin = Spin::_0) -> Piece4 {
-	auto const result = [=] {
+	auto result = [=] {
 		switch(mino) {
 		case Mino4::I: return std::to_array<Piece4::value_type>({{-1, 0}, {0, 0}, {1, 0}, {2, 0}});
 		case Mino4::L: return std::to_array<Piece4::value_type>({{-1, 0}, {0, 0}, {1, 0}, {-1, -1}});
@@ -80,7 +80,7 @@ constexpr auto minoPiece(Mino4 mino, Spin spin = Spin::_0) -> Piece4 {
 		case Mino4::T: return std::to_array<Piece4::value_type>({{-1, 0}, {0, 0}, {1, 0}, {0, -1}});
 		case Mino4::J: return std::to_array<Piece4::value_type>({{-1, 0}, {0, 0}, {1, 0}, {1, -1}});
 		case Mino4::S: return std::to_array<Piece4::value_type>({{0, 0}, {1, 0}, {-1, -1}, {0, -1}});
-		default: throw std::logic_error{"Wrong piece type"};
+		default: throw std::logic_error("Wrong piece type");
 		}
 	}();
 	return rotatePiece(result, spin);

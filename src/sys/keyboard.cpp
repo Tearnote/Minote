@@ -8,6 +8,6 @@ namespace minote::sys {
 using namespace base;
 using namespace base::literals;
 
-Scancode::Scancode(Keycode keycode): code{glfwGetKeyScancode(+keycode)} {}
+Scancode::Scancode(Keycode keycode): code(glfwGetKeyScancode(+keycode)) {}
 
 }

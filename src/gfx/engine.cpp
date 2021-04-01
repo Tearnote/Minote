@@ -246,7 +246,7 @@ void Engine::setup() {
 
 void Engine::render() {
 	// Prepare per-frame data
-	world.setViewProjection(glm::uvec2{swapchain->extent.width, swapchain->extent.height},
+	world.setViewProjection(glm::uvec2(swapchain->extent.width, swapchain->extent.height),
 		VerticalFov, NearPlane,
 		camera.eye, camera.center, camera.up);
 	auto lightTransform = glm::infinitePerspective(glm::radians(120.0f * 12 / glm::length(world.lightPosition)), 1.0f, glm::length(world.lightPosition) / 6.0f) *
@@ -273,7 +273,7 @@ void Engine::render() {
 	std::memcpy(worldBuf.mapped_ptr, &world, sizeof(world));
 
 	// Upload instances
-	hashmap<ID, vuk::Buffer> instanceBufs;
+	auto instanceBufs = hashmap<ID, vuk::Buffer>();
 	for (auto&[id, inst]: instances) {
 		auto instBuf = ptc.allocate_scratch_buffer(
 			vuk::MemoryUsage::eCPUtoGPU,
@@ -463,7 +463,7 @@ void Engine::render() {
 
 	// Submit the command buffer
 	auto renderSem = ptc.acquire_semaphore();
-	VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	auto waitStage = VkPipelineStageFlags(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 	auto submitInfo = VkSubmitInfo{
 		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
 		.waitSemaphoreCount = 1,
@@ -499,12 +499,12 @@ void Engine::render() {
 }
 
 void Engine::setBackground(glm::vec3 color) {
-	world.ambientColor = glm::vec4{color, 1.0f};
+	world.ambientColor = glm::vec4(color, 1.0f);
 }
 
 void Engine::setLightSource(glm::vec3 position, glm::vec3 color) {
-	world.lightPosition = glm::vec4{position, 1.0f};
-	world.lightColor = glm::vec4{color, 1.0f};
+	world.lightPosition = glm::vec4(position, 1.0f);
+	world.lightColor = glm::vec4(color, 1.0f);
 }
 
 void Engine::setCamera(glm::vec3 eye, glm::vec3 center, glm::vec3 up) {

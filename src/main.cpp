@@ -44,7 +44,7 @@ auto main(int, char*[]) -> int try {
 	constexpr auto Logpath = "minote.log";
 #endif //NDEBUG
 	try {
-		auto logfile = file{Logpath, "w"};
+		auto logfile = file(Logpath, "w");
 		L.enableFile(std::move(logfile));
 	} catch (std::system_error const& e) {
 		L.warn("{}", Logpath, e.what());
@@ -53,13 +53,13 @@ auto main(int, char*[]) -> int try {
 	L.info("Starting up {} {}", AppTitle, AppVersion);
 
 	// Window creation
-	sys::Glfw glfw;
-	auto window = sys::Window{glfw, AppTitle, false, {960, 540}};
+	auto glfw = sys::Glfw();
+	auto window = sys::Window(glfw, AppTitle, false, {960, 540});
 
 	// *** Thread startup ***
 
 	// Game thread
-	auto gameThread = std::jthread{game, std::ref(glfw), std::ref(window)};
+	auto gameThread = std::jthread(game, std::ref(glfw), std::ref(window));
 
 	// Input thread loop
 	while (!window.isClosing()) {

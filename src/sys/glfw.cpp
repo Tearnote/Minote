@@ -25,10 +25,10 @@ Glfw::Glfw() {
 	assert(!exists);
 
 	if (glfwInit() == GLFW_FALSE)
-		throw std::runtime_error{fmt::format("Failed to initialize GLFW: {}", getError())};
+		throw std::runtime_error(fmt::format("Failed to initialize GLFW: {}", getError()));
 #ifdef _WIN32
 	if (timeBeginPeriod(1) != TIMERR_NOERROR)
-		throw std::runtime_error{"Failed to initialize Windows timer"};
+		throw std::runtime_error("Failed to initialize Windows timer");
 #endif //_WIN32
 
 	exists = true;
@@ -51,7 +51,7 @@ void Glfw::poll() {
 
 auto Glfw::getError() -> std::string_view {
 	char const* description = nullptr;
-	auto const code = glfwGetError(&description);
+	auto code = glfwGetError(&description);
 	if (code == GLFW_NO_ERROR)
 		return "No error";
 	assert(description);

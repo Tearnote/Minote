@@ -12,7 +12,7 @@ using namespace base::literals;
 
 void Mapper::collectKeyInputs(sys::Window& window) {
 	window.processInputs([=, this](auto const& key) {
-		const auto type = [=] {
+		auto type = [=] {
 			switch (+key.keycode) {
 			case GLFW_KEY_UP:
 			case GLFW_KEY_W:
@@ -48,18 +48,18 @@ void Mapper::collectKeyInputs(sys::Window& window) {
 		if (type == Action::Type::None) return true; // Key not recognized
 
 		using KeyState = sys::Window::KeyInput::State;
-		const auto state = [=] {
+		auto state = [=] {
 			switch (key.state) {
 			case KeyState::Pressed:
 				return Action::State::Pressed;
 			case KeyState::Released:
 				return Action::State::Released;
 			default:
-				throw std::logic_error{"Encountered invalid key state"};
+				throw std::logic_error("Encountered invalid key state");
 			}
 		}();
 
-		const auto timestamp = sys::Glfw::getTime();
+		auto timestamp = sys::Glfw::getTime();
 
 		try {
 			actions.push_back({
@@ -68,7 +68,7 @@ void Mapper::collectKeyInputs(sys::Window& window) {
 				.timestamp = timestamp,
 			});
 		} catch (...) {
-			throw std::runtime_error{"Mapper queue is full"};
+			throw std::runtime_error("Mapper queue is full");
 		}
 		return true;
 	});

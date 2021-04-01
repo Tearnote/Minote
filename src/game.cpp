@@ -18,7 +18,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 
 	// *** Initialization ***
 
-	Mapper mapper;
+	auto mapper = Mapper();
 	auto engine = gfx::Engine(window, AppVersion);
 	engine.setup();
 
@@ -28,7 +28,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 
 	auto nextUpdate = sys::Glfw::getTime();
 
-	auto lightSource = glm::vec3{6.0f, 12.0f, -6.0f};
+	auto lightSource = glm::vec3(6.0f, 12.0f, -6.0f);
 
 	while (!window.isClosing()) {
 		// Input
@@ -36,7 +36,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 
 		// Logic
 		while (nextUpdate <= sys::Glfw::getTime()) {
-			svector<Mapper::Action, 64> updateActions;
+			auto updateActions = svector<Mapper::Action, 64>();
 
 			mapper.processActions([&](auto const& action) {
 				if (action.timestamp > nextUpdate) return false;
@@ -65,9 +65,9 @@ void game(sys::Glfw&, sys::Window& window) try {
 		engine.setLightSource(lightSource, {1.0f, 1.0f, 1.0f});
 		engine.setCamera({0.0f, 12.0f, 24.0f}, {0.0f, 4.0f, 0.0f});
 
-		auto const centerTransform = make_translate({-0.5f, -0.5f, -0.5f});
-		auto const rotateTransform = make_rotate(glm::radians(-90.0f), {1.0f, 0.0f, 0.0f});
-		auto const rotateTransformAnim = make_rotate(f32(glm::radians(f64(sys::Glfw::getTime().count()) / 20000000.0)), {0.0f, 1.0f, 0.0f});
+		auto centerTransform = make_translate({-0.5f, -0.5f, -0.5f});
+		auto rotateTransform = make_rotate(glm::radians(-90.0f), {1.0f, 0.0f, 0.0f});
+		auto rotateTransformAnim = make_rotate(f32(glm::radians(f64(sys::Glfw::getTime().count()) / 20000000.0)), {0.0f, 1.0f, 0.0f});
 
 		engine.enqueue("block"_id, std::array{
 			gfx::Engine::Instance{

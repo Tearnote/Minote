@@ -15,8 +15,8 @@ using namespace base;
 namespace ranges = std::ranges;
 
 PlayState::PlayState():
-	p1{} {
-	rng.seed(static_cast<u64>(std::time(nullptr)));
+	p1() {
+	rng.seed(u64(std::time(nullptr)));
 	p1.tokens.fill(StartingTokens);
 	do {
 		p1.preview = getRandomPiece();
@@ -35,8 +35,8 @@ void PlayState::tick(std::span<Action const> actions) {
 
 void PlayState::draw(gfx::Engine& engine) {
 	// Scene
-	auto const stackHeight = grid.stackHeight();
-	auto const baseline = f32(DeadlineDepth - stackHeight);
+	auto stackHeight = grid.stackHeight();
+	auto baseline = f32(DeadlineDepth - stackHeight);
 
 	engine.enqueueDraw("scene_top"_id, "transparent"_id, std::array{
 		gfx::Instance{
@@ -63,15 +63,15 @@ void PlayState::draw(gfx::Engine& engine) {
 	}, gfx::Material::Flat);
 
 	// Grid
-	svector<gfx::Instance, 512> blockInstances;
+	auto blockInstances = svector<gfx::Instance, 512>();
 	for (auto x: nrange(0_zu, grid.Width))
 		for (auto y: nrange(0_zu, grid.Height)) {
-			auto const minoOpt = grid.get({x, y});
+			auto minoOpt = grid.get({x, y});
 			if (!minoOpt) continue;
-			auto const mino = minoOpt.value();
+			auto mino = minoOpt.value();
 
-			auto const translation = make_translate({
-				static_cast<f32>(x) - grid.Width / 2,
+			auto translation = make_translate({
+				f32(x) - grid.Width / 2,
 				baseline + y,
 				-1.0f,
 			});
@@ -83,18 +83,18 @@ void PlayState::draw(gfx::Engine& engine) {
 
 	// Player
 	if (p1.state == Player::State::Active) {
-		auto const pieceTranslation = make_translate({
+		auto pieceTranslation = make_translate({
 			p1.position.x - i32(grid.Width / 2),
 			baseline + p1.position.y,
 			0.0f,
 		});
-		auto const pieceRotationPre = make_translate({-0.5f, -0.5f, 0.0f});
-		auto const pieceRotation = make_rotate(+p1.spin * glm::radians(90.0f), {0.0f, 0.0f, 1.0f});
-		auto const pieceRotationPost = make_translate({0.5f, 0.5f, -1.0f});
-		auto const pieceTransform = pieceTranslation * pieceRotationPost * pieceRotation * pieceRotationPre;
+		auto pieceRotationPre = make_translate({-0.5f, -0.5f, 0.0f});
+		auto pieceRotation = make_rotate(+p1.spin * glm::radians(90.0f), {0.0f, 0.0f, 1.0f});
+		auto pieceRotationPost = make_translate({0.5f, 0.5f, -1.0f});
+		auto pieceTransform = pieceTranslation * pieceRotationPost * pieceRotation * pieceRotationPre;
 
-		for (auto const block: minoPiece(p1.pieceType)) {
-			auto const blockTransform = make_translate({block.x, block.y, 0.0f});
+		for (auto block: minoPiece(p1.pieceType)) {
+			auto blockTransform = make_translate({block.x, block.y, 0.0f});
 			blockInstances.emplace_back(gfx::Instance{
 				.transform = pieceTransform * blockTransform,
 				.tint = minoColor(p1.pieceType),
@@ -103,14 +103,14 @@ void PlayState::draw(gfx::Engine& engine) {
 	}
 
 	// Preview
-	auto const previewTransform = make_translate({
+	auto previewTransform = make_translate({
 		PlayerSpawnPosition.x - i32(grid.Width / 2),
 		DeadlineDepth + PlayerSpawnPosition.y + 3,
 		-1.0f,
 	});
 
-	for (auto const block: minoPiece(p1.preview)) {
-		auto const blockTransform = make_translate({block.x, block.y, 0.0f});
+	for (auto block: minoPiece(p1.preview)) {
+		auto blockTransform = make_translate({block.x, block.y, 0.0f});
 		blockInstances.emplace_back(gfx::Instance{
 			.transform = previewTransform * blockTransform,
 			.tint = minoColor(p1.preview),
@@ -130,27 +130,27 @@ void PlayState::draw(gfx::Engine& engine) {
 
 auto PlayState::getRandomPiece() -> Mino4 {
 	// Count the number of tokens
-	auto const tokenTotal = std::accumulate(p1.tokens.begin(),p1.tokens.end(), size_t{0},
+	auto tokenTotal = std::accumuate(p1.tokens.begin(), p1.tokens.end(), 0_zu,
 		[](auto sum, auto val) {
-			val = std::max(i8{0}, val);
+			val = std::max(i8(0), val);
 			return sum + val;
 		});
 	ASSERT(tokenTotal);
 
 	// Create and fill the token list
-	std::vector<Mino4> tokenList;
+	auto tokenList = std::vector<Mino4>();
 	tokenList.reserve(tokenTotal);
 	for (auto i: nrange(0_zu, p1.tokens.size())) {
-		auto const count = p1.tokens[i];
+		auto count = p1.tokens[i];
 		if (count > 0)
 			tokenList.insert(tokenList.end(), count, Mino4{i});
 	}
 	ASSERT(tokenList.size() == tokenTotal);
 
 	// Pick a random token from the list and update the token distribution
-	auto const picked = tokenList[rng.randInt(tokenTotal)];
+	auto picked = tokenList[rng.randInt(tokenTotal)];
 	for (auto i: nrange(0_zu, p1.tokens.size())) {
-		if (Mino4{i} == picked)
+		if (Mino4(i) == picked)
 			p1.tokens[i] -= p1.tokens.size() - 1;
 		else
 			p1.tokens[i] += 1;
@@ -183,8 +183,8 @@ void PlayState::spawnPlayer() {
 void PlayState::rotate(i32 direction) {
 	if (p1.state != Player::State::Active) return;
 
-	auto const origSpin = p1.spin;
-	auto const origPosition = p1.position;
+	auto origSpin = p1.spin;
+	auto origPosition = p1.position;
 
 	p1.spin = spinCounterClockwise(p1.spin, direction);
 
@@ -252,7 +252,7 @@ void PlayState::rotate(i32 direction) {
 	}
 
 	// Check if any kick succeeds
-	auto const successful = [this] {
+	auto successful = [this] {
 		auto check = [this] {
 			return !grid.overlaps(p1.position, minoPiece(p1.pieceType, p1.spin));
 		};
@@ -297,7 +297,7 @@ void PlayState::rotate(i32 direction) {
 
 void PlayState::shift(i32 direction) {
 	if (p1.state != Player::State::Active) return;
-	auto const origPosition = p1.position;
+	auto origPosition = p1.position;
 
 	p1.position.x += direction;
 
@@ -308,7 +308,7 @@ void PlayState::shift(i32 direction) {
 void PlayState::updateActions(std::span<Action const>& actions) {// Collect player actions
 	p1.pressed.fill(false);
 	for (auto const& action: actions) {
-		auto const state = (action.state == Action::State::Pressed)? true : false;
+		auto state = (action.state == Action::State::Pressed)? true : false;
 		p1.pressed[+action.type] = state;
 		p1.held[+action.type] = state;
 	}

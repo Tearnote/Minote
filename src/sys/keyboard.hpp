@@ -132,7 +132,7 @@ enum struct Keycode {
 struct Scancode {
 
 	// Create the scancode. The default value is different from any real scancode.
-	constexpr explicit Scancode(int raw = -1) noexcept : code{raw} {}
+	constexpr explicit Scancode(int raw = -1) noexcept : code(raw) {}
 	explicit Scancode(Keycode);
 
 	constexpr auto operator==(Scancode const&) const -> bool = default;
