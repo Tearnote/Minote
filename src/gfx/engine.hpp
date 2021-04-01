@@ -5,6 +5,7 @@
 #include "VkBootstrap.h"
 #include "volk/volk.h"
 #include "vuk/Context.hpp"
+#include "base/version.hpp"
 #include "base/hashmap.hpp"
 #include "base/id.hpp"
 #include "sys/window.hpp"
@@ -33,7 +34,7 @@ struct Engine {
 
 	};
 
-	explicit Engine(sys::Window& window);
+	explicit Engine(sys::Window& window, Version version);
 	~Engine();
 
 	void setup();

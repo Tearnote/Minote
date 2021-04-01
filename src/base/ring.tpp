@@ -9,13 +9,13 @@
 namespace minote::base {
 
 template<typename T, std::size_t Capacity>
-constexpr ring<T, Capacity>::ring(size_type const num) {
+constexpr ring<T, Capacity>::ring(size_type num) {
 	for (size_type i = 0; i < num; ++i)
 		emplace_back();
 }
 
 template<typename T, std::size_t Capacity>
-constexpr ring<T, Capacity>::ring(size_type const num, value_type const& val) {
+constexpr ring<T, Capacity>::ring(size_type num, value_type const& val) {
 	for (size_type i = 0; i < num; ++i)
 		emplace_back(val);
 }
@@ -33,12 +33,12 @@ constexpr ring<T, Capacity>::ring(std::initializer_list<value_type> il) {
 
 template<typename T, std::size_t Capacity>
 constexpr void ring<T, Capacity>::swap(ring& other) {
-	auto[shorter, longer]{[&]() -> std::pair<ring&, ring&> {
+	auto[shorter, longer] = [&]() -> std::pair<ring&, ring&> {
 		if (size() > other.size())
 			return {other, *this};
 		else
 			return {*this, other};
-	}()};
+	}();
 
 	std::swap_ranges(shorter.begin(), shorter.end(), longer.begin());
 
@@ -51,23 +51,23 @@ constexpr void ring<T, Capacity>::swap(ring& other) {
 }
 
 template<typename T, std::size_t Capacity>
-constexpr auto ring<T, Capacity>::at(size_type const i) -> reference {
+constexpr auto ring<T, Capacity>::at(size_type i) -> reference {
 	assert(i < length);
-	size_type const index = (offset + i) % capacity();
+	size_type index = (offset + i) % capacity();
 	return *std::launder(reinterpret_cast<value_type*>(&buffer[index]));
 }
 
 template<typename T, std::size_t Capacity>
-constexpr auto ring<T, Capacity>::at(size_type const i) const -> const_reference {
+constexpr auto ring<T, Capacity>::at(size_type i) const -> const_reference {
 	assert(i < length);
-	size_type const index = (offset + i) % capacity();
+	size_type index = (offset + i) % capacity();
 	return *std::launder(reinterpret_cast<value_type const*>(&buffer[index]));
 }
 
 template<typename T, size_t Capacity>
 constexpr void ring<T, Capacity>::push_back(const_reference value) {
 	if (length == capacity())
-		throw std::out_of_range{"ring is full"};
+		throw std::out_of_range("ring is full");
 
 	length += 1;
 	std::construct_at(&back(), value);
@@ -76,7 +76,7 @@ constexpr void ring<T, Capacity>::push_back(const_reference value) {
 template<typename T, size_t Capacity>
 constexpr void ring<T, Capacity>::push_back(value_type&& value) {
 	if (length == capacity())
-		throw std::out_of_range{"ring is full"};
+		throw std::out_of_range("ring is full");
 
 	length += 1;
 	std::construct_at(&back(), std::move(value));
@@ -85,7 +85,7 @@ constexpr void ring<T, Capacity>::push_back(value_type&& value) {
 template<typename T, std::size_t Capacity>
 constexpr void ring<T, Capacity>::push_front(const_reference value) {
 	if (length == capacity())
-		throw std::out_of_range{"ring is full"};
+		throw std::out_of_range("ring is full");
 
 	offset = offset? offset - 1 : capacity() - 1;
 	length += 1;
@@ -95,7 +95,7 @@ constexpr void ring<T, Capacity>::push_front(const_reference value) {
 template<typename T, std::size_t Capacity>
 constexpr void ring<T, Capacity>::push_front(value_type&& value) {
 	if (length == capacity())
-		throw std::out_of_range{"ring is full"};
+		throw std::out_of_range("ring is full");
 
 	offset = offset? offset - 1 : capacity() - 1;
 	length += 1;
@@ -106,7 +106,7 @@ template<typename T, size_t Capacity>
 template<typename... Args>
 constexpr auto ring<T, Capacity>::emplace_back(Args&&... args) -> reference {
 	if (length == capacity())
-		throw std::out_of_range{"ring is full"};
+		throw std::out_of_range("ring is full");
 
 	length += 1;
 	std::construct_at(&back(), std::forward<Args>(args)...);
@@ -117,7 +117,7 @@ template<typename T, size_t Capacity>
 template<typename... Args>
 constexpr auto ring<T, Capacity>::emplace_front(Args&&... args) -> reference {
 	if (length == capacity())
-		throw std::out_of_range{"ring is full"};
+		throw std::out_of_range("ring is full");
 
 	offset = offset? offset - 1 : capacity() - 1;
 	length += 1;

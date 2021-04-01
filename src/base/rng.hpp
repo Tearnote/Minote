@@ -31,7 +31,7 @@ struct Rng {
 	// (exclusive). RNG state is advanced by one step.
 	template<std::floating_point T = f32>
 	auto randFloat() -> T {
-		return std::ldexp(static_cast<T>(pcg32_random_r(&state)), -32);
+		return std::ldexp(T(pcg32_random_r(&state)), -32);
 	}
 
 };

@@ -19,7 +19,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 	// *** Initialization ***
 
 	Mapper mapper;
-	auto engine = gfx::Engine(window);
+	auto engine = gfx::Engine(window, AppVersion);
 	engine.setup();
 
 //	PlayState play;

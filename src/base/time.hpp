@@ -12,12 +12,12 @@ using nsec = std::chrono::nanoseconds;
 
 // Create nsec from a count of seconds
 constexpr auto seconds(arithmetic auto val) {
-	return nsec{static_cast<nsec::rep>(val * 1'000'000'000)};
+	return nsec(nsec::rep(val * 1'000'000'000));
 }
 
 // Create nsec from a count of milliseconds
 constexpr auto milliseconds(arithmetic auto val) {
-	return nsec{static_cast<nsec::rep>(val * 1'000'000)};
+	return nsec(nsec::rep(val * 1'000'000));
 }
 
 // If you use nsec's operators with floating-point numbers, the resulting value will
@@ -31,9 +31,7 @@ constexpr auto round(std::chrono::duration<Rep, Period> val) {
 // Compute (left / right) with floating-point instead of integer division.
 template<std::floating_point T = f32>
 constexpr auto ratio(nsec const left, nsec const right) {
-	return static_cast<T>(
-		static_cast<double>(left.count()) / static_cast<double>(right.count())
-	);
+	return T(double(left.count()) / double(right.count()));
 }
 
 namespace literals {

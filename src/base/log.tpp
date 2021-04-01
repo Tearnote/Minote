@@ -19,7 +19,7 @@ namespace detail {
 
 // Mapping from Log::Level to string name. Keep aligned to 5 chars
 constexpr auto LogLevelStrings = std::array{
-	""sv, "TRACE"sv, "DEBUG"sv, " INFO"sv, " WARN"sv, "ERROR"sv, " CRIT"sv
+	"", "TRACE", "DEBUG", " INFO", " WARN", "ERROR", " CRIT"
 };
 
 // Write a preformatted log message to a specified output. Does not insert
@@ -63,15 +63,15 @@ void Log::crit(S const& fmt, Args&& ... args) {
 }
 
 template<typename S, typename... Args>
-void Log::log(Log::Level const _level, S const& fmt, Args&&... args) {
+void Log::log(Log::Level _level, S const& fmt, Args&&... args) {
 	if (_level < level) return;
 	if (!console && !logfile) return;
 
-	fmt::memory_buffer msg;
+	auto msg = fmt::memory_buffer();
 
 	// Insert timestamp and level
-	auto const now = std::time(nullptr);
-	auto const localnow = *std::localtime(&now);
+	auto now = std::time(nullptr);
+	auto localnow = *std::localtime(&now);
 	fmt::format_to(msg, "{:%H:%M:%S} [{}] ", localnow, detail::LogLevelStrings[+_level]);
 
 	// Insert formatted message

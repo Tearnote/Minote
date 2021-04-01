@@ -7,7 +7,6 @@
 #include "vuk/CommandBuffer.hpp"
 #include "base/svector.hpp"
 #include "base/types.hpp"
-#include "base/util.hpp"
 
 namespace minote::gfx {
 
@@ -39,7 +38,7 @@ constexpr auto generateNormals(std::array<Vertex, N> mesh) {
 		auto v1 = *(iv + 1);
 		auto v2 = *(iv + 2);
 
-		glm::vec4 const normal = glm::vec4{glm::normalize(glm::cross(glm::vec3{v1.position - v0.position}, glm::vec3{v2.position - v0.position})), 0.0f};
+		auto normal = glm::vec4(glm::normalize(glm::cross(glm::vec3(v1.position - v0.position), glm::vec3(v2.position - v0.position))), 0.0f);
 		v0.normal = normal;
 		v1.normal = normal;
 		v2.normal = normal;

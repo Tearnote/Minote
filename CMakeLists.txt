@@ -14,7 +14,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Main executable
 set(SOURCES
         src/base/concepts.hpp
-        src/base/zip_view.hpp
         src/base/hashmap.hpp
         src/base/svector.hpp
         src/base/version.hpp

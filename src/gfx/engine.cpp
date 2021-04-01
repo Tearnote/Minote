@@ -36,7 +36,7 @@ VKAPI_ATTR auto VKAPI_CALL debugCallback(
 			return Log::Level::Info;
 		if (severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
 			return Log::Level::Debug;
-		throw std::logic_error{fmt::format("Unknown Vulkan diagnostic message severity: #{}", severityCode)};
+		throw std::logic_error(fmt::format("Unknown Vulkan diagnostic message severity: #{}", severityCode));
 	}();
 
 	auto type = [typeCode]() {
@@ -56,7 +56,7 @@ VKAPI_ATTR auto VKAPI_CALL debugCallback(
 
 #endif //VK_VALIDATION
 
-Engine::Engine(sys::Window& window) {
+Engine::Engine(sys::Window& window, Version version) {
 	// Create instance
 	auto instanceResult = vkb::InstanceBuilder()
 #ifdef VK_VALIDATION
@@ -66,7 +66,7 @@ Engine::Engine(sys::Window& window) {
 		.set_app_name(AppTitle)
 		.set_engine_name("vuk")
 		.require_api_version(1, 2, 0)
-		.set_app_version(0, 0, 1)
+		.set_app_version(std::get<0>(version), std::get<1>(version), std::get<2>(version))
 		.build();
 	if (!instanceResult)
 		throw std::runtime_error(fmt::format("Failed to create a Vulkan instance: {}", instanceResult.error().message()));
@@ -88,7 +88,7 @@ Engine::Engine(sys::Window& window) {
 	auto physicalDevice = physicalDeviceSelectorResult.value();
 
 	// Create device
-	VkPhysicalDeviceHostQueryResetFeatures queryReset{
+	auto queryReset = VkPhysicalDeviceHostQueryResetFeatures{
 		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES,
 		.hostQueryReset = VK_TRUE,
 	};
@@ -127,9 +127,8 @@ Engine::~Engine() {
 #endif //IMGUI_DISABLE
 	meshes.clear();
 	// This performs cleanups for all inflight frames
-	for (auto i = 0u; i < vuk::Context::FC; i++) {
+	for (auto i = 0u; i < vuk::Context::FC; i++)
 		context->begin();
-	}
 	context.reset();
 	vkb::destroy_device(device);
 	vkDestroySurfaceKHR(instance.instance, surface, nullptr);
@@ -141,7 +140,7 @@ void Engine::setup() {
 	auto ptc = ifc.begin();
 
 	// Create pipelines
-	vuk::PipelineBaseCreateInfo msmDepthPci;
+	auto msmDepthPci = vuk::PipelineBaseCreateInfo();
 	msmDepthPci.add_spirv(std::vector<u32>{
 #include "spv/msmdepth.vert.spv"
 	}, "msmdepth.vert");
@@ -152,7 +151,7 @@ void Engine::setup() {
 	context->create_named_pipeline("msm_depth", msmDepthPci);
 
 	// Create pipelines
-	vuk::PipelineBaseCreateInfo msmMomentsPci;
+	auto msmMomentsPci = vuk::PipelineBaseCreateInfo();
 	msmMomentsPci.add_spirv(std::vector<u32>{
 #include "spv/msmmoments.vert.spv"
 	}, "msmmoments.vert");
@@ -162,7 +161,7 @@ void Engine::setup() {
 	context->create_named_pipeline("msm_moments", msmMomentsPci);
 
 	// Create pipelines
-	vuk::PipelineBaseCreateInfo msmMomentsBlurredPci;
+	auto msmMomentsBlurredPci = vuk::PipelineBaseCreateInfo();
 	msmMomentsBlurredPci.add_spirv(std::vector<u32>{
 #include "spv/msmblur.vert.spv"
 	}, "msmblur.vert");
@@ -171,7 +170,7 @@ void Engine::setup() {
 	}, "msmblur.frag");
 	context->create_named_pipeline("msm_moments_blurred", msmMomentsBlurredPci);
 
-	vuk::PipelineBaseCreateInfo objectPci;
+	auto objectPci = vuk::PipelineBaseCreateInfo();
 	objectPci.add_spirv(std::vector<u32>{
 #include "spv/object.vert.spv"
 	}, "object.vert");
@@ -181,7 +180,7 @@ void Engine::setup() {
 	objectPci.rasterization_state.cullMode = vuk::CullModeFlagBits::eBack;
 	context->create_named_pipeline("object", objectPci);
 
-	vuk::PipelineBaseCreateInfo swapchainBlitPci;
+	auto swapchainBlitPci = vuk::PipelineBaseCreateInfo();
 	swapchainBlitPci.add_spirv(std::vector<u32>{
 #include "spv/swapchainBlit.vert.spv"
 	}, "blit.vert");
@@ -190,7 +189,7 @@ void Engine::setup() {
 	}, "blit.frag");
 	context->create_named_pipeline("swapchain_blit", swapchainBlitPci);
 
-	vuk::PipelineBaseCreateInfo bloomThresholdPci;
+	auto bloomThresholdPci = vuk::PipelineBaseCreateInfo();
 	bloomThresholdPci.add_spirv(std::vector<u32>{
 #include "spv/bloomThreshold.vert.spv"
 	}, "bloomThreshold.vert");
@@ -199,7 +198,7 @@ void Engine::setup() {
 	}, "bloomThreshold.frag");
 	context->create_named_pipeline("bloom_threshold", bloomThresholdPci);
 
-	vuk::PipelineBaseCreateInfo bloomBlurDownPci;
+	auto bloomBlurDownPci = vuk::PipelineBaseCreateInfo();
 	bloomBlurDownPci.add_spirv(std::vector<u32>{
 #include "spv/bloomBlur.vert.spv"
 	}, "bloomBlur.vert");
@@ -208,7 +207,7 @@ void Engine::setup() {
 	}, "bloomBlur.frag");
 	context->create_named_pipeline("bloom_blur_down", bloomBlurDownPci);
 
-	vuk::PipelineBaseCreateInfo bloomBlurUpPci;
+	auto bloomBlurUpPci = vuk::PipelineBaseCreateInfo();
 	bloomBlurUpPci.add_spirv(std::vector<u32>{
 #include "spv/bloomBlur.vert.spv"
 	}, "bloomBlur.vert");
@@ -285,7 +284,7 @@ void Engine::render() {
 	}
 
 	// Set up the rendergraph
-	vuk::RenderGraph rg;
+	auto rg = vuk::RenderGraph();
 	rg.add_pass({ // MSM depth draw
 		.auxiliary_order = 0.0f,
 		.resources = {"msm_depth"_image(vuk::eDepthStencilRW), "msm_depth_nop"_image(vuk::eColorWrite)},

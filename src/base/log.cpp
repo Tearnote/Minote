@@ -2,8 +2,6 @@
 
 #include <system_error>
 #include <utility>
-#include <fmt/core.h>
-#include "base/file.hpp"
 
 namespace minote::base {
 

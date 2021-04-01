@@ -10,6 +10,8 @@ namespace minote::gfx {
 
 using namespace base;
 
+// Functions copied and customized from vuk examples source
+
 ImguiData ImGui_ImplVuk_Init(vuk::PerThreadContext& ptc) {
 	auto& io = ImGui::GetIO();
 	io.BackendRendererName = "imgui_impl_vuk";

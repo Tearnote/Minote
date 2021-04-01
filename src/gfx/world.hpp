@@ -1,6 +1,5 @@
 #pragma once
 
-#include <glm/trigonometric.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -22,8 +21,8 @@ struct World {
 
 	void setViewProjection(glm::uvec2 viewport, f32 fovy, f32 zNear,
 		glm::vec3 eye, glm::vec3 center, glm::vec3 up = {0.0f, 1.0f, 0.0f}) {
-		auto const rawview = glm::lookAt(eye, center, up);
-		auto const yFlip = base::make_scale(glm::vec3{-1.0f, -1.0f, 1.0f});
+		auto rawview = glm::lookAt(eye, center, up);
+		auto yFlip = make_scale({-1.0f, -1.0f, 1.0f});
 		projection = glm::infinitePerspective(fovy, f32(viewport.x) / f32(viewport.y), zNear);
 		view = yFlip * rawview;
 		viewProjection = projection * view;

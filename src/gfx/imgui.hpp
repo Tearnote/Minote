@@ -14,9 +14,10 @@ struct ImguiData {
 	std::unique_ptr<vuk::SampledImage> font_si;
 };
 
-ImguiData ImGui_ImplVuk_Init(vuk::PerThreadContext& ptc);
+auto ImGui_ImplVuk_Init(vuk::PerThreadContext& ptc) -> ImguiData;
 
-void ImGui_ImplVuk_Render(vuk::PerThreadContext& ptc, vuk::RenderGraph& rg, vuk::Name src_target, vuk::Name dst_target, ImguiData& data, ImDrawData* draw_data);
+void ImGui_ImplVuk_Render(vuk::PerThreadContext& ptc, vuk::RenderGraph& rg,
+	vuk::Name src_target, vuk::Name dst_target, ImguiData& data, ImDrawData* draw_data);
 
 #endif //IMGUI_DISABLE
 
