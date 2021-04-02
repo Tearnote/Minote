@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.17)
 project(Minote VERSION 0.0
         DESCRIPTION "Modern action puzzle game"
         LANGUAGES C CXX)
+include(FetchContent)
 cmake_policy(SET CMP0077 NEW)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED)
@@ -62,7 +63,10 @@ add_compile_definitions(VK_NO_PROTOTYPES)
 set(VUK_LINK_TO_LOADER OFF CACHE BOOL "")
 set(VUK_USE_VULKAN_SDK OFF CACHE BOOL "")
 set(VUK_USE_SHADERC OFF CACHE BOOL "")
-add_subdirectory(lib/vuk)
+FetchContent_Declare(vuk
+        GIT_REPOSITORY https://github.com/martty/vuk
+        GIT_TAG edeb5ab431b25b4c3660936a8c4bcc832d973ffe)
+FetchContent_MakeAvailable(vuk)
 target_compile_definitions(vuk PUBLIC VUK_CUSTOM_VULKAN_HEADER="volk.h")
 target_include_directories(vuk PUBLIC lib/volk)
 if(WIN32)
