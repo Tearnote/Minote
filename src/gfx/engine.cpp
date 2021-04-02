@@ -1,5 +1,7 @@
 #include "gfx/engine.hpp"
 
+#include "config.hpp"
+
 #include <stdexcept>
 #include <cstring>
 #include <cassert>
@@ -19,7 +21,7 @@ namespace minote::gfx {
 using namespace base;
 using namespace std::string_literals;
 
-#ifdef VK_VALIDATION
+#if VK_VALIDATION
 VKAPI_ATTR auto VKAPI_CALL debugCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT severityCode,
 	VkDebugUtilsMessageTypeFlagsEXT typeCode,
@@ -53,13 +55,12 @@ VKAPI_ATTR auto VKAPI_CALL debugCallback(
 
 	return VK_FALSE;
 }
-
 #endif //VK_VALIDATION
 
 Engine::Engine(sys::Window& window, Version version) {
 	// Create instance
 	auto instanceResult = vkb::InstanceBuilder()
-#ifdef VK_VALIDATION
+#if VK_VALIDATION
 		.request_validation_layers()
 		.set_debug_callback(debugCallback)
 #endif //VK_VALIDATION
@@ -121,10 +122,10 @@ Engine::Engine(sys::Window& window, Version version) {
 
 Engine::~Engine() {
 	context->wait_idle();
-#ifndef IMGUI_DISABLE
+#if IMGUI
 	imguiData.font_texture.view.reset();
 	imguiData.font_texture.image.reset();
-#endif //IMGUI_DISABLE
+#endif //IMGUI
 	meshes.clear();
 	// This performs cleanups for all inflight frames
 	for (auto i = 0u; i < vuk::Context::FC; i++)
@@ -230,18 +231,18 @@ void Engine::setup() {
 	instances.emplace("block"_id, std::vector<Instance>());
 
 	// Initialize imgui rendering
-#ifndef IMGUI_DISABLE
+#if IMGUI
 	imguiData = ImGui_ImplVuk_Init(ptc);
 	ImGui::GetIO().DisplaySize = ImVec2{f32(swapchain->extent.width), f32(swapchain->extent.height)};
-#endif //IMGUI_DISABLE
+#endif //IMGUI
 
 	// Finalize uploads
 	ptc.wait_all_transfers();
 
 	// Begin imgui frame so that first-frame calls succeed
-#ifndef IMGUI_DISABLE
+#if IMGUI
 	ImGui::NewFrame();
-#endif //IMGUI_DISABLE
+#endif //IMGUI
 }
 
 void Engine::render() {
@@ -423,10 +424,10 @@ void Engine::render() {
 		},
 	});
 
-#ifndef IMGUI_DISABLE
+#if IMGUI
 	ImGui::Render();
 	ImGui_ImplVuk_Render(ptc, rg, "swapchain", "swapchain", imguiData, ImGui::GetDrawData());
-#endif //IMGUI_DISABLE
+#endif //IMGUI
 
 	rg.attach_managed("msm_depth_nop", vuk::Format::eR8Unorm, msmSize, vuk::Samples::e4, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	rg.attach_managed("msm_depth", vuk::Format::eD32Sfloat, msmSize, vuk::Samples::e4, vuk::ClearDepthStencil{1.0f, 0});
@@ -493,9 +494,9 @@ void Engine::render() {
 	// Clean up
 	for (auto&[id, inst]: instances)
 		inst.clear();
-#ifndef IMGUI_DISABLE
+#if IMGUI
 	ImGui::NewFrame();
-#endif //IMGUI_DISABLE
+#endif //IMGUI
 }
 
 void Engine::setBackground(glm::vec3 color) {
@@ -550,9 +551,9 @@ void Engine::refreshSwapchain() {
 	auto newSwapchain = context->add_swapchain(createSwapchain(swapchain->swapchain));
 	context->remove_swapchain(swapchain);
 	swapchain = newSwapchain;
-#ifndef IMGUI_DISABLE
-	ImGui::GetIO().DisplaySize = ImVec2{f32(swapchain->extent.width), f32(swapchain->extent.height)};
-#endif //IMGUI_DISABLE
+#if IMGUI
+	ImGui::GetIO().DisplaySize = ImVec2(f32(swapchain->extent.width), f32(swapchain->extent.height));
+#endif //IMGUI
 }
 
 }

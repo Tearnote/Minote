@@ -1,12 +1,14 @@
 #include "gfx/imgui.hpp"
 
+#include "config.hpp"
+
+#if IMGUI
+
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/Context.hpp"
 #include "base/types.hpp"
 
 namespace minote::gfx {
-
-#ifndef IMGUI_DISABLE
 
 using namespace base;
 
@@ -169,6 +171,6 @@ void ImGui_ImplVuk_Render(vuk::PerThreadContext& ptc, vuk::RenderGraph& rg, vuk:
 	rg.add_alias(dst_target, src_target);
 }
 
-#endif //IMGUI_DISABLE
-
 }
+
+#endif //IMGUI

@@ -1,5 +1,7 @@
 #include "window.hpp"
 
+#include "config.hpp"
+
 #include <string_view>
 #include <stdexcept>
 #include <optional>
@@ -8,9 +10,9 @@
 #include <glm/vec2.hpp>
 #include <GLFW/glfw3.h>
 #include <fmt/core.h>
-#ifndef IMGUI_DISABLE
+#if IMGUI
 #include "backends/imgui_impl_glfw.h"
-#endif //IMGUI_DISABLE
+#endif //IMGUI
 #include "base/math.hpp"
 #include "base/log.hpp"
 
@@ -123,20 +125,19 @@ Window::Window(Glfw const& _glfw, std::string_view _title, bool fullscreen, glm:
 	// *** Set up window callbacks ***
 
 	glfwSetWindowUserPointer(m_handle, this);
-#ifndef MINOTE_DEBUG
-	glfwSetInputMode(m_handle, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-#endif //MINOTE_DEBUG
 	glfwSetKeyCallback(m_handle, keyCallback);
 	glfwSetFramebufferSizeCallback(m_handle, framebufferResizeCallback);
 	glfwSetWindowContentScaleCallback(m_handle, windowScaleCallback);
 
 	// Initialize imgui input
-#ifndef IMGUI_DISABLE
+#if IMGUI
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGui::StyleColorsDark();
 	ImGui_ImplGlfw_InitForVulkan(m_handle, true);
-#endif //IMGUI_DISABLE
+#else //IMGUI
+	glfwSetInputMode(m_handle, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+#endif //IMGUI
 
 	L.info(R"(Window "{}" created at {:s} *{:.2f}{})",
 		title(), size(), scale(), fullscreen ? " fullscreen" : "");

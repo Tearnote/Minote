@@ -1,5 +1,7 @@
 #pragma once
 
+#include "config.hpp"
+
 #include <optional>
 #include <span>
 #include "VkBootstrap.h"
@@ -9,16 +11,14 @@
 #include "base/hashmap.hpp"
 #include "base/id.hpp"
 #include "sys/window.hpp"
+#if IMGUI
 #include "gfx/imgui.hpp"
+#endif //IMGUI
 #include "gfx/world.hpp"
 
 namespace minote::gfx {
 
 using namespace base;
-
-#ifndef NDEBUG
-#define VK_VALIDATION
-#endif //NDEBUG
 
 struct Engine {
 
@@ -56,9 +56,9 @@ private:
 	vkb::Device device;
 	vuk::SwapChainRef swapchain;
 	std::optional<vuk::Context> context;
-#ifndef IMGUI_DISABLE
+#if IMGUI
 	ImguiData imguiData;
-#endif //IMGUI_DISABLE
+#endif //IMGUI
 
 	hashmap<ID, vuk::Unique<vuk::Buffer>> meshes;
 	hashmap<ID, std::vector<Instance>> instances;

@@ -41,6 +41,7 @@ set(SOURCES
         src/mesh/scene.hpp
         #src/playstate.hpp src/playstate.cpp
         src/mapper.hpp src/mapper.tpp src/mapper.cpp
+        src/config.hpp
         src/game.hpp src/game.cpp
         src/main.hpp src/main.cpp
         src/mino.hpp src/mino.tpp)
@@ -49,30 +50,18 @@ set(SOURCES
 set(INTERNALLIBS
         lib/robin-hood-hashing/robin_hood.h
         lib/static_vector/fixed_capacity_vector
-        $<$<CONFIG:Debug>:
-        lib/imgui/imgui.h lib/imgui/imgui.cpp lib/imgui/imconfig.h
-        lib/imgui/imgui_internal.h lib/imgui/imgui_draw.cpp lib/imgui/imgui_tables.cpp lib/imgui/imgui_widgets.cpp lib/imgui/imgui_demo.cpp
-        lib/imgui/backends/imgui_impl_glfw.h lib/imgui/backends/imgui_impl_glfw.cpp
-        >
         lib/volk/volk.h lib/volk/volk.c
         lib/stb/stb_image.h lib/stb/stb_image.c
         lib/pcg/pcg_basic.h lib/pcg/pcg_basic.c)
 add_executable(Minote ${SOURCES} ${INTERNALLIBS})
 
 target_include_directories(Minote PRIVATE lib)
-target_include_directories(Minote PRIVATE lib/imgui)
 
 add_compile_definitions(VK_NO_PROTOTYPES)
 if(WIN32)
     add_compile_definitions(VK_USE_PLATFORM_WIN32_KHR)
 else()
     add_compile_definitions(VK_USE_PLATFORM_XCB_KHR)
-endif()
-
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_compile_definitions(IMGUI_DISABLE_WIN32_FUNCTIONS)
-else()
-    add_compile_definitions(IMGUI_DISABLE)
 endif()
 
 set(VUK_LINK_TO_LOADER OFF CACHE BOOL "")
@@ -91,6 +80,23 @@ FetchContent_Declare(vk-bootstrap
         GIT_TAG 85aac8d51ce8db80ac254d657a62a7e98a9ad2b4)
 FetchContent_MakeAvailable(vk-bootstrap)
 target_link_libraries(Minote vk-bootstrap)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_compile_definitions(IMGUI_DISABLE_WIN32_FUNCTIONS)
+    FetchContent_Declare(imgui
+            GIT_REPOSITORY https://github.com/ocornut/imgui
+            GIT_TAG 00d570e280533bca9cf6e5652d0f2eb131d032e7)
+    FetchContent_MakeAvailable(imgui)
+    add_library(imgui
+            ${imgui_SOURCE_DIR}/imgui.h ${imgui_SOURCE_DIR}/imgui.cpp
+            ${imgui_SOURCE_DIR}/imconfig.h ${imgui_SOURCE_DIR}/imgui_internal.h
+            ${imgui_SOURCE_DIR}/imgui_draw.cpp ${imgui_SOURCE_DIR}/imgui_tables.cpp
+            ${imgui_SOURCE_DIR}/imgui_widgets.cpp ${imgui_SOURCE_DIR}/imgui_demo.cpp
+            ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.h ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp)
+    target_include_directories(imgui PRIVATE ${imgui_SOURCE_DIR})
+    target_include_directories(Minote PRIVATE ${imgui_SOURCE_DIR})
+    target_link_libraries(Minote imgui)
+endif()
 
 # Build settings
 target_compile_options(Minote PRIVATE -Wall -Wextra -Wno-missing-field-initializers -fno-rtti)

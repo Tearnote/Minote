@@ -6,6 +6,7 @@
 #include "gfx/engine.hpp"
 #include "mapper.hpp"
 //#include "playstate.hpp"
+#include "config.hpp"
 #include "main.hpp"
 
 namespace minote {
@@ -41,10 +42,10 @@ void game(sys::Glfw&, sys::Window& window) try {
 			mapper.processActions([&](auto const& action) {
 				if (action.timestamp > nextUpdate) return false;
 
-#ifndef IMGUI_DISABLE
+#if IMGUI
 				if (action.state == Mapper::Action::State::Pressed && ImGui::GetIO().WantCaptureKeyboard)
 					return false;
-#endif //IMGUI_DISABLE
+#endif //IMGUI
 
 				updateActions.push_back(action);
 
@@ -144,9 +145,9 @@ void game(sys::Glfw&, sys::Window& window) try {
 			},
 		});
 
-#ifndef IMGUI_DISABLE
+#if IMGUI
 		ImGui::ShowDemoWindow();
-#endif //IMGUI_DISABLE
+#endif //IMGUI
 		engine.render();
 	}
 
