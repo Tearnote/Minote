@@ -49,7 +49,6 @@ set(SOURCES
 set(INTERNALLIBS
         lib/robin-hood-hashing/robin_hood.h
         lib/static_vector/fixed_capacity_vector
-        lib/vk-bootstrap/src/VkBootstrap.h lib/vk-bootstrap/src/VkBootstrap.cpp
         $<$<CONFIG:Debug>:
         lib/imgui/imgui.h lib/imgui/imgui.cpp lib/imgui/imconfig.h
         lib/imgui/imgui_internal.h lib/imgui/imgui_draw.cpp lib/imgui/imgui_tables.cpp lib/imgui/imgui_widgets.cpp lib/imgui/imgui_demo.cpp
@@ -58,8 +57,24 @@ set(INTERNALLIBS
         lib/volk/volk.h lib/volk/volk.c
         lib/stb/stb_image.h lib/stb/stb_image.c
         lib/pcg/pcg_basic.h lib/pcg/pcg_basic.c)
+add_executable(Minote ${SOURCES} ${INTERNALLIBS})
+
+target_include_directories(Minote PRIVATE lib)
+target_include_directories(Minote PRIVATE lib/imgui)
 
 add_compile_definitions(VK_NO_PROTOTYPES)
+if(WIN32)
+    add_compile_definitions(VK_USE_PLATFORM_WIN32_KHR)
+else()
+    add_compile_definitions(VK_USE_PLATFORM_XCB_KHR)
+endif()
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_compile_definitions(IMGUI_DISABLE_WIN32_FUNCTIONS)
+else()
+    add_compile_definitions(IMGUI_DISABLE)
+endif()
+
 set(VUK_LINK_TO_LOADER OFF CACHE BOOL "")
 set(VUK_USE_VULKAN_SDK OFF CACHE BOOL "")
 set(VUK_USE_SHADERC OFF CACHE BOOL "")
@@ -69,22 +84,13 @@ FetchContent_Declare(vuk
 FetchContent_MakeAvailable(vuk)
 target_compile_definitions(vuk PUBLIC VUK_CUSTOM_VULKAN_HEADER="volk.h")
 target_include_directories(vuk PUBLIC lib/volk)
-if(WIN32)
-    add_compile_definitions(VK_USE_PLATFORM_WIN32_KHR)
-else()
-    add_compile_definitions(VK_USE_PLATFORM_XCB_KHR)
-endif()
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_compile_definitions(IMGUI_DISABLE_WIN32_FUNCTIONS)
-else()
-    add_compile_definitions(IMGUI_DISABLE)
-endif()
-
-add_executable(Minote ${SOURCES} ${INTERNALLIBS})
-target_include_directories(Minote PRIVATE lib)
-target_include_directories(Minote PRIVATE lib/vk-bootstrap/src)
-target_include_directories(Minote PRIVATE lib/imgui)
 target_link_libraries(Minote vuk)
+
+FetchContent_Declare(vk-bootstrap
+        GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap
+        GIT_TAG 85aac8d51ce8db80ac254d657a62a7e98a9ad2b4)
+FetchContent_MakeAvailable(vk-bootstrap)
+target_link_libraries(Minote vk-bootstrap)
 
 # Build settings
 target_compile_options(Minote PRIVATE -Wall -Wextra -Wno-missing-field-initializers -fno-rtti)
