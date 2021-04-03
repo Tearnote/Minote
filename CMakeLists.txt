@@ -1,4 +1,5 @@
 # Project information
+
 cmake_minimum_required(VERSION 3.17)
 project(Minote VERSION 0.0
         DESCRIPTION "Modern action puzzle game"
@@ -11,7 +12,27 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Build settings
+
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release")
+endif()
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -s -ffunction-sections -Wl,--gc-sections")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s -ffunction-sections -Wl,--gc-sections")
+    if(WIN32)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mwindows")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mwindows")
+    endif()
+endif()
+
+if(WIN32)
+    set(BUILD_SHARED_LIBS OFF)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
+endif()
+
 # Main executable
+
 add_executable(Minote
         src/base/concepts.hpp
         src/base/hashmap.hpp
@@ -43,8 +64,16 @@ add_executable(Minote
         src/game.hpp src/game.cpp
         src/main.hpp src/main.cpp
         src/mino.hpp src/mino.tpp)
+target_compile_options(Minote PRIVATE -Wall -Wextra -Wno-missing-field-initializers -fno-rtti)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set_property(TARGET Minote PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
+target_include_directories(Minote PRIVATE src)
+if(WIN32)
+    target_link_libraries(Minote PRIVATE winmm)
+endif()
 
-# Internal libraries
+# Libraries
 
 include(FetchContent)
 
@@ -139,32 +168,36 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_link_libraries(Minote PRIVATE imgui)
 endif()
 
-# Build settings
-target_compile_options(Minote PRIVATE -Wall -Wextra -Wno-missing-field-initializers -fno-rtti)
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release")
-endif()
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -s -ffunction-sections -Wl,--gc-sections")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s -ffunction-sections -Wl,--gc-sections")
-    if(WIN32)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mwindows")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mwindows")
-    endif()
-endif()
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    set_property(TARGET Minote PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-endif()
-target_include_directories(Minote PRIVATE src)
-
-# External libraries
-
-if(WIN32)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
-    target_link_libraries(Minote PRIVATE winmm)
-endif()
+set(SPIRV_HEADERS_SKIP_EXAMPLES ON CACHE BOOL "")
+FetchContent_Declare(spirv-headers
+        GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Headers
+        GIT_TAG f88a1f98fa7a44ccfcf33d810c72b200e7d9a78a)
+FetchContent_MakeAvailable(spirv-headers)
+set(SPIRV_SKIP_EXECUTABLES ON CACHE BOOL "")
+set(SPIRV_CHECK_CONTEXT OFF CACHE BOOL "")
+set(SPIRV_SKIP_TESTS ON CACHE BOOL "")
+set(SPIRV_WERROR OFF CACHE BOOL "")
+FetchContent_Declare(spirv-tools
+        GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Tools
+        GIT_TAG 212895d4c2cd9f4900adba4514aa5ea2c8256f9f)
+FetchContent_MakeAvailable(spirv-tools)
+set(ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "")
+set(ENABLE_SPVREMAPPER OFF CACHE BOOL "")
+set(ENABLE_CTEST OFF CACHE BOOL "")
+FetchContent_Declare(glslang
+        GIT_REPOSITORY https://github.com/KhronosGroup/glslang
+        GIT_TAG 5878bcb17e43bf22cecaf6095900a33ff7f53445)
+FetchContent_MakeAvailable(glslang)
+set(SHADERC_ENABLE_WERROR_COMPILE OFF CACHE BOOL "")
+set(SHADERC_SKIP_EXAMPLES ON CACHE BOOL "")
+set(SHADERC_SKIP_TESTS ON CACHE BOOL "")
+FetchContent_Declare(shaderc
+        GIT_REPOSITORY https://github.com/google/shaderc
+        GIT_TAG 3fe94c6a76d2b617e7fb20fdf3cde98001a274e3)
+FetchContent_MakeAvailable(shaderc)
 
 # Shader compilation
+
 set(SHADER_SOURCES
         src/glsl/swapchainBlit.vert src/glsl/swapchainBlit.frag
         src/glsl/object.vert src/glsl/object.frag
@@ -181,12 +214,13 @@ foreach (SHADER_PATH ${SHADER_SOURCES})
     add_custom_command(
             OUTPUT ${SHADER_OUTPUT}
             COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/generated/spv/"
-            COMMAND glslc $<IF:$<CONFIG:Debug>,-O0,-O> -mfmt=num -o ${SHADER_OUTPUT} ${PROJECT_SOURCE_DIR}/${SHADER_PATH}
+            COMMAND glslc_exe $<IF:$<CONFIG:Debug>,-O0,-O> -mfmt=num -o ${SHADER_OUTPUT} ${PROJECT_SOURCE_DIR}/${SHADER_PATH}
             DEPENDS ${SHADER_PATH}
             VERBATIM)
     list(APPEND SHADER_OUTPUTS ${SHADER_OUTPUT})
 endforeach (SHADER_PATH)
 
 add_custom_target(Compile_shaders DEPENDS ${SHADER_OUTPUTS})
+add_dependencies(Compile_shaders shaderc)
 target_include_directories(Minote PRIVATE ${PROJECT_BINARY_DIR}/generated)
 add_dependencies(Minote Compile_shaders)
