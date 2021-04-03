@@ -117,6 +117,16 @@ FetchContent_Declare(fmt
 FetchContent_MakeAvailable(fmt)
 target_link_libraries(Minote PRIVATE fmt)
 
+add_compile_definitions(GLM_FORCE_SIZE_T_LENGTH)
+add_compile_definitions(GLM_FORCE_UNRESTRICTED_GENTYPE)
+add_compile_definitions(GLM_FORCE_LEFT_HANDED)
+add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
+FetchContent_Declare(glm
+        GIT_REPOSITORY https://github.com/g-truc/glm
+        GIT_TAG ace16e47780dcef815294715237f51e9129b6eb3)
+FetchContent_MakeAvailable(glm)
+target_link_libraries(Minote PRIVATE glm)
+
 # Build settings
 target_compile_options(Minote PRIVATE -Wall -Wextra -Wno-missing-field-initializers -fno-rtti)
 if(NOT CMAKE_BUILD_TYPE)
@@ -144,18 +154,11 @@ endif()
 
 find_package(PkgConfig REQUIRED)
 pkg_search_module(GLFW REQUIRED glfw3)
-pkg_search_module(GLM REQUIRED glm)
 
 add_compile_definitions(GLFW_INCLUDE_NONE)
-add_compile_definitions(GLM_FORCE_SIZE_T_LENGTH)
-add_compile_definitions(GLM_FORCE_UNRESTRICTED_GENTYPE)
-add_compile_definitions(GLM_FORCE_LEFT_HANDED)
-add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
 
 target_include_directories(Minote PRIVATE ${GLFW_INCLUDE_DIRS})
-target_include_directories(Minote PRIVATE ${GLM_INCLUDE_DIRS})
 target_link_libraries(Minote PRIVATE ${GLFW_STATIC_LIBRARIES})
-target_link_libraries(Minote PRIVATE ${GLM_STATIC_LIBRARIES})
 if(WIN32)
     target_link_libraries(Minote PRIVATE winmm)
 endif()
