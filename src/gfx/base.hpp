@@ -1,7 +1,7 @@
 #pragma once
 
 #include <glm/trigonometric.hpp>
-#include "volk/volk.h"
+#include "volk.h"
 
 namespace minote::gfx {
 

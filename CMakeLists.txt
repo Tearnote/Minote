@@ -47,9 +47,7 @@ set(SOURCES
         src/mino.hpp src/mino.tpp)
 
 # Internal libraries
-set(INTERNALLIBS
-        lib/static_vector/fixed_capacity_vector
-        lib/volk/volk.h lib/volk/volk.c)
+set(INTERNALLIBS lib/static_vector/fixed_capacity_vector)
 add_executable(Minote ${SOURCES} ${INTERNALLIBS})
 
 target_include_directories(Minote PRIVATE lib)
@@ -61,6 +59,12 @@ else()
     add_compile_definitions(VK_USE_PLATFORM_XCB_KHR)
 endif()
 
+FetchContent_Declare(volk
+        GIT_REPOSITORY https://github.com/zeux/volk
+        GIT_TAG 66169849935bd85f329c513dd01c28b0a02bfe33)
+FetchContent_MakeAvailable(volk)
+target_link_libraries(Minote volk)
+
 set(VUK_LINK_TO_LOADER OFF CACHE BOOL "")
 set(VUK_USE_VULKAN_SDK OFF CACHE BOOL "")
 set(VUK_USE_SHADERC OFF CACHE BOOL "")
@@ -69,7 +73,7 @@ FetchContent_Declare(vuk
         GIT_TAG edeb5ab431b25b4c3660936a8c4bcc832d973ffe)
 FetchContent_MakeAvailable(vuk)
 target_compile_definitions(vuk PUBLIC VUK_CUSTOM_VULKAN_HEADER="volk.h")
-target_include_directories(vuk PUBLIC lib/volk)
+target_link_libraries(vuk PRIVATE volk)
 target_link_libraries(Minote vuk)
 
 FetchContent_Declare(vk-bootstrap

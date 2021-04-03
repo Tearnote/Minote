@@ -8,7 +8,7 @@
 #include <GLFW/glfw3.h>
 #include <fmt/core.h>
 #include "VkBootstrap.h"
-#include "volk/volk.h"
+#include "volk.h"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
 #include "base/log.hpp"

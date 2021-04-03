@@ -5,7 +5,7 @@
 #include <optional>
 #include <span>
 #include "VkBootstrap.h"
-#include "volk/volk.h"
+#include "volk.h"
 #include "vuk/Context.hpp"
 #include "base/version.hpp"
 #include "base/hashmap.hpp"
