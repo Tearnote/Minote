@@ -1,7 +1,7 @@
 #include "game.hpp"
 
 #include <exception>
-#include "base/svector.hpp"
+#include <vector>
 #include "base/log.hpp"
 #include "gfx/engine.hpp"
 #include "mapper.hpp"
@@ -36,9 +36,10 @@ void game(sys::Glfw&, sys::Window& window) try {
 		mapper.collectKeyInputs(window);
 
 		// Logic
+		auto updateActions = std::vector<Mapper::Action>();
+		updateActions.reserve(16);
 		while (nextUpdate <= sys::Glfw::getTime()) {
-			auto updateActions = svector<Mapper::Action, 64>();
-
+			updateActions.clear();
 			mapper.processActions([&](auto const& action) {
 				if (action.timestamp > nextUpdate) return false;
 

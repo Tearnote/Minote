@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.17)
 project(Minote VERSION 0.0
         DESCRIPTION "Modern action puzzle game"
         LANGUAGES C CXX)
-include(FetchContent)
 cmake_policy(SET CMP0077 NEW)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED)
@@ -13,10 +12,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Main executable
-set(SOURCES
+add_executable(Minote
         src/base/concepts.hpp
         src/base/hashmap.hpp
-        src/base/svector.hpp
         src/base/version.hpp
         src/base/tween.hpp
         src/base/types.hpp
@@ -47,10 +45,8 @@ set(SOURCES
         src/mino.hpp src/mino.tpp)
 
 # Internal libraries
-set(INTERNALLIBS lib/static_vector/fixed_capacity_vector)
-add_executable(Minote ${SOURCES} ${INTERNALLIBS})
 
-target_include_directories(Minote PRIVATE lib)
+include(FetchContent)
 
 add_compile_definitions(VK_NO_PROTOTYPES)
 if(WIN32)

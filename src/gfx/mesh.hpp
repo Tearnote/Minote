@@ -5,7 +5,6 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 #include "vuk/CommandBuffer.hpp"
-#include "base/svector.hpp"
 #include "base/types.hpp"
 
 namespace minote::gfx {
@@ -32,7 +31,8 @@ template<size_t N>
 constexpr auto generateNormals(std::array<Vertex, N> mesh) {
 	static_assert(N % 3 == 0);
 
-	svector<Vertex, N> result;
+	auto result = std::array<Vertex, N>();
+	auto resultPtr = result.begin();
 	for (auto iv = mesh.begin(), ov = result.begin(); iv != mesh.end(); iv += 3, ov += 3) {
 		auto v0 = *(iv + 0);
 		auto v1 = *(iv + 1);
@@ -42,9 +42,9 @@ constexpr auto generateNormals(std::array<Vertex, N> mesh) {
 		v0.normal = normal;
 		v1.normal = normal;
 		v2.normal = normal;
-		result.push_back(v0);
-		result.push_back(v1);
-		result.push_back(v2);
+		*resultPtr++ = v0;
+		*resultPtr++ = v1;
+		*resultPtr++ = v2;
 	}
 	return result;
 }

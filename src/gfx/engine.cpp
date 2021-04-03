@@ -227,7 +227,7 @@ void Engine::setup() {
 	meshes.emplace("block"_id, ptc.create_buffer(
 		vuk::MemoryUsage::eGPUonly,
 		vuk::BufferUsageFlagBits::eVertexBuffer,
-		std::span(blockNorm)).first);
+		std::span<Vertex>(blockNorm)).first);
 	instances.emplace("block"_id, std::vector<Instance>());
 
 	// Initialize imgui rendering
