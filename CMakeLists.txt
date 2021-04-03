@@ -49,8 +49,7 @@ set(SOURCES
 # Internal libraries
 set(INTERNALLIBS
         lib/static_vector/fixed_capacity_vector
-        lib/volk/volk.h lib/volk/volk.c
-        lib/stb/stb_image.h lib/stb/stb_image.c)
+        lib/volk/volk.h lib/volk/volk.c)
 add_executable(Minote ${SOURCES} ${INTERNALLIBS})
 
 target_include_directories(Minote PRIVATE lib)
