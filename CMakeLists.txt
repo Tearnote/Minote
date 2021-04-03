@@ -79,23 +79,6 @@ FetchContent_Declare(vk-bootstrap
 FetchContent_MakeAvailable(vk-bootstrap)
 target_link_libraries(Minote PRIVATE vk-bootstrap)
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    FetchContent_Declare(imgui
-            GIT_REPOSITORY https://github.com/ocornut/imgui
-            GIT_TAG 00d570e280533bca9cf6e5652d0f2eb131d032e7)
-    FetchContent_MakeAvailable(imgui)
-    add_library(imgui
-            ${imgui_SOURCE_DIR}/imgui.h ${imgui_SOURCE_DIR}/imgui.cpp
-            ${imgui_SOURCE_DIR}/imconfig.h ${imgui_SOURCE_DIR}/imgui_internal.h
-            ${imgui_SOURCE_DIR}/imgui_draw.cpp ${imgui_SOURCE_DIR}/imgui_tables.cpp
-            ${imgui_SOURCE_DIR}/imgui_widgets.cpp ${imgui_SOURCE_DIR}/imgui_demo.cpp
-            ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.h ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp)
-    target_compile_definitions(imgui PRIVATE IMGUI_DISABLE_WIN32_FUNCTIONS)
-    target_include_directories(imgui PRIVATE ${imgui_SOURCE_DIR})
-    target_include_directories(Minote PRIVATE ${imgui_SOURCE_DIR})
-    target_link_libraries(Minote PRIVATE imgui)
-endif()
-
 FetchContent_Declare(pcg
         GIT_REPOSITORY https://github.com/imneme/pcg-c-basic
         GIT_TAG bc39cd76ac3d541e618606bcc6e1e5ba5e5e6aa3)
@@ -126,7 +109,7 @@ FetchContent_Declare(glm
         GIT_REPOSITORY https://github.com/g-truc/glm
         GIT_TAG ace16e47780dcef815294715237f51e9129b6eb3)
 FetchContent_MakeAvailable(glm)
-target_link_libraries(Minote PRIVATE glm)
+target_include_directories(Minote PRIVATE ${glm_SOURCE_DIR}) # The target isn't working for some reason
 
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "")
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "")
@@ -137,6 +120,24 @@ FetchContent_Declare(glfw
         GIT_TAG 901d30b973c536f26b74bca1134c5892d54b251d) # 3.3.3
 FetchContent_MakeAvailable(glfw)
 target_link_libraries(Minote PRIVATE glfw)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    FetchContent_Declare(imgui
+            GIT_REPOSITORY https://github.com/ocornut/imgui
+            GIT_TAG 00d570e280533bca9cf6e5652d0f2eb131d032e7)
+    FetchContent_MakeAvailable(imgui)
+    add_library(imgui
+            ${imgui_SOURCE_DIR}/imgui.h ${imgui_SOURCE_DIR}/imgui.cpp
+            ${imgui_SOURCE_DIR}/imconfig.h ${imgui_SOURCE_DIR}/imgui_internal.h
+            ${imgui_SOURCE_DIR}/imgui_draw.cpp ${imgui_SOURCE_DIR}/imgui_tables.cpp
+            ${imgui_SOURCE_DIR}/imgui_widgets.cpp ${imgui_SOURCE_DIR}/imgui_demo.cpp
+            ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.h ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp)
+    target_compile_definitions(imgui PRIVATE IMGUI_DISABLE_WIN32_FUNCTIONS)
+    target_include_directories(imgui PRIVATE ${imgui_SOURCE_DIR})
+    target_include_directories(Minote PRIVATE ${imgui_SOURCE_DIR})
+    target_link_libraries(imgui PRIVATE glfw)
+    target_link_libraries(Minote PRIVATE imgui)
+endif()
 
 # Build settings
 target_compile_options(Minote PRIVATE -Wall -Wextra -Wno-missing-field-initializers -fno-rtti)
