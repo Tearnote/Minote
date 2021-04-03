@@ -59,7 +59,7 @@ FetchContent_Declare(volk
         GIT_REPOSITORY https://github.com/zeux/volk
         GIT_TAG 66169849935bd85f329c513dd01c28b0a02bfe33)
 FetchContent_MakeAvailable(volk)
-target_link_libraries(Minote volk)
+target_link_libraries(Minote PRIVATE volk)
 
 set(VUK_LINK_TO_LOADER OFF CACHE BOOL "")
 set(VUK_USE_VULKAN_SDK OFF CACHE BOOL "")
@@ -70,13 +70,13 @@ FetchContent_Declare(vuk
 FetchContent_MakeAvailable(vuk)
 target_compile_definitions(vuk PUBLIC VUK_CUSTOM_VULKAN_HEADER="volk.h")
 target_link_libraries(vuk PRIVATE volk)
-target_link_libraries(Minote vuk)
+target_link_libraries(Minote PRIVATE vuk)
 
 FetchContent_Declare(vk-bootstrap
         GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap
         GIT_TAG 85aac8d51ce8db80ac254d657a62a7e98a9ad2b4)
 FetchContent_MakeAvailable(vk-bootstrap)
-target_link_libraries(Minote vk-bootstrap)
+target_link_libraries(Minote PRIVATE vk-bootstrap)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_definitions(IMGUI_DISABLE_WIN32_FUNCTIONS)
@@ -92,7 +92,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
             ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.h ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp)
     target_include_directories(imgui PRIVATE ${imgui_SOURCE_DIR})
     target_include_directories(Minote PRIVATE ${imgui_SOURCE_DIR})
-    target_link_libraries(Minote imgui)
+    target_link_libraries(Minote PRIVATE imgui)
 endif()
 
 FetchContent_Declare(pcg
@@ -101,7 +101,7 @@ FetchContent_Declare(pcg
 FetchContent_MakeAvailable(pcg)
 add_library(pcg ${pcg_SOURCE_DIR}/pcg_basic.h ${pcg_SOURCE_DIR}/pcg_basic.c)
 target_include_directories(Minote PRIVATE ${pcg_SOURCE_DIR})
-target_link_libraries(Minote pcg)
+target_link_libraries(Minote PRIVATE pcg)
 
 if(NOT TARGET robin_hood)
     FetchContent_Declare(robin_hood
@@ -109,7 +109,13 @@ if(NOT TARGET robin_hood)
             GIT_TAG f7aa87e65e6e3bac0dd92df14f192ca882b54d74)
     FetchContent_MakeAvailable(robin_hood)
 endif()
-target_link_libraries(Minote robin_hood)
+target_link_libraries(Minote PRIVATE robin_hood)
+
+FetchContent_Declare(fmt
+        GIT_REPOSITORY https://github.com/fmtlib/fmt
+        GIT_TAG 95da4847274c42c110fd5bf1bf61d3f94be4a08e)
+FetchContent_MakeAvailable(fmt)
+target_link_libraries(Minote PRIVATE fmt)
 
 # Build settings
 target_compile_options(Minote PRIVATE -Wall -Wextra -Wno-missing-field-initializers -fno-rtti)
@@ -139,7 +145,6 @@ endif()
 find_package(PkgConfig REQUIRED)
 pkg_search_module(GLFW REQUIRED glfw3)
 pkg_search_module(GLM REQUIRED glm)
-pkg_search_module(FMT REQUIRED fmt)
 
 add_compile_definitions(GLFW_INCLUDE_NONE)
 add_compile_definitions(GLM_FORCE_SIZE_T_LENGTH)
@@ -149,12 +154,10 @@ add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
 
 target_include_directories(Minote PRIVATE ${GLFW_INCLUDE_DIRS})
 target_include_directories(Minote PRIVATE ${GLM_INCLUDE_DIRS})
-target_include_directories(Minote PRIVATE ${FMT_INCLUDE_DIRS})
-target_link_libraries(Minote ${GLFW_STATIC_LIBRARIES})
-target_link_libraries(Minote ${GLM_STATIC_LIBRARIES})
-target_link_libraries(Minote ${FMT_STATIC_LIBRARIES})
+target_link_libraries(Minote PRIVATE ${GLFW_STATIC_LIBRARIES})
+target_link_libraries(Minote PRIVATE ${GLM_STATIC_LIBRARIES})
 if(WIN32)
-    target_link_libraries(Minote winmm)
+    target_link_libraries(Minote PRIVATE winmm)
 endif()
 
 # Shader compilation
