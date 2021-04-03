@@ -51,8 +51,7 @@ set(INTERNALLIBS
         lib/robin-hood-hashing/robin_hood.h
         lib/static_vector/fixed_capacity_vector
         lib/volk/volk.h lib/volk/volk.c
-        lib/stb/stb_image.h lib/stb/stb_image.c
-        lib/pcg/pcg_basic.h lib/pcg/pcg_basic.c)
+        lib/stb/stb_image.h lib/stb/stb_image.c)
 add_executable(Minote ${SOURCES} ${INTERNALLIBS})
 
 target_include_directories(Minote PRIVATE lib)
@@ -97,6 +96,14 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_include_directories(Minote PRIVATE ${imgui_SOURCE_DIR})
     target_link_libraries(Minote imgui)
 endif()
+
+FetchContent_Declare(pcg
+        GIT_REPOSITORY https://github.com/imneme/pcg-c-basic
+        GIT_TAG bc39cd76ac3d541e618606bcc6e1e5ba5e5e6aa3)
+FetchContent_MakeAvailable(pcg)
+add_library(pcg ${pcg_SOURCE_DIR}/pcg_basic.h ${pcg_SOURCE_DIR}/pcg_basic.c)
+target_include_directories(Minote PRIVATE ${pcg_SOURCE_DIR})
+target_link_libraries(Minote pcg)
 
 # Build settings
 target_compile_options(Minote PRIVATE -Wall -Wextra -Wno-missing-field-initializers -fno-rtti)
