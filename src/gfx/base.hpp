@@ -1,6 +1,6 @@
 #pragma once
 
-#include <glm/trigonometric.hpp>
+#include "glm/trigonometric.hpp"
 #include "volk.h"
 
 namespace minote::gfx {

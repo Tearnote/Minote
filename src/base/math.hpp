@@ -1,13 +1,13 @@
 #pragma once
 
 #include <concepts>
-#include <glm/vec2.hpp>
-#include <glm/vec3.hpp>
-#include <glm/mat4x4.hpp>
-#include <glm/matrix.hpp>
-#include <glm/ext/matrix_transform.hpp>
-#include <glm/gtc/type_precision.hpp>
-#include <fmt/format.h>
+#include "glm/ext/matrix_transform.hpp"
+#include "glm/gtc/type_precision.hpp"
+#include "glm/mat4x4.hpp"
+#include "glm/vec2.hpp"
+#include "glm/vec3.hpp"
+#include "glm/vec4.hpp"
+#include "fmt/format.h"
 #include "base/types.hpp"
 
 namespace minote::base {

@@ -1,9 +1,9 @@
 #pragma once
 
 #include <array>
-#include <glm/geometric.hpp>
-#include <glm/vec3.hpp>
-#include <glm/vec4.hpp>
+#include "glm/geometric.hpp"
+#include "glm/vec3.hpp"
+#include "glm/vec4.hpp"
 #include "vuk/CommandBuffer.hpp"
 #include "base/types.hpp"
 

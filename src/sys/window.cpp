@@ -7,9 +7,9 @@
 #include <optional>
 #include <cassert>
 #include <mutex>
-#include <glm/vec2.hpp>
-#include <GLFW/glfw3.h>
-#include <fmt/core.h>
+#include "glm/vec2.hpp"
+#include "GLFW/glfw3.h"
+#include "fmt/core.h"
 #if IMGUI
 #include "backends/imgui_impl_glfw.h"
 #endif //IMGUI

@@ -1,6 +1,6 @@
 #include "sys/keyboard.hpp"
 
-#include <GLFW/glfw3.h>
+#include "GLFW/glfw3.h"
 #include "base/util.hpp"
 
 namespace minote::sys {

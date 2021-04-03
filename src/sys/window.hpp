@@ -4,7 +4,7 @@
 #include <string>
 #include <atomic>
 #include <mutex>
-#include <glm/vec2.hpp>
+#include "glm/vec2.hpp"
 #include "base/types.hpp"
 #include "base/ring.hpp"
 #include "base/time.hpp"

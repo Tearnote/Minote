@@ -2,7 +2,7 @@
 
 #include <system_error>
 #include <cstdio>
-#include <fmt/core.h>
+#include "fmt/core.h"
 #include "base/util.hpp"
 
 namespace minote::base {

@@ -1,7 +1,7 @@
 #include "mapper.hpp"
 
 #include <stdexcept>
-#include <GLFW/glfw3.h>
+#include "GLFW/glfw3.h"
 #include "base/util.hpp"
 #include "sys/glfw.hpp"
 

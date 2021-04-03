@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <optional>
 #include <array>
-#include <glm/vec2.hpp>
+#include "glm/vec2.hpp"
 #include "base/zip_view.hpp"
 #include "base/types.hpp"
 #include "base/math.hpp"

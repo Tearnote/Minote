@@ -1,7 +1,7 @@
 #pragma once
 
 #include <tuple>
-#include <fmt/format.h>
+#include "fmt/format.h"
 #include "base/types.hpp"
 
 namespace minote::base {
