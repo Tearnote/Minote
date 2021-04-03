@@ -1,6 +1,6 @@
 #pragma once
 
-#include "robin-hood-hashing/robin_hood.h"
+#include "robin_hood.h"
 
 namespace minote::base {
 

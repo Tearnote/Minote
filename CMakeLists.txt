@@ -48,7 +48,6 @@ set(SOURCES
 
 # Internal libraries
 set(INTERNALLIBS
-        lib/robin-hood-hashing/robin_hood.h
         lib/static_vector/fixed_capacity_vector
         lib/volk/volk.h lib/volk/volk.c
         lib/stb/stb_image.h lib/stb/stb_image.c)
@@ -104,6 +103,14 @@ FetchContent_MakeAvailable(pcg)
 add_library(pcg ${pcg_SOURCE_DIR}/pcg_basic.h ${pcg_SOURCE_DIR}/pcg_basic.c)
 target_include_directories(Minote PRIVATE ${pcg_SOURCE_DIR})
 target_link_libraries(Minote pcg)
+
+if(NOT TARGET robin_hood)
+    FetchContent_Declare(robin_hood
+            GIT_REPOSITORY https://github.com/martinus/robin-hood-hashing
+            GIT_TAG f7aa87e65e6e3bac0dd92df14f192ca882b54d74)
+    FetchContent_MakeAvailable(robin_hood)
+endif()
+target_link_libraries(Minote robin_hood)
 
 # Build settings
 target_compile_options(Minote PRIVATE -Wall -Wextra -Wno-missing-field-initializers -fno-rtti)
