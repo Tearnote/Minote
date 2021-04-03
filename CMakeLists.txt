@@ -48,11 +48,11 @@ add_executable(Minote
 
 include(FetchContent)
 
-add_compile_definitions(VK_NO_PROTOTYPES)
+target_compile_definitions(Minote PRIVATE VK_NO_PROTOTYPES)
 if(WIN32)
-    add_compile_definitions(VK_USE_PLATFORM_WIN32_KHR)
+    target_compile_definitions(Minote PRIVATE VK_USE_PLATFORM_WIN32_KHR)
 else()
-    add_compile_definitions(VK_USE_PLATFORM_XCB_KHR)
+    target_compile_definitions(Minote PRIVATE VK_USE_PLATFORM_XCB_KHR)
 endif()
 
 FetchContent_Declare(volk
@@ -68,7 +68,8 @@ FetchContent_Declare(vuk
         GIT_REPOSITORY https://github.com/martty/vuk
         GIT_TAG edeb5ab431b25b4c3660936a8c4bcc832d973ffe)
 FetchContent_MakeAvailable(vuk)
-target_compile_definitions(vuk PUBLIC VUK_CUSTOM_VULKAN_HEADER="volk.h")
+target_compile_definitions(vuk PRIVATE VK_NO_PROTOTYPES)
+target_compile_definitions(vuk PRIVATE VUK_CUSTOM_VULKAN_HEADER="volk.h")
 target_link_libraries(vuk PRIVATE volk)
 target_link_libraries(Minote PRIVATE vuk)
 
@@ -79,7 +80,6 @@ FetchContent_MakeAvailable(vk-bootstrap)
 target_link_libraries(Minote PRIVATE vk-bootstrap)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_compile_definitions(IMGUI_DISABLE_WIN32_FUNCTIONS)
     FetchContent_Declare(imgui
             GIT_REPOSITORY https://github.com/ocornut/imgui
             GIT_TAG 00d570e280533bca9cf6e5652d0f2eb131d032e7)
@@ -90,6 +90,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
             ${imgui_SOURCE_DIR}/imgui_draw.cpp ${imgui_SOURCE_DIR}/imgui_tables.cpp
             ${imgui_SOURCE_DIR}/imgui_widgets.cpp ${imgui_SOURCE_DIR}/imgui_demo.cpp
             ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.h ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp)
+    target_compile_definitions(imgui PRIVATE IMGUI_DISABLE_WIN32_FUNCTIONS)
     target_include_directories(imgui PRIVATE ${imgui_SOURCE_DIR})
     target_include_directories(Minote PRIVATE ${imgui_SOURCE_DIR})
     target_link_libraries(Minote PRIVATE imgui)
@@ -117,15 +118,25 @@ FetchContent_Declare(fmt
 FetchContent_MakeAvailable(fmt)
 target_link_libraries(Minote PRIVATE fmt)
 
-add_compile_definitions(GLM_FORCE_SIZE_T_LENGTH)
-add_compile_definitions(GLM_FORCE_UNRESTRICTED_GENTYPE)
-add_compile_definitions(GLM_FORCE_LEFT_HANDED)
-add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE)
+target_compile_definitions(Minote PRIVATE GLM_FORCE_SIZE_T_LENGTH)
+target_compile_definitions(Minote PRIVATE GLM_FORCE_UNRESTRICTED_GENTYPE)
+target_compile_definitions(Minote PRIVATE GLM_FORCE_LEFT_HANDED)
+target_compile_definitions(Minote PRIVATE GLM_FORCE_DEPTH_ZERO_TO_ONE)
 FetchContent_Declare(glm
         GIT_REPOSITORY https://github.com/g-truc/glm
         GIT_TAG ace16e47780dcef815294715237f51e9129b6eb3)
 FetchContent_MakeAvailable(glm)
 target_link_libraries(Minote PRIVATE glm)
+
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "")
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "")
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "")
+target_compile_definitions(Minote PRIVATE GLFW_INCLUDE_NONE)
+FetchContent_Declare(glfw
+        GIT_REPOSITORY https://github.com/glfw/glfw
+        GIT_TAG 901d30b973c536f26b74bca1134c5892d54b251d) # 3.3.3
+FetchContent_MakeAvailable(glfw)
+target_link_libraries(Minote PRIVATE glfw)
 
 # Build settings
 target_compile_options(Minote PRIVATE -Wall -Wextra -Wno-missing-field-initializers -fno-rtti)
@@ -146,20 +157,9 @@ endif()
 target_include_directories(Minote PRIVATE src)
 
 # External libraries
+
 if(WIN32)
-    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-    set(BUILD_SHARED_LIBS OFF)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
-endif()
-
-find_package(PkgConfig REQUIRED)
-pkg_search_module(GLFW REQUIRED glfw3)
-
-add_compile_definitions(GLFW_INCLUDE_NONE)
-
-target_include_directories(Minote PRIVATE ${GLFW_INCLUDE_DIRS})
-target_link_libraries(Minote PRIVATE ${GLFW_STATIC_LIBRARIES})
-if(WIN32)
     target_link_libraries(Minote PRIVATE winmm)
 endif()
 
