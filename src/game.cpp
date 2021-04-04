@@ -9,6 +9,8 @@
 #include "config.hpp"
 #include "main.hpp"
 
+#include "GLFW/glfw3.h"
+
 namespace minote {
 
 using namespace base;
@@ -65,7 +67,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 		// Graphics
 		engine.setBackground({0.4f, 0.4f, 0.4f});
 		engine.setLightSource(lightSource, {1.0f, 1.0f, 1.0f});
-		engine.setCamera({0.0f, 12.0f, 24.0f}, {0.0f, 4.0f, 0.0f});
+		engine.setCamera({std::sin(glfwGetTime() / 4.0) * 24.0f, std::sin(glfwGetTime() / 8.0) * 2.0f + 8.0f, std::cos(glfwGetTime() / 4.0) * 24.0f}, {0.0f, 4.0f, 0.0f});
 
 		auto centerTransform = make_translate({-0.5f, -0.5f, -0.5f});
 		auto rotateTransform = make_rotate(glm::radians(-90.0f), {1.0f, 0.0f, 0.0f});

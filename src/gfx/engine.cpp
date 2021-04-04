@@ -7,6 +7,8 @@
 #include <cassert>
 #include "GLFW/glfw3.h"
 #include "fmt/core.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 #include "VkBootstrap.h"
 #include "volk.h"
 #include "vuk/CommandBuffer.hpp"
@@ -122,6 +124,7 @@ Engine::Engine(sys::Window& window, Version version) {
 
 Engine::~Engine() {
 	context->wait_idle();
+	env.reset();
 #if IMGUI
 	imguiData.font_texture.view.reset();
 	imguiData.font_texture.image.reset();
@@ -181,6 +184,16 @@ void Engine::setup() {
 	objectPci.rasterization_state.cullMode = vuk::CullModeFlagBits::eBack;
 	context->create_named_pipeline("object", objectPci);
 
+	auto cubemapPci = vuk::PipelineBaseCreateInfo();
+	cubemapPci.add_spirv(std::vector<u32>{
+#include "spv/cubemap.vert.spv"
+	}, "cubemap.vert");
+	cubemapPci.add_spirv(std::vector<u32>{
+#include "spv/cubemap.frag.spv"
+	}, "cubemap.frag");
+	cubemapPci.depth_stencil_state.depthWriteEnable = false;
+	context->create_named_pipeline("cubemap", cubemapPci);
+
 	auto swapchainBlitPci = vuk::PipelineBaseCreateInfo();
 	swapchainBlitPci.add_spirv(std::vector<u32>{
 #include "spv/swapchainBlit.vert.spv"
@@ -233,8 +246,24 @@ void Engine::setup() {
 	// Initialize imgui rendering
 #if IMGUI
 	imguiData = ImGui_ImplVuk_Init(ptc);
-	ImGui::GetIO().DisplaySize = ImVec2{f32(swapchain->extent.width), f32(swapchain->extent.height)};
+	ImGui::GetIO().DisplaySize = ImVec2(f32(swapchain->extent.width), f32(swapchain->extent.height));
 #endif //IMGUI
+
+	// Upload environment map
+	auto width = 0;
+	auto height = 0;
+	auto components = 0;
+	stbi_set_flip_vertically_on_load(true);
+	auto* hdri = stbi_loadf("env.hdr", &width, &height, &components, 4);
+	env = context->allocate_texture(vuk::ImageCreateInfo{
+		.format = vuk::Format::eR32G32B32A32Sfloat,
+		.extent = {u32(width), u32(height), 1u},
+		.mipLevels = u32(std::log2(std::max(width, height))) + 1,
+		.usage = vuk::ImageUsageFlagBits::eTransferSrc | vuk::ImageUsageFlagBits::eTransferDst | vuk::ImageUsageFlagBits::eSampled,
+	});
+	ptc.upload(*env->image, vuk::Format::eR32G32B32A32Sfloat, {u32(width), u32(height), 1u}, 0,
+		std::span(hdri, width * height * 4), true);
+	stbi_image_free(hdri);
 
 	// Finalize uploads
 	ptc.wait_all_transfers();
@@ -338,12 +367,17 @@ void Engine::render() {
 				auto instCount = instances.at(id).size();
 				if (!instCount) continue;
 
-				auto sampler = vuk::SamplerCreateInfo{
+				auto msmSampler = vuk::SamplerCreateInfo{
 					.magFilter = vuk::Filter::eLinear,
 					.minFilter = vuk::Filter::eLinear,
 					.addressModeU = vuk::SamplerAddressMode::eClampToBorder,
 					.addressModeV = vuk::SamplerAddressMode::eClampToBorder,
 					.borderColor = vuk::BorderColor::eIntOpaqueWhite,
+				};
+				auto envSampler = vuk::SamplerCreateInfo{
+					.magFilter = vuk::Filter::eLinear,
+					.minFilter = vuk::Filter::eLinear,
+					.mipmapMode = vuk::SamplerMipmapMode::eLinear,
 				};
 				command_buffer
 					.set_viewport(0, vuk::Rect2D::framebuffer())
@@ -351,12 +385,34 @@ void Engine::render() {
 					.bind_uniform_buffer(0, 0, worldBuf)
 					.bind_vertex_buffer(0, *mesh, 0, gfx::Vertex::format())
 					.bind_storage_buffer(0, 1, instanceBufs.at(id))
-					.bind_sampled_image(0, 2, "msm_moments_blurred", sampler)
+					.bind_sampled_image(0, 2, "msm_moments_blurred", msmSampler)
+					.bind_sampled_image(0, 4, *env, envSampler)
 					.bind_graphics_pipeline("object");
 				auto* model = command_buffer.map_scratch_uniform_binding<glm::mat4>(0, 3);
 				*model = lightTransform;
 				command_buffer.draw(mesh->size / sizeof(gfx::Vertex), instCount, 0, 0);
 			}
+		}
+	});
+	rg.add_pass({ // Cubemap draw
+		.auxiliary_order = 0.0f,
+		.resources = {"object_color"_image(vuk::eColorWrite), "object_depth"_image(vuk::eDepthStencilRW)},
+		.execute = [this, worldBuf](vuk::CommandBuffer& command_buffer) {
+			auto envSampler = vuk::SamplerCreateInfo{
+				.magFilter = vuk::Filter::eLinear,
+				.minFilter = vuk::Filter::eLinear,
+				.addressModeU = vuk::SamplerAddressMode::eClampToEdge,
+				.addressModeV = vuk::SamplerAddressMode::eClampToEdge,
+			};
+			command_buffer.set_primitive_topology(vuk::PrimitiveTopology::eTriangleStrip);
+			command_buffer
+				.set_viewport(0, vuk::Rect2D::framebuffer())
+				.set_scissor(0, vuk::Rect2D::framebuffer())
+				.bind_uniform_buffer(0, 0, worldBuf)
+				.bind_sampled_image(0, 1, *env, envSampler)
+				.bind_graphics_pipeline("cubemap");
+			command_buffer.draw(14, 1, 0, 0);
+			command_buffer.set_primitive_topology(vuk::PrimitiveTopology::eTriangleList);
 		}
 	});
 	rg.add_pass({ // Bloom threshold

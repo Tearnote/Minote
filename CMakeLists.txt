@@ -196,11 +196,18 @@ FetchContent_Declare(shaderc
         GIT_TAG 3fe94c6a76d2b617e7fb20fdf3cde98001a274e3)
 FetchContent_MakeAvailable(shaderc)
 
+FetchContent_Declare(stb
+        GIT_REPOSITORY https://github.com/nothings/stb
+        GIT_TAG c9064e317699d2e495f36ba4f9ac037e88ee371a)
+FetchContent_MakeAvailable(stb)
+target_include_directories(Minote PRIVATE ${stb_SOURCE_DIR})
+
 # Shader compilation
 
 set(SHADER_SOURCES
         src/glsl/swapchainBlit.vert src/glsl/swapchainBlit.frag
         src/glsl/object.vert src/glsl/object.frag
+        src/glsl/cubemap.vert src/glsl/cubemap.frag
         src/glsl/msmdepth.vert src/glsl/msmdepth.frag
         src/glsl/msmblur.vert src/glsl/msmblur.frag
         src/glsl/msmmoments.vert src/glsl/msmmoments.frag

@@ -7,6 +7,13 @@ vec2 triangleVertex(int vertexID, out vec2 texCoords) {
     return vec2(x, y);
 }
 
+// https://twitter.com/donzanoid/status/616370134278606848
+// Uses a triangle strip
+vec3 cubeVertex(int vertexID) {
+    int b = 1 << vertexID;
+    return vec3((0x287a & b) != 0, (0x02af & b) != 0, (0x31e3 & b) != 0);
+}
+
 // http://www.java-gaming.org/topics/fast-srgb-conversion-glsl-snippet/37583/view.html
 vec3 srgbEncode(vec3 color) {
    float r = color.r < 0.0031308 ? 12.92 * color.r : 1.055 * pow(color.r, 1.0/2.4) - 0.055;
@@ -22,8 +29,9 @@ vec3 srgbDecode(vec3 color) {
    return vec3(r, g, b);
 }
 
-// https://www.iquilezles.org/www/articles/functions/functions.htm
-float gain(float x, float k) {
-    const float a = 0.5*pow(2.0*((x<0.5)?x:1.0-x), k);
-    return (x<0.5)?a:1.0-a;
+vec2 sampleSphericalMap(vec3 v) {
+    vec2 uv = vec2(atan(v.z, v.x), asin(v.y));
+    uv *= vec2(0.1591, 0.3183);
+    uv += 0.5;
+    return uv;
 }

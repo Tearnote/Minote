@@ -70,6 +70,8 @@ private:
 		glm::vec3 up;
 	} camera;
 
+	std::optional<vuk::Texture> env;
+
 	auto createSwapchain(VkSwapchainKHR old = VK_NULL_HANDLE) -> vuk::Swapchain;
 	void refreshSwapchain();
 
