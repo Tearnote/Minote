@@ -95,7 +95,7 @@ set(VUK_USE_VULKAN_SDK OFF CACHE BOOL "")
 set(VUK_USE_SHADERC OFF CACHE BOOL "")
 FetchContent_Declare(vuk
         GIT_REPOSITORY https://github.com/martty/vuk
-        GIT_TAG edeb5ab431b25b4c3660936a8c4bcc832d973ffe)
+        GIT_TAG fb8f4436851ca0a02d7e823badcb311300375de1)
 FetchContent_MakeAvailable(vuk)
 target_compile_definitions(vuk PRIVATE VK_NO_PROTOTYPES)
 target_compile_definitions(vuk PRIVATE VUK_CUSTOM_VULKAN_HEADER="volk.h")
@@ -208,9 +208,6 @@ set(SHADER_SOURCES
         src/glsl/swapchainBlit.vert src/glsl/swapchainBlit.frag
         src/glsl/object.vert src/glsl/object.frag
         src/glsl/cubemap.vert src/glsl/cubemap.frag
-        src/glsl/msmdepth.vert src/glsl/msmdepth.frag
-        src/glsl/msmblur.vert src/glsl/msmblur.frag
-        src/glsl/msmmoments.vert src/glsl/msmmoments.frag
         src/glsl/bloomThreshold.vert src/glsl/bloomThreshold.frag
         src/glsl/bloomBlur.vert src/glsl/bloomBlur.frag
         src/glsl/imgui.vert src/glsl/imgui.frag)

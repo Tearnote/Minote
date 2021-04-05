@@ -144,35 +144,6 @@ void Engine::setup() {
 	auto ptc = ifc.begin();
 
 	// Create pipelines
-	auto msmDepthPci = vuk::PipelineBaseCreateInfo();
-	msmDepthPci.add_spirv(std::vector<u32>{
-#include "spv/msmdepth.vert.spv"
-	}, "msmdepth.vert");
-	msmDepthPci.add_spirv(std::vector<u32>{
-#include "spv/msmdepth.frag.spv"
-	}, "msmdepth.frag");
-	msmDepthPci.rasterization_state.cullMode = vuk::CullModeFlagBits::eBack;
-	context->create_named_pipeline("msm_depth", msmDepthPci);
-
-	// Create pipelines
-	auto msmMomentsPci = vuk::PipelineBaseCreateInfo();
-	msmMomentsPci.add_spirv(std::vector<u32>{
-#include "spv/msmmoments.vert.spv"
-	}, "msmmoments.vert");
-	msmMomentsPci.add_spirv(std::vector<u32>{
-#include "spv/msmmoments.frag.spv"
-	}, "msmmoments.frag");
-	context->create_named_pipeline("msm_moments", msmMomentsPci);
-
-	// Create pipelines
-	auto msmMomentsBlurredPci = vuk::PipelineBaseCreateInfo();
-	msmMomentsBlurredPci.add_spirv(std::vector<u32>{
-#include "spv/msmblur.vert.spv"
-	}, "msmblur.vert");
-	msmMomentsBlurredPci.add_spirv(std::vector<u32>{
-#include "spv/msmblur.frag.spv"
-	}, "msmblur.frag");
-	context->create_named_pipeline("msm_moments_blurred", msmMomentsBlurredPci);
 
 	auto objectPci = vuk::PipelineBaseCreateInfo();
 	objectPci.add_spirv(std::vector<u32>{
@@ -279,9 +250,6 @@ void Engine::render() {
 	world.setViewProjection(glm::uvec2(swapchain->extent.width, swapchain->extent.height),
 		VerticalFov, NearPlane,
 		camera.eye, camera.center, camera.up);
-	auto lightTransform = glm::infinitePerspective(glm::radians(120.0f * 12 / glm::length(world.lightPosition)), 1.0f, glm::length(world.lightPosition) / 6.0f) *
-		glm::lookAt(glm::vec3(world.lightPosition), {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f});
-	auto msmSize = vuk::Dimension2D::absolute(1024, 1024);
 	constexpr auto BloomDepth = 6u;
 	auto bloomNames = std::array<std::string, BloomDepth>{};
 	for (auto i = 0u; i < BloomDepth; i += 1)
@@ -315,65 +283,14 @@ void Engine::render() {
 
 	// Set up the rendergraph
 	auto rg = vuk::RenderGraph();
-	rg.add_pass({ // MSM depth draw
-		.auxiliary_order = 0.0f,
-		.resources = {"msm_depth"_image(vuk::eDepthStencilRW), "msm_depth_nop"_image(vuk::eColorWrite)},
-		.execute = [&, this](vuk::CommandBuffer& command_buffer) {
-			for (auto&[id, mesh]: meshes) {
-				auto instCount = instances.at(id).size();
-				if (!instCount) continue;
-
-				command_buffer
-					.set_viewport(0, vuk::Rect2D::absolute(0, 0, msmSize.extent.width, msmSize.extent.height))
-					.set_scissor(0, vuk::Rect2D::absolute(0, 0, msmSize.extent.width, msmSize.extent.height))
-					.bind_vertex_buffer(0, *mesh, 0, gfx::Vertex::format())
-					.bind_storage_buffer(0, 0, instanceBufs.at(id))
-					.bind_graphics_pipeline("msm_depth");
-				auto* model = command_buffer.map_scratch_uniform_binding<glm::mat4>(0, 1);
-				*model = lightTransform;
-				command_buffer.draw(mesh->size / sizeof(gfx::Vertex), instCount, 0, 0);
-			}
-		},
-	});
-	rg.add_pass({ // MSM moment extraction
-		.auxiliary_order = 0.0f,
-		.resources = {"msm_depth"_image(vuk::eFragmentSampled), "msm_moments"_image(vuk::eColorWrite)},
-		.execute = [&](vuk::CommandBuffer& command_buffer) {
-			command_buffer
-				.set_viewport(0, vuk::Rect2D::absolute(0, 0, msmSize.extent.width, msmSize.extent.height))
-				.set_scissor(0, vuk::Rect2D::absolute(0, 0, msmSize.extent.width, msmSize.extent.height))
-				.bind_sampled_image(0, 0, "msm_depth", {})
-				.bind_graphics_pipeline("msm_moments");
-			command_buffer.draw(3, 1, 0, 0);
-		},
-	});
-	rg.add_pass({ // MSM blurring
-		.auxiliary_order = 0.0f,
-		.resources = {"msm_moments"_image(vuk::eFragmentSampled), "msm_moments_blurred"_image(vuk::eColorWrite)},
-		.execute = [&](vuk::CommandBuffer& command_buffer) {
-			command_buffer
-				.set_viewport(0, vuk::Rect2D::absolute(0, 0, msmSize.extent.width, msmSize.extent.height))
-				.set_scissor(0, vuk::Rect2D::absolute(0, 0, msmSize.extent.width, msmSize.extent.height))
-				.bind_sampled_image(0, 0, "msm_moments", {})
-				.bind_graphics_pipeline("msm_moments_blurred");
-			command_buffer.draw(3, 1, 0, 0);
-		},
-	});
 	rg.add_pass({ // Object draw
 		.auxiliary_order = 0.0f,
-		.resources = {"object_color"_image(vuk::eColorWrite), "object_depth"_image(vuk::eDepthStencilRW), "msm_moments_blurred"_image(vuk::eFragmentSampled)},
-		.execute = [this, worldBuf, &instanceBufs, &lightTransform](vuk::CommandBuffer& command_buffer) {
+		.resources = {"object_color"_image(vuk::eColorWrite), "object_depth"_image(vuk::eDepthStencilRW)},
+		.execute = [this, worldBuf, &instanceBufs](vuk::CommandBuffer& command_buffer) {
 			for (auto&[id, mesh]: meshes) {
 				auto instCount = instances.at(id).size();
 				if (!instCount) continue;
 
-				auto msmSampler = vuk::SamplerCreateInfo{
-					.magFilter = vuk::Filter::eLinear,
-					.minFilter = vuk::Filter::eLinear,
-					.addressModeU = vuk::SamplerAddressMode::eClampToBorder,
-					.addressModeV = vuk::SamplerAddressMode::eClampToBorder,
-					.borderColor = vuk::BorderColor::eIntOpaqueWhite,
-				};
 				auto envSampler = vuk::SamplerCreateInfo{
 					.magFilter = vuk::Filter::eLinear,
 					.minFilter = vuk::Filter::eLinear,
@@ -385,11 +302,8 @@ void Engine::render() {
 					.bind_uniform_buffer(0, 0, worldBuf)
 					.bind_vertex_buffer(0, *mesh, 0, gfx::Vertex::format())
 					.bind_storage_buffer(0, 1, instanceBufs.at(id))
-					.bind_sampled_image(0, 2, "msm_moments_blurred", msmSampler)
-					.bind_sampled_image(0, 4, *env, envSampler)
+					.bind_sampled_image(0, 3, *env, envSampler)
 					.bind_graphics_pipeline("object");
-				auto* model = command_buffer.map_scratch_uniform_binding<glm::mat4>(0, 3);
-				*model = lightTransform;
 				command_buffer.draw(mesh->size / sizeof(gfx::Vertex), instCount, 0, 0);
 			}
 		}
@@ -438,7 +352,9 @@ void Engine::render() {
 					.set_scissor(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
 					.bind_sampled_image(0, 0, std::string_view(bloomNames[i-1]), {
 						.magFilter = vuk::Filter::eLinear,
-						.minFilter = vuk::Filter::eLinear})
+						.minFilter = vuk::Filter::eLinear,
+						.addressModeU = vuk::SamplerAddressMode::eClampToEdge,
+						.addressModeV = vuk::SamplerAddressMode::eClampToEdge})
 					.bind_graphics_pipeline("bloom_blur_down");
 				auto* stepSize = command_buffer.map_scratch_uniform_binding<f32>(0, 1);
 				*stepSize = 1.0f;
@@ -457,7 +373,9 @@ void Engine::render() {
 					.set_scissor(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
 					.bind_sampled_image(0, 0, std::string_view(bloomNames[i+1]), {
 						.magFilter = vuk::Filter::eLinear,
-						.minFilter = vuk::Filter::eLinear})
+						.minFilter = vuk::Filter::eLinear,
+						.addressModeU = vuk::SamplerAddressMode::eClampToEdge,
+						.addressModeV = vuk::SamplerAddressMode::eClampToEdge})
 					.bind_graphics_pipeline("bloom_blur_up");
 				auto* stepSize = command_buffer.map_scratch_uniform_binding<f32>(0, 1);
 				*stepSize = 0.5f;
@@ -485,10 +403,6 @@ void Engine::render() {
 	ImGui_ImplVuk_Render(ptc, rg, "swapchain", "swapchain", imguiData, ImGui::GetDrawData());
 #endif //IMGUI
 
-	rg.attach_managed("msm_depth_nop", vuk::Format::eR8Unorm, msmSize, vuk::Samples::e4, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
-	rg.attach_managed("msm_depth", vuk::Format::eD32Sfloat, msmSize, vuk::Samples::e4, vuk::ClearDepthStencil{1.0f, 0});
-	rg.attach_managed("msm_moments", vuk::Format::eR16G16B16A16Unorm, msmSize, vuk::Samples::e1, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
-	rg.attach_managed("msm_moments_blurred", vuk::Format::eR16G16B16A16Unorm, msmSize, vuk::Samples::e1, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	rg.attach_managed("object_color", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearColor{world.ambientColor.r, world.ambientColor.g, world.ambientColor.b, world.ambientColor.a});
 	rg.attach_managed("object_depth", vuk::Format::eD32Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearDepthStencil{ 1.0f, 0 });
 	rg.attach_managed("object_resolved", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e1, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
