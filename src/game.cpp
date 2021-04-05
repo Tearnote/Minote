@@ -1,7 +1,14 @@
 #include "game.hpp"
 
+#include "config.hpp"
+
 #include <exception>
+#include <stdexcept>
 #include <vector>
+#include <memory>
+#include <span>
+#include "sqlite3.h"
+#include "base/util.hpp"
 #include "base/log.hpp"
 #include "gfx/engine.hpp"
 #include "mapper.hpp"
@@ -24,6 +31,43 @@ void game(sys::Glfw&, sys::Window& window) try {
 	auto mapper = Mapper();
 	auto engine = gfx::Engine(window, AppVersion);
 	engine.setup();
+
+	{
+		auto* assets = (sqlite3*)(nullptr);
+		if (auto result = sqlite3_open_v2(AssetsPath, &assets, SQLITE_OPEN_READONLY, nullptr); result != SQLITE_OK) {
+			sqlite3_close(assets);
+			throw std::runtime_error(fmt::format(R"(Failed to open database "{}": {})", AssetsPath, sqlite3_errstr(result)));
+		}
+		defer {
+			if (auto result = sqlite3_close(assets); result != SQLITE_OK)
+				L.warn(R"(Failed to close database "{}": {})", AssetsPath, sqlite3_errstr(result));
+		};
+
+		{
+			auto modelsQuery = (sqlite3_stmt*)(nullptr);
+			if (auto result = sqlite3_prepare_v2(assets, "SELECT * from models", -1, &modelsQuery, nullptr); result != SQLITE_OK)
+				throw std::runtime_error(fmt::format(R"(Failed to query database "{}": {})", AssetsPath, sqlite3_errstr(result)));
+			defer { sqlite3_finalize(modelsQuery); };
+			if (sqlite3_column_count(modelsQuery) != 2)
+				throw std::runtime_error(fmt::format(R"(Invalid number of columns in table "models" in database "{}")", AssetsPath));
+
+			auto result = SQLITE_OK;
+			while (result = sqlite3_step(modelsQuery), result != SQLITE_DONE) {
+				if (result != SQLITE_ROW)
+					throw std::runtime_error(fmt::format(R"(Failed to query database "{}": {})", AssetsPath, sqlite3_errstr(result)));
+				if (sqlite3_column_type(modelsQuery, 0) != SQLITE_TEXT)
+					throw std::runtime_error(fmt::format(R"(Invalid type in column 0 of table "models" in database "{}")", AssetsPath));
+				if (sqlite3_column_type(modelsQuery, 1) != SQLITE_BLOB)
+					throw std::runtime_error(fmt::format(R"(Invalid type in column 1 of table "models" in database "{}")", AssetsPath));
+
+				auto name = (char const*)(sqlite3_column_text(modelsQuery, 0));
+				auto nameLen = sqlite3_column_bytes(modelsQuery, 0);
+				auto model = (u8 const*)(sqlite3_column_blob(modelsQuery, 1));
+				auto modelLen = sqlite3_column_bytes(modelsQuery, 1);
+				engine.addModel(std::string_view(name, nameLen), std::span(model, modelLen));
+			}
+		}
+	}
 
 //	PlayState play;
 

@@ -113,7 +113,7 @@ FetchContent_Declare(pcg
         GIT_TAG bc39cd76ac3d541e618606bcc6e1e5ba5e5e6aa3)
 FetchContent_MakeAvailable(pcg)
 add_library(pcg ${pcg_SOURCE_DIR}/pcg_basic.h ${pcg_SOURCE_DIR}/pcg_basic.c)
-target_include_directories(Minote PRIVATE ${pcg_SOURCE_DIR})
+target_include_directories(pcg PUBLIC ${pcg_SOURCE_DIR})
 target_link_libraries(Minote PRIVATE pcg)
 
 if(NOT TARGET robin_hood)
@@ -162,8 +162,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
             ${imgui_SOURCE_DIR}/imgui_widgets.cpp ${imgui_SOURCE_DIR}/imgui_demo.cpp
             ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.h ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp)
     target_compile_definitions(imgui PRIVATE IMGUI_DISABLE_WIN32_FUNCTIONS)
-    target_include_directories(imgui PRIVATE ${imgui_SOURCE_DIR})
-    target_include_directories(Minote PRIVATE ${imgui_SOURCE_DIR})
+    target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR})
     target_link_libraries(imgui PRIVATE glfw)
     target_link_libraries(Minote PRIVATE imgui)
 endif()
@@ -202,6 +201,18 @@ FetchContent_Declare(stb
 FetchContent_MakeAvailable(stb)
 target_include_directories(Minote PRIVATE ${stb_SOURCE_DIR})
 
+FetchContent_Declare(sqlite
+        URL https://www.sqlite.org/2021/sqlite-amalgamation-3350400.zip)
+FetchContent_MakeAvailable(sqlite)
+add_library(sqlite
+        ${sqlite_SOURCE_DIR}/sqlite3.h ${sqlite_SOURCE_DIR}/sqlite3.c
+        ${sqlite_SOURCE_DIR}/sqlite3ext.h)
+target_include_directories(sqlite PUBLIC ${sqlite_SOURCE_DIR})
+target_link_libraries(Minote PRIVATE sqlite)
+add_executable(sqlite-shell
+        ${sqlite_SOURCE_DIR}/shell.c)
+target_link_libraries(sqlite-shell PRIVATE sqlite)
+
 # Shader compilation
 
 set(SHADER_SOURCES
@@ -212,7 +223,7 @@ set(SHADER_SOURCES
         src/glsl/bloomBlur.vert src/glsl/bloomBlur.frag
         src/glsl/imgui.vert src/glsl/imgui.frag)
 
-foreach (SHADER_PATH ${SHADER_SOURCES})
+foreach(SHADER_PATH ${SHADER_SOURCES})
     get_filename_component(SHADER_FILENAME ${SHADER_PATH} NAME)
     set(SHADER_OUTPUT ${PROJECT_BINARY_DIR}/generated/spv/${SHADER_FILENAME}.spv)
     add_custom_command(
@@ -222,9 +233,37 @@ foreach (SHADER_PATH ${SHADER_SOURCES})
             DEPENDS ${SHADER_PATH}
             VERBATIM)
     list(APPEND SHADER_OUTPUTS ${SHADER_OUTPUT})
-endforeach (SHADER_PATH)
+endforeach()
 
 add_custom_target(Compile_shaders DEPENDS ${SHADER_OUTPUTS})
 add_dependencies(Compile_shaders shaderc)
 target_include_directories(Minote PRIVATE ${PROJECT_BINARY_DIR}/generated)
 add_dependencies(Minote Compile_shaders)
+
+# Asset packaging
+
+set(ASSET_OUTPUT ${PROJECT_BINARY_DIR}/assets.db)
+add_custom_command(
+        OUTPUT ${ASSET_OUTPUT}
+        COMMAND sqlite-shell ${ASSET_OUTPUT} "VACUUM"
+        VERBATIM)
+
+set(MODELS
+        models/block.ply)
+add_custom_command(
+        OUTPUT ${ASSET_OUTPUT} APPEND
+        COMMAND sqlite-shell ${ASSET_OUTPUT} "CREATE TABLE IF NOT EXISTS models(name TEXT UNIQUE, data BLOB)"
+        VERBATIM)
+foreach(MODEL_PATH ${MODELS})
+    get_filename_component(MODEL_NAME ${MODEL_PATH} NAME_WLE)
+    add_custom_command(
+            OUTPUT ${ASSET_OUTPUT} APPEND
+            COMMAND sqlite-shell ${ASSET_OUTPUT} "INSERT OR REPLACE INTO models(name, data) VALUES('${MODEL_NAME}', readfile('${PROJECT_SOURCE_DIR}/${MODEL_PATH}'))"
+            DEPENDS ${MODEL_PATH}
+            VERBATIM)
+endforeach()
+
+add_custom_target(Package_assets DEPENDS ${ASSET_OUTPUT})
+add_dependencies(Package_assets sqlite-shell)
+
+add_dependencies(Minote Package_assets)

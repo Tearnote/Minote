@@ -11,3 +11,5 @@
 #else //IMGUI
 #define VK_VALIDATION 0
 #endif //IMGUI
+
+static constexpr auto AssetsPath = "assets.db";

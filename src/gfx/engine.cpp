@@ -486,6 +486,10 @@ void Engine::setCamera(glm::vec3 eye, glm::vec3 center, glm::vec3 up) {
 	};
 }
 
+void Engine::addModel(std::string_view name, std::span<u8 const> model) {
+	L.trace("Adding model {}", name);
+}
+
 void Engine::enqueue(ID mesh, std::span<Instance const> _instances) {
 	auto& vec = instances.at(mesh);
 	vec.insert(vec.end(), _instances.begin(), _instances.end());

@@ -44,6 +44,8 @@ struct Engine {
 	void setLightSource(glm::vec3 position, glm::vec3 color);
 	void setCamera(glm::vec3 eye, glm::vec3 center, glm::vec3 up = {0.0f, 1.0f, 0.0f});
 
+	void addModel(std::string_view name, std::span<u8 const> model);
+
 	void enqueue(ID mesh, std::span<Instance const> instances);
 
 	Engine(Engine const&) = delete;
