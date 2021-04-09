@@ -20,6 +20,10 @@ struct InstanceBuffer {
 
 		glm::mat4 transform = glm::mat4(1.0f);
 		glm::vec4 tint = {1.0f, 1.0f, 1.0f, 1.0f};
+		float roughness = 0.6f;
+		float metalness = 0.1f;
+		float pad0;
+		float pad1;
 
 	};
 

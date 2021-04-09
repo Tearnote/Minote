@@ -7,9 +7,9 @@ layout(location = 0) out vec4 out_color;
 layout(binding = 0) uniform sampler2D source;
 
 void main() {
-	const float threshold = 1.2;
+	const float threshold = 1.25;
 	const float softKnee = 0.2;
-	const float strength = 0.2;
+	const float strength = 0.08;
 
 	vec4 fragColor = texture(source, f_texCoords);
 	float brightness = max(fragColor.r, max(fragColor.g, fragColor.b));

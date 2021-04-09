@@ -7,6 +7,10 @@ layout(binding = 0) uniform World {
 struct Instance {
 	mat4 transform;
 	vec4 tint;
+	float roughness;
+	float metalness;
+	float pad0;
+	float pad1;
 };
 
 layout(std430, binding = 1) readonly buffer Instances {

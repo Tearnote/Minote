@@ -28,21 +28,16 @@ void main() {
 
 	const float mipCount = 12.0;
 
-	const float roughness = 0.6;
-	const float metalness = 0.1;
-//	const float roughness = 0.2;
-//	const float metalness = 0.9;
-
 	// Standard vectors
 	vec3 normal = normalize(f_normal);
 	vec3 viewDirection = normalize(f_viewPosition - f_position);
 	float NoV = dot(normal, viewDirection);
 
 	// PBR calculation
-	vec3 f0 = max(f_color.rgb * metalness, vec3(0.04));
+	vec3 f0 = max(f_color.rgb * instance.metalness, vec3(0.04));
 
-	vec3 diffuse = f_color.rgb * textureLod(env, sampleSphericalMap(normal), mipCount - 2.0).rgb * (1.0 - metalness);
-	vec3 specular = vec3(textureLod(env, sampleSphericalMap(-reflect(viewDirection, normal)), roughness * mipCount));
+	vec3 diffuse = f_color.rgb * textureLod(env, sampleSphericalMap(normal), mipCount - 2.0).rgb * (1.0 - instance.metalness);
+	vec3 specular = vec3(textureLod(env, sampleSphericalMap(-reflect(viewDirection, normal)), instance.roughness * mipCount));
 
-	out_color = vec4(mix(diffuse, specular, envBRDFApprox(f0, NoV, roughness)), f_color.a);
+	out_color = vec4(mix(diffuse, specular, envBRDFApprox(f0, NoV, instance.roughness)), f_color.a);
 }

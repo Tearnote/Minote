@@ -151,6 +151,8 @@ void game(sys::Glfw&, sys::Window& window) try {
 			gfx::Engine::Instance{
 				.transform = make_translate({-2.0f, 1.5f, 0.0f}) * make_scale({1.5f, 1.5f, 1.5f}) * rotateTransformAnim * rotateTransform,
 				.tint = {0.2f, 0.9f, 0.5f, 1.0f},
+				.roughness = 0.2f,
+				.metalness = 0.9f,
 			},
 		});
 
