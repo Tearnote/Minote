@@ -9,9 +9,6 @@ layout(binding = 0) uniform World {
 	mat4 view;
 	mat4 projection;
 	mat4 viewProjection;
-	vec4 lightPosition;
-	vec4 lightColor;
-	vec4 ambientColor;
 } world;
 
 layout(binding = 1) uniform sampler2D env;

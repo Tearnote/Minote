@@ -39,6 +39,7 @@ add_executable(Minote
         src/base/version.hpp
         src/base/tween.hpp
         src/base/types.hpp
+        src/base/memio.hpp
         src/base/ring.hpp src/base/ring.tpp
         src/base/util.hpp
         src/base/math.hpp
@@ -51,13 +52,11 @@ add_executable(Minote
         src/sys/keyboard.hpp src/sys/keyboard.cpp
         src/sys/window.hpp src/sys/window.tpp src/sys/window.cpp
         src/sys/glfw.hpp src/sys/glfw.cpp
+        src/gfx/instancebuffer.hpp src/gfx/instancebuffer.cpp
+        src/gfx/meshbuffer.hpp src/gfx/meshbuffer.cpp
         src/gfx/engine.hpp src/gfx/engine.cpp
-        src/gfx/world.hpp
         src/gfx/imgui.hpp src/gfx/imgui.cpp
-        src/gfx/mesh.hpp
         src/gfx/base.hpp
-        src/mesh/block.hpp
-        src/mesh/scene.hpp
         #src/playstate.hpp src/playstate.cpp
         src/mapper.hpp src/mapper.tpp src/mapper.cpp
         src/config.hpp
@@ -212,6 +211,19 @@ target_link_libraries(Minote PRIVATE sqlite)
 add_executable(sqlite-shell
         ${sqlite_SOURCE_DIR}/shell.c)
 target_link_libraries(sqlite-shell PRIVATE sqlite)
+
+FetchContent_Declare(tinyply
+        GIT_REPOSITORY https://github.com/ddiakopoulos/tinyply
+        GIT_TAG 79a5c65965d193425dd33406a23c028a7aa29544)
+FetchContent_GetProperties(tinyply)
+if(NOT tinyply_POPULATED)
+    FetchContent_Populate(tinyply)
+    add_library(tinyply
+            ${tinyply_SOURCE_DIR}/source/tinyply.h
+            ${tinyply_SOURCE_DIR}/source/tinyply.cpp)
+    target_include_directories(tinyply PUBLIC ${tinyply_SOURCE_DIR}/source)
+endif()
+target_link_libraries(Minote PRIVATE tinyply)
 
 # Shader compilation
 

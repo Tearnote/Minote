@@ -2,18 +2,11 @@ layout(binding = 0) uniform World {
 	mat4 view;
 	mat4 projection;
 	mat4 viewProjection;
-	vec4 lightPosition;
-	vec4 lightColor;
-	vec4 ambientColor;
 } world;
 
 struct Instance {
 	mat4 transform;
 	vec4 tint;
-	float ambient;
-	float diffuse;
-	float specular;
-	float shine;
 };
 
 layout(std430, binding = 1) readonly buffer Instances {

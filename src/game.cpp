@@ -8,6 +8,7 @@
 #include <memory>
 #include <span>
 #include "sqlite3.h"
+#include "base/math.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"
 #include "gfx/engine.hpp"
@@ -30,7 +31,6 @@ void game(sys::Glfw&, sys::Window& window) try {
 
 	auto mapper = Mapper();
 	auto engine = gfx::Engine(window, AppVersion);
-	engine.setup();
 
 	{
 		auto* assets = (sqlite3*)(nullptr);
@@ -62,12 +62,13 @@ void game(sys::Glfw&, sys::Window& window) try {
 
 				auto name = (char const*)(sqlite3_column_text(modelsQuery, 0));
 				auto nameLen = sqlite3_column_bytes(modelsQuery, 0);
-				auto model = (u8 const*)(sqlite3_column_blob(modelsQuery, 1));
+				auto model = (char const*)(sqlite3_column_blob(modelsQuery, 1));
 				auto modelLen = sqlite3_column_bytes(modelsQuery, 1);
 				engine.addModel(std::string_view(name, nameLen), std::span(model, modelLen));
 			}
 		}
 	}
+	engine.setup();
 
 //	PlayState play;
 
@@ -109,86 +110,47 @@ void game(sys::Glfw&, sys::Window& window) try {
 		}
 
 		// Graphics
-		engine.setBackground({0.4f, 0.4f, 0.4f});
-		engine.setLightSource(lightSource, {1.0f, 1.0f, 1.0f});
 		engine.setCamera({std::sin(glfwGetTime() / 4.0) * 24.0f, std::sin(glfwGetTime() / 3.3) * 4.0f + 8.0f, std::cos(glfwGetTime() / 4.0) * 24.0f}, {0.0f, 4.0f, 0.0f});
 
-		auto centerTransform = make_translate({-0.5f, -0.5f, -0.5f});
-		auto rotateTransform = make_rotate(glm::radians(-90.0f), {1.0f, 0.0f, 0.0f});
+		auto rotateTransform = make_rotate(glm::radians(90.0f), {1.0f, 0.0f, 0.0f});
 		auto rotateTransformAnim = make_rotate(f32(glm::radians(f64(sys::Glfw::getTime().count()) / 20000000.0)), {0.0f, 1.0f, 0.0f});
 
 		engine.enqueue("block"_id, std::array{
 			gfx::Engine::Instance{
-				.transform = make_translate({0.0f, -1.0f, 0.0f}) * make_scale({16.0f, 2.0f, 16.0f}) * rotateTransform * centerTransform,
+				.transform = make_translate({0.0f, -1.0f, 0.0f}) * make_scale({8.0f, 1.0f, 8.0f}) * rotateTransform,
 				.tint = {0.9f, 0.9f, 1.0f, 1.0f},
-				.ambient = 0.1f,
-				.diffuse = 1.0f,
-				.specular = 0.4f,
-				.shine = 24.0f,
 			},
 			gfx::Engine::Instance{
-				.transform = make_translate({-4.0f, 1.0f, -4.0f}) * make_scale({2.0f, 2.0f, 2.0f}) * rotateTransform * centerTransform,
+				.transform = make_translate({-4.0f, 1.0f, -4.0f}) * rotateTransform,
 				.tint = {0.9f, 0.1f, 0.1f, 1.0f},
-				.ambient = 0.1f,
-				.diffuse = 1.0f,
-				.specular = 0.4f,
-				.shine = 24.0f,
 			},
 			gfx::Engine::Instance{
-				.transform = make_translate({4.0f, 1.0f, -4.0f}) * make_scale({2.0f, 2.0f, 2.0f}) * rotateTransform * centerTransform,
+				.transform = make_translate({4.0f, 1.0f, -4.0f}) * rotateTransform,
 				.tint = {0.9f, 0.1f, 0.1f, 1.0f},
-				.ambient = 0.1f,
-				.diffuse = 1.0f,
-				.specular = 0.4f,
-				.shine = 24.0f,
 			},
 			gfx::Engine::Instance{
-				.transform = make_translate({-4.0f, 1.0f, 4.0f}) * make_scale({2.0f, 2.0f, 2.0f}) * rotateTransform * centerTransform,
+				.transform = make_translate({-4.0f, 1.0f, 4.0f}) * rotateTransform,
 				.tint = {0.9f, 0.1f, 0.1f, 1.0f},
-				.ambient = 0.1f,
-				.diffuse = 1.0f,
-				.specular = 0.4f,
-				.shine = 24.0f,
 			},
 			gfx::Engine::Instance{
-				.transform = make_translate({4.0f, 1.0f, 4.0f}) * make_scale({2.0f, 2.0f, 2.0f}) * rotateTransform * centerTransform,
+				.transform = make_translate({4.0f, 1.0f, 4.0f}) * rotateTransform,
 				.tint = {0.9f, 0.1f, 0.1f, 1.0f},
-				.ambient = 0.1f,
-				.diffuse = 1.0f,
-				.specular = 0.4f,
-				.shine = 24.0f,
 			},
 			gfx::Engine::Instance{
-				.transform = make_translate({2.0f, 1.0f, 0.0f}) * make_scale({2.0f, 2.0f, 2.0f}) * rotateTransform * centerTransform,
+				.transform = make_translate({2.0f, 1.0f, 0.0f}) * rotateTransform,
 				.tint = {0.1f, 0.5f, 0.1f, 1.0f},
-				.ambient = 0.1f,
-				.diffuse = 1.0f,
-				.specular = 0.4f,
-				.shine = 24.0f,
 			},
 			gfx::Engine::Instance{
-				.transform = make_translate({2.0f, 2.75f, 0.0f}) * make_scale({2.0f, 2.0f, 2.0f}) * rotateTransform * centerTransform,
+				.transform = make_translate({2.0f, 2.75f, 0.0f}) * rotateTransform,
 				.tint = {0.1f, 0.7f, 0.1f, 1.0f},
-				.ambient = 0.1f,
-				.diffuse = 1.0f,
-				.specular = 0.4f,
-				.shine = 24.0f,
 			},
 			gfx::Engine::Instance{
-				.transform = make_translate({2.0f, 4.5f, 0.0f}) * make_scale({2.0f, 2.0f, 2.0f}) * rotateTransform * centerTransform,
+				.transform = make_translate({2.0f, 4.5f, 0.0f}) * rotateTransform,
 				.tint = {0.1f, 0.9f, 0.1f, 1.0f},
-				.ambient = 0.1f,
-				.diffuse = 1.0f,
-				.specular = 0.4f,
-				.shine = 24.0f,
 			},
 			gfx::Engine::Instance{
-				.transform = make_translate({-2.0f, 1.5f, 0.0f}) * make_scale({3.0f, 3.0f, 3.0f}) * rotateTransformAnim * rotateTransform * centerTransform,
+				.transform = make_translate({-2.0f, 1.5f, 0.0f}) * make_scale({1.5f, 1.5f, 1.5f}) * rotateTransformAnim * rotateTransform,
 				.tint = {0.2f, 0.9f, 0.5f, 1.0f},
-				.ambient = 0.1f,
-				.diffuse = 1.0f,
-				.specular = 0.4f,
-				.shine = 24.0f,
 			},
 		});
 

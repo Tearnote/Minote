@@ -5,17 +5,19 @@
 #include <stdexcept>
 #include <cstring>
 #include <cassert>
+#include "VkBootstrap.h"
 #include "GLFW/glfw3.h"
-#include "fmt/core.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-#include "VkBootstrap.h"
+#include "fmt/core.h"
+#include "tinyply.h"
 #include "volk.h"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
+#include "base/memio.hpp"
+#include "base/math.hpp"
 #include "base/log.hpp"
 #include "gfx/base.hpp"
-#include "mesh/block.hpp"
 #include "main.hpp"
 
 namespace minote::gfx {
@@ -125,11 +127,14 @@ Engine::Engine(sys::Window& window, Version version) {
 Engine::~Engine() {
 	context->wait_idle();
 	env.reset();
+	indicesBuf.reset();
+	colorsBuf.reset();
+	normalsBuf.reset();
+	verticesBuf.reset();
 #if IMGUI
 	imguiData.font_texture.view.reset();
 	imguiData.font_texture.image.reset();
 #endif //IMGUI
-	meshes.clear();
 	// This performs cleanups for all inflight frames
 	for (auto i = 0u; i < vuk::Context::FC; i++)
 		context->begin();
@@ -137,6 +142,30 @@ Engine::~Engine() {
 	vkb::destroy_device(device);
 	vkDestroySurfaceKHR(instance.instance, surface, nullptr);
 	vkb::destroy_instance(instance);
+}
+
+void Engine::addModel(std::string_view name, std::span<char const> model) {
+	L.info("Loading model {}", name);
+
+	auto buf = memory_stream(model.data(), model.size_bytes());
+	auto ply = tinyply::PlyFile();
+	ply.parse_header(buf);
+	if (!ply.is_binary_file())
+		L.warn(R"(Model "{}" exported as ASCII, loading performance is slow)", name);
+
+	auto vertices = ply.request_properties_from_element("vertex", {"x", "y", "z"});
+	auto normals  = ply.request_properties_from_element("vertex", {"nx", "ny", "nz"});
+	auto colors   = ply.request_properties_from_element("vertex", {"red", "green", "blue", "alpha"});
+	auto faces    = ply.request_properties_from_element("face", {"vertex_indices"}, 3);
+	ply.read(buf);
+
+	if (!vertices || !normals || !colors || !faces)
+		throw std::runtime_error(fmt::format(R"(Failed to read model "{}": wrong format)", name));
+	meshBuffer.addMesh(ID(name),
+		std::span((glm::vec3*)(vertices->buffer.get()), vertices->count),
+		std::span((glm::vec3*)(normals->buffer.get()), normals->count),
+		std::span((glm::u8vec4*)(colors->buffer.get()), colors->count),
+		std::span((std::array<u32, 3>*)(faces->buffer.get()), faces->count));
 }
 
 void Engine::setup() {
@@ -206,19 +235,22 @@ void Engine::setup() {
 	bloomBlurUpPci.color_blend_attachments[0].dstAlphaBlendFactor = vuk::BlendFactor::eOne;
 	context->create_named_pipeline("bloom_blur_up", bloomBlurUpPci);
 
-	// Load meshes
-	auto blockNorm = generateNormals(mesh::Block);
-	meshes.emplace("block"_id, ptc.create_buffer(
-		vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eVertexBuffer,
-		std::span<Vertex>(blockNorm)).first);
-	instances.emplace("block"_id, std::vector<Instance>());
-
 	// Initialize imgui rendering
 #if IMGUI
 	imguiData = ImGui_ImplVuk_Init(ptc);
 	ImGui::GetIO().DisplaySize = ImVec2(f32(swapchain->extent.width), f32(swapchain->extent.height));
 #endif //IMGUI
+
+	// Upload mesh buffers
+	auto [vertices, normals, colors, indices] = meshBuffer.makeBuffers();
+	verticesBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
+		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(vertices)).first;
+	normalsBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
+		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(normals)).first;
+	colorsBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
+		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(colors)).first;
+	indicesBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
+		vuk::BufferUsageFlagBits::eIndexBuffer, std::span(indices)).first;
 
 	// Upload environment map
 	auto width = 0;
@@ -245,11 +277,27 @@ void Engine::setup() {
 #endif //IMGUI
 }
 
+void Engine::setCamera(glm::vec3 eye, glm::vec3 center, glm::vec3 up) {
+	camera = Camera{
+		.eye = eye,
+		.center = center,
+		.up = up,
+	};
+}
+
+void Engine::enqueue(ID mesh, std::span<Instance const> instances) {
+	instanceBuffer.addInstances(mesh, instances);
+}
+
 void Engine::render() {
 	// Prepare per-frame data
-	world.setViewProjection(glm::uvec2(swapchain->extent.width, swapchain->extent.height),
-		VerticalFov, NearPlane,
-		camera.eye, camera.center, camera.up);
+	auto viewport = glm::uvec2(swapchain->extent.width, swapchain->extent.height);
+	auto rawview = glm::lookAt(camera.eye, camera.center, camera.up);
+	auto yFlip = make_scale({-1.0f, -1.0f, 1.0f});
+	world.projection = glm::infinitePerspective(VerticalFov, f32(viewport.x) / f32(viewport.y), NearPlane);
+	world.view = yFlip * rawview;
+	world.viewProjection = world.projection * world.view;
+
 	constexpr auto BloomDepth = 6u;
 	auto bloomNames = std::array<std::string, BloomDepth>{};
 	for (auto i = 0u; i < BloomDepth; i += 1)
@@ -270,42 +318,42 @@ void Engine::render() {
 		sizeof(World), alignof(World));
 	std::memcpy(worldBuf.mapped_ptr, &world, sizeof(world));
 
-	// Upload instances
-	auto instanceBufs = hashmap<ID, vuk::Buffer>();
-	for (auto&[id, inst]: instances) {
-		auto instBuf = ptc.allocate_scratch_buffer(
-			vuk::MemoryUsage::eCPUtoGPU,
-			vuk::BufferUsageFlagBits::eStorageBuffer,
-			sizeof(Instance) * inst.size(), alignof(Instance));
-		std::memcpy(instBuf.mapped_ptr, inst.data(), sizeof(Instance) * inst.size());
-		instanceBufs.emplace(id, instBuf);
-	}
+	// Upload indirect buffers
+	auto [commands, instances] = instanceBuffer.makeIndirect(meshBuffer);
+	auto commandsBuf = ptc.allocate_scratch_buffer(
+		vuk::MemoryUsage::eCPUtoGPU,
+		vuk::BufferUsageFlagBits::eIndirectBuffer,
+		sizeof(decltype(commands)::value_type) * commands.size(), alignof(decltype(commands)::value_type));
+	std::memcpy(commandsBuf.mapped_ptr, commands.data(), sizeof(decltype(commands)::value_type) * commands.size());
+	auto instancesBuf = ptc.allocate_scratch_buffer(
+		vuk::MemoryUsage::eCPUtoGPU,
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		sizeof(decltype(instances)::value_type) * instances.size(), alignof(decltype(instances)::value_type));
+	std::memcpy(instancesBuf.mapped_ptr, instances.data(), sizeof(decltype(instances)::value_type) * instances.size());
 
 	// Set up the rendergraph
 	auto rg = vuk::RenderGraph();
 	rg.add_pass({ // Object draw
 		.auxiliary_order = 0.0f,
 		.resources = {"object_color"_image(vuk::eColorWrite), "object_depth"_image(vuk::eDepthStencilRW)},
-		.execute = [this, worldBuf, &instanceBufs](vuk::CommandBuffer& command_buffer) {
-			for (auto&[id, mesh]: meshes) {
-				auto instCount = instances.at(id).size();
-				if (!instCount) continue;
-
-				auto envSampler = vuk::SamplerCreateInfo{
-					.magFilter = vuk::Filter::eLinear,
-					.minFilter = vuk::Filter::eLinear,
-					.mipmapMode = vuk::SamplerMipmapMode::eLinear,
-				};
-				command_buffer
-					.set_viewport(0, vuk::Rect2D::framebuffer())
-					.set_scissor(0, vuk::Rect2D::framebuffer())
-					.bind_uniform_buffer(0, 0, worldBuf)
-					.bind_vertex_buffer(0, *mesh, 0, gfx::Vertex::format())
-					.bind_storage_buffer(0, 1, instanceBufs.at(id))
-					.bind_sampled_image(0, 3, *env, envSampler)
-					.bind_graphics_pipeline("object");
-				command_buffer.draw(mesh->size / sizeof(gfx::Vertex), instCount, 0, 0);
-			}
+		.execute = [this, worldBuf, &instancesBuf, &commands, &commandsBuf](vuk::CommandBuffer& command_buffer) {
+			auto envSampler = vuk::SamplerCreateInfo{
+				.magFilter = vuk::Filter::eLinear,
+				.minFilter = vuk::Filter::eLinear,
+				.mipmapMode = vuk::SamplerMipmapMode::eLinear,
+			};
+			command_buffer
+				.set_viewport(0, vuk::Rect2D::framebuffer())
+				.set_scissor(0, vuk::Rect2D::framebuffer())
+				.bind_uniform_buffer(0, 0, worldBuf)
+				.bind_vertex_buffer(0, *verticesBuf, 0, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
+				.bind_vertex_buffer(1, *normalsBuf, 1, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
+				.bind_vertex_buffer(2, *colorsBuf, 2, vuk::Packed{vuk::Format::eR8G8B8A8Unorm})
+				.bind_index_buffer(*indicesBuf, vuk::IndexType::eUint32)
+				.bind_storage_buffer(0, 1, instancesBuf)
+				.bind_sampled_image(0, 3, *env, envSampler)
+				.bind_graphics_pipeline("object");
+			command_buffer.draw_indexed_indirect(commands.size(), commandsBuf);
 		}
 	});
 	rg.add_pass({ // Cubemap draw
@@ -403,8 +451,8 @@ void Engine::render() {
 	ImGui_ImplVuk_Render(ptc, rg, "swapchain", "swapchain", imguiData, ImGui::GetDrawData());
 #endif //IMGUI
 
-	rg.attach_managed("object_color", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearColor{world.ambientColor.r, world.ambientColor.g, world.ambientColor.b, world.ambientColor.a});
-	rg.attach_managed("object_depth", vuk::Format::eD32Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearDepthStencil{ 1.0f, 0 });
+	rg.attach_managed("object_color", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
+	rg.attach_managed("object_depth", vuk::Format::eD32Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearDepthStencil{1.0f, 0});
 	rg.attach_managed("object_resolved", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e1, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	rg.resolve_resource_into("object_resolved", "object_color");
 	for (auto i = 0u; i < BloomDepth; i += 1) {
@@ -462,37 +510,9 @@ void Engine::render() {
 		throw std::runtime_error(fmt::format("Unable to present to the screen: error {}", result));
 
 	// Clean up
-	for (auto&[id, inst]: instances)
-		inst.clear();
 #if IMGUI
 	ImGui::NewFrame();
 #endif //IMGUI
-}
-
-void Engine::setBackground(glm::vec3 color) {
-	world.ambientColor = glm::vec4(color, 1.0f);
-}
-
-void Engine::setLightSource(glm::vec3 position, glm::vec3 color) {
-	world.lightPosition = glm::vec4(position, 1.0f);
-	world.lightColor = glm::vec4(color, 1.0f);
-}
-
-void Engine::setCamera(glm::vec3 eye, glm::vec3 center, glm::vec3 up) {
-	camera = Camera{
-		.eye = eye,
-		.center = center,
-		.up = up,
-	};
-}
-
-void Engine::addModel(std::string_view name, std::span<u8 const> model) {
-	L.trace("Adding model {}", name);
-}
-
-void Engine::enqueue(ID mesh, std::span<Instance const> _instances) {
-	auto& vec = instances.at(mesh);
-	vec.insert(vec.end(), _instances.begin(), _instances.end());
 }
 
 auto Engine::createSwapchain(VkSwapchainKHR old) -> vuk::Swapchain {
