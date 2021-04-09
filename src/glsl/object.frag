@@ -40,4 +40,5 @@ void main() {
 	vec3 specular = vec3(textureLod(env, sampleSphericalMap(-reflect(viewDirection, normal)), instance.roughness * mipCount));
 
 	out_color = vec4(mix(diffuse, specular, envBRDFApprox(f0, NoV, instance.roughness)), f_color.a);
+//	out_color = vec4(envBRDFApprox(f0, NoV, instance.roughness), f_color.a);
 }

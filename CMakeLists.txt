@@ -256,7 +256,8 @@ add_custom_command(
         VERBATIM)
 
 set(MODELS
-        models/block.glb)
+        models/block.glb
+        models/sphere.glb)
 add_custom_command(
         OUTPUT ${ASSET_OUTPUT} APPEND
         COMMAND sqlite-shell ${ASSET_OUTPUT} "CREATE TABLE IF NOT EXISTS models(name TEXT UNIQUE, data BLOB)"

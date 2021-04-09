@@ -82,9 +82,13 @@ Engine::Engine(sys::Window& window, Version version) {
 	glfwCreateWindowSurface(instance.instance, window.handle(), nullptr, &surface);
 
 	// Select physical device
+	auto physicalDeviceFeatures = VkPhysicalDeviceFeatures{
+		.multiDrawIndirect = true,
+	};
 	auto physicalDeviceSelectorResult = vkb::PhysicalDeviceSelector(instance)
 		.set_surface(surface)
 		.set_minimum_version(1, 0)
+		.set_required_features(physicalDeviceFeatures)
 		.select();
 	if (!physicalDeviceSelectorResult)
 		throw std::runtime_error(fmt::format("Failed to find a suitable GPU for Vulkan: {}", physicalDeviceSelectorResult.error().message()));
