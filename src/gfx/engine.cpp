@@ -10,11 +10,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include "fmt/core.h"
-#include "tinyply.h"
 #include "volk.h"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
-#include "base/memio.hpp"
 #include "base/math.hpp"
 #include "base/log.hpp"
 #include "gfx/base.hpp"
@@ -145,27 +143,7 @@ Engine::~Engine() {
 }
 
 void Engine::addModel(std::string_view name, std::span<char const> model) {
-	L.info("Loading model {}", name);
-
-	auto buf = memory_stream(model.data(), model.size_bytes());
-	auto ply = tinyply::PlyFile();
-	ply.parse_header(buf);
-	if (!ply.is_binary_file())
-		L.warn(R"(Model "{}" exported as ASCII, loading performance is slow)", name);
-
-	auto vertices = ply.request_properties_from_element("vertex", {"x", "y", "z"});
-	auto normals  = ply.request_properties_from_element("vertex", {"nx", "ny", "nz"});
-	auto colors   = ply.request_properties_from_element("vertex", {"red", "green", "blue", "alpha"});
-	auto faces    = ply.request_properties_from_element("face", {"vertex_indices"}, 3);
-	ply.read(buf);
-
-	if (!vertices || !normals || !colors || !faces)
-		throw std::runtime_error(fmt::format(R"(Failed to read model "{}": wrong format)", name));
-	meshBuffer.addMesh(ID(name),
-		std::span((glm::vec3*)(vertices->buffer.get()), vertices->count),
-		std::span((glm::vec3*)(normals->buffer.get()), normals->count),
-		std::span((glm::u8vec4*)(colors->buffer.get()), colors->count),
-		std::span((std::array<u32, 3>*)(faces->buffer.get()), faces->count));
+	meshBuffer.addGltf(name, model);
 }
 
 void Engine::setup() {
@@ -348,8 +326,8 @@ void Engine::render() {
 				.bind_uniform_buffer(0, 0, worldBuf)
 				.bind_vertex_buffer(0, *verticesBuf, 0, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
 				.bind_vertex_buffer(1, *normalsBuf, 1, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
-				.bind_vertex_buffer(2, *colorsBuf, 2, vuk::Packed{vuk::Format::eR8G8B8A8Unorm})
-				.bind_index_buffer(*indicesBuf, vuk::IndexType::eUint32)
+				.bind_vertex_buffer(2, *colorsBuf, 2, vuk::Packed{vuk::Format::eR16G16B16A16Unorm})
+				.bind_index_buffer(*indicesBuf, vuk::IndexType::eUint16)
 				.bind_storage_buffer(0, 1, instancesBuf)
 				.bind_sampled_image(0, 3, *env, envSampler)
 				.bind_graphics_pipeline("object");

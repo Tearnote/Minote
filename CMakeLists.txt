@@ -39,7 +39,6 @@ add_executable(Minote
         src/base/version.hpp
         src/base/tween.hpp
         src/base/types.hpp
-        src/base/memio.hpp
         src/base/ring.hpp src/base/ring.tpp
         src/base/util.hpp
         src/base/math.hpp
@@ -212,18 +211,14 @@ add_executable(sqlite-shell
         ${sqlite_SOURCE_DIR}/shell.c)
 target_link_libraries(sqlite-shell PRIVATE sqlite)
 
-FetchContent_Declare(tinyply
-        GIT_REPOSITORY https://github.com/ddiakopoulos/tinyply
-        GIT_TAG 79a5c65965d193425dd33406a23c028a7aa29544)
-FetchContent_GetProperties(tinyply)
-if(NOT tinyply_POPULATED)
-    FetchContent_Populate(tinyply)
-    add_library(tinyply
-            ${tinyply_SOURCE_DIR}/source/tinyply.h
-            ${tinyply_SOURCE_DIR}/source/tinyply.cpp)
-    target_include_directories(tinyply PUBLIC ${tinyply_SOURCE_DIR}/source)
-endif()
-target_link_libraries(Minote PRIVATE tinyply)
+FetchContent_Declare(cgltf
+        GIT_REPOSITORY https://github.com/jkuhlmann/cgltf
+        GIT_TAG 1bdc84d3bb81fa69bcf71ed5cafe63e58df1448a)
+FetchContent_MakeAvailable(cgltf)
+add_library(cgltf ${cgltf_SOURCE_DIR}/cgltf.h ${cgltf_SOURCE_DIR}/cgltf_write.h)
+set_target_properties(cgltf PROPERTIES LINKER_LANGUAGE C)
+target_include_directories(cgltf PUBLIC ${cgltf_SOURCE_DIR})
+target_link_libraries(Minote PRIVATE cgltf)
 
 # Shader compilation
 
@@ -261,7 +256,7 @@ add_custom_command(
         VERBATIM)
 
 set(MODELS
-        models/block.ply)
+        models/block.glb)
 add_custom_command(
         OUTPUT ${ASSET_OUTPUT} APPEND
         COMMAND sqlite-shell ${ASSET_OUTPUT} "CREATE TABLE IF NOT EXISTS models(name TEXT UNIQUE, data BLOB)"
