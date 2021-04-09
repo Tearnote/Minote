@@ -148,22 +148,20 @@ FetchContent_Declare(glfw
 FetchContent_MakeAvailable(glfw)
 target_link_libraries(Minote PRIVATE glfw)
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    FetchContent_Declare(imgui
-            GIT_REPOSITORY https://github.com/ocornut/imgui
-            GIT_TAG 00d570e280533bca9cf6e5652d0f2eb131d032e7)
-    FetchContent_MakeAvailable(imgui)
-    add_library(imgui
-            ${imgui_SOURCE_DIR}/imgui.h ${imgui_SOURCE_DIR}/imgui.cpp
-            ${imgui_SOURCE_DIR}/imconfig.h ${imgui_SOURCE_DIR}/imgui_internal.h
-            ${imgui_SOURCE_DIR}/imgui_draw.cpp ${imgui_SOURCE_DIR}/imgui_tables.cpp
-            ${imgui_SOURCE_DIR}/imgui_widgets.cpp ${imgui_SOURCE_DIR}/imgui_demo.cpp
-            ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.h ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp)
-    target_compile_definitions(imgui PRIVATE IMGUI_DISABLE_WIN32_FUNCTIONS)
-    target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR})
-    target_link_libraries(imgui PRIVATE glfw)
-    target_link_libraries(Minote PRIVATE imgui)
-endif()
+FetchContent_Declare(imgui
+        GIT_REPOSITORY https://github.com/ocornut/imgui
+        GIT_TAG 00d570e280533bca9cf6e5652d0f2eb131d032e7)
+FetchContent_MakeAvailable(imgui)
+add_library(imgui
+        ${imgui_SOURCE_DIR}/imgui.h ${imgui_SOURCE_DIR}/imgui.cpp
+        ${imgui_SOURCE_DIR}/imconfig.h ${imgui_SOURCE_DIR}/imgui_internal.h
+        ${imgui_SOURCE_DIR}/imgui_draw.cpp ${imgui_SOURCE_DIR}/imgui_tables.cpp
+        ${imgui_SOURCE_DIR}/imgui_widgets.cpp ${imgui_SOURCE_DIR}/imgui_demo.cpp
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.h ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp)
+target_compile_definitions(imgui PRIVATE IMGUI_DISABLE_WIN32_FUNCTIONS)
+target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR})
+target_link_libraries(imgui PRIVATE glfw)
+target_link_libraries(Minote PRIVATE imgui)
 
 set(SPIRV_HEADERS_SKIP_EXAMPLES ON CACHE BOOL "")
 FetchContent_Declare(spirv-headers

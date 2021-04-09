@@ -3,7 +3,7 @@
 #ifndef NDEBUG
 #define IMGUI 1
 #else //IMGUI
-#define IMGUI 0
+#define IMGUI 1
 #endif //IMGUI
 
 #ifndef NDEBUG
