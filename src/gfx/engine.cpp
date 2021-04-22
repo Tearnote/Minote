@@ -15,6 +15,7 @@
 #include "vuk/RenderGraph.hpp"
 #include "base/math.hpp"
 #include "base/log.hpp"
+#include "gfx/pipelines.hpp"
 #include "gfx/base.hpp"
 #include "main.hpp"
 
@@ -154,70 +155,8 @@ void Engine::setup() {
 	auto ifc = context->begin();
 	auto ptc = ifc.begin();
 
-	// Create pipelines
+	createPipelines(*context);
 
-	auto objectPci = vuk::PipelineBaseCreateInfo();
-	objectPci.add_spirv(std::vector<u32>{
-#include "spv/object.vert.spv"
-	}, "object.vert");
-	objectPci.add_spirv(std::vector<u32>{
-#include "spv/object.frag.spv"
-	}, "object.frag");
-	objectPci.rasterization_state.cullMode = vuk::CullModeFlagBits::eBack;
-	context->create_named_pipeline("object", objectPci);
-
-	auto cubemapPci = vuk::PipelineBaseCreateInfo();
-	cubemapPci.add_spirv(std::vector<u32>{
-#include "spv/cubemap.vert.spv"
-	}, "cubemap.vert");
-	cubemapPci.add_spirv(std::vector<u32>{
-#include "spv/cubemap.frag.spv"
-	}, "cubemap.frag");
-	cubemapPci.depth_stencil_state.depthWriteEnable = false;
-	context->create_named_pipeline("cubemap", cubemapPci);
-
-	auto swapchainBlitPci = vuk::PipelineBaseCreateInfo();
-	swapchainBlitPci.add_spirv(std::vector<u32>{
-#include "spv/swapchainBlit.vert.spv"
-	}, "blit.vert");
-	swapchainBlitPci.add_spirv(std::vector<u32>{
-#include "spv/swapchainBlit.frag.spv"
-	}, "blit.frag");
-	context->create_named_pipeline("swapchain_blit", swapchainBlitPci);
-
-	auto bloomThresholdPci = vuk::PipelineBaseCreateInfo();
-	bloomThresholdPci.add_spirv(std::vector<u32>{
-#include "spv/bloomThreshold.vert.spv"
-	}, "bloomThreshold.vert");
-	bloomThresholdPci.add_spirv(std::vector<u32>{
-#include "spv/bloomThreshold.frag.spv"
-	}, "bloomThreshold.frag");
-	context->create_named_pipeline("bloom_threshold", bloomThresholdPci);
-
-	auto bloomBlurDownPci = vuk::PipelineBaseCreateInfo();
-	bloomBlurDownPci.add_spirv(std::vector<u32>{
-#include "spv/bloomBlur.vert.spv"
-	}, "bloomBlur.vert");
-	bloomBlurDownPci.add_spirv(std::vector<u32>{
-#include "spv/bloomBlur.frag.spv"
-	}, "bloomBlur.frag");
-	context->create_named_pipeline("bloom_blur_down", bloomBlurDownPci);
-
-	auto bloomBlurUpPci = vuk::PipelineBaseCreateInfo();
-	bloomBlurUpPci.add_spirv(std::vector<u32>{
-#include "spv/bloomBlur.vert.spv"
-	}, "bloomBlur.vert");
-	bloomBlurUpPci.add_spirv(std::vector<u32>{
-#include "spv/bloomBlur.frag.spv"
-	}, "bloomBlur.frag");
-	bloomBlurUpPci.set_blend(vuk::BlendPreset::eAlphaBlend);
-	// Turn into additive
-	bloomBlurUpPci.color_blend_attachments[0].srcColorBlendFactor = vuk::BlendFactor::eOne;
-	bloomBlurUpPci.color_blend_attachments[0].dstColorBlendFactor = vuk::BlendFactor::eOne;
-	bloomBlurUpPci.color_blend_attachments[0].dstAlphaBlendFactor = vuk::BlendFactor::eOne;
-	context->create_named_pipeline("bloom_blur_up", bloomBlurUpPci);
-
-	// Initialize imgui rendering
 #if IMGUI
 	imguiData = ImGui_ImplVuk_Init(ptc);
 	ImGui::GetIO().DisplaySize = ImVec2(f32(swapchain->extent.width), f32(swapchain->extent.height));

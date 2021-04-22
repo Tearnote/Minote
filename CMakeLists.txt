@@ -53,6 +53,7 @@ add_executable(Minote
         src/sys/glfw.hpp src/sys/glfw.cpp
         src/gfx/instancebuffer.hpp src/gfx/instancebuffer.cpp
         src/gfx/meshbuffer.hpp src/gfx/meshbuffer.cpp
+        src/gfx/pipelines.hpp src/gfx/pipelines.cpp
         src/gfx/engine.hpp src/gfx/engine.cpp
         src/gfx/imgui.hpp src/gfx/imgui.cpp
         src/gfx/base.hpp
