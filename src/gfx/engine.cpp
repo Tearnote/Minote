@@ -151,7 +151,7 @@ void Engine::addModel(std::string_view name, std::span<char const> model) {
 	meshBuffer.addGltf(name, model);
 }
 
-void Engine::setup() {
+void Engine::uploadAssets() {
 	auto ifc = context->begin();
 	auto ptc = ifc.begin();
 

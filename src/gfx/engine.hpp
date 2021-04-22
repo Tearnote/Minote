@@ -32,7 +32,7 @@ struct Engine {
 	~Engine();
 
 	void addModel(std::string_view name, std::span<char const> model);
-	void setup();
+	void uploadAssets();
 
 	void setCamera(glm::vec3 eye, glm::vec3 center, glm::vec3 up = {0.0f, 1.0f, 0.0f});
 	void enqueue(ID mesh, std::span<Instance const> instances);

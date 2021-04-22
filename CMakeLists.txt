@@ -59,10 +59,11 @@ add_executable(Minote
         src/gfx/base.hpp
         #src/playstate.hpp src/playstate.cpp
         src/mapper.hpp src/mapper.tpp src/mapper.cpp
+        src/assets.hpp src/assets.tpp src/assets.cpp
         src/config.hpp
         src/game.hpp src/game.cpp
         src/main.hpp src/main.cpp
-        src/mino.hpp src/mino.tpp)
+        src/mino.hpp src/mino.tpp src/assets.tpp)
 target_compile_options(Minote PRIVATE -Wall -Wextra -Wno-missing-field-initializers -fno-rtti)
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     set_property(TARGET Minote PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
