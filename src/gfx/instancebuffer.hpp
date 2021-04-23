@@ -7,6 +7,7 @@
 #include "glm/mat4x4.hpp"
 #include "glm/vec4.hpp"
 #include "base/hashmap.hpp"
+#include "base/types.hpp"
 #include "base/id.hpp"
 #include "gfx/meshbuffer.hpp"
 
@@ -20,10 +21,10 @@ struct InstanceBuffer {
 
 		glm::mat4 transform = glm::mat4(1.0f);
 		glm::vec4 tint = {1.0f, 1.0f, 1.0f, 1.0f};
-		float roughness = 0.6f;
-		float metalness = 0.1f;
-		float pad0;
-		float pad1;
+		f32 roughness = 0.6f;
+		f32 metalness = 0.1f;
+		f32 pad0;
+		f32 pad1;
 
 	};
 

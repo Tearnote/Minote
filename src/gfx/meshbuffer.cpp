@@ -6,6 +6,9 @@
 #include <cstring>
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
+#include "glm/geometric.hpp"
+#include "glm/common.hpp"
+#include "glm/vec3.hpp"
 #include "fmt/core.h"
 #include "base/util.hpp"
 
@@ -34,11 +37,11 @@ void MeshBuffer::addGltf(std::string_view name, std::span<char const> mesh) {
 	assert(indexBuffer);
 	indexBuffer += indexAccessor.buffer_view->offset;
 
-	descriptors.emplace(name, Descriptor{
+	auto& desc = descriptors.emplace(name, Descriptor{
 		.indexOffset = u32(indices.size()),
 		.indexCount = u32(indexAccessor.count),
 		.vertexOffset = u32(vertices.size()),
-	});
+	}).first->second;
 	assert(indexAccessor.component_type == cgltf_component_type_r_16u);
 	assert(indexAccessor.type == cgltf_type_scalar);
 	auto* indexTypedBuffer = (u16*)(indexBuffer);
@@ -53,6 +56,13 @@ void MeshBuffer::addGltf(std::string_view name, std::span<char const> mesh) {
 		if (std::strcmp(primitive.attributes[attrIdx].name, "POSITION") == 0) {
 			assert(accessor.component_type == cgltf_component_type_r_32f);
 			assert(accessor.type == cgltf_type_vec3);
+
+			// Calculate the furthest point from the origin (for frustum culling)
+			auto min = glm::vec3(accessor.min[0], accessor.min[1], accessor.min[2]);
+			auto max = glm::vec3(accessor.max[0], accessor.max[1], accessor.max[2]);
+			auto far = glm::max(glm::abs(min), glm::abs(max));
+			desc.radius = glm::length(far);
+
 			auto* typedBuffer = (glm::vec3*)(buffer);
 			vertices.insert(vertices.end(), typedBuffer, typedBuffer + accessor.count);
 			continue;
@@ -61,6 +71,7 @@ void MeshBuffer::addGltf(std::string_view name, std::span<char const> mesh) {
 		if (std::strcmp(primitive.attributes[attrIdx].name, "NORMAL") == 0) {
 			assert(accessor.component_type == cgltf_component_type_r_32f);
 			assert(accessor.type == cgltf_type_vec3);
+
 			auto* typedBuffer = (glm::vec3*)(buffer);
 			normals.insert(normals.end(), typedBuffer, typedBuffer + accessor.count);
 			continue;
@@ -69,6 +80,7 @@ void MeshBuffer::addGltf(std::string_view name, std::span<char const> mesh) {
 		if (std::strcmp(primitive.attributes[attrIdx].name, "COLOR_0") == 0) {
 			assert(accessor.component_type == cgltf_component_type_r_16u);
 			assert(accessor.type == cgltf_type_vec4);
+
 			auto* typedBuffer = (glm::u16vec4*)(buffer);
 			colors.insert(colors.end(), typedBuffer, typedBuffer + accessor.count);
 			continue;

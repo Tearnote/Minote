@@ -21,6 +21,7 @@ struct MeshBuffer {
 		u32 indexOffset;
 		u32 indexCount;
 		u32 vertexOffset;
+		f32 radius;
 
 	};
 
