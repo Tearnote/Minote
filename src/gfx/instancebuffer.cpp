@@ -26,7 +26,7 @@ auto InstanceBuffer::makeIndirect(MeshBuffer const& meshBuffer)
 	allInstances.reserve(totalInstanceCount);
 
 	for (auto& [id, vec]: instances) {
-		auto& descriptor = meshBuffer.descriptors.at(id);
+		auto& descriptor = meshBuffer.at(id);
 		commands.emplace_back(vuk::DrawIndexedIndirectCommand{
 			.indexCount = descriptor.indexCount,
 			.instanceCount = u32(vec.size()),

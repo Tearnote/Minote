@@ -2,7 +2,6 @@
 
 #include <string_view>
 #include <vector>
-#include <tuple>
 #include <span>
 #include "glm/vec3.hpp"
 #include "glm/vec4.hpp"
@@ -29,9 +28,15 @@ struct MeshBuffer {
 		f32 radius;
 
 	};
-	hashmap<ID, Descriptor> descriptors;
+	std::vector<Descriptor> descriptors;
+	hashmap<ID, size_t> descriptorIDs;
 
 	void addGltf(std::string_view name, std::span<char const> mesh);
+
+	[[nodiscard]]
+	auto at(ID id) -> Descriptor& { return descriptors[descriptorIDs.at(id)]; }
+	[[nodiscard]]
+	auto at(ID id) const -> Descriptor const& { return descriptors[descriptorIDs.at(id)]; }
 
 };
 

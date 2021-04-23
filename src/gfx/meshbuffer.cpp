@@ -37,11 +37,12 @@ void MeshBuffer::addGltf(std::string_view name, std::span<char const> mesh) {
 	assert(indexBuffer);
 	indexBuffer += indexAccessor.buffer_view->offset;
 
-	auto& desc = descriptors.emplace(name, Descriptor{
+	descriptorIDs.emplace(name, descriptors.size());
+	auto& desc = descriptors.emplace_back(Descriptor{
 		.indexOffset = u32(indices.size()),
 		.indexCount = u32(indexAccessor.count),
 		.vertexOffset = u32(vertices.size()),
-	}).first->second;
+	});
 	assert(indexAccessor.component_type == cgltf_component_type_r_16u);
 	assert(indexAccessor.type == cgltf_type_scalar);
 	auto* indexTypedBuffer = (u16*)(indexBuffer);
