@@ -148,7 +148,7 @@ Engine::~Engine() {
 }
 
 void Engine::addModel(std::string_view name, std::span<char const> model) {
-	meshBuffer.addGltf(name, model);
+	meshes.addGltf(name, model);
 }
 
 void Engine::uploadAssets() {
@@ -164,13 +164,13 @@ void Engine::uploadAssets() {
 
 	// Upload mesh buffers
 	verticesBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(meshBuffer.vertices)).first;
+		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(meshes.vertices)).first;
 	normalsBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(meshBuffer.normals)).first;
+		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(meshes.normals)).first;
 	colorsBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(meshBuffer.colors)).first;
+		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(meshes.colors)).first;
 	indicesBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eIndexBuffer, std::span(meshBuffer.indices)).first;
+		vuk::BufferUsageFlagBits::eIndexBuffer, std::span(meshes.indices)).first;
 
 	// Upload environment map
 	auto width = 0;
@@ -205,8 +205,8 @@ void Engine::setCamera(glm::vec3 eye, glm::vec3 center, glm::vec3 up) {
 	};
 }
 
-void Engine::enqueue(ID mesh, std::span<Instance const> instances) {
-	instanceBuffer.addInstances(mesh, instances);
+void Engine::enqueue(ID mesh, std::span<Instance const> _instances) {
+	instances.addInstances(mesh, _instances);
 }
 
 void Engine::render() {
@@ -239,7 +239,7 @@ void Engine::render() {
 	std::memcpy(worldBuf.mapped_ptr, &world, sizeof(world));
 
 	// Upload indirect buffers
-	auto [commands, instances] = instanceBuffer.makeIndirect(meshBuffer);
+	auto [commands, instanceVec] = instances.makeIndirect(meshes);
 	auto commandsBuf = ptc.allocate_scratch_buffer(
 		vuk::MemoryUsage::eCPUtoGPU,
 		vuk::BufferUsageFlagBits::eIndirectBuffer,
@@ -248,8 +248,8 @@ void Engine::render() {
 	auto instancesBuf = ptc.allocate_scratch_buffer(
 		vuk::MemoryUsage::eCPUtoGPU,
 		vuk::BufferUsageFlagBits::eStorageBuffer,
-		sizeof(decltype(instances)::value_type) * instances.size(), alignof(decltype(instances)::value_type));
-	std::memcpy(instancesBuf.mapped_ptr, instances.data(), sizeof(decltype(instances)::value_type) * instances.size());
+		sizeof(decltype(instanceVec)::value_type) * instanceVec.size(), alignof(decltype(instanceVec)::value_type));
+	std::memcpy(instancesBuf.mapped_ptr, instanceVec.data(), sizeof(decltype(instanceVec)::value_type) * instanceVec.size());
 
 	// Set up the rendergraph
 	auto rg = vuk::RenderGraph();

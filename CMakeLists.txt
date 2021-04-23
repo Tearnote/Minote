@@ -51,9 +51,9 @@ add_executable(Minote
         src/sys/keyboard.hpp src/sys/keyboard.cpp
         src/sys/window.hpp src/sys/window.tpp src/sys/window.cpp
         src/sys/glfw.hpp src/sys/glfw.cpp
-        src/gfx/instancebuffer.hpp src/gfx/instancebuffer.cpp
-        src/gfx/meshbuffer.hpp src/gfx/meshbuffer.cpp
+        src/gfx/instances.hpp src/gfx/instances.cpp
         src/gfx/pipelines.hpp src/gfx/pipelines.cpp
+        src/gfx/meshes.hpp src/gfx/meshes.cpp
         src/gfx/engine.hpp src/gfx/engine.cpp
         src/gfx/imgui.hpp src/gfx/imgui.cpp
         src/gfx/base.hpp

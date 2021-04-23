@@ -14,8 +14,8 @@
 #include "base/hashmap.hpp"
 #include "base/id.hpp"
 #include "sys/window.hpp"
-#include "gfx/instancebuffer.hpp"
-#include "gfx/meshbuffer.hpp"
+#include "gfx/instances.hpp"
+#include "gfx/meshes.hpp"
 #if IMGUI
 #include "gfx/imgui.hpp"
 #endif //IMGUI
@@ -26,7 +26,7 @@ using namespace base;
 
 struct Engine {
 
-	using Instance = InstanceBuffer::Instance;
+	using Instance = Instances::Instance;
 
 	explicit Engine(sys::Window& window, Version version);
 	~Engine();
@@ -53,8 +53,8 @@ private:
 	ImguiData imguiData;
 #endif //IMGUI
 
-	MeshBuffer meshBuffer;
-	InstanceBuffer instanceBuffer;
+	Meshes meshes;
+	Instances instances;
 
 	vuk::Unique<vuk::Buffer> verticesBuf;
 	vuk::Unique<vuk::Buffer> normalsBuf;

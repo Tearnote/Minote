@@ -1,4 +1,4 @@
-#include "gfx/meshbuffer.hpp"
+#include "gfx/meshes.hpp"
 
 #include <string_view>
 #include <stdexcept>
@@ -17,7 +17,7 @@ namespace minote::gfx {
 using namespace base;
 using namespace base::literals;
 
-void MeshBuffer::addGltf(std::string_view name, std::span<char const> mesh) {
+void Meshes::addGltf(std::string_view name, std::span<char const> mesh) {
 	auto options = cgltf_options{
 		.type = cgltf_file_type_glb,
 	};

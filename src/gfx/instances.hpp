@@ -9,13 +9,13 @@
 #include "base/hashmap.hpp"
 #include "base/types.hpp"
 #include "base/id.hpp"
-#include "gfx/meshbuffer.hpp"
+#include "gfx/meshes.hpp"
 
 namespace minote::gfx {
 
 using namespace base;
 
-struct InstanceBuffer {
+struct Instances {
 
 	struct Instance {
 
@@ -30,7 +30,7 @@ struct InstanceBuffer {
 
 	void addInstances(ID mesh, std::span<Instance const> instances);
 
-	auto makeIndirect(MeshBuffer const& meshBuffer)
+	auto makeIndirect(Meshes const& meshBuffer)
 		-> std::pair<std::vector<vuk::DrawIndexedIndirectCommand>, std::vector<Instance>>;
 
 private:
