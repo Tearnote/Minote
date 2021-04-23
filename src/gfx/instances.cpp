@@ -14,7 +14,7 @@ void Instances::addInstances(ID mesh, std::span<Instance const> _instances) {
 	auto& vec = instances.at(mesh);
 	vec.insert(vec.end(), _instances.begin(), _instances.end());
 }
-auto Instances::makeIndirect(Meshes const& meshBuffer)
+auto Instances::makeIndirect(Meshes const& meshes)
 	-> std::pair<std::vector<vuk::DrawIndexedIndirectCommand>, std::vector<Instance>> {
 	auto commands = std::vector<vuk::DrawIndexedIndirectCommand>();
 	auto allInstances = std::vector<Instance>();
@@ -26,7 +26,11 @@ auto Instances::makeIndirect(Meshes const& meshBuffer)
 	allInstances.reserve(totalInstanceCount);
 
 	for (auto& [id, vec]: instances) {
-		auto& descriptor = meshBuffer.at(id);
+		// Insert the meshID for compute purposes
+		for(auto& inst: vec)
+			inst.meshID = meshes.descriptorIDs.at(id);
+
+		auto& descriptor = meshes.at(id);
 		commands.emplace_back(vuk::DrawIndexedIndirectCommand{
 			.indexCount = descriptor.indexCount,
 			.instanceCount = u32(vec.size()),

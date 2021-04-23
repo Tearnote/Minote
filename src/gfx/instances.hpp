@@ -23,7 +23,7 @@ struct Instances {
 		glm::vec4 tint = {1.0f, 1.0f, 1.0f, 1.0f};
 		f32 roughness = 0.6f;
 		f32 metalness = 0.1f;
-		f32 pad0;
+		u32 meshID; // internal
 		f32 pad1;
 
 	};
