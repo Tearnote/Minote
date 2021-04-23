@@ -163,15 +163,14 @@ void Engine::uploadAssets() {
 #endif //IMGUI
 
 	// Upload mesh buffers
-	auto [vertices, normals, colors, indices] = meshBuffer.makeBuffers();
 	verticesBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(vertices)).first;
+		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(meshBuffer.vertices)).first;
 	normalsBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(normals)).first;
+		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(meshBuffer.normals)).first;
 	colorsBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(colors)).first;
+		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(meshBuffer.colors)).first;
 	indicesBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eIndexBuffer, std::span(indices)).first;
+		vuk::BufferUsageFlagBits::eIndexBuffer, std::span(meshBuffer.indices)).first;
 
 	// Upload environment map
 	auto width = 0;

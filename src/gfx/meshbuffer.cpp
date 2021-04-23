@@ -90,9 +90,4 @@ void MeshBuffer::addGltf(std::string_view name, std::span<char const> mesh) {
 	}
 }
 
-auto MeshBuffer::makeBuffers() -> std::tuple<std::vector<glm::vec3>, std::vector<glm::vec3>,
-	std::vector<glm::u16vec4>, std::vector<u16>> {
-	return std::make_tuple(std::move(vertices), std::move(normals), std::move(colors), std::move(indices));
-}
-
 }

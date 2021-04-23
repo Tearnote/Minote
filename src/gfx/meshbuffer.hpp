@@ -16,6 +16,11 @@ using namespace base;
 
 struct MeshBuffer {
 
+	std::vector<glm::vec3> vertices;
+	std::vector<glm::vec3> normals;
+	std::vector<glm::u16vec4> colors;
+	std::vector<u16> indices;
+
 	struct Descriptor {
 
 		u32 indexOffset;
@@ -24,23 +29,9 @@ struct MeshBuffer {
 		f32 radius;
 
 	};
+	hashmap<ID, Descriptor> descriptors;
 
 	void addGltf(std::string_view name, std::span<char const> mesh);
-
-	[[nodiscard]]
-	auto getDescriptor(ID name) const -> Descriptor { return descriptors.at(name); }
-
-	auto makeBuffers() -> std::tuple<std::vector<glm::vec3>, std::vector<glm::vec3>,
-	    std::vector<glm::u16vec4>, std::vector<u16>>;
-
-private:
-
-	std::vector<glm::vec3> vertices;
-	std::vector<glm::vec3> normals;
-	std::vector<glm::u16vec4> colors;
-	std::vector<u16> indices;
-
-	hashmap<ID, Descriptor> descriptors;
 
 };
 
