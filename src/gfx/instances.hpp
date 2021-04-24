@@ -33,7 +33,7 @@ struct Instances {
 
 	[[nodiscard]]
 	auto size() const { return instances.size(); }
-	void clear() { instances.clear(); }
+	void clear();
 
 };
 

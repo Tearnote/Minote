@@ -15,4 +15,9 @@ void Instances::addInstances(ID mesh, std::span<Instance const> _instances) {
 	vec.insert(vec.end(), _instances.begin(), _instances.end());
 }
 
+void Instances::clear() {
+	for (auto& [id, vec]: instances)
+		vec.clear();
+}
+
 }

@@ -8,52 +8,48 @@ namespace minote::gfx {
 using namespace base::literals;
 
 auto Indirect::createBuffers(vuk::PerThreadContext& ptc, Meshes const& meshes, Instances const& _instances) -> Indirect {
-	auto commandsVec = std::vector<Command>();
-	auto instancesVec = std::vector<Instance>();
-
-	commandsVec.reserve(meshes.size());
 	auto totalInstanceCount = 0_zu;
 	for (auto& [id, vec]: _instances.instances)
 		totalInstanceCount += vec.size();
-	instancesVec.reserve(totalInstanceCount);
-
-	for (auto& [id, vec]: _instances.instances) {
-		auto& descriptor = meshes.at(id);
-		commandsVec.emplace_back(Command{
-			.indexCount = descriptor.indexCount,
-			.instanceCount = u32(vec.size()),
-			.firstIndex = descriptor.indexOffset,
-			.vertexOffset = i32(descriptor.vertexOffset),
-			.firstInstance = u32(instancesVec.size()),
-			.meshRadius = descriptor.radius,
-		});
-
-		auto start = instancesVec.end();
-		instancesVec.insert(instancesVec.end(), vec.begin(), vec.end());
-
-		for (auto it = start; it < instancesVec.end(); it += 1)
-			it->meshID = meshes.descriptorIDs.at(id);
-	}
 
 	auto result = Indirect{
 		.commands = ptc.allocate_scratch_buffer(
 			vuk::MemoryUsage::eCPUtoGPU,
 			vuk::BufferUsageFlagBits::eIndirectBuffer | vuk::BufferUsageFlagBits::eStorageBuffer,
-			sizeof(Command) * commandsVec.size(), alignof(Command)),
-		.commandsCount = commandsVec.size(),
+			sizeof(Command) * _instances.size(), alignof(Command)),
+		.commandsCount = _instances.size(),
 		.instances = ptc.allocate_scratch_buffer(
 			vuk::MemoryUsage::eCPUtoGPU,
 			vuk::BufferUsageFlagBits::eStorageBuffer,
-			sizeof(Instance) * instancesVec.size(), alignof(Instance)),
+			sizeof(Instance) * totalInstanceCount, alignof(Instance)),
 		.instancesCulled = ptc.allocate_scratch_buffer(
 			vuk::MemoryUsage::eGPUonly,
 			vuk::BufferUsageFlagBits::eStorageBuffer,
-			sizeof(Instance) * instancesVec.size(), alignof(Instance)),
-		.instancesCount = instancesVec.size(),
+			sizeof(Instance) * totalInstanceCount, alignof(Instance)),
+		.instancesCount = totalInstanceCount,
 	};
 
-	std::memcpy(result.commands.mapped_ptr, commandsVec.data(), sizeof(Command) * commandsVec.size());
-	std::memcpy(result.instances.mapped_ptr, instancesVec.data(), sizeof(Instance) * instancesVec.size());
+	auto instanceOffset = 0_zu;
+	auto* instanceIt = (Instance*)(result.instances.mapped_ptr);
+	auto* commandIt = (Command*)(result.commands.mapped_ptr);
+	for (auto& [id, vec]: _instances.instances) {
+		auto& descriptor = meshes.at(id);
+		*commandIt = Command{
+			.indexCount = descriptor.indexCount,
+			.instanceCount = u32(vec.size()),
+			.firstIndex = descriptor.indexOffset,
+			.vertexOffset = i32(descriptor.vertexOffset),
+			.firstInstance = u32(instanceOffset),
+			.meshRadius = descriptor.radius,
+		};
+		commandIt += 1;
+
+		std::memcpy(instanceIt, vec.data(), sizeof(Instance) * vec.size());
+		for (auto i = 0_zu; i < vec.size(); i += 1)
+			instanceIt[i].meshID = meshes.descriptorIDs.at(id);
+		instanceIt += vec.size();
+		instanceOffset += vec.size();
+	}
 
 	return result;
 }
