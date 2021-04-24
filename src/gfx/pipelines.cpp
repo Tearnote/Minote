@@ -67,6 +67,12 @@ void createPipelines(vuk::Context& ctx) {
 	bloomBlurUpPci.color_blend_attachments[0].dstColorBlendFactor = vuk::BlendFactor::eOne;
 	bloomBlurUpPci.color_blend_attachments[0].dstAlphaBlendFactor = vuk::BlendFactor::eOne;
 	ctx.create_named_pipeline("bloom_blur_up", bloomBlurUpPci);
+
+	auto cullPci = vuk::ComputePipelineCreateInfo();
+	cullPci.add_spirv(std::vector<u32>{
+#include "spv/cull.comp.spv"
+	}, "cull.comp");
+	ctx.create_named_pipeline("cull", cullPci);
 }
 
 }

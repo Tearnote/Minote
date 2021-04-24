@@ -244,34 +244,53 @@ void Engine::render() {
 
 	// Set up the rendergraph
 	auto rg = vuk::RenderGraph();
+	rg.add_pass({ // Frustum culling
+		.auxiliary_order = 0.0f,
+		.resources = {
+			"commands"_buffer(vuk::eComputeRW),
+			"instances"_buffer(vuk::eComputeRead),
+			"instances_culled"_buffer(vuk::eComputeWrite),
+		},
+		.execute = [&indirect](vuk::CommandBuffer& cmd){
+			auto commandsBuf = cmd.get_resource_buffer("commands");
+			auto instancesBuf = cmd.get_resource_buffer("instances");
+			auto instancesCulledBuf = cmd.get_resource_buffer("instances_culled");
+			cmd.bind_storage_buffer(0, 0, commandsBuf)
+			   .bind_storage_buffer(0, 1, instancesBuf)
+			   .bind_storage_buffer(0, 2, instancesCulledBuf)
+			   .bind_compute_pipeline("cull");
+			auto* instancesCount = cmd.map_scratch_uniform_binding<u32>(0, 3);
+			*instancesCount = indirect.instancesCount;
+			cmd.dispatch_invocations(indirect.instancesCount);
+		}
+	});
 	rg.add_pass({ // Object draw
 		.auxiliary_order = 0.0f,
 		.resources = {
 			"commands"_buffer(vuk::eIndirectRead),
-			"instances"_buffer(vuk::eVertexRead),
+			"instances_culled"_buffer(vuk::eVertexRead),
 			"object_color"_image(vuk::eColorWrite),
 			"object_depth"_image(vuk::eDepthStencilRW),
 		},
-		.execute = [this, worldBuf, &indirect](vuk::CommandBuffer& command_buffer) {
+		.execute = [this, worldBuf, &indirect](vuk::CommandBuffer& cmd) {
 			auto envSampler = vuk::SamplerCreateInfo{
 				.magFilter = vuk::Filter::eLinear,
 				.minFilter = vuk::Filter::eLinear,
 				.mipmapMode = vuk::SamplerMipmapMode::eLinear,
 			};
-			auto commandsBuf = command_buffer.get_resource_buffer("commands");
-			auto instancesBuf = command_buffer.get_resource_buffer("instances");
-			command_buffer
-				.set_viewport(0, vuk::Rect2D::framebuffer())
-				.set_scissor(0, vuk::Rect2D::framebuffer())
-				.bind_uniform_buffer(0, 0, worldBuf)
-				.bind_vertex_buffer(0, *verticesBuf, 0, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
-				.bind_vertex_buffer(1, *normalsBuf, 1, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
-				.bind_vertex_buffer(2, *colorsBuf, 2, vuk::Packed{vuk::Format::eR16G16B16A16Unorm})
-				.bind_index_buffer(*indicesBuf, vuk::IndexType::eUint16)
-				.bind_storage_buffer(0, 1, instancesBuf)
-				.bind_sampled_image(0, 3, *env, envSampler)
-				.bind_graphics_pipeline("object");
-			command_buffer.draw_indexed_indirect(indirect.commandsCount, commandsBuf, sizeof(Indirect::Command));
+			auto commandsBuf = cmd.get_resource_buffer("commands");
+			auto instancesBuf = cmd.get_resource_buffer("instances");
+			cmd.set_viewport(0, vuk::Rect2D::framebuffer())
+			   .set_scissor(0, vuk::Rect2D::framebuffer())
+			   .bind_uniform_buffer(0, 0, worldBuf)
+			   .bind_vertex_buffer(0, *verticesBuf, 0, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
+			   .bind_vertex_buffer(1, *normalsBuf, 1, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
+			   .bind_vertex_buffer(2, *colorsBuf, 2, vuk::Packed{vuk::Format::eR16G16B16A16Unorm})
+			   .bind_index_buffer(*indicesBuf, vuk::IndexType::eUint16)
+			   .bind_storage_buffer(0, 1, instancesBuf)
+			   .bind_sampled_image(0, 3, *env, envSampler)
+			   .bind_graphics_pipeline("object");
+			cmd.draw_indexed_indirect(indirect.commandsCount, commandsBuf, sizeof(Indirect::Command));
 		}
 	});
 	rg.add_pass({ // Cubemap draw
@@ -280,22 +299,21 @@ void Engine::render() {
 			"object_color"_image(vuk::eColorWrite),
 			"object_depth"_image(vuk::eDepthStencilRW),
 		},
-		.execute = [this, worldBuf](vuk::CommandBuffer& command_buffer) {
+		.execute = [this, worldBuf](vuk::CommandBuffer& cmd) {
 			auto envSampler = vuk::SamplerCreateInfo{
 				.magFilter = vuk::Filter::eLinear,
 				.minFilter = vuk::Filter::eLinear,
 				.addressModeU = vuk::SamplerAddressMode::eClampToEdge,
 				.addressModeV = vuk::SamplerAddressMode::eClampToEdge,
 			};
-			command_buffer.set_primitive_topology(vuk::PrimitiveTopology::eTriangleStrip);
-			command_buffer
-				.set_viewport(0, vuk::Rect2D::framebuffer())
-				.set_scissor(0, vuk::Rect2D::framebuffer())
-				.bind_uniform_buffer(0, 0, worldBuf)
-				.bind_sampled_image(0, 1, *env, envSampler)
-				.bind_graphics_pipeline("cubemap");
-			command_buffer.draw(14, 1, 0, 0);
-			command_buffer.set_primitive_topology(vuk::PrimitiveTopology::eTriangleList);
+			cmd.set_primitive_topology(vuk::PrimitiveTopology::eTriangleStrip);
+			cmd.set_viewport(0, vuk::Rect2D::framebuffer())
+			   .set_scissor(0, vuk::Rect2D::framebuffer())
+			   .bind_uniform_buffer(0, 0, worldBuf)
+			   .bind_sampled_image(0, 1, *env, envSampler)
+			   .bind_graphics_pipeline("cubemap");
+			cmd.draw(14, 1, 0, 0);
+			cmd.set_primitive_topology(vuk::PrimitiveTopology::eTriangleList);
 		}
 	});
 	rg.add_pass({ // Bloom threshold
@@ -304,13 +322,12 @@ void Engine::render() {
 			vuk::Resource(std::string_view(bloomNames[0]), vuk::Resource::Type::eImage, vuk::eColorWrite),
 			"object_resolved"_image(vuk::eFragmentSampled),
 		},
-		.execute = [&bloomSizes](vuk::CommandBuffer& command_buffer) {
-			command_buffer
-				.set_viewport(0, vuk::Rect2D::absolute({}, bloomSizes[0].extent))
-				.set_scissor(0, vuk::Rect2D::absolute({}, bloomSizes[0].extent))
-				.bind_sampled_image(0, 0, "object_resolved", {})
-				.bind_graphics_pipeline("bloom_threshold");
-			command_buffer.draw(3, 1, 0, 0);
+		.execute = [&bloomSizes](vuk::CommandBuffer& cmd) {
+			cmd.set_viewport(0, vuk::Rect2D::absolute({}, bloomSizes[0].extent))
+			   .set_scissor(0, vuk::Rect2D::absolute({}, bloomSizes[0].extent))
+			   .bind_sampled_image(0, 0, "object_resolved", {})
+			   .bind_graphics_pipeline("bloom_threshold");
+			cmd.draw(3, 1, 0, 0);
 		},
 	});
 	for (auto i = 1u; i < BloomDepth; i += 1) {
@@ -320,19 +337,18 @@ void Engine::render() {
 				vuk::Resource(std::string_view(bloomNames[i]), vuk::Resource::Type::eImage, vuk::eColorWrite),
 			    vuk::Resource(std::string_view(bloomNames[i-1]), vuk::Resource::Type::eImage, vuk::eFragmentSampled),
 			},
-			.execute = [i, &bloomSizes, &bloomNames](vuk::CommandBuffer& command_buffer) {
-				command_buffer
-					.set_viewport(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
-					.set_scissor(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
-					.bind_sampled_image(0, 0, std::string_view(bloomNames[i-1]), {
-						.magFilter = vuk::Filter::eLinear,
-						.minFilter = vuk::Filter::eLinear,
-						.addressModeU = vuk::SamplerAddressMode::eClampToEdge,
-						.addressModeV = vuk::SamplerAddressMode::eClampToEdge})
-					.bind_graphics_pipeline("bloom_blur_down");
-				auto* stepSize = command_buffer.map_scratch_uniform_binding<f32>(0, 1);
+			.execute = [i, &bloomSizes, &bloomNames](vuk::CommandBuffer& cmd) {
+				cmd.set_viewport(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
+				   .set_scissor(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
+				   .bind_sampled_image(0, 0, std::string_view(bloomNames[i - 1]), {
+					   .magFilter = vuk::Filter::eLinear,
+					   .minFilter = vuk::Filter::eLinear,
+					   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
+					   .addressModeV = vuk::SamplerAddressMode::eClampToEdge})
+				   .bind_graphics_pipeline("bloom_blur_down");
+				auto* stepSize = cmd.map_scratch_uniform_binding<f32>(0, 1);
 				*stepSize = 1.0f;
-				command_buffer.draw(3, 1, 0, 0);
+				cmd.draw(3, 1, 0, 0);
 			},
 		});
 	}
@@ -343,19 +359,18 @@ void Engine::render() {
 				vuk::Resource(std::string_view(bloomNames[i]), vuk::Resource::Type::eImage, vuk::eColorWrite),
 				vuk::Resource(std::string_view(bloomNames[i+1]), vuk::Resource::Type::eImage, vuk::eFragmentSampled),
 			},
-			.execute = [i, &bloomSizes, &bloomNames](vuk::CommandBuffer& command_buffer) {
-				command_buffer
-					.set_viewport(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
-					.set_scissor(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
-					.bind_sampled_image(0, 0, std::string_view(bloomNames[i+1]), {
-						.magFilter = vuk::Filter::eLinear,
-						.minFilter = vuk::Filter::eLinear,
-						.addressModeU = vuk::SamplerAddressMode::eClampToEdge,
-						.addressModeV = vuk::SamplerAddressMode::eClampToEdge})
+			.execute = [i, &bloomSizes, &bloomNames](vuk::CommandBuffer& cmd) {
+				cmd.set_viewport(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
+				   .set_scissor(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
+				   .bind_sampled_image(0, 0, std::string_view(bloomNames[i + 1]), {
+					   .magFilter = vuk::Filter::eLinear,
+					   .minFilter = vuk::Filter::eLinear,
+					   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
+					   .addressModeV = vuk::SamplerAddressMode::eClampToEdge})
 					.bind_graphics_pipeline("bloom_blur_up");
-				auto* stepSize = command_buffer.map_scratch_uniform_binding<f32>(0, 1);
+				auto* stepSize = cmd.map_scratch_uniform_binding<f32>(0, 1);
 				*stepSize = 0.5f;
-				command_buffer.draw(3, 1, 0, 0);
+				cmd.draw(3, 1, 0, 0);
 			},
 		});
 	}
@@ -366,14 +381,13 @@ void Engine::render() {
 			"object_resolved"_image(vuk::eFragmentSampled),
 			vuk::Resource(std::string_view(bloomNames[0]), vuk::Resource::Type::eImage, vuk::eFragmentSampled),
 		},
-		.execute = [&bloomNames](vuk::CommandBuffer& command_buffer) {
-			command_buffer
-				.set_viewport(0, vuk::Rect2D::framebuffer())
-				.set_scissor(0, vuk::Rect2D::framebuffer())
-				.bind_sampled_image(0, 0, "object_resolved", {})
-				.bind_sampled_image(0, 1, std::string_view(bloomNames[0]), {})
-				.bind_graphics_pipeline("swapchain_blit");
-			command_buffer.draw(3, 1, 0, 0);
+		.execute = [&bloomNames](vuk::CommandBuffer& cmd) {
+			cmd.set_viewport(0, vuk::Rect2D::framebuffer())
+			   .set_scissor(0, vuk::Rect2D::framebuffer())
+			   .bind_sampled_image(0, 0, "object_resolved", {})
+			   .bind_sampled_image(0, 1, std::string_view(bloomNames[0]), {})
+			   .bind_graphics_pipeline("swapchain_blit");
+			cmd.draw(3, 1, 0, 0);
 		},
 	});
 
@@ -382,8 +396,9 @@ void Engine::render() {
 	ImGui_ImplVuk_Render(ptc, rg, "swapchain", "swapchain", imguiData, ImGui::GetDrawData());
 #endif //IMGUI
 
-	rg.attach_buffer("commands", indirect.commands, vuk::Access::eTransferDst, vuk::eNone);
-	rg.attach_buffer("instances", indirect.instances, vuk::Access::eTransferDst, vuk::eNone);
+	rg.attach_buffer("commands", indirect.commands, vuk::eTransferDst, vuk::eNone);
+	rg.attach_buffer("instances", indirect.instances, vuk::eTransferDst, vuk::eNone);
+	rg.attach_buffer("instances_culled", indirect.instancesCulled, vuk::eNone, vuk::eNone);
 	rg.attach_managed("object_color", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	rg.attach_managed("object_depth", vuk::Format::eD32Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearDepthStencil{1.0f, 0});
 	rg.attach_managed("object_resolved", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e1, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});

@@ -229,7 +229,8 @@ set(SHADER_SOURCES
         src/glsl/cubemap.vert src/glsl/cubemap.frag
         src/glsl/bloomThreshold.vert src/glsl/bloomThreshold.frag
         src/glsl/bloomBlur.vert src/glsl/bloomBlur.frag
-        src/glsl/imgui.vert src/glsl/imgui.frag)
+        src/glsl/imgui.vert src/glsl/imgui.frag
+        src/glsl/cull.comp)
 
 foreach(SHADER_PATH ${SHADER_SOURCES})
     get_filename_component(SHADER_FILENAME ${SHADER_PATH} NAME)

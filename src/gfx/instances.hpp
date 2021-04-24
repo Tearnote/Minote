@@ -24,7 +24,7 @@ struct Instances {
 		f32 roughness = 0.6f;
 		f32 metalness = 0.1f;
 		u32 meshID; // internal
-		f32 pad1;
+		f32 pad0;
 
 	};
 	hashmap<ID, std::vector<Instance>> instances;

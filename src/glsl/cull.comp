@@ -1,0 +1,41 @@
+#version 460
+
+layout(local_size_x = 64) in;
+
+struct Command {
+	uint indexCount;
+	uint instanceCount;
+	uint firstIndex;
+	uint vertexOffset;
+	uint firstInstance;
+	float meshRadius;
+};
+layout (binding = 0, std430) buffer Draws {
+	Command draws[];
+};
+
+struct Instance {
+	mat4 transform;
+	vec4 tint;
+	float roughness;
+	float metalness;
+	uint meshID;
+	float pad0;
+};
+layout (binding = 1, std430) readonly buffer Instances {
+	Instance instances[];
+};
+layout (binding = 2, std430) writeonly buffer InstancesCulled {
+	Instance instancesCulled[];
+};
+
+layout(binding = 3) uniform InstancesCount {
+	uint instancesCount;
+};
+
+void main() {
+	uint gid = gl_GlobalInvocationID.x;
+	if (gid >= instancesCount) return;
+
+	instancesCulled[gid] = instances[gid];
+}
