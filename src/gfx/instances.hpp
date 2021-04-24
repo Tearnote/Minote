@@ -19,10 +19,10 @@ struct Instances {
 
 	struct Instance {
 
-		glm::mat4 transform = glm::mat4(1.0f);
-		glm::vec4 tint = {1.0f, 1.0f, 1.0f, 1.0f};
-		f32 roughness = 0.6f;
-		f32 metalness = 0.1f;
+		glm::mat4 transform;
+		glm::vec4 tint;
+		f32 roughness;
+		f32 metalness;
 		u32 meshID; // internal
 		f32 pad0;
 
@@ -31,6 +31,7 @@ struct Instances {
 
 	void addInstances(ID mesh, std::span<Instance const> instances);
 
+	[[nodiscard]]
 	auto size() const { return instances.size(); }
 	void clear() { instances.clear(); }
 
