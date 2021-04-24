@@ -16,6 +16,7 @@
 #include "base/math.hpp"
 #include "base/log.hpp"
 #include "gfx/pipelines.hpp"
+#include "gfx/indirect.hpp"
 #include "gfx/base.hpp"
 #include "main.hpp"
 
@@ -239,24 +240,14 @@ void Engine::render() {
 	std::memcpy(worldBuf.mapped_ptr, &world, sizeof(world));
 
 	// Upload indirect buffers
-	auto [commands, instanceVec] = instances.makeIndirect(meshes);
-	auto commandsBuf = ptc.allocate_scratch_buffer(
-		vuk::MemoryUsage::eCPUtoGPU,
-		vuk::BufferUsageFlagBits::eIndirectBuffer,
-		sizeof(decltype(commands)::value_type) * commands.size(), alignof(decltype(commands)::value_type));
-	std::memcpy(commandsBuf.mapped_ptr, commands.data(), sizeof(decltype(commands)::value_type) * commands.size());
-	auto instancesBuf = ptc.allocate_scratch_buffer(
-		vuk::MemoryUsage::eCPUtoGPU,
-		vuk::BufferUsageFlagBits::eStorageBuffer,
-		sizeof(decltype(instanceVec)::value_type) * instanceVec.size(), alignof(decltype(instanceVec)::value_type));
-	std::memcpy(instancesBuf.mapped_ptr, instanceVec.data(), sizeof(decltype(instanceVec)::value_type) * instanceVec.size());
+	auto indirect = Indirect::createBuffers(ptc, meshes, instances);
 
 	// Set up the rendergraph
 	auto rg = vuk::RenderGraph();
 	rg.add_pass({ // Object draw
 		.auxiliary_order = 0.0f,
 		.resources = {"object_color"_image(vuk::eColorWrite), "object_depth"_image(vuk::eDepthStencilRW)},
-		.execute = [this, worldBuf, &instancesBuf, &commands, &commandsBuf](vuk::CommandBuffer& command_buffer) {
+		.execute = [this, worldBuf, &indirect](vuk::CommandBuffer& command_buffer) {
 			auto envSampler = vuk::SamplerCreateInfo{
 				.magFilter = vuk::Filter::eLinear,
 				.minFilter = vuk::Filter::eLinear,
@@ -270,10 +261,10 @@ void Engine::render() {
 				.bind_vertex_buffer(1, *normalsBuf, 1, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
 				.bind_vertex_buffer(2, *colorsBuf, 2, vuk::Packed{vuk::Format::eR16G16B16A16Unorm})
 				.bind_index_buffer(*indicesBuf, vuk::IndexType::eUint16)
-				.bind_storage_buffer(0, 1, instancesBuf)
+				.bind_storage_buffer(0, 1, indirect.instances)
 				.bind_sampled_image(0, 3, *env, envSampler)
 				.bind_graphics_pipeline("object");
-			command_buffer.draw_indexed_indirect(commands.size(), commandsBuf);
+			command_buffer.draw_indexed_indirect(indirect.commandsCount, indirect.commands, sizeof(Indirect::Command));
 		}
 	});
 	rg.add_pass({ // Cubemap draw
@@ -430,6 +421,7 @@ void Engine::render() {
 		throw std::runtime_error(fmt::format("Unable to present to the screen: error {}", result));
 
 	// Clean up
+	instances.clear();
 #if IMGUI
 	ImGui::NewFrame();
 #endif //IMGUI

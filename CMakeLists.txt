@@ -53,6 +53,7 @@ add_executable(Minote
         src/sys/glfw.hpp src/sys/glfw.cpp
         src/gfx/instances.hpp src/gfx/instances.cpp
         src/gfx/pipelines.hpp src/gfx/pipelines.cpp
+        src/gfx/indirect.hpp src/gfx/indirect.cpp
         src/gfx/meshes.hpp src/gfx/meshes.cpp
         src/gfx/engine.hpp src/gfx/engine.cpp
         src/gfx/imgui.hpp src/gfx/imgui.cpp
@@ -63,7 +64,7 @@ add_executable(Minote
         src/config.hpp
         src/game.hpp src/game.cpp
         src/main.hpp src/main.cpp
-        src/mino.hpp src/mino.tpp src/assets.tpp)
+        src/mino.hpp src/mino.tpp)
 target_compile_options(Minote PRIVATE -Wall -Wextra -Wno-missing-field-initializers -fno-rtti)
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     set_property(TARGET Minote PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
@@ -94,8 +95,8 @@ set(VUK_LINK_TO_LOADER OFF CACHE BOOL "")
 set(VUK_USE_VULKAN_SDK OFF CACHE BOOL "")
 set(VUK_USE_SHADERC OFF CACHE BOOL "")
 FetchContent_Declare(vuk
-        GIT_REPOSITORY https://github.com/martty/vuk
-        GIT_TAG fb8f4436851ca0a02d7e823badcb311300375de1)
+        GIT_REPOSITORY https://github.com/Tearnote/vuk
+        GIT_TAG 7c27db5b7f409ca1ae189c1a57f3aea1bc4591d9)
 FetchContent_MakeAvailable(vuk)
 target_compile_definitions(vuk PRIVATE VK_NO_PROTOTYPES)
 target_compile_definitions(vuk PRIVATE VUK_CUSTOM_VULKAN_HEADER="volk.h")

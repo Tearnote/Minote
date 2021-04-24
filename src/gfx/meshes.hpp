@@ -38,6 +38,8 @@ struct Meshes {
 	[[nodiscard]]
 	auto at(ID id) const -> Descriptor const& { return descriptors[descriptorIDs.at(id)]; }
 
+	auto size() const { return descriptors.size(); }
+
 };
 
 }

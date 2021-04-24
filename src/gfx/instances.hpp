@@ -27,15 +27,12 @@ struct Instances {
 		f32 pad1;
 
 	};
+	hashmap<ID, std::vector<Instance>> instances;
 
 	void addInstances(ID mesh, std::span<Instance const> instances);
 
-	auto makeIndirect(Meshes const& meshBuffer)
-		-> std::pair<std::vector<vuk::DrawIndexedIndirectCommand>, std::vector<Instance>>;
-
-private:
-
-	hashmap<ID, std::vector<Instance>> instances;
+	auto size() const { return instances.size(); }
+	void clear() { instances.clear(); }
 
 };
 

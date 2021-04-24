@@ -9,7 +9,7 @@ struct Instance {
 	vec4 tint;
 	float roughness;
 	float metalness;
-	float pad0;
+	uint meshID;
 	float pad1;
 };
 
