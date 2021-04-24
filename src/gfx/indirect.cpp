@@ -37,11 +37,17 @@ auto Indirect::createBuffers(vuk::PerThreadContext& ptc, Meshes const& meshes, I
 
 	auto result = Indirect{
 		.commands = ptc.allocate_scratch_buffer(
-			vuk::MemoryUsage::eCPUtoGPU, vuk::BufferUsageFlagBits::eIndirectBuffer,
+			vuk::MemoryUsage::eCPUtoGPU,
+			vuk::BufferUsageFlagBits::eIndirectBuffer | vuk::BufferUsageFlagBits::eStorageBuffer,
 			sizeof(Command) * commandsVec.size(), alignof(Command)),
 		.commandsCount = commandsVec.size(),
 		.instances = ptc.allocate_scratch_buffer(
-			vuk::MemoryUsage::eCPUtoGPU, vuk::BufferUsageFlagBits::eStorageBuffer,
+			vuk::MemoryUsage::eCPUtoGPU,
+			vuk::BufferUsageFlagBits::eStorageBuffer,
+			sizeof(Instance) * instancesVec.size(), alignof(Instance)),
+		.instancesCulled = ptc.allocate_scratch_buffer(
+			vuk::MemoryUsage::eGPUonly,
+			vuk::BufferUsageFlagBits::eStorageBuffer,
 			sizeof(Instance) * instancesVec.size(), alignof(Instance)),
 		.instancesCount = instancesVec.size(),
 	};

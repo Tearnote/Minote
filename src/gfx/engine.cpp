@@ -246,13 +246,20 @@ void Engine::render() {
 	auto rg = vuk::RenderGraph();
 	rg.add_pass({ // Object draw
 		.auxiliary_order = 0.0f,
-		.resources = {"object_color"_image(vuk::eColorWrite), "object_depth"_image(vuk::eDepthStencilRW)},
+		.resources = {
+			"commands"_buffer(vuk::eIndirectRead),
+			"instances"_buffer(vuk::eVertexRead),
+			"object_color"_image(vuk::eColorWrite),
+			"object_depth"_image(vuk::eDepthStencilRW),
+		},
 		.execute = [this, worldBuf, &indirect](vuk::CommandBuffer& command_buffer) {
 			auto envSampler = vuk::SamplerCreateInfo{
 				.magFilter = vuk::Filter::eLinear,
 				.minFilter = vuk::Filter::eLinear,
 				.mipmapMode = vuk::SamplerMipmapMode::eLinear,
 			};
+			auto commandsBuf = command_buffer.get_resource_buffer("commands");
+			auto instancesBuf = command_buffer.get_resource_buffer("instances");
 			command_buffer
 				.set_viewport(0, vuk::Rect2D::framebuffer())
 				.set_scissor(0, vuk::Rect2D::framebuffer())
@@ -261,15 +268,18 @@ void Engine::render() {
 				.bind_vertex_buffer(1, *normalsBuf, 1, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
 				.bind_vertex_buffer(2, *colorsBuf, 2, vuk::Packed{vuk::Format::eR16G16B16A16Unorm})
 				.bind_index_buffer(*indicesBuf, vuk::IndexType::eUint16)
-				.bind_storage_buffer(0, 1, indirect.instances)
+				.bind_storage_buffer(0, 1, instancesBuf)
 				.bind_sampled_image(0, 3, *env, envSampler)
 				.bind_graphics_pipeline("object");
-			command_buffer.draw_indexed_indirect(indirect.commandsCount, indirect.commands, sizeof(Indirect::Command));
+			command_buffer.draw_indexed_indirect(indirect.commandsCount, commandsBuf, sizeof(Indirect::Command));
 		}
 	});
 	rg.add_pass({ // Cubemap draw
 		.auxiliary_order = 0.0f,
-		.resources = {"object_color"_image(vuk::eColorWrite), "object_depth"_image(vuk::eDepthStencilRW)},
+		.resources = {
+			"object_color"_image(vuk::eColorWrite),
+			"object_depth"_image(vuk::eDepthStencilRW),
+		},
 		.execute = [this, worldBuf](vuk::CommandBuffer& command_buffer) {
 			auto envSampler = vuk::SamplerCreateInfo{
 				.magFilter = vuk::Filter::eLinear,
@@ -290,7 +300,10 @@ void Engine::render() {
 	});
 	rg.add_pass({ // Bloom threshold
 		.auxiliary_order = 0.0f,
-		.resources = {vuk::Resource(std::string_view(bloomNames[0]), vuk::Resource::Type::eImage, vuk::eColorWrite), "object_resolved"_image(vuk::eFragmentSampled)},
+		.resources = {
+			vuk::Resource(std::string_view(bloomNames[0]), vuk::Resource::Type::eImage, vuk::eColorWrite),
+			"object_resolved"_image(vuk::eFragmentSampled),
+		},
 		.execute = [&bloomSizes](vuk::CommandBuffer& command_buffer) {
 			command_buffer
 				.set_viewport(0, vuk::Rect2D::absolute({}, bloomSizes[0].extent))
@@ -303,8 +316,10 @@ void Engine::render() {
 	for (auto i = 1u; i < BloomDepth; i += 1) {
 		rg.add_pass({ // Bloom downscale
 			.auxiliary_order = 0.0f,
-			.resources = {vuk::Resource(std::string_view(bloomNames[i]), vuk::Resource::Type::eImage, vuk::eColorWrite),
-			              vuk::Resource(std::string_view(bloomNames[i-1]), vuk::Resource::Type::eImage, vuk::eFragmentSampled)},
+			.resources = {
+				vuk::Resource(std::string_view(bloomNames[i]), vuk::Resource::Type::eImage, vuk::eColorWrite),
+			    vuk::Resource(std::string_view(bloomNames[i-1]), vuk::Resource::Type::eImage, vuk::eFragmentSampled),
+			},
 			.execute = [i, &bloomSizes, &bloomNames](vuk::CommandBuffer& command_buffer) {
 				command_buffer
 					.set_viewport(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
@@ -324,8 +339,10 @@ void Engine::render() {
 	for (auto i = BloomDepth - 2; i < BloomDepth; i -= 1) {
 		rg.add_pass({ // Bloom upscale
 			.auxiliary_order = 1.0f,
-			.resources = {vuk::Resource(std::string_view(bloomNames[i]), vuk::Resource::Type::eImage, vuk::eColorWrite),
-			              vuk::Resource(std::string_view(bloomNames[i+1]), vuk::Resource::Type::eImage, vuk::eFragmentSampled)},
+			.resources = {
+				vuk::Resource(std::string_view(bloomNames[i]), vuk::Resource::Type::eImage, vuk::eColorWrite),
+				vuk::Resource(std::string_view(bloomNames[i+1]), vuk::Resource::Type::eImage, vuk::eFragmentSampled),
+			},
 			.execute = [i, &bloomSizes, &bloomNames](vuk::CommandBuffer& command_buffer) {
 				command_buffer
 					.set_viewport(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
@@ -344,8 +361,11 @@ void Engine::render() {
 	}
 	rg.add_pass({ // Swapchain blit
 		.auxiliary_order = 1.0f,
-		.resources = {"swapchain"_image(vuk::eColorWrite), "object_resolved"_image(vuk::eFragmentSampled),
-		              vuk::Resource(std::string_view(bloomNames[0]), vuk::Resource::Type::eImage, vuk::eFragmentSampled)},
+		.resources = {
+			"swapchain"_image(vuk::eColorWrite),
+			"object_resolved"_image(vuk::eFragmentSampled),
+			vuk::Resource(std::string_view(bloomNames[0]), vuk::Resource::Type::eImage, vuk::eFragmentSampled),
+		},
 		.execute = [&bloomNames](vuk::CommandBuffer& command_buffer) {
 			command_buffer
 				.set_viewport(0, vuk::Rect2D::framebuffer())
@@ -362,6 +382,8 @@ void Engine::render() {
 	ImGui_ImplVuk_Render(ptc, rg, "swapchain", "swapchain", imguiData, ImGui::GetDrawData());
 #endif //IMGUI
 
+	rg.attach_buffer("commands", indirect.commands, vuk::Access::eTransferDst, vuk::eNone);
+	rg.attach_buffer("instances", indirect.instances, vuk::Access::eTransferDst, vuk::eNone);
 	rg.attach_managed("object_color", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	rg.attach_managed("object_depth", vuk::Format::eD32Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearDepthStencil{1.0f, 0});
 	rg.attach_managed("object_resolved", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e1, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});

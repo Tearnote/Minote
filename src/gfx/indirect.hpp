@@ -29,6 +29,7 @@ struct Indirect {
 	vuk::Buffer commands;
 	size_t commandsCount;
 	vuk::Buffer instances;
+	vuk::Buffer instancesCulled;
 	size_t instancesCount;
 
 	static auto createBuffers(vuk::PerThreadContext& ptc, Meshes const& meshes, Instances const& instances) -> Indirect;
