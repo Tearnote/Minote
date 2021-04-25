@@ -1,4 +1,5 @@
 #version 460
+#pragma shader_stage(vertex)
 
 layout(location = 0) out vec2 f_texCoords;
 

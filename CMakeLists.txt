@@ -224,13 +224,14 @@ target_link_libraries(Minote PRIVATE cgltf)
 # Shader compilation
 
 set(SHADER_SOURCES
-        src/glsl/swapchainBlit.vert src/glsl/swapchainBlit.frag
-        src/glsl/object.vert src/glsl/object.frag
-        src/glsl/cubemap.vert src/glsl/cubemap.frag
         src/glsl/bloomThreshold.vert src/glsl/bloomThreshold.frag
         src/glsl/bloomBlur.vert src/glsl/bloomBlur.frag
+        src/glsl/zprepass.vert src/glsl/zprepass.frag
+        src/glsl/tonemap.vert src/glsl/tonemap.frag
+        src/glsl/object.vert src/glsl/object.frag
         src/glsl/imgui.vert src/glsl/imgui.frag
-        src/glsl/cull.comp)
+        src/glsl/cull.comp
+        src/glsl/sky.vert src/glsl/sky.frag)
 
 foreach(SHADER_PATH ${SHADER_SOURCES})
     get_filename_component(SHADER_FILENAME ${SHADER_PATH} NAME)

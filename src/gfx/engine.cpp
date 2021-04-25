@@ -279,6 +279,26 @@ void Engine::render() {
 			cmd.dispatch_invocations(indirect.instancesCount);
 		}
 	});
+	rg.add_pass({ // Z-prepass
+		.auxiliary_order = 0.0f,
+		.resources = {
+			"commands"_buffer(vuk::eIndirectRead),
+			"instances_culled"_buffer(vuk::eVertexRead),
+			"object_depth"_image(vuk::eDepthStencilRW),
+		},
+		.execute = [this, worldBuf, &indirect](vuk::CommandBuffer& cmd) {
+			auto commandsBuf = cmd.get_resource_buffer("commands");
+			auto instancesBuf = cmd.get_resource_buffer("instances_culled");
+			cmd.set_viewport(0, vuk::Rect2D::framebuffer())
+			   .set_scissor(0, vuk::Rect2D::framebuffer())
+			   .bind_uniform_buffer(0, 0, worldBuf)
+			   .bind_vertex_buffer(0, *verticesBuf, 0, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
+			   .bind_index_buffer(*indicesBuf, vuk::IndexType::eUint16)
+			   .bind_storage_buffer(0, 1, instancesBuf)
+			   .bind_graphics_pipeline("z_prepass");
+			cmd.draw_indexed_indirect(indirect.commandsCount, commandsBuf, sizeof(Indirect::Command));
+		}
+	});
 	rg.add_pass({ // Object draw
 		.auxiliary_order = 0.0f,
 		.resources = {
@@ -326,7 +346,7 @@ void Engine::render() {
 			   .set_scissor(0, vuk::Rect2D::framebuffer())
 			   .bind_uniform_buffer(0, 0, worldBuf)
 			   .bind_sampled_image(0, 1, *env, envSampler)
-			   .bind_graphics_pipeline("cubemap");
+			   .bind_graphics_pipeline("sky");
 			cmd.draw(14, 1, 0, 0);
 			cmd.set_primitive_topology(vuk::PrimitiveTopology::eTriangleList);
 		}
@@ -389,7 +409,7 @@ void Engine::render() {
 			},
 		});
 	}
-	rg.add_pass({ // Swapchain blit
+	rg.add_pass({ // Swapchain blit with tonemapping
 		.auxiliary_order = 1.0f,
 		.resources = {
 			"swapchain"_image(vuk::eColorWrite),
@@ -401,7 +421,7 @@ void Engine::render() {
 			   .set_scissor(0, vuk::Rect2D::framebuffer())
 			   .bind_sampled_image(0, 0, "object_resolved", {})
 			   .bind_sampled_image(0, 1, std::string_view(bloomNames[0]), {})
-			   .bind_graphics_pipeline("swapchain_blit");
+			   .bind_graphics_pipeline("tonemap");
 			cmd.draw(3, 1, 0, 0);
 		},
 	});

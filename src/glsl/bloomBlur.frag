@@ -1,4 +1,5 @@
 #version 460
+#pragma shader_stage(fragment)
 
 layout(location = 0) in vec2 f_texCoords;
 

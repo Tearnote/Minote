@@ -77,7 +77,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 		// Graphics
 		engine.setCamera({std::sin(glfwGetTime() / 4.0) * 28.0f, std::sin(glfwGetTime() / 3.1) * 4.0f + 12.0f, std::cos(glfwGetTime() / 4.0) * 28.0f}, {0.0f, 4.0f, 0.0f});
 
-		ImGui::SliderInt("Expand", &Expand, 0, 50);
+		ImGui::SliderInt("Expand", &Expand, 0, 40);
 
 		auto rotateTransform = make_rotate(glm::radians(90.0f), {1.0f, 0.0f, 0.0f});
 		auto rotateTransformAnim = make_rotate(f32(glm::radians(f64(sys::Glfw::getTime().count()) / 20000000.0)), {0.0f, 1.0f, 0.0f});
