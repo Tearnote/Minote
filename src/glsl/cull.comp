@@ -29,13 +29,39 @@ layout (binding = 2, std430) writeonly buffer InstancesCulled {
 	Instance instancesCulled[];
 };
 
-layout(binding = 3) uniform InstancesCount {
+layout(binding = 3) uniform CullData {
+	mat4 view;
+	vec4 frustum;
 	uint instancesCount;
 };
+
+float maxScale(mat4 transform) {
+	float x = length(vec3(transform[0][0], transform[0][1], transform[0][2]));
+	float y = length(vec3(transform[1][0], transform[1][1], transform[1][2]));
+	float z = length(vec3(transform[2][0], transform[2][1], transform[2][2]));
+	return max(x, max(y, z));
+}
+
+bool visible(uint gid, float radius) {
+	vec3 center = (view * instances[gid].transform[3]).xyz;
+
+	bool result = true;
+	result = result && center.z * frustum[1] - abs(center.x) * frustum[0] > -radius;
+	result = result && center.z * frustum[3] - abs(center.y) * frustum[2] > -radius;
+
+	return result;
+}
 
 void main() {
 	uint gid = gl_GlobalInvocationID.x;
 	if (gid >= instancesCount) return;
 
-	instancesCulled[gid] = instances[gid];
+	uint meshID = instances[gid].meshID;
+	float scale = maxScale(instances[gid].transform);
+	float radius = draws[meshID].meshRadius;
+	if (!visible(gid, radius * scale)) return;
+
+	uint offset = draws[meshID].firstInstance;
+	uint index = atomicAdd(draws[meshID].instanceCount, 1);
+	instancesCulled[offset + index] = instances[gid];
 }

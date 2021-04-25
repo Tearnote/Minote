@@ -1,6 +1,7 @@
 # Output files
 build*/*
 cmake-build-debug*/*
+cmake-build-relwithdebinfo*/*
 cmake-build-release*/*
 doc/*
 

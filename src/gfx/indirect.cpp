@@ -36,7 +36,7 @@ auto Indirect::createBuffers(vuk::PerThreadContext& ptc, Meshes const& meshes, I
 		auto& descriptor = meshes.at(id);
 		*commandIt = Command{
 			.indexCount = descriptor.indexCount,
-			.instanceCount = u32(vec.size()),
+			.instanceCount = 0, // filled in during culling
 			.firstIndex = descriptor.indexOffset,
 			.vertexOffset = i32(descriptor.vertexOffset),
 			.firstInstance = u32(instanceOffset),

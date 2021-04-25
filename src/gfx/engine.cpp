@@ -251,7 +251,7 @@ void Engine::render() {
 			"instances"_buffer(vuk::eComputeRead),
 			"instances_culled"_buffer(vuk::eComputeWrite),
 		},
-		.execute = [&indirect](vuk::CommandBuffer& cmd){
+		.execute = [this, &indirect](vuk::CommandBuffer& cmd){
 			auto commandsBuf = cmd.get_resource_buffer("commands");
 			auto instancesBuf = cmd.get_resource_buffer("instances");
 			auto instancesCulledBuf = cmd.get_resource_buffer("instances_culled");
@@ -259,8 +259,23 @@ void Engine::render() {
 			   .bind_storage_buffer(0, 1, instancesBuf)
 			   .bind_storage_buffer(0, 2, instancesCulledBuf)
 			   .bind_compute_pipeline("cull");
-			auto* instancesCount = cmd.map_scratch_uniform_binding<u32>(0, 3);
-			*instancesCount = indirect.instancesCount;
+			struct CullData {
+				glm::mat4 view;
+				glm::vec4 frustum;
+				u32 instancesCount;
+			};
+			auto* cullData = cmd.map_scratch_uniform_binding<CullData>(0, 3);
+			*cullData = CullData{
+				.view = world.view,
+				.frustum = [this] {
+					glm::vec4 frustumX = world.viewProjection[3] + world.viewProjection[0];
+					glm::vec4 frustumY = world.viewProjection[3] + world.viewProjection[1];
+					frustumX /= glm::length(glm::vec3(frustumX));
+					frustumY /= glm::length(glm::vec3(frustumY));
+					return glm::vec4(frustumX.x, frustumX.z, frustumY.y, frustumY.z);
+				}(),
+				.instancesCount = u32(indirect.instancesCount),
+			};
 			cmd.dispatch_invocations(indirect.instancesCount);
 		}
 	});
@@ -279,7 +294,7 @@ void Engine::render() {
 				.mipmapMode = vuk::SamplerMipmapMode::eLinear,
 			};
 			auto commandsBuf = cmd.get_resource_buffer("commands");
-			auto instancesBuf = cmd.get_resource_buffer("instances");
+			auto instancesBuf = cmd.get_resource_buffer("instances_culled");
 			cmd.set_viewport(0, vuk::Rect2D::framebuffer())
 			   .set_scissor(0, vuk::Rect2D::framebuffer())
 			   .bind_uniform_buffer(0, 0, worldBuf)
