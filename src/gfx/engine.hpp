@@ -74,6 +74,7 @@ private:
 	} camera;
 
 	std::optional<vuk::Texture> env;
+	std::optional<vuk::Texture> cubemap;
 
 	auto createSwapchain(VkSwapchainKHR old = VK_NULL_HANDLE) -> vuk::Swapchain;
 	void refreshSwapchain();

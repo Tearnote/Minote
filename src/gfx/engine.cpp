@@ -130,6 +130,7 @@ Engine::Engine(sys::Window& window, Version version) {
 
 Engine::~Engine() {
 	context->wait_idle();
+	cubemap.reset();
 	env.reset();
 	indicesBuf.reset();
 	colorsBuf.reset();
@@ -188,6 +189,23 @@ void Engine::uploadAssets() {
 	ptc.upload(*env->image, vuk::Format::eR32G32B32A32Sfloat, {u32(width), u32(height), 1u}, 0,
 		std::span(hdri, width * height * 4), true);
 	stbi_image_free(hdri);
+	cubemap = context->allocate_texture(vuk::ImageCreateInfo{
+		.flags = vuk::ImageCreateFlagBits::eCubeCompatible,
+		.format = vuk::Format::eR16G16B16A16Sfloat,
+		.extent = {CubeMapSize, CubeMapSize, 1},
+		.mipLevels = mipmapCount(CubeMapSize),
+		.arrayLayers = 6,
+		.usage = vuk::ImageUsageFlagBits::eStorage | vuk::ImageUsageFlagBits::eSampled,
+	});
+	cubemap->view = ptc.create_image_view(vuk::ImageViewCreateInfo{
+		.image = cubemap->image.get(),
+		.format = cubemap->format,
+		.subresourceRange = vuk::ImageSubresourceRange{
+			.aspectMask = vuk::ImageAspectFlagBits::eColor,
+			.levelCount = VK_REMAINING_MIP_LEVELS,
+			.layerCount = 6,
+		},
+	});
 
 	// Finalize uploads
 	ptc.wait_all_transfers();
