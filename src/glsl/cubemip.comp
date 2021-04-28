@@ -1,0 +1,31 @@
+#version 460
+#pragma shader_stage(compute)
+#extension GL_EXT_nonuniform_qualifier: enable
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(binding = 0, rgba16f) restrict coherent uniform image2DArray cubemap[];
+
+vec4 Load2x2Avg(uvec3 id) {
+	vec4 sample00 = imageLoad(cubemap[0], ivec3(id.xy + uvec2(0, 0), id.z));
+	vec4 sample10 = imageLoad(cubemap[0], ivec3(id.xy + uvec2(1, 0), id.z));
+	vec4 sample01 = imageLoad(cubemap[0], ivec3(id.xy + uvec2(0, 1), id.z));
+	vec4 sample11 = imageLoad(cubemap[0], ivec3(id.xy + uvec2(1, 1), id.z));
+	return (sample00 + sample10 + sample01 + sample11) * 0.25;
+}
+
+void main() {
+	uvec3 gid = gl_GlobalInvocationID;
+	uint size = imageSize(cubemap[0]).x;
+
+	vec4 sample00 = Load2x2Avg(uvec3(gid.xy * 4 + uvec2(0, 0), gid.z));
+	vec4 sample10 = Load2x2Avg(uvec3(gid.xy * 4 + uvec2(2, 0), gid.z));
+	vec4 sample01 = Load2x2Avg(uvec3(gid.xy * 4 + uvec2(0, 2), gid.z));
+	vec4 sample11 = Load2x2Avg(uvec3(gid.xy * 4 + uvec2(2, 2), gid.z));
+	imageStore(cubemap[1], ivec3(gid.xy * 2 + uvec2(0, 0), gid.z), sample00);
+	imageStore(cubemap[1], ivec3(gid.xy * 2 + uvec2(1, 0), gid.z), sample10);
+	imageStore(cubemap[1], ivec3(gid.xy * 2 + uvec2(0, 1), gid.z), sample01);
+	imageStore(cubemap[1], ivec3(gid.xy * 2 + uvec2(1, 1), gid.z), sample11);
+	vec4 sampleAvg = (sample00 + sample10 + sample01 + sample11) * 0.25;
+	imageStore(cubemap[2], ivec3(gid.xy, gid.z), sampleAvg);
+}

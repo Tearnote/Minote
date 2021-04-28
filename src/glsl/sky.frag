@@ -11,11 +11,8 @@ layout(binding = 0) uniform World {
 	mat4 viewProjection;
 } world;
 
-layout(binding = 1) uniform sampler2D env;
-
-#include "util.glslh"
+layout(binding = 1) uniform samplerCube cubemap;
 
 void main() {
-	vec2 uv = sampleSphericalMap(normalize(f_position.rgb));
-	out_color = vec4(textureLod(env, uv, 0.0).rgb, 1.0);
+	out_color = vec4(textureLod(cubemap, normalize(f_position.rgb), 0.0).rgb, 1.0);
 }

@@ -105,7 +105,7 @@ target_link_libraries(Minote PRIVATE vuk)
 
 FetchContent_Declare(vk-bootstrap
         GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap
-        GIT_TAG 85aac8d51ce8db80ac254d657a62a7e98a9ad2b4)
+        GIT_TAG 95b82a95378c2900f7d1d7908cee322b5f3bf120)
 FetchContent_MakeAvailable(vk-bootstrap)
 target_link_libraries(Minote PRIVATE vk-bootstrap)
 
@@ -167,6 +167,7 @@ target_link_libraries(imgui PRIVATE glfw)
 target_link_libraries(Minote PRIVATE imgui)
 
 set(SPIRV_HEADERS_SKIP_EXAMPLES ON CACHE BOOL "")
+set(SPIRV_HEADERS_SKIP_INSTALL ON CACHE BOOL "")
 FetchContent_Declare(spirv-headers
         GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Headers
         GIT_TAG f88a1f98fa7a44ccfcf33d810c72b200e7d9a78a)
@@ -228,6 +229,8 @@ set(SHADER_SOURCES
         src/glsl/bloomBlur.vert src/glsl/bloomBlur.frag
         src/glsl/zprepass.vert src/glsl/zprepass.frag
         src/glsl/tonemap.vert src/glsl/tonemap.frag
+        src/glsl/cubemap.comp
+        src/glsl/cubemip.comp
         src/glsl/object.vert src/glsl/object.frag
         src/glsl/imgui.vert src/glsl/imgui.frag
         src/glsl/cull.comp

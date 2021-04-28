@@ -75,6 +75,8 @@ private:
 
 	std::optional<vuk::Texture> env;
 	std::optional<vuk::Texture> cubemap;
+	std::vector<vuk::Unique<vuk::ImageView>> cubemapMips;
+	vuk::Unique<vuk::PersistentDescriptorSet> cubemapPds;
 
 	auto createSwapchain(VkSwapchainKHR old = VK_NULL_HANDLE) -> vuk::Swapchain;
 	void refreshSwapchain();

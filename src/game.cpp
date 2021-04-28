@@ -86,6 +86,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 		auto transform3 = make_translate({4.0f, 2.0f, -4.0f}) * rotateTransform;
 		auto transform4 = make_translate({-4.0f, 2.0f, 4.0f}) * rotateTransform;
 		auto transform5 = make_translate({4.0f, 2.0f, 4.0f}) * rotateTransform;
+		auto transform55 = make_translate({7.0f, 2.0f, 0.0f}) * rotateTransform;
 		auto transform6 = make_translate({0.0f, 2.5f, 0.0f}) * make_scale({1.5f, 1.5f, 1.5f}) * rotateTransformAnim * rotateTransform;
 		auto transform7 = make_translate({0.0f, 2.0f, 8.0f});
 		auto transform8 = make_translate({0.0f, 2.0f, -8.0f});
@@ -121,6 +122,12 @@ void game(sys::Glfw&, sys::Window& window) try {
 				gfx::Engine::Instance{
 					.transform = offset * transform5,
 					.tint = {0.9f, 0.1f, 0.1f, 1.0f},
+					.roughness = 0.6f,
+					.metalness = 0.1f,
+				},
+				gfx::Engine::Instance{
+					.transform = offset * transform55,
+					.tint = {0.1f, 0.1f, 0.9f, 1.0f},
 					.roughness = 0.6f,
 					.metalness = 0.1f,
 				},

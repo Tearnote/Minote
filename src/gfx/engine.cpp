@@ -85,25 +85,26 @@ Engine::Engine(sys::Window& window, Version version) {
 
 	// Select physical device
 	auto physicalDeviceFeatures = VkPhysicalDeviceFeatures{
-		.multiDrawIndirect = true,
+		.multiDrawIndirect = VK_TRUE,
+	};
+	auto physicalDeviceVulkan12Features = VkPhysicalDeviceVulkan12Features{
+		.descriptorBindingPartiallyBound = VK_TRUE,
+		.descriptorBindingVariableDescriptorCount = VK_TRUE,
+		.runtimeDescriptorArray = VK_TRUE,
+		.hostQueryReset = VK_TRUE,
 	};
 	auto physicalDeviceSelectorResult = vkb::PhysicalDeviceSelector(instance)
 		.set_surface(surface)
-		.set_minimum_version(1, 0)
+		.set_minimum_version(1, 2)
 		.set_required_features(physicalDeviceFeatures)
+		.set_required_features_12(physicalDeviceVulkan12Features)
 		.select();
 	if (!physicalDeviceSelectorResult)
 		throw std::runtime_error(fmt::format("Failed to find a suitable GPU for Vulkan: {}", physicalDeviceSelectorResult.error().message()));
 	auto physicalDevice = physicalDeviceSelectorResult.value();
 
 	// Create device
-	auto queryReset = VkPhysicalDeviceHostQueryResetFeatures{
-		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES,
-		.hostQueryReset = VK_TRUE,
-	};
-	auto deviceResult = vkb::DeviceBuilder(physicalDevice)
-		.add_pNext(&queryReset)
-		.build();
+	auto deviceResult = vkb::DeviceBuilder(physicalDevice).build();
 	if (!deviceResult)
 		throw std::runtime_error(fmt::format("Failed to create Vulkan device: {}", deviceResult.error().message()));
 	device = deviceResult.value();
@@ -130,6 +131,8 @@ Engine::Engine(sys::Window& window, Version version) {
 
 Engine::~Engine() {
 	context->wait_idle();
+	cubemapPds.reset();
+	cubemapMips.clear();
 	cubemap.reset();
 	env.reset();
 	indicesBuf.reset();
@@ -178,7 +181,6 @@ void Engine::uploadAssets() {
 	auto width = 0;
 	auto height = 0;
 	auto components = 0;
-	stbi_set_flip_vertically_on_load(true);
 	auto* hdri = stbi_loadf("env.hdr", &width, &height, &components, 4);
 	env = context->allocate_texture(vuk::ImageCreateInfo{
 		.format = vuk::Format::eR32G32B32A32Sfloat,
@@ -189,16 +191,18 @@ void Engine::uploadAssets() {
 	ptc.upload(*env->image, vuk::Format::eR32G32B32A32Sfloat, {u32(width), u32(height), 1u}, 0,
 		std::span(hdri, width * height * 4), true);
 	stbi_image_free(hdri);
+	auto cubemapMipCount = mipmapCount(CubeMapSize);
 	cubemap = context->allocate_texture(vuk::ImageCreateInfo{
 		.flags = vuk::ImageCreateFlagBits::eCubeCompatible,
 		.format = vuk::Format::eR16G16B16A16Sfloat,
 		.extent = {CubeMapSize, CubeMapSize, 1},
-		.mipLevels = mipmapCount(CubeMapSize),
+		.mipLevels = cubemapMipCount,
 		.arrayLayers = 6,
 		.usage = vuk::ImageUsageFlagBits::eStorage | vuk::ImageUsageFlagBits::eSampled,
 	});
 	cubemap->view = ptc.create_image_view(vuk::ImageViewCreateInfo{
 		.image = cubemap->image.get(),
+		.viewType = vuk::ImageViewType::eCube,
 		.format = cubemap->format,
 		.subresourceRange = vuk::ImageSubresourceRange{
 			.aspectMask = vuk::ImageAspectFlagBits::eColor,
@@ -206,6 +210,22 @@ void Engine::uploadAssets() {
 			.layerCount = 6,
 		},
 	});
+	cubemapPds = ptc.create_persistent_descriptorset(*context->get_named_compute_pipeline("cubemip"), 0, 3);
+	for (auto i = 0u; i < /*cubemapMipCount*/3; i += 1) {
+		auto& view = cubemapMips.emplace_back(ptc.create_image_view(vuk::ImageViewCreateInfo{
+			.image = cubemap->image.get(),
+			.viewType = vuk::ImageViewType::e2DArray,
+			.format = cubemap->format,
+			.subresourceRange = vuk::ImageSubresourceRange{
+				.aspectMask = vuk::ImageAspectFlagBits::eColor,
+				.baseMipLevel = i,
+				.levelCount = 1,
+				.layerCount = 6,
+			},
+		}));
+		cubemapPds->update_storage_image(ptc, 0, i, view.get());
+	}
+	ptc.commit_persistent_descriptorset(cubemapPds.get());
 
 	// Finalize uploads
 	ptc.wait_all_transfers();
@@ -238,11 +258,11 @@ void Engine::render() {
 	world.viewProjection = world.projection * world.view;
 
 	constexpr auto BloomDepth = 6u;
-	auto bloomNames = std::array<std::string, BloomDepth>{};
+	auto bloomNames = std::array<std::string, BloomDepth>();
 	for (auto i = 0u; i < BloomDepth; i += 1)
 		bloomNames[i] = "bloom"s + std::to_string(i);
 	auto swapchainSize = vuk::Dimension2D::absolute(swapchain->extent);
-	auto bloomSizes = std::array<vuk::Dimension2D, BloomDepth>{};
+	auto bloomSizes = std::array<vuk::Dimension2D, BloomDepth>();
 	for (auto i = 0u; i < BloomDepth; i += 1)
 		bloomSizes[i] = vuk::Dimension2D::absolute(std::max(swapchainSize.extent.width >> i, 1u), std::max(swapchainSize.extent.height >> i, 1u));
 
@@ -262,6 +282,49 @@ void Engine::render() {
 
 	// Set up the rendergraph
 	auto rg = vuk::RenderGraph();
+	rg.add_pass({ // Cubemap create
+		.auxiliary_order = 0.0f,
+		.resources = {
+			"cubemap"_image(vuk::eComputeWrite),
+		},
+		.execute = [this](vuk::CommandBuffer& cmd) {
+			auto envSampler = vuk::SamplerCreateInfo{
+				.magFilter = vuk::Filter::eLinear,
+				.minFilter = vuk::Filter::eLinear,
+				.mipmapMode = vuk::SamplerMipmapMode::eLinear,
+			};
+			cmd.bind_sampled_image(0, 0, *env, envSampler)
+			   .bind_storage_image(0, 1, "cubemap")
+			   .bind_compute_pipeline("cubemap");
+			auto* sides = cmd.map_scratch_uniform_binding<std::array<glm::mat4, 6>>(0, 2);
+			*sides = std::to_array<glm::mat4>({glm::mat3{
+				0.0f, 0.0f, -1.0f,
+				0.0f, 1.0f, 0.0f,
+				1.0f, 0.0f, 0.0f,
+			}, glm::mat3{
+				0.0f, 0.0f, 1.0f,
+				0.0f, 1.0f, 0.0f,
+				-1.0f, 0.0f, 0.0f,
+			}, glm::mat3{
+				1.0f, 0.0f, 0.0f,
+				0.0f, 0.0f, 1.0f,
+				0.0f, -1.0f, 0.0f,
+			}, glm::mat3{
+				1.0f, 0.0f, 0.0f,
+				0.0f, 0.0f, -1.0f,
+				0.0f, 1.0f, 0.0f,
+			}, glm::mat3{
+				1.0f, 0.0f, 0.0f,
+				0.0f, 1.0f, 0.0f,
+				0.0f, 0.0f, 1.0f,
+			}, glm::mat3{
+				-1.0f, 0.0f, 0.0f,
+				0.0f, 1.0f, 0.0f,
+				0.0f, 0.0f, -1.0f,
+			}});
+			cmd.dispatch_invocations(CubeMapSize, CubeMapSize, 6);
+		},
+	});
 	rg.add_pass({ // Frustum culling
 		.auxiliary_order = 0.0f,
 		.resources = {
@@ -269,7 +332,7 @@ void Engine::render() {
 			"instances"_buffer(vuk::eComputeRead),
 			"instances_culled"_buffer(vuk::eComputeWrite),
 		},
-		.execute = [this, &indirect](vuk::CommandBuffer& cmd){
+		.execute = [this, &indirect](vuk::CommandBuffer& cmd) {
 			auto commandsBuf = cmd.get_resource_buffer("commands");
 			auto instancesBuf = cmd.get_resource_buffer("instances");
 			auto instancesCulledBuf = cmd.get_resource_buffer("instances_culled");
@@ -295,10 +358,21 @@ void Engine::render() {
 				.instancesCount = u32(indirect.instancesCount),
 			};
 			cmd.dispatch_invocations(indirect.instancesCount);
-		}
+		},
+	});
+	rg.add_pass({ // Cubemap mip generation
+		.auxiliary_order = 1.0f,
+		.resources = {
+			"cubemap"_image(vuk::eComputeRW),
+		},
+		.execute = [this](vuk::CommandBuffer& cmd) {
+			cmd.bind_persistent(0, cubemapPds.get())
+			   .bind_compute_pipeline("cubemip");
+			cmd.dispatch_invocations(CubeMapSize / 4, CubeMapSize / 4, 6);
+		},
 	});
 	rg.add_pass({ // Z-prepass
-		.auxiliary_order = 0.0f,
+		.auxiliary_order = 1.0f,
 		.resources = {
 			"commands"_buffer(vuk::eIndirectRead),
 			"instances_culled"_buffer(vuk::eVertexRead),
@@ -315,10 +389,10 @@ void Engine::render() {
 			   .bind_storage_buffer(0, 1, instancesBuf)
 			   .bind_graphics_pipeline("z_prepass");
 			cmd.draw_indexed_indirect(indirect.commandsCount, commandsBuf, sizeof(Indirect::Command));
-		}
+		},
 	});
 	rg.add_pass({ // Object draw
-		.auxiliary_order = 0.0f,
+		.auxiliary_order = 2.0f,
 		.resources = {
 			"commands"_buffer(vuk::eIndirectRead),
 			"instances_culled"_buffer(vuk::eVertexRead),
@@ -344,16 +418,17 @@ void Engine::render() {
 			   .bind_sampled_image(0, 3, *env, envSampler)
 			   .bind_graphics_pipeline("object");
 			cmd.draw_indexed_indirect(indirect.commandsCount, commandsBuf, sizeof(Indirect::Command));
-		}
+		},
 	});
 	rg.add_pass({ // Cubemap draw
-		.auxiliary_order = 0.0f,
+		.auxiliary_order = 3.0f,
 		.resources = {
+			"cubemap"_image(vuk::eFragmentSampled),
 			"object_color"_image(vuk::eColorWrite),
 			"object_depth"_image(vuk::eDepthStencilRW),
 		},
 		.execute = [this, worldBuf](vuk::CommandBuffer& cmd) {
-			auto envSampler = vuk::SamplerCreateInfo{
+			auto cubeSampler = vuk::SamplerCreateInfo{
 				.magFilter = vuk::Filter::eLinear,
 				.minFilter = vuk::Filter::eLinear,
 				.addressModeU = vuk::SamplerAddressMode::eClampToEdge,
@@ -363,14 +438,14 @@ void Engine::render() {
 			cmd.set_viewport(0, vuk::Rect2D::framebuffer())
 			   .set_scissor(0, vuk::Rect2D::framebuffer())
 			   .bind_uniform_buffer(0, 0, worldBuf)
-			   .bind_sampled_image(0, 1, *env, envSampler)
+			   .bind_sampled_image(0, 1, *cubemap, cubeSampler)
 			   .bind_graphics_pipeline("sky");
 			cmd.draw(14, 1, 0, 0);
 			cmd.set_primitive_topology(vuk::PrimitiveTopology::eTriangleList);
-		}
+		},
 	});
 	rg.add_pass({ // Bloom threshold
-		.auxiliary_order = 0.0f,
+		.auxiliary_order = 4.0f,
 		.resources = {
 			vuk::Resource(std::string_view(bloomNames[0]), vuk::Resource::Type::eImage, vuk::eColorWrite),
 			"object_resolved"_image(vuk::eFragmentSampled),
@@ -385,7 +460,7 @@ void Engine::render() {
 	});
 	for (auto i = 1u; i < BloomDepth; i += 1) {
 		rg.add_pass({ // Bloom downscale
-			.auxiliary_order = 0.0f,
+			.auxiliary_order = 4.0f,
 			.resources = {
 				vuk::Resource(std::string_view(bloomNames[i]), vuk::Resource::Type::eImage, vuk::eColorWrite),
 			    vuk::Resource(std::string_view(bloomNames[i-1]), vuk::Resource::Type::eImage, vuk::eFragmentSampled),
@@ -407,7 +482,7 @@ void Engine::render() {
 	}
 	for (auto i = BloomDepth - 2; i < BloomDepth; i -= 1) {
 		rg.add_pass({ // Bloom upscale
-			.auxiliary_order = 1.0f,
+			.auxiliary_order = 5.0f,
 			.resources = {
 				vuk::Resource(std::string_view(bloomNames[i]), vuk::Resource::Type::eImage, vuk::eColorWrite),
 				vuk::Resource(std::string_view(bloomNames[i+1]), vuk::Resource::Type::eImage, vuk::eFragmentSampled),
@@ -428,7 +503,7 @@ void Engine::render() {
 		});
 	}
 	rg.add_pass({ // Swapchain blit with tonemapping
-		.auxiliary_order = 1.0f,
+		.auxiliary_order = 6.0f,
 		.resources = {
 			"swapchain"_image(vuk::eColorWrite),
 			"object_resolved"_image(vuk::eFragmentSampled),
@@ -449,9 +524,10 @@ void Engine::render() {
 	ImGui_ImplVuk_Render(ptc, rg, "swapchain", "swapchain", imguiData, ImGui::GetDrawData());
 #endif //IMGUI
 
-	rg.attach_buffer("commands", indirect.commands, vuk::eTransferDst, vuk::eNone);
-	rg.attach_buffer("instances", indirect.instances, vuk::eTransferDst, vuk::eNone);
-	rg.attach_buffer("instances_culled", indirect.instancesCulled, vuk::eNone, vuk::eNone);
+	rg.attach_image("cubemap", vuk::ImageAttachment::from_texture(*cubemap), {}, {});
+	rg.attach_buffer("commands", indirect.commands, vuk::eTransferDst, {});
+	rg.attach_buffer("instances", indirect.instances, vuk::eTransferDst, {});
+	rg.attach_buffer("instances_culled", indirect.instancesCulled, {}, {});
 	rg.attach_managed("object_color", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	rg.attach_managed("object_depth", vuk::Format::eD32Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearDepthStencil{1.0f, 0});
 	rg.attach_managed("object_resolved", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e1, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
