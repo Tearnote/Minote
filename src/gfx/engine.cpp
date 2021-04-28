@@ -210,8 +210,8 @@ void Engine::uploadAssets() {
 			.layerCount = 6,
 		},
 	});
-	cubemapPds = ptc.create_persistent_descriptorset(*context->get_named_compute_pipeline("cubemip"), 0, 3);
-	for (auto i = 0u; i < /*cubemapMipCount*/3; i += 1) {
+	cubemapPds = ptc.create_persistent_descriptorset(*context->get_named_compute_pipeline("cubemip"), 0, 16);
+	for (auto i = 0u; i < cubemapMipCount; i += 1) {
 		auto& view = cubemapMips.emplace_back(ptc.create_image_view(vuk::ImageViewCreateInfo{
 			.image = cubemap->image.get(),
 			.viewType = vuk::ImageViewType::e2DArray,

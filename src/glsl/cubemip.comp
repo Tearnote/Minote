@@ -6,6 +6,10 @@ layout(local_size_x = 16, local_size_y = 16) in;
 
 layout(binding = 0, rgba16f) restrict coherent uniform image2DArray cubemap[];
 
+const uint groupSize = gl_WorkGroupSize.x;
+
+shared vec4 localArea[groupSize * groupSize];
+
 vec4 Load2x2Avg(uvec3 id) {
 	vec4 sample00 = imageLoad(cubemap[0], ivec3(id.xy + uvec2(0, 0), id.z));
 	vec4 sample10 = imageLoad(cubemap[0], ivec3(id.xy + uvec2(1, 0), id.z));
@@ -14,9 +18,18 @@ vec4 Load2x2Avg(uvec3 id) {
 	return (sample00 + sample10 + sample01 + sample11) * 0.25;
 }
 
+vec4 LocalLoad(uvec2 id) {
+	return localArea[id.y * groupSize + id.x];
+}
+
+void LocalStore(uvec2 id, vec4 val) {
+	localArea[id.y * groupSize + id.x] = val;
+}
+
 void main() {
-	uvec3 gid = gl_GlobalInvocationID;
-	uint size = imageSize(cubemap[0]).x;
+	const uvec3 gid = gl_GlobalInvocationID;
+	const uvec3 lid = gl_LocalInvocationID;
+	const uvec3 wid = gl_WorkGroupID;
 
 	vec4 sample00 = Load2x2Avg(uvec3(gid.xy * 4 + uvec2(0, 0), gid.z));
 	vec4 sample10 = Load2x2Avg(uvec3(gid.xy * 4 + uvec2(2, 0), gid.z));
@@ -28,4 +41,26 @@ void main() {
 	imageStore(cubemap[1], ivec3(gid.xy * 2 + uvec2(1, 1), gid.z), sample11);
 	vec4 sampleAvg = (sample00 + sample10 + sample01 + sample11) * 0.25;
 	imageStore(cubemap[2], ivec3(gid.xy, gid.z), sampleAvg);
+	LocalStore(lid.xy, sampleAvg);
+
+	uint mip = 3;
+	for (uint step = 1; step < gl_WorkGroupSize.x; step *= 2) {
+
+		memoryBarrierShared();
+		barrier();
+
+		uint threshold = groupSize / (step * 2);
+		bool isActive = (lid.x < threshold && lid.y < threshold);
+		if (isActive) {
+			vec4 sample00 = LocalLoad(lid.xy * step * 2 + uvec2(0, 0));
+			vec4 sample10 = LocalLoad(lid.xy * step * 2 + uvec2(step, 0));
+			vec4 sample01 = LocalLoad(lid.xy * step * 2 + uvec2(0, step));
+			vec4 sample11 = LocalLoad(lid.xy * step * 2 + uvec2(step, step));
+			vec4 sampleAvg = (sample00 + sample10 + sample01 + sample11) * 0.25;
+			imageStore(cubemap[mip], ivec3(wid.xy * (groupSize / (step * 2)) + lid.xy, gid.z), sampleAvg);
+			LocalStore(lid.xy * step * 2, sampleAvg);
+		}
+
+		mip += 1;
+	}
 }
