@@ -5,10 +5,14 @@
 layout(local_size_x = 16, local_size_y = 16) in;
 
 layout(binding = 0, rgba16f) restrict coherent uniform image2DArray cubemap[];
+layout(set = 1, binding = 0) restrict coherent buffer Atomics {
+	uint groupsFinished[6];
+};
 
 const uint groupSize = gl_WorkGroupSize.x;
 
 shared vec4 localArea[groupSize * groupSize];
+shared bool finalGroup;
 
 vec4 Load2x2Avg(uvec3 id) {
 	vec4 sample00 = imageLoad(cubemap[0], ivec3(id.xy + uvec2(0, 0), id.z));
@@ -30,6 +34,9 @@ void main() {
 	const uvec3 gid = gl_GlobalInvocationID;
 	const uvec3 lid = gl_LocalInvocationID;
 	const uvec3 wid = gl_WorkGroupID;
+
+	if (gid.xy == uvec2(0))
+		atomicExchange(groupsFinished[gid.z], 0);
 
 	vec4 sample00 = Load2x2Avg(uvec3(gid.xy * 4 + uvec2(0, 0), gid.z));
 	vec4 sample10 = Load2x2Avg(uvec3(gid.xy * 4 + uvec2(2, 0), gid.z));
@@ -62,5 +69,41 @@ void main() {
 		}
 
 		mip += 1;
+	}
+
+	if (lid.xy == uvec2(0)) {
+		uint groupFinishIndex = atomicAdd(groupsFinished[gid.z], 1) + 1;
+		finalGroup = (groupFinishIndex == groupSize * groupSize);
+	}
+
+	memoryBarrierShared();
+	memoryBarrierImage();
+	barrier();
+
+	if (finalGroup) {
+
+		vec4 groupSample = imageLoad(cubemap[mip-1], ivec3(lid.xy, gid.z));
+		LocalStore(lid.xy, groupSample);
+
+		for (uint step = 1; step < gl_WorkGroupSize.x; step *= 2) {
+
+			memoryBarrierShared();
+			barrier();
+
+			uint threshold = groupSize / (step * 2);
+			bool isActive = (lid.x < threshold && lid.y < threshold);
+			if (isActive) {
+				vec4 sample00 = LocalLoad(lid.xy * step * 2 + uvec2(0, 0));
+				vec4 sample10 = LocalLoad(lid.xy * step * 2 + uvec2(step, 0));
+				vec4 sample01 = LocalLoad(lid.xy * step * 2 + uvec2(0, step));
+				vec4 sample11 = LocalLoad(lid.xy * step * 2 + uvec2(step, step));
+				vec4 sampleAvg = (sample00 + sample10 + sample01 + sample11) * 0.25;
+				imageStore(cubemap[mip], ivec3(lid.xy, gid.z), sampleAvg);
+				LocalStore(lid.xy * step * 2, sampleAvg);
+			}
+
+			mip += 1;
+		}
+
 	}
 }

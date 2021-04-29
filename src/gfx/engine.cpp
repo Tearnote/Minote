@@ -277,6 +277,9 @@ void Engine::render() {
 		sizeof(World), alignof(World));
 	std::memcpy(worldBuf.mapped_ptr, &world, sizeof(world));
 
+	auto cubemipAtomic = ptc.allocate_scratch_buffer(vuk::MemoryUsage::eGPUonly,
+		vuk::BufferUsageFlagBits::eStorageBuffer, sizeof(u32) * 6, alignof(u32));
+
 	// Upload indirect buffers
 	auto indirect = Indirect::createBuffers(ptc, meshes, instances);
 
@@ -365,8 +368,9 @@ void Engine::render() {
 		.resources = {
 			"cubemap"_image(vuk::eComputeRW),
 		},
-		.execute = [this](vuk::CommandBuffer& cmd) {
+		.execute = [this, &cubemipAtomic](vuk::CommandBuffer& cmd) {
 			cmd.bind_persistent(0, cubemapPds.get())
+			   .bind_storage_buffer(1, 0, cubemipAtomic)
 			   .bind_compute_pipeline("cubemip");
 			cmd.dispatch_invocations(CubeMapSize / 4, CubeMapSize / 4, 6);
 		},
