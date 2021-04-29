@@ -400,11 +400,12 @@ void Engine::render() {
 		.resources = {
 			"commands"_buffer(vuk::eIndirectRead),
 			"instances_culled"_buffer(vuk::eVertexRead),
+			"cubemap"_image(vuk::eFragmentSampled),
 			"object_color"_image(vuk::eColorWrite),
 			"object_depth"_image(vuk::eDepthStencilRW),
 		},
 		.execute = [this, worldBuf, &indirect](vuk::CommandBuffer& cmd) {
-			auto envSampler = vuk::SamplerCreateInfo{
+			auto cubeSampler = vuk::SamplerCreateInfo{
 				.magFilter = vuk::Filter::eLinear,
 				.minFilter = vuk::Filter::eLinear,
 				.mipmapMode = vuk::SamplerMipmapMode::eLinear,
@@ -419,7 +420,7 @@ void Engine::render() {
 			   .bind_vertex_buffer(2, *colorsBuf, 2, vuk::Packed{vuk::Format::eR16G16B16A16Unorm})
 			   .bind_index_buffer(*indicesBuf, vuk::IndexType::eUint16)
 			   .bind_storage_buffer(0, 1, instancesBuf)
-			   .bind_sampled_image(0, 3, *env, envSampler)
+			   .bind_sampled_image(0, 3, "cubemap", cubeSampler)
 			   .bind_graphics_pipeline("object");
 			cmd.draw_indexed_indirect(indirect.commandsCount, commandsBuf, sizeof(Indirect::Command));
 		},

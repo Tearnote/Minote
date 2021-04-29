@@ -9,9 +9,8 @@ layout(location = 4) in vec3 f_viewPosition;
 
 layout(location = 0) out vec4 out_color;
 
-layout(binding = 3) uniform sampler2D env;
+layout(binding = 3) uniform samplerCube cubemap;
 
-#include "util.glslh"
 #include "object.glslh"
 
 vec3 envBRDFApprox(vec3 f0, float NoV, float roughness) {
@@ -26,7 +25,7 @@ vec3 envBRDFApprox(vec3 f0, float NoV, float roughness) {
 void main() {
 	const Instance instance = instances.data[InstanceIndex];
 
-	const float mipCount = 12.0;
+	const float mipCount = 11.0;
 
 	// Standard vectors
 	vec3 normal = normalize(f_normal);
@@ -36,8 +35,8 @@ void main() {
 	// PBR calculation
 	vec3 f0 = max(f_color.rgb * instance.metalness, vec3(0.04));
 
-	vec3 diffuse = f_color.rgb * textureLod(env, sampleSphericalMap(normal), mipCount - 2.0).rgb * (1.0 - instance.metalness);
-	vec3 specular = vec3(textureLod(env, sampleSphericalMap(-reflect(viewDirection, normal)), mipCount - (1 - 1.2 * log2(instance.roughness))));
+	vec3 diffuse = f_color.rgb * textureLod(cubemap, normal, mipCount - 1.0).rgb * (1.0 - instance.metalness);
+	vec3 specular = vec3(textureLod(cubemap, -reflect(viewDirection, normal), mipCount - (1 - 1.2 * log2(instance.roughness))));
 
 	out_color = vec4(mix(diffuse, specular, envBRDFApprox(f0, NoV, instance.roughness)), f_color.a);
 //	out_color = vec4(envBRDFApprox(f0, NoV, instance.roughness), f_color.a);
