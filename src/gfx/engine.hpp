@@ -73,7 +73,6 @@ private:
 		glm::vec3 up;
 	} camera;
 
-	std::optional<vuk::Texture> env;
 	std::optional<vuk::Texture> cubemap;
 	std::vector<vuk::Unique<vuk::ImageView>> cubemapMips;
 	vuk::Unique<vuk::PersistentDescriptorSet> cubemapPds;

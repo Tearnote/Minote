@@ -3,13 +3,10 @@
 
 layout(local_size_x = 8, local_size_y = 8) in;
 
-layout(binding = 0) uniform sampler2D env;
-layout(binding = 1, rgba16f) restrict writeonly uniform imageCube cubemap;
-layout(binding = 2) uniform Sides {
+layout(binding = 0, rgba16f) restrict writeonly uniform imageCube cubemap;
+layout(binding = 1) uniform Sides {
 	mat4 sides[6];
 };
-
-#include "util.glslh"
 
 void main() {
 	uvec3 gid = gl_GlobalInvocationID;
@@ -17,8 +14,7 @@ void main() {
 
 	vec2 uv = vec2(gid.xy) / vec2(size);
 	uv = uv * 2.0 - 1.0;
-	vec3 dir = normalize(mat3(sides[gid.z]) * vec3(uv, 1.0));
-	vec2 uvEnv = sampleSphericalMap(dir);
-	vec4 envSample = textureLod(env, uvEnv, 0.0);
-	imageStore(cubemap, ivec3(gid), envSample);
+	vec3 dir = mat3(sides[gid.z]) * vec3(uv, 1.0);
+
+	imageStore(cubemap, ivec3(gid), vec4(1.0));
 }

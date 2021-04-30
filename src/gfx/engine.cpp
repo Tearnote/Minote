@@ -7,8 +7,6 @@
 #include <cassert>
 #include "VkBootstrap.h"
 #include "GLFW/glfw3.h"
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
 #include "fmt/core.h"
 #include "volk.h"
 #include "vuk/CommandBuffer.hpp"
@@ -134,7 +132,6 @@ Engine::~Engine() {
 	cubemapPds.reset();
 	cubemapMips.clear();
 	cubemap.reset();
-	env.reset();
 	indicesBuf.reset();
 	colorsBuf.reset();
 	normalsBuf.reset();
@@ -177,20 +174,7 @@ void Engine::uploadAssets() {
 	indicesBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
 		vuk::BufferUsageFlagBits::eIndexBuffer, std::span(meshes.indices)).first;
 
-	// Upload environment map
-	auto width = 0;
-	auto height = 0;
-	auto components = 0;
-	auto* hdri = stbi_loadf("env.hdr", &width, &height, &components, 4);
-	env = context->allocate_texture(vuk::ImageCreateInfo{
-		.format = vuk::Format::eR32G32B32A32Sfloat,
-		.extent = {u32(width), u32(height), 1u},
-		.mipLevels = u32(std::log2(std::max(width, height))) + 1,
-		.usage = vuk::ImageUsageFlagBits::eTransferSrc | vuk::ImageUsageFlagBits::eTransferDst | vuk::ImageUsageFlagBits::eSampled,
-	});
-	ptc.upload(*env->image, vuk::Format::eR32G32B32A32Sfloat, {u32(width), u32(height), 1u}, 0,
-		std::span(hdri, width * height * 4), true);
-	stbi_image_free(hdri);
+	// Create cubemap and its views
 	auto cubemapMipCount = mipmapCount(CubeMapSize);
 	cubemap = context->allocate_texture(vuk::ImageCreateInfo{
 		.flags = vuk::ImageCreateFlagBits::eCubeCompatible,
@@ -291,38 +275,32 @@ void Engine::render() {
 			"cubemap"_image(vuk::eComputeWrite),
 		},
 		.execute = [this](vuk::CommandBuffer& cmd) {
-			auto envSampler = vuk::SamplerCreateInfo{
-				.magFilter = vuk::Filter::eLinear,
-				.minFilter = vuk::Filter::eLinear,
-				.mipmapMode = vuk::SamplerMipmapMode::eLinear,
-			};
-			cmd.bind_sampled_image(0, 0, *env, envSampler)
-			   .bind_storage_image(0, 1, "cubemap")
+			cmd.bind_storage_image(0, 0, "cubemap")
 			   .bind_compute_pipeline("cubemap");
-			auto* sides = cmd.map_scratch_uniform_binding<std::array<glm::mat4, 6>>(0, 2);
+			auto* sides = cmd.map_scratch_uniform_binding<std::array<glm::mat4, 6>>(0, 1);
 			*sides = std::to_array<glm::mat4>({glm::mat3{
 				0.0f, 0.0f, -1.0f,
-				0.0f, 1.0f, 0.0f,
+				0.0f, -1.0f, 0.0f,
 				1.0f, 0.0f, 0.0f,
 			}, glm::mat3{
 				0.0f, 0.0f, 1.0f,
-				0.0f, 1.0f, 0.0f,
+				0.0f, -1.0f, 0.0f,
 				-1.0f, 0.0f, 0.0f,
 			}, glm::mat3{
 				1.0f, 0.0f, 0.0f,
 				0.0f, 0.0f, 1.0f,
+				0.0f, 1.0f, 0.0f,
+			}, glm::mat3{
+				1.0f, 0.0f, 0.0f,
+				0.0f, 0.0f, -1.0f,
 				0.0f, -1.0f, 0.0f,
 			}, glm::mat3{
 				1.0f, 0.0f, 0.0f,
-				0.0f, 0.0f, -1.0f,
-				0.0f, 1.0f, 0.0f,
-			}, glm::mat3{
-				1.0f, 0.0f, 0.0f,
-				0.0f, 1.0f, 0.0f,
+				0.0f, -1.0f, 0.0f,
 				0.0f, 0.0f, 1.0f,
 			}, glm::mat3{
 				-1.0f, 0.0f, 0.0f,
-				0.0f, 1.0f, 0.0f,
+				0.0f, -1.0f, 0.0f,
 				0.0f, 0.0f, -1.0f,
 			}});
 			cmd.dispatch_invocations(CubeMapSize, CubeMapSize, 6);

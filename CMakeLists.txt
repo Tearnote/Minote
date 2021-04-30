@@ -195,12 +195,6 @@ FetchContent_Declare(shaderc
         GIT_TAG 3fe94c6a76d2b617e7fb20fdf3cde98001a274e3)
 FetchContent_MakeAvailable(shaderc)
 
-FetchContent_Declare(stb
-        GIT_REPOSITORY https://github.com/nothings/stb
-        GIT_TAG c9064e317699d2e495f36ba4f9ac037e88ee371a)
-FetchContent_MakeAvailable(stb)
-target_include_directories(Minote PRIVATE ${stb_SOURCE_DIR})
-
 FetchContent_Declare(sqlite
         URL https://www.sqlite.org/2021/sqlite-amalgamation-3350400.zip)
 FetchContent_MakeAvailable(sqlite)
