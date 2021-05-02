@@ -240,7 +240,7 @@ foreach(SHADER_PATH ${SHADER_SOURCES})
     add_custom_command(
             OUTPUT ${SHADER_OUTPUT}
             COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/generated/spv/"
-            COMMAND glslc_exe $<IF:$<CONFIG:Debug>,-O0,-O> -mfmt=num -o ${SHADER_OUTPUT} ${PROJECT_SOURCE_DIR}/${SHADER_PATH}
+            COMMAND glslc_exe -mfmt=num -o ${SHADER_OUTPUT} ${PROJECT_SOURCE_DIR}/${SHADER_PATH}
             DEPENDS ${SHADER_PATH}
             VERBATIM)
     list(APPEND SHADER_OUTPUTS ${SHADER_OUTPUT})
