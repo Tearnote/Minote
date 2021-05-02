@@ -269,12 +269,12 @@ void Engine::render() {
 
 	// Set up the rendergraph
 	auto rg = vuk::RenderGraph();
-	rg.add_pass({ // Cubemap create
-		.auxiliary_order = 0.0f,
+	rg.add_pass({
+		.name = "Sky generation",
 		.resources = {
 			"cubemap"_image(vuk::eComputeWrite),
 		},
-		.execute = [this](vuk::CommandBuffer& cmd) {
+		.execute = [](vuk::CommandBuffer& cmd) {
 			cmd.bind_storage_image(0, 0, "cubemap")
 			   .bind_compute_pipeline("cubemap");
 			auto* sides = cmd.map_scratch_uniform_binding<std::array<glm::mat4, 6>>(0, 1);
@@ -306,8 +306,8 @@ void Engine::render() {
 			cmd.dispatch_invocations(CubeMapSize, CubeMapSize, 6);
 		},
 	});
-	rg.add_pass({ // Frustum culling
-		.auxiliary_order = 0.0f,
+	rg.add_pass({
+		.name = "Frustum culling",
 		.resources = {
 			"commands"_buffer(vuk::eComputeRW),
 			"instances"_buffer(vuk::eComputeRead),
@@ -341,8 +341,8 @@ void Engine::render() {
 			cmd.dispatch_invocations(indirect.instancesCount);
 		},
 	});
-	rg.add_pass({ // Cubemap mip generation
-		.auxiliary_order = 1.0f,
+	rg.add_pass({
+		.name = "Generate cubemap mips",
 		.resources = {
 			"cubemap"_image(vuk::eComputeRW),
 		},
@@ -353,8 +353,8 @@ void Engine::render() {
 			cmd.dispatch_invocations(CubeMapSize / 4, CubeMapSize / 4, 6);
 		},
 	});
-	rg.add_pass({ // Z-prepass
-		.auxiliary_order = 1.0f,
+	rg.add_pass({
+		.name = "Z-prepass",
 		.resources = {
 			"commands"_buffer(vuk::eIndirectRead),
 			"instances_culled"_buffer(vuk::eVertexRead),
@@ -373,8 +373,8 @@ void Engine::render() {
 			cmd.draw_indexed_indirect(indirect.commandsCount, commandsBuf, sizeof(Indirect::Command));
 		},
 	});
-	rg.add_pass({ // Object draw
-		.auxiliary_order = 2.0f,
+	rg.add_pass({
+		.name = "Object drawing",
 		.resources = {
 			"commands"_buffer(vuk::eIndirectRead),
 			"instances_culled"_buffer(vuk::eVertexRead),
@@ -403,8 +403,8 @@ void Engine::render() {
 			cmd.draw_indexed_indirect(indirect.commandsCount, commandsBuf, sizeof(Indirect::Command));
 		},
 	});
-	rg.add_pass({ // Cubemap draw
-		.auxiliary_order = 3.0f,
+	rg.add_pass({
+		.name = "Sky drawing",
 		.resources = {
 			"cubemap"_image(vuk::eFragmentSampled),
 			"object_color"_image(vuk::eColorWrite),
@@ -427,8 +427,8 @@ void Engine::render() {
 			cmd.set_primitive_topology(vuk::PrimitiveTopology::eTriangleList);
 		},
 	});
-	rg.add_pass({ // Bloom threshold
-		.auxiliary_order = 4.0f,
+	rg.add_pass({
+		.name = "Bloom threshold pass",
 		.resources = {
 			vuk::Resource(std::string_view(bloomNames[0]), vuk::Resource::Type::eImage, vuk::eColorWrite),
 			"object_resolved"_image(vuk::eFragmentSampled),
@@ -442,8 +442,8 @@ void Engine::render() {
 		},
 	});
 	for (auto i = 1u; i < BloomDepth; i += 1) {
-		rg.add_pass({ // Bloom downscale
-			.auxiliary_order = 4.0f,
+		rg.add_pass({
+			.name = "Bloom downscale pass",
 			.resources = {
 				vuk::Resource(std::string_view(bloomNames[i]), vuk::Resource::Type::eImage, vuk::eColorWrite),
 			    vuk::Resource(std::string_view(bloomNames[i-1]), vuk::Resource::Type::eImage, vuk::eFragmentSampled),
@@ -464,8 +464,9 @@ void Engine::render() {
 		});
 	}
 	for (auto i = BloomDepth - 2; i < BloomDepth; i -= 1) {
-		rg.add_pass({ // Bloom upscale
-			.auxiliary_order = 5.0f,
+		rg.add_pass({
+			.name = "Bloom upscale pass",
+			.auxiliary_order = 1.0f,
 			.resources = {
 				vuk::Resource(std::string_view(bloomNames[i]), vuk::Resource::Type::eImage, vuk::eColorWrite),
 				vuk::Resource(std::string_view(bloomNames[i+1]), vuk::Resource::Type::eImage, vuk::eFragmentSampled),
@@ -485,8 +486,8 @@ void Engine::render() {
 			},
 		});
 	}
-	rg.add_pass({ // Swapchain blit with tonemapping
-		.auxiliary_order = 6.0f,
+	rg.add_pass({
+		.name = "Tonemapping",
 		.resources = {
 			"swapchain"_image(vuk::eColorWrite),
 			"object_resolved"_image(vuk::eFragmentSampled),
