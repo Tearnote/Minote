@@ -1,0 +1,34 @@
+#version 460
+#pragma shader_stage(compute)
+
+layout(local_size_x = 8, local_size_y = 8) in;
+
+layout(set = 1, binding = 0, rgba16f) restrict writeonly uniform image2D transmittance;
+
+#include "sky.glslh"
+
+void main() {
+	uvec3 gid = gl_GlobalInvocationID;
+	ivec2 size = imageSize(transmittance);
+
+	// Compute camera position from LUT coords
+	vec2 uv = (vec2(gid.xy) + vec2(0.5)) / vec2(size);
+	float viewHeight;
+	float viewZenithCosAngle;
+	UvToLutTransmittanceParams(viewHeight, viewZenithCosAngle, uv);
+
+	// A few extra needed constants
+	vec3 WorldPos = vec3(0.0, 0.0, viewHeight);
+	vec3 WorldDir = vec3(0.0, sqrt(1.0 - viewZenithCosAngle * viewZenithCosAngle), viewZenithCosAngle);
+
+	const bool ground = false;
+	const float SampleCountIni = 40.0;	// Can go as low as 10 sample but energy lost starts to be visible.
+	const float DepthBufferValue = -1.0;
+	const bool VariableSampleCount = false;
+	const bool MieRayPhase = false;
+	vec3 result = exp(-IntegrateScatteredLuminance(gid.xy, WorldPos, WorldDir, sun_direction,
+	ground, SampleCountIni, DepthBufferValue, VariableSampleCount, MieRayPhase, 9000000.0).OpticalDepth);
+
+	// Optical depth to transmittance
+	imageStore(transmittance, ivec2(gid.xy), vec4(result, 1.0));
+}

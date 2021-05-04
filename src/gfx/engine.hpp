@@ -19,6 +19,7 @@
 #if IMGUI
 #include "gfx/imgui.hpp"
 #endif //IMGUI
+#include "gfx/sky.hpp"
 
 namespace minote::gfx {
 
@@ -76,6 +77,8 @@ private:
 	std::optional<vuk::Texture> cubemap;
 	std::vector<vuk::Unique<vuk::ImageView>> cubemapMips;
 	vuk::Unique<vuk::PersistentDescriptorSet> cubemapPds;
+
+	std::optional<Sky> sky;
 
 	auto createSwapchain(VkSwapchainKHR old = VK_NULL_HANDLE) -> vuk::Swapchain;
 	void refreshSwapchain();

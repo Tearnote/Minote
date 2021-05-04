@@ -62,6 +62,7 @@ add_executable(Minote
         src/gfx/engine.hpp src/gfx/engine.cpp
         src/gfx/imgui.hpp src/gfx/imgui.cpp
         src/gfx/base.hpp
+        src/gfx/sky.hpp src/gfx/sky.cpp
         #src/playstate.hpp src/playstate.cpp
         src/mapper.hpp src/mapper.tpp src/mapper.cpp
         src/assets.hpp src/assets.tpp src/assets.cpp
@@ -223,6 +224,7 @@ target_link_libraries(Minote PRIVATE cgltf)
 # Shader compilation
 
 set(SHADER_SOURCES
+        src/glsl/sky/skyGenTransmittance.comp
         src/glsl/bloomThreshold.vert src/glsl/bloomThreshold.frag
         src/glsl/bloomBlur.vert src/glsl/bloomBlur.frag
         src/glsl/zprepass.vert src/glsl/zprepass.frag
@@ -240,7 +242,7 @@ foreach(SHADER_PATH ${SHADER_SOURCES})
     add_custom_command(
             OUTPUT ${SHADER_OUTPUT}
             COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/generated/spv/"
-            COMMAND glslc_exe -mfmt=num -o ${SHADER_OUTPUT} ${PROJECT_SOURCE_DIR}/${SHADER_PATH}
+            COMMAND glslc_exe -mfmt=num $<$<CONFIG:Debug>:-g> -o ${SHADER_OUTPUT} ${PROJECT_SOURCE_DIR}/${SHADER_PATH}
             DEPENDS ${SHADER_PATH}
             VERBATIM)
     list(APPEND SHADER_OUTPUTS ${SHADER_OUTPUT})

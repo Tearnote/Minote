@@ -129,6 +129,7 @@ Engine::Engine(sys::Window& window, Version version) {
 
 Engine::~Engine() {
 	context->wait_idle();
+	sky.reset();
 	cubemapPds.reset();
 	cubemapMips.clear();
 	cubemap.reset();
@@ -211,6 +212,8 @@ void Engine::uploadAssets() {
 	}
 	ptc.commit_persistent_descriptorset(cubemapPds.get());
 
+	sky = Sky(*context);
+
 	// Finalize uploads
 	ptc.wait_all_transfers();
 
@@ -269,6 +272,31 @@ void Engine::render() {
 
 	// Set up the rendergraph
 	auto rg = vuk::RenderGraph();
+
+	float const EarthRayleighScaleHeight = 8.0f;
+	float const EarthMieScaleHeight = 1.2f;
+	auto const MieScattering = glm::vec3{0.003996f, 0.003996f, 0.003996f};
+	auto const MieExtinction = glm::vec3{0.004440f, 0.004440f, 0.004440f};
+
+	rg.append(sky->generateAtmosphereModel(Sky::AtmosphereParams{
+		.BottomRadius = 6360.0f,
+		.TopRadius = 6460.0f,
+		.RayleighDensityExpScale = -1.0f / EarthRayleighScaleHeight,
+		.RayleighScattering = {0.005802f, 0.013558f, 0.033100f},
+		.MieDensityExpScale = -1.0f / EarthMieScaleHeight,
+		.MieScattering = MieScattering,
+		.MieExtinction = MieExtinction,
+		.MieAbsorption = glm::max(MieExtinction - MieScattering, glm::vec3(0.0f)),
+		.MiePhaseG = 0.8f,
+		.AbsorptionDensity0LayerWidth = 25.0f,
+		.AbsorptionDensity0ConstantTerm = -2.0f / 3.0f,
+		.AbsorptionDensity0LinearTerm = 1.0f / 15.0f,
+		.AbsorptionDensity1ConstantTerm = 8.0f / 3.0f,
+		.AbsorptionDensity1LinearTerm = -1.0f / 15.0f,
+		.AbsorptionExtinction = {0.000650f, 0.001881f, 0.000085f},
+		.GroundAlbedo = {0.0f, 0.0f, 0.0f},
+	}, {swapchain->extent.width, swapchain->extent.height}, world.viewProjection));
+
 	rg.add_pass({
 		.name = "Sky generation",
 		.resources = {
