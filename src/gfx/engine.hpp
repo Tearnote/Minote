@@ -75,6 +75,7 @@ private:
 	} camera;
 
 	std::optional<vuk::Texture> cubemap;
+	vuk::Unique<vuk::ImageView> cubemapBase;
 	std::vector<vuk::Unique<vuk::ImageView>> cubemapMips;
 	vuk::Unique<vuk::PersistentDescriptorSet> cubemapPds;
 

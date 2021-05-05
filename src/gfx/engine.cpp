@@ -132,6 +132,7 @@ Engine::~Engine() {
 	sky.reset();
 	cubemapPds.reset();
 	cubemapMips.clear();
+	cubemapBase.reset();
 	cubemap.reset();
 	indicesBuf.reset();
 	colorsBuf.reset();
@@ -192,6 +193,15 @@ void Engine::uploadAssets() {
 		.subresourceRange = vuk::ImageSubresourceRange{
 			.aspectMask = vuk::ImageAspectFlagBits::eColor,
 			.levelCount = VK_REMAINING_MIP_LEVELS,
+			.layerCount = 6,
+		},
+	});
+	cubemapBase = ptc.create_image_view(vuk::ImageViewCreateInfo{
+		.image = cubemap->image.get(),
+		.viewType = vuk::ImageViewType::e2DArray,
+		.format = cubemap->format,
+		.subresourceRange = vuk::ImageSubresourceRange{
+			.aspectMask = vuk::ImageAspectFlagBits::eColor,
 			.layerCount = 6,
 		},
 	});
@@ -377,6 +387,10 @@ void Engine::render() {
 		.execute = [this, &cubemipAtomic](vuk::CommandBuffer& cmd) {
 			cmd.bind_persistent(0, cubemapPds.get())
 			   .bind_storage_buffer(1, 0, cubemipAtomic)
+			   .bind_sampled_image(1, 1, cubemapBase.get(), vuk::SamplerCreateInfo{
+			   	.magFilter = vuk::Filter::eLinear,
+			   	.minFilter = vuk::Filter::eLinear,
+			   }, vuk::ImageLayout::eGeneral)
 			   .bind_compute_pipeline("cubemip");
 			cmd.dispatch_invocations(CubeMapSize / 4, CubeMapSize / 4, 6);
 		},
