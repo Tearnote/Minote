@@ -9,8 +9,8 @@ layout(binding = 1) uniform Sides {
 };
 
 void main() {
-	uvec3 gid = gl_GlobalInvocationID;
-	ivec2 size = imageSize(cubemap);
+	const uvec3 gid = gl_GlobalInvocationID;
+	const ivec2 size = imageSize(cubemap);
 
 	vec2 uv = vec2(gid.xy) / vec2(size);
 	uv = uv * 2.0 - 1.0;

@@ -8,8 +8,8 @@ layout(set = 1, binding = 0, rgba16f) restrict writeonly uniform image2D transmi
 #include "sky.glslh"
 
 void main() {
-	uvec3 gid = gl_GlobalInvocationID;
-	ivec2 size = imageSize(transmittance);
+	const uvec3 gid = gl_GlobalInvocationID;
+	const ivec2 size = imageSize(transmittance);
 
 	// Compute camera position from LUT coords
 	vec2 uv = (vec2(gid.xy) + vec2(0.5)) / vec2(size);

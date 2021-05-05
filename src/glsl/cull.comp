@@ -54,7 +54,7 @@ bool visible(uint gid, float radius) {
 }
 
 void main() {
-	uint gid = gl_GlobalInvocationID.x;
+	const uint gid = gl_GlobalInvocationID.x;
 	if (gid >= instancesCount) return;
 
 	uint meshID = instances[gid].meshID;
