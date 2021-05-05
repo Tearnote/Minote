@@ -244,7 +244,7 @@ foreach(SHADER_PATH ${SHADER_SOURCES})
             COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/generated/spv/"
             COMMAND glslc_exe -mfmt=num $<$<CONFIG:Debug>:-g> -o ${SHADER_OUTPUT} ${PROJECT_SOURCE_DIR}/${SHADER_PATH}
             DEPENDS ${SHADER_PATH}
-            VERBATIM)
+            VERBATIM COMMAND_EXPAND_LISTS)
     list(APPEND SHADER_OUTPUTS ${SHADER_OUTPUT})
 endforeach()
 
@@ -274,7 +274,7 @@ foreach(MODEL_PATH ${MODELS})
             OUTPUT ${ASSET_OUTPUT} APPEND
             COMMAND sqlite-shell ${ASSET_OUTPUT} "INSERT OR REPLACE INTO models(name, data) VALUES('${MODEL_NAME}', readfile('${PROJECT_SOURCE_DIR}/${MODEL_PATH}'))"
             DEPENDS ${MODEL_PATH}
-            VERBATIM)
+            VERBATIM COMMAND_EXPAND_LISTS)
 endforeach()
 
 add_custom_target(Package_assets DEPENDS ${ASSET_OUTPUT})
