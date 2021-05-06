@@ -275,7 +275,7 @@ void Engine::render() {
 	std::memcpy(worldBuf.mapped_ptr, &world, sizeof(world));
 
 	auto cubemipAtomic = ptc.allocate_scratch_buffer(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eStorageBuffer, sizeof(u32) * 6, alignof(u32));
+		vuk::BufferUsageFlagBits::eStorageBuffer, sizeof(glm::vec4) * 256 + sizeof(u32) * 6, alignof(glm::vec4));
 
 	// Upload indirect buffers
 	auto indirect = Indirect::createBuffers(ptc, meshes, instances);
