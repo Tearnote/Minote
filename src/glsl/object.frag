@@ -25,7 +25,7 @@ vec3 envBRDFApprox(vec3 f0, float NoV, float roughness) {
 void main() {
 	const Instance instance = instances.data[InstanceIndex];
 
-	const float mipCount = 11.0;
+	const float mipCount = floor(log2(float(textureSize(cubemap, 0).x))) + 1.0;
 
 	// Standard vectors
 	vec3 normal = normalize(f_normal);
