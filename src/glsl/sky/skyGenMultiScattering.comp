@@ -1,0 +1,127 @@
+#version 460
+#pragma shader_stage(compute)
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 64) in;
+
+layout(set = 1, binding = 0, rgba16f) restrict writeonly uniform image2D multiScattering;
+
+#include "sky.glslh"
+
+shared vec3 MultiScatAs1SharedMem[64];
+shared vec3 LSharedMem[64];
+
+void main() {
+	const uvec3 gid = gl_GlobalInvocationID;
+	const ivec2 size = imageSize(multiScattering);
+
+	// Compute camera position from LUT coords
+	vec2 uv = (vec2(gid.xy) + vec2(0.5)) / vec2(size);
+	uv = vec2(fromSubUvsToUnit(uv.x, size.x), fromSubUvsToUnit(uv.y, size.y));
+
+	float cosSunZenithAngle = uv.x * 2.0 - 1.0;
+	vec3 sunDir = vec3(0.0, sqrt(clamp(1.0 - cosSunZenithAngle * cosSunZenithAngle, 0.0, 1.0)), cosSunZenithAngle);
+	// We adjust again viewHeight according to PLANET_RADIUS_OFFSET to be in a valid range.
+	float viewHeight = Atmosphere.BottomRadius + clamp(uv.y + PLANET_RADIUS_OFFSET, 0.0, 1.0) * (Atmosphere.TopRadius - Atmosphere.BottomRadius - PLANET_RADIUS_OFFSET);
+
+	vec3 WorldPos = vec3(0.0, 0.0, viewHeight);
+	vec3 WorldDir = vec3(0.0, 0.0, 1.0);
+
+	const bool ground = true;
+	const float SampleCountIni = 20; // a minimum set of step is required for accuracy unfortunately
+	const float DepthBufferValue = -1.0;
+	const bool VariableSampleCount = false;
+	const bool MieRayPhase = false;
+
+	const float SphereSolidAngle = 4.0 * PI;
+	const float IsotropicPhase = 1.0 / SphereSolidAngle;
+
+	// Reference. Since there are many samples, it requires MULTI_SCATTERING_POWER_SERIE to be true for accuracy and to avoid divergences (see declaration for explanations)
+#define SQRTSAMPLECOUNT 8
+	const float sqrtSample = float(SQRTSAMPLECOUNT);
+	float i = 0.5 + float(gid.z / SQRTSAMPLECOUNT);
+	float j = 0.5 + float(gid.z - float((gid.z / SQRTSAMPLECOUNT)*SQRTSAMPLECOUNT));
+	{
+		float randA = i / sqrtSample;
+		float randB = j / sqrtSample;
+		float theta = 2.0 * PI * randA;
+		float phi = PI * randB;
+		float cosPhi = cos(phi);
+		float sinPhi = sin(phi);
+		float cosTheta = cos(theta);
+		float sinTheta = sin(theta);
+		WorldDir.x = cosTheta * sinPhi;
+		WorldDir.y = sinTheta * sinPhi;
+		WorldDir.z = cosPhi;
+		SingleScatteringResult result = IntegrateScatteredLuminance(gid.xy, WorldPos, WorldDir, sunDir,
+		ground, SampleCountIni, DepthBufferValue, VariableSampleCount, MieRayPhase, 9000000.0);
+
+		MultiScatAs1SharedMem[gid.z] = result.MultiScatAs1 * SphereSolidAngle / (sqrtSample * sqrtSample);
+		LSharedMem[gid.z] = result.L * SphereSolidAngle / (sqrtSample * sqrtSample);
+	}
+#undef SQRTSAMPLECOUNT
+
+	memoryBarrierShared();
+	barrier();
+
+	// 64 to 32
+	if (gid.z < 32) {
+		MultiScatAs1SharedMem[gid.z] += MultiScatAs1SharedMem[gid.z + 32];
+		LSharedMem[gid.z] += LSharedMem[gid.z + 32];
+	}
+	memoryBarrierShared();
+	barrier();
+	// 32 to 16
+	if (gid.z < 16) {
+		MultiScatAs1SharedMem[gid.z] += MultiScatAs1SharedMem[gid.z + 16];
+		LSharedMem[gid.z] += LSharedMem[gid.z + 16];
+	}
+	memoryBarrierShared();
+	barrier();
+	// 16 to 8 (16 is thread group min hardware size with intel, no sync required from there)
+	if (gid.z < 8) {
+		MultiScatAs1SharedMem[gid.z] += MultiScatAs1SharedMem[gid.z + 8];
+		LSharedMem[gid.z] += LSharedMem[gid.z + 8];
+	}
+	memoryBarrierShared();
+	barrier();
+	if (gid.z < 4) {
+		MultiScatAs1SharedMem[gid.z] += MultiScatAs1SharedMem[gid.z + 4];
+		LSharedMem[gid.z] += LSharedMem[gid.z + 4];
+	}
+	memoryBarrierShared();
+	barrier();
+	if (gid.z < 2) {
+		MultiScatAs1SharedMem[gid.z] += MultiScatAs1SharedMem[gid.z + 2];
+		LSharedMem[gid.z] += LSharedMem[gid.z + 2];
+	}
+	memoryBarrierShared();
+	barrier();
+	if (gid.z < 1) {
+		MultiScatAs1SharedMem[gid.z] += MultiScatAs1SharedMem[gid.z + 1];
+		LSharedMem[gid.z] += LSharedMem[gid.z + 1];
+	}
+	memoryBarrierShared();
+	barrier();
+	if (gid.z > 0)
+		return;
+
+	vec3 MultiScatAs1 = MultiScatAs1SharedMem[0] * IsotropicPhase; // Equation 7 f_ms
+	vec3 InScatteredLuminance = LSharedMem[0] * IsotropicPhase;    // Equation 5 L_2ndOrder
+
+	// MultiScatAs1 represents the amount of luminance scattered as if the integral of scattered luminance over the sphere would be 1.
+	//  - 1st order of scattering: one can ray-march a straight path as usual over the sphere. That is InScatteredLuminance.
+	//  - 2nd order of scattering: the inscattered luminance is InScatteredLuminance at each of samples of fist order integration. Assuming a uniform phase function that is represented by MultiScatAs1,
+	//  - 3nd order of scattering: the inscattered luminance is (InScatteredLuminance * MultiScatAs1 * MultiScatAs1)
+	//  - etc.
+#if	MULTI_SCATTERING_POWER_SERIE == 0
+	vec3 MultiScatAs1SQR = MultiScatAs1 * MultiScatAs1;
+	vec3 L = InScatteredLuminance * (1.0 + MultiScatAs1 + MultiScatAs1SQR + MultiScatAs1 * MultiScatAs1SQR + MultiScatAs1SQR * MultiScatAs1SQR);
+#else
+	// For a serie, sum_{n=0}^{n=+inf} = 1 + r + r^2 + r^3 + ... + r^n = 1 / (1.0 - r), see https://en.wikipedia.org/wiki/Geometric_series
+	const vec3 r = MultiScatAs1;
+	const vec3 SumOfAllMultiScatteringEventsContribution = 1.0 / (1.0 - r);
+	vec3 L = InScatteredLuminance * SumOfAllMultiScatteringEventsContribution;// Equation 10 Psi_ms
+#endif
+
+	imageStore(multiScattering, ivec2(gid.xy), vec4(MultipleScatteringFactor * L, 1.0));
+}

@@ -305,7 +305,7 @@ void Engine::render() {
 		.AbsorptionDensity1LinearTerm = -1.0f / 15.0f,
 		.AbsorptionExtinction = {0.000650f, 0.001881f, 0.000085f},
 		.GroundAlbedo = {0.0f, 0.0f, 0.0f},
-	}, {swapchain->extent.width, swapchain->extent.height}, world.viewProjection));
+	}, ptc, {swapchain->extent.width, swapchain->extent.height}, world.viewProjection));
 
 	rg.add_pass({
 		.name = "Sky generation",
@@ -397,6 +397,7 @@ void Engine::render() {
 	});
 	rg.add_pass({
 		.name = "Z-prepass",
+		.auxiliary_order = 1.0f,
 		.resources = {
 			"commands"_buffer(vuk::eIndirectRead),
 			"instances_culled"_buffer(vuk::eVertexRead),
@@ -417,6 +418,7 @@ void Engine::render() {
 	});
 	rg.add_pass({
 		.name = "Object drawing",
+		.auxiliary_order = 2.0f,
 		.resources = {
 			"commands"_buffer(vuk::eIndirectRead),
 			"instances_culled"_buffer(vuk::eVertexRead),

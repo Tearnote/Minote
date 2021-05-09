@@ -15,13 +15,17 @@ struct Sky {
 	constexpr static auto TransmittanceWidth = 256u;
 	constexpr static auto TransmittanceHeight = 64u;
 
+	constexpr static auto MultiScatteringFormat = vuk::Format::eR16G16B16A16Sfloat;
+	constexpr static auto MultiScatteringWidth = 32u;
+	constexpr static auto MultiScatteringHeight = 32u;
+
 	struct Globals {
 
 		glm::mat4 gSkyInvViewProjMat;
 		glm::uvec2 gResolution;
 		glm::vec2 RayMarchMinMaxSPP;
 		glm::vec3 gSunIlluminance;
-		float pad0;
+		float MultipleScatteringFactor;
 		glm::vec3 sun_direction;
 
 	};
@@ -60,10 +64,11 @@ struct Sky {
 	};
 
 	vuk::Texture transmittance;
+	vuk::Texture multiScattering;
 
 	explicit Sky(vuk::Context&);
 
-	auto generateAtmosphereModel(AtmosphereParams const&, glm::uvec2 resolution, glm::mat4 viewProjection) -> vuk::RenderGraph;
+	auto generateAtmosphereModel(AtmosphereParams const&, vuk::PerThreadContext&, glm::uvec2 resolution, glm::mat4 viewProjection) -> vuk::RenderGraph;
 
 };
 

@@ -8,11 +8,11 @@ layout(set = 1, binding = 0, rgba16f) restrict writeonly uniform image2D transmi
 #include "sky.glslh"
 
 void main() {
-	const uvec3 gid = gl_GlobalInvocationID;
+	const uvec2 gid = gl_GlobalInvocationID.xy;
 	const ivec2 size = imageSize(transmittance);
 
 	// Compute camera position from LUT coords
-	vec2 uv = (vec2(gid.xy) + vec2(0.5)) / vec2(size);
+	vec2 uv = (vec2(gid) + vec2(0.5)) / vec2(size);
 	float viewHeight;
 	float viewZenithCosAngle;
 	UvToLutTransmittanceParams(viewHeight, viewZenithCosAngle, uv);
@@ -26,9 +26,9 @@ void main() {
 	const float DepthBufferValue = -1.0;
 	const bool VariableSampleCount = false;
 	const bool MieRayPhase = false;
-	vec3 result = exp(-IntegrateScatteredLuminance(gid.xy, WorldPos, WorldDir, sun_direction,
+	vec3 result = exp(-IntegrateScatteredLuminance(gid, WorldPos, WorldDir, sun_direction,
 	ground, SampleCountIni, DepthBufferValue, VariableSampleCount, MieRayPhase, 9000000.0).OpticalDepth);
 
 	// Optical depth to transmittance
-	imageStore(transmittance, ivec2(gid.xy), vec4(result, 1.0));
+	imageStore(transmittance, ivec2(gid), vec4(result, 1.0));
 }
