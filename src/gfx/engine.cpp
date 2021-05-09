@@ -250,7 +250,8 @@ void Engine::render() {
 	auto viewport = glm::uvec2(swapchain->extent.width, swapchain->extent.height);
 	auto rawview = glm::lookAt(camera.eye, camera.center, camera.up);
 	auto yFlip = make_scale({-1.0f, -1.0f, 1.0f});
-	world.projection = glm::infinitePerspective(VerticalFov, f32(viewport.x) / f32(viewport.y), NearPlane);
+//	world.projection = glm::infinitePerspective(VerticalFov, f32(viewport.x) / f32(viewport.y), NearPlane);
+	world.projection = glm::perspective(VerticalFov, f32(viewport.x) / f32(viewport.y), NearPlane, 1000.0f);
 	world.view = yFlip * rawview;
 	world.viewProjection = world.projection * world.view;
 
@@ -305,7 +306,7 @@ void Engine::render() {
 		.AbsorptionDensity1LinearTerm = -1.0f / 15.0f,
 		.AbsorptionExtinction = {0.000650f, 0.001881f, 0.000085f},
 		.GroundAlbedo = {0.0f, 0.0f, 0.0f},
-	}, ptc, {swapchain->extent.width, swapchain->extent.height}, world.viewProjection));
+	}, ptc, {swapchain->extent.width, swapchain->extent.height}, camera.eye, world.viewProjection));
 
 	rg.add_pass({
 		.name = "Sky generation",
@@ -316,7 +317,8 @@ void Engine::render() {
 			cmd.bind_storage_image(0, 0, "cubemap")
 			   .bind_compute_pipeline("cubemap");
 			auto* sides = cmd.map_scratch_uniform_binding<std::array<glm::mat4, 6>>(0, 1);
-			*sides = std::to_array<glm::mat4>({glm::mat3{
+			*sides = std::to_array<glm::mat4>({
+			glm::mat3{
 				0.0f, 0.0f, -1.0f,
 				0.0f, -1.0f, 0.0f,
 				1.0f, 0.0f, 0.0f,
@@ -449,6 +451,7 @@ void Engine::render() {
 	});
 	rg.add_pass({
 		.name = "Sky drawing",
+		.auxiliary_order = 3.0f,
 		.resources = {
 			"cubemap"_image(vuk::eFragmentSampled),
 			"object_color"_image(vuk::eColorWrite),

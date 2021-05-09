@@ -224,8 +224,9 @@ target_link_libraries(Minote PRIVATE cgltf)
 # Shader compilation
 
 set(SHADER_SOURCES
-        src/glsl/sky/skyGenTransmittance.comp
         src/glsl/sky/skyGenMultiScattering.comp
+        src/glsl/sky/skyGenTransmittance.comp
+        src/glsl/sky/skyGenSkyView.comp
         src/glsl/bloomThreshold.vert src/glsl/bloomThreshold.frag
         src/glsl/bloomBlur.vert src/glsl/bloomBlur.frag
         src/glsl/zprepass.vert src/glsl/zprepass.frag
