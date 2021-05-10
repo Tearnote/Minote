@@ -24,8 +24,8 @@ void createPipelines(vuk::Context& ctx) {
 	objectPci.add_spirv(std::vector<u32>{
 #include "spv/object.frag.spv"
 	}, "object.frag");
-	objectPci.depth_stencil_state.depthWriteEnable = false;
 	objectPci.rasterization_state.cullMode = vuk::CullModeFlagBits::eBack;
+	objectPci.depth_stencil_state.depthWriteEnable = false;
 	objectPci.depth_stencil_state.depthCompareOp = vuk::CompareOp::eEqual;
 	ctx.create_named_pipeline("object", objectPci);
 
@@ -36,9 +36,9 @@ void createPipelines(vuk::Context& ctx) {
 	skyPci.add_spirv(std::vector<u32>{
 #include "spv/sky.frag.spv"
 	}, "sky.frag");
+	skyPci.rasterization_state.cullMode = vuk::CullModeFlagBits::eFront;
 	skyPci.depth_stencil_state.depthWriteEnable = false;
-	objectPci.rasterization_state.cullMode = vuk::CullModeFlagBits::eBack;
-	skyPci.depth_stencil_state.depthCompareOp = vuk::CompareOp::eEqual;
+	skyPci.depth_stencil_state.depthCompareOp = vuk::CompareOp::eLessOrEqual;
 	ctx.create_named_pipeline("sky", skyPci);
 
 	auto tonemapPci = vuk::PipelineBaseCreateInfo();
