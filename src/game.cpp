@@ -75,21 +75,21 @@ void game(sys::Glfw&, sys::Window& window) try {
 		}
 
 		// Graphics
-		engine.setCamera({std::sin(glfwGetTime() / 4.0) * 28.0f, std::sin(glfwGetTime() / 3.1) * 4.0f + 12.0f, std::cos(glfwGetTime() / 4.0) * 28.0f}, {0.0f, 4.0f, 0.0f});
+		engine.setCamera({std::sin(glfwGetTime() / 4.0) * 28.0f, std::cos(glfwGetTime() / 4.0) * 28.0f, std::sin(glfwGetTime() / 3.1) * 4.0f + 12.0f}, {0.0f, 0.0f, 4.0f});
 
 		ImGui::SliderInt("Expand", &Expand, 0, 40);
 
-		auto rotateTransform = make_rotate(glm::radians(90.0f), {1.0f, 0.0f, 0.0f});
-		auto rotateTransformAnim = make_rotate(f32(glm::radians(f64(sys::Glfw::getTime().count()) / 20000000.0)), {0.0f, 1.0f, 0.0f});
-		auto transform1 = make_translate({0.0f, 0.0f, 0.0f}) * make_scale({12.0f, 1.0f, 12.0f}) * glm::inverse(rotateTransform);
-		auto transform2 = make_translate({-4.0f, 2.0f, -4.0f}) * rotateTransform;
-		auto transform3 = make_translate({4.0f, 2.0f, -4.0f}) * rotateTransform;
-		auto transform4 = make_translate({-4.0f, 2.0f, 4.0f}) * rotateTransform;
-		auto transform5 = make_translate({4.0f, 2.0f, 4.0f}) * rotateTransform;
-		auto transform55 = make_translate({7.0f, 2.0f, 0.0f}) * rotateTransform;
-		auto transform6 = make_translate({0.0f, 2.5f, 0.0f}) * make_scale({1.5f, 1.5f, 1.5f}) * rotateTransformAnim * rotateTransform;
-		auto transform7 = make_translate({0.0f, 2.0f, 8.0f});
-		auto transform8 = make_translate({0.0f, 2.0f, -8.0f});
+		auto rotateTransform = make_rotate(glm::radians(180.0f), {1.0f, 0.0f, 0.0f});
+		auto rotateTransformAnim = make_rotate(f32(glm::radians(f64(sys::Glfw::getTime().count()) / 20000000.0)), {0.0f, 0.0f, 1.0f});
+		auto transform1 = make_translate({0.0f, 0.0f, 0.0f}) * make_scale({12.0f, 12.0f, 1.0f}) * glm::inverse(rotateTransform);
+		auto transform2 = make_translate({-4.0f, -4.0f, 2.0f}) * rotateTransform;
+		auto transform3 = make_translate({4.0f, -4.0f, 2.0f}) * rotateTransform;
+		auto transform4 = make_translate({-4.0f, 4.0f, 2.0f}) * rotateTransform;
+		auto transform5 = make_translate({4.0f, 4.0f, 2.0f}) * rotateTransform;
+		auto transform55 = make_translate({7.0f, 0.0f, 2.0f}) * rotateTransform;
+		auto transform6 = make_translate({0.0f, 0.0f, 2.5f}) * make_scale({1.5f, 1.5f, 1.5f}) * rotateTransformAnim * rotateTransform;
+		auto transform7 = make_translate({0.0f, 8.0f, 2.0f});
+		auto transform8 = make_translate({0.0f, -8.0f, 2.0f});
 		constexpr auto Spacing = 25.0f;
 		for (auto x = -Spacing * Expand; x <= Spacing * Expand; x += Spacing)
 		for (auto y = -Spacing * Expand; y <= Spacing * Expand; y += Spacing) {

@@ -250,8 +250,8 @@ void Engine::render() {
 	auto viewport = glm::uvec2(swapchain->extent.width, swapchain->extent.height);
 	auto rawview = glm::lookAt(camera.eye, camera.center, camera.up);
 	auto yFlip = make_scale({-1.0f, -1.0f, 1.0f});
-//	world.projection = glm::infinitePerspective(VerticalFov, f32(viewport.x) / f32(viewport.y), NearPlane);
-	world.projection = glm::perspective(VerticalFov, f32(viewport.x) / f32(viewport.y), NearPlane, 1000.0f);
+	world.projection = glm::infinitePerspective(VerticalFov, f32(viewport.x) / f32(viewport.y), NearPlane);
+//	world.projection = glm::perspective(VerticalFov, f32(viewport.x) / f32(viewport.y), NearPlane, 1000.0f);
 	world.view = yFlip * rawview;
 	world.viewProjection = world.projection * world.view;
 
@@ -289,7 +289,7 @@ void Engine::render() {
 	auto const MieScattering = glm::vec3{0.003996f, 0.003996f, 0.003996f};
 	auto const MieExtinction = glm::vec3{0.004440f, 0.004440f, 0.004440f};
 
-	rg.append(sky->generateAtmosphereModel(Sky::AtmosphereParams{
+	/*rg.append(sky->generateAtmosphereModel(Sky::AtmosphereParams{
 		.BottomRadius = 6360.0f,
 		.TopRadius = 6460.0f,
 		.RayleighDensityExpScale = -1.0f / EarthRayleighScaleHeight,
@@ -306,11 +306,12 @@ void Engine::render() {
 		.AbsorptionDensity1LinearTerm = -1.0f / 15.0f,
 		.AbsorptionExtinction = {0.000650f, 0.001881f, 0.000085f},
 		.GroundAlbedo = {0.0f, 0.0f, 0.0f},
-	}, ptc, {swapchain->extent.width, swapchain->extent.height}, camera.eye, world.viewProjection));
+	}, ptc, {swapchain->extent.width, swapchain->extent.height}, camera.eye, world.viewProjection));*/
 
 	rg.add_pass({
 		.name = "Sky generation",
 		.resources = {
+//			"sky_sky_view"_image(vuk::eComputeRead),
 			"cubemap"_image(vuk::eComputeWrite),
 		},
 		.execute = [](vuk::CommandBuffer& cmd) {
