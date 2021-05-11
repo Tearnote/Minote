@@ -110,7 +110,7 @@ target_link_libraries(Minote PRIVATE vuk)
 
 FetchContent_Declare(vk-bootstrap
         GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap
-        GIT_TAG 95b82a95378c2900f7d1d7908cee322b5f3bf120)
+        GIT_TAG 36eff8fa4222b2225e349a44dde0402f0f4a277b)
 FetchContent_MakeAvailable(vk-bootstrap)
 target_link_libraries(Minote PRIVATE vk-bootstrap)
 
