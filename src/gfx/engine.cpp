@@ -63,7 +63,8 @@ Engine::Engine(sys::Window& window, Version version) {
 	// Create instance
 	auto instanceResult = vkb::InstanceBuilder()
 #if VK_VALIDATION
-		.request_validation_layers()
+		.enable_layer("VK_LAYER_KHRONOS_validation")
+		.add_validation_feature_enable(VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT)
 		.set_debug_callback(debugCallback)
 #endif //VK_VALIDATION
 		.set_app_name(AppTitle)
@@ -289,7 +290,7 @@ void Engine::render() {
 	auto const MieScattering = glm::vec3{0.003996f, 0.003996f, 0.003996f};
 	auto const MieExtinction = glm::vec3{0.004440f, 0.004440f, 0.004440f};
 
-	/*rg.append(sky->generateAtmosphereModel(Sky::AtmosphereParams{
+	rg.append(sky->generateAtmosphereModel(Sky::AtmosphereParams{
 		.BottomRadius = 6360.0f,
 		.TopRadius = 6460.0f,
 		.RayleighDensityExpScale = -1.0f / EarthRayleighScaleHeight,
@@ -306,7 +307,7 @@ void Engine::render() {
 		.AbsorptionDensity1LinearTerm = -1.0f / 15.0f,
 		.AbsorptionExtinction = {0.000650f, 0.001881f, 0.000085f},
 		.GroundAlbedo = {0.0f, 0.0f, 0.0f},
-	}, ptc, {swapchain->extent.width, swapchain->extent.height}, camera.eye, world.viewProjection));*/
+	}, ptc, {swapchain->extent.width, swapchain->extent.height}, camera.eye, world.viewProjection));
 
 	rg.add_pass({
 		.name = "Sky generation",

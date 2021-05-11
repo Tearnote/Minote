@@ -70,7 +70,7 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerTh
 	rg.add_pass({
 		.name = "Sky transmittance LUT generation",
 		.resources = {
-			"sky_transmittance"_image(vuk::eComputeRW),
+			"sky_transmittance"_image(vuk::eComputeWrite),
 		},
 		.execute = [globalsBuf, atmosphereBuf](vuk::CommandBuffer& cmd) {
 			cmd.bind_uniform_buffer(0, 0, globalsBuf)
