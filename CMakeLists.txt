@@ -194,6 +194,7 @@ FetchContent_Declare(glslang
 FetchContent_MakeAvailable(glslang)
 set(SHADERC_ENABLE_WERROR_COMPILE OFF CACHE BOOL "")
 set(SHADERC_SKIP_EXAMPLES ON CACHE BOOL "")
+set(SHADERC_SKIP_INSTALL ON CACHE BOOL "")
 set(SHADERC_SKIP_TESTS ON CACHE BOOL "")
 FetchContent_Declare(shaderc
         GIT_REPOSITORY https://github.com/google/shaderc
