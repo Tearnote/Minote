@@ -252,18 +252,9 @@ void Engine::render() {
 	auto rawview = glm::lookAt(camera.eye, camera.center, camera.up);
 	auto yFlip = make_scale({-1.0f, -1.0f, 1.0f});
 	world.projection = glm::infinitePerspective(VerticalFov, f32(viewport.x) / f32(viewport.y), NearPlane);
-//	world.projection = glm::perspective(VerticalFov, f32(viewport.x) / f32(viewport.y), NearPlane, 1000.0f);
 	world.view = yFlip * rawview;
 	world.viewProjection = world.projection * world.view;
-
-	constexpr auto BloomDepth = 6u;
-	auto bloomNames = std::array<std::string, BloomDepth>();
-	for (auto i = 0u; i < BloomDepth; i += 1)
-		bloomNames[i] = "bloom"s + std::to_string(i);
 	auto swapchainSize = vuk::Dimension2D::absolute(swapchain->extent);
-	auto bloomSizes = std::array<vuk::Dimension2D, BloomDepth>();
-	for (auto i = 0u; i < BloomDepth; i += 1)
-		bloomSizes[i] = vuk::Dimension2D::absolute(std::max(swapchainSize.extent.width >> i, 1u), std::max(swapchainSize.extent.height >> i, 1u));
 
 	// Begin draw
 	auto ifc = context->begin();
@@ -476,77 +467,17 @@ void Engine::render() {
 			cmd.set_primitive_topology(vuk::PrimitiveTopology::eTriangleList);
 		},
 	});
-	rg.add_pass({
-		.name = "Bloom threshold pass",
-		.resources = {
-			vuk::Resource(std::string_view(bloomNames[0]), vuk::Resource::Type::eImage, vuk::eColorWrite),
-			"object_resolved"_image(vuk::eFragmentSampled),
-		},
-		.execute = [&bloomSizes](vuk::CommandBuffer& cmd) {
-			cmd.set_viewport(0, vuk::Rect2D::absolute({}, bloomSizes[0].extent))
-			   .set_scissor(0, vuk::Rect2D::absolute({}, bloomSizes[0].extent))
-			   .bind_sampled_image(0, 0, "object_resolved", {})
-			   .bind_graphics_pipeline("bloom_threshold");
-			cmd.draw(3, 1, 0, 0);
-		},
-	});
-	for (auto i = 1u; i < BloomDepth; i += 1) {
-		rg.add_pass({
-			.name = "Bloom downscale pass",
-			.resources = {
-				vuk::Resource(std::string_view(bloomNames[i]), vuk::Resource::Type::eImage, vuk::eColorWrite),
-			    vuk::Resource(std::string_view(bloomNames[i-1]), vuk::Resource::Type::eImage, vuk::eFragmentSampled),
-			},
-			.execute = [i, &bloomSizes, &bloomNames](vuk::CommandBuffer& cmd) {
-				cmd.set_viewport(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
-				   .set_scissor(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
-				   .bind_sampled_image(0, 0, std::string_view(bloomNames[i - 1]), {
-					   .magFilter = vuk::Filter::eLinear,
-					   .minFilter = vuk::Filter::eLinear,
-					   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
-					   .addressModeV = vuk::SamplerAddressMode::eClampToEdge})
-				   .bind_graphics_pipeline("bloom_blur_down");
-				auto* stepSize = cmd.map_scratch_uniform_binding<f32>(0, 1);
-				*stepSize = 1.0f;
-				cmd.draw(3, 1, 0, 0);
-			},
-		});
-	}
-	for (auto i = BloomDepth - 2; i < BloomDepth; i -= 1) {
-		rg.add_pass({
-			.name = "Bloom upscale pass",
-			.auxiliary_order = 1.0f,
-			.resources = {
-				vuk::Resource(std::string_view(bloomNames[i]), vuk::Resource::Type::eImage, vuk::eColorWrite),
-				vuk::Resource(std::string_view(bloomNames[i+1]), vuk::Resource::Type::eImage, vuk::eFragmentSampled),
-			},
-			.execute = [i, &bloomSizes, &bloomNames](vuk::CommandBuffer& cmd) {
-				cmd.set_viewport(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
-				   .set_scissor(0, vuk::Rect2D::absolute({}, bloomSizes[i].extent))
-				   .bind_sampled_image(0, 0, std::string_view(bloomNames[i + 1]), {
-					   .magFilter = vuk::Filter::eLinear,
-					   .minFilter = vuk::Filter::eLinear,
-					   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
-					   .addressModeV = vuk::SamplerAddressMode::eClampToEdge})
-					.bind_graphics_pipeline("bloom_blur_up");
-				auto* stepSize = cmd.map_scratch_uniform_binding<f32>(0, 1);
-				*stepSize = 0.5f;
-				cmd.draw(3, 1, 0, 0);
-			},
-		});
-	}
+	rg.resolve_resource_into("object_resolved", "object_color");
 	rg.add_pass({
 		.name = "Tonemapping",
 		.resources = {
-			"swapchain"_image(vuk::eColorWrite),
 			"object_resolved"_image(vuk::eFragmentSampled),
-			vuk::Resource(std::string_view(bloomNames[0]), vuk::Resource::Type::eImage, vuk::eFragmentSampled),
+			"swapchain"_image(vuk::eColorWrite),
 		},
-		.execute = [&bloomNames](vuk::CommandBuffer& cmd) {
+		.execute = [](vuk::CommandBuffer& cmd) {
 			cmd.set_viewport(0, vuk::Rect2D::framebuffer())
 			   .set_scissor(0, vuk::Rect2D::framebuffer())
 			   .bind_sampled_image(0, 0, "object_resolved", {})
-			   .bind_sampled_image(0, 1, std::string_view(bloomNames[0]), {})
 			   .bind_graphics_pipeline("tonemap");
 			cmd.draw(3, 1, 0, 0);
 		},
@@ -564,11 +495,6 @@ void Engine::render() {
 	rg.attach_managed("object_color", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	rg.attach_managed("object_depth", vuk::Format::eD32Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearDepthStencil{1.0f, 0});
 	rg.attach_managed("object_resolved", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e1, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
-	rg.resolve_resource_into("object_resolved", "object_color");
-	for (auto i = 0u; i < BloomDepth; i += 1) {
-		rg.attach_managed(std::string_view(bloomNames[i]), vuk::Format::eR16G16B16A16Sfloat,
-			bloomSizes[i], vuk::Samples::e1, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
-	}
 	rg.attach_swapchain("swapchain", swapchain, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	auto erg = std::move(rg).link(ptc);
 

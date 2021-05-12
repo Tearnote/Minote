@@ -228,8 +228,6 @@ set(SHADER_SOURCES
         src/glsl/sky/skyGenMultiScattering.comp
         src/glsl/sky/skyGenTransmittance.comp
         src/glsl/sky/skyGenSkyView.comp
-        src/glsl/bloomThreshold.vert src/glsl/bloomThreshold.frag
-        src/glsl/bloomBlur.vert src/glsl/bloomBlur.frag
         src/glsl/zprepass.vert src/glsl/zprepass.frag
         src/glsl/tonemap.vert src/glsl/tonemap.frag
         src/glsl/cubemap.comp
