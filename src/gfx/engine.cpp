@@ -169,13 +169,13 @@ void Engine::uploadAssets() {
 
 	// Upload mesh buffers
 	verticesBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(meshes.vertices)).first;
+		vuk::BufferUsageFlagBits::eVertexBuffer, std::span<glm::vec3>(meshes.vertices)).first;
 	normalsBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(meshes.normals)).first;
+		vuk::BufferUsageFlagBits::eVertexBuffer, std::span<glm::vec3>(meshes.normals)).first;
 	colorsBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(meshes.colors)).first;
+		vuk::BufferUsageFlagBits::eVertexBuffer, std::span<glm::u16vec4>(meshes.colors)).first;
 	indicesBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eIndexBuffer, std::span(meshes.indices)).first;
+		vuk::BufferUsageFlagBits::eIndexBuffer, std::span<u16>(meshes.indices)).first;
 
 	// Create cubemap and its views
 	auto cubemapMipCount = mipmapCount(CubeMapSize);
