@@ -7,7 +7,7 @@ namespace minote {
 using namespace base;
 
 template<size_t W, size_t H>
-auto Grid<W, H>::get(glm::ivec2 position) const -> std::optional<Mino4> {
+auto Grid<W, H>::get(ivec2 position) const -> std::optional<Mino4> {
 	if (position.x < 0 || position.x >= i32(Width) || position.y < 0)
 		return Mino4::Garbage;
 	if (position.y >= i32(Height))
@@ -16,7 +16,7 @@ auto Grid<W, H>::get(glm::ivec2 position) const -> std::optional<Mino4> {
 }
 
 template<size_t W, size_t H>
-void Grid<W, H>::set(glm::ivec2 position, Mino4 value) {
+void Grid<W, H>::set(ivec2 position, Mino4 value) {
 	if (position.x < 0 || position.x >= i32(Width) ||
 		position.y < 0 || position.y >= i32(Height))
 		return;
@@ -34,7 +34,7 @@ auto Grid<W, H>::stackHeight() -> size_t {
 }
 
 template<size_t W, size_t H>
-auto Grid<W, H>::overlaps(glm::ivec2 position, Piece4 const& piece) -> bool {
+auto Grid<W, H>::overlaps(ivec2 position, Piece4 const& piece) -> bool {
 	for (auto block: piece) {
 		if (get(position + block))
 			return true;
@@ -43,7 +43,7 @@ auto Grid<W, H>::overlaps(glm::ivec2 position, Piece4 const& piece) -> bool {
 }
 
 template<size_t W, size_t H>
-void Grid<W, H>::stamp(glm::ivec2 position, Piece4 const& piece, Mino4 value) {
+void Grid<W, H>::stamp(ivec2 position, Piece4 const& piece, Mino4 value) {
 	for (auto block: piece)
 		set(position + block, value);
 }

@@ -89,7 +89,7 @@ void PlayState::draw(gfx::Engine& engine) {
 			0.0f,
 		});
 		auto pieceRotationPre = make_translate({-0.5f, -0.5f, 0.0f});
-		auto pieceRotation = make_rotate(+p1.spin * glm::radians(90.0f), {0.0f, 0.0f, 1.0f});
+		auto pieceRotation = make_rotate(+p1.spin * radians(90.0f), {0.0f, 0.0f, 1.0f});
 		auto pieceRotationPost = make_translate({0.5f, 0.5f, -1.0f});
 		auto pieceTransform = pieceTranslation * pieceRotationPost * pieceRotation * pieceRotationPre;
 

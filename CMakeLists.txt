@@ -142,7 +142,7 @@ target_compile_definitions(Minote PRIVATE GLM_FORCE_LEFT_HANDED)
 target_compile_definitions(Minote PRIVATE GLM_FORCE_DEPTH_ZERO_TO_ONE)
 FetchContent_Declare(glm
         GIT_REPOSITORY https://github.com/g-truc/glm
-        GIT_TAG ace16e47780dcef815294715237f51e9129b6eb3)
+        GIT_TAG 4abd46483ab3cadda5cdb40dcd28e6f3b789d621)
 FetchContent_MakeAvailable(glm)
 target_include_directories(Minote PRIVATE ${glm_SOURCE_DIR}) # The target isn't working for some reason
 

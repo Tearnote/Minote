@@ -3,7 +3,6 @@
 #include <stdexcept>
 #include <optional>
 #include <array>
-#include "glm/vec2.hpp"
 #include "base/zip_view.hpp"
 #include "base/types.hpp"
 #include "base/math.hpp"
@@ -35,19 +34,19 @@ enum struct Spin: int {
 	_270,
 };
 
-using Piece4 = std::array<glm::ivec2, 4>;
+using Piece4 = std::array<ivec2, 4>;
 
 constexpr auto minoColor(Mino4 mino) {
 	switch (mino) {
-	case Mino4::I: return glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-	case Mino4::L: return glm::vec4(1.0f, .22f, 0.0f, 1.0f);
-	case Mino4::O: return glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
-	case Mino4::Z: return glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
-	case Mino4::T: return glm::vec4(0.0f, 1.0f, 1.0f, 1.0f);
-	case Mino4::J: return glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
-	case Mino4::S: return glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
-	case Mino4::Garbage: return glm::vec4(.22f, .22f, .22f, 1.0f);
-	default: return glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
+	case Mino4::I: return vec4(1.0f, 0.0f, 0.0f, 1.0f);
+	case Mino4::L: return vec4(1.0f, .22f, 0.0f, 1.0f);
+	case Mino4::O: return vec4(1.0f, 1.0f, 0.0f, 1.0f);
+	case Mino4::Z: return vec4(0.0f, 1.0f, 0.0f, 1.0f);
+	case Mino4::T: return vec4(0.0f, 1.0f, 1.0f, 1.0f);
+	case Mino4::J: return vec4(0.0f, 0.0f, 1.0f, 1.0f);
+	case Mino4::S: return vec4(1.0f, 0.0f, 1.0f, 1.0f);
+	case Mino4::Garbage: return vec4(.22f, .22f, .22f, 1.0f);
+	default: return vec4(1.0f, 0.0f, 1.0f, 1.0f);
 	}
 }
 
@@ -93,15 +92,15 @@ struct Grid {
 	static constexpr auto Height = H;
 
 	[[nodiscard]]
-	auto get(glm::ivec2 position) const -> std::optional<Mino4>;
+	auto get(ivec2 position) const -> std::optional<Mino4>;
 
-	void set(glm::ivec2 position, Mino4 value);
+	void set(ivec2 position, Mino4 value);
 
 	auto stackHeight() -> size_t;
 
-	auto overlaps(glm::ivec2 position, Piece4 const& piece) -> bool;
+	auto overlaps(ivec2 position, Piece4 const& piece) -> bool;
 
-	void stamp(glm::ivec2 position, Piece4 const& piece, Mino4 value);
+	void stamp(ivec2 position, Piece4 const& piece, Mino4 value);
 
 	void eraseRow(i32 height);
 

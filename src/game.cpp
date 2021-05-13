@@ -79,9 +79,9 @@ void game(sys::Glfw&, sys::Window& window) try {
 
 		ImGui::SliderInt("Expand", &Expand, 0, 40);
 
-		auto rotateTransform = make_rotate(glm::radians(180.0f), {1.0f, 0.0f, 0.0f});
-		auto rotateTransformAnim = make_rotate(f32(glm::radians(f64(sys::Glfw::getTime().count()) / 20000000.0)), {0.0f, 0.0f, 1.0f});
-		auto transform1 = make_translate({0.0f, 0.0f, 0.0f}) * make_scale({12.0f, 12.0f, 1.0f}) * glm::inverse(rotateTransform);
+		auto rotateTransform = make_rotate(radians(180.0f), {1.0f, 0.0f, 0.0f});
+		auto rotateTransformAnim = make_rotate(f32(radians(f64(sys::Glfw::getTime().count()) / 20000000.0)), {0.0f, 0.0f, 1.0f});
+		auto transform1 = make_translate({0.0f, 0.0f, 0.0f}) * make_scale({12.0f, 12.0f, 1.0f}) * inverse(rotateTransform);
 		auto transform2 = make_translate({-4.0f, -4.0f, 2.0f}) * rotateTransform;
 		auto transform3 = make_translate({4.0f, -4.0f, 2.0f}) * rotateTransform;
 		auto transform4 = make_translate({-4.0f, 4.0f, 2.0f}) * rotateTransform;

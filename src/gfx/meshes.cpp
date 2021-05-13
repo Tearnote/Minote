@@ -6,9 +6,6 @@
 #include <cstring>
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
-#include "glm/geometric.hpp"
-#include "glm/common.hpp"
-#include "glm/vec3.hpp"
 #include "fmt/core.h"
 #include "base/util.hpp"
 
@@ -59,12 +56,12 @@ void Meshes::addGltf(std::string_view name, std::span<char const> mesh) {
 			assert(accessor.type == cgltf_type_vec3);
 
 			// Calculate the furthest point from the origin (for frustum culling)
-			auto min = glm::vec3(accessor.min[0], accessor.min[1], accessor.min[2]);
-			auto max = glm::vec3(accessor.max[0], accessor.max[1], accessor.max[2]);
-			auto far = glm::max(glm::abs(min), glm::abs(max));
-			desc.radius = glm::length(far);
+			auto pmin = vec3(accessor.min[0], accessor.min[1], accessor.min[2]);
+			auto pmax = vec3(accessor.max[0], accessor.max[1], accessor.max[2]);
+			auto pfar = max(abs(pmin), abs(pmax));
+			desc.radius = length(pfar);
 
-			auto* typedBuffer = (glm::vec3*)(buffer);
+			auto* typedBuffer = (vec3*)(buffer);
 			vertices.insert(vertices.end(), typedBuffer, typedBuffer + accessor.count);
 			continue;
 		}
@@ -73,7 +70,7 @@ void Meshes::addGltf(std::string_view name, std::span<char const> mesh) {
 			assert(accessor.component_type == cgltf_component_type_r_32f);
 			assert(accessor.type == cgltf_type_vec3);
 
-			auto* typedBuffer = (glm::vec3*)(buffer);
+			auto* typedBuffer = (vec3*)(buffer);
 			normals.insert(normals.end(), typedBuffer, typedBuffer + accessor.count);
 			continue;
 		}
@@ -82,7 +79,7 @@ void Meshes::addGltf(std::string_view name, std::span<char const> mesh) {
 			assert(accessor.component_type == cgltf_component_type_r_16u);
 			assert(accessor.type == cgltf_type_vec4);
 
-			auto* typedBuffer = (glm::u16vec4*)(buffer);
+			auto* typedBuffer = (u16vec4*)(buffer);
 			colors.insert(colors.end(), typedBuffer, typedBuffer + accessor.count);
 			continue;
 		}

@@ -21,7 +21,7 @@ struct PlayState {
 private:
 
 	static constexpr auto StartingTokens = 6;
-	static constexpr auto PlayerSpawnPosition = glm::ivec2(4, 5);
+	static constexpr auto PlayerSpawnPosition = ivec2(4, 5);
 	static constexpr auto AutoshiftTargetInitial = 24;
 	static constexpr auto AutoshiftTargetMinimum = 2;
 	static constexpr auto AutoshiftTargetFactor = 0.5f;
@@ -45,7 +45,7 @@ private:
 
 		State state;
 
-		glm::ivec2 position;
+		ivec2 position;
 		Mino4 pieceType;
 		Spin spin;
 

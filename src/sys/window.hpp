@@ -4,10 +4,10 @@
 #include <string>
 #include <atomic>
 #include <mutex>
-#include "glm/vec2.hpp"
 #include "base/types.hpp"
 #include "base/ring.hpp"
 #include "base/time.hpp"
+#include "base/math.hpp"
 #include "sys/keyboard.hpp"
 #include "sys/glfw.hpp"
 
@@ -36,13 +36,13 @@ struct Window {
 	// Open a window with specified parameters on the screen. The OpenGL context is
 	// not activated by default. Size of the window is in logical units. If fullscreen is true,
 	// size is ignored and the window is created at desktop resolution.
-	Window(Glfw const& glfw, std::string_view title, bool fullscreen = false, glm::uvec2 size = {1280, 720});
+	Window(Glfw const& glfw, std::string_view title, bool fullscreen = false, uvec2 size = {1280, 720});
 
 	// Close the window. The OpenGL context must be already deactivated.
 	~Window();
 
 	// Window property accessors
-	auto size() -> glm::uvec2 { return m_size; }
+	auto size() -> uvec2 { return m_size; }
 	auto scale() -> f32 { return m_scale; }
 	auto title() -> std::string_view { return m_title; }
 
@@ -93,7 +93,7 @@ private:
 	mutable std::mutex inputsMutex;
 
 	// Size in physical pixels
-	std::atomic<glm::uvec2> m_size;
+	std::atomic<uvec2> m_size;
 
 	// DPI scaling, where 1.0 is "standard" DPI
 	std::atomic<f32> m_scale;

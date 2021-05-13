@@ -7,7 +7,6 @@
 #include <optional>
 #include <cassert>
 #include <mutex>
-#include "glm/vec2.hpp"
 #include "GLFW/glfw3.h"
 #include "fmt/core.h"
 #if IMGUI
@@ -60,9 +59,9 @@ void Window::framebufferResizeCallback(GLFWwindow* handle, int width, int height
 	assert(height >= 0);
 	auto& window = getWindow(handle);
 
-	auto newSize = glm::uvec2(width, height);
+	auto newSize = uvec2(width, height);
 	window.m_size = newSize;
-	L.info(R"(Window "{}" resized to {:s})", window.title(), newSize);
+	L.info(R"(Window "{}" resized to {}x{})", window.title(), newSize.x, newSize.y);
 }
 
 // Function to run when the window is rescaled. This might happen when dragging
@@ -78,7 +77,7 @@ void Window::windowScaleCallback(GLFWwindow* handle, float xScale, float) {
 	L.info(R"(Window "{}" DPI scaling changed to {})", window.title(), xScale);
 }
 
-Window::Window(Glfw const& _glfw, std::string_view _title, bool fullscreen, glm::uvec2 _size):
+Window::Window(Glfw const& _glfw, std::string_view _title, bool fullscreen, uvec2 _size):
 	glfw(_glfw), m_title(_title) {
 	assert(_size.x > 0 && _size.y > 0);
 
@@ -110,9 +109,9 @@ Window::Window(Glfw const& _glfw, std::string_view _title, bool fullscreen, glm:
 	// *** Set window properties ***
 
 	// Real size might be different from requested size because of DPI scaling
-	auto realSize = glm::ivec2();
+	auto realSize = ivec2();
 	glfwGetFramebufferSize(m_handle, &realSize.x, &realSize.y);
-	if (realSize == glm::ivec2(0, 0))
+	if (realSize == ivec2(0, 0))
 		throw std::runtime_error(
 			fmt::format(R"(Failed to retrieve window "{}" framebuffer size: {})", _title,
 				Glfw::getError()));
@@ -139,8 +138,8 @@ Window::Window(Glfw const& _glfw, std::string_view _title, bool fullscreen, glm:
 	glfwSetInputMode(m_handle, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 #endif //IMGUI
 
-	L.info(R"(Window "{}" created at {:s} *{:.2f}{})",
-		title(), size(), scale(), fullscreen ? " fullscreen" : "");
+	L.info(R"(Window "{}" created at {}x{} *{:.2f}{})",
+		title(), size().x, size().y, scale(), fullscreen ? " fullscreen" : "");
 }
 
 Window::~Window() {

@@ -44,9 +44,9 @@ Sky::Sky(vuk::Context& ctx):
 }
 
 auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerThreadContext& ptc,
-	glm::uvec2 resolution, glm::vec3 cameraPos, glm::mat4 viewProjection) -> vuk::RenderGraph {
+	uvec2 resolution, vec3 cameraPos, mat4 viewProjection) -> vuk::RenderGraph {
 	auto globals = Globals{
-		.gSkyInvViewProjMat = glm::inverse(viewProjection),
+		.gSkyInvViewProjMat = inverse(viewProjection),
 		.gResolution = resolution,
 		.RayMarchMinMaxSPP = {4.0f, 14.0f},
 		.gSunIlluminance = {1.0f, 1.0f, 1.0f},

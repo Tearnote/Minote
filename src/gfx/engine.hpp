@@ -7,11 +7,9 @@
 #include "VkBootstrap.h"
 #include "volk.h"
 #include "vuk/Context.hpp"
-#include "glm/mat4x4.hpp"
-#include "glm/vec3.hpp"
-#include "glm/vec4.hpp"
 #include "base/version.hpp"
 #include "base/hashmap.hpp"
+#include "base/math.hpp"
 #include "base/id.hpp"
 #include "sys/window.hpp"
 #include "gfx/instances.hpp"
@@ -35,7 +33,7 @@ struct Engine {
 	void addModel(std::string_view name, std::span<char const> model);
 	void uploadAssets();
 
-	void setCamera(glm::vec3 eye, glm::vec3 center, glm::vec3 up = {0.0f, 0.0f, 1.0f});
+	void setCamera(vec3 eye, vec3 center, vec3 up = {0.0f, 0.0f, 1.0f});
 	void enqueue(ID mesh, std::span<Instance const> instances);
 
 	void render();
@@ -63,15 +61,15 @@ private:
 	vuk::Unique<vuk::Buffer> indicesBuf;
 
 	struct World {
-		glm::mat4 view;
-		glm::mat4 projection;
-		glm::mat4 viewProjection;
+		mat4 view;
+		mat4 projection;
+		mat4 viewProjection;
 	} world;
 
 	struct Camera {
-		glm::vec3 eye;
-		glm::vec3 center;
-		glm::vec3 up;
+		vec3 eye;
+		vec3 center;
+		vec3 up;
 	} camera;
 
 	std::optional<vuk::Texture> cubemap;

@@ -4,8 +4,6 @@
 #include <vector>
 #include <span>
 #include "vuk/CommandBuffer.hpp"
-#include "glm/mat4x4.hpp"
-#include "glm/vec4.hpp"
 #include "base/hashmap.hpp"
 #include "base/types.hpp"
 #include "base/id.hpp"
@@ -19,8 +17,8 @@ struct Instances {
 
 	struct Instance {
 
-		glm::mat4 transform;
-		glm::vec4 tint;
+		mat4 transform;
+		vec4 tint;
 		f32 roughness;
 		f32 metalness;
 		u32 meshID; // internal

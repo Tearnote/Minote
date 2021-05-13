@@ -169,11 +169,11 @@ void Engine::uploadAssets() {
 
 	// Upload mesh buffers
 	verticesBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eVertexBuffer, std::span<glm::vec3>(meshes.vertices)).first;
+		vuk::BufferUsageFlagBits::eVertexBuffer, std::span<vec3>(meshes.vertices)).first;
 	normalsBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eVertexBuffer, std::span<glm::vec3>(meshes.normals)).first;
+		vuk::BufferUsageFlagBits::eVertexBuffer, std::span<vec3>(meshes.normals)).first;
 	colorsBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eVertexBuffer, std::span<glm::u16vec4>(meshes.colors)).first;
+		vuk::BufferUsageFlagBits::eVertexBuffer, std::span<u16vec4>(meshes.colors)).first;
 	indicesBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
 		vuk::BufferUsageFlagBits::eIndexBuffer, std::span<u16>(meshes.indices)).first;
 
@@ -234,7 +234,7 @@ void Engine::uploadAssets() {
 #endif //IMGUI
 }
 
-void Engine::setCamera(glm::vec3 eye, glm::vec3 center, glm::vec3 up) {
+void Engine::setCamera(vec3 eye, vec3 center, vec3 up) {
 	camera = Camera{
 		.eye = eye,
 		.center = center,
@@ -248,10 +248,10 @@ void Engine::enqueue(ID mesh, std::span<Instance const> _instances) {
 
 void Engine::render() {
 	// Prepare per-frame data
-	auto viewport = glm::uvec2(swapchain->extent.width, swapchain->extent.height);
-	auto rawview = glm::lookAt(camera.eye, camera.center, camera.up);
+	auto viewport = uvec2(swapchain->extent.width, swapchain->extent.height);
+	auto rawview = lookAt(camera.eye, camera.center, camera.up);
 	auto yFlip = make_scale({-1.0f, -1.0f, 1.0f});
-	world.projection = glm::infinitePerspective(VerticalFov, f32(viewport.x) / f32(viewport.y), NearPlane);
+	world.projection = infinitePerspective(VerticalFov, f32(viewport.x) / f32(viewport.y), NearPlane);
 	world.view = yFlip * rawview;
 	world.viewProjection = world.projection * world.view;
 	auto swapchainSize = vuk::Dimension2D::absolute(swapchain->extent);
@@ -268,7 +268,7 @@ void Engine::render() {
 	std::memcpy(worldBuf.mapped_ptr, &world, sizeof(world));
 
 	auto cubemipAtomic = ptc.allocate_scratch_buffer(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eStorageBuffer, sizeof(glm::vec4) * 256 * 6 + sizeof(u32) * 6, alignof(glm::vec4));
+		vuk::BufferUsageFlagBits::eStorageBuffer, sizeof(vec4) * 256 * 6 + sizeof(u32) * 6, alignof(vec4));
 
 	// Upload indirect buffers
 	auto indirect = Indirect::createBuffers(ptc, meshes, instances);
@@ -278,8 +278,8 @@ void Engine::render() {
 
 	float const EarthRayleighScaleHeight = 8.0f;
 	float const EarthMieScaleHeight = 1.2f;
-	auto const MieScattering = glm::vec3{0.003996f, 0.003996f, 0.003996f};
-	auto const MieExtinction = glm::vec3{0.004440f, 0.004440f, 0.004440f};
+	auto const MieScattering = vec3{0.003996f, 0.003996f, 0.003996f};
+	auto const MieExtinction = vec3{0.004440f, 0.004440f, 0.004440f};
 
 	rg.append(sky->generateAtmosphereModel(Sky::AtmosphereParams{
 		.BottomRadius = 6360.0f,
@@ -289,7 +289,7 @@ void Engine::render() {
 		.MieDensityExpScale = -1.0f / EarthMieScaleHeight,
 		.MieScattering = MieScattering,
 		.MieExtinction = MieExtinction,
-		.MieAbsorption = glm::max(MieExtinction - MieScattering, glm::vec3(0.0f)),
+		.MieAbsorption = max(MieExtinction - MieScattering, vec3(0.0f)),
 		.MiePhaseG = 0.8f,
 		.AbsorptionDensity0LayerWidth = 25.0f,
 		.AbsorptionDensity0ConstantTerm = -2.0f / 3.0f,
@@ -309,29 +309,29 @@ void Engine::render() {
 		.execute = [](vuk::CommandBuffer& cmd) {
 			cmd.bind_storage_image(0, 0, "cubemap")
 			   .bind_compute_pipeline("cubemap");
-			auto* sides = cmd.map_scratch_uniform_binding<std::array<glm::mat4, 6>>(0, 1);
-			*sides = std::to_array<glm::mat4>({
-			glm::mat3{
+			auto* sides = cmd.map_scratch_uniform_binding<std::array<mat4, 6>>(0, 1);
+			*sides = std::to_array<mat4>({
+			mat3{
 				0.0f, 0.0f, -1.0f,
 				0.0f, -1.0f, 0.0f,
 				1.0f, 0.0f, 0.0f,
-			}, glm::mat3{
+			}, mat3{
 				0.0f, 0.0f, 1.0f,
 				0.0f, -1.0f, 0.0f,
 				-1.0f, 0.0f, 0.0f,
-			}, glm::mat3{
+			}, mat3{
 				1.0f, 0.0f, 0.0f,
 				0.0f, 0.0f, 1.0f,
 				0.0f, 1.0f, 0.0f,
-			}, glm::mat3{
+			}, mat3{
 				1.0f, 0.0f, 0.0f,
 				0.0f, 0.0f, -1.0f,
 				0.0f, -1.0f, 0.0f,
-			}, glm::mat3{
+			}, mat3{
 				1.0f, 0.0f, 0.0f,
 				0.0f, -1.0f, 0.0f,
 				0.0f, 0.0f, 1.0f,
-			}, glm::mat3{
+			}, mat3{
 				-1.0f, 0.0f, 0.0f,
 				0.0f, -1.0f, 0.0f,
 				0.0f, 0.0f, -1.0f,
@@ -355,19 +355,19 @@ void Engine::render() {
 			   .bind_storage_buffer(0, 2, instancesCulledBuf)
 			   .bind_compute_pipeline("cull");
 			struct CullData {
-				glm::mat4 view;
-				glm::vec4 frustum;
+				mat4 view;
+				vec4 frustum;
 				u32 instancesCount;
 			};
 			auto* cullData = cmd.map_scratch_uniform_binding<CullData>(0, 3);
 			*cullData = CullData{
 				.view = world.view,
 				.frustum = [this] {
-					glm::vec4 frustumX = world.viewProjection[3] + world.viewProjection[0];
-					glm::vec4 frustumY = world.viewProjection[3] + world.viewProjection[1];
-					frustumX /= glm::length(glm::vec3(frustumX));
-					frustumY /= glm::length(glm::vec3(frustumY));
-					return glm::vec4(frustumX.x, frustumX.z, frustumY.y, frustumY.z);
+					vec4 frustumX = world.viewProjection[3] + world.viewProjection[0];
+					vec4 frustumY = world.viewProjection[3] + world.viewProjection[1];
+					frustumX /= length(vec3(frustumX));
+					frustumY /= length(vec3(frustumY));
+					return vec4(frustumX.x, frustumX.z, frustumY.y, frustumY.z);
 				}(),
 				.instancesCount = u32(indirect.instancesCount),
 			};
