@@ -58,6 +58,8 @@ void main() {
 	const uvec2 localID = MortonOrder(gl_SubgroupID * gl_SubgroupSize + gl_SubgroupInvocationID);
 	const uvec2 groupOffset = gl_WorkGroupSize.xy * gl_WorkGroupID.xy;
 	const uvec2 globalID = groupOffset + localID;
+	if (all(equal(globalID, uvec2(0))))
+		groupsFinished[gl_GlobalInvocationID.z] = 0;
 
 	// Initial 2 mips - sample the initial texture 4 times
 	const vec2 baseTex = vec2(1.0) / vec2(textureSize(cubemapBase, 0).xy);
@@ -80,7 +82,8 @@ void main() {
 	const uint opsPerLoop =
 		gl_SubgroupSize >= 64? 4 :
 		gl_SubgroupSize >= 16? 3 :
-		gl_SubgroupSize >=  4? 2 : 1;
+		gl_SubgroupSize >=  4? 2 :
+		1;
 	const uint mipsToGenerate = 4;
 	const uint iterations = uint(ceil(float(mipsToGenerate) / float(opsPerLoop)));
 	for (uint i = 0; i < iterations; i++) {
