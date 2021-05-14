@@ -300,45 +300,7 @@ void Engine::render() {
 		.GroundAlbedo = {0.0f, 0.0f, 0.0f},
 	};
 	rg.append(sky->generateAtmosphereModel(atmosphere, ptc, {swapchain->extent.width, swapchain->extent.height}, camera.eye, world.viewProjection));
-
-	rg.add_pass({
-		.name = "IBL cubemap",
-		.resources = {
-			"cubemap"_image(vuk::eComputeWrite),
-		},
-		.execute = [](vuk::CommandBuffer& cmd) {
-			cmd.bind_storage_image(0, 0, "cubemap")
-			   .bind_compute_pipeline("cubemap");
-			auto* sides = cmd.map_scratch_uniform_binding<std::array<mat4, 6>>(0, 1);
-			*sides = std::to_array<mat4>({
-			mat3{
-				0.0f, 0.0f, -1.0f,
-				0.0f, -1.0f, 0.0f,
-				1.0f, 0.0f, 0.0f,
-			}, mat3{
-				0.0f, 0.0f, 1.0f,
-				0.0f, -1.0f, 0.0f,
-				-1.0f, 0.0f, 0.0f,
-			}, mat3{
-				1.0f, 0.0f, 0.0f,
-				0.0f, 0.0f, 1.0f,
-				0.0f, 1.0f, 0.0f,
-			}, mat3{
-				1.0f, 0.0f, 0.0f,
-				0.0f, 0.0f, -1.0f,
-				0.0f, -1.0f, 0.0f,
-			}, mat3{
-				1.0f, 0.0f, 0.0f,
-				0.0f, -1.0f, 0.0f,
-				0.0f, 0.0f, 1.0f,
-			}, mat3{
-				-1.0f, 0.0f, 0.0f,
-				0.0f, -1.0f, 0.0f,
-				0.0f, 0.0f, -1.0f,
-			}});
-			cmd.dispatch_invocations(CubeMapSize, CubeMapSize, 6);
-		},
-	});
+	rg.append(sky->drawCubemap(atmosphere, "cubemap", ptc, {cubemap->extent.width, cubemap->extent.height}, camera.eye, world.viewProjection));
 	rg.add_pass({
 		.name = "Frustum culling",
 		.resources = {

@@ -44,12 +44,6 @@ void createPipelines(vuk::Context& ctx) {
 	}, "cull.comp");
 	ctx.create_named_pipeline("cull", cullPci);
 
-	auto cubemapPci = vuk::ComputePipelineCreateInfo();
-	cubemapPci.add_spirv(std::vector<u32>{
-#include "spv/cubemap.comp.spv"
-	}, "cubemap.comp");
-	ctx.create_named_pipeline("cubemap", cubemapPci);
-
 	auto cubemipPci = vuk::ComputePipelineCreateInfo();
 	cubemipPci.add_spirv(std::vector<u32>{
 #include "spv/cubemip.comp.spv"

@@ -83,6 +83,9 @@ struct Sky {
 	auto draw(AtmosphereParams const&, vuk::Name targetColor, vuk::Name targetDepth, vuk::PerThreadContext&,
 		uvec2 resolution, vec3 cameraPos, mat4 viewProjection) -> vuk::RenderGraph;
 
+	auto drawCubemap(AtmosphereParams const&, vuk::Name target, vuk::PerThreadContext&,
+		uvec2 resolution, vec3 cameraPos, mat4 viewProjection) -> vuk::RenderGraph;
+
 };
 
 }

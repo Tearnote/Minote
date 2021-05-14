@@ -228,11 +228,11 @@ target_link_libraries(Minote PRIVATE cgltf)
 set(SHADER_SOURCES
         src/glsl/sky/skyGenMultiScattering.comp
         src/glsl/sky/skyGenTransmittance.comp
+        src/glsl/sky/skyDrawCubemap.comp
         src/glsl/sky/skyGenSkyView.comp
         src/glsl/sky/skyDraw.vert src/glsl/sky/skyDraw.frag
         src/glsl/zprepass.vert src/glsl/zprepass.frag
         src/glsl/tonemap.vert src/glsl/tonemap.frag
-        src/glsl/cubemap.comp
         src/glsl/cubemip.comp
         src/glsl/object.vert src/glsl/object.frag
         src/glsl/imgui.vert src/glsl/imgui.frag

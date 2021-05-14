@@ -31,41 +31,51 @@ Sky::Sky(vuk::Context& ctx):
 	auto skyGenTransmittancePci = vuk::ComputePipelineCreateInfo();
 	skyGenTransmittancePci.add_spirv(std::vector<u32>{
 #include "spv/skyGenTransmittance.comp.spv"
-	}, "skyGenTransmittancePci.comp");
+	}, "skyGenTransmittance.comp");
 	ctx.create_named_pipeline("sky_gen_transmittance", skyGenTransmittancePci);
 
 	auto skyGenMultiScatteringPci = vuk::ComputePipelineCreateInfo();
 	skyGenMultiScatteringPci.add_spirv(std::vector<u32>{
 #include "spv/skyGenMultiScattering.comp.spv"
-	}, "skyGenMultiScatteringPci.comp");
+	}, "skyGenMultiScattering.comp");
 	ctx.create_named_pipeline("sky_gen_multi_scattering", skyGenMultiScatteringPci);
 
 	auto skyGenSkyViewPci = vuk::ComputePipelineCreateInfo();
 	skyGenSkyViewPci.add_spirv(std::vector<u32>{
 #include "spv/skyGenSkyView.comp.spv"
-	}, "skyGenSkyViewPci.comp");
+	}, "skyGenSkyView.comp");
 	ctx.create_named_pipeline("sky_gen_sky_view", skyGenSkyViewPci);
 
 	auto skyDrawPci = vuk::PipelineBaseCreateInfo();
 	skyDrawPci.add_spirv(std::vector<u32>{
 #include "spv/skyDraw.vert.spv"
-	}, "sky.vert");
+	}, "skyDraw.vert");
 	skyDrawPci.add_spirv(std::vector<u32>{
 #include "spv/skyDraw.frag.spv"
-	}, "sky.frag");
+	}, "skyDraw.frag");
 	skyDrawPci.depth_stencil_state.depthWriteEnable = false;
 	skyDrawPci.depth_stencil_state.depthCompareOp = vuk::CompareOp::eEqual;
 	ctx.create_named_pipeline("sky_draw", skyDrawPci);
+	
+	auto skyDrawCubemapPci = vuk::ComputePipelineCreateInfo();
+	skyDrawCubemapPci.add_spirv(std::vector<u32>{
+#include "spv/skyDrawCubemap.comp.spv"
+	}, "skyDrawCubemap.comp");
+	ctx.create_named_pipeline("sky_draw_cubemap", skyDrawCubemapPci);
 }
 
 auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerThreadContext& ptc,
 	uvec2 resolution, vec3 cameraPos, mat4 viewProjection) -> vuk::RenderGraph {
+	static auto sunPitch = radians(13.3f);
+	static auto sunYaw = radians(30.0f);
 #if IMGUI
-	ImGui::SliderFloat("Sun direction X", &sunDirection[0], -1.0f, 1.0f);
-	ImGui::SliderFloat("Sun direction Y", &sunDirection[1], -1.0f, 1.0f);
-	ImGui::SliderFloat("Sun direction Z", &sunDirection[2], -1.0f, 1.0f);
+	ImGui::SliderAngle("Sun pitch", &sunPitch, -10.0f, 190.0f);
+	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f);
 #endif //IMGUI
-	sunDirection = glm::normalize(sunDirection);
+	sunDirection = vec3(1.0, 0.0, 0.0);
+	sunDirection = glm::mat3(make_rotate(sunPitch, {0.0f, -1.0f, 0.0f})) * sunDirection;
+	sunDirection = glm::mat3(make_rotate(sunYaw, {0.0f, 0.0f, 1.0f})) * sunDirection;
+
 	auto globals = Globals{
 		.gSkyInvViewProjMat = inverse(viewProjection),
 		.gResolution = resolution,
@@ -205,6 +215,89 @@ auto Sky::draw(AtmosphereParams const& atmosphere, vuk::Name targetColor, vuk::N
 			   .bind_sampled_image(1, 0, "sky_sky_view", skyViewSampler)
 			   .bind_graphics_pipeline("sky_draw");
 			cmd.draw(3, 1, 0, 0);
+		},
+	});
+	rg.attach_image("sky_transmittance", vuk::ImageAttachment::from_texture(transmittance), {}, {});
+	rg.attach_image("sky_sky_view", vuk::ImageAttachment::from_texture(skyView), {}, {});
+	return rg;
+}
+
+auto Sky::drawCubemap(AtmosphereParams const& atmosphere, vuk::Name target, vuk::PerThreadContext& ptc,
+		uvec2 resolution, vec3 cameraPos, mat4 viewProjection) -> vuk::RenderGraph {
+	auto globals = Globals{
+		.gSkyInvViewProjMat = inverse(viewProjection),
+		.gResolution = resolution,
+		.RayMarchMinMaxSPP = {4.0f, 14.0f},
+		.gSunIlluminance = {1.0f, 1.0f, 1.0f},
+		.MultipleScatteringFactor = 1.0f,
+		.sun_direction = sunDirection,
+		.camera = cameraPos,
+	};
+	auto globalsBuf = ptc.allocate_scratch_buffer(
+		vuk::MemoryUsage::eCPUtoGPU,
+		vuk::BufferUsageFlagBits::eUniformBuffer,
+		sizeof(Globals), alignof(Globals));
+	std::memcpy(globalsBuf.mapped_ptr, &globals, sizeof(Globals));
+
+	auto atmosphereBuf = ptc.allocate_scratch_buffer(
+		vuk::MemoryUsage::eCPUtoGPU,
+		vuk::BufferUsageFlagBits::eUniformBuffer,
+		sizeof(AtmosphereParams), alignof(AtmosphereParams));
+	std::memcpy(atmosphereBuf.mapped_ptr, &atmosphere, sizeof(AtmosphereParams));
+
+	auto rg = vuk::RenderGraph();
+	rg.add_pass({
+		.name = "IBL cubemap",
+		.resources = {
+			"sky_transmittance"_image(vuk::eComputeSampled),
+			"sky_sky_view"_image(vuk::eComputeSampled),
+			vuk::Resource(target, vuk::Resource::Type::eImage, vuk::eComputeWrite),
+		},
+		.execute = [globalsBuf, atmosphereBuf, target, resolution](vuk::CommandBuffer& cmd) {
+			auto skyViewSampler = vuk::SamplerCreateInfo{
+				.magFilter = vuk::Filter::eLinear,
+				.minFilter = vuk::Filter::eLinear,
+				.addressModeU = vuk::SamplerAddressMode::eClampToEdge,
+				.addressModeV = vuk::SamplerAddressMode::eClampToEdge,
+			};
+			cmd.bind_uniform_buffer(0, 0, globalsBuf)
+			   .bind_uniform_buffer(0, 1, atmosphereBuf)
+			   .bind_sampled_image(0, 2, "sky_transmittance", vuk::SamplerCreateInfo{
+				   .magFilter = vuk::Filter::eLinear,
+				   .minFilter = vuk::Filter::eLinear,
+				   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
+				   .addressModeV = vuk::SamplerAddressMode::eClampToEdge})
+			   .bind_sampled_image(1, 0, "sky_sky_view", skyViewSampler)
+			   .bind_storage_image(1, 1, target)
+			   .bind_compute_pipeline("sky_draw_cubemap");
+			auto* sides = cmd.map_scratch_uniform_binding<std::array<mat4, 6>>(1, 2);
+			*sides = std::to_array<mat4>({
+			mat3{
+				0.0f, 0.0f, -1.0f,
+				0.0f, -1.0f, 0.0f,
+				1.0f, 0.0f, 0.0f,
+			}, mat3{
+				0.0f, 0.0f, 1.0f,
+				0.0f, -1.0f, 0.0f,
+				-1.0f, 0.0f, 0.0f,
+			}, mat3{
+				1.0f, 0.0f, 0.0f,
+				0.0f, 0.0f, 1.0f,
+				0.0f, 1.0f, 0.0f,
+			}, mat3{
+				1.0f, 0.0f, 0.0f,
+				0.0f, 0.0f, -1.0f,
+				0.0f, -1.0f, 0.0f,
+			}, mat3{
+				1.0f, 0.0f, 0.0f,
+				0.0f, -1.0f, 0.0f,
+				0.0f, 0.0f, 1.0f,
+			}, mat3{
+				-1.0f, 0.0f, 0.0f,
+				0.0f, -1.0f, 0.0f,
+				0.0f, 0.0f, -1.0f,
+			}});
+			cmd.dispatch_invocations(resolution.x, resolution.y, 6);
 		},
 	});
 	rg.attach_image("sky_transmittance", vuk::ImageAttachment::from_texture(transmittance), {}, {});
