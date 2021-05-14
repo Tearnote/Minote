@@ -75,7 +75,18 @@ void game(sys::Glfw&, sys::Window& window) try {
 		}
 
 		// Graphics
-		engine.setCamera({std::sin(glfwGetTime() / 4.0) * 28.0f, std::cos(glfwGetTime() / 4.0) * 28.0f, std::sin(glfwGetTime() / 3.1) * 4.0f + 12.0f}, {0.0f, 0.0f, 4.0f});
+		static auto spin = false;
+		static auto cameraHeight = 12.0f;
+		static auto cameraYaw = 13.333f;
+#if IMGUI
+		ImGui::Checkbox("Spin the camera", &spin);
+		ImGui::SliderFloat("Camera height", &cameraHeight, -24.0f, 24.0f);
+		ImGui::SliderFloat("Camera yaw", &cameraYaw, 0.0f, 360.0f);
+#endif //IMGUI
+		if (spin)
+			engine.setCamera({std::sin(glfwGetTime() / 4.0) * 28.0f, std::cos(glfwGetTime() / 4.0) * 28.0f, std::sin(glfwGetTime() / 3.1) * 4.0f + 12.0f}, {0.0f, 0.0f, 4.0f});
+		else
+			engine.setCamera({std::sin(radians(cameraYaw)) * -28.0f, std::cos(radians(cameraYaw)) * -28.0f, cameraHeight}, {0.0f, 0.0f, 4.0f});
 
 		ImGui::SliderInt("Expand", &Expand, 0, 40);
 
@@ -93,7 +104,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 		constexpr auto Spacing = 25.0f;
 		for (auto x = -Spacing * Expand; x <= Spacing * Expand; x += Spacing)
 		for (auto y = -Spacing * Expand; y <= Spacing * Expand; y += Spacing) {
-			auto offset = make_translate({x, 0.0f, y});
+			auto offset = make_translate({x, y, 0.0f});
 			engine.enqueue("block"_id, std::array{
 				gfx::Engine::Instance{
 					.transform = offset * transform1,
@@ -155,9 +166,6 @@ void game(sys::Glfw&, sys::Window& window) try {
 			}
 		}
 
-#if IMGUI
-		ImGui::ShowDemoWindow();
-#endif //IMGUI
 		engine.render();
 	}
 

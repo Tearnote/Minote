@@ -252,8 +252,10 @@ void Engine::render() {
 	auto rawview = lookAt(camera.eye, camera.center, camera.up);
 	auto yFlip = make_scale({-1.0f, -1.0f, 1.0f});
 	world.projection = infinitePerspective(VerticalFov, f32(viewport.x) / f32(viewport.y), NearPlane);
+	auto finiteProjection = glm::perspective(VerticalFov, f32(viewport.x) / f32(viewport.y), NearPlane, 1000.0f);
 	world.view = yFlip * rawview;
 	world.viewProjection = world.projection * world.view;
+	auto finiteViewProjection = finiteProjection * world.view;
 	auto swapchainSize = vuk::Dimension2D::absolute(swapchain->extent);
 
 	// Begin draw
@@ -281,7 +283,7 @@ void Engine::render() {
 	auto const MieScattering = vec3{0.003996f, 0.003996f, 0.003996f};
 	auto const MieExtinction = vec3{0.004440f, 0.004440f, 0.004440f};
 
-	rg.append(sky->generateAtmosphereModel(Sky::AtmosphereParams{
+	auto atmosphere = Sky::AtmosphereParams{
 		.BottomRadius = 6360.0f,
 		.TopRadius = 6460.0f,
 		.RayleighDensityExpScale = -1.0f / EarthRayleighScaleHeight,
@@ -298,12 +300,12 @@ void Engine::render() {
 		.AbsorptionDensity1LinearTerm = -1.0f / 15.0f,
 		.AbsorptionExtinction = {0.000650f, 0.001881f, 0.000085f},
 		.GroundAlbedo = {0.0f, 0.0f, 0.0f},
-	}, ptc, {swapchain->extent.width, swapchain->extent.height}, camera.eye, world.viewProjection));
+	};
+	rg.append(sky->generateAtmosphereModel(atmosphere, ptc, {swapchain->extent.width, swapchain->extent.height}, camera.eye, finiteViewProjection));
 
 	rg.add_pass({
-		.name = "Sky generation",
+		.name = "IBL cubemap",
 		.resources = {
-//			"sky_sky_view"_image(vuk::eComputeRead),
 			"cubemap"_image(vuk::eComputeWrite),
 		},
 		.execute = [](vuk::CommandBuffer& cmd) {
@@ -375,7 +377,7 @@ void Engine::render() {
 		},
 	});
 	rg.add_pass({
-		.name = "Generate cubemap mips",
+		.name = "IBL cubemap mips",
 		.resources = {
 			"cubemap"_image(vuk::eComputeRW),
 		},
@@ -392,7 +394,6 @@ void Engine::render() {
 	});
 	rg.add_pass({
 		.name = "Z-prepass",
-		.auxiliary_order = 1.0f,
 		.resources = {
 			"commands"_buffer(vuk::eIndirectRead),
 			"instances_culled"_buffer(vuk::eVertexRead),
@@ -413,7 +414,6 @@ void Engine::render() {
 	});
 	rg.add_pass({
 		.name = "Object drawing",
-		.auxiliary_order = 2.0f,
 		.resources = {
 			"commands"_buffer(vuk::eIndirectRead),
 			"instances_culled"_buffer(vuk::eVertexRead),
@@ -442,31 +442,7 @@ void Engine::render() {
 			cmd.draw_indexed_indirect(indirect.commandsCount, commandsBuf, sizeof(Indirect::Command));
 		},
 	});
-	rg.add_pass({
-		.name = "Sky drawing",
-		.auxiliary_order = 3.0f,
-		.resources = {
-			"cubemap"_image(vuk::eFragmentSampled),
-			"object_color"_image(vuk::eColorWrite),
-			"object_depth"_image(vuk::eDepthStencilRW),
-		},
-		.execute = [this, worldBuf](vuk::CommandBuffer& cmd) {
-			auto cubeSampler = vuk::SamplerCreateInfo{
-				.magFilter = vuk::Filter::eLinear,
-				.minFilter = vuk::Filter::eLinear,
-				.addressModeU = vuk::SamplerAddressMode::eClampToEdge,
-				.addressModeV = vuk::SamplerAddressMode::eClampToEdge,
-			};
-			cmd.set_primitive_topology(vuk::PrimitiveTopology::eTriangleStrip);
-			cmd.set_viewport(0, vuk::Rect2D::framebuffer())
-			   .set_scissor(0, vuk::Rect2D::framebuffer())
-			   .bind_uniform_buffer(0, 0, worldBuf)
-			   .bind_sampled_image(0, 1, *cubemap, cubeSampler)
-			   .bind_graphics_pipeline("sky");
-			cmd.draw(14, 1, 0, 0);
-			cmd.set_primitive_topology(vuk::PrimitiveTopology::eTriangleList);
-		},
-	});
+	rg.append(sky->draw(atmosphere, "object_color", "object_depth", ptc, {swapchain->extent.width, swapchain->extent.height}, camera.eye, finiteViewProjection));
 	rg.resolve_resource_into("object_resolved", "object_color");
 	rg.add_pass({
 		.name = "Tonemapping",

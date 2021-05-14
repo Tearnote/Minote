@@ -228,14 +228,14 @@ set(SHADER_SOURCES
         src/glsl/sky/skyGenMultiScattering.comp
         src/glsl/sky/skyGenTransmittance.comp
         src/glsl/sky/skyGenSkyView.comp
+        src/glsl/sky/skyDraw.vert src/glsl/sky/skyDraw.frag
         src/glsl/zprepass.vert src/glsl/zprepass.frag
         src/glsl/tonemap.vert src/glsl/tonemap.frag
         src/glsl/cubemap.comp
         src/glsl/cubemip.comp
         src/glsl/object.vert src/glsl/object.frag
         src/glsl/imgui.vert src/glsl/imgui.frag
-        src/glsl/cull.comp
-        src/glsl/sky.vert src/glsl/sky.frag)
+        src/glsl/cull.comp)
 
 foreach(SHADER_PATH ${SHADER_SOURCES})
     get_filename_component(SHADER_FILENAME ${SHADER_PATH} NAME)

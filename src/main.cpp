@@ -56,7 +56,7 @@ auto main(int, char*[]) -> int try {
 
 	// Window creation
 	auto glfw = sys::Glfw();
-	auto window = sys::Window(glfw, AppTitle, false, {960, 540});
+	auto window = sys::Window(glfw, AppTitle, false, {1280, 720});
 
 	// *** Thread startup ***
 

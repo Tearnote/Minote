@@ -73,9 +73,14 @@ struct Sky {
 	vuk::Texture multiScattering;
 	vuk::Texture skyView;
 
+	vec3 sunDirection;
+
 	explicit Sky(vuk::Context&);
 
 	auto generateAtmosphereModel(AtmosphereParams const&, vuk::PerThreadContext&,
+		uvec2 resolution, vec3 cameraPos, mat4 viewProjection) -> vuk::RenderGraph;
+
+	auto draw(AtmosphereParams const&, vuk::Name targetColor, vuk::Name targetDepth, vuk::PerThreadContext&,
 		uvec2 resolution, vec3 cameraPos, mat4 viewProjection) -> vuk::RenderGraph;
 
 };
