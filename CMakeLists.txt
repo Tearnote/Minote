@@ -140,6 +140,7 @@ target_compile_definitions(Minote PRIVATE GLM_FORCE_SIZE_T_LENGTH)
 target_compile_definitions(Minote PRIVATE GLM_FORCE_UNRESTRICTED_GENTYPE)
 target_compile_definitions(Minote PRIVATE GLM_FORCE_LEFT_HANDED)
 target_compile_definitions(Minote PRIVATE GLM_FORCE_DEPTH_ZERO_TO_ONE)
+target_compile_definitions(Minote PRIVATE GLM_FORCE_XYZW_ONLY)
 FetchContent_Declare(glm
         GIT_REPOSITORY https://github.com/g-truc/glm
         GIT_TAG 4abd46483ab3cadda5cdb40dcd28e6f3b789d621)

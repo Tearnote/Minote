@@ -19,5 +19,5 @@ vec3 reinhard_jodie(vec3 v) {
 
 void main() {
 	out_color = texture(source, f_texCoords);
-	// out_color = vec4(reinhard_jodie(vec3(out_color)), 1.0);
+	out_color = vec4(reinhard_jodie(vec3(out_color)), 1.0);
 }

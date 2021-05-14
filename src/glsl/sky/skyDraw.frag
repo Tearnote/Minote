@@ -15,7 +15,7 @@ void main() {
 	vec3 ClipSpace = vec3(f_texCoords * vec2(2.0, 2.0) - vec2(1.0, 1.0), 1.0);
 	vec4 HPos = gSkyInvViewProjMat * vec4(ClipSpace, 1.0);
 
-	vec3 WorldDir = normalize(HPos.xyz / HPos.w - camera);
+	vec3 WorldDir = normalize(HPos.xyz);
 	vec3 WorldPos = camera + vec3(0.0, 0.0, Atmosphere.BottomRadius);
 
 	float viewHeight = length(WorldPos);
@@ -35,9 +35,7 @@ void main() {
 
 		SkyViewLutParamsToUv(IntersectGround, viewZenithCosAngle, lightViewCosAngle, viewSize, viewHeight, uv);
 		out_color = vec4(textureLod(skyView, uv, 0.0).rgb + GetSunLuminance(WorldPos, WorldDir, Atmosphere.BottomRadius), 1.0);
-		vec3 white_point = vec3(1.08241, 0.96756, 0.95003);
-		float exposure = 10.0;
-		out_color = vec4(vec3(1.0) - exp(-out_color.rgb / white_point * exposure), 1.0);
+		out_color.rgb *= 10.0;
 	} else {
 		out_color = vec4(0.0, 0.0, 0.0, 1.0);
 	}

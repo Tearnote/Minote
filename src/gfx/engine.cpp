@@ -252,10 +252,8 @@ void Engine::render() {
 	auto rawview = lookAt(camera.eye, camera.center, camera.up);
 	auto yFlip = make_scale({-1.0f, -1.0f, 1.0f});
 	world.projection = infinitePerspective(VerticalFov, f32(viewport.x) / f32(viewport.y), NearPlane);
-	auto finiteProjection = glm::perspective(VerticalFov, f32(viewport.x) / f32(viewport.y), NearPlane, 1000.0f);
 	world.view = yFlip * rawview;
 	world.viewProjection = world.projection * world.view;
-	auto finiteViewProjection = finiteProjection * world.view;
 	auto swapchainSize = vuk::Dimension2D::absolute(swapchain->extent);
 
 	// Begin draw
@@ -301,7 +299,7 @@ void Engine::render() {
 		.AbsorptionExtinction = {0.000650f, 0.001881f, 0.000085f},
 		.GroundAlbedo = {0.0f, 0.0f, 0.0f},
 	};
-	rg.append(sky->generateAtmosphereModel(atmosphere, ptc, {swapchain->extent.width, swapchain->extent.height}, camera.eye, finiteViewProjection));
+	rg.append(sky->generateAtmosphereModel(atmosphere, ptc, {swapchain->extent.width, swapchain->extent.height}, camera.eye, world.viewProjection));
 
 	rg.add_pass({
 		.name = "IBL cubemap",
@@ -442,7 +440,7 @@ void Engine::render() {
 			cmd.draw_indexed_indirect(indirect.commandsCount, commandsBuf, sizeof(Indirect::Command));
 		},
 	});
-	rg.append(sky->draw(atmosphere, "object_color", "object_depth", ptc, {swapchain->extent.width, swapchain->extent.height}, camera.eye, finiteViewProjection));
+	rg.append(sky->draw(atmosphere, "object_color", "object_depth", ptc, {swapchain->extent.width, swapchain->extent.height}, camera.eye, world.viewProjection));
 	rg.resolve_resource_into("object_resolved", "object_color");
 	rg.add_pass({
 		.name = "Tonemapping",
