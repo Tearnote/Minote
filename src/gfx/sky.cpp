@@ -69,10 +69,10 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerTh
 	static auto sunPitch = radians(13.3f);
 	static auto sunYaw = radians(30.0f);
 #if IMGUI
-	ImGui::SliderAngle("Sun pitch", &sunPitch, -10.0f, 190.0f);
-	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f);
+	ImGui::SliderAngle("Sun pitch", &sunPitch, -10.0f, 190.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
+	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
 #endif //IMGUI
-	sunDirection = vec3(1.0, 0.0, 0.0);
+	sunDirection = vec3(1.0f, 0.0f, 0.0f);
 	sunDirection = glm::mat3(make_rotate(sunPitch, {0.0f, -1.0f, 0.0f})) * sunDirection;
 	sunDirection = glm::mat3(make_rotate(sunYaw, {0.0f, 0.0f, 1.0f})) * sunDirection;
 

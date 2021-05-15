@@ -16,33 +16,29 @@ void main() {
 	const ivec2 size = imageSize(cubemap);
 	const ivec2 viewSize = textureSize(skyView, 0);
 
-	vec2 uv = (vec2(gid.xy) + vec2(0.5)) / vec2(size);
-	uv = uv * 2.0 - 1.0;
-	vec3 dir = mat3(sides[gid.z]) * vec3(uv, 1.0);
+	vec2 cubeUv = (vec2(gid.xy) + vec2(0.5)) / vec2(size);
+	cubeUv = cubeUv * 2.0 - 1.0;
+	vec3 dir = mat3(sides[gid.z]) * vec3(cubeUv, 1.0);
 
 	vec3 WorldDir = normalize(dir);
-	vec3 WorldPos = camera + vec3(0.0, 0.0, Atmosphere.BottomRadius);
+	vec3 WorldPos = vec3(0.0, 0.0, Atmosphere.BottomRadius + 1.0);
 
 	float viewHeight = length(WorldPos);
 	
-	if (viewHeight < Atmosphere.TopRadius) {
-		vec2 uv;
-		vec3 UpVector = normalize(WorldPos);
-		float viewZenithCosAngle = dot(WorldDir, UpVector);
+	vec2 uv;
+	vec3 UpVector = normalize(WorldPos);
+	float viewZenithCosAngle = dot(WorldDir, UpVector);
 
-		vec3 sideVector = normalize(cross(UpVector, WorldDir)); // assumes non parallel vectors
-		vec3 forwardVector = normalize(cross(sideVector, UpVector)); // aligns toward the sun light but perpendicular to up vector
-		vec2 lightOnPlane = vec2(dot(sun_direction, forwardVector), dot(sun_direction, sideVector));
-		lightOnPlane = normalize(lightOnPlane);
-		float lightViewCosAngle = lightOnPlane.x;
+	vec3 sideVector = normalize(cross(UpVector, WorldDir)); // assumes non parallel vectors
+	vec3 forwardVector = normalize(cross(sideVector, UpVector)); // aligns toward the sun light but perpendicular to up vector
+	vec2 lightOnPlane = vec2(dot(sun_direction, forwardVector), dot(sun_direction, sideVector));
+	lightOnPlane = normalize(lightOnPlane);
+	float lightViewCosAngle = lightOnPlane.x;
 
-		bool IntersectGround = raySphereIntersectNearest(WorldPos, WorldDir, vec3(0.0), Atmosphere.BottomRadius) >= 0.0;
+	bool IntersectGround = raySphereIntersectNearest(WorldPos, WorldDir, vec3(0.0), Atmosphere.BottomRadius) >= 0.0;
 
-		SkyViewLutParamsToUv(IntersectGround, viewZenithCosAngle, lightViewCosAngle, viewSize, viewHeight, uv);
-		vec4 result = vec4(textureLod(skyView, uv, 0.0).rgb + GetSunLuminance(WorldPos, WorldDir, Atmosphere.BottomRadius), 1.0) * 10.0;
-		result.rgb *= 10.0;
-		imageStore(cubemap, ivec3(gid), result);
-	} else {
-		imageStore(cubemap, ivec3(gid), vec4(0.0, 0.0, 0.0, 1.0));
-	}
+	SkyViewLutParamsToUv(IntersectGround, viewZenithCosAngle, lightViewCosAngle, viewSize, viewHeight, uv);
+	vec4 result = vec4(textureLod(skyView, uv, 0.0).rgb + GetSunLuminance(WorldPos, WorldDir, Atmosphere.BottomRadius), 1.0) * 10.0;
+	result.rgb *= 10.0;
+	imageStore(cubemap, ivec3(gid), result);
 }

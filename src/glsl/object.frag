@@ -35,7 +35,7 @@ void main() {
 	// PBR calculation
 	vec3 f0 = max(f_color.rgb * instance.metalness, vec3(0.04));
 
-	vec3 diffuse = f_color.rgb * textureLod(cubemap, normal, mipCount - 1.0).rgb * (1.0 - instance.metalness);
+	vec3 diffuse = f_color.rgb * textureLod(cubemap, normal, mipCount - 2.0).rgb * (1.0 - instance.metalness);
 	vec3 specular = vec3(textureLod(cubemap, -reflect(viewDirection, normal), mipCount - (1 - 1.2 * log2(instance.roughness))));
 
 	out_color = vec4(mix(diffuse, specular, envBRDFApprox(f0, NoV, instance.roughness)), f_color.a);

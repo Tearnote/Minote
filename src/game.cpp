@@ -76,17 +76,23 @@ void game(sys::Glfw&, sys::Window& window) try {
 
 		// Graphics
 		static auto spin = false;
-		static auto cameraHeight = 12.0f;
-		static auto cameraYaw = 13.333f;
+		static auto cameraDistance = 32.0f;
+		static auto cameraPitch = radians(20.0f);
+		static auto cameraYaw = radians(13.333f);
 #if IMGUI
 		ImGui::Checkbox("Spin the camera", &spin);
-		ImGui::SliderFloat("Camera height", &cameraHeight, -24.0f, 24.0f);
-		ImGui::SliderFloat("Camera yaw", &cameraYaw, 0.0f, 360.0f);
+		ImGui::SliderFloat("Camera distance", &cameraDistance, 20.0f, 10000.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
+		ImGui::SliderAngle("Camera pitch", &cameraPitch, 0.0f, 89.875f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
+		ImGui::SliderAngle("Camera yaw", &cameraYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
 #endif //IMGUI
-		if (spin)
+		if (spin) {
 			engine.setCamera({std::sin(glfwGetTime() / 4.0) * 28.0f, std::cos(glfwGetTime() / 4.0) * 28.0f, std::sin(glfwGetTime() / 3.1) * 4.0f + 12.0f}, {0.0f, 0.0f, 4.0f});
-		else
-			engine.setCamera({std::sin(radians(cameraYaw)) * -28.0f, std::cos(radians(cameraYaw)) * -28.0f, cameraHeight}, {0.0f, 0.0f, 4.0f});
+		} else {
+			auto cameraPosition = vec3(0.0f, -cameraDistance, 0.0f);
+			cameraPosition = glm::mat3(make_rotate(cameraPitch, {-1.0f, 0.0f, 0.0f})) * cameraPosition;
+			cameraPosition = glm::mat3(make_rotate(cameraYaw, {0.0f, 0.0f, 1.0f})) * cameraPosition;
+			engine.setCamera(cameraPosition, {0.0f, 0.0f, 4.0f});
+		}
 
 		ImGui::SliderInt("Expand", &Expand, 0, 40);
 
