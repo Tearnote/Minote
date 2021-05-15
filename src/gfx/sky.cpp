@@ -27,6 +27,11 @@ Sky::Sky(vuk::Context& ctx):
 		.extent = {SkyViewWidth, SkyViewHeight, 1},
 		.usage = vuk::ImageUsageFlagBits::eStorage | vuk::ImageUsageFlagBits::eSampled,
 	})),
+	skyCubemapView(ctx.allocate_texture(vuk::ImageCreateInfo{
+		.format = SkyViewFormat,
+		.extent = {SkyViewWidth, SkyViewHeight, 1},
+		.usage = vuk::ImageUsageFlagBits::eStorage | vuk::ImageUsageFlagBits::eSampled,
+	})),
 	sunDirection{0.283f, 0.912f, 0.296f} {
 	auto skyGenTransmittancePci = vuk::ComputePipelineCreateInfo();
 	skyGenTransmittancePci.add_spirv(std::vector<u32>{
@@ -91,6 +96,21 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerTh
 		sizeof(Globals), alignof(Globals));
 	std::memcpy(globalsBuf.mapped_ptr, &globals, sizeof(Globals));
 
+	auto cubemapGlobals = Globals{
+		.gSkyInvViewProjMat = inverse(viewProjection),
+		.gResolution = resolution,
+		.RayMarchMinMaxSPP = {4.0f, 14.0f},
+		.gSunIlluminance = {1.0f, 1.0f, 1.0f},
+		.MultipleScatteringFactor = 1.0f,
+		.sun_direction = sunDirection,
+		.camera = {0.0f, 0.0f, 1.0f},
+	};
+	auto cubemapGlobalsBuf = ptc.allocate_scratch_buffer(
+		vuk::MemoryUsage::eCPUtoGPU,
+		vuk::BufferUsageFlagBits::eUniformBuffer,
+		sizeof(Globals), alignof(Globals));
+	std::memcpy(cubemapGlobalsBuf.mapped_ptr, &cubemapGlobals, sizeof(Globals));
+
 	auto atmosphereBuf = ptc.allocate_scratch_buffer(
 		vuk::MemoryUsage::eCPUtoGPU,
 		vuk::BufferUsageFlagBits::eUniformBuffer,
@@ -99,7 +119,7 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerTh
 
 	auto rg = vuk::RenderGraph();
 	rg.add_pass({
-		.name = "Sky transmittance LUT generation",
+		.name = "Sky transmittance LUT",
 		.resources = {
 			"sky_transmittance"_image(vuk::eComputeWrite),
 		},
@@ -117,7 +137,7 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerTh
 		},
 	});
 	rg.add_pass({
-		.name = "Sky multiple scattering LUT generation",
+		.name = "Sky multiple scattering LUT",
 		.resources = {
 			"sky_transmittance"_image(vuk::eComputeRead),
 			"sky_multi_scattering"_image(vuk::eComputeWrite),
@@ -136,7 +156,7 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerTh
 		},
 	});
 	rg.add_pass({
-		.name = "Sky view LUT generation",
+		.name = "Sky view LUT",
 		.resources = {
 			"sky_transmittance"_image(vuk::eComputeRead),
 			"sky_multi_scattering"_image(vuk::eComputeRead),
@@ -160,9 +180,35 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerTh
 			cmd.dispatch_invocations(SkyViewWidth, SkyViewHeight, 1);
 		},
 	});
+	rg.add_pass({
+		.name = "Sky cubemap view LUT",
+		.resources = {
+			"sky_transmittance"_image(vuk::eComputeRead),
+			"sky_multi_scattering"_image(vuk::eComputeRead),
+			"sky_cubemap_sky_view"_image(vuk::eComputeWrite),
+		},
+		.execute = [cubemapGlobalsBuf, atmosphereBuf](vuk::CommandBuffer& cmd) {
+			cmd.bind_uniform_buffer(0, 0, cubemapGlobalsBuf)
+			   .bind_uniform_buffer(0, 1, atmosphereBuf)
+			   .bind_sampled_image(0, 2, "sky_transmittance", vuk::SamplerCreateInfo{
+				   .magFilter = vuk::Filter::eLinear,
+				   .minFilter = vuk::Filter::eLinear,
+				   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
+				   .addressModeV = vuk::SamplerAddressMode::eClampToEdge})
+			   .bind_sampled_image(0, 3, "sky_multi_scattering", vuk::SamplerCreateInfo{
+				   .magFilter = vuk::Filter::eLinear,
+				   .minFilter = vuk::Filter::eLinear,
+				   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
+				   .addressModeV = vuk::SamplerAddressMode::eClampToEdge})
+			   .bind_storage_image(1, 0, "sky_cubemap_sky_view")
+			   .bind_compute_pipeline("sky_gen_sky_view");
+			cmd.dispatch_invocations(SkyViewWidth, SkyViewHeight, 1);
+		},
+	});
 	rg.attach_image("sky_transmittance", vuk::ImageAttachment::from_texture(transmittance), {}, {});
 	rg.attach_image("sky_multi_scattering", vuk::ImageAttachment::from_texture(multiScattering), {}, {});
 	rg.attach_image("sky_sky_view", vuk::ImageAttachment::from_texture(skyView), {}, {});
+	rg.attach_image("sky_cubemap_sky_view", vuk::ImageAttachment::from_texture(skyCubemapView), {}, {});
 	return rg;
 }
 
@@ -231,7 +277,7 @@ auto Sky::drawCubemap(AtmosphereParams const& atmosphere, vuk::Name target, vuk:
 		.gSunIlluminance = {1.0f, 1.0f, 1.0f},
 		.MultipleScatteringFactor = 1.0f,
 		.sun_direction = sunDirection,
-		.camera = cameraPos,
+		.camera = {0.0f, 0.0f, 1.0f},
 	};
 	auto globalsBuf = ptc.allocate_scratch_buffer(
 		vuk::MemoryUsage::eCPUtoGPU,
@@ -250,7 +296,7 @@ auto Sky::drawCubemap(AtmosphereParams const& atmosphere, vuk::Name target, vuk:
 		.name = "IBL cubemap",
 		.resources = {
 			"sky_transmittance"_image(vuk::eComputeSampled),
-			"sky_sky_view"_image(vuk::eComputeSampled),
+			"sky_cubemap_sky_view"_image(vuk::eComputeSampled),
 			vuk::Resource(target, vuk::Resource::Type::eImage, vuk::eComputeWrite),
 		},
 		.execute = [globalsBuf, atmosphereBuf, target, resolution](vuk::CommandBuffer& cmd) {
@@ -267,7 +313,7 @@ auto Sky::drawCubemap(AtmosphereParams const& atmosphere, vuk::Name target, vuk:
 				   .minFilter = vuk::Filter::eLinear,
 				   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
 				   .addressModeV = vuk::SamplerAddressMode::eClampToEdge})
-			   .bind_sampled_image(1, 0, "sky_sky_view", skyViewSampler)
+			   .bind_sampled_image(1, 0, "sky_cubemap_sky_view", skyViewSampler)
 			   .bind_storage_image(1, 1, target)
 			   .bind_compute_pipeline("sky_draw_cubemap");
 			auto* sides = cmd.map_scratch_uniform_binding<std::array<mat4, 6>>(1, 2);
@@ -301,7 +347,7 @@ auto Sky::drawCubemap(AtmosphereParams const& atmosphere, vuk::Name target, vuk:
 		},
 	});
 	rg.attach_image("sky_transmittance", vuk::ImageAttachment::from_texture(transmittance), {}, {});
-	rg.attach_image("sky_sky_view", vuk::ImageAttachment::from_texture(skyView), {}, {});
+	rg.attach_image("sky_cubemap_sky_view", vuk::ImageAttachment::from_texture(skyCubemapView), {}, {});
 	return rg;
 }
 

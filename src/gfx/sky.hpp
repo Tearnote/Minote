@@ -72,6 +72,7 @@ struct Sky {
 	vuk::Texture transmittance;
 	vuk::Texture multiScattering;
 	vuk::Texture skyView;
+	vuk::Texture skyCubemapView;
 
 	vec3 sunDirection;
 
