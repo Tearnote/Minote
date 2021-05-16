@@ -30,7 +30,9 @@
 #define MEAN_ILLUM_MODE 0
 #endif
 
+#ifndef RENDER_SUN_DISK
 #define RENDER_SUN_DISK 1
+#endif
 
 #if 1
 #define USE_CornetteShanks
