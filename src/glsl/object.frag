@@ -25,7 +25,7 @@ vec3 envBRDFApprox(vec3 f0, float NoV, float roughness) {
 void main() {
 	const Instance instance = instances.data[InstanceIndex];
 
-	const float mipCount = floor(log2(float(textureSize(cubemap, 0).x))) + 1.0;
+	const float mipCount = 8;
 
 	// Standard vectors
 	vec3 normal = normalize(f_normal);
@@ -39,5 +39,4 @@ void main() {
 	vec3 specular = vec3(textureLod(cubemap, -reflect(viewDirection, normal), mipCount - (1 - 1.2 * log2(instance.roughness))));
 
 	out_color = vec4(mix(diffuse, specular, envBRDFApprox(f0, NoV, instance.roughness)), f_color.a);
-//	out_color = vec4(envBRDFApprox(f0, NoV, instance.roughness), f_color.a);
 }
