@@ -269,7 +269,7 @@ auto Sky::draw(AtmosphereParams const& atmosphere, vuk::Name targetColor, vuk::N
 }
 
 auto Sky::drawCubemap(AtmosphereParams const& atmosphere, vuk::Name target, vuk::PerThreadContext& ptc,
-		uvec2 resolution, vec3 cameraPos, mat4 viewProjection) -> vuk::RenderGraph {
+		uvec2 resolution, mat4 viewProjection) -> vuk::RenderGraph {
 	auto globals = Globals{
 		.gSkyInvViewProjMat = inverse(viewProjection),
 		.gResolution = resolution,

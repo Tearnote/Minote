@@ -57,11 +57,13 @@ add_executable(Minote
         src/sys/glfw.hpp src/sys/glfw.cpp
         src/gfx/instances.hpp src/gfx/instances.cpp
         src/gfx/pipelines.hpp src/gfx/pipelines.cpp
+        src/gfx/iblCoeffs.hpp
         src/gfx/indirect.hpp src/gfx/indirect.cpp
         src/gfx/meshes.hpp src/gfx/meshes.cpp
         src/gfx/engine.hpp src/gfx/engine.cpp
         src/gfx/imgui.hpp src/gfx/imgui.cpp
         src/gfx/base.hpp
+        src/gfx/ibl.hpp src/gfx/ibl.cpp
         src/gfx/sky.hpp src/gfx/sky.cpp
         #src/playstate.hpp src/playstate.cpp
         src/mapper.hpp src/mapper.tpp src/mapper.cpp
@@ -231,9 +233,10 @@ set(SHADER_SOURCES
         src/glsl/sky/skyDrawCubemap.comp
         src/glsl/sky/skyGenSkyView.comp
         src/glsl/sky/skyDraw.vert src/glsl/sky/skyDraw.frag
+        src/glsl/iblPostfilter.comp
+        src/glsl/iblPrefilter.comp
         src/glsl/zprepass.vert src/glsl/zprepass.frag
         src/glsl/tonemap.vert src/glsl/tonemap.frag
-        src/glsl/cubemip.comp
         src/glsl/object.vert src/glsl/object.frag
         src/glsl/imgui.vert src/glsl/imgui.frag
         src/glsl/cull.comp)

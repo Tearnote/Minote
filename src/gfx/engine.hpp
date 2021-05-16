@@ -18,6 +18,7 @@
 #include "gfx/imgui.hpp"
 #endif //IMGUI
 #include "gfx/sky.hpp"
+#include "gfx/ibl.hpp"
 
 namespace minote::gfx {
 
@@ -72,12 +73,8 @@ private:
 		vec3 up;
 	} camera;
 
-	std::optional<vuk::Texture> cubemap;
-	vuk::Unique<vuk::ImageView> cubemapBase;
-	std::vector<vuk::Unique<vuk::ImageView>> cubemapMips;
-	vuk::Unique<vuk::PersistentDescriptorSet> cubemapPds;
-
 	std::optional<Sky> sky;
+	std::optional<IBLMap> ibl;
 
 	auto createSwapchain(VkSwapchainKHR old = VK_NULL_HANDLE) -> vuk::Swapchain;
 	void refreshSwapchain();

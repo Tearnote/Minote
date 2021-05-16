@@ -130,11 +130,8 @@ Engine::Engine(sys::Window& window, Version version) {
 
 Engine::~Engine() {
 	context->wait_idle();
+	ibl.reset();
 	sky.reset();
-	cubemapPds.reset();
-	cubemapMips.clear();
-	cubemapBase.reset();
-	cubemap.reset();
 	indicesBuf.reset();
 	colorsBuf.reset();
 	normalsBuf.reset();
@@ -177,53 +174,9 @@ void Engine::uploadAssets() {
 	indicesBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
 		vuk::BufferUsageFlagBits::eIndexBuffer, std::span<u16>(meshes.indices)).first;
 
-	// Create cubemap and its views
-	auto cubemapMipCount = mipmapCount(CubeMapSize);
-	cubemap = context->allocate_texture(vuk::ImageCreateInfo{
-		.flags = vuk::ImageCreateFlagBits::eCubeCompatible,
-		.format = vuk::Format::eR16G16B16A16Sfloat,
-		.extent = {CubeMapSize, CubeMapSize, 1},
-		.mipLevels = cubemapMipCount,
-		.arrayLayers = 6,
-		.usage = vuk::ImageUsageFlagBits::eStorage | vuk::ImageUsageFlagBits::eSampled,
-	});
-	cubemap->view = ptc.create_image_view(vuk::ImageViewCreateInfo{
-		.image = cubemap->image.get(),
-		.viewType = vuk::ImageViewType::eCube,
-		.format = cubemap->format,
-		.subresourceRange = vuk::ImageSubresourceRange{
-			.aspectMask = vuk::ImageAspectFlagBits::eColor,
-			.levelCount = VK_REMAINING_MIP_LEVELS,
-			.layerCount = 6,
-		},
-	});
-	cubemapBase = ptc.create_image_view(vuk::ImageViewCreateInfo{
-		.image = cubemap->image.get(),
-		.viewType = vuk::ImageViewType::e2DArray,
-		.format = cubemap->format,
-		.subresourceRange = vuk::ImageSubresourceRange{
-			.aspectMask = vuk::ImageAspectFlagBits::eColor,
-			.layerCount = 6,
-		},
-	});
-	cubemapPds = ptc.create_persistent_descriptorset(*context->get_named_compute_pipeline("cubemip"), 0, 16);
-	for (auto i = 0u; i < cubemapMipCount; i += 1) {
-		auto& view = cubemapMips.emplace_back(ptc.create_image_view(vuk::ImageViewCreateInfo{
-			.image = cubemap->image.get(),
-			.viewType = vuk::ImageViewType::e2DArray,
-			.format = cubemap->format,
-			.subresourceRange = vuk::ImageSubresourceRange{
-				.aspectMask = vuk::ImageAspectFlagBits::eColor,
-				.baseMipLevel = i,
-				.levelCount = 1,
-				.layerCount = 6,
-			},
-		}));
-		cubemapPds->update_storage_image(ptc, 0, i, view.get());
-	}
-	ptc.commit_persistent_descriptorset(cubemapPds.get());
-
+	// Create pipeline components
 	sky = Sky(*context);
+	ibl = IBLMap(*context, ptc);
 
 	// Finalize uploads
 	ptc.wait_all_transfers();
@@ -267,9 +220,6 @@ void Engine::render() {
 		sizeof(World), alignof(World));
 	std::memcpy(worldBuf.mapped_ptr, &world, sizeof(world));
 
-	auto cubemipAtomic = ptc.allocate_scratch_buffer(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eStorageBuffer, sizeof(vec4) * 256 * 6 + sizeof(u32) * 6, alignof(vec4));
-
 	// Upload indirect buffers
 	auto indirect = Indirect::createBuffers(ptc, meshes, instances);
 
@@ -300,7 +250,8 @@ void Engine::render() {
 		.GroundAlbedo = {0.0f, 0.0f, 0.0f},
 	};
 	rg.append(sky->generateAtmosphereModel(atmosphere, ptc, {swapchain->extent.width, swapchain->extent.height}, camera.eye, world.viewProjection));
-	rg.append(sky->drawCubemap(atmosphere, "cubemap", ptc, {cubemap->extent.width, cubemap->extent.height}, camera.eye, world.viewProjection));
+	rg.append(sky->drawCubemap(atmosphere, "ibl_map_unfiltered", ptc, {ibl->mapUnfiltered.extent.width, ibl->mapUnfiltered.extent.height}, world.viewProjection));
+	rg.append(ibl->filter());
 	rg.add_pass({
 		.name = "Frustum culling",
 		.resources = {
@@ -337,22 +288,6 @@ void Engine::render() {
 		},
 	});
 	rg.add_pass({
-		.name = "IBL cubemap mips",
-		.resources = {
-			"cubemap"_image(vuk::eComputeRW),
-		},
-		.execute = [this, &cubemipAtomic](vuk::CommandBuffer& cmd) {
-			cmd.bind_persistent(0, cubemapPds.get())
-			   .bind_storage_buffer(1, 0, cubemipAtomic)
-			   .bind_sampled_image(1, 1, cubemapBase.get(), vuk::SamplerCreateInfo{
-			   	.magFilter = vuk::Filter::eLinear,
-			   	.minFilter = vuk::Filter::eLinear,
-			   }, vuk::ImageLayout::eGeneral)
-			   .bind_compute_pipeline("cubemip");
-			cmd.dispatch_invocations(CubeMapSize / 4, CubeMapSize / 4, 6);
-		},
-	});
-	rg.add_pass({
 		.name = "Z-prepass",
 		.resources = {
 			"commands"_buffer(vuk::eIndirectRead),
@@ -377,7 +312,7 @@ void Engine::render() {
 		.resources = {
 			"commands"_buffer(vuk::eIndirectRead),
 			"instances_culled"_buffer(vuk::eVertexRead),
-			"cubemap"_image(vuk::eFragmentSampled),
+			"ibl_map_filtered"_image(vuk::eFragmentSampled),
 			"object_color"_image(vuk::eColorWrite),
 			"object_depth"_image(vuk::eDepthStencilRW),
 		},
@@ -397,7 +332,7 @@ void Engine::render() {
 			   .bind_vertex_buffer(2, *colorsBuf, 2, vuk::Packed{vuk::Format::eR16G16B16A16Unorm})
 			   .bind_index_buffer(*indicesBuf, vuk::IndexType::eUint16)
 			   .bind_storage_buffer(0, 1, instancesBuf)
-			   .bind_sampled_image(0, 3, "cubemap", cubeSampler)
+			   .bind_sampled_image(0, 3, "ibl_map_filtered", cubeSampler)
 			   .bind_graphics_pipeline("object");
 			cmd.draw_indexed_indirect(indirect.commandsCount, commandsBuf, sizeof(Indirect::Command));
 		},
@@ -424,7 +359,6 @@ void Engine::render() {
 	ImGui_ImplVuk_Render(ptc, rg, "swapchain", "swapchain", imguiData, ImGui::GetDrawData());
 #endif //IMGUI
 
-	rg.attach_image("cubemap", vuk::ImageAttachment::from_texture(*cubemap), {}, {});
 	rg.attach_buffer("commands", indirect.commands, vuk::eTransferDst, {});
 	rg.attach_buffer("instances", indirect.instances, vuk::eTransferDst, {});
 	rg.attach_buffer("instances_culled", indirect.instancesCulled, {}, {});
