@@ -68,7 +68,7 @@ Sky::Sky(vuk::Context& ctx):
 	}, "skyDrawCubemap.comp");
 	ctx.create_named_pipeline("sky_draw_cubemap", skyDrawCubemapPci);
 }
-
+#include "GLFW/glfw3.h"
 auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerThreadContext& ptc,
 	uvec2 resolution, vec3 cameraPos, mat4 viewProjection) -> vuk::RenderGraph {
 	static auto sunPitch = radians(20.0f);
@@ -78,6 +78,7 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerTh
 	ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 60.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
 	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
 #endif //IMGUI
+	// sunPitch = radians(15.0f - glfwGetTime() / 2.0);
 	sunDirection = vec3(1.0f, 0.0f, 0.0f);
 	sunDirection = glm::mat3(make_rotate(sunPitch, {0.0f, -1.0f, 0.0f})) * sunDirection;
 	sunDirection = glm::mat3(make_rotate(sunYaw, {0.0f, 0.0f, 1.0f})) * sunDirection;
