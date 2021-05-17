@@ -71,11 +71,11 @@ Sky::Sky(vuk::Context& ctx):
 
 auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerThreadContext& ptc,
 	uvec2 resolution, vec3 cameraPos, mat4 viewProjection) -> vuk::RenderGraph {
-	static auto sunPitch = radians(13.3f);
+	static auto sunPitch = radians(20.0f);
 	static auto sunYaw = radians(30.0f);
 #if IMGUI
 	// ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 90.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
-	ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 8.0f, "%.2f deg", ImGuiSliderFlags_NoRoundToFormat);
+	ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 60.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
 	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
 #endif //IMGUI
 	sunDirection = vec3(1.0f, 0.0f, 0.0f);

@@ -15,6 +15,7 @@ void createPipelines(vuk::Context& ctx) {
 #include "spv/zprepass.frag.spv"
 	}, "zprepass.frag");
 	zPrepassPci.rasterization_state.cullMode = vuk::CullModeFlagBits::eBack;
+	zPrepassPci.depth_stencil_state.depthCompareOp = vuk::CompareOp::eGreater;
 	ctx.create_named_pipeline("z_prepass", zPrepassPci);
 
 	auto objectPci = vuk::PipelineBaseCreateInfo();

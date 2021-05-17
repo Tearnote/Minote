@@ -109,6 +109,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 		auto transform6 = make_translate({0_m, 0_m, 2.5_m}) * make_scale({1.5f, 1.5f, 1.5f}) * rotateTransformAnim * rotateTransform;
 		auto transform7 = make_translate({0_m, 8_m, 2_m});
 		auto transform8 = make_translate({0_m, -8_m, 2_m});
+		auto transform9 = make_translate({0_m, 0_m, -6360_km}) * make_scale({6360_km, 6360_km, 6360_km});
 		constexpr auto Spacing = 25_m;
 		for (auto x = -Spacing * Expand; x <= Spacing * Expand; x += Spacing)
 		for (auto y = -Spacing * Expand; y <= Spacing * Expand; y += Spacing) {

@@ -205,6 +205,9 @@ void Engine::render() {
 	auto rawview = lookAt(camera.eye, camera.center, camera.up);
 	auto yFlip = make_scale({-1.0f, -1.0f, 1.0f});
 	world.projection = infinitePerspective(VerticalFov, f32(viewport.x) / f32(viewport.y), NearPlane);
+	// Reverse-Z
+	world.projection[2][2] = 0.0f;
+	world.projection[3][2] *= -1.0f;
 	world.view = yFlip * rawview;
 	world.viewProjection = world.projection * world.view;
 	auto swapchainSize = vuk::Dimension2D::absolute(swapchain->extent);
@@ -365,7 +368,7 @@ void Engine::render() {
 	rg.attach_buffer("instances", indirect.instances, vuk::eTransferDst, {});
 	rg.attach_buffer("instances_culled", indirect.instancesCulled, {}, {});
 	rg.attach_managed("object_color", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
-	rg.attach_managed("object_depth", vuk::Format::eD32Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearDepthStencil{1.0f, 0});
+	rg.attach_managed("object_depth", vuk::Format::eD32Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearDepthStencil{0.0f, 0});
 	rg.attach_managed("object_resolved", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e1, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	rg.attach_swapchain("swapchain", swapchain, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	auto erg = std::move(rg).link(ptc);
