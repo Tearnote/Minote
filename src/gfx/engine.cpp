@@ -276,8 +276,9 @@ void Engine::render() {
 			*cullData = CullData{
 				.view = world.view,
 				.frustum = [this] {
-					vec4 frustumX = world.viewProjection[3] + world.viewProjection[0];
-					vec4 frustumY = world.viewProjection[3] + world.viewProjection[1];
+					auto projectionT = transpose(world.projection);
+					vec4 frustumX = projectionT[3] + projectionT[0];
+					vec4 frustumY = projectionT[3] + projectionT[1];
 					frustumX /= length(vec3(frustumX));
 					frustumY /= length(vec3(frustumY));
 					return vec4(frustumX.x, frustumX.z, frustumY.y, frustumY.z);
@@ -334,6 +335,7 @@ void Engine::render() {
 			   .bind_storage_buffer(0, 1, instancesBuf)
 			   .bind_sampled_image(0, 3, "ibl_map_filtered", cubeSampler)
 			   .bind_graphics_pipeline("object");
+			cmd.push_constants(vuk::ShaderStageFlagBits::eFragment, 0, sky->sunDirection);
 			cmd.draw_indexed_indirect(indirect.commandsCount, commandsBuf, sizeof(Indirect::Command));
 		},
 	});

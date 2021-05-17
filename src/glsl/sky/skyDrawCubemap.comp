@@ -40,6 +40,5 @@ void main() {
 
 	SkyViewLutParamsToUv(IntersectGround, viewZenithCosAngle, lightViewCosAngle, viewSize, viewHeight, uv);
 	vec4 result = vec4(textureLod(skyView, uv, 0.0).rgb + GetSunLuminance(WorldPos, WorldDir, Atmosphere.BottomRadius), 1.0) * 10.0;
-	result.rgb *= 10.0;
 	imageStore(cubemap, ivec3(gid), result);
 }

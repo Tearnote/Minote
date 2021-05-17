@@ -23,6 +23,8 @@ struct Sky {
 	constexpr static auto SkyViewWidth = 192u;
 	constexpr static auto SkyViewHeight = 108u;
 
+	constexpr static auto CubemapHeight = 0.2f;
+
 	struct Globals {
 
 		mat4 gSkyInvViewProjMat;

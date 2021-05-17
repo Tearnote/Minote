@@ -73,4 +73,17 @@ constexpr auto make_scale(glm::vec<3, T, Q> v) -> glm::mat<4, 4, T, Q> {
 	return glm::scale(glm::mat<4, 4, T, Q>(1), v);
 }
 
+namespace literals {
+
+constexpr float operator""_m(unsigned long long int val) { return float(val) * 0.001f; }
+constexpr float operator""_m(long double val) { return float(val) * 0.001f; }
+
+constexpr float operator""_km(unsigned long long int val) { return float(val); }
+constexpr float operator""_km(long double val) { return float(val); }
+
+constexpr float operator""_deg(unsigned long long int val) { return radians(float(val)); }
+constexpr float operator""_deg(long double val) { return radians(float(val)); }
+
+}
+
 }

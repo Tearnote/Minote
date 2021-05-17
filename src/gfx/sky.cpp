@@ -74,11 +74,12 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerTh
 	static auto sunPitch = radians(13.3f);
 	static auto sunYaw = radians(30.0f);
 #if IMGUI
-	ImGui::SliderAngle("Sun pitch", &sunPitch, 0.0f, 90.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
+	// ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 90.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
+	ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 8.0f, "%.2f deg", ImGuiSliderFlags_NoRoundToFormat);
 	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
 #endif //IMGUI
 	sunDirection = vec3(1.0f, 0.0f, 0.0f);
-	sunDirection = glm::mat3(make_rotate(sunPitch * (95.0f / 90.0f) - radians(5.0f), {0.0f, -1.0f, 0.0f})) * sunDirection;
+	sunDirection = glm::mat3(make_rotate(sunPitch, {0.0f, -1.0f, 0.0f})) * sunDirection;
 	sunDirection = glm::mat3(make_rotate(sunYaw, {0.0f, 0.0f, 1.0f})) * sunDirection;
 
 	auto globals = Globals{
@@ -103,7 +104,7 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerTh
 		.gSunIlluminance = {1.0f, 1.0f, 1.0f},
 		.MultipleScatteringFactor = 1.0f,
 		.sun_direction = sunDirection,
-		.camera = {0.0f, 0.0f, 1.0f},
+		.camera = {0.0f, 0.0f, CubemapHeight},
 	};
 	auto cubemapGlobalsBuf = ptc.allocate_scratch_buffer(
 		vuk::MemoryUsage::eCPUtoGPU,
@@ -277,7 +278,7 @@ auto Sky::drawCubemap(AtmosphereParams const& atmosphere, vuk::Name target, vuk:
 		.gSunIlluminance = {1.0f, 1.0f, 1.0f},
 		.MultipleScatteringFactor = 1.0f,
 		.sun_direction = sunDirection,
-		.camera = {0.0f, 0.0f, 1.0f},
+		.camera = {0.0f, 0.0f, CubemapHeight},
 	};
 	auto globalsBuf = ptc.allocate_scratch_buffer(
 		vuk::MemoryUsage::eCPUtoGPU,

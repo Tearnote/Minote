@@ -11,7 +11,12 @@ layout(location = 0) out vec4 out_color;
 
 layout(binding = 3) uniform samplerCube cubemap;
 
+layout(push_constant) uniform Constants {
+	vec3 sunDirection;
+};
+
 #include "object.glslh"
+#include "util.glslh"
 
 vec3 envBRDFApprox(vec3 f0, float NoV, float roughness) {
 	vec4 c0 = vec4(-1.0, -0.0275, -0.572, 0.022);
@@ -20,6 +25,15 @@ vec3 envBRDFApprox(vec3 f0, float NoV, float roughness) {
 	float a004 = min(r.x * r.x, exp2(-9.28 * NoV)) * r.x + r.y;
 	vec2 AB = vec2(-1.04, 1.04) * a004 + r.zw;
 	return f0 * AB.x + AB.y;
+}
+
+float D_Approx(float Roughness, float RoL) {
+    float a = Roughness * Roughness;
+    float a2 = a * a;
+    float rcp_a2 = 1.0 / a2;
+    // 0.5 / ln(2), 0.275 / ln(2)
+    float c = 0.72134752 * rcp_a2 + 0.39674113;
+    return rcp_a2 * exp2(c*RoL - c);
 }
 
 void main() {
@@ -32,11 +46,25 @@ void main() {
 	vec3 viewDirection = normalize(f_viewPosition - f_position);
 	float NoV = dot(normal, viewDirection);
 
+	// Sun visibility
+	float sunDot = dot(vec3(0.0, 0.0, 1.0), sunDirection);
+	vec3 sunColor = vec3(textureLod(cubemap, sunDirection, 0.0));
+	// sunColor = mix(vec3(1.0), sunColor, sunColor);
+	const float sunAngularSize = radians(0.4);
+	sunColor *= smoothstep(cos(radians(90) + sunAngularSize), cos(radians(90) - sunAngularSize), sunDot);
+
 	// PBR calculation
 	vec3 f0 = max(f_color.rgb * instance.metalness, vec3(0.04));
 
-	vec3 diffuse = f_color.rgb * textureLod(cubemap, normal, mipCount - 2.0).rgb * (1.0 - instance.metalness);
-	vec3 specular = vec3(textureLod(cubemap, -reflect(viewDirection, normal), mipCount - (1 - 1.2 * log2(instance.roughness))));
+	vec3 iblDiffuse = textureLod(cubemap, normal, mipCount - 2.0).rgb;
+	vec3 sunDiffuse = sunColor * max(dot(normal, sunDirection), 0.0);
+	vec3 diffuse = f_color.rgb * (iblDiffuse + sunDiffuse) * (1.0 - instance.metalness);
+
+	vec3 reflection = reflect(viewDirection, normal);
+	vec3 iblSpecular = vec3(textureLod(cubemap, -reflection, mipCount - (1 - 1.2 * log2(instance.roughness))));
+	const float sunSpecularBias = 0.1;
+	vec3 sunSpecular = sunColor * D_Approx(instance.roughness * (1.0 - sunSpecularBias) + sunSpecularBias, dot(-reflection, sunDirection));
+	vec3 specular = iblSpecular + sunSpecular;
 
 	out_color = vec4(mix(diffuse, specular, envBRDFApprox(f0, NoV, instance.roughness)), f_color.a);
 }
