@@ -61,9 +61,10 @@ void main() {
 	vec3 diffuse = f_color.rgb * (iblDiffuse + sunDiffuse) * (1.0 - instance.metalness);
 
 	vec3 reflection = reflect(viewDirection, normal);
-	vec3 iblSpecular = vec3(textureLod(cubemap, -reflection, mipCount - (1 - 1.2 * log2(instance.roughness))));
-	const float sunSpecularBias = 0.1;
-	vec3 sunSpecular = sunColor * D_Approx(instance.roughness * (1.0 - sunSpecularBias) + sunSpecularBias, dot(-reflection, sunDirection));
+	float iblMip = max(7.0 - 0.480898 * log(2.0 / pow(instance.roughness, 4.0) - 1.0), 0.0);
+	vec3 iblSpecular = vec3(textureLod(cubemap, -reflection, iblMip));
+	const float sunMinRoughness = 1.0 / 16.0;
+	vec3 sunSpecular = sunColor * D_Approx(max(instance.roughness, sunMinRoughness), dot(-reflection, sunDirection));
 	vec3 specular = iblSpecular + sunSpecular;
 
 	out_color = vec4(mix(diffuse, specular, envBRDFApprox(f0, NoV, instance.roughness)), f_color.a);
