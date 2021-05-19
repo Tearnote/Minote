@@ -59,43 +59,7 @@ VKAPI_ATTR auto VKAPI_CALL debugCallback(
 }
 #endif //VK_VALIDATION
 
-#define BASE_RESOLUTION 128
-#define PROBE_REFLECTION_MIPS 7
-#define PROBE_REFLECTION_MIPS_FULL 8
-
-struct CubemapLevelParams {
-	int level;
-	float gloss;
-	float roughness;
-	unsigned res;
-};
-
-float R_SpecParamFromGloss( float gloss )
-{
-	const float GGX_MAX_SPEC_POWER = 18;
-	float exponent = powf( 2.0f, gloss * GGX_MAX_SPEC_POWER );
-	// returns roughness == sqrt(alpha) for GGX physically-based shader
-	return powf( 2.0f / ( 1 + exponent ), .25f );
-}
-
-void create_cubemap_level_params(std::vector<CubemapLevelParams> &level_params)
-{
-	for (int mip = 0; mip < PROBE_REFLECTION_MIPS; ++mip)
-	{
-		const float ENVMAP_MIPLEVEL_0_PB = 6.0f;
-		const float ENVMAP_MIPLEVEL_1_PB = 0.0f;
-
-		level_params[mip].level = mip;
-		level_params[mip].gloss = (ENVMAP_MIPLEVEL_0_PB - mip) / (ENVMAP_MIPLEVEL_0_PB - ENVMAP_MIPLEVEL_1_PB);
-		level_params[mip].roughness = R_SpecParamFromGloss(level_params[mip].gloss);
-		level_params[mip].res = BASE_RESOLUTION >> mip;
-	}
-}
-
 Engine::Engine(sys::Window& window, Version version) {
-	std::vector<CubemapLevelParams> params(PROBE_REFLECTION_MIPS);
-	create_cubemap_level_params(params);
-
 	// Create instance
 	auto instanceResult = vkb::InstanceBuilder()
 #if VK_VALIDATION
