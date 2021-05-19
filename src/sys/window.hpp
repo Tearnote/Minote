@@ -68,6 +68,9 @@ struct Window {
 	// creation, be careful with any operations that might require synchronization.
 	auto handle() { return m_handle; }
 
+	auto mousePos() { return m_mousePos.load(); }
+	auto mouseDown() { return m_mouseDown.load(); }
+
 	// Not movable, not copyable
 	Window(Window const&) = delete;
 	auto operator=(Window const&) -> Window& = delete;
@@ -98,6 +101,10 @@ private:
 	// DPI scaling, where 1.0 is "standard" DPI
 	std::atomic<f32> m_scale;
 
+	// Current state of the mouse, for debug purposes
+	std::atomic<vec2> m_mousePos;
+	std::atomic<bool> m_mouseDown;
+
 	// Function to run on each keypress event. The event is added to the queue.
 	static void keyCallback(GLFWwindow*, int, int, int, int);
 
@@ -109,6 +116,10 @@ private:
 	// to a display with different DPI scaling, or at startup. The new scale is saved
 	// for later retrieval.
 	static void windowScaleCallback(GLFWwindow*, float, float);
+
+	static void cursorPosCallback(GLFWwindow*, double, double);
+
+	static void mouseButtonCallback(GLFWwindow*, int, int, int);
 
 };
 

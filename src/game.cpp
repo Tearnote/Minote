@@ -37,7 +37,23 @@ void game(sys::Glfw&, sys::Window& window) try {
 	});
 	engine.uploadAssets();
 
-//	PlayState play;
+	auto cameraPos = vec3(0_m, -24_m, 4_m);
+	auto cameraDir = vec3(0.0f, 1.0f, 0.0f);
+	auto cameraUp = vec3(0.0f, 0.0f, 1.0f);
+	auto camUp = false;
+	auto camDown = false;
+	auto camLeft = false;
+	auto camRight = false;
+	auto camFloat = false;
+	auto const moveSpeed = 1_m / 16.0f;
+	auto cursorLastPos = vec2();
+	auto cursorOffset = vec2();
+	auto lastButtonState = false;
+	auto cameraYaw = 0_deg;
+	auto cameraPitch = 0_deg;
+	auto const lookSpeed = 1.0f / 256.0f;
+
+	//	PlayState play;
 
 	// *** Main loop ***
 
@@ -68,34 +84,70 @@ void game(sys::Glfw&, sys::Window& window) try {
 				if (action.type == Action::Back)
 					window.requestClose();
 
+				// Placeholder camera input
+				auto state = action.state == Mapper::Action::State::Pressed? true : false;
+				if (action.type == Action::Drop)
+					camUp = state;
+				if (action.type == Action::Lock)
+					camDown = state;
+				if (action.type == Action::Left)
+					camLeft = state;
+				if (action.type == Action::Right)
+					camRight = state;
+				if (action.type == Action::Skip)
+					camFloat = state;
+
 				return true;
 			});
 
 //			play.tick(updateActions);
 			nextUpdate += UpdateTick;
+
+			// Placeholder camera controls
+			auto cursorNewPos = window.mousePos();
+			if (!lastButtonState && window.mouseDown()) {
+				lastButtonState = true;
+				cursorLastPos = cursorNewPos;
+			}
+			if (!window.mouseDown()
+#if IMGUI
+				|| ImGui::GetIO().WantCaptureMouse
+#endif //IMGUI
+			)
+				lastButtonState = false;
+			if (lastButtonState) {
+				cursorOffset += cursorNewPos - cursorLastPos;
+				cursorLastPos = cursorNewPos;
+			}
+
+			cameraYaw += cursorOffset.x * lookSpeed;
+			cameraPitch -= cursorOffset.y * lookSpeed;
+			cameraPitch = clamp(cameraPitch, -89_deg, 89_deg);
+
+			auto cameraTransform = make_rotate(cameraPitch, {1.0f, 0.0f, 0.0f});
+			cameraTransform = make_rotate(cameraYaw, {0.0f, 0.0f, -1.0f}) * cameraTransform;
+			cameraDir = cameraTransform * vec4(0.0f, 1.0f, 0.0f, 0.0f);
+			cameraUp = cameraTransform * vec4(0.0f, 0.0f, 1.0f, 0.0f);
+
+			if (camUp)
+				cameraPos += cameraDir * moveSpeed;
+			if (camDown)
+				cameraPos -= cameraDir * moveSpeed;
+			if (camLeft)
+				cameraPos -= normalize(cross(cameraDir, cameraUp)) * moveSpeed;
+			if (camRight)
+				cameraPos += normalize(cross(cameraDir, cameraUp)) * moveSpeed;
+			if (camFloat)
+				cameraPos += vec3(0.0f, 0.0f, 1.0f) * moveSpeed;
 		}
 
 		// Graphics
-		static auto spin = false;
-		static auto cameraDistance = 32_m;
-		static auto cameraPitch = 12_deg;
-		static auto cameraYaw = -33_deg;
-#if IMGUI
-		ImGui::Checkbox("Spin the camera", &spin);
-		ImGui::SliderFloat("Camera distance", &cameraDistance, 20_m, 10000_km, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
-		ImGui::SliderAngle("Camera pitch", &cameraPitch, 0.0f, 89.875f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
-		ImGui::SliderAngle("Camera yaw", &cameraYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
-#endif //IMGUI
-		if (spin) {
-			engine.setCamera({std::sin(glfwGetTime() / 4.0) * 28_m, std::cos(glfwGetTime() / 4.0) * 28_m, std::sin(glfwGetTime() / 3.1) * 4_m + 12_m}, {0_m, 0_m, 4_m});
-		} else {
-			auto cameraPosition = vec3(0_m, -cameraDistance, 4_m);
-			cameraPosition = mat3(make_rotate(cameraPitch, {-1.0f, 0.0f, 0.0f})) * cameraPosition;
-			cameraPosition = mat3(make_rotate(cameraYaw, {0.0f, 0.0f, 1.0f})) * cameraPosition;
-			engine.setCamera(cameraPosition, {0_m, 0_m, 4_m});
-		}
+		engine.setCamera(cameraPos, cameraPos + cameraDir);
+		cursorOffset = vec2();
 
+#if IMGUI
 		ImGui::SliderInt("Expand", &Expand, 0, 40);
+#endif //IMGUI
 
 		auto prescale = make_scale({1_m, 1_m, 1_m});
 		auto rotateTransform = make_rotate(180_deg, {1.0f, 0.0f, 0.0f});
@@ -109,7 +161,6 @@ void game(sys::Glfw&, sys::Window& window) try {
 		auto transform6 = make_translate({0_m, 0_m, 2.5_m}) * make_scale({1.5f, 1.5f, 1.5f}) * rotateTransformAnim * rotateTransform;
 		auto transform7 = make_translate({0_m, 8_m, 2_m});
 		auto transform8 = make_translate({0_m, -8_m, 2_m});
-		auto transform9 = make_translate({0_m, 0_m, -6360_km}) * make_scale({6360_km, 6360_km, 6360_km});
 		constexpr auto Spacing = 25_m;
 		for (auto x = -Spacing * Expand; x <= Spacing * Expand; x += Spacing)
 		for (auto y = -Spacing * Expand; y <= Spacing * Expand; y += Spacing) {

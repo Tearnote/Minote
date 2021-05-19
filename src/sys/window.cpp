@@ -77,6 +77,21 @@ void Window::windowScaleCallback(GLFWwindow* handle, float xScale, float) {
 	L.info(R"(Window "{}" DPI scaling changed to {})", window.title(), xScale);
 }
 
+void Window::cursorPosCallback(GLFWwindow* handle, double xPos, double yPos) {
+	assert(handle);
+	auto& window = getWindow(handle);
+
+	window.m_mousePos.store({xPos, yPos});
+}
+
+void Window::mouseButtonCallback(GLFWwindow* handle, int button, int action, int) {
+	assert(handle);
+	auto& window = getWindow(handle);
+
+	if (button == GLFW_MOUSE_BUTTON_LEFT)
+		window.m_mouseDown.store(action == GLFW_PRESS? true : false);
+}
+
 Window::Window(Glfw const& _glfw, std::string_view _title, bool fullscreen, uvec2 _size):
 	glfw(_glfw), m_title(_title) {
 	assert(_size.x > 0 && _size.y > 0);
@@ -127,6 +142,8 @@ Window::Window(Glfw const& _glfw, std::string_view _title, bool fullscreen, uvec
 	glfwSetKeyCallback(m_handle, keyCallback);
 	glfwSetFramebufferSizeCallback(m_handle, framebufferResizeCallback);
 	glfwSetWindowContentScaleCallback(m_handle, windowScaleCallback);
+	glfwSetCursorPosCallback(m_handle, cursorPosCallback);
+	glfwSetMouseButtonCallback(m_handle, mouseButtonCallback);
 
 	// Initialize imgui input
 #if IMGUI

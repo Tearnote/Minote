@@ -33,10 +33,14 @@ using glm::u16vec4;
 using glm::mat3;
 using glm::mat4;
 using glm::radians;
+using glm::clamp;
 using glm::abs;
 using glm::min;
 using glm::max;
+using glm::normalize;
 using glm::length;
+using glm::cross;
+using glm::dot;
 using glm::infinitePerspective;
 
 // True modulo operation (as opposed to remainder, which is operator% in C++.)
