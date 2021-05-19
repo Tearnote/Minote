@@ -326,6 +326,11 @@ vec3 GetSunLuminance(vec3 WorldPos, vec3 WorldDir, float PlanetRadius) {
 	return vec3(0.0);
 }
 
+#define AP_KM_PER_SLICE 4.0
+float AerialPerspectiveSliceToDepth(float slice) {
+	return slice * AP_KM_PER_SLICE;
+}
+
 #if MULTISCATAPPROX_ENABLED
 vec3 GetMultipleScattering(vec3 scattering, vec3 extinction, vec3 worldPos, float viewZenithCosAngle) {
 	uvec2 size = textureSize(MultiScatteringLutTexture, 0).xy;

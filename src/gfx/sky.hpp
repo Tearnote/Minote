@@ -23,6 +23,11 @@ struct Sky {
 	constexpr static auto SkyViewWidth = 192u;
 	constexpr static auto SkyViewHeight = 108u;
 
+	constexpr static auto AerialPerspectiveFormat = vuk::Format::eR16G16B16A16Sfloat;
+	constexpr static auto AerialPerspectiveWidth = 32u;
+	constexpr static auto AerialPerspectiveHeight = 32u;
+	constexpr static auto AerialPerspectiveDepth = 32u;
+
 	constexpr static auto CubemapHeight = 0.2f;
 
 	struct Globals {
@@ -75,6 +80,7 @@ struct Sky {
 	vuk::Texture multiScattering;
 	vuk::Texture skyView;
 	vuk::Texture skyCubemapView;
+	vuk::Texture aerialPerspective;
 
 	vec3 sunDirection;
 

@@ -32,6 +32,11 @@ Sky::Sky(vuk::Context& ctx):
 		.extent = {SkyViewWidth, SkyViewHeight, 1},
 		.usage = vuk::ImageUsageFlagBits::eStorage | vuk::ImageUsageFlagBits::eSampled,
 	})),
+	aerialPerspective(ctx.allocate_texture(vuk::ImageCreateInfo{
+		.format = AerialPerspectiveFormat,
+		.extent = {AerialPerspectiveWidth, AerialPerspectiveHeight, AerialPerspectiveDepth},
+		.usage = vuk::ImageUsageFlagBits::eStorage | vuk::ImageUsageFlagBits::eSampled,
+	})),
 	sunDirection{0.283f, 0.912f, 0.296f} {
 	auto skyGenTransmittancePci = vuk::ComputePipelineCreateInfo();
 	skyGenTransmittancePci.add_spirv(std::vector<u32>{
@@ -67,14 +72,19 @@ Sky::Sky(vuk::Context& ctx):
 #include "spv/skyDrawCubemap.comp.spv"
 	}, "skyDrawCubemap.comp");
 	ctx.create_named_pipeline("sky_draw_cubemap", skyDrawCubemapPci);
+	
+	auto skyAerialPerspectivePci = vuk::ComputePipelineCreateInfo();
+	skyAerialPerspectivePci.add_spirv(std::vector<u32>{
+#include "spv/skyGenAerialPerspective.comp.spv"
+	}, "skyGenAerialPerspectivePci.comp");
+	ctx.create_named_pipeline("sky_gen_aerial_perspective", skyAerialPerspectivePci);
 }
 #include "GLFW/glfw3.h"
 auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerThreadContext& ptc,
 	uvec2 resolution, vec3 cameraPos, mat4 viewProjection) -> vuk::RenderGraph {
-	static auto sunPitch = radians(20.0f);
+	static auto sunPitch = radians(7.2f);
 	static auto sunYaw = radians(30.0f);
 #if IMGUI
-	// ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 90.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
 	ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 60.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
 	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
 #endif //IMGUI
@@ -141,7 +151,7 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerTh
 	rg.add_pass({
 		.name = "Sky multiple scattering LUT",
 		.resources = {
-			"sky_transmittance"_image(vuk::eComputeRead),
+			"sky_transmittance"_image(vuk::eComputeSampled),
 			"sky_multi_scattering"_image(vuk::eComputeWrite),
 		},
 		.execute = [globalsBuf, atmosphereBuf](vuk::CommandBuffer& cmd) {
@@ -160,8 +170,8 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerTh
 	rg.add_pass({
 		.name = "Sky view LUT",
 		.resources = {
-			"sky_transmittance"_image(vuk::eComputeRead),
-			"sky_multi_scattering"_image(vuk::eComputeRead),
+			"sky_transmittance"_image(vuk::eComputeSampled),
+			"sky_multi_scattering"_image(vuk::eComputeSampled),
 			"sky_sky_view"_image(vuk::eComputeWrite),
 		},
 		.execute = [globalsBuf, atmosphereBuf](vuk::CommandBuffer& cmd) {
@@ -185,8 +195,8 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerTh
 	rg.add_pass({
 		.name = "Sky cubemap view LUT",
 		.resources = {
-			"sky_transmittance"_image(vuk::eComputeRead),
-			"sky_multi_scattering"_image(vuk::eComputeRead),
+			"sky_transmittance"_image(vuk::eComputeSampled),
+			"sky_multi_scattering"_image(vuk::eComputeSampled),
 			"sky_cubemap_sky_view"_image(vuk::eComputeWrite),
 		},
 		.execute = [cubemapGlobalsBuf, atmosphereBuf](vuk::CommandBuffer& cmd) {
@@ -207,10 +217,36 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerTh
 			cmd.dispatch_invocations(SkyViewWidth, SkyViewHeight, 1);
 		},
 	});
+	rg.add_pass({
+		.name = "Sky aerial perspective LUT",
+		.resources = {
+			"sky_transmittance"_image(vuk::eComputeSampled),
+			"sky_multi_scattering"_image(vuk::eComputeSampled),
+			"sky_aerial_perspective"_image(vuk::eComputeWrite),
+		},
+		.execute = [cubemapGlobalsBuf, atmosphereBuf](vuk::CommandBuffer& cmd) {
+			cmd.bind_uniform_buffer(0, 0, cubemapGlobalsBuf)
+			   .bind_uniform_buffer(0, 1, atmosphereBuf)
+			   .bind_sampled_image(0, 2, "sky_transmittance", vuk::SamplerCreateInfo{
+				   .magFilter = vuk::Filter::eLinear,
+				   .minFilter = vuk::Filter::eLinear,
+				   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
+				   .addressModeV = vuk::SamplerAddressMode::eClampToEdge})
+			   .bind_sampled_image(0, 3, "sky_multi_scattering", vuk::SamplerCreateInfo{
+				   .magFilter = vuk::Filter::eLinear,
+				   .minFilter = vuk::Filter::eLinear,
+				   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
+				   .addressModeV = vuk::SamplerAddressMode::eClampToEdge})
+			   .bind_storage_image(1, 0, "sky_aerial_perspective")
+			   .bind_compute_pipeline("sky_gen_aerial_perspective");
+			cmd.dispatch_invocations(AerialPerspectiveWidth, AerialPerspectiveHeight, AerialPerspectiveDepth);
+		},
+	});
 	rg.attach_image("sky_transmittance", vuk::ImageAttachment::from_texture(transmittance), {}, {});
 	rg.attach_image("sky_multi_scattering", vuk::ImageAttachment::from_texture(multiScattering), {}, {});
 	rg.attach_image("sky_sky_view", vuk::ImageAttachment::from_texture(skyView), {}, {});
 	rg.attach_image("sky_cubemap_sky_view", vuk::ImageAttachment::from_texture(skyCubemapView), {}, {});
+	rg.attach_image("sky_aerial_perspective", vuk::ImageAttachment::from_texture(aerialPerspective), {}, {});
 	return rg;
 }
 

@@ -103,7 +103,7 @@ set(VUK_USE_VULKAN_SDK OFF CACHE BOOL "")
 set(VUK_USE_SHADERC OFF CACHE BOOL "")
 FetchContent_Declare(vuk
         GIT_REPOSITORY https://github.com/Tearnote/vuk
-        GIT_TAG fd4f8745c3a6d777912877916b9fa4fa33b64bb9)
+        GIT_TAG 39d8a4da4fce0db0c671fcc6158c6070b31998b5)
 FetchContent_MakeAvailable(vuk)
 target_compile_definitions(vuk PRIVATE VK_NO_PROTOTYPES)
 target_compile_definitions(vuk PRIVATE VUK_CUSTOM_VULKAN_HEADER="volk.h")
@@ -228,6 +228,7 @@ target_link_libraries(Minote PRIVATE cgltf)
 # Shader compilation
 
 set(SHADER_SOURCES
+        src/glsl/sky/skyGenAerialPerspective.comp
         src/glsl/sky/skyGenMultiScattering.comp
         src/glsl/sky/skyGenTransmittance.comp
         src/glsl/sky/skyDrawCubemap.comp
