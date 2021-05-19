@@ -37,7 +37,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 	});
 	engine.uploadAssets();
 
-	auto cameraPos = vec3(0_m, -24_m, 4_m);
+	auto cameraPos = vec3(-10_m, -26_m, 10_m);
 	auto cameraDir = vec3(0.0f, 1.0f, 0.0f);
 	auto cameraUp = vec3(0.0f, 0.0f, 1.0f);
 	auto camUp = false;
@@ -49,8 +49,8 @@ void game(sys::Glfw&, sys::Window& window) try {
 	auto cursorLastPos = vec2();
 	auto cursorOffset = vec2();
 	auto lastButtonState = false;
-	auto cameraYaw = 0_deg;
-	auto cameraPitch = 0_deg;
+	auto cameraYaw = 32_deg;
+	auto cameraPitch = -12_deg;
 	auto const lookSpeed = 1.0f / 256.0f;
 
 	//	PlayState play;
