@@ -10,6 +10,7 @@ layout(location = 4) in vec3 f_viewPosition;
 layout(location = 0) out vec4 out_color;
 
 layout(binding = 3) uniform samplerCube cubemap;
+layout(binding = 4) uniform sampler3D aerialPerspective;
 
 layout(push_constant) uniform Constants {
 	vec3 sunDirection;
@@ -34,6 +35,11 @@ float D_Approx(float Roughness, float RoL) {
     // 0.5 / ln(2), 0.275 / ln(2)
     float c = 0.72134752 * rcp_a2 + 0.39674113;
     return rcp_a2 * exp2(c*RoL - c);
+}
+
+#define AP_KM_PER_SLICE 4.0
+float AerialPerspectiveDepthToSlice(float depth) {
+	return depth * (1.0 / AP_KM_PER_SLICE);
 }
 
 void main() {
@@ -68,4 +74,18 @@ void main() {
 	vec3 specular = iblSpecular + sunSpecular;
 
 	out_color = vec4(mix(diffuse, specular, envBRDFApprox(f0, NoV, instance.roughness)), f_color.a);
+
+	// Aerial perspective
+	float depth = 1.0 - gl_FragCoord.z; // Reverse-z
+	float Slice = AerialPerspectiveDepthToSlice(depth);
+	float Weight = 1.0;
+	if (Slice < 0.5) {
+		// We multiply by weight to fade to 0 at depth 0. That works for luminance and opacity.
+		Weight = clamp(Slice * 2.0, 0.0, 1.0);
+		Slice = 0.5;
+	}
+	float w = sqrt(Slice / textureSize(aerialPerspective, 0).z);	// squared distribution
+
+	const vec4 AP = Weight * textureLod(aerialPerspective, vec3(gl_FragCoord.xy / vec2(world.viewportSize), w), 0.0);
+	out_color.rgb += AP.rgb * 4.0;
 }

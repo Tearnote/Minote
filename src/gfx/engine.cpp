@@ -210,6 +210,7 @@ void Engine::render() {
 	world.projection[3][2] *= -1.0f;
 	world.view = yFlip * rawview;
 	world.viewProjection = world.projection * world.view;
+	world.viewportSize = {swapchain->extent.width, swapchain->extent.height};
 	auto swapchainSize = vuk::Dimension2D::absolute(swapchain->extent);
 
 	// Begin draw
@@ -317,6 +318,7 @@ void Engine::render() {
 			"commands"_buffer(vuk::eIndirectRead),
 			"instances_culled"_buffer(vuk::eVertexRead),
 			"ibl_map_filtered"_image(vuk::eFragmentSampled),
+			"sky_aerial_perspective"_image(vuk::eFragmentSampled),
 			"object_color"_image(vuk::eColorWrite),
 			"object_depth"_image(vuk::eDepthStencilRW),
 		},
@@ -325,6 +327,13 @@ void Engine::render() {
 				.magFilter = vuk::Filter::eLinear,
 				.minFilter = vuk::Filter::eLinear,
 				.mipmapMode = vuk::SamplerMipmapMode::eLinear,
+			};
+			auto aerialSampler = vuk::SamplerCreateInfo{
+				.magFilter = vuk::Filter::eLinear,
+				.minFilter = vuk::Filter::eLinear,
+				.addressModeU = vuk::SamplerAddressMode::eClampToEdge,
+				.addressModeV = vuk::SamplerAddressMode::eClampToEdge,
+				.addressModeW = vuk::SamplerAddressMode::eClampToEdge,
 			};
 			auto commandsBuf = cmd.get_resource_buffer("commands");
 			auto instancesBuf = cmd.get_resource_buffer("instances_culled");
@@ -337,6 +346,7 @@ void Engine::render() {
 			   .bind_index_buffer(*indicesBuf, vuk::IndexType::eUint16)
 			   .bind_storage_buffer(0, 1, instancesBuf)
 			   .bind_sampled_image(0, 3, "ibl_map_filtered", cubeSampler)
+			   .bind_sampled_image(0, 4, "sky_aerial_perspective", aerialSampler)
 			   .bind_graphics_pipeline("object");
 			cmd.push_constants(vuk::ShaderStageFlagBits::eFragment, 0, sky->sunDirection);
 			cmd.draw_indexed_indirect(indirect.commandsCount, commandsBuf, sizeof(Indirect::Command));

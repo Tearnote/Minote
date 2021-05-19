@@ -65,6 +65,7 @@ private:
 		mat4 view;
 		mat4 projection;
 		mat4 viewProjection;
+		uvec2 viewportSize;
 	} world;
 
 	struct Camera {
