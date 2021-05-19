@@ -28,3 +28,8 @@ vec3 srgbDecode(vec3 color) {
    float b = color.b < 0.04045 ? (1.0 / 12.92) * color.b : pow((color.b + 0.055) * (1.0 / 1.055), 2.4);
    return vec3(r, g, b);
 }
+
+float Luminance(vec3 rgb) {
+    const vec3 W = vec3(0.2125, 0.7154, 0.0721);
+    return dot(rgb, W);
+}
