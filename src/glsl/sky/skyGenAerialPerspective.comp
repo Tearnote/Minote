@@ -5,7 +5,7 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 layout(set = 1, binding = 0, rgba16f) restrict writeonly uniform image3D aerialPerspective;
 
-#define MULTISCATAPPROX_ENABLED 1
+#define MULTIPLE_SCATTERING_ENABLED 1
 #include "sky.glslh"
 
 void main() {
@@ -67,10 +67,10 @@ void main() {
 
 	const bool ground = false;
 	const float SampleCountIni = max(1.0, float(gid.z + 1.0) * 2.0);
-	const float DepthBufferValue = -1.0;
 	const bool VariableSampleCount = false;
 	const bool MieRayPhase = true;
-	SingleScatteringResult ss = IntegrateScatteredLuminance(PixPos, WorldPos, WorldDir, SunDir, ground, SampleCountIni, DepthBufferValue, VariableSampleCount, MieRayPhase, tMaxMax);
+	SingleScatteringResult ss = IntegrateScatteredLuminance(WorldPos, WorldDir, SunDir,
+	ground, SampleCountIni, VariableSampleCount, MieRayPhase, tMaxMax);
 
 
 	const float Transmittance = dot(ss.Transmittance, vec3(1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0));
