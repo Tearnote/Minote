@@ -36,8 +36,6 @@ struct Sky {
 		vec2 RayMarchMinMaxSPP;
 		vec3 gSunIlluminance;
 		float MultipleScatteringFactor;
-		vec3 sun_direction;
-		float pad0;
 		vec3 camera;
 
 	};

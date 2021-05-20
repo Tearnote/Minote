@@ -26,7 +26,7 @@ void main() {
 
 	vec3 sideVector = normalize(cross(UpVector, WorldDir)); // assumes non parallel vectors
 	vec3 forwardVector = normalize(cross(sideVector, UpVector)); // aligns toward the sun light but perpendicular to up vector
-	vec2 lightOnPlane = vec2(dot(sun_direction, forwardVector), dot(sun_direction, sideVector));
+	vec2 lightOnPlane = vec2(dot(world.sunDirection, forwardVector), dot(world.sunDirection, sideVector));
 	lightOnPlane = normalize(lightOnPlane);
 	float lightViewCosAngle = lightOnPlane.x;
 

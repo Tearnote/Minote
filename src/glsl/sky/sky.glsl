@@ -52,8 +52,6 @@ layout(set = 0, binding = 1) uniform Globals {
 	vec2 RayMarchMinMaxSPP;
 	vec3 gSunIlluminance;
 	float MultipleScatteringFactor;
-	vec3 sun_direction;
-	float pad0;
 	vec3 camera;
 
 };
@@ -269,7 +267,7 @@ void SkyViewLutParamsToUv(in bool IntersectGround, in float viewZenithCosAngle, 
 
 vec3 GetSunLuminance(vec3 WorldPos, vec3 WorldDir, float PlanetRadius) {
 #if RENDER_SUN_DISK
-	if (dot(WorldDir, sun_direction) > cos(0.5*0.505*3.14159 / 180.0)) {
+	if (dot(WorldDir, world.sunDirection) > cos(0.5*0.505*3.14159 / 180.0)) {
 		float t = raySphereIntersectNearest(WorldPos, WorldDir, vec3(0.0), PlanetRadius);
 		if (t < 0.0) { // no intersection
 			const vec3 SunLuminance = vec3(1.0); // arbitrary. But fine, not use when comparing the models

@@ -34,7 +34,7 @@ void main() {
 	vec3 SunDir;
 	{
 		vec3 UpVector = WorldPos / viewHeight;
-		float sunZenithCosAngle = dot(UpVector, sun_direction);
+		float sunZenithCosAngle = dot(UpVector, world.sunDirection);
 		SunDir = normalize(vec3(sqrt(1.0 - sunZenithCosAngle * sunZenithCosAngle), 0.0, sunZenithCosAngle));
 	}
 

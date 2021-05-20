@@ -214,6 +214,17 @@ void Engine::render() {
 	world.viewportSize = {swapchain->extent.width, swapchain->extent.height};
 	auto swapchainSize = vuk::Dimension2D::absolute(swapchain->extent);
 
+	static auto sunPitch = radians(7.2f);
+	static auto sunYaw = radians(30.0f);
+#if IMGUI
+	ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 60.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
+	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
+#endif //IMGUI
+	// sunPitch = radians(15.0f - glfwGetTime() / 2.0);
+	world.sunDirection = vec3(1.0f, 0.0f, 0.0f);
+	world.sunDirection = glm::mat3(make_rotate(sunPitch, {0.0f, -1.0f, 0.0f})) * world.sunDirection;
+	world.sunDirection = glm::mat3(make_rotate(sunYaw, {0.0f, 0.0f, 1.0f})) * world.sunDirection;
+
 	// Begin draw
 	auto ifc = context->begin();
 	auto ptc = ifc.begin();

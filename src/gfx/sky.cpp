@@ -82,23 +82,11 @@ Sky::Sky(vuk::Context& ctx):
 #include "GLFW/glfw3.h"
 auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::Buffer world, vuk::PerThreadContext& ptc,
 	uvec2 resolution, vec3 cameraPos) -> vuk::RenderGraph {
-	static auto sunPitch = radians(7.2f);
-	static auto sunYaw = radians(30.0f);
-#if IMGUI
-	ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 60.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
-	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
-#endif //IMGUI
-	// sunPitch = radians(15.0f - glfwGetTime() / 2.0);
-	sunDirection = vec3(1.0f, 0.0f, 0.0f);
-	sunDirection = glm::mat3(make_rotate(sunPitch, {0.0f, -1.0f, 0.0f})) * sunDirection;
-	sunDirection = glm::mat3(make_rotate(sunYaw, {0.0f, 0.0f, 1.0f})) * sunDirection;
-
 	auto globals = Globals{
 		.gResolution = resolution,
 		.RayMarchMinMaxSPP = {4.0f, 14.0f},
 		.gSunIlluminance = {1.0f, 1.0f, 1.0f},
 		.MultipleScatteringFactor = 1.0f,
-		.sun_direction = sunDirection,
 		.camera = cameraPos,
 	};
 	auto globalsBuf = ptc.allocate_scratch_buffer(
@@ -112,7 +100,6 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::Buffe
 		.RayMarchMinMaxSPP = {4.0f, 14.0f},
 		.gSunIlluminance = {1.0f, 1.0f, 1.0f},
 		.MultipleScatteringFactor = 1.0f,
-		.sun_direction = sunDirection,
 		.camera = {0.0f, 0.0f, CubemapHeight},
 	};
 	auto cubemapGlobalsBuf = ptc.allocate_scratch_buffer(
@@ -260,7 +247,6 @@ auto Sky::draw(AtmosphereParams const& atmosphere, vuk::Name targetColor, vuk::N
 		.RayMarchMinMaxSPP = {4.0f, 14.0f},
 		.gSunIlluminance = {1.0f, 1.0f, 1.0f},
 		.MultipleScatteringFactor = 1.0f,
-		.sun_direction = sunDirection,
 		.camera = cameraPos,
 	};
 	auto globalsBuf = ptc.allocate_scratch_buffer(
@@ -316,7 +302,6 @@ auto Sky::drawCubemap(AtmosphereParams const& atmosphere, vuk::Name target, vuk:
 		.RayMarchMinMaxSPP = {4.0f, 14.0f},
 		.gSunIlluminance = {1.0f, 1.0f, 1.0f},
 		.MultipleScatteringFactor = 1.0f,
-		.sun_direction = sunDirection,
 		.camera = {0.0f, 0.0f, CubemapHeight},
 	};
 	auto globalsBuf = ptc.allocate_scratch_buffer(
