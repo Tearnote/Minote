@@ -36,8 +36,7 @@ Sky::Sky(vuk::Context& ctx):
 		.format = AerialPerspectiveFormat,
 		.extent = {AerialPerspectiveWidth, AerialPerspectiveHeight, AerialPerspectiveDepth},
 		.usage = vuk::ImageUsageFlagBits::eStorage | vuk::ImageUsageFlagBits::eSampled,
-	})),
-	sunDirection{0.283f, 0.912f, 0.296f} {
+	})) {
 	auto skyGenTransmittancePci = vuk::ComputePipelineCreateInfo();
 	skyGenTransmittancePci.add_spirv(std::vector<u32>{
 #include "spv/skyGenTransmittance.comp.spv"

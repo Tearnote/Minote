@@ -360,7 +360,6 @@ void Engine::render() {
 			   .bind_sampled_image(0, 3, "ibl_map_filtered", cubeSampler)
 			   .bind_sampled_image(0, 4, "sky_aerial_perspective", aerialSampler)
 			   .bind_graphics_pipeline("object");
-			cmd.push_constants(vuk::ShaderStageFlagBits::eFragment, 0, sky->sunDirection);
 			cmd.draw_indexed_indirect(indirect.commandsCount, commandsBuf, sizeof(Indirect::Command));
 		},
 	});

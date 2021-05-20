@@ -79,8 +79,6 @@ struct Sky {
 	vuk::Texture skyCubemapView;
 	vuk::Texture aerialPerspective;
 
-	vec3 sunDirection;
-
 	explicit Sky(vuk::Context&);
 
 	auto generateAtmosphereModel(AtmosphereParams const&, vuk::Buffer world, vuk::PerThreadContext&,

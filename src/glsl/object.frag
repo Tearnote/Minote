@@ -12,10 +12,6 @@ layout(location = 0) out vec4 out_color;
 layout(binding = 3) uniform samplerCube cubemap;
 layout(binding = 4) uniform sampler3D aerialPerspective;
 
-layout(push_constant) uniform Constants {
-	vec3 sunDirection;
-};
-
 #include "instance.glsl"
 #include "world.glsl"
 #include "util.glsl"
@@ -54,8 +50,8 @@ void main() {
 	float NoV = dot(normal, viewDirection);
 
 	// Sun visibility
-	float sunDot = dot(vec3(0.0, 0.0, 1.0), sunDirection);
-	vec3 sunColor = vec3(textureLod(cubemap, sunDirection, 0.0));
+	float sunDot = dot(vec3(0.0, 0.0, 1.0), world.sunDirection);
+	vec3 sunColor = vec3(textureLod(cubemap, world.sunDirection, 0.0));
 	sunColor = mix(vec3(1.0), sunColor, Luminance(sunColor));
 	const float sunAngularSize = radians(0.4);
 	sunColor *= smoothstep(cos(radians(90) + sunAngularSize), cos(radians(90) - sunAngularSize), sunDot);
@@ -64,14 +60,14 @@ void main() {
 	vec3 f0 = max(f_color.rgb * instance.metalness, vec3(0.04));
 
 	vec3 iblDiffuse = textureLod(cubemap, normal, mipCount - 2.0).rgb;
-	vec3 sunDiffuse = sunColor * max(dot(normal, sunDirection), 0.0);
+	vec3 sunDiffuse = sunColor * max(dot(normal, world.sunDirection), 0.0);
 	vec3 diffuse = f_color.rgb * (iblDiffuse + sunDiffuse) * (1.0 - instance.metalness);
 
 	vec3 reflection = reflect(viewDirection, normal);
 	float iblMip = max(7.0 - 0.480898 * log(2.0 / pow(instance.roughness, 4.0) - 1.0), 0.0);
 	vec3 iblSpecular = vec3(textureLod(cubemap, -reflection, iblMip));
 	const float sunMinRoughness = 1.0 / 16.0;
-	vec3 sunSpecular = sunColor * D_Approx(max(instance.roughness, sunMinRoughness), dot(-reflection, sunDirection));
+	vec3 sunSpecular = sunColor * D_Approx(max(instance.roughness, sunMinRoughness), dot(-reflection, world.sunDirection));
 	vec3 specular = iblSpecular + sunSpecular;
 
 	out_color = vec4(mix(diffuse, specular, envBRDFApprox(f0, NoV, instance.roughness)), f_color.a);
