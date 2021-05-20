@@ -32,7 +32,6 @@ struct Sky {
 
 	struct Globals {
 
-		mat4 gSkyInvViewProjMat;
 		uvec2 gResolution;
 		vec2 RayMarchMinMaxSPP;
 		vec3 gSunIlluminance;
@@ -86,14 +85,14 @@ struct Sky {
 
 	explicit Sky(vuk::Context&);
 
-	auto generateAtmosphereModel(AtmosphereParams const&, vuk::PerThreadContext&,
-		uvec2 resolution, vec3 cameraPos, mat4 viewProjection) -> vuk::RenderGraph;
+	auto generateAtmosphereModel(AtmosphereParams const&, vuk::Buffer world, vuk::PerThreadContext&,
+		uvec2 resolution, vec3 cameraPos) -> vuk::RenderGraph;
 
-	auto draw(AtmosphereParams const&, vuk::Name targetColor, vuk::Name targetDepth, vuk::PerThreadContext&,
-		uvec2 resolution, vec3 cameraPos, mat4 viewProjection) -> vuk::RenderGraph;
+	auto draw(AtmosphereParams const&, vuk::Name targetColor, vuk::Name targetDepth, vuk::Buffer world, vuk::PerThreadContext&,
+		uvec2 resolution, vec3 cameraPos) -> vuk::RenderGraph;
 
-	auto drawCubemap(AtmosphereParams const&, vuk::Name target, vuk::PerThreadContext&,
-		uvec2 resolution, mat4 viewProjection) -> vuk::RenderGraph;
+	auto drawCubemap(AtmosphereParams const&, vuk::Name target, vuk::Buffer world, vuk::PerThreadContext&,
+		uvec2 resolution) -> vuk::RenderGraph;
 
 };
 

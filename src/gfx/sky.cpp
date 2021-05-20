@@ -66,13 +66,13 @@ Sky::Sky(vuk::Context& ctx):
 	skyDrawPci.depth_stencil_state.depthWriteEnable = false;
 	skyDrawPci.depth_stencil_state.depthCompareOp = vuk::CompareOp::eEqual;
 	ctx.create_named_pipeline("sky_draw", skyDrawPci);
-	
+
 	auto skyDrawCubemapPci = vuk::ComputePipelineCreateInfo();
 	skyDrawCubemapPci.add_spirv(std::vector<u32>{
 #include "spv/skyDrawCubemap.comp.spv"
 	}, "skyDrawCubemap.comp");
 	ctx.create_named_pipeline("sky_draw_cubemap", skyDrawCubemapPci);
-	
+
 	auto skyAerialPerspectivePci = vuk::ComputePipelineCreateInfo();
 	skyAerialPerspectivePci.add_spirv(std::vector<u32>{
 #include "spv/skyGenAerialPerspective.comp.spv"
@@ -80,8 +80,8 @@ Sky::Sky(vuk::Context& ctx):
 	ctx.create_named_pipeline("sky_gen_aerial_perspective", skyAerialPerspectivePci);
 }
 #include "GLFW/glfw3.h"
-auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerThreadContext& ptc,
-	uvec2 resolution, vec3 cameraPos, mat4 viewProjection) -> vuk::RenderGraph {
+auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::Buffer world, vuk::PerThreadContext& ptc,
+	uvec2 resolution, vec3 cameraPos) -> vuk::RenderGraph {
 	static auto sunPitch = radians(7.2f);
 	static auto sunYaw = radians(30.0f);
 #if IMGUI
@@ -94,7 +94,6 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerTh
 	sunDirection = glm::mat3(make_rotate(sunYaw, {0.0f, 0.0f, 1.0f})) * sunDirection;
 
 	auto globals = Globals{
-		.gSkyInvViewProjMat = inverse(viewProjection),
 		.gResolution = resolution,
 		.RayMarchMinMaxSPP = {4.0f, 14.0f},
 		.gSunIlluminance = {1.0f, 1.0f, 1.0f},
@@ -109,7 +108,6 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerTh
 	std::memcpy(globalsBuf.mapped_ptr, &globals, sizeof(Globals));
 
 	auto cubemapGlobals = Globals{
-		.gSkyInvViewProjMat = inverse(viewProjection),
 		.gResolution = resolution,
 		.RayMarchMinMaxSPP = {4.0f, 14.0f},
 		.gSunIlluminance = {1.0f, 1.0f, 1.0f},
@@ -135,10 +133,11 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerTh
 		.resources = {
 			"sky_transmittance"_image(vuk::eComputeWrite),
 		},
-		.execute = [globalsBuf, atmosphereBuf](vuk::CommandBuffer& cmd) {
-			cmd.bind_uniform_buffer(0, 0, globalsBuf)
-			   .bind_uniform_buffer(0, 1, atmosphereBuf)
-			   .bind_sampled_image(0, 2, "sky_transmittance", vuk::SamplerCreateInfo{
+		.execute = [world, globalsBuf, atmosphereBuf](vuk::CommandBuffer& cmd) {
+			cmd.bind_uniform_buffer(0, 0, world)
+			   .bind_uniform_buffer(0, 1, globalsBuf)
+			   .bind_uniform_buffer(0, 2, atmosphereBuf)
+			   .bind_sampled_image(0, 3, "sky_transmittance", vuk::SamplerCreateInfo{
 				   .magFilter = vuk::Filter::eLinear,
 				   .minFilter = vuk::Filter::eLinear,
 				   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
@@ -154,10 +153,11 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerTh
 			"sky_transmittance"_image(vuk::eComputeSampled),
 			"sky_multi_scattering"_image(vuk::eComputeWrite),
 		},
-		.execute = [globalsBuf, atmosphereBuf](vuk::CommandBuffer& cmd) {
-			cmd.bind_uniform_buffer(0, 0, globalsBuf)
-			   .bind_uniform_buffer(0, 1, atmosphereBuf)
-			   .bind_sampled_image(0, 2, "sky_transmittance", vuk::SamplerCreateInfo{
+		.execute = [world, globalsBuf, atmosphereBuf](vuk::CommandBuffer& cmd) {
+			cmd.bind_uniform_buffer(0, 0, world)
+			   .bind_uniform_buffer(0, 1, globalsBuf)
+			   .bind_uniform_buffer(0, 2, atmosphereBuf)
+			   .bind_sampled_image(0, 3, "sky_transmittance", vuk::SamplerCreateInfo{
 				   .magFilter = vuk::Filter::eLinear,
 				   .minFilter = vuk::Filter::eLinear,
 				   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
@@ -174,15 +174,16 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerTh
 			"sky_multi_scattering"_image(vuk::eComputeSampled),
 			"sky_sky_view"_image(vuk::eComputeWrite),
 		},
-		.execute = [globalsBuf, atmosphereBuf](vuk::CommandBuffer& cmd) {
-			cmd.bind_uniform_buffer(0, 0, globalsBuf)
-			   .bind_uniform_buffer(0, 1, atmosphereBuf)
-			   .bind_sampled_image(0, 2, "sky_transmittance", vuk::SamplerCreateInfo{
+		.execute = [world, globalsBuf, atmosphereBuf](vuk::CommandBuffer& cmd) {
+			cmd.bind_uniform_buffer(0, 0, world)
+			   .bind_uniform_buffer(0, 1, globalsBuf)
+			   .bind_uniform_buffer(0, 2, atmosphereBuf)
+			   .bind_sampled_image(0, 3, "sky_transmittance", vuk::SamplerCreateInfo{
 				   .magFilter = vuk::Filter::eLinear,
 				   .minFilter = vuk::Filter::eLinear,
 				   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
 				   .addressModeV = vuk::SamplerAddressMode::eClampToEdge})
-			   .bind_sampled_image(0, 3, "sky_multi_scattering", vuk::SamplerCreateInfo{
+			   .bind_sampled_image(0, 4, "sky_multi_scattering", vuk::SamplerCreateInfo{
 				   .magFilter = vuk::Filter::eLinear,
 				   .minFilter = vuk::Filter::eLinear,
 				   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
@@ -199,15 +200,16 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerTh
 			"sky_multi_scattering"_image(vuk::eComputeSampled),
 			"sky_cubemap_sky_view"_image(vuk::eComputeWrite),
 		},
-		.execute = [cubemapGlobalsBuf, atmosphereBuf](vuk::CommandBuffer& cmd) {
-			cmd.bind_uniform_buffer(0, 0, cubemapGlobalsBuf)
-			   .bind_uniform_buffer(0, 1, atmosphereBuf)
-			   .bind_sampled_image(0, 2, "sky_transmittance", vuk::SamplerCreateInfo{
+		.execute = [world, cubemapGlobalsBuf, atmosphereBuf](vuk::CommandBuffer& cmd) {
+			cmd.bind_uniform_buffer(0, 0, world)
+			   .bind_uniform_buffer(0, 1, cubemapGlobalsBuf)
+			   .bind_uniform_buffer(0, 2, atmosphereBuf)
+			   .bind_sampled_image(0, 3, "sky_transmittance", vuk::SamplerCreateInfo{
 				   .magFilter = vuk::Filter::eLinear,
 				   .minFilter = vuk::Filter::eLinear,
 				   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
 				   .addressModeV = vuk::SamplerAddressMode::eClampToEdge})
-			   .bind_sampled_image(0, 3, "sky_multi_scattering", vuk::SamplerCreateInfo{
+			   .bind_sampled_image(0, 4, "sky_multi_scattering", vuk::SamplerCreateInfo{
 				   .magFilter = vuk::Filter::eLinear,
 				   .minFilter = vuk::Filter::eLinear,
 				   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
@@ -224,15 +226,16 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerTh
 			"sky_multi_scattering"_image(vuk::eComputeSampled),
 			"sky_aerial_perspective"_image(vuk::eComputeWrite),
 		},
-		.execute = [cubemapGlobalsBuf, atmosphereBuf](vuk::CommandBuffer& cmd) {
-			cmd.bind_uniform_buffer(0, 0, cubemapGlobalsBuf)
-			   .bind_uniform_buffer(0, 1, atmosphereBuf)
-			   .bind_sampled_image(0, 2, "sky_transmittance", vuk::SamplerCreateInfo{
+		.execute = [world, cubemapGlobalsBuf, atmosphereBuf](vuk::CommandBuffer& cmd) {
+			cmd.bind_uniform_buffer(0, 0, world)
+			   .bind_uniform_buffer(0, 1, cubemapGlobalsBuf)
+			   .bind_uniform_buffer(0, 2, atmosphereBuf)
+			   .bind_sampled_image(0, 3, "sky_transmittance", vuk::SamplerCreateInfo{
 				   .magFilter = vuk::Filter::eLinear,
 				   .minFilter = vuk::Filter::eLinear,
 				   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
 				   .addressModeV = vuk::SamplerAddressMode::eClampToEdge})
-			   .bind_sampled_image(0, 3, "sky_multi_scattering", vuk::SamplerCreateInfo{
+			   .bind_sampled_image(0, 4, "sky_multi_scattering", vuk::SamplerCreateInfo{
 				   .magFilter = vuk::Filter::eLinear,
 				   .minFilter = vuk::Filter::eLinear,
 				   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
@@ -250,10 +253,9 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::PerTh
 	return rg;
 }
 
-auto Sky::draw(AtmosphereParams const& atmosphere, vuk::Name targetColor, vuk::Name targetDepth, vuk::PerThreadContext& ptc,
-	uvec2 resolution, vec3 cameraPos, mat4 viewProjection) -> vuk::RenderGraph {
+auto Sky::draw(AtmosphereParams const& atmosphere, vuk::Name targetColor, vuk::Name targetDepth, vuk::Buffer world, vuk::PerThreadContext& ptc,
+	uvec2 resolution, vec3 cameraPos) -> vuk::RenderGraph {
 	auto globals = Globals{
-		.gSkyInvViewProjMat = inverse(viewProjection),
 		.gResolution = resolution,
 		.RayMarchMinMaxSPP = {4.0f, 14.0f},
 		.gSunIlluminance = {1.0f, 1.0f, 1.0f},
@@ -282,16 +284,17 @@ auto Sky::draw(AtmosphereParams const& atmosphere, vuk::Name targetColor, vuk::N
 			vuk::Resource(targetColor, vuk::Resource::Type::eImage, vuk::eColorWrite),
 			vuk::Resource(targetDepth, vuk::Resource::Type::eImage, vuk::eDepthStencilRW),
 		},
-		.execute = [globalsBuf, atmosphereBuf](vuk::CommandBuffer& cmd) {
+		.execute = [world, globalsBuf, atmosphereBuf](vuk::CommandBuffer& cmd) {
 			auto skyViewSampler = vuk::SamplerCreateInfo{
 				.magFilter = vuk::Filter::eLinear,
 				.minFilter = vuk::Filter::eLinear,
 				.addressModeU = vuk::SamplerAddressMode::eClampToEdge,
 				.addressModeV = vuk::SamplerAddressMode::eClampToEdge,
 			};
-			cmd.bind_uniform_buffer(0, 0, globalsBuf)
-			   .bind_uniform_buffer(0, 1, atmosphereBuf)
-			   .bind_sampled_image(0, 2, "sky_transmittance", vuk::SamplerCreateInfo{
+			cmd.bind_uniform_buffer(0, 0, world)
+			   .bind_uniform_buffer(0, 1, globalsBuf)
+			   .bind_uniform_buffer(0, 2, atmosphereBuf)
+			   .bind_sampled_image(0, 3, "sky_transmittance", vuk::SamplerCreateInfo{
 				   .magFilter = vuk::Filter::eLinear,
 				   .minFilter = vuk::Filter::eLinear,
 				   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
@@ -306,10 +309,9 @@ auto Sky::draw(AtmosphereParams const& atmosphere, vuk::Name targetColor, vuk::N
 	return rg;
 }
 
-auto Sky::drawCubemap(AtmosphereParams const& atmosphere, vuk::Name target, vuk::PerThreadContext& ptc,
-		uvec2 resolution, mat4 viewProjection) -> vuk::RenderGraph {
+auto Sky::drawCubemap(AtmosphereParams const& atmosphere, vuk::Name target, vuk::Buffer world, vuk::PerThreadContext& ptc,
+		uvec2 resolution) -> vuk::RenderGraph {
 	auto globals = Globals{
-		.gSkyInvViewProjMat = inverse(viewProjection),
 		.gResolution = resolution,
 		.RayMarchMinMaxSPP = {4.0f, 14.0f},
 		.gSunIlluminance = {1.0f, 1.0f, 1.0f},
@@ -337,16 +339,17 @@ auto Sky::drawCubemap(AtmosphereParams const& atmosphere, vuk::Name target, vuk:
 			"sky_cubemap_sky_view"_image(vuk::eComputeSampled),
 			vuk::Resource(target, vuk::Resource::Type::eImage, vuk::eComputeWrite),
 		},
-		.execute = [globalsBuf, atmosphereBuf, target, resolution](vuk::CommandBuffer& cmd) {
+		.execute = [world, globalsBuf, atmosphereBuf, target, resolution](vuk::CommandBuffer& cmd) {
 			auto skyViewSampler = vuk::SamplerCreateInfo{
 				.magFilter = vuk::Filter::eLinear,
 				.minFilter = vuk::Filter::eLinear,
 				.addressModeU = vuk::SamplerAddressMode::eClampToEdge,
 				.addressModeV = vuk::SamplerAddressMode::eClampToEdge,
 			};
-			cmd.bind_uniform_buffer(0, 0, globalsBuf)
-			   .bind_uniform_buffer(0, 1, atmosphereBuf)
-			   .bind_sampled_image(0, 2, "sky_transmittance", vuk::SamplerCreateInfo{
+			cmd.bind_uniform_buffer(0, 0, world)
+			   .bind_uniform_buffer(0, 1, globalsBuf)
+			   .bind_uniform_buffer(0, 2, atmosphereBuf)
+			   .bind_sampled_image(0, 3, "sky_transmittance", vuk::SamplerCreateInfo{
 				   .magFilter = vuk::Filter::eLinear,
 				   .minFilter = vuk::Filter::eLinear,
 				   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,

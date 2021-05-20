@@ -13,13 +13,13 @@ void main() {
 	const ivec2 viewSize = textureSize(skyView, 0);
 
 	vec3 ClipSpace = vec3(f_texCoords * vec2(2.0, 2.0) - vec2(1.0, 1.0), 0.0);
-	vec4 HPos = gSkyInvViewProjMat * vec4(ClipSpace, 1.0);
+	vec4 HPos = world.viewProjectionInverse * vec4(ClipSpace, 1.0);
 
 	vec3 WorldDir = normalize(HPos.xyz);
 	vec3 WorldPos = camera + vec3(0.0, 0.0, Atmosphere.BottomRadius);
 
 	float viewHeight = length(WorldPos);
-	
+
 	vec2 uv;
 	vec3 UpVector = normalize(WorldPos);
 	float viewZenithCosAngle = dot(WorldDir, UpVector);

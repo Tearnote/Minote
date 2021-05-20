@@ -14,6 +14,7 @@
 #include "sys/window.hpp"
 #include "gfx/instances.hpp"
 #include "gfx/meshes.hpp"
+#include "gfx/world.hpp"
 #if IMGUI
 #include "gfx/imgui.hpp"
 #endif //IMGUI
@@ -61,12 +62,7 @@ private:
 	vuk::Unique<vuk::Buffer> colorsBuf;
 	vuk::Unique<vuk::Buffer> indicesBuf;
 
-	struct World {
-		mat4 view;
-		mat4 projection;
-		mat4 viewProjection;
-		uvec2 viewportSize;
-	} world;
+	World world;
 
 	struct Camera {
 		vec3 eye;

@@ -1,3 +1,5 @@
+#include "../world.glsl"
+
 #define PI 3.1415926535897932384626433832795
 
 #ifndef MULTIPLE_SCATTERING_ENABLED
@@ -44,9 +46,8 @@ struct SingleScatteringResult {
 
 };
 
-layout(set = 0, binding = 0) uniform Globals {
+layout(set = 0, binding = 1) uniform Globals {
 
-	mat4 gSkyInvViewProjMat;
 	uvec2 gResolution;
 	vec2 RayMarchMinMaxSPP;
 	vec3 gSunIlluminance;
@@ -57,7 +58,7 @@ layout(set = 0, binding = 0) uniform Globals {
 
 };
 
-layout(set = 0, binding = 1) uniform AtmosphereParameters {
+layout(set = 0, binding = 2) uniform AtmosphereParameters {
 
 	float BottomRadius; // Radius of the planet (center to ground)
 	float TopRadius; // Maximum considered atmosphere height (center to atmosphere top)
@@ -90,9 +91,9 @@ layout(set = 0, binding = 1) uniform AtmosphereParameters {
 
 } Atmosphere;
 
-layout(set = 0, binding = 2) uniform sampler2D TransmittanceLutTexture;
+layout(set = 0, binding = 3) uniform sampler2D TransmittanceLutTexture;
 #if MULTIPLE_SCATTERING_ENABLED
-layout(set = 0, binding = 3) uniform sampler2D MultiScatteringLutTexture;
+layout(set = 0, binding = 4) uniform sampler2D MultiScatteringLutTexture;
 #endif
 
 float fromUnitToSubUvs(float u, float resolution) {
@@ -412,7 +413,7 @@ in bool ground, in float SampleCountIni, in bool VariableSampleCount, in bool Mi
 		// Under extreme coefficient, MultiScatAs1 can grow larger and thus result in broken visuals.
 		// The way to fix that is to use a proper analytical integration as proposed in slide 28 of http://www.frostbite.com/2015/08/physically-based-unified-volumetric-rendering-in-frostbite/
 		// However, it is possible to disable as it can also work using simple power serie sum unroll up to 5th order. The rest of the orders has a really low contribution.
-		
+
 		vec3 MS = medium.scattering * 1;
 		vec3 MSint = (MS - MS * SampleTransmittance) / medium.extinction;
 		result.MultiScatAs1 += throughput * MSint;

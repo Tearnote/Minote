@@ -11,7 +11,8 @@ layout(location = 2) out vec4 f_color;
 layout(location = 3) out vec3 f_normal;
 layout(location = 4) out vec3 f_viewPosition;
 
-#include "object.glsl"
+#include "instance.glsl"
+#include "world.glsl"
 
 void main() {
 	InstanceIndex = gl_InstanceIndex;
