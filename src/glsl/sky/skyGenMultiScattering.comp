@@ -6,7 +6,7 @@ layout(local_size_x = 1, local_size_y = 1, local_size_z = 64) in;
 layout(set = 1, binding = 0, rgba16f) restrict writeonly uniform image2D multiScattering;
 
 #define ILLUMINANCE_IS_ONE
-#include "sky.glslh"
+#include "sky.glsl"
 
 shared vec3 MultiScatAs1SharedMem[64];
 shared vec3 LSharedMem[64];

@@ -16,8 +16,8 @@ layout(push_constant) uniform Constants {
 	vec3 sunDirection;
 };
 
-#include "object.glslh"
-#include "util.glslh"
+#include "object.glsl"
+#include "util.glsl"
 
 vec3 envBRDFApprox(vec3 f0, float NoV, float roughness) {
 	vec4 c0 = vec4(-1.0, -0.0275, -0.572, 0.022);

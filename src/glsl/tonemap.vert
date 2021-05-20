@@ -3,7 +3,7 @@
 
 layout(location = 0) out vec2 f_texCoords;
 
-#include "util.glslh"
+#include "util.glsl"
 
 void main() {
 	vec2 pos = triangleVertex(gl_VertexIndex, f_texCoords);

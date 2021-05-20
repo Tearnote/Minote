@@ -7,7 +7,7 @@ layout(location = 0) out vec4 out_color;
 
 layout(set = 1, binding = 0) uniform sampler2D skyView;
 
-#include "sky.glslh"
+#include "sky.glsl"
 
 void main() {
 	const ivec2 viewSize = textureSize(skyView, 0);

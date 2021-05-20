@@ -10,7 +10,7 @@ layout(set = 1, binding = 2) uniform Sides {
 };
 
 #define RENDER_SUN_DISK 0
-#include "sky.glslh"
+#include "sky.glsl"
 
 void main() {
 	const uvec3 gid = gl_GlobalInvocationID;
