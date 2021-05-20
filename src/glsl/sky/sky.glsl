@@ -51,7 +51,7 @@ layout(set = 0, binding = 1) uniform Globals {
 	uvec2 gResolution;
 	vec2 RayMarchMinMaxSPP;
 	vec3 gSunIlluminance;
-	float MultipleScatteringFactor;
+	float pad0;
 	vec3 camera;
 
 };

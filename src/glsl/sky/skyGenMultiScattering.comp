@@ -123,5 +123,5 @@ void main() {
 	vec3 L = InScatteredLuminance * SumOfAllMultiScatteringEventsContribution;// Equation 10 Psi_ms
 #endif
 
-	imageStore(multiScattering, ivec2(gid.xy), vec4(MultipleScatteringFactor * L, 1.0));
+	imageStore(multiScattering, ivec2(gid.xy), vec4(world.multiScatteringFactor * L, 1.0));
 }

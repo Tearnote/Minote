@@ -8,6 +8,6 @@ layout(binding = 0) uniform World {
 	vec2 pad0;
 
 	vec3 sunDirection;
-	float pad1;
+	float multiScatteringFactor;
 
 } world;
