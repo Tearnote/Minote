@@ -85,5 +85,4 @@ void main() {
 	float w = sqrt(Slice / textureSize(aerialPerspective, 0).z);	// squared distribution
 
 	const vec4 AP = Weight * textureLod(aerialPerspective, vec3(gl_FragCoord.xy / vec2(world.viewportSize), w), 0.0);
-	out_color.rgb += AP.rgb * 4.0;
 }

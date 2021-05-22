@@ -37,5 +37,4 @@ void main() {
 	vec3 sun = GetSunLuminance(WorldPos, WorldDir, Atmosphere.BottomRadius);
 	sun = mix(sun, skyView, skyView);
 	out_color = vec4(skyView + sun, 1.0);
-	out_color.rgb *= 4.0;
 }
