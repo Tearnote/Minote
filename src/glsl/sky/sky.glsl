@@ -50,8 +50,6 @@ layout(set = 0, binding = 1) uniform Globals {
 
 	uvec2 gResolution;
 	vec2 RayMarchMinMaxSPP;
-	vec3 gSunIlluminance;
-	float pad0;
 	vec3 camera;
 
 };
@@ -340,7 +338,7 @@ in bool ground, in float SampleCountIni, in bool VariableSampleCount, in bool Mi
 	// This make the scattering factor independent of the light. It is now only linked to the atmosphere properties.
 	vec3 globalL = vec3(1.0);
 #else
-	vec3 globalL = gSunIlluminance;
+	vec3 globalL = world.sunIlluminance;
 #endif
 
 	// Ray march the atmosphere to integrate optical depth

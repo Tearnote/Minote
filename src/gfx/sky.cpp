@@ -84,7 +84,6 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::Buffe
 	auto globals = Globals{
 		.gResolution = resolution,
 		.RayMarchMinMaxSPP = {4.0f, 14.0f},
-		.gSunIlluminance = {1.0f, 1.0f, 1.0f},
 		.camera = cameraPos,
 	};
 	auto globalsBuf = ptc.allocate_scratch_buffer(
@@ -96,7 +95,6 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::Buffe
 	auto cubemapGlobals = Globals{
 		.gResolution = resolution,
 		.RayMarchMinMaxSPP = {4.0f, 14.0f},
-		.gSunIlluminance = {1.0f, 1.0f, 1.0f},
 		.camera = {0.0f, 0.0f, CubemapHeight},
 	};
 	auto cubemapGlobalsBuf = ptc.allocate_scratch_buffer(
@@ -242,7 +240,6 @@ auto Sky::draw(AtmosphereParams const& atmosphere, vuk::Name targetColor, vuk::N
 	auto globals = Globals{
 		.gResolution = resolution,
 		.RayMarchMinMaxSPP = {4.0f, 14.0f},
-		.gSunIlluminance = {1.0f, 1.0f, 1.0f},
 		.camera = cameraPos,
 	};
 	auto globalsBuf = ptc.allocate_scratch_buffer(
@@ -296,7 +293,6 @@ auto Sky::drawCubemap(AtmosphereParams const& atmosphere, vuk::Name target, vuk:
 	auto globals = Globals{
 		.gResolution = resolution,
 		.RayMarchMinMaxSPP = {4.0f, 14.0f},
-		.gSunIlluminance = {1.0f, 1.0f, 1.0f},
 		.camera = {0.0f, 0.0f, CubemapHeight},
 	};
 	auto globalsBuf = ptc.allocate_scratch_buffer(

@@ -229,6 +229,11 @@ void Engine::render() {
 	ImGui::SliderFloat("Multiple scattering", &scattering, 0.01f, 100.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
 #endif //IMGUI
 	world.multiScatteringFactor = scattering;
+	static auto sunIlluminance = 1.0f;
+#if IMGUI
+	ImGui::SliderFloat("Sun illuminance", &sunIlluminance, 0.01f, 100.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
+#endif //IMGUI
+	world.sunIlluminance = vec3(sunIlluminance);
 
 	// Begin draw
 	auto ifc = context->begin();

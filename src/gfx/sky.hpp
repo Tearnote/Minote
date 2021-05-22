@@ -34,8 +34,6 @@ struct Sky {
 
 		uvec2 gResolution;
 		vec2 RayMarchMinMaxSPP;
-		vec3 gSunIlluminance;
-		float pad0;
 		vec3 camera;
 
 	};

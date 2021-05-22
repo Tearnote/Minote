@@ -17,6 +17,7 @@ struct World {
 
 	vec3 sunDirection;
 	float multiScatteringFactor;
+	vec3 sunIlluminance;
 
 };
 

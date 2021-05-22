@@ -53,6 +53,7 @@ void main() {
 	float sunDot = dot(vec3(0.0, 0.0, 1.0), world.sunDirection);
 	vec3 sunColor = vec3(textureLod(cubemap, world.sunDirection, 0.0));
 	sunColor = mix(vec3(1.0), sunColor, Luminance(sunColor));
+	sunColor *= world.sunIlluminance;
 	const float sunAngularSize = radians(0.4);
 	sunColor *= smoothstep(cos(radians(90) + sunAngularSize), cos(radians(90) - sunAngularSize), sunDot);
 

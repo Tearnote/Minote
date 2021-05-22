@@ -11,6 +11,7 @@
 #include "glm/ext/vector_uint3.hpp"
 #include "glm/ext/vector_uint4.hpp"
 #include "glm/gtc/type_precision.hpp"
+#include "glm/gtc/type_ptr.hpp"
 #include "glm/ext/vector_common.hpp"
 #include "glm/ext/matrix_float3x3.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
@@ -42,6 +43,8 @@ using glm::length;
 using glm::cross;
 using glm::dot;
 using glm::infinitePerspective;
+using glm::inverse;
+using glm::value_ptr;
 
 // True modulo operation (as opposed to remainder, which is operator% in C++.)
 // The result is always positive and does not flip direction at zero.

@@ -9,5 +9,6 @@ layout(binding = 0) uniform World {
 
 	vec3 sunDirection;
 	float multiScatteringFactor;
+	vec3 sunIlluminance;
 
 } world;
