@@ -79,12 +79,10 @@ Sky::Sky(vuk::Context& ctx):
 	ctx.create_named_pipeline("sky_gen_aerial_perspective", skyAerialPerspectivePci);
 }
 #include "GLFW/glfw3.h"
-auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::Buffer world, vuk::PerThreadContext& ptc,
-	uvec2 resolution, vec3 cameraPos) -> vuk::RenderGraph {
+auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::Buffer world, vuk::PerThreadContext& ptc, uvec2 resolution) -> vuk::RenderGraph {
 	auto globals = Globals{
 		.gResolution = resolution,
 		.RayMarchMinMaxSPP = {4.0f, 14.0f},
-		.camera = cameraPos,
 	};
 	auto globalsBuf = ptc.allocate_scratch_buffer(
 		vuk::MemoryUsage::eCPUtoGPU,
@@ -95,7 +93,6 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::Buffe
 	auto cubemapGlobals = Globals{
 		.gResolution = resolution,
 		.RayMarchMinMaxSPP = {4.0f, 14.0f},
-		.camera = {0.0f, 0.0f, CubemapHeight},
 	};
 	auto cubemapGlobalsBuf = ptc.allocate_scratch_buffer(
 		vuk::MemoryUsage::eCPUtoGPU,
@@ -235,12 +232,10 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::Buffe
 	return rg;
 }
 
-auto Sky::draw(AtmosphereParams const& atmosphere, vuk::Name targetColor, vuk::Name targetDepth, vuk::Buffer world, vuk::PerThreadContext& ptc,
-	uvec2 resolution, vec3 cameraPos) -> vuk::RenderGraph {
+auto Sky::draw(AtmosphereParams const& atmosphere, vuk::Name targetColor, vuk::Name targetDepth, vuk::Buffer world, vuk::PerThreadContext& ptc, uvec2 resolution) -> vuk::RenderGraph {
 	auto globals = Globals{
 		.gResolution = resolution,
 		.RayMarchMinMaxSPP = {4.0f, 14.0f},
-		.camera = cameraPos,
 	};
 	auto globalsBuf = ptc.allocate_scratch_buffer(
 		vuk::MemoryUsage::eCPUtoGPU,
@@ -288,12 +283,10 @@ auto Sky::draw(AtmosphereParams const& atmosphere, vuk::Name targetColor, vuk::N
 	return rg;
 }
 
-auto Sky::drawCubemap(AtmosphereParams const& atmosphere, vuk::Name target, vuk::Buffer world, vuk::PerThreadContext& ptc,
-		uvec2 resolution) -> vuk::RenderGraph {
+auto Sky::drawCubemap(AtmosphereParams const& atmosphere, vuk::Name target, vuk::Buffer world, vuk::PerThreadContext& ptc, uvec2 resolution) -> vuk::RenderGraph {
 	auto globals = Globals{
 		.gResolution = resolution,
 		.RayMarchMinMaxSPP = {4.0f, 14.0f},
-		.camera = {0.0f, 0.0f, CubemapHeight},
 	};
 	auto globalsBuf = ptc.allocate_scratch_buffer(
 		vuk::MemoryUsage::eCPUtoGPU,

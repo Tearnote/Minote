@@ -21,7 +21,7 @@ void main() {
 	vec3 WorldDir = normalize(HPos.xyz);
 	float earthR = Atmosphere.BottomRadius;
 	vec3 earthO = vec3(0.0, 0.0, -earthR);
-	vec3 camPos = camera + vec3(0.0, 0.0, earthR);
+	vec3 camPos = world.cameraPos + vec3(0.0, 0.0, earthR);
 	vec3 SunDir = world.sunDirection;
 	vec3 SunLuminance = vec3(0.0);
 

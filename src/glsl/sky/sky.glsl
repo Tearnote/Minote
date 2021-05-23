@@ -47,11 +47,10 @@ struct SingleScatteringResult {
 };
 
 layout(set = 0, binding = 1) uniform Globals {
-
+	
 	uvec2 gResolution;
 	vec2 RayMarchMinMaxSPP;
-	vec3 camera;
-
+	
 };
 
 layout(set = 0, binding = 2) uniform AtmosphereParameters {

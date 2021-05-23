@@ -22,7 +22,7 @@ void main() {
 	vec3 dir = mat3(sides[gid.z]) * vec3(cubeUv, 1.0);
 
 	vec3 WorldDir = normalize(dir);
-	vec3 WorldPos = camera + vec3(0.0, 0.0, Atmosphere.BottomRadius);
+	vec3 WorldPos = world.cameraPos + vec3(0.0, 0.0, Atmosphere.BottomRadius);
 
 	float viewHeight = length(WorldPos);
 

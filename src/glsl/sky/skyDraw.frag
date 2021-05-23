@@ -16,7 +16,7 @@ void main() {
 	vec4 HPos = world.viewProjectionInverse * vec4(ClipSpace, 1.0);
 
 	vec3 WorldDir = normalize(HPos.xyz);
-	vec3 WorldPos = camera + vec3(0.0, 0.0, Atmosphere.BottomRadius);
+	vec3 WorldPos = world.cameraPos + vec3(0.0, 0.0, Atmosphere.BottomRadius);
 
 	float viewHeight = length(WorldPos);
 

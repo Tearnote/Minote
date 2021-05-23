@@ -34,7 +34,6 @@ struct Sky {
 
 		uvec2 gResolution;
 		vec2 RayMarchMinMaxSPP;
-		vec3 camera;
 
 	};
 
@@ -79,14 +78,11 @@ struct Sky {
 
 	explicit Sky(vuk::Context&);
 
-	auto generateAtmosphereModel(AtmosphereParams const&, vuk::Buffer world, vuk::PerThreadContext&,
-		uvec2 resolution, vec3 cameraPos) -> vuk::RenderGraph;
+	auto generateAtmosphereModel(AtmosphereParams const&, vuk::Buffer world, vuk::PerThreadContext&, uvec2 resolution) -> vuk::RenderGraph;
 
-	auto draw(AtmosphereParams const&, vuk::Name targetColor, vuk::Name targetDepth, vuk::Buffer world, vuk::PerThreadContext&,
-		uvec2 resolution, vec3 cameraPos) -> vuk::RenderGraph;
+	auto draw(AtmosphereParams const&, vuk::Name targetColor, vuk::Name targetDepth, vuk::Buffer world, vuk::PerThreadContext&, uvec2 resolution) -> vuk::RenderGraph;
 
-	auto drawCubemap(AtmosphereParams const&, vuk::Name target, vuk::Buffer world, vuk::PerThreadContext&,
-		uvec2 resolution) -> vuk::RenderGraph;
+	auto drawCubemap(AtmosphereParams const&, vuk::Name target, vuk::Buffer world, vuk::PerThreadContext&, uvec2 resolution) -> vuk::RenderGraph;
 
 };
 
