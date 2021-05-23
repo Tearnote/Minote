@@ -44,6 +44,7 @@ using glm::cross;
 using glm::dot;
 using glm::infinitePerspective;
 using glm::inverse;
+using glm::lookAt;
 using glm::value_ptr;
 
 // True modulo operation (as opposed to remainder, which is operator% in C++.)

@@ -14,6 +14,7 @@
 #include "sys/window.hpp"
 #include "gfx/instances.hpp"
 #include "gfx/meshes.hpp"
+#include "gfx/camera.hpp"
 #include "gfx/world.hpp"
 #if IMGUI
 #include "gfx/imgui.hpp"
@@ -35,15 +36,11 @@ struct Engine {
 	void addModel(std::string_view name, std::span<char const> model);
 	void uploadAssets();
 
-	void setCamera(vec3 eye, vec3 center, vec3 up = {0.0f, 0.0f, 1.0f});
 	void enqueue(ID mesh, std::span<Instance const> instances);
-
 	void render();
 
 	Engine(Engine const&) = delete;
 	auto operator=(Engine const&) -> Engine& = delete;
-
-private:
 
 	vkb::Instance instance;
 	VkSurfaceKHR surface;
@@ -63,12 +60,7 @@ private:
 	vuk::Unique<vuk::Buffer> indicesBuf;
 
 	World world;
-
-	struct Camera {
-		vec3 eye;
-		vec3 center;
-		vec3 up;
-	} camera;
+	Camera camera;
 
 	std::optional<Sky> sky;
 	std::optional<IBLMap> ibl;

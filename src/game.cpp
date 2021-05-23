@@ -36,29 +36,28 @@ void game(sys::Glfw&, sys::Window& window) try {
 		engine.addModel(name, data);
 	});
 	engine.uploadAssets();
-
-	auto cameraPos = vec3(-10_m, -26_m, 10_m);
-	auto cameraDir = vec3(0.0f, 1.0f, 0.0f);
-	auto cameraUp = vec3(0.0f, 0.0f, 1.0f);
+	
+	engine.camera = gfx::Camera{
+		.position = {-10_m, -26_m, 10_m},
+		.yaw = 58_deg,
+		.pitch = -12_deg,
+		.lookSpeed = 1.0f / 256.0f,
+		.moveSpeed = 1_m / 16.0f,
+	};
 	auto camUp = false;
 	auto camDown = false;
 	auto camLeft = false;
 	auto camRight = false;
 	auto camFloat = false;
-	auto const moveSpeed = 1_m / 16.0f;
 	auto cursorLastPos = vec2();
-	auto cursorOffset = vec2();
 	auto lastButtonState = false;
-	auto cameraYaw = 32_deg;
-	auto cameraPitch = -12_deg;
-	auto const lookSpeed = 1.0f / 256.0f;
-
-	//	PlayState play;
-
+	
+	// PlayState play;
+	
 	// *** Main loop ***
-
+	
 	auto nextUpdate = sys::Glfw::getTime();
-
+	
 	auto Expand = 0;
 	while (!window.isClosing()) {
 		// Input
@@ -71,14 +70,14 @@ void game(sys::Glfw&, sys::Window& window) try {
 			updateActions.clear();
 			mapper.processActions([&](auto const& action) {
 				if (action.timestamp > nextUpdate) return false;
-
+				
 #if IMGUI
 				if (action.state == Mapper::Action::State::Pressed && ImGui::GetIO().WantCaptureKeyboard)
 					return false;
 #endif //IMGUI
-
+				
 				updateActions.push_back(action);
-
+				
 				// Interpret quit events here for now
 				using Action = Mapper::Action::Type;
 				if (action.type == Action::Back)
@@ -96,15 +95,16 @@ void game(sys::Glfw&, sys::Window& window) try {
 					camRight = state;
 				if (action.type == Action::Skip)
 					camFloat = state;
-
+				
 				return true;
 			});
-
+			
 //			play.tick(updateActions);
 			nextUpdate += UpdateTick;
-
+			
 			// Placeholder camera controls
 			auto cursorNewPos = window.mousePos();
+			auto cursorOffset = vec2();
 			if (!lastButtonState && window.mouseDown()) {
 				lastButtonState = true;
 				cursorLastPos = cursorNewPos;
@@ -119,32 +119,17 @@ void game(sys::Glfw&, sys::Window& window) try {
 				cursorOffset += cursorNewPos - cursorLastPos;
 				cursorLastPos = cursorNewPos;
 			}
-
-			cameraYaw += cursorOffset.x * lookSpeed;
-			cameraPitch -= cursorOffset.y * lookSpeed;
-			cameraPitch = clamp(cameraPitch, -89_deg, 89_deg);
-
-			auto cameraTransform = make_rotate(cameraPitch, {1.0f, 0.0f, 0.0f});
-			cameraTransform = make_rotate(cameraYaw, {0.0f, 0.0f, -1.0f}) * cameraTransform;
-			cameraDir = cameraTransform * vec4(0.0f, 1.0f, 0.0f, 0.0f);
-			cameraUp = cameraTransform * vec4(0.0f, 0.0f, 1.0f, 0.0f);
-
-			if (camUp)
-				cameraPos += cameraDir * moveSpeed;
-			if (camDown)
-				cameraPos -= cameraDir * moveSpeed;
-			if (camLeft)
-				cameraPos -= normalize(cross(cameraDir, cameraUp)) * moveSpeed;
-			if (camRight)
-				cameraPos += normalize(cross(cameraDir, cameraUp)) * moveSpeed;
-			if (camFloat)
-				cameraPos += vec3(0.0f, 0.0f, 1.0f) * moveSpeed;
+			cursorOffset.y = -cursorOffset.y;
+			
+			engine.camera.rotate(cursorOffset.x, cursorOffset.y);
+			engine.camera.roam({
+				float(camRight) - float(camLeft),
+				0.0f,
+				float(camUp) - float(camDown)});
+			engine.camera.shift({0.0f, 0.0f, float(camFloat)});
 		}
-
+		
 		// Graphics
-		engine.setCamera(cameraPos, cameraPos + cameraDir);
-		cursorOffset = vec2();
-
 #if IMGUI
 		ImGui::SliderInt("Expand", &Expand, 0, 40);
 #endif //IMGUI

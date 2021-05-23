@@ -187,14 +187,6 @@ void Engine::uploadAssets() {
 #endif //IMGUI
 }
 
-void Engine::setCamera(vec3 eye, vec3 center, vec3 up) {
-	camera = Camera{
-		.eye = eye,
-		.center = center,
-		.up = up,
-	};
-}
-
 void Engine::enqueue(ID mesh, std::span<Instance const> _instances) {
 	instances.addInstances(mesh, _instances);
 }
@@ -202,13 +194,14 @@ void Engine::enqueue(ID mesh, std::span<Instance const> _instances) {
 void Engine::render() {
 	// Prepare per-frame data
 	auto viewport = uvec2(swapchain->extent.width, swapchain->extent.height);
-	auto rawview = lookAt(camera.eye, camera.center, camera.up);
-	auto yFlip = make_scale({-1.0f, -1.0f, 1.0f});
+	auto rawview = camera.transform();
+	// auto zFlip = make_scale({-1.0f, -1.0f, 1.0f});
 	world.projection = infinitePerspective(VerticalFov, f32(viewport.x) / f32(viewport.y), NearPlane);
 	// Reverse-Z
 	world.projection[2][2] = 0.0f;
 	world.projection[3][2] *= -1.0f;
-	world.view = yFlip * rawview;
+	// world.view = zFlip * rawview;
+	world.view = rawview;
 	world.viewProjection = world.projection * world.view;
 	world.viewProjectionInverse = inverse(world.viewProjection);
 	world.viewportSize = {swapchain->extent.width, swapchain->extent.height};
@@ -275,7 +268,7 @@ void Engine::render() {
 		.AbsorptionExtinction = {0.000650f, 0.001881f, 0.000085f},
 		.GroundAlbedo = {0.0f, 0.0f, 0.0f},
 	};
-	rg.append(sky->generateAtmosphereModel(atmosphere, worldBuf, ptc, {swapchain->extent.width, swapchain->extent.height}, camera.eye));
+	rg.append(sky->generateAtmosphereModel(atmosphere, worldBuf, ptc, {swapchain->extent.width, swapchain->extent.height}, camera.position));
 	rg.append(sky->drawCubemap(atmosphere, "ibl_map_unfiltered", worldBuf, ptc, {ibl->mapUnfiltered.extent.width, ibl->mapUnfiltered.extent.height}));
 	rg.append(ibl->filter());
 	rg.add_pass({
@@ -373,7 +366,7 @@ void Engine::render() {
 			cmd.draw_indexed_indirect(indirect.commandsCount, commandsBuf, sizeof(Indirect::Command));
 		},
 	});
-	rg.append(sky->draw(atmosphere, "object_color", "object_depth", worldBuf, ptc, {swapchain->extent.width, swapchain->extent.height}, camera.eye));
+	rg.append(sky->draw(atmosphere, "object_color", "object_depth", worldBuf, ptc, {swapchain->extent.width, swapchain->extent.height}, camera.position));
 	rg.resolve_resource_into("object_resolved", "object_color");
 	rg.add_pass({
 		.name = "Tonemapping",
