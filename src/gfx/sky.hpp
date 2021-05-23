@@ -30,12 +30,6 @@ struct Sky {
 	
 	constexpr static auto CubemapHeight = 0.2f;
 	
-	struct Globals {
-		
-		vec2 RayMarchMinMaxSPP;
-		
-	};
-	
 	struct AtmosphereParams {
 		
 		float BottomRadius; // Radius of the planet (center to ground)

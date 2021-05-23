@@ -12,6 +12,9 @@
 
 #define PLANET_RADIUS_OFFSET 0.01
 
+#define RAYMARCH_MIN_SPP 4.0
+#define RAYMARCH_MAX_SPP 14.0
+
 struct MediumSampleRGB {
 
 	vec3 scattering;
@@ -46,13 +49,7 @@ struct SingleScatteringResult {
 
 };
 
-layout(set = 0, binding = 1) uniform Globals {
-	
-	vec2 RayMarchMinMaxSPP;
-	
-};
-
-layout(set = 0, binding = 2) uniform AtmosphereParameters {
+layout(set = 0, binding = 1) uniform AtmosphereParameters {
 
 	float BottomRadius; // Radius of the planet (center to ground)
 	float TopRadius; // Maximum considered atmosphere height (center to atmosphere top)
@@ -85,9 +82,9 @@ layout(set = 0, binding = 2) uniform AtmosphereParameters {
 
 } Atmosphere;
 
-layout(set = 0, binding = 3) uniform sampler2D TransmittanceLutTexture;
+layout(set = 0, binding = 2) uniform sampler2D TransmittanceLutTexture;
 #if MULTIPLE_SCATTERING_ENABLED
-layout(set = 0, binding = 4) uniform sampler2D MultiScatteringLutTexture;
+layout(set = 0, binding = 3) uniform sampler2D MultiScatteringLutTexture;
 #endif
 
 float fromUnitToSubUvs(float u, float resolution) {
@@ -309,15 +306,15 @@ in bool ground, in float SampleCountIni, in bool VariableSampleCount, in bool Mi
 	} else if (tTop > 0.0) {
 		tMax = min(tTop, tBottom);
 	}
-
+	
 	tMax = min(tMax, tMaxMax);
-
+	
 	// Sample count
 	float SampleCount = SampleCountIni;
 	float SampleCountFloor = SampleCountIni;
 	float tMaxFloor = tMax;
 	if (VariableSampleCount) {
-		SampleCount = mix(RayMarchMinMaxSPP.x, RayMarchMinMaxSPP.y, clamp(tMax*0.01, 0.0, 1.0));
+		SampleCount = mix(RAYMARCH_MIN_SPP, RAYMARCH_MAX_SPP, clamp(tMax*0.01, 0.0, 1.0));
 		SampleCountFloor = floor(SampleCount);
 		tMaxFloor = tMax * SampleCountFloor / SampleCount;	// rescale tMax to map to the last entire step segment.
 	}

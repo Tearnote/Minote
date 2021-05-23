@@ -80,24 +80,6 @@ Sky::Sky(vuk::Context& ctx):
 }
 #include "GLFW/glfw3.h"
 auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::Buffer world, vuk::PerThreadContext& ptc) -> vuk::RenderGraph {
-	auto globals = Globals{
-		.RayMarchMinMaxSPP = {4.0f, 14.0f},
-	};
-	auto globalsBuf = ptc.allocate_scratch_buffer(
-		vuk::MemoryUsage::eCPUtoGPU,
-		vuk::BufferUsageFlagBits::eUniformBuffer,
-		sizeof(Globals), alignof(Globals));
-	std::memcpy(globalsBuf.mapped_ptr, &globals, sizeof(Globals));
-
-	auto cubemapGlobals = Globals{
-		.RayMarchMinMaxSPP = {4.0f, 14.0f},
-	};
-	auto cubemapGlobalsBuf = ptc.allocate_scratch_buffer(
-		vuk::MemoryUsage::eCPUtoGPU,
-		vuk::BufferUsageFlagBits::eUniformBuffer,
-		sizeof(Globals), alignof(Globals));
-	std::memcpy(cubemapGlobalsBuf.mapped_ptr, &cubemapGlobals, sizeof(Globals));
-
 	auto atmosphereBuf = ptc.allocate_scratch_buffer(
 		vuk::MemoryUsage::eCPUtoGPU,
 		vuk::BufferUsageFlagBits::eUniformBuffer,
@@ -110,11 +92,10 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::Buffe
 		.resources = {
 			"sky_transmittance"_image(vuk::eComputeWrite),
 		},
-		.execute = [world, globalsBuf, atmosphereBuf](vuk::CommandBuffer& cmd) {
+		.execute = [world, atmosphereBuf](vuk::CommandBuffer& cmd) {
 			cmd.bind_uniform_buffer(0, 0, world)
-			   .bind_uniform_buffer(0, 1, globalsBuf)
-			   .bind_uniform_buffer(0, 2, atmosphereBuf)
-			   .bind_sampled_image(0, 3, "sky_transmittance", vuk::SamplerCreateInfo{
+			   .bind_uniform_buffer(0, 1, atmosphereBuf)
+			   .bind_sampled_image(0, 2, "sky_transmittance", vuk::SamplerCreateInfo{
 				   .magFilter = vuk::Filter::eLinear,
 				   .minFilter = vuk::Filter::eLinear,
 				   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
@@ -130,11 +111,10 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::Buffe
 			"sky_transmittance"_image(vuk::eComputeSampled),
 			"sky_multi_scattering"_image(vuk::eComputeWrite),
 		},
-		.execute = [world, globalsBuf, atmosphereBuf](vuk::CommandBuffer& cmd) {
+		.execute = [world, atmosphereBuf](vuk::CommandBuffer& cmd) {
 			cmd.bind_uniform_buffer(0, 0, world)
-			   .bind_uniform_buffer(0, 1, globalsBuf)
-			   .bind_uniform_buffer(0, 2, atmosphereBuf)
-			   .bind_sampled_image(0, 3, "sky_transmittance", vuk::SamplerCreateInfo{
+			   .bind_uniform_buffer(0, 1, atmosphereBuf)
+			   .bind_sampled_image(0, 2, "sky_transmittance", vuk::SamplerCreateInfo{
 				   .magFilter = vuk::Filter::eLinear,
 				   .minFilter = vuk::Filter::eLinear,
 				   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
@@ -151,16 +131,15 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::Buffe
 			"sky_multi_scattering"_image(vuk::eComputeSampled),
 			"sky_sky_view"_image(vuk::eComputeWrite),
 		},
-		.execute = [world, globalsBuf, atmosphereBuf](vuk::CommandBuffer& cmd) {
+		.execute = [world, atmosphereBuf](vuk::CommandBuffer& cmd) {
 			cmd.bind_uniform_buffer(0, 0, world)
-			   .bind_uniform_buffer(0, 1, globalsBuf)
-			   .bind_uniform_buffer(0, 2, atmosphereBuf)
-			   .bind_sampled_image(0, 3, "sky_transmittance", vuk::SamplerCreateInfo{
+			   .bind_uniform_buffer(0, 1, atmosphereBuf)
+			   .bind_sampled_image(0, 2, "sky_transmittance", vuk::SamplerCreateInfo{
 				   .magFilter = vuk::Filter::eLinear,
 				   .minFilter = vuk::Filter::eLinear,
 				   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
 				   .addressModeV = vuk::SamplerAddressMode::eClampToEdge})
-			   .bind_sampled_image(0, 4, "sky_multi_scattering", vuk::SamplerCreateInfo{
+			   .bind_sampled_image(0, 3, "sky_multi_scattering", vuk::SamplerCreateInfo{
 				   .magFilter = vuk::Filter::eLinear,
 				   .minFilter = vuk::Filter::eLinear,
 				   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
@@ -177,11 +156,10 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::Buffe
 			"sky_multi_scattering"_image(vuk::eComputeSampled),
 			"sky_cubemap_sky_view"_image(vuk::eComputeWrite),
 		},
-		.execute = [world, cubemapGlobalsBuf, atmosphereBuf](vuk::CommandBuffer& cmd) {
+		.execute = [world, atmosphereBuf](vuk::CommandBuffer& cmd) {
 			cmd.bind_uniform_buffer(0, 0, world)
-			   .bind_uniform_buffer(0, 1, cubemapGlobalsBuf)
-			   .bind_uniform_buffer(0, 2, atmosphereBuf)
-			   .bind_sampled_image(0, 3, "sky_transmittance", vuk::SamplerCreateInfo{
+			   .bind_uniform_buffer(0, 1, atmosphereBuf)
+			   .bind_sampled_image(0, 2, "sky_transmittance", vuk::SamplerCreateInfo{
 				   .magFilter = vuk::Filter::eLinear,
 				   .minFilter = vuk::Filter::eLinear,
 				   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
@@ -203,16 +181,15 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::Buffe
 			"sky_multi_scattering"_image(vuk::eComputeSampled),
 			"sky_aerial_perspective"_image(vuk::eComputeWrite),
 		},
-		.execute = [world, cubemapGlobalsBuf, atmosphereBuf](vuk::CommandBuffer& cmd) {
+		.execute = [world, atmosphereBuf](vuk::CommandBuffer& cmd) {
 			cmd.bind_uniform_buffer(0, 0, world)
-			   .bind_uniform_buffer(0, 1, cubemapGlobalsBuf)
-			   .bind_uniform_buffer(0, 2, atmosphereBuf)
-			   .bind_sampled_image(0, 3, "sky_transmittance", vuk::SamplerCreateInfo{
+			   .bind_uniform_buffer(0, 1, atmosphereBuf)
+			   .bind_sampled_image(0, 2, "sky_transmittance", vuk::SamplerCreateInfo{
 				   .magFilter = vuk::Filter::eLinear,
 				   .minFilter = vuk::Filter::eLinear,
 				   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
 				   .addressModeV = vuk::SamplerAddressMode::eClampToEdge})
-			   .bind_sampled_image(0, 4, "sky_multi_scattering", vuk::SamplerCreateInfo{
+			   .bind_sampled_image(0, 3, "sky_multi_scattering", vuk::SamplerCreateInfo{
 				   .magFilter = vuk::Filter::eLinear,
 				   .minFilter = vuk::Filter::eLinear,
 				   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
@@ -231,15 +208,6 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::Buffe
 }
 
 auto Sky::draw(AtmosphereParams const& atmosphere, vuk::Name targetColor, vuk::Name targetDepth, vuk::Buffer world, vuk::PerThreadContext& ptc) -> vuk::RenderGraph {
-	auto globals = Globals{
-		.RayMarchMinMaxSPP = {4.0f, 14.0f},
-	};
-	auto globalsBuf = ptc.allocate_scratch_buffer(
-		vuk::MemoryUsage::eCPUtoGPU,
-		vuk::BufferUsageFlagBits::eUniformBuffer,
-		sizeof(Globals), alignof(Globals));
-	std::memcpy(globalsBuf.mapped_ptr, &globals, sizeof(Globals));
-
 	auto atmosphereBuf = ptc.allocate_scratch_buffer(
 		vuk::MemoryUsage::eCPUtoGPU,
 		vuk::BufferUsageFlagBits::eUniformBuffer,
@@ -255,7 +223,7 @@ auto Sky::draw(AtmosphereParams const& atmosphere, vuk::Name targetColor, vuk::N
 			vuk::Resource(targetColor, vuk::Resource::Type::eImage, vuk::eColorWrite),
 			vuk::Resource(targetDepth, vuk::Resource::Type::eImage, vuk::eDepthStencilRW),
 		},
-		.execute = [world, globalsBuf, atmosphereBuf](vuk::CommandBuffer& cmd) {
+		.execute = [world, atmosphereBuf](vuk::CommandBuffer& cmd) {
 			auto skyViewSampler = vuk::SamplerCreateInfo{
 				.magFilter = vuk::Filter::eLinear,
 				.minFilter = vuk::Filter::eLinear,
@@ -263,9 +231,8 @@ auto Sky::draw(AtmosphereParams const& atmosphere, vuk::Name targetColor, vuk::N
 				.addressModeV = vuk::SamplerAddressMode::eClampToEdge,
 			};
 			cmd.bind_uniform_buffer(0, 0, world)
-			   .bind_uniform_buffer(0, 1, globalsBuf)
-			   .bind_uniform_buffer(0, 2, atmosphereBuf)
-			   .bind_sampled_image(0, 3, "sky_transmittance", vuk::SamplerCreateInfo{
+			   .bind_uniform_buffer(0, 1, atmosphereBuf)
+			   .bind_sampled_image(0, 2, "sky_transmittance", vuk::SamplerCreateInfo{
 				   .magFilter = vuk::Filter::eLinear,
 				   .minFilter = vuk::Filter::eLinear,
 				   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
@@ -281,15 +248,6 @@ auto Sky::draw(AtmosphereParams const& atmosphere, vuk::Name targetColor, vuk::N
 }
 
 auto Sky::drawCubemap(AtmosphereParams const& atmosphere, vuk::Name target, u32 targetSize, vuk::Buffer world, vuk::PerThreadContext& ptc) -> vuk::RenderGraph {
-	auto globals = Globals{
-		.RayMarchMinMaxSPP = {4.0f, 14.0f},
-	};
-	auto globalsBuf = ptc.allocate_scratch_buffer(
-		vuk::MemoryUsage::eCPUtoGPU,
-		vuk::BufferUsageFlagBits::eUniformBuffer,
-		sizeof(Globals), alignof(Globals));
-	std::memcpy(globalsBuf.mapped_ptr, &globals, sizeof(Globals));
-
 	auto atmosphereBuf = ptc.allocate_scratch_buffer(
 		vuk::MemoryUsage::eCPUtoGPU,
 		vuk::BufferUsageFlagBits::eUniformBuffer,
@@ -304,7 +262,7 @@ auto Sky::drawCubemap(AtmosphereParams const& atmosphere, vuk::Name target, u32 
 			"sky_cubemap_sky_view"_image(vuk::eComputeSampled),
 			vuk::Resource(target, vuk::Resource::Type::eImage, vuk::eComputeWrite),
 		},
-		.execute = [world, globalsBuf, atmosphereBuf, target, targetSize](vuk::CommandBuffer& cmd) {
+		.execute = [world, atmosphereBuf, target, targetSize](vuk::CommandBuffer& cmd) {
 			auto skyViewSampler = vuk::SamplerCreateInfo{
 				.magFilter = vuk::Filter::eLinear,
 				.minFilter = vuk::Filter::eLinear,
@@ -312,9 +270,8 @@ auto Sky::drawCubemap(AtmosphereParams const& atmosphere, vuk::Name target, u32 
 				.addressModeV = vuk::SamplerAddressMode::eClampToEdge,
 			};
 			cmd.bind_uniform_buffer(0, 0, world)
-			   .bind_uniform_buffer(0, 1, globalsBuf)
-			   .bind_uniform_buffer(0, 2, atmosphereBuf)
-			   .bind_sampled_image(0, 3, "sky_transmittance", vuk::SamplerCreateInfo{
+			   .bind_uniform_buffer(0, 1, atmosphereBuf)
+			   .bind_sampled_image(0, 2, "sky_transmittance", vuk::SamplerCreateInfo{
 				   .magFilter = vuk::Filter::eLinear,
 				   .minFilter = vuk::Filter::eLinear,
 				   .addressModeU = vuk::SamplerAddressMode::eClampToEdge,
