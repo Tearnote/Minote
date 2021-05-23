@@ -269,8 +269,8 @@ void Engine::render() {
 		.AbsorptionExtinction = {0.000650f, 0.001881f, 0.000085f},
 		.GroundAlbedo = {0.0f, 0.0f, 0.0f},
 	};
-	rg.append(sky->generateAtmosphereModel(atmosphere, worldBuf, ptc, {swapchain->extent.width, swapchain->extent.height}));
-	rg.append(sky->drawCubemap(atmosphere, "ibl_map_unfiltered", worldBuf, ptc, {ibl->mapUnfiltered.extent.width, ibl->mapUnfiltered.extent.height}));
+	rg.append(sky->generateAtmosphereModel(atmosphere, worldBuf, ptc));
+	rg.append(sky->drawCubemap(atmosphere, "ibl_map_unfiltered", ibl->BaseSize, worldBuf, ptc));
 	rg.append(ibl->filter());
 	rg.add_pass({
 		.name = "Frustum culling",
@@ -367,7 +367,7 @@ void Engine::render() {
 			cmd.draw_indexed_indirect(indirect.commandsCount, commandsBuf, sizeof(Indirect::Command));
 		},
 	});
-	rg.append(sky->draw(atmosphere, "object_color", "object_depth", worldBuf, ptc, {swapchain->extent.width, swapchain->extent.height}));
+	rg.append(sky->draw(atmosphere, "object_color", "object_depth", worldBuf, ptc));
 	rg.resolve_resource_into("object_resolved", "object_color");
 	rg.add_pass({
 		.name = "Tonemapping",

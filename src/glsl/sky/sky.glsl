@@ -48,7 +48,6 @@ struct SingleScatteringResult {
 
 layout(set = 0, binding = 1) uniform Globals {
 	
-	uvec2 gResolution;
 	vec2 RayMarchMinMaxSPP;
 	
 };

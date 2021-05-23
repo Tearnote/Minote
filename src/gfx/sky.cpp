@@ -79,9 +79,8 @@ Sky::Sky(vuk::Context& ctx):
 	ctx.create_named_pipeline("sky_gen_aerial_perspective", skyAerialPerspectivePci);
 }
 #include "GLFW/glfw3.h"
-auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::Buffer world, vuk::PerThreadContext& ptc, uvec2 resolution) -> vuk::RenderGraph {
+auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::Buffer world, vuk::PerThreadContext& ptc) -> vuk::RenderGraph {
 	auto globals = Globals{
-		.gResolution = resolution,
 		.RayMarchMinMaxSPP = {4.0f, 14.0f},
 	};
 	auto globalsBuf = ptc.allocate_scratch_buffer(
@@ -91,7 +90,6 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::Buffe
 	std::memcpy(globalsBuf.mapped_ptr, &globals, sizeof(Globals));
 
 	auto cubemapGlobals = Globals{
-		.gResolution = resolution,
 		.RayMarchMinMaxSPP = {4.0f, 14.0f},
 	};
 	auto cubemapGlobalsBuf = ptc.allocate_scratch_buffer(
@@ -232,9 +230,8 @@ auto Sky::generateAtmosphereModel(AtmosphereParams const& atmosphere, vuk::Buffe
 	return rg;
 }
 
-auto Sky::draw(AtmosphereParams const& atmosphere, vuk::Name targetColor, vuk::Name targetDepth, vuk::Buffer world, vuk::PerThreadContext& ptc, uvec2 resolution) -> vuk::RenderGraph {
+auto Sky::draw(AtmosphereParams const& atmosphere, vuk::Name targetColor, vuk::Name targetDepth, vuk::Buffer world, vuk::PerThreadContext& ptc) -> vuk::RenderGraph {
 	auto globals = Globals{
-		.gResolution = resolution,
 		.RayMarchMinMaxSPP = {4.0f, 14.0f},
 	};
 	auto globalsBuf = ptc.allocate_scratch_buffer(
@@ -283,9 +280,8 @@ auto Sky::draw(AtmosphereParams const& atmosphere, vuk::Name targetColor, vuk::N
 	return rg;
 }
 
-auto Sky::drawCubemap(AtmosphereParams const& atmosphere, vuk::Name target, vuk::Buffer world, vuk::PerThreadContext& ptc, uvec2 resolution) -> vuk::RenderGraph {
+auto Sky::drawCubemap(AtmosphereParams const& atmosphere, vuk::Name target, u32 targetSize, vuk::Buffer world, vuk::PerThreadContext& ptc) -> vuk::RenderGraph {
 	auto globals = Globals{
-		.gResolution = resolution,
 		.RayMarchMinMaxSPP = {4.0f, 14.0f},
 	};
 	auto globalsBuf = ptc.allocate_scratch_buffer(
@@ -308,7 +304,7 @@ auto Sky::drawCubemap(AtmosphereParams const& atmosphere, vuk::Name target, vuk:
 			"sky_cubemap_sky_view"_image(vuk::eComputeSampled),
 			vuk::Resource(target, vuk::Resource::Type::eImage, vuk::eComputeWrite),
 		},
-		.execute = [world, globalsBuf, atmosphereBuf, target, resolution](vuk::CommandBuffer& cmd) {
+		.execute = [world, globalsBuf, atmosphereBuf, target, targetSize](vuk::CommandBuffer& cmd) {
 			auto skyViewSampler = vuk::SamplerCreateInfo{
 				.magFilter = vuk::Filter::eLinear,
 				.minFilter = vuk::Filter::eLinear,
@@ -353,7 +349,7 @@ auto Sky::drawCubemap(AtmosphereParams const& atmosphere, vuk::Name target, vuk:
 				0.0f, -1.0f, 0.0f,
 				0.0f, 0.0f, -1.0f,
 			}});
-			cmd.dispatch_invocations(resolution.x, resolution.y, 6);
+			cmd.dispatch_invocations(targetSize, targetSize, 6);
 		},
 	});
 	rg.attach_image("sky_transmittance", vuk::ImageAttachment::from_texture(transmittance), {}, {});
