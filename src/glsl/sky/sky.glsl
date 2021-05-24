@@ -268,8 +268,18 @@ vec3 GetSunLuminance(vec3 WorldPos, vec3 WorldDir, float PlanetRadius) {
 	if (dot(WorldDir, world.sunDirection) > cos(0.5*0.505*3.14159 / 180.0)) {
 		float t = raySphereIntersectNearest(WorldPos, WorldDir, vec3(0.0), PlanetRadius);
 		if (t < 0.0) { // no intersection
-			const vec3 SunLuminance = vec3(1.0); // arbitrary. But fine, not use when comparing the models
-			return SunLuminance;
+			vec2 uvUp;
+			LutTransmittanceParamsToUv(Atmosphere.BottomRadius, 1.0, uvUp);
+			
+			float pHeight = length(WorldPos);
+			const vec3 UpVector = WorldPos / pHeight;
+			float SunZenithCosAngle = dot(world.sunDirection, UpVector);
+			vec2 uvSun;
+			LutTransmittanceParamsToUv(pHeight, SunZenithCosAngle, uvSun);
+			
+			const vec3 SunLuminance = vec3(40.0); // arbitrary. But fine, not use when comparing the models
+			vec3 SunLuminanceInSpace = SunLuminance / textureLod(TransmittanceLutTexture, uvUp, 0.0).rgb;
+			return SunLuminanceInSpace * textureLod(TransmittanceLutTexture, uvSun, 0.0).rgb;
 		}
 	}
 #endif
