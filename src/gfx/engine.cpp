@@ -248,7 +248,7 @@ void Engine::render() {
 	static auto precomputed = false;
 	if (!precomputed) {
 		
-		auto precompute = atmosphere->precompute(worldBuf);
+		auto precompute = atmosphere->precompute();
 		auto erg = std::move(precompute).link(ptc);
 		vuk::execute_submit_and_wait(ptc, std::move(erg));
 		

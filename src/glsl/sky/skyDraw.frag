@@ -7,6 +7,7 @@ layout(location = 0) out vec4 out_color;
 
 layout(set = 1, binding = 0) uniform sampler2D skyView;
 
+#define SKY_USE_WORLD
 #include "sky.glsl"
 
 void main() {

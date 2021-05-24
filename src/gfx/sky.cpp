@@ -81,7 +81,7 @@ Atmosphere::Atmosphere(vuk::PerThreadContext& _ptc, Params const& _params) {
 	
 }
 
-auto Atmosphere::precompute(vuk::Buffer _world) -> vuk::RenderGraph {
+auto Atmosphere::precompute() -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
 	
@@ -90,10 +90,9 @@ auto Atmosphere::precompute(vuk::Buffer _world) -> vuk::RenderGraph {
 		.resources = {
 			"sky_transmittance"_image(vuk::eComputeWrite),
 		},
-		.execute = [this, _world](vuk::CommandBuffer& cmd) {
+		.execute = [this](vuk::CommandBuffer& cmd) {
 			
-			cmd.bind_uniform_buffer(0, 0, _world)
-			   .bind_uniform_buffer(0, 1, *params)
+			cmd.bind_uniform_buffer(0, 1, *params)
 			   .bind_sampled_image(0, 2, "sky_transmittance", LinearClamp)
 			   .bind_storage_image(1, 0, "sky_transmittance")
 			   .bind_compute_pipeline("sky_gen_transmittance");
@@ -108,10 +107,9 @@ auto Atmosphere::precompute(vuk::Buffer _world) -> vuk::RenderGraph {
 			"sky_transmittance"_image(vuk::eComputeSampled),
 			"sky_multi_scattering"_image(vuk::eComputeWrite),
 		},
-		.execute = [this, _world](vuk::CommandBuffer& cmd) {
+		.execute = [this](vuk::CommandBuffer& cmd) {
 			
-			cmd.bind_uniform_buffer(0, 0, _world)
-			   .bind_uniform_buffer(0, 1, *params)
+			cmd.bind_uniform_buffer(0, 1, *params)
 			   .bind_sampled_image(0, 2, "sky_transmittance", LinearClamp)
 			   .bind_storage_image(1, 0, "sky_multi_scattering")
 			   .bind_compute_pipeline("sky_gen_multi_scattering");

@@ -61,7 +61,7 @@ struct Atmosphere {
 	
 	Atmosphere(vuk::PerThreadContext&, Params const&);
 	
-	auto precompute(vuk::Buffer world /* TODO eliminate? */) -> vuk::RenderGraph;
+	auto precompute() -> vuk::RenderGraph;
 	
 private:
 	

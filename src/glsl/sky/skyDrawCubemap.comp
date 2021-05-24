@@ -10,6 +10,7 @@ layout(set = 1, binding = 2) uniform Sides {
 };
 
 #define RENDER_SUN_DISK 0
+#define SKY_USE_WORLD
 #include "sky.glsl"
 
 void main() {

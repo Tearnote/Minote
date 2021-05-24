@@ -1,4 +1,6 @@
+#ifdef SKY_USE_WORLD
 #include "../world.glsl"
+#endif
 
 #define PI 3.1415926535897932384626433832795
 
@@ -258,6 +260,7 @@ void SkyViewLutParamsToUv(in bool IntersectGround, in float viewZenithCosAngle, 
 	uv = vec2(fromUnitToSubUvs(uv.x, viewSize.x), fromUnitToSubUvs(uv.y, viewSize.y));
 }
 
+#ifdef SKY_USE_WORLD
 vec3 GetSunLuminance(vec3 WorldPos, vec3 WorldDir, float PlanetRadius) {
 #if RENDER_SUN_DISK
 	if (dot(WorldDir, world.sunDirection) > cos(0.5*0.505*3.14159 / 180.0)) {
@@ -270,6 +273,7 @@ vec3 GetSunLuminance(vec3 WorldPos, vec3 WorldDir, float PlanetRadius) {
 #endif
 	return vec3(0.0);
 }
+#endif
 
 #define AP_KM_PER_SLICE 4.0
 float AerialPerspectiveSliceToDepth(float slice) {
