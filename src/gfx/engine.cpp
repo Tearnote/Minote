@@ -131,7 +131,7 @@ Engine::Engine(sys::Window& window, Version version) {
 Engine::~Engine() {
 	context->wait_idle();
 	ibl.reset();
-	sky.reset();
+	atmosphere.reset();
 	indicesBuf.reset();
 	colorsBuf.reset();
 	normalsBuf.reset();
@@ -165,17 +165,17 @@ void Engine::uploadAssets() {
 #endif //IMGUI
 
 	// Upload mesh buffers
-	verticesBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eVertexBuffer, std::span<vec3>(meshes.vertices)).first;
-	normalsBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eVertexBuffer, std::span<vec3>(meshes.normals)).first;
-	colorsBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eVertexBuffer, std::span<u16vec4>(meshes.colors)).first;
-	indicesBuf = ptc.create_buffer(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eIndexBuffer, std::span<u16>(meshes.indices)).first;
+	verticesBuf = ptc.create_buffer<vec3>(vuk::MemoryUsage::eGPUonly,
+		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(meshes.vertices)).first;
+	normalsBuf = ptc.create_buffer<vec3>(vuk::MemoryUsage::eGPUonly,
+		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(meshes.normals)).first;
+	colorsBuf = ptc.create_buffer<u16vec4>(vuk::MemoryUsage::eGPUonly,
+		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(meshes.colors)).first;
+	indicesBuf = ptc.create_buffer<u16>(vuk::MemoryUsage::eGPUonly,
+		vuk::BufferUsageFlagBits::eIndexBuffer, std::span(meshes.indices)).first;
 
 	// Create pipeline components
-	sky = Sky(*context);
+	atmosphere = Atmosphere(ptc, Atmosphere::Params::earth());
 	ibl = IBLMap(*context, ptc);
 
 	// Finalize uploads
@@ -232,7 +232,7 @@ void Engine::render() {
 	// Begin draw
 	auto ifc = context->begin();
 	auto ptc = ifc.begin();
-
+	
 	// Upload uniform buffers
 	auto worldBuf = ptc.allocate_scratch_buffer(
 		vuk::MemoryUsage::eCPUtoGPU,
@@ -242,35 +242,26 @@ void Engine::render() {
 
 	// Upload indirect buffers
 	auto indirect = Indirect::createBuffers(ptc, meshes, instances);
-
+	
+	// Perform precomputations
+	static auto precomputed = false;
+	if (!precomputed) {
+		
+		auto precompute = atmosphere->precompute(worldBuf);
+		auto erg = std::move(precompute).link(ptc);
+		vuk::execute_submit_and_wait(ptc, std::move(erg));
+		
+		precomputed = true;
+		
+	}
+	
+	auto sky = Sky(ptc, *atmosphere);
+	
 	// Set up the rendergraph
 	auto rg = vuk::RenderGraph();
-
-	float const EarthRayleighScaleHeight = 8.0f;
-	float const EarthMieScaleHeight = 1.2f;
-	auto const MieScattering = vec3{0.003996f, 0.003996f, 0.003996f};
-	auto const MieExtinction = vec3{0.004440f, 0.004440f, 0.004440f};
-
-	auto atmosphere = Sky::AtmosphereParams{
-		.BottomRadius = 6360.0f,
-		.TopRadius = 6460.0f,
-		.RayleighDensityExpScale = -1.0f / EarthRayleighScaleHeight,
-		.RayleighScattering = {0.005802f, 0.013558f, 0.033100f},
-		.MieDensityExpScale = -1.0f / EarthMieScaleHeight,
-		.MieScattering = MieScattering,
-		.MieExtinction = MieExtinction,
-		.MieAbsorption = max(MieExtinction - MieScattering, vec3(0.0f)),
-		.MiePhaseG = 0.8f,
-		.AbsorptionDensity0LayerWidth = 25.0f,
-		.AbsorptionDensity0ConstantTerm = -2.0f / 3.0f,
-		.AbsorptionDensity0LinearTerm = 1.0f / 15.0f,
-		.AbsorptionDensity1ConstantTerm = 8.0f / 3.0f,
-		.AbsorptionDensity1LinearTerm = -1.0f / 15.0f,
-		.AbsorptionExtinction = {0.000650f, 0.001881f, 0.000085f},
-		.GroundAlbedo = {0.0f, 0.0f, 0.0f},
-	};
-	rg.append(sky->generateAtmosphereModel(atmosphere, worldBuf, ptc));
-	rg.append(sky->drawCubemap(atmosphere, "ibl_map_unfiltered", ibl->BaseSize, worldBuf, ptc));
+	
+	rg.append(sky.compute(worldBuf));
+	rg.append(sky.drawCubemap(worldBuf, "ibl_map_unfiltered", uvec2(ibl->BaseSize)));
 	rg.append(ibl->filter());
 	rg.add_pass({
 		.name = "Frustum culling",
@@ -367,7 +358,7 @@ void Engine::render() {
 			cmd.draw_indexed_indirect(indirect.commandsCount, commandsBuf, sizeof(Indirect::Command));
 		},
 	});
-	rg.append(sky->draw(atmosphere, "object_color", "object_depth", worldBuf, ptc));
+	rg.append(sky.draw(worldBuf, "object_color", "object_depth"));
 	rg.resolve_resource_into("object_resolved", "object_color");
 	rg.add_pass({
 		.name = "Tonemapping",

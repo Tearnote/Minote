@@ -62,7 +62,7 @@ struct Engine {
 	World world;
 	Camera camera;
 
-	std::optional<Sky> sky;
+	std::optional<Atmosphere> atmosphere;
 	std::optional<IBLMap> ibl;
 
 	auto createSwapchain(VkSwapchainKHR old = VK_NULL_HANDLE) -> vuk::Swapchain;
