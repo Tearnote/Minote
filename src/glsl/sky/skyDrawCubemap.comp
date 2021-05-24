@@ -43,6 +43,6 @@ void main() {
 	bool IntersectGround = raySphereIntersectNearest(WorldPos, WorldDir, vec3(0.0), Atmosphere.BottomRadius) >= 0.0;
 
 	SkyViewLutParamsToUv(IntersectGround, viewZenithCosAngle, lightViewCosAngle, viewSize, viewHeight, uv);
-	vec4 result = vec4(textureLod(skyView, uv, 0.0).rgb + GetSunLuminance(WorldPos, WorldDir, Atmosphere.BottomRadius), 1.0);
+	vec4 result = vec4(textureLod(skyView, uv, 0.0).rgb, 1.0);
 	imageStore(cubemap, ivec3(gid), result);
 }

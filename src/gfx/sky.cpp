@@ -81,7 +81,7 @@ Atmosphere::Atmosphere(vuk::PerThreadContext& _ptc, Params const& _params) {
 	
 }
 
-auto Atmosphere::precompute() -> vuk::RenderGraph {
+auto Atmosphere::precalculate() -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
 	
@@ -188,7 +188,7 @@ Sky::Sky(vuk::PerThreadContext& _ptc, Atmosphere const& _atmosphere):
 	
 }
 
-auto Sky::compute(vuk::Buffer _world, Camera const& _camera) -> vuk::RenderGraph {
+auto Sky::calculate(vuk::Buffer _world, Camera const& _camera) -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
 	

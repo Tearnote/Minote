@@ -62,7 +62,7 @@ struct Atmosphere {
 	
 	Atmosphere(vuk::PerThreadContext&, Params const&);
 	
-	auto precompute() -> vuk::RenderGraph;
+	auto precalculate() -> vuk::RenderGraph;
 	
 private:
 	
@@ -89,7 +89,7 @@ struct Sky {
 	
 	Sky(vuk::PerThreadContext&, Atmosphere const&);
 	
-	auto compute(vuk::Buffer world, Camera const& camera) -> vuk::RenderGraph;
+	auto calculate(vuk::Buffer world, Camera const& camera) -> vuk::RenderGraph;
 	
 	auto draw(vuk::Buffer world, vuk::Name targetColor,
 		vuk::Name targetDepth) -> vuk::RenderGraph;

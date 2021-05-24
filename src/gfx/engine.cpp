@@ -181,6 +181,11 @@ void Engine::uploadAssets() {
 
 	// Finalize uploads
 	ptc.wait_all_transfers();
+	
+	// Perform precalculations
+	auto precalc = atmosphere->precalculate();
+	auto erg = std::move(precalc).link(ptc);
+	vuk::execute_submit_and_wait(ptc, std::move(erg));
 
 	// Begin imgui frame so that first-frame calls succeed
 #if IMGUI
@@ -244,24 +249,12 @@ void Engine::render() {
 	// Upload indirect buffers
 	auto indirect = Indirect::createBuffers(ptc, meshes, instances);
 	
-	// Perform precomputations
-	static auto precomputed = false;
-	if (!precomputed) {
-		
-		auto precompute = atmosphere->precompute();
-		auto erg = std::move(precompute).link(ptc);
-		vuk::execute_submit_and_wait(ptc, std::move(erg));
-		
-		precomputed = true;
-		
-	}
-	
 	auto sky = Sky(ptc, *atmosphere);
 	
 	// Set up the rendergraph
 	auto rg = vuk::RenderGraph();
 	
-	rg.append(sky.compute(worldBuf, camera));
+	rg.append(sky.calculate(worldBuf, camera));
 	rg.append(sky.drawCubemap(worldBuf, "ibl_map_unfiltered", uvec2(ibl->BaseSize)));
 	rg.append(ibl->filter());
 	rg.add_pass({
