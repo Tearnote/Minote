@@ -5,6 +5,7 @@
 #include "vuk/Buffer.hpp"
 #include "vuk/Image.hpp"
 #include "base/math.hpp"
+#include "gfx/camera.hpp"
 
 namespace minote::gfx {
 
@@ -88,7 +89,7 @@ struct Sky {
 	
 	Sky(vuk::PerThreadContext&, Atmosphere const&);
 	
-	auto compute(vuk::Buffer world) -> vuk::RenderGraph;
+	auto compute(vuk::Buffer world, Camera const& camera) -> vuk::RenderGraph;
 	
 	auto draw(vuk::Buffer world, vuk::Name targetColor,
 		vuk::Name targetDepth) -> vuk::RenderGraph;

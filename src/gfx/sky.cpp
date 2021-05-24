@@ -188,7 +188,7 @@ Sky::Sky(vuk::PerThreadContext& _ptc, Atmosphere const& _atmosphere):
 	
 }
 
-auto Sky::compute(vuk::Buffer _world) -> vuk::RenderGraph {
+auto Sky::compute(vuk::Buffer _world, Camera const& _camera) -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
 	
@@ -199,7 +199,7 @@ auto Sky::compute(vuk::Buffer _world) -> vuk::RenderGraph {
 			"sky_multi_scattering"_image(vuk::eComputeSampled),
 			"sky_sky_view"_image(vuk::eComputeWrite),
 		},
-		.execute = [this, _world](vuk::CommandBuffer& cmd) {
+		.execute = [this, _world, _camera](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_uniform_buffer(0, 1, *atmosphere.params)
@@ -207,6 +207,8 @@ auto Sky::compute(vuk::Buffer _world) -> vuk::RenderGraph {
 			   .bind_sampled_image(0, 3, "sky_multi_scattering", LinearClamp)
 			   .bind_storage_image(1, 0, "sky_sky_view")
 			   .bind_compute_pipeline("sky_gen_sky_view");
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0_zu,
+				_camera.position);
 			cmd.dispatch_invocations(SkyViewWidth, SkyViewHeight, 1);
 			
 		},
@@ -227,6 +229,8 @@ auto Sky::compute(vuk::Buffer _world) -> vuk::RenderGraph {
 			   .bind_sampled_image(0, 3, "sky_multi_scattering", LinearClamp)
 			   .bind_storage_image(1, 0, "sky_cubemap_sky_view")
 			   .bind_compute_pipeline("sky_gen_sky_view");
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0_zu,
+				vec3(0_m, 0_m, 1_m));
 			cmd.dispatch_invocations(SkyViewWidth, SkyViewHeight, 1);
 			
 		},
@@ -363,6 +367,9 @@ auto Sky::drawCubemap(vuk::Buffer _world, vuk::Name _target,
 					0.0f, -1.0f, 0.0f,
 					0.0f, 0.0f, -1.0f,
 				}});
+			
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0_zu,
+				vec3(0_m, 0_m, 1_m));
 			
 			cmd.dispatch_invocations(_targetSize.x, _targetSize.y, 6);
 			

@@ -261,7 +261,7 @@ void Engine::render() {
 	// Set up the rendergraph
 	auto rg = vuk::RenderGraph();
 	
-	rg.append(sky.compute(worldBuf));
+	rg.append(sky.compute(worldBuf, camera));
 	rg.append(sky.drawCubemap(worldBuf, "ibl_map_unfiltered", uvec2(ibl->BaseSize)));
 	rg.append(ibl->filter());
 	rg.add_pass({

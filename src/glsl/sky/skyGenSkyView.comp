@@ -4,6 +4,9 @@
 layout(local_size_x = 8, local_size_y = 8) in;
 
 layout(set = 1, binding = 0, r11f_g11f_b10f) restrict writeonly uniform image2D skyView;
+layout(push_constant) uniform ProbePosition {
+	vec3 probePosition;
+};
 
 #define SKY_USE_WORLD
 #define MULTIPLE_SCATTERING_ENABLED 1
@@ -21,8 +24,8 @@ void main() {
 	vec3 ClipSpace = vec3((pixPos / vec2(size)) * vec2(2.0, -2.0) - vec2(1.0, -1.0), 1.0);
 	vec4 HPos = world.viewProjectionInverse * vec4(ClipSpace, 1.0);
 
-	vec3 WorldDir = normalize(HPos.xyz / HPos.w - world.cameraPos);
-	vec3 WorldPos = world.cameraPos + vec3(0, 0, Atmosphere.BottomRadius);
+	vec3 WorldDir = normalize(HPos.xyz / HPos.w - probePosition);
+	vec3 WorldPos = probePosition + vec3(0, 0, Atmosphere.BottomRadius);
 
 	vec2 uv = pixPos / vec2(size);
 
