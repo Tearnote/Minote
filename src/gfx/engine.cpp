@@ -15,6 +15,7 @@
 #include "base/log.hpp"
 #include "gfx/pipelines.hpp"
 #include "gfx/indirect.hpp"
+#include "gfx/samplers.hpp"
 #include "gfx/base.hpp"
 #include "main.hpp"
 
@@ -330,18 +331,6 @@ void Engine::render() {
 			"object_depth"_image(vuk::eDepthStencilRW),
 		},
 		.execute = [this, worldBuf, &indirect](vuk::CommandBuffer& cmd) {
-			auto cubeSampler = vuk::SamplerCreateInfo{
-				.magFilter = vuk::Filter::eLinear,
-				.minFilter = vuk::Filter::eLinear,
-				.mipmapMode = vuk::SamplerMipmapMode::eLinear,
-			};
-			auto aerialSampler = vuk::SamplerCreateInfo{
-				.magFilter = vuk::Filter::eLinear,
-				.minFilter = vuk::Filter::eLinear,
-				.addressModeU = vuk::SamplerAddressMode::eClampToEdge,
-				.addressModeV = vuk::SamplerAddressMode::eClampToEdge,
-				.addressModeW = vuk::SamplerAddressMode::eClampToEdge,
-			};
 			auto commandsBuf = cmd.get_resource_buffer("commands");
 			auto instancesBuf = cmd.get_resource_buffer("instances_culled");
 			cmd.set_viewport(0, vuk::Rect2D::framebuffer())
@@ -352,8 +341,8 @@ void Engine::render() {
 			   .bind_vertex_buffer(2, *colorsBuf, 2, vuk::Packed{vuk::Format::eR16G16B16A16Unorm})
 			   .bind_index_buffer(*indicesBuf, vuk::IndexType::eUint16)
 			   .bind_storage_buffer(0, 1, instancesBuf)
-			   .bind_sampled_image(0, 3, "ibl_map_filtered", cubeSampler)
-			   .bind_sampled_image(0, 4, "sky_aerial_perspective", aerialSampler)
+			   .bind_sampled_image(0, 3, "ibl_map_filtered", TrilinearClamp)
+			   .bind_sampled_image(0, 4, "sky_aerial_perspective", TrilinearClamp)
 			   .bind_graphics_pipeline("object");
 			cmd.draw_indexed_indirect(indirect.commandsCount, commandsBuf, sizeof(Indirect::Command));
 		},

@@ -4,6 +4,7 @@
 #include "gfx/iblCoeffs.hpp"
 #include "base/types.hpp"
 #include "base/math.hpp"
+#include "gfx/samplers.hpp"
 
 namespace minote::gfx {
 
@@ -101,11 +102,7 @@ auto IBLMap::filter() -> vuk::RenderGraph {
 				if (i != 1)
 					cmd.image_barrier("ibl_map_unfiltered", vuk::eComputeWrite, vuk::eComputeRead);
 
-				cmd.bind_sampled_image(0, 0, "ibl_map_unfiltered", vuk::SamplerCreateInfo{
-					.magFilter = vuk::Filter::eLinear,
-					.minFilter = vuk::Filter::eLinear,
-					.addressModeU = vuk::SamplerAddressMode::eClampToEdge,
-					.addressModeV = vuk::SamplerAddressMode::eClampToEdge})
+				cmd.bind_sampled_image(0, 0, "ibl_map_unfiltered", LinearClamp)
 				   .bind_storage_image(0, 1, *arrayViewsUnfiltered[i])
 				   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, float(i - 1))
 				   .bind_compute_pipeline("ibl_prefilter");
@@ -120,12 +117,7 @@ auto IBLMap::filter() -> vuk::RenderGraph {
 			"ibl_map_filtered"_image(vuk::eComputeWrite),
 		},
 		.execute = [this](vuk::CommandBuffer& cmd) {
-			cmd.bind_sampled_image(0, 0, "ibl_map_unfiltered", vuk::SamplerCreateInfo{
-				.magFilter = vuk::Filter::eLinear,
-				.minFilter = vuk::Filter::eLinear,
-				.mipmapMode = vuk::SamplerMipmapMode::eLinear,
-				.addressModeU = vuk::SamplerAddressMode::eClampToEdge,
-				.addressModeV = vuk::SamplerAddressMode::eClampToEdge})
+			cmd.bind_sampled_image(0, 0, "ibl_map_unfiltered", TrilinearClamp)
 			   .bind_storage_image(0, 1, *arrayViewsFiltered[1])
 			   .bind_storage_image(0, 2, *arrayViewsFiltered[2])
 			   .bind_storage_image(0, 3, *arrayViewsFiltered[3])
