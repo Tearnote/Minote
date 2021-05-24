@@ -84,7 +84,9 @@ layout(set = 0, binding = 1) uniform AtmosphereParameters {
 
 } Atmosphere;
 
+#ifndef TRANSMITTANCE_DISABLED
 layout(set = 0, binding = 2) uniform sampler2D TransmittanceLutTexture;
+#endif
 #if MULTIPLE_SCATTERING_ENABLED
 layout(set = 0, binding = 3) uniform sampler2D MultiScatteringLutTexture;
 #endif
@@ -383,7 +385,11 @@ in bool ground, in float SampleCountIni, in bool VariableSampleCount, in bool Mi
 		float SunZenithCosAngle = dot(SunDir, UpVector);
 		vec2 uv;
 		LutTransmittanceParamsToUv(pHeight, SunZenithCosAngle, uv);
+#ifndef TRANSMITTANCE_DISABLED
 		vec3 TransmittanceToSun = textureLod(TransmittanceLutTexture, uv, 0.0).rgb;
+#else
+		vec3 TransmittanceToSun = vec3(0.0);
+#endif
 
 		vec3 PhaseTimesScattering;
 		if (MieRayPhase)
@@ -439,7 +445,11 @@ in bool ground, in float SampleCountIni, in bool VariableSampleCount, in bool Mi
 		float SunZenithCosAngle = dot(SunDir, UpVector);
 		vec2 uv;
 		LutTransmittanceParamsToUv(pHeight, SunZenithCosAngle, uv);
+#ifndef TRANSMITTANCE_DISABLED
 		vec3 TransmittanceToSun = textureLod(TransmittanceLutTexture, uv, 0.0).rgb;
+#else
+		vec3 TransmittanceToSun = vec3(0.0);
+#endif
 
 		const float NdotL = clamp(dot(normalize(UpVector), normalize(SunDir)), 0.0, 1.0);
 		L += globalL * TransmittanceToSun * throughput * NdotL * Atmosphere.GroundAlbedo / PI;

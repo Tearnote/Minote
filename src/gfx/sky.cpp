@@ -93,7 +93,6 @@ auto Atmosphere::precompute() -> vuk::RenderGraph {
 		.execute = [this](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 1, *params)
-			   .bind_sampled_image(0, 2, "sky_transmittance", LinearClamp)
 			   .bind_storage_image(1, 0, "sky_transmittance")
 			   .bind_compute_pipeline("sky_gen_transmittance");
 			cmd.dispatch_invocations(TransmittanceWidth, TransmittanceHeight);
