@@ -18,9 +18,13 @@ struct IBLMap {
 	std::array<vuk::Unique<vuk::ImageView>, MipCount> arrayViewsUnfiltered;
 	std::array<vuk::Unique<vuk::ImageView>, MipCount> arrayViewsFiltered;
 
-	IBLMap(vuk::Context&, vuk::PerThreadContext&);
+	IBLMap(vuk::PerThreadContext&);
 
 	auto filter() -> vuk::RenderGraph;
+	
+private:
+	
+	inline static bool pipelinesCreated = false;
 
 };
 

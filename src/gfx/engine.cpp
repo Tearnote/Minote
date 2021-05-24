@@ -177,7 +177,7 @@ void Engine::uploadAssets() {
 
 	// Create pipeline components
 	atmosphere = Atmosphere(ptc, Atmosphere::Params::earth());
-	ibl = IBLMap(*context, ptc);
+	ibl = IBLMap(ptc);
 
 	// Finalize uploads
 	ptc.wait_all_transfers();

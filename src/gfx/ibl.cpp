@@ -10,8 +10,8 @@ namespace minote::gfx {
 
 using namespace base;
 
-IBLMap::IBLMap(vuk::Context& ctx, vuk::PerThreadContext& ptc) {
-	mapUnfiltered = ctx.allocate_texture(vuk::ImageCreateInfo{
+IBLMap::IBLMap(vuk::PerThreadContext& ptc) {
+	mapUnfiltered = ptc.ctx.allocate_texture(vuk::ImageCreateInfo{
 		.flags = vuk::ImageCreateFlagBits::eCubeCompatible,
 		.format = Format,
 		.extent = {BaseSize, BaseSize, 1},
@@ -30,7 +30,7 @@ IBLMap::IBLMap(vuk::Context& ctx, vuk::PerThreadContext& ptc) {
 		},
 	});
 
-	mapFiltered = ctx.allocate_texture(vuk::ImageCreateInfo{
+	mapFiltered = ptc.ctx.allocate_texture(vuk::ImageCreateInfo{
 		.flags = vuk::ImageCreateFlagBits::eCubeCompatible,
 		.format = Format,
 		.extent = {BaseSize, BaseSize, 1},
@@ -77,17 +77,21 @@ IBLMap::IBLMap(vuk::Context& ctx, vuk::PerThreadContext& ptc) {
 		});
 	}
 
-	auto iblPrefilterPci = vuk::ComputePipelineCreateInfo();
-	iblPrefilterPci.add_spirv(std::vector<u32>{
+	if (!pipelinesCreated) {
+		auto iblPrefilterPci = vuk::ComputePipelineCreateInfo();
+		iblPrefilterPci.add_spirv(std::vector<u32>{
 #include "spv/iblPrefilter.comp.spv"
-	}, "iblPrefilter.comp");
-	ctx.create_named_pipeline("ibl_prefilter", iblPrefilterPci);
+		}, "iblPrefilter.comp");
+		ptc.ctx.create_named_pipeline("ibl_prefilter", iblPrefilterPci);
 
-	auto iblPostfilterPci = vuk::ComputePipelineCreateInfo();
-	iblPostfilterPci.add_spirv(std::vector<u32>{
+		auto iblPostfilterPci = vuk::ComputePipelineCreateInfo();
+		iblPostfilterPci.add_spirv(std::vector<u32>{
 #include "spv/iblPostfilter.comp.spv"
-	}, "iblPostfilter.comp");
-	ctx.create_named_pipeline("ibl_postfilter", iblPostfilterPci);
+		}, "iblPostfilter.comp");
+		ptc.ctx.create_named_pipeline("ibl_postfilter", iblPostfilterPci);
+		
+		pipelinesCreated = true;
+	}
 }
 
 auto IBLMap::filter() -> vuk::RenderGraph {

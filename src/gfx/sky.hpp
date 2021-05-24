@@ -65,7 +65,7 @@ struct Atmosphere {
 	
 private:
 	
-	bool pipelinesCreated = false;
+	inline static bool pipelinesCreated = false;
 	
 };
 
@@ -98,7 +98,7 @@ struct Sky {
 	
 private:
 	
-	bool pipelinesCreated = false;
+	inline static bool pipelinesCreated = false;
 	
 };
 
