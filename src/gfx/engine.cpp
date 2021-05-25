@@ -220,15 +220,10 @@ void Engine::render() {
 	ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 60.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
 	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
 #endif //IMGUI
-	sunPitch = radians(1.0f - glfwGetTime() / 8.0);
+	// sunPitch = radians(6.0f - glfwGetTime() / 2.0);
 	world.sunDirection = vec3(1.0f, 0.0f, 0.0f);
 	world.sunDirection = glm::mat3(make_rotate(sunPitch, {0.0f, -1.0f, 0.0f})) * world.sunDirection;
 	world.sunDirection = glm::mat3(make_rotate(sunYaw, {0.0f, 0.0f, 1.0f})) * world.sunDirection;
-	static auto scattering = 1.0f;
-#if IMGUI
-	ImGui::SliderFloat("Multiple scattering", &scattering, 0.01f, 100.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
-#endif //IMGUI
-	world.multiScatteringFactor = scattering;
 	static auto sunIlluminance = 4.0f;
 #if IMGUI
 	ImGui::SliderFloat("Sun illuminance", &sunIlluminance, 0.01f, 100.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
