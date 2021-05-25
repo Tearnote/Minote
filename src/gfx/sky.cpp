@@ -151,6 +151,11 @@ Sky::Sky(vuk::PerThreadContext& _ptc, Atmosphere const& _atmosphere):
 		.usage = vuk::ImageUsageFlagBits::eStorage | vuk::ImageUsageFlagBits::eSampled,
 	});
 	
+	sunLuminance = _ptc.allocate_buffer(
+		vuk::MemoryUsage::eGPUonly,
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		sizeof(vec3), alignof(vec3));
+	
 	if (!pipelinesCreated) {
 		
 		auto skyGenSkyViewPci = vuk::ComputePipelineCreateInfo();
@@ -330,6 +335,7 @@ auto Sky::drawCubemap(vuk::Buffer _world, vuk::Name _target,
 			"sky_transmittance"_image(vuk::eComputeSampled),
 			"sky_cubemap_sky_view"_image(vuk::eComputeSampled),
 			vuk::Resource(_target, vuk::Resource::Type::eImage, vuk::eComputeWrite),
+			"sky_sun_luminance"_buffer(vuk::Access::eComputeWrite),
 		},
 		.execute = [this, _world, _target, _targetSize](vuk::CommandBuffer& cmd) {
 			
@@ -338,6 +344,7 @@ auto Sky::drawCubemap(vuk::Buffer _world, vuk::Name _target,
 			   .bind_sampled_image(0, 2, "sky_transmittance", LinearClamp)
 			   .bind_sampled_image(1, 0, "sky_cubemap_sky_view", LinearClamp)
 			   .bind_storage_image(1, 1, _target)
+			   .bind_storage_buffer(1, 3, *sunLuminance)
 			   .bind_compute_pipeline("sky_draw_cubemap");
 			
 			auto* sides = cmd.map_scratch_uniform_binding<std::array<mat4, 6>>(1, 2);
@@ -382,6 +389,10 @@ auto Sky::drawCubemap(vuk::Buffer _world, vuk::Name _target,
 		vuk::Access::eComputeSampled);
 	rg.attach_image("sky_cubemap_sky_view",
 		vuk::ImageAttachment::from_texture(skyCubemapView),
+		vuk::Access::eNone,
+		vuk::Access::eNone);
+	rg.attach_buffer("sky_sun_luminance",
+		*sunLuminance,
 		vuk::Access::eNone,
 		vuk::Access::eNone);
 	

@@ -9,6 +9,9 @@ layout(location = 4) in vec3 f_viewPosition;
 
 layout(location = 0) out vec4 out_color;
 
+layout(binding = 2) restrict readonly buffer SunLuminance {
+	vec3 sunLuminance;
+};
 layout(binding = 3) uniform samplerCube cubemap;
 layout(binding = 4) uniform sampler3D aerialPerspective;
 
@@ -51,11 +54,16 @@ void main() {
 
 	// Sun visibility
 	float sunDot = dot(vec3(0.0, 0.0, 1.0), world.sunDirection);
-	vec3 sunColor = vec3(textureLod(cubemap, world.sunDirection, 0.0));
-	sunColor = mix(vec3(1.0), sunColor, Luminance(sunColor));
-	sunColor *= world.sunIlluminance;
-	const float sunAngularSize = radians(0.4);
-	sunColor *= smoothstep(cos(radians(90) + sunAngularSize), cos(radians(90) - sunAngularSize), sunDot);
+	vec3 sunColor = sunLuminance;
+	
+	const float sunAngularSize = radians(0.2);
+	const float sunsetStart = cos(radians(90.05) - sunAngularSize);
+	const float sunsetEnd = cos(radians(90.05) + sunAngularSize);
+	float sunset = (sunDot - sunsetEnd) / (sunsetStart - sunsetEnd);
+	sunset = clamp(sunset, 0.0, 1.0);
+	sunset = (1.0 - cos(sunset * 1.57079633)) / 2.0;
+	
+	sunColor *= sunset;
 
 	// PBR calculation
 	vec3 f0 = max(f_color.rgb * instance.metalness, vec3(0.04));

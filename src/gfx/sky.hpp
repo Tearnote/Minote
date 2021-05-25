@@ -86,6 +86,7 @@ struct Sky {
 	vuk::Texture skyView;
 	vuk::Texture skyCubemapView;
 	vuk::Texture aerialPerspective;
+	vuk::Unique<vuk::Buffer> sunLuminance;
 	
 	Sky(vuk::PerThreadContext&, Atmosphere const&);
 	

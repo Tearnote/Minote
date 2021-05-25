@@ -220,7 +220,7 @@ void Engine::render() {
 	ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 60.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
 	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
 #endif //IMGUI
-	// sunPitch = radians(15.0f - glfwGetTime() / 2.0);
+	sunPitch = radians(1.0f - glfwGetTime() / 8.0);
 	world.sunDirection = vec3(1.0f, 0.0f, 0.0f);
 	world.sunDirection = glm::mat3(make_rotate(sunPitch, {0.0f, -1.0f, 0.0f})) * world.sunDirection;
 	world.sunDirection = glm::mat3(make_rotate(sunYaw, {0.0f, 0.0f, 1.0f})) * world.sunDirection;
@@ -229,7 +229,7 @@ void Engine::render() {
 	ImGui::SliderFloat("Multiple scattering", &scattering, 0.01f, 100.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
 #endif //IMGUI
 	world.multiScatteringFactor = scattering;
-	static auto sunIlluminance = 1.0f;
+	static auto sunIlluminance = 4.0f;
 #if IMGUI
 	ImGui::SliderFloat("Sun illuminance", &sunIlluminance, 0.01f, 100.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
 #endif //IMGUI
@@ -320,12 +320,14 @@ void Engine::render() {
 			"instances_culled"_buffer(vuk::eVertexRead),
 			"ibl_map_filtered"_image(vuk::eFragmentSampled),
 			"sky_aerial_perspective"_image(vuk::eFragmentSampled),
+			"sky_sun_luminance"_buffer(vuk::eFragmentRead),
 			"object_color"_image(vuk::eColorWrite),
 			"object_depth"_image(vuk::eDepthStencilRW),
 		},
 		.execute = [this, worldBuf, &indirect](vuk::CommandBuffer& cmd) {
 			auto commandsBuf = cmd.get_resource_buffer("commands");
 			auto instancesBuf = cmd.get_resource_buffer("instances_culled");
+			auto sunLuminanceBuf = cmd.get_resource_buffer("sky_sun_luminance");
 			cmd.set_viewport(0, vuk::Rect2D::framebuffer())
 			   .set_scissor(0, vuk::Rect2D::framebuffer())
 			   .bind_uniform_buffer(0, 0, worldBuf)
@@ -334,6 +336,7 @@ void Engine::render() {
 			   .bind_vertex_buffer(2, *colorsBuf, 2, vuk::Packed{vuk::Format::eR16G16B16A16Unorm})
 			   .bind_index_buffer(*indicesBuf, vuk::IndexType::eUint16)
 			   .bind_storage_buffer(0, 1, instancesBuf)
+			   .bind_storage_buffer(0, 2, sunLuminanceBuf)
 			   .bind_sampled_image(0, 3, "ibl_map_filtered", TrilinearClamp)
 			   .bind_sampled_image(0, 4, "sky_aerial_perspective", TrilinearClamp)
 			   .bind_graphics_pipeline("object");

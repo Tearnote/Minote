@@ -277,7 +277,7 @@ vec3 GetSunLuminance(vec3 WorldPos, vec3 WorldDir, float PlanetRadius) {
 			vec2 uvSun;
 			LutTransmittanceParamsToUv(pHeight, SunZenithCosAngle, uvSun);
 			
-			const vec3 SunLuminance = vec3(40.0); // arbitrary. But fine, not use when comparing the models
+			const vec3 SunLuminance = vec3(1.0) * world.sunIlluminance; // arbitrary. But fine, not use when comparing the models
 			vec3 SunLuminanceInSpace = SunLuminance / textureLod(TransmittanceLutTexture, uvUp, 0.0).rgb;
 			return SunLuminanceInSpace * textureLod(TransmittanceLutTexture, uvSun, 0.0).rgb;
 		}
