@@ -56,79 +56,90 @@ void game(sys::Glfw&, sys::Window& window) try {
 	
 	// Create renderable objects
 	
-	auto const Expand = 0u;
+	auto staticObjects = std::vector<gfx::ObjectID>();
+	defer {
+		for (auto id: staticObjects)
+			engine.objects.destroy(id);
+	};
+	auto dynamicObjects = std::vector<gfx::DynamicObject>();
+	defer {
+		for (auto& obj: dynamicObjects)
+			obj.destroy(engine.objects);
+	};
+	
+	auto const Expand = 20u;
 	auto prescale = make_scale({1_m, 1_m, 1_m});
 	auto rotateTransform = make_rotate(180_deg, {1.0f, 0.0f, 0.0f});
-	auto rotateTransformAnim = make_rotate(f32(radians(f64(sys::Glfw::getTime().count()) / 20000000.0)), {0.0f, 0.0f, 1.0f});
 	auto transform1 = make_translate({0_m, 0_m, 0_m}) * make_scale({12.0f, 12.0f, 1.0f}) * inverse(rotateTransform);
 	auto transform2 = make_translate({-4_m, -4_m, 2_m}) * rotateTransform;
 	auto transform3 = make_translate({4_m, -4_m, 2_m}) * rotateTransform;
 	auto transform4 = make_translate({-4_m, 4_m, 2_m}) * rotateTransform;
 	auto transform5 = make_translate({4_m, 4_m, 2_m}) * rotateTransform;
 	auto transform55 = make_translate({7_m, 0_m, 2_m}) * rotateTransform;
-	auto transform6 = make_translate({0_m, 0_m, 2.5_m}) * make_scale({1.5f, 1.5f, 1.5f}) * rotateTransformAnim * rotateTransform;
 	auto transform7 = make_translate({0_m, 8_m, 2_m});
 	auto transform8 = make_translate({0_m, -8_m, 2_m});
 	constexpr auto Spacing = 25_m;
 	for (auto x = -Spacing * Expand; x <= Spacing * Expand; x += Spacing)
 	for (auto y = -Spacing * Expand; y <= Spacing * Expand; y += Spacing) {
 		auto offset = make_translate({x, y, 0 * 0.001});
-		engine.objects.create({
+		auto offsetVec3 = vec3(x, y, 0);
+		staticObjects.emplace_back(engine.objects.createStatic({
 			.mesh = "block"_id,
 			.transform = offset * transform1 * prescale,
 			.tint = {0.9f, 0.9f, 1.0f, 1.0f},
 			.roughness = 0.6f,
-			.metalness = 0.1f});
-		engine.objects.create({
+			.metalness = 0.1f}));
+		staticObjects.emplace_back(engine.objects.createStatic({
 			.mesh = "block"_id,
 			.transform = offset * transform2 * prescale,
 			.tint = {0.9f, 0.1f, 0.1f, 1.0f},
 			.roughness = 0.6f,
-			.metalness = 0.1f});
-		engine.objects.create({
+			.metalness = 0.1f}));
+		staticObjects.emplace_back(engine.objects.createStatic({
 			.mesh = "block"_id,
 			.transform = offset * transform3 * prescale,
 			.tint = {0.9f, 0.1f, 0.1f, 1.0f},
 			.roughness = 0.6f,
-			.metalness = 0.1f});
-		engine.objects.create({
+			.metalness = 0.1f}));
+		staticObjects.emplace_back(engine.objects.createStatic({
 			.mesh = "block"_id,
 			.transform = offset * transform4 * prescale,
 			.tint = {0.9f, 0.1f, 0.1f, 1.0f},
 			.roughness = 0.6f,
-			.metalness = 0.1f});
-		engine.objects.create({
+			.metalness = 0.1f}));
+		staticObjects.emplace_back(engine.objects.createStatic({
 			.mesh = "block"_id,
 			.transform = offset * transform5 * prescale,
 			.tint = {0.9f, 0.1f, 0.1f, 1.0f},
 			.roughness = 0.6f,
-			.metalness = 0.1f});
-		engine.objects.create({
+			.metalness = 0.1f}));
+		staticObjects.emplace_back(engine.objects.createStatic({
 			.mesh = "block"_id,
 			.transform = offset * transform55 * prescale,
 			.tint = {0.1f, 0.1f, 0.9f, 1.0f},
 			.roughness = 0.6f,
-			.metalness = 0.1f});
-		engine.objects.create({
-			.mesh = "block"_id,
-			.transform = offset * transform6 * prescale,
-			.tint = {0.2f, 0.9f, 0.5f, 1.0f},
-			.roughness = 0.2f,
-			.metalness = 0.9f});
+			.metalness = 0.1f}));
+		auto& spinny = dynamicObjects.emplace_back(gfx::DynamicObject::create(engine.objects));
+		spinny.mesh = "block"_id;
+		spinny.position = vec3(0_m, 0_m, 2.5_m) + offsetVec3;
+		spinny.scale = vec3(1_m, 1_m, 1_m) * vec3(1.5f, 1.5f, 1.5f);
+		spinny.tint = vec4(0.2f, 0.9f, 0.5f, 1.0f);
+		spinny.roughness = 0.2f;
+		spinny.metalness = 0.9f;
 		for (auto i = 0.0f; i <= 1.0f; i += 0.125f) {
 			auto offset2 = offset * make_translate({(i - 0.5f) * 2.0f * 8_m, 0_m, 0_m});
-			engine.objects.create({
+			staticObjects.emplace_back(engine.objects.createStatic({
 				.mesh = "sphere"_id,
 				.transform = offset2 * transform7 * prescale,
 				.tint = {1.0f, 1.0f, 1.0f, 1.0f},
 				.roughness = i,
-				.metalness = 0.9f});
-			engine.objects.create({
+				.metalness = 0.9f}));
+			staticObjects.emplace_back(engine.objects.createStatic({
 				.mesh = "sphere"_id,
 				.transform = offset2 * transform8 * prescale,
 				.tint = {1.0f, 1.0f, 1.0f, 1.0f},
 				.roughness = i,
-				.metalness = 0.1f});
+				.metalness = 0.1f}));
 		}
 	}
 	
@@ -208,9 +219,16 @@ void game(sys::Glfw&, sys::Window& window) try {
 		
 		// Graphics
 		
+		auto rotateTransform = make_rotate(180_deg, {1.0f, 0.0f, 0.0f});
+		auto rotateTransformAnim = make_rotate(f32(radians(f64(sys::Glfw::getTime().count()) / 20000000.0)), {0.0f, 0.0f, 1.0f});
+		for (auto& obj: dynamicObjects) {
+			obj.rotation = mat3(rotateTransformAnim * rotateTransform);
+			obj.update(engine.objects);
+		}
+		
 		engine.render();
 	}
-
+	
 } catch (std::exception const& e) {
 	L.crit("Unhandled exception on game thread: {}", e.what());
 	L.crit("Cannot recover, shutting down. Please report this error to the developer");

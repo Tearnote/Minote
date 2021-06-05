@@ -35,7 +35,7 @@ auto Objects::create() -> ObjectID {
 	
 }
 
-auto Objects::create(Proxy const& _proxy) -> ObjectID {
+auto Objects::createStatic(StaticProxy const& _proxy) -> ObjectID {
 	
 	auto id = create();
 	metadata[id].visible = _proxy.visible;
@@ -50,9 +50,42 @@ auto Objects::create(Proxy const& _proxy) -> ObjectID {
 	
 }
 
+void Objects::destroy(ObjectID _id) {
+	
+	metadata[_id].exists = false;
+	deletedIDs.push_back(_id);
+	
+}
+
 void Objects::updatePrevTransforms() {
 	
 	std::memcpy(prevTransforms.data(), transforms.data(), sizeof(mat4) * size());
+	
+}
+
+auto DynamicObject::create(Objects& _objects) -> DynamicObject {
+	
+	auto result = DynamicObject();
+	result.id = _objects.create();
+	return result;
+	
+}
+
+void DynamicObject::destroy(Objects& _objects) {
+	
+	_objects.destroy(id);
+	
+}
+
+void DynamicObject::update(Objects& _objects) {
+	
+	_objects.metadata[id].visible = visible;
+	_objects.meshIDs[id] = mesh;
+	_objects.transforms[id] = make_translate(position) * mat4(rotation) * make_scale(scale);
+	_objects.materials[id].tint = tint;
+	_objects.materials[id].roughness = roughness;
+	_objects.materials[id].metalness = metalness;
+	
 	
 }
 

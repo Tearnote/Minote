@@ -26,7 +26,7 @@ struct Objects {
 		
 	};
 	
-	struct Proxy {
+	struct StaticProxy {
 		
 		bool visible = true;
 		ID mesh;
@@ -47,7 +47,7 @@ struct Objects {
 	
 	[[nodiscard]]
 	auto create() -> ObjectID;
-	auto create(Proxy const&) -> ObjectID;
+	auto createStatic(StaticProxy const&) -> ObjectID;
 	
 	void destroy(ObjectID);
 	
@@ -63,5 +63,29 @@ private:
 };
 
 using ObjectID = Objects::ObjectID;
+
+struct DynamicObject {
+	
+	bool visible = true;
+	ID mesh;
+	
+	vec3 position = {0.0f, 0.0f, 0.0f};
+	vec3 scale = {1.0f, 1.0f, 1.0f};
+	mat3 rotation = mat3(1.0f);
+	
+	vec4 tint = {1.0f, 1.0f, 1.0f, 1.0f};
+	f32 roughness;
+	f32 metalness;
+	
+	static auto create(Objects&) -> DynamicObject;
+	void destroy(Objects&);
+	
+	void update(Objects&);
+	
+private:
+	
+	ObjectID id;
+	
+};
 
 }
