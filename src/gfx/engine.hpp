@@ -12,7 +12,7 @@
 #include "base/math.hpp"
 #include "base/id.hpp"
 #include "sys/window.hpp"
-#include "gfx/instances.hpp"
+#include "gfx/objects.hpp"
 #include "gfx/meshes.hpp"
 #include "gfx/camera.hpp"
 #include "gfx/world.hpp"
@@ -27,21 +27,17 @@ namespace minote::gfx {
 using namespace base;
 
 struct Engine {
-
-	using Instance = Instances::Instance;
-
+	
 	explicit Engine(sys::Window& window, Version version);
 	~Engine();
-
-	void addModel(std::string_view name, std::span<char const> model);
+	
 	void uploadAssets();
-
-	void enqueue(ID mesh, std::span<Instance const> instances);
+	
 	void render();
-
+	
 	Engine(Engine const&) = delete;
 	auto operator=(Engine const&) -> Engine& = delete;
-
+	
 	vkb::Instance instance;
 	VkSurfaceKHR surface;
 	vkb::Device device;
@@ -50,24 +46,24 @@ struct Engine {
 #if IMGUI
 	ImguiData imguiData;
 #endif //IMGUI
-
+	
 	Meshes meshes;
-	Instances instances;
-
+	Objects objects;
+	
 	vuk::Unique<vuk::Buffer> verticesBuf;
 	vuk::Unique<vuk::Buffer> normalsBuf;
 	vuk::Unique<vuk::Buffer> colorsBuf;
 	vuk::Unique<vuk::Buffer> indicesBuf;
-
+	
 	World world;
 	Camera camera;
-
+	
 	std::optional<Atmosphere> atmosphere;
 	std::optional<IBLMap> ibl;
-
+	
 	auto createSwapchain(VkSwapchainKHR old = VK_NULL_HANDLE) -> vuk::Swapchain;
 	void refreshSwapchain();
-
+	
 };
 
 }

@@ -150,10 +150,6 @@ Engine::~Engine() {
 	vkb::destroy_instance(instance);
 }
 
-void Engine::addModel(std::string_view name, std::span<char const> model) {
-	meshes.addGltf(name, model);
-}
-
 void Engine::uploadAssets() {
 	auto ifc = context->begin();
 	auto ptc = ifc.begin();
@@ -191,10 +187,6 @@ void Engine::uploadAssets() {
 #if IMGUI
 	ImGui::NewFrame();
 #endif //IMGUI
-}
-
-void Engine::enqueue(ID mesh, std::span<Instance const> _instances) {
-	instances.addInstances(mesh, _instances);
 }
 
 void Engine::render() {
@@ -242,7 +234,7 @@ void Engine::render() {
 	std::memcpy(worldBuf.mapped_ptr, &world, sizeof(world));
 
 	// Upload indirect buffers
-	auto indirect = Indirect::createBuffers(ptc, meshes, instances);
+	auto indirect = Indirect(ptc, objects, meshes);
 	
 	auto sky = Sky(ptc, *atmosphere);
 	
@@ -360,9 +352,9 @@ void Engine::render() {
 	ImGui_ImplVuk_Render(ptc, rg, "swapchain", "swapchain", imguiData, ImGui::GetDrawData());
 #endif //IMGUI
 
-	rg.attach_buffer("commands", indirect.commands, vuk::eTransferDst, {});
-	rg.attach_buffer("instances", indirect.instances, vuk::eTransferDst, {});
-	rg.attach_buffer("instances_culled", indirect.instancesCulled, {}, {});
+	rg.attach_buffer("commands", indirect.commandsBuf, vuk::eTransferDst, {});
+	rg.attach_buffer("instances", indirect.instancesBuf, vuk::eTransferDst, {});
+	rg.attach_buffer("instances_culled", indirect.instancesCulledBuf, {}, {});
 	rg.attach_managed("object_color", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	rg.attach_managed("object_depth", vuk::Format::eD32Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearDepthStencil{0.0f, 0});
 	rg.attach_managed("object_resolved", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e1, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
@@ -417,7 +409,6 @@ void Engine::render() {
 		throw std::runtime_error(fmt::format("Unable to present to the screen: error {}", result));
 
 	// Clean up
-	instances.clear();
 #if IMGUI
 	ImGui::NewFrame();
 #endif //IMGUI

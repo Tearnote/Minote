@@ -2,7 +2,7 @@
 
 #include "vuk/Context.hpp"
 #include "vuk/Buffer.hpp"
-#include "gfx/instances.hpp"
+#include "gfx/objects.hpp"
 #include "gfx/meshes.hpp"
 #include "base/types.hpp"
 
@@ -11,11 +11,9 @@ namespace minote::gfx {
 using namespace base;
 
 struct Indirect {
-
-	using Instance = Instances::Instance;
-
+	
 	struct Command {
-
+		
 		u32 indexCount;
 		u32 instanceCount;
 		u32 firstIndex;
@@ -23,17 +21,29 @@ struct Indirect {
 		u32 firstInstance;
 		// =====
 		f32 meshRadius;
-
+		
 	};
-
-	vuk::Buffer commands;
-	size_t commandsCount;
-	vuk::Buffer instances;
-	vuk::Buffer instancesCulled;
-	size_t instancesCount;
-
-	static auto createBuffers(vuk::PerThreadContext& ptc, Meshes const& meshes, Instances const& instances) -> Indirect;
-
+	
+	struct Instance {
+		
+		mat4 transform;
+		vec4 tint;
+		f32 roughness;
+		f32 metalness;
+		u32 meshID;
+		f32 pad0;
+		
+	};
+	
+	usize commandsCount;
+	vuk::Buffer commandsBuf;
+	
+	usize instancesCount;
+	vuk::Buffer instancesBuf;
+	vuk::Buffer instancesCulledBuf;
+	
+	Indirect(vuk::PerThreadContext&, Objects const&, Meshes const&);
+	
 };
 
 }

@@ -57,11 +57,11 @@ add_executable(Minote
         src/sys/keyboard.hpp src/sys/keyboard.cpp
         src/sys/window.hpp src/sys/window.tpp src/sys/window.cpp
         src/sys/glfw.hpp src/sys/glfw.cpp
-        src/gfx/instances.hpp src/gfx/instances.cpp
         src/gfx/pipelines.hpp src/gfx/pipelines.cpp
         src/gfx/iblCoeffs.hpp
         src/gfx/indirect.hpp src/gfx/indirect.cpp
         src/gfx/samplers.hpp
+        src/gfx/objects.hpp src/gfx/objects.cpp
         src/gfx/meshes.hpp src/gfx/meshes.cpp
         src/gfx/engine.hpp src/gfx/engine.cpp
         src/gfx/camera.hpp src/gfx/camera.cpp

@@ -7,7 +7,9 @@ namespace minote::base {
 
 // Resource ID. created from a string hashed at compile-time if possible
 struct ID {
-
+	
+	constexpr ID(): id(0u) {}
+	
 	// Hash string with FNV-1a
 	explicit constexpr ID(std::string_view str): id(Basis) {
 		for (auto ch: str) {
