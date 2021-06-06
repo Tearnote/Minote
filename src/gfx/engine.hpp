@@ -25,8 +25,12 @@
 namespace minote::gfx {
 
 using namespace base;
+using namespace base::literals;
 
 struct Engine {
+	
+	static constexpr auto VerticalFov = 45_deg;
+	static constexpr auto NearPlane = 0.1_m;
 	
 	explicit Engine(sys::Window& window, Version version);
 	~Engine();
