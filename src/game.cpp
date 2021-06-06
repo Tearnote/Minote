@@ -33,7 +33,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 
 	auto assets = Assets(AssetsPath);
 	assets.loadModels([&engine](auto name, auto data) {
-		engine.meshes.addGltf(name, data);
+		engine.meshes->addGltf(name, data);
 	});
 	engine.uploadAssets();
 	

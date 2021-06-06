@@ -47,14 +47,8 @@ struct Engine {
 	ImguiData imguiData;
 #endif //IMGUI
 	
-	Meshes meshes;
+	std::optional<Meshes> meshes;
 	Objects objects;
-	
-	vuk::Unique<vuk::Buffer> verticesBuf;
-	vuk::Unique<vuk::Buffer> normalsBuf;
-	vuk::Unique<vuk::Buffer> colorsBuf;
-	vuk::Unique<vuk::Buffer> indicesBuf;
-	
 	World world;
 	Camera camera;
 	

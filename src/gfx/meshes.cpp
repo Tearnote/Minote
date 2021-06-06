@@ -88,4 +88,26 @@ void Meshes::addGltf(std::string_view name, std::span<char const> mesh) {
 	}
 }
 
+void Meshes::upload(vuk::PerThreadContext& _ptc) {
+	
+	verticesBuf = _ptc.create_buffer<vec3>(vuk::MemoryUsage::eGPUonly,
+		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(vertices)).first;
+	normalsBuf  = _ptc.create_buffer<vec3>(vuk::MemoryUsage::eGPUonly,
+		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(normals)).first;
+	colorsBuf   = _ptc.create_buffer<u16vec4>(vuk::MemoryUsage::eGPUonly,
+		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(colors)).first;
+	indicesBuf  = _ptc.create_buffer<u16>(vuk::MemoryUsage::eGPUonly,
+		vuk::BufferUsageFlagBits::eIndexBuffer, std::span(indices)).first;
+	
+	vertices.clear();
+	vertices.shrink_to_fit();
+	normals.clear();
+	normals.shrink_to_fit();
+	colors.clear();
+	colors.shrink_to_fit();
+	indices.clear();
+	indices.shrink_to_fit();
+	
+}
+
 }

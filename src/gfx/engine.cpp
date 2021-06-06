@@ -124,19 +124,19 @@ Engine::Engine(sys::Window& window, Version version) {
 		graphicsQueue, graphicsQueueFamilyIndex,
 		transferQueue, transferQueueFamilyIndex
 	});
-
+	
 	// Create swapchain
 	swapchain = context->add_swapchain(createSwapchain());
+	
+	// Create user-facing modules
+	meshes = Meshes();
 }
 
 Engine::~Engine() {
 	context->wait_idle();
 	ibl.reset();
 	atmosphere.reset();
-	indicesBuf.reset();
-	colorsBuf.reset();
-	normalsBuf.reset();
-	verticesBuf.reset();
+	meshes.reset();
 #if IMGUI
 	imguiData.font_texture.view.reset();
 	imguiData.font_texture.image.reset();
@@ -153,28 +153,21 @@ Engine::~Engine() {
 void Engine::uploadAssets() {
 	auto ifc = context->begin();
 	auto ptc = ifc.begin();
-
+	
 	createPipelines(*context);
-
+	
 #if IMGUI
 	imguiData = ImGui_ImplVuk_Init(ptc);
 	ImGui::GetIO().DisplaySize = ImVec2(f32(swapchain->extent.width), f32(swapchain->extent.height));
 #endif //IMGUI
-
-	// Upload mesh buffers
-	verticesBuf = ptc.create_buffer<vec3>(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(meshes.vertices)).first;
-	normalsBuf = ptc.create_buffer<vec3>(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(meshes.normals)).first;
-	colorsBuf = ptc.create_buffer<u16vec4>(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(meshes.colors)).first;
-	indicesBuf = ptc.create_buffer<u16>(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eIndexBuffer, std::span(meshes.indices)).first;
-
+	
+	// Upload static data
+	meshes->upload(ptc);
+	
 	// Create pipeline components
 	atmosphere = Atmosphere(ptc, Atmosphere::Params::earth());
 	ibl = IBLMap(ptc);
-
+	
 	// Finalize uploads
 	ptc.wait_all_transfers();
 	
@@ -182,7 +175,7 @@ void Engine::uploadAssets() {
 	auto precalc = atmosphere->precalculate();
 	auto erg = std::move(precalc).link(ptc);
 	vuk::execute_submit_and_wait(ptc, std::move(erg));
-
+	
 	// Begin imgui frame so that first-frame calls succeed
 #if IMGUI
 	ImGui::NewFrame();
@@ -232,7 +225,7 @@ void Engine::render() {
 	// Initialize modules
 	
 	auto worldBuf = world.upload(ptc);
-	auto indirect = Indirect(ptc, objects, meshes);
+	auto indirect = Indirect(ptc, objects, *meshes);
 	auto sky = Sky(ptc, *atmosphere);
 	
 	// Set up the rendergraph
@@ -256,8 +249,8 @@ void Engine::render() {
 			cmd.set_viewport(0, vuk::Rect2D::framebuffer())
 			   .set_scissor(0, vuk::Rect2D::framebuffer())
 			   .bind_uniform_buffer(0, 0, worldBuf)
-			   .bind_vertex_buffer(0, *verticesBuf, 0, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
-			   .bind_index_buffer(*indicesBuf, vuk::IndexType::eUint16)
+			   .bind_vertex_buffer(0, *meshes->verticesBuf, 0, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
+			   .bind_index_buffer(*meshes->indicesBuf, vuk::IndexType::eUint16)
 			   .bind_storage_buffer(0, 1, instancesBuf)
 			   .bind_graphics_pipeline("z_prepass");
 			cmd.draw_indexed_indirect(indirect.commandsCount, commandsBuf, sizeof(Indirect::Command));
@@ -281,10 +274,10 @@ void Engine::render() {
 			cmd.set_viewport(0, vuk::Rect2D::framebuffer())
 			   .set_scissor(0, vuk::Rect2D::framebuffer())
 			   .bind_uniform_buffer(0, 0, worldBuf)
-			   .bind_vertex_buffer(0, *verticesBuf, 0, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
-			   .bind_vertex_buffer(1, *normalsBuf, 1, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
-			   .bind_vertex_buffer(2, *colorsBuf, 2, vuk::Packed{vuk::Format::eR16G16B16A16Unorm})
-			   .bind_index_buffer(*indicesBuf, vuk::IndexType::eUint16)
+			   .bind_vertex_buffer(0, *meshes->verticesBuf, 0, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
+			   .bind_vertex_buffer(1, *meshes->normalsBuf, 1, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
+			   .bind_vertex_buffer(2, *meshes->colorsBuf, 2, vuk::Packed{vuk::Format::eR16G16B16A16Unorm})
+			   .bind_index_buffer(*meshes->indicesBuf, vuk::IndexType::eUint16)
 			   .bind_storage_buffer(0, 1, instancesBuf)
 			   .bind_storage_buffer(0, 2, sunLuminanceBuf)
 			   .bind_sampled_image(0, 3, "ibl_map_filtered", TrilinearClamp)
