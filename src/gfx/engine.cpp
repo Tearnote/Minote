@@ -13,10 +13,10 @@
 #include "vuk/RenderGraph.hpp"
 #include "base/math.hpp"
 #include "base/log.hpp"
-#include "gfx/pipelines.hpp"
 #include "gfx/indirect.hpp"
 #include "gfx/forward.hpp"
 #include "gfx/base.hpp"
+#include "gfx/post.hpp"
 #include "main.hpp"
 
 namespace minote::gfx {
@@ -154,8 +154,6 @@ void Engine::uploadAssets() {
 	auto ifc = context->begin();
 	auto ptc = ifc.begin();
 	
-	createPipelines(*context);
-	
 #if IMGUI
 	imguiData = ImGui_ImplVuk_Init(ptc);
 	ImGui::GetIO().DisplaySize = ImVec2(f32(swapchain->extent.width), f32(swapchain->extent.height));
@@ -227,6 +225,8 @@ void Engine::render() {
 	auto worldBuf = world.upload(ptc);
 	auto indirect = Indirect(ptc, objects, *meshes);
 	auto sky = Sky(ptc, *atmosphere);
+	auto forward = Forward(ptc, swapchainSize.extent);
+	auto post = Post(ptc);
 	
 	// Set up the rendergraph
 	
@@ -236,26 +236,11 @@ void Engine::render() {
 	rg.append(sky.drawCubemap(worldBuf, "ibl_map_unfiltered", uvec2(ibl->BaseSize)));
 	rg.append(ibl->filter());
 	rg.append(indirect.frustumCull(world));
-	
-	auto forward = Forward(ptc, swapchainSize.extent);
 	rg.append(forward.zPrepass(worldBuf, indirect, *meshes));
 	rg.append(forward.draw(worldBuf, indirect, *meshes));
 	rg.append(sky.draw(worldBuf, "object_color", "object_depth"));
 	rg.resolve_resource_into("object_resolved", "object_color");
-	rg.add_pass({
-		.name = "Tonemapping",
-		.resources = {
-			"object_resolved"_image(vuk::eFragmentSampled),
-			"swapchain"_image(vuk::eColorWrite),
-		},
-		.execute = [](vuk::CommandBuffer& cmd) {
-			cmd.set_viewport(0, vuk::Rect2D::framebuffer())
-			   .set_scissor(0, vuk::Rect2D::framebuffer())
-			   .bind_sampled_image(0, 0, "object_resolved", {})
-			   .bind_graphics_pipeline("tonemap");
-			cmd.draw(3, 1, 0, 0);
-		},
-	});
+	rg.append(post.tonemap("object_resolved", "swapchain", swapchainSize.extent));
 	
 #if IMGUI
 	ImGui::Render();

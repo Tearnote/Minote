@@ -12,11 +12,11 @@ struct Forward {
 	
 	vuk::Extent2D size;
 	
-	Forward(vuk::PerThreadContext&, vuk::Extent2D outputSize);
+	Forward(vuk::PerThreadContext&, vuk::Extent2D targetSize);
 	
 	auto zPrepass(vuk::Buffer world, Indirect&, Meshes&) -> vuk::RenderGraph;
 	
-	auto draw(vuk::Buffer _world, Indirect&, Meshes&) -> vuk::RenderGraph;
+	auto draw(vuk::Buffer world, Indirect&, Meshes&) -> vuk::RenderGraph;
 	
 private:
 	

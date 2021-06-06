@@ -5,9 +5,9 @@
 
 namespace minote::gfx {
 
-Forward::Forward(vuk::PerThreadContext& _ptc, vuk::Extent2D _outputSize) {
+Forward::Forward(vuk::PerThreadContext& _ptc, vuk::Extent2D _targetSize) {
 	
-	size = _outputSize;
+	size = _targetSize;
 	
 	if (!pipelinesCreated) {
 		

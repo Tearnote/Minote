@@ -57,7 +57,6 @@ add_executable(Minote
         src/sys/keyboard.hpp src/sys/keyboard.cpp
         src/sys/window.hpp src/sys/window.tpp src/sys/window.cpp
         src/sys/glfw.hpp src/sys/glfw.cpp
-        src/gfx/pipelines.hpp src/gfx/pipelines.cpp
         src/gfx/iblCoeffs.hpp
         src/gfx/indirect.hpp src/gfx/indirect.cpp
         src/gfx/samplers.hpp
@@ -68,6 +67,7 @@ add_executable(Minote
         src/gfx/camera.hpp src/gfx/camera.cpp
         src/gfx/imgui.hpp src/gfx/imgui.cpp
         src/gfx/world.hpp src/gfx/world.cpp
+        src/gfx/post.hpp src/gfx/post.cpp
         src/gfx/base.hpp
         src/gfx/ibl.hpp src/gfx/ibl.cpp
         src/gfx/sky.hpp src/gfx/sky.cpp
