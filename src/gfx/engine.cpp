@@ -239,7 +239,7 @@ void Engine::render() {
 	rg.append(forward.zPrepass(worldBuf, indirect, *meshes));
 	rg.append(forward.draw(worldBuf, indirect, *meshes));
 	rg.append(sky.draw(worldBuf, "object_color", "object_depth"));
-	rg.resolve_resource_into("object_resolved", "object_color");
+	rg.append(forward.resolve());
 	rg.append(post.tonemap("object_resolved", "swapchain", swapchainSize.extent));
 	
 #if IMGUI

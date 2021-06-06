@@ -18,6 +18,8 @@ struct Forward {
 	
 	auto draw(vuk::Buffer world, Indirect&, Meshes&) -> vuk::RenderGraph;
 	
+	auto resolve() -> vuk::RenderGraph;
+	
 private:
 	
 	inline static bool pipelinesCreated = false;

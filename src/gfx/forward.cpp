@@ -115,12 +115,23 @@ auto Forward::draw(vuk::Buffer _world, Indirect& _indirect, Meshes& _meshes) -> 
 		vuk::Dimension2D::absolute(size),
 		vuk::Samples::e4,
 		vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
+	
+	return rg;
+	
+}
+
+auto Forward::resolve() -> vuk::RenderGraph {
+	
+	auto rg = vuk::RenderGraph();
+	
+	rg.resolve_resource_into("object_resolved", "object_color");
+	
 	rg.attach_managed("object_resolved",
 		vuk::Format::eR16G16B16A16Sfloat,
 		vuk::Dimension2D::absolute(size),
 		vuk::Samples::e1,
 		vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
-	
+		
 	return rg;
 	
 }
