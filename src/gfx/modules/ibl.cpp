@@ -1,12 +1,12 @@
-#include "gfx/ibl.hpp"
+#include "gfx/modules/ibl.hpp"
 
 #include "vuk/CommandBuffer.hpp"
-#include "gfx/iblCoeffs.hpp"
 #include "base/types.hpp"
 #include "base/math.hpp"
+#include "gfx/modules/iblCoeffs.hpp"
 #include "gfx/samplers.hpp"
 
-namespace minote::gfx {
+namespace minote::gfx::modules {
 
 using namespace base;
 

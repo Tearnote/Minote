@@ -10,7 +10,7 @@
 #include "base/math.hpp"
 #include "base/id.hpp"
 
-namespace minote::gfx {
+namespace minote::gfx::modules {
 
 using namespace base;
 

@@ -7,7 +7,7 @@
 #include "base/math.hpp"
 #include "gfx/camera.hpp"
 
-namespace minote::gfx {
+namespace minote::gfx::modules {
 
 using namespace base;
 

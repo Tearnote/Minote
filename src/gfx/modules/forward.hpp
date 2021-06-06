@@ -2,11 +2,11 @@
 
 #include "vuk/RenderGraph.hpp"
 #include "vuk/Context.hpp"
-#include "gfx/indirect.hpp"
-#include "gfx/sky.hpp"
-#include "gfx/ibl.hpp"
+#include "gfx/modules/indirect.hpp"
+#include "gfx/modules/sky.hpp"
+#include "gfx/modules/ibl.hpp"
 
-namespace minote::gfx {
+namespace minote::gfx::modules {
 
 struct Forward {
 	

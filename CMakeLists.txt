@@ -57,20 +57,20 @@ add_executable(Minote
         src/sys/keyboard.hpp src/sys/keyboard.cpp
         src/sys/window.hpp src/sys/window.tpp src/sys/window.cpp
         src/sys/glfw.hpp src/sys/glfw.cpp
-        src/gfx/iblCoeffs.hpp
-        src/gfx/indirect.hpp src/gfx/indirect.cpp
+        src/gfx/modules/iblCoeffs.hpp
+        src/gfx/modules/indirect.hpp src/gfx/modules/indirect.cpp
+        src/gfx/modules/forward.hpp src/gfx/modules/forward.cpp
+        src/gfx/modules/meshes.hpp src/gfx/modules/meshes.cpp
+        src/gfx/modules/world.hpp src/gfx/modules/world.cpp
+        src/gfx/modules/post.hpp src/gfx/modules/post.cpp
+        src/gfx/modules/ibl.hpp src/gfx/modules/ibl.cpp
+        src/gfx/modules/sky.hpp src/gfx/modules/sky.cpp
         src/gfx/samplers.hpp
         src/gfx/objects.hpp src/gfx/objects.cpp
-        src/gfx/forward.hpp src/gfx/forward.cpp
-        src/gfx/meshes.hpp src/gfx/meshes.cpp
         src/gfx/engine.hpp src/gfx/engine.cpp
         src/gfx/camera.hpp src/gfx/camera.cpp
         src/gfx/imgui.hpp src/gfx/imgui.cpp
-        src/gfx/world.hpp src/gfx/world.cpp
-        src/gfx/post.hpp src/gfx/post.cpp
         src/gfx/base.hpp
-        src/gfx/ibl.hpp src/gfx/ibl.cpp
-        src/gfx/sky.hpp src/gfx/sky.cpp
         #src/playstate.hpp src/playstate.cpp
         src/mapper.hpp src/mapper.tpp src/mapper.cpp
         src/assets.hpp src/assets.tpp src/assets.cpp

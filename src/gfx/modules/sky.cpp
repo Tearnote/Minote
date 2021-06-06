@@ -1,4 +1,4 @@
-#include "gfx/sky.hpp"
+#include "gfx/modules/sky.hpp"
 
 #include "config.hpp"
 
@@ -8,7 +8,7 @@
 #include "base/util.hpp"
 #include "gfx/samplers.hpp"
 
-namespace minote::gfx {
+namespace minote::gfx::modules {
 
 using namespace base;
 using namespace base::literals;

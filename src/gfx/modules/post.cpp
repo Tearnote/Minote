@@ -1,10 +1,10 @@
-#include "gfx/post.hpp"
+#include "gfx/modules/post.hpp"
 
 #include <vector>
 #include "vuk/CommandBuffer.hpp"
 #include "base/types.hpp"
 
-namespace minote::gfx {
+namespace minote::gfx::modules {
 
 using namespace base;
 

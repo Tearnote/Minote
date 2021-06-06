@@ -1,6 +1,6 @@
-#include "gfx/world.hpp"
+#include "gfx/modules/world.hpp"
 
-namespace minote::gfx {
+namespace minote::gfx::modules {
 
 auto World::upload(vuk::PerThreadContext& _ptc) -> vuk::Buffer {
 	

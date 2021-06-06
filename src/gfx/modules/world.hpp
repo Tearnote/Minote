@@ -4,7 +4,7 @@
 #include "vuk/Buffer.hpp"
 #include "base/math.hpp"
 
-namespace minote::gfx {
+namespace minote::gfx::modules {
 
 using namespace base;
 

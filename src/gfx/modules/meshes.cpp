@@ -1,4 +1,4 @@
-#include "gfx/meshes.hpp"
+#include "gfx/modules/meshes.hpp"
 
 #include <string_view>
 #include <stdexcept>
@@ -9,7 +9,7 @@
 #include "fmt/core.h"
 #include "base/util.hpp"
 
-namespace minote::gfx {
+namespace minote::gfx::modules {
 
 using namespace base;
 using namespace base::literals;

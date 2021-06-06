@@ -1,4 +1,4 @@
-#include "gfx/indirect.hpp"
+#include "gfx/modules/indirect.hpp"
 
 #include <cstring>
 #include "vuk/CommandBuffer.hpp"
@@ -6,7 +6,7 @@
 #include "base/math.hpp"
 #include "base/util.hpp"
 
-namespace minote::gfx {
+namespace minote::gfx::modules {
 
 using namespace base;
 using namespace base::literals;

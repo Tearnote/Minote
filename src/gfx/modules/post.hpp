@@ -3,7 +3,7 @@
 #include "vuk/RenderGraph.hpp"
 #include "vuk/Context.hpp"
 
-namespace minote::gfx {
+namespace minote::gfx::modules {
 
 struct Post {
 	

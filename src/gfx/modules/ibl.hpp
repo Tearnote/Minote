@@ -5,7 +5,7 @@
 #include "vuk/Context.hpp"
 #include "vuk/Image.hpp"
 
-namespace minote::gfx {
+namespace minote::gfx::modules {
 
 struct IBLMap {
 	

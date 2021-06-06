@@ -13,10 +13,10 @@
 #include "vuk/RenderGraph.hpp"
 #include "base/math.hpp"
 #include "base/log.hpp"
-#include "gfx/indirect.hpp"
-#include "gfx/forward.hpp"
+#include "gfx/modules/indirect.hpp"
+#include "gfx/modules/forward.hpp"
+#include "gfx/modules/post.hpp"
 #include "gfx/base.hpp"
-#include "gfx/post.hpp"
 #include "main.hpp"
 
 namespace minote::gfx {
@@ -129,7 +129,7 @@ Engine::Engine(sys::Window& window, Version version) {
 	swapchain = context->add_swapchain(createSwapchain());
 	
 	// Create user-facing modules
-	meshes = Meshes();
+	meshes = modules::Meshes();
 }
 
 Engine::~Engine() {
@@ -163,8 +163,8 @@ void Engine::uploadAssets() {
 	meshes->upload(ptc);
 	
 	// Create pipeline components
-	atmosphere = Atmosphere(ptc, Atmosphere::Params::earth());
-	ibl = IBLMap(ptc);
+	atmosphere = modules::Atmosphere(ptc, modules::Atmosphere::Params::earth());
+	ibl = modules::IBLMap(ptc);
 	
 	// Finalize uploads
 	ptc.wait_all_transfers();
@@ -223,10 +223,10 @@ void Engine::render() {
 	// Initialize modules
 	
 	auto worldBuf = world.upload(ptc);
-	auto indirect = Indirect(ptc, objects, *meshes);
-	auto sky = Sky(ptc, *atmosphere);
-	auto forward = Forward(ptc, swapchainSize.extent);
-	auto post = Post(ptc);
+	auto indirect = modules::Indirect(ptc, objects, *meshes);
+	auto sky = modules::Sky(ptc, *atmosphere);
+	auto forward = modules::Forward(ptc, swapchainSize.extent);
+	auto post = modules::Post(ptc);
 	
 	// Set up the rendergraph
 	
