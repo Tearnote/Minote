@@ -49,7 +49,7 @@ auto Forward::zPrepass(vuk::Buffer _world, Indirect& _indirect, Meshes& _meshes)
 		.resources = {
 			"commands"_buffer(vuk::eIndirectRead),
 			"instances_culled"_buffer(vuk::eVertexRead),
-			"object_depth"_image(vuk::eDepthStencilRW),
+			vuk::Resource(Depth_n, vuk::Resource::Type::eImage, vuk::eDepthStencilRW),
 		},
 		.execute = [this, _world, &_indirect, &_meshes](vuk::CommandBuffer& cmd) {
 			auto commandsBuf = cmd.get_resource_buffer("commands");
@@ -65,7 +65,7 @@ auto Forward::zPrepass(vuk::Buffer _world, Indirect& _indirect, Meshes& _meshes)
 		},
 	});
 	
-	rg.attach_managed("object_depth",
+	rg.attach_managed(Depth_n,
 		vuk::Format::eD32Sfloat,
 		vuk::Dimension2D::absolute(size),
 		vuk::Samples::e4,
@@ -87,8 +87,8 @@ auto Forward::draw(vuk::Buffer _world, Indirect& _indirect, Meshes& _meshes) -> 
 			"ibl_map_filtered"_image(vuk::eFragmentSampled),
 			"sky_aerial_perspective"_image(vuk::eFragmentSampled),
 			"sky_sun_luminance"_buffer(vuk::eFragmentRead),
-			"object_color"_image(vuk::eColorWrite),
-			"object_depth"_image(vuk::eDepthStencilRW),
+			vuk::Resource(Color_n, vuk::Resource::Type::eImage, vuk::eColorWrite),
+			vuk::Resource(Depth_n, vuk::Resource::Type::eImage, vuk::eDepthStencilRW),
 		},
 		.execute = [this, _world, &_indirect, &_meshes](vuk::CommandBuffer& cmd) {
 			auto commandsBuf = cmd.get_resource_buffer("commands");
@@ -110,7 +110,7 @@ auto Forward::draw(vuk::Buffer _world, Indirect& _indirect, Meshes& _meshes) -> 
 		},
 	});
 	
-	rg.attach_managed("object_color",
+	rg.attach_managed(Color_n,
 		vuk::Format::eR16G16B16A16Sfloat,
 		vuk::Dimension2D::absolute(size),
 		vuk::Samples::e4,
@@ -124,9 +124,9 @@ auto Forward::resolve() -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
 	
-	rg.resolve_resource_into("object_resolved", "object_color");
+	rg.resolve_resource_into(Resolved_n, Color_n);
 	
-	rg.attach_managed("object_resolved",
+	rg.attach_managed(Resolved_n,
 		vuk::Format::eR16G16B16A16Sfloat,
 		vuk::Dimension2D::absolute(size),
 		vuk::Samples::e1,

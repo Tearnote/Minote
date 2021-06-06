@@ -238,9 +238,9 @@ void Engine::render() {
 	rg.append(indirect.frustumCull(world));
 	rg.append(forward.zPrepass(worldBuf, indirect, *meshes));
 	rg.append(forward.draw(worldBuf, indirect, *meshes));
-	rg.append(sky.draw(worldBuf, "object_color", "object_depth"));
+	rg.append(sky.draw(worldBuf, forward.Color_n, forward.Depth_n));
 	rg.append(forward.resolve());
-	rg.append(post.tonemap("object_resolved", "swapchain", swapchainSize.extent));
+	rg.append(post.tonemap(forward.Resolved_n, "swapchain", swapchainSize.extent));
 	
 #if IMGUI
 	ImGui::Render();
