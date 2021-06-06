@@ -35,18 +35,31 @@ auto Objects::create() -> ObjectID {
 	
 }
 
-auto Objects::createStatic(StaticProxy const& _proxy) -> ObjectID {
+auto Objects::createStatic(Object const& _object) -> ObjectID {
+	
+	auto transform =
+		make_translate(_object.position) *
+		mat4(_object.rotation) *
+		make_scale(_object.scale);
 	
 	auto id = create();
-	metadata[id].visible = _proxy.visible;
-	meshIDs[id] = _proxy.mesh;
-	transforms[id] = _proxy.transform;
-	prevTransforms[id] = _proxy.transform;
-	materials[id].tint = _proxy.tint;
-	materials[id].roughness = _proxy.roughness;
-	materials[id].metalness = _proxy.metalness;
+	metadata[id].visible    = _object.visible;
+	meshIDs[id]             = _object.mesh;
+	transforms[id]          = transform;
+	prevTransforms[id]      = transform;
+	materials[id].tint      = _object.tint;
+	materials[id].roughness = _object.roughness;
+	materials[id].metalness = _object.metalness;
 	
 	return id;
+	
+}
+
+auto Objects::createDynamic() -> Object {
+	
+	return Object{
+		.id = create(),
+	};
 	
 }
 
@@ -57,34 +70,31 @@ void Objects::destroy(ObjectID _id) {
 	
 }
 
+void Objects::destroy(Object const& _object) {
+	
+	destroy(_object.id);
+	
+}
+
 void Objects::updatePrevTransforms() {
 	
 	std::memcpy(prevTransforms.data(), transforms.data(), sizeof(mat4) * size());
 	
 }
 
-auto DynamicObject::create(Objects& _objects) -> DynamicObject {
+void Objects::update(Object const& _object) {
 	
-	auto result = DynamicObject();
-	result.id = _objects.create();
-	return result;
+	auto transform =
+		make_translate(_object.position) *
+		mat4(_object.rotation) *
+		make_scale(_object.scale);
 	
-}
-
-void DynamicObject::destroy(Objects& _objects) {
-	
-	_objects.destroy(id);
-	
-}
-
-void DynamicObject::update(Objects& _objects) {
-	
-	_objects.metadata[id].visible = visible;
-	_objects.meshIDs[id] = mesh;
-	_objects.transforms[id] = make_translate(position) * mat4(rotation) * make_scale(scale);
-	_objects.materials[id].tint = tint;
-	_objects.materials[id].roughness = roughness;
-	_objects.materials[id].metalness = metalness;
+	metadata[_object.id].visible    = _object.visible;
+	meshIDs[_object.id]             = _object.mesh;
+	transforms[_object.id]          = transform;
+	materials[_object.id].tint      = _object.tint;
+	materials[_object.id].roughness = _object.roughness;
+	materials[_object.id].metalness = _object.metalness;
 	
 	
 }
