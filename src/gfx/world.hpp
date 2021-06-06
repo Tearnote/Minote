@@ -1,5 +1,7 @@
 #pragma once
 
+#include "vuk/Context.hpp"
+#include "vuk/Buffer.hpp"
 #include "base/math.hpp"
 
 namespace minote::gfx {
@@ -7,7 +9,7 @@ namespace minote::gfx {
 using namespace base;
 
 struct World {
-
+	
 	mat4 view;
 	mat4 projection;
 	mat4 viewProjection;
@@ -16,11 +18,13 @@ struct World {
 	vec2 pad0;
 	vec3 cameraPos;
 	float pad1;
-
+	
 	vec3 sunDirection;
 	float pad2;
 	vec3 sunIlluminance;
-
+	
+	auto upload(vuk::PerThreadContext&) -> vuk::Buffer;
+	
 };
 
 }

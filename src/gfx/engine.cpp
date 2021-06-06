@@ -190,7 +190,9 @@ void Engine::uploadAssets() {
 }
 
 void Engine::render() {
+	
 	// Prepare per-frame data
+	
 	auto viewport = uvec2(swapchain->extent.width, swapchain->extent.height);
 	auto rawview = camera.transform();
 	// auto zFlip = make_scale({-1.0f, -1.0f, 1.0f});
@@ -221,24 +223,20 @@ void Engine::render() {
 	ImGui::SliderFloat("Sun illuminance", &sunIlluminance, 0.01f, 100.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
 #endif //IMGUI
 	world.sunIlluminance = vec3(sunIlluminance);
-
+	
 	// Begin draw
+	
 	auto ifc = context->begin();
 	auto ptc = ifc.begin();
 	
-	// Upload uniform buffers
-	auto worldBuf = ptc.allocate_scratch_buffer(
-		vuk::MemoryUsage::eCPUtoGPU,
-		vuk::BufferUsageFlagBits::eUniformBuffer,
-		sizeof(World), alignof(World));
-	std::memcpy(worldBuf.mapped_ptr, &world, sizeof(world));
-
-	// Upload indirect buffers
-	auto indirect = Indirect(ptc, objects, meshes);
+	// Initialize modules
 	
+	auto worldBuf = world.upload(ptc);
+	auto indirect = Indirect(ptc, objects, meshes);
 	auto sky = Sky(ptc, *atmosphere);
 	
 	// Set up the rendergraph
+	
 	auto rg = vuk::RenderGraph();
 	
 	rg.append(sky.calculate(worldBuf, camera));
@@ -311,19 +309,20 @@ void Engine::render() {
 			cmd.draw(3, 1, 0, 0);
 		},
 	});
-
+	
 #if IMGUI
 	ImGui::Render();
 	ImGui_ImplVuk_Render(ptc, rg, "swapchain", "swapchain", imguiData, ImGui::GetDrawData());
 #endif //IMGUI
-
+	
 	rg.attach_managed("object_color", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	rg.attach_managed("object_depth", vuk::Format::eD32Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearDepthStencil{0.0f, 0});
 	rg.attach_managed("object_resolved", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e1, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	rg.attach_swapchain("swapchain", swapchain, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	auto erg = std::move(rg).link(ptc);
-
+	
 	// Acquire swapchain image
+	
 	auto presentSem = ptc.acquire_semaphore();
 	auto swapchainImageIndex = [&, this] {
 		while (true) {
@@ -337,11 +336,11 @@ void Engine::render() {
 				throw std::runtime_error(fmt::format("Unable to acquire swapchain image: error {}", error));
 		}
 	}();
-
-	// Build the rendergraph
+	
+	// Build and submit the rendergraph
+	
 	auto commandBuffer = erg.execute(ptc, {{swapchain, swapchainImageIndex}});
-
-	// Submit the command buffer
+	
 	auto renderSem = ptc.acquire_semaphore();
 	auto waitStage = VkPipelineStageFlags(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 	auto submitInfo = VkSubmitInfo{
@@ -355,7 +354,9 @@ void Engine::render() {
 		.pSignalSemaphores = &renderSem,
 	};
 	context->submit_graphics(submitInfo, ptc.acquire_fence());
-
+	
+	// Present to screen
+	
 	auto presentInfo = VkPresentInfoKHR{
 		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 		.waitSemaphoreCount = 1,
@@ -369,11 +370,13 @@ void Engine::render() {
 		refreshSwapchain();
 	else if (result != VK_SUCCESS)
 		throw std::runtime_error(fmt::format("Unable to present to the screen: error {}", result));
-
+	
 	// Clean up
+	
 #if IMGUI
 	ImGui::NewFrame();
 #endif //IMGUI
+	
 }
 
 auto Engine::createSwapchain(VkSwapchainKHR old) -> vuk::Swapchain {
