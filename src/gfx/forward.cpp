@@ -66,7 +66,7 @@ auto Forward::zPrepass(vuk::Buffer _world, Indirect& _indirect, Meshes& _meshes)
 	rg.attach_managed(Depth_n,
 		vuk::Format::eD32Sfloat,
 		vuk::Dimension2D::absolute(size),
-		vuk::Samples::e4,
+		SampleCount,
 		vuk::ClearDepthStencil{0.0f, 0});
 	
 	return rg;
@@ -109,7 +109,7 @@ auto Forward::draw(vuk::Buffer _world, Indirect& _indirect, Meshes& _meshes) -> 
 	rg.attach_managed(Color_n,
 		vuk::Format::eR16G16B16A16Sfloat,
 		vuk::Dimension2D::absolute(size),
-		vuk::Samples::e4,
+		SampleCount,
 		vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	
 	return rg;

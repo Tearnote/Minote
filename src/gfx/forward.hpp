@@ -14,6 +14,8 @@ struct Forward {
 	static constexpr auto Color_n = "forward_color";
 	static constexpr auto Resolved_n = "forward_resolved";
 	
+	static constexpr auto SampleCount = vuk::Samples::e4;
+	
 	vuk::Extent2D size;
 	
 	Forward(vuk::PerThreadContext&, vuk::Extent2D targetSize);
