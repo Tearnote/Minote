@@ -11,13 +11,17 @@ namespace minote::gfx {
 using namespace base;
 
 IBLMap::IBLMap(vuk::PerThreadContext& ptc) {
+	
 	mapUnfiltered = ptc.ctx.allocate_texture(vuk::ImageCreateInfo{
 		.flags = vuk::ImageCreateFlagBits::eCubeCompatible,
 		.format = Format,
 		.extent = {BaseSize, BaseSize, 1},
 		.mipLevels = MipCount,
 		.arrayLayers = 6,
-		.usage = vuk::ImageUsageFlagBits::eStorage | vuk::ImageUsageFlagBits::eSampled | vuk::ImageUsageFlagBits::eTransferSrc,
+		.usage =
+			vuk::ImageUsageFlagBits::eStorage |
+			vuk::ImageUsageFlagBits::eSampled |
+			vuk::ImageUsageFlagBits::eTransferSrc,
 	});
 	mapUnfiltered.view = ptc.create_image_view(vuk::ImageViewCreateInfo{
 		.image = *mapUnfiltered.image,
@@ -29,14 +33,17 @@ IBLMap::IBLMap(vuk::PerThreadContext& ptc) {
 			.layerCount = 6,
 		},
 	});
-
+	
 	mapFiltered = ptc.ctx.allocate_texture(vuk::ImageCreateInfo{
 		.flags = vuk::ImageCreateFlagBits::eCubeCompatible,
 		.format = Format,
 		.extent = {BaseSize, BaseSize, 1},
 		.mipLevels = MipCount,
 		.arrayLayers = 6,
-		.usage = vuk::ImageUsageFlagBits::eStorage | vuk::ImageUsageFlagBits::eSampled | vuk::ImageUsageFlagBits::eTransferDst,
+		.usage =
+			vuk::ImageUsageFlagBits::eStorage |
+			vuk::ImageUsageFlagBits::eSampled |
+			vuk::ImageUsageFlagBits::eTransferDst,
 	});
 	mapFiltered.view = ptc.create_image_view(vuk::ImageViewCreateInfo{
 		.image = *mapFiltered.image,
@@ -48,8 +55,9 @@ IBLMap::IBLMap(vuk::PerThreadContext& ptc) {
 			.layerCount = 6,
 		},
 	});
-
+	
 	for (auto i = 0u; i < arrayViewsUnfiltered.size(); i += 1) {
+		
 		arrayViewsUnfiltered[i] = ptc.create_image_view(vuk::ImageViewCreateInfo{
 			.image = *mapUnfiltered.image,
 			.viewType = vuk::ImageViewType::e2DArray,
@@ -61,9 +69,11 @@ IBLMap::IBLMap(vuk::PerThreadContext& ptc) {
 				.layerCount = 6,
 			},
 		});
+		
 	}
-
+	
 	for (auto i = 0u; i < arrayViewsFiltered.size(); i += 1) {
+		
 		arrayViewsFiltered[i] = ptc.create_image_view(vuk::ImageViewCreateInfo{
 			.image = *mapFiltered.image,
 			.viewType = vuk::ImageViewType::e2DArray,
@@ -75,15 +85,17 @@ IBLMap::IBLMap(vuk::PerThreadContext& ptc) {
 				.layerCount = 6,
 			},
 		});
+		
 	}
-
+	
 	if (!pipelinesCreated) {
+		
 		auto iblPrefilterPci = vuk::ComputePipelineCreateInfo();
 		iblPrefilterPci.add_spirv(std::vector<u32>{
 #include "spv/iblPrefilter.comp.spv"
 		}, "iblPrefilter.comp");
 		ptc.ctx.create_named_pipeline("ibl_prefilter", iblPrefilterPci);
-
+		
 		auto iblPostfilterPci = vuk::ComputePipelineCreateInfo();
 		iblPostfilterPci.add_spirv(std::vector<u32>{
 #include "spv/iblPostfilter.comp.spv"
@@ -91,37 +103,45 @@ IBLMap::IBLMap(vuk::PerThreadContext& ptc) {
 		ptc.ctx.create_named_pipeline("ibl_postfilter", iblPostfilterPci);
 		
 		pipelinesCreated = true;
+		
 	}
+	
 }
 
 auto IBLMap::filter() -> vuk::RenderGraph {
+	
 	auto rg = vuk::RenderGraph();
+	
 	rg.add_pass({
 		.name = "IBL prefilter",
 		.resources = {
-			"ibl_map_unfiltered"_image(vuk::eComputeRW),
+			vuk::Resource(Unfiltered_n, vuk::Resource::Type::eImage, vuk::eComputeRW),
 		},
 		.execute = [this](vuk::CommandBuffer& cmd) {
+			
 			for (auto i = 1u; i < MipCount; i += 1) {
 				if (i != 1)
-					cmd.image_barrier("ibl_map_unfiltered", vuk::eComputeWrite, vuk::eComputeRead);
-
-				cmd.bind_sampled_image(0, 0, "ibl_map_unfiltered", LinearClamp)
+					cmd.image_barrier(Unfiltered_n, vuk::eComputeWrite, vuk::eComputeRead);
+				
+				cmd.bind_sampled_image(0, 0, Unfiltered_n, LinearClamp)
 				   .bind_storage_image(0, 1, *arrayViewsUnfiltered[i])
 				   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, float(i - 1))
 				   .bind_compute_pipeline("ibl_prefilter");
 				cmd.dispatch_invocations(BaseSize >> i, BaseSize >> i, 6);
 			}
+			
 		},
 	});
+	
 	rg.add_pass({
 		.name = "IBL postfilter",
 		.resources = {
-			"ibl_map_unfiltered"_image(vuk::eComputeRead),
-			"ibl_map_filtered"_image(vuk::eComputeWrite),
+			vuk::Resource(Unfiltered_n, vuk::Resource::Type::eImage, vuk::eComputeRead),
+			vuk::Resource(Filtered_n,   vuk::Resource::Type::eImage, vuk::eComputeWrite),
 		},
 		.execute = [this](vuk::CommandBuffer& cmd) {
-			cmd.bind_sampled_image(0, 0, "ibl_map_unfiltered", TrilinearClamp)
+			
+			cmd.bind_sampled_image(0, 0, Unfiltered_n, TrilinearClamp)
 			   .bind_storage_image(0, 1, *arrayViewsFiltered[1])
 			   .bind_storage_image(0, 2, *arrayViewsFiltered[2])
 			   .bind_storage_image(0, 3, *arrayViewsFiltered[3])
@@ -130,21 +150,27 @@ auto IBLMap::filter() -> vuk::RenderGraph {
 			   .bind_storage_image(0, 6, *arrayViewsFiltered[6])
 			   .bind_storage_image(0, 7, *arrayViewsFiltered[7])
 			   .bind_compute_pipeline("ibl_postfilter");
+			
 			auto* coeffs = cmd.map_scratch_uniform_binding<vec4[7][5][3][24]>(0, 8);
 			std::memcpy(coeffs, IBLCoefficients, sizeof(IBLCoefficients));
+			
 			cmd.dispatch_invocations(21840, 6);
+			
 		},
 	});
+	
 	rg.add_pass({
 		.name = "IBL mip 0 copy",
 		.resources = {
-			"ibl_map_unfiltered"_image(vuk::eTransferSrc),
-			"ibl_map_filtered"_image(vuk::eTransferDst),
+			vuk::Resource(Unfiltered_n, vuk::Resource::Type::eImage, vuk::eTransferSrc),
+			vuk::Resource(Filtered_n,   vuk::Resource::Type::eImage, vuk::eTransferDst),
 		},
 		.execute = [this](vuk::CommandBuffer& cmd) {
-			cmd.image_barrier("ibl_map_unfiltered", vuk::eComputeRead, vuk::eTransferSrc);
-			cmd.image_barrier("ibl_map_filtered", vuk::eComputeWrite, vuk::eTransferDst);
-			cmd.blit_image("ibl_map_unfiltered", "ibl_map_filtered", vuk::ImageBlit{
+			
+			cmd.image_barrier(Unfiltered_n, vuk::eComputeRead,  vuk::eTransferSrc);
+			cmd.image_barrier(Filtered_n,   vuk::eComputeWrite, vuk::eTransferDst);
+			
+			cmd.blit_image(Unfiltered_n, Filtered_n, vuk::ImageBlit{
 				.srcSubresource = vuk::ImageSubresourceLayers{
 					.aspectMask = vuk::ImageAspectFlagBits::eColor,
 					.layerCount = 6,
@@ -156,10 +182,19 @@ auto IBLMap::filter() -> vuk::RenderGraph {
 				},
 				.dstOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{BaseSize, BaseSize, 1}},
 			}, vuk::Filter::eNearest);
+			
 		},
 	});
-	rg.attach_image("ibl_map_unfiltered", vuk::ImageAttachment::from_texture(mapUnfiltered), {}, {});
-	rg.attach_image("ibl_map_filtered", vuk::ImageAttachment::from_texture(mapFiltered), {}, {});
+	
+	rg.attach_image(Unfiltered_n,
+		vuk::ImageAttachment::from_texture(mapUnfiltered),
+		vuk::eNone,
+		vuk::eNone);
+	rg.attach_image(Filtered_n,
+		vuk::ImageAttachment::from_texture(mapFiltered),
+		vuk::eNone,
+		vuk::eNone);
+	
 	return rg;
 }
 

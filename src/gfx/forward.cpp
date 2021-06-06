@@ -64,7 +64,7 @@ auto Forward::zPrepass(vuk::Buffer _world, Indirect& _indirect, Meshes& _meshes)
 	});
 	
 	rg.attach_managed(Depth_n,
-		vuk::Format::eD32Sfloat,
+		DepthFormat,
 		vuk::Dimension2D::absolute(size),
 		SampleCount,
 		vuk::ClearDepthStencil{0.0f, 0});
@@ -73,7 +73,7 @@ auto Forward::zPrepass(vuk::Buffer _world, Indirect& _indirect, Meshes& _meshes)
 	
 }
 
-auto Forward::draw(vuk::Buffer _world, Indirect& _indirect, Meshes& _meshes) -> vuk::RenderGraph {
+auto Forward::draw(vuk::Buffer _world, Indirect& _indirect, Meshes& _meshes, IBLMap& _ibl) -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
 	
@@ -82,13 +82,13 @@ auto Forward::draw(vuk::Buffer _world, Indirect& _indirect, Meshes& _meshes) -> 
 		.resources = {
 			vuk::Resource(_indirect.Commands_n,        vuk::Resource::Type::eBuffer, vuk::eIndirectRead),
 			vuk::Resource(_indirect.InstancesCulled_n, vuk::Resource::Type::eBuffer, vuk::eVertexRead),
-			"ibl_map_filtered"_image(vuk::eFragmentSampled),
+			vuk::Resource(_ibl.Filtered_n,             vuk::Resource::Type::eImage,  vuk::eFragmentSampled),
 			"sky_aerial_perspective"_image(vuk::eFragmentSampled),
 			"sky_sun_luminance"_buffer(vuk::eFragmentRead),
 			vuk::Resource(Color_n,                     vuk::Resource::Type::eImage,  vuk::eColorWrite),
 			vuk::Resource(Depth_n,                     vuk::Resource::Type::eImage,  vuk::eDepthStencilRW),
 		},
-		.execute = [this, _world, &_indirect, &_meshes](vuk::CommandBuffer& cmd) {
+		.execute = [this, _world, &_indirect, &_meshes, &_ibl](vuk::CommandBuffer& cmd) {
 			auto sunLuminanceBuf = cmd.get_resource_buffer("sky_sun_luminance");
 			cmd.set_viewport(0, vuk::Rect2D::framebuffer())
 			   .set_scissor(0, vuk::Rect2D::framebuffer())
@@ -99,7 +99,7 @@ auto Forward::draw(vuk::Buffer _world, Indirect& _indirect, Meshes& _meshes) -> 
 			   .bind_index_buffer(*_meshes.indicesBuf, vuk::IndexType::eUint16)
 			   .bind_storage_buffer(0, 1, _indirect.instancesBuf)
 			   .bind_storage_buffer(0, 2, sunLuminanceBuf)
-			   .bind_sampled_image(0, 3, "ibl_map_filtered", TrilinearClamp)
+			   .bind_sampled_image(0, 3, _ibl.Filtered_n, TrilinearClamp)
 			   .bind_sampled_image(0, 4, "sky_aerial_perspective", TrilinearClamp)
 			   .bind_graphics_pipeline("object");
 			cmd.draw_indexed_indirect(_indirect.commandsCount, _indirect.commandsBuf, sizeof(Indirect::Command));
@@ -107,7 +107,7 @@ auto Forward::draw(vuk::Buffer _world, Indirect& _indirect, Meshes& _meshes) -> 
 	});
 	
 	rg.attach_managed(Color_n,
-		vuk::Format::eR16G16B16A16Sfloat,
+		ColorFormat,
 		vuk::Dimension2D::absolute(size),
 		SampleCount,
 		vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
@@ -123,7 +123,7 @@ auto Forward::resolve() -> vuk::RenderGraph {
 	rg.resolve_resource_into(Resolved_n, Color_n);
 	
 	rg.attach_managed(Resolved_n,
-		vuk::Format::eR16G16B16A16Sfloat,
+		ColorFormat,
 		vuk::Dimension2D::absolute(size),
 		vuk::Samples::e1,
 		vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
