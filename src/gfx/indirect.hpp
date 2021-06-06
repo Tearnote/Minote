@@ -14,6 +14,10 @@ using namespace base;
 
 struct Indirect {
 	
+	static constexpr auto Commands_n = "indirect_commands";
+	static constexpr auto Instances_n = "indirect_instances";
+	static constexpr auto InstancesCulled_n = "indirect_instances_culled";
+	
 	struct Command {
 		
 		u32 indexCount;

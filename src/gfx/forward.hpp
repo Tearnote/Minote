@@ -10,9 +10,9 @@ namespace minote::gfx {
 
 struct Forward {
 	
-	constexpr static auto Depth_n = "forward_depth";
-	constexpr static auto Color_n = "forward_color";
-	constexpr static auto Resolved_n = "forward_resolved";
+	static constexpr auto Depth_n = "forward_depth";
+	static constexpr auto Color_n = "forward_color";
+	static constexpr auto Resolved_n = "forward_resolved";
 	
 	vuk::Extent2D size;
 	

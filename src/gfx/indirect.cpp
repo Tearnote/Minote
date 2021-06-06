@@ -136,14 +136,11 @@ auto Indirect::frustumCull(World const& _world) -> vuk::RenderGraph {
 	rg.add_pass({
 		.name = "Frustum culling",
 		.resources = {
-			"commands"_buffer(vuk::eComputeRW),
-			"instances"_buffer(vuk::eComputeRead),
-			"instances_culled"_buffer(vuk::eComputeWrite),
+			vuk::Resource(Commands_n,        vuk::Resource::Type::eBuffer, vuk::eComputeRW),
+			vuk::Resource(Instances_n,       vuk::Resource::Type::eBuffer, vuk::eComputeRead),
+			vuk::Resource(InstancesCulled_n, vuk::Resource::Type::eBuffer, vuk::eComputeWrite),
 		},
 		.execute = [this, view, projection](vuk::CommandBuffer& cmd) {
-			auto commandsBuf = cmd.get_resource_buffer("commands");
-			auto instancesBuf = cmd.get_resource_buffer("instances");
-			auto instancesCulledBuf = cmd.get_resource_buffer("instances_culled");
 			cmd.bind_storage_buffer(0, 0, commandsBuf)
 			   .bind_storage_buffer(0, 1, instancesBuf)
 			   .bind_storage_buffer(0, 2, instancesCulledBuf)
@@ -170,15 +167,15 @@ auto Indirect::frustumCull(World const& _world) -> vuk::RenderGraph {
 		},
 	});
 	
-	rg.attach_buffer("commands",
+	rg.attach_buffer(Commands_n,
 		commandsBuf,
 		vuk::eTransferDst,
 		vuk::eNone);
-	rg.attach_buffer("instances",
+	rg.attach_buffer(Instances_n,
 		instancesBuf,
 		vuk::eTransferDst,
 		vuk::eNone);
-	rg.attach_buffer("instances_culled",
+	rg.attach_buffer(InstancesCulled_n,
 		instancesCulledBuf,
 		vuk::eNone,
 		vuk::eNone);
