@@ -62,6 +62,7 @@ add_executable(Minote
         src/gfx/indirect.hpp src/gfx/indirect.cpp
         src/gfx/samplers.hpp
         src/gfx/objects.hpp src/gfx/objects.cpp
+        src/gfx/forward.hpp src/gfx/forward.cpp
         src/gfx/meshes.hpp src/gfx/meshes.cpp
         src/gfx/engine.hpp src/gfx/engine.cpp
         src/gfx/camera.hpp src/gfx/camera.cpp

@@ -15,7 +15,7 @@
 #include "base/log.hpp"
 #include "gfx/pipelines.hpp"
 #include "gfx/indirect.hpp"
-#include "gfx/samplers.hpp"
+#include "gfx/forward.hpp"
 #include "gfx/base.hpp"
 #include "main.hpp"
 
@@ -236,56 +236,10 @@ void Engine::render() {
 	rg.append(sky.drawCubemap(worldBuf, "ibl_map_unfiltered", uvec2(ibl->BaseSize)));
 	rg.append(ibl->filter());
 	rg.append(indirect.frustumCull(world));
-	rg.add_pass({
-		.name = "Z-prepass",
-		.resources = {
-			"commands"_buffer(vuk::eIndirectRead),
-			"instances_culled"_buffer(vuk::eVertexRead),
-			"object_depth"_image(vuk::eDepthStencilRW),
-		},
-		.execute = [this, worldBuf, &indirect](vuk::CommandBuffer& cmd) {
-			auto commandsBuf = cmd.get_resource_buffer("commands");
-			auto instancesBuf = cmd.get_resource_buffer("instances_culled");
-			cmd.set_viewport(0, vuk::Rect2D::framebuffer())
-			   .set_scissor(0, vuk::Rect2D::framebuffer())
-			   .bind_uniform_buffer(0, 0, worldBuf)
-			   .bind_vertex_buffer(0, *meshes->verticesBuf, 0, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
-			   .bind_index_buffer(*meshes->indicesBuf, vuk::IndexType::eUint16)
-			   .bind_storage_buffer(0, 1, instancesBuf)
-			   .bind_graphics_pipeline("z_prepass");
-			cmd.draw_indexed_indirect(indirect.commandsCount, commandsBuf, sizeof(Indirect::Command));
-		},
-	});
-	rg.add_pass({
-		.name = "Object drawing",
-		.resources = {
-			"commands"_buffer(vuk::eIndirectRead),
-			"instances_culled"_buffer(vuk::eVertexRead),
-			"ibl_map_filtered"_image(vuk::eFragmentSampled),
-			"sky_aerial_perspective"_image(vuk::eFragmentSampled),
-			"sky_sun_luminance"_buffer(vuk::eFragmentRead),
-			"object_color"_image(vuk::eColorWrite),
-			"object_depth"_image(vuk::eDepthStencilRW),
-		},
-		.execute = [this, worldBuf, &indirect](vuk::CommandBuffer& cmd) {
-			auto commandsBuf = cmd.get_resource_buffer("commands");
-			auto instancesBuf = cmd.get_resource_buffer("instances_culled");
-			auto sunLuminanceBuf = cmd.get_resource_buffer("sky_sun_luminance");
-			cmd.set_viewport(0, vuk::Rect2D::framebuffer())
-			   .set_scissor(0, vuk::Rect2D::framebuffer())
-			   .bind_uniform_buffer(0, 0, worldBuf)
-			   .bind_vertex_buffer(0, *meshes->verticesBuf, 0, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
-			   .bind_vertex_buffer(1, *meshes->normalsBuf, 1, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
-			   .bind_vertex_buffer(2, *meshes->colorsBuf, 2, vuk::Packed{vuk::Format::eR16G16B16A16Unorm})
-			   .bind_index_buffer(*meshes->indicesBuf, vuk::IndexType::eUint16)
-			   .bind_storage_buffer(0, 1, instancesBuf)
-			   .bind_storage_buffer(0, 2, sunLuminanceBuf)
-			   .bind_sampled_image(0, 3, "ibl_map_filtered", TrilinearClamp)
-			   .bind_sampled_image(0, 4, "sky_aerial_perspective", TrilinearClamp)
-			   .bind_graphics_pipeline("object");
-			cmd.draw_indexed_indirect(indirect.commandsCount, commandsBuf, sizeof(Indirect::Command));
-		},
-	});
+	
+	auto forward = Forward(ptc, swapchainSize.extent);
+	rg.append(forward.zPrepass(worldBuf, indirect, *meshes));
+	rg.append(forward.draw(worldBuf, indirect, *meshes));
 	rg.append(sky.draw(worldBuf, "object_color", "object_depth"));
 	rg.resolve_resource_into("object_resolved", "object_color");
 	rg.add_pass({
@@ -308,9 +262,6 @@ void Engine::render() {
 	ImGui_ImplVuk_Render(ptc, rg, "swapchain", "swapchain", imguiData, ImGui::GetDrawData());
 #endif //IMGUI
 	
-	rg.attach_managed("object_color", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
-	rg.attach_managed("object_depth", vuk::Format::eD32Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearDepthStencil{0.0f, 0});
-	rg.attach_managed("object_resolved", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e1, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	rg.attach_swapchain("swapchain", swapchain, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	auto erg = std::move(rg).link(ptc);
 	

@@ -119,11 +119,11 @@ auto Atmosphere::precalculate() -> vuk::RenderGraph {
 	
 	rg.attach_image("sky_transmittance",
 		vuk::ImageAttachment::from_texture(transmittance),
-		vuk::Access::eNone,
+		vuk::eNone,
 		vuk::Access::eComputeSampled);
 	rg.attach_image("sky_multi_scattering",
 		vuk::ImageAttachment::from_texture(multiScattering),
-		vuk::Access::eNone,
+		vuk::eNone,
 		vuk::Access::eComputeSampled);
 		
 	return rg;
@@ -271,16 +271,16 @@ auto Sky::calculate(vuk::Buffer _world, Camera const& _camera) -> vuk::RenderGra
 		vuk::Access::eComputeSampled);
 	rg.attach_image("sky_sky_view",
 		vuk::ImageAttachment::from_texture(skyView),
-		vuk::Access::eNone,
-		vuk::Access::eNone);
+		vuk::eNone,
+		vuk::eNone);
 	rg.attach_image("sky_cubemap_sky_view",
 		vuk::ImageAttachment::from_texture(skyCubemapView),
-		vuk::Access::eNone,
-		vuk::Access::eNone);
+		vuk::eNone,
+		vuk::eNone);
 	rg.attach_image("sky_aerial_perspective",
 		vuk::ImageAttachment::from_texture(aerialPerspective),
-		vuk::Access::eNone,
-		vuk::Access::eNone);
+		vuk::eNone,
+		vuk::eNone);
 	
 	return rg;
 	
@@ -317,8 +317,8 @@ auto Sky::draw(vuk::Buffer _world, vuk::Name _targetColor,
 		vuk::Access::eComputeSampled);
 	rg.attach_image("sky_sky_view",
 		vuk::ImageAttachment::from_texture(skyView),
-		vuk::Access::eNone,
-		vuk::Access::eNone);
+		vuk::eNone,
+		vuk::eNone);
 	
 	return rg;
 	
@@ -389,12 +389,12 @@ auto Sky::drawCubemap(vuk::Buffer _world, vuk::Name _target,
 		vuk::Access::eComputeSampled);
 	rg.attach_image("sky_cubemap_sky_view",
 		vuk::ImageAttachment::from_texture(skyCubemapView),
-		vuk::Access::eNone,
-		vuk::Access::eNone);
+		vuk::eNone,
+		vuk::eNone);
 	rg.attach_buffer("sky_sun_luminance",
 		*sunLuminance,
-		vuk::Access::eNone,
-		vuk::Access::eNone);
+		vuk::eNone,
+		vuk::eNone);
 	
 	return rg;
 }

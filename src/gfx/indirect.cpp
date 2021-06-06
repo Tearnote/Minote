@@ -170,9 +170,18 @@ auto Indirect::frustumCull(World const& _world) -> vuk::RenderGraph {
 		},
 	});
 	
-	rg.attach_buffer("commands", commandsBuf, vuk::eTransferDst, {});
-	rg.attach_buffer("instances", instancesBuf, vuk::eTransferDst, {});
-	rg.attach_buffer("instances_culled", instancesCulledBuf, {}, {});
+	rg.attach_buffer("commands",
+		commandsBuf,
+		vuk::eTransferDst,
+		vuk::eNone);
+	rg.attach_buffer("instances",
+		instancesBuf,
+		vuk::eTransferDst,
+		vuk::eNone);
+	rg.attach_buffer("instances_culled",
+		instancesCulledBuf,
+		vuk::eNone,
+		vuk::eNone);
 	
 	return rg;
 	
