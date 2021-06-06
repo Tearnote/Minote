@@ -244,42 +244,7 @@ void Engine::render() {
 	rg.append(sky.calculate(worldBuf, camera));
 	rg.append(sky.drawCubemap(worldBuf, "ibl_map_unfiltered", uvec2(ibl->BaseSize)));
 	rg.append(ibl->filter());
-	rg.add_pass({
-		.name = "Frustum culling",
-		.resources = {
-			"commands"_buffer(vuk::eComputeRW),
-			"instances"_buffer(vuk::eComputeRead),
-			"instances_culled"_buffer(vuk::eComputeWrite),
-		},
-		.execute = [this, &indirect](vuk::CommandBuffer& cmd) {
-			auto commandsBuf = cmd.get_resource_buffer("commands");
-			auto instancesBuf = cmd.get_resource_buffer("instances");
-			auto instancesCulledBuf = cmd.get_resource_buffer("instances_culled");
-			cmd.bind_storage_buffer(0, 0, commandsBuf)
-			   .bind_storage_buffer(0, 1, instancesBuf)
-			   .bind_storage_buffer(0, 2, instancesCulledBuf)
-			   .bind_compute_pipeline("cull");
-			struct CullData {
-				mat4 view;
-				vec4 frustum;
-				u32 instancesCount;
-			};
-			auto* cullData = cmd.map_scratch_uniform_binding<CullData>(0, 3);
-			*cullData = CullData{
-				.view = world.view,
-				.frustum = [this] {
-					auto projectionT = transpose(world.projection);
-					vec4 frustumX = projectionT[3] + projectionT[0];
-					vec4 frustumY = projectionT[3] + projectionT[1];
-					frustumX /= length(vec3(frustumX));
-					frustumY /= length(vec3(frustumY));
-					return vec4(frustumX.x, frustumX.z, frustumY.y, frustumY.z);
-				}(),
-				.instancesCount = u32(indirect.instancesCount),
-			};
-			cmd.dispatch_invocations(indirect.instancesCount);
-		},
-	});
+	rg.append(indirect.frustumCull(world));
 	rg.add_pass({
 		.name = "Z-prepass",
 		.resources = {
@@ -352,9 +317,6 @@ void Engine::render() {
 	ImGui_ImplVuk_Render(ptc, rg, "swapchain", "swapchain", imguiData, ImGui::GetDrawData());
 #endif //IMGUI
 
-	rg.attach_buffer("commands", indirect.commandsBuf, vuk::eTransferDst, {});
-	rg.attach_buffer("instances", indirect.instancesBuf, vuk::eTransferDst, {});
-	rg.attach_buffer("instances_culled", indirect.instancesCulledBuf, {}, {});
 	rg.attach_managed("object_color", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	rg.attach_managed("object_depth", vuk::Format::eD32Sfloat, swapchainSize, vuk::Samples::e4, vuk::ClearDepthStencil{0.0f, 0});
 	rg.attach_managed("object_resolved", vuk::Format::eR16G16B16A16Sfloat, swapchainSize, vuk::Samples::e1, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});

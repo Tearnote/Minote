@@ -43,6 +43,7 @@ using glm::length;
 using glm::cross;
 using glm::dot;
 using glm::infinitePerspective;
+using glm::transpose;
 using glm::inverse;
 using glm::lookAt;
 using glm::value_ptr;

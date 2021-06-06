@@ -39,11 +39,6 @@ void createPipelines(vuk::Context& ctx) {
 	}, "blit.frag");
 	ctx.create_named_pipeline("tonemap", tonemapPci);
 
-	auto cullPci = vuk::ComputePipelineCreateInfo();
-	cullPci.add_spirv(std::vector<u32>{
-#include "spv/cull.comp.spv"
-	}, "cull.comp");
-	ctx.create_named_pipeline("cull", cullPci);
 }
 
 }

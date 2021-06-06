@@ -1,9 +1,11 @@
 #pragma once
 
+#include "vuk/RenderGraph.hpp"
 #include "vuk/Context.hpp"
 #include "vuk/Buffer.hpp"
 #include "gfx/objects.hpp"
 #include "gfx/meshes.hpp"
+#include "gfx/world.hpp"
 #include "base/types.hpp"
 
 namespace minote::gfx {
@@ -43,6 +45,12 @@ struct Indirect {
 	vuk::Buffer instancesCulledBuf;
 	
 	Indirect(vuk::PerThreadContext&, Objects const&, Meshes const&);
+	
+	auto frustumCull(World const&) -> vuk::RenderGraph;
+	
+private:
+	
+	inline static bool pipelinesCreated = false;
 	
 };
 
