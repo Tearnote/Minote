@@ -56,7 +56,7 @@ struct Objects {
 	[[nodiscard]]
 	auto createStatic(Object const&) -> ObjectID;
 	[[nodiscard]]
-	auto createDynamic() -> Object;
+	auto createDynamic(Object const&) -> Object;
 	
 	void destroy(ObjectID);
 	void destroy(Object const&);

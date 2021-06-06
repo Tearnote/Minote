@@ -74,7 +74,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 	for (auto x = -Spacing * Expand; x <= Spacing * Expand; x += Spacing)
 	for (auto y = -Spacing * Expand; y <= Spacing * Expand; y += Spacing) {
 		auto offset = vec3(x, y, 0);
-		staticObjects.emplace_back(engine.objects.createStatic({
+		staticObjects.emplace_back(engine.objects.createStatic(gfx::Object{
 			.mesh = "block"_id,
 			.position = vec3(0_m, 0_m, 0_m) + offset,
 			.scale = vec3(12.0f, 12.0f, 1.0f) * prescale,
@@ -82,7 +82,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 			.tint = {0.9f, 0.9f, 1.0f, 1.0f},
 			.roughness = 0.6f,
 			.metalness = 0.1f}));
-		staticObjects.emplace_back(engine.objects.createStatic({
+		staticObjects.emplace_back(engine.objects.createStatic(gfx::Object{
 			.mesh = "block"_id,
 			.position = vec3(-4_m, -4_m, 2_m) + offset,
 			.scale = prescale,
@@ -90,7 +90,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 			.tint = {0.9f, 0.1f, 0.1f, 1.0f},
 			.roughness = 0.6f,
 			.metalness = 0.1f}));
-		staticObjects.emplace_back(engine.objects.createStatic({
+		staticObjects.emplace_back(engine.objects.createStatic(gfx::Object{
 			.mesh = "block"_id,
 			.position = vec3(4_m, -4_m, 2_m) + offset,
 			.scale = prescale,
@@ -98,7 +98,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 			.tint = {0.9f, 0.1f, 0.1f, 1.0f},
 			.roughness = 0.6f,
 			.metalness = 0.1f}));
-		staticObjects.emplace_back(engine.objects.createStatic({
+		staticObjects.emplace_back(engine.objects.createStatic(gfx::Object{
 			.mesh = "block"_id,
 			.position = vec3(-4_m, 4_m, 2_m) + offset,
 			.scale = prescale,
@@ -106,7 +106,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 			.tint = {0.9f, 0.1f, 0.1f, 1.0f},
 			.roughness = 0.6f,
 			.metalness = 0.1f}));
-		staticObjects.emplace_back(engine.objects.createStatic({
+		staticObjects.emplace_back(engine.objects.createStatic(gfx::Object{
 			.mesh = "block"_id,
 			.position = vec3(4_m, 4_m, 2_m) + offset,
 			.scale = prescale,
@@ -114,7 +114,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 			.tint = {0.9f, 0.1f, 0.1f, 1.0f},
 			.roughness = 0.6f,
 			.metalness = 0.1f}));
-		staticObjects.emplace_back(engine.objects.createStatic({
+		staticObjects.emplace_back(engine.objects.createStatic(gfx::Object{
 			.mesh = "block"_id,
 			.position = vec3(7_m, 0_m, 2_m) + offset,
 			.scale = prescale,
@@ -122,23 +122,23 @@ void game(sys::Glfw&, sys::Window& window) try {
 			.tint = {0.1f, 0.1f, 0.9f, 1.0f},
 			.roughness = 0.6f,
 			.metalness = 0.1f}));
-		auto& spinny = dynamicObjects.emplace_back(engine.objects.createDynamic());
-		spinny.mesh = "block"_id;
-		spinny.position = vec3(0_m, 0_m, 2.5_m) + offset;
-		spinny.scale = vec3(1_m, 1_m, 1_m) * vec3(1.5f, 1.5f, 1.5f);
-		spinny.tint = vec4(0.2f, 0.9f, 0.5f, 1.0f);
-		spinny.roughness = 0.2f;
-		spinny.metalness = 0.9f;
+		dynamicObjects.emplace_back(engine.objects.createDynamic(gfx::Object{
+			.mesh = "block"_id,
+			.position = vec3(0_m, 0_m, 2.5_m) + offset,
+			.scale = vec3(1_m, 1_m, 1_m) * vec3(1.5f, 1.5f, 1.5f),
+			.tint = {0.2f, 0.9f, 0.5f, 1.0f},
+			.roughness = 0.2f,
+			.metalness = 0.9f}));
 		for (auto i = 0.0f; i <= 1.0f; i += 0.125f) {
 			auto offset2 = offset + vec3((i - 0.5f) * 2.0f * 8_m, 0_m, 0_m);
-			staticObjects.emplace_back(engine.objects.createStatic({
+			staticObjects.emplace_back(engine.objects.createStatic(gfx::Object{
 				.mesh = "sphere"_id,
 				.position = vec3(0_m, 8_m, 2_m) + offset2,
 				.scale = prescale,
 				.tint = {1.0f, 1.0f, 1.0f, 1.0f},
 				.roughness = i,
 				.metalness = 0.9f}));
-			staticObjects.emplace_back(engine.objects.createStatic({
+			staticObjects.emplace_back(engine.objects.createStatic(gfx::Object{
 				.mesh = "sphere"_id,
 				.position = vec3(0_m, -8_m, 2_m) + offset2,
 				.scale = prescale,

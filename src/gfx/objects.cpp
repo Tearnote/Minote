@@ -55,11 +55,11 @@ auto Objects::createStatic(Object const& _object) -> ObjectID {
 	
 }
 
-auto Objects::createDynamic() -> Object {
+auto Objects::createDynamic(Object const& _object) -> Object {
 	
-	return Object{
-		.id = create(),
-	};
+	auto result = _object;
+	result.id = create();
+	return result;
 	
 }
 
