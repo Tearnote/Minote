@@ -24,7 +24,7 @@ struct Forward {
 	
 	auto zPrepass(vuk::Buffer world, Indirect&, Meshes&) -> vuk::RenderGraph;
 	
-	auto draw(vuk::Buffer world, Indirect&, Meshes&, IBLMap&) -> vuk::RenderGraph;
+	auto draw(vuk::Buffer world, Indirect&, Meshes&, Sky&, IBLMap&) -> vuk::RenderGraph;
 	
 	auto resolve() -> vuk::RenderGraph;
 	

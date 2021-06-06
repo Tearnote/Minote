@@ -233,12 +233,12 @@ void Engine::render() {
 	auto rg = vuk::RenderGraph();
 	
 	rg.append(sky.calculate(worldBuf, camera));
-	rg.append(sky.drawCubemap(worldBuf, ibl->Unfiltered_n, uvec2(ibl->BaseSize)));
+	rg.append(sky.drawCubemap(worldBuf, ibl->Unfiltered_n, {ibl->BaseSize, ibl->BaseSize}));
 	rg.append(ibl->filter());
 	rg.append(indirect.frustumCull(world));
 	rg.append(forward.zPrepass(worldBuf, indirect, *meshes));
-	rg.append(forward.draw(worldBuf, indirect, *meshes, *ibl));
-	rg.append(sky.draw(worldBuf, forward.Color_n, forward.Depth_n));
+	rg.append(forward.draw(worldBuf, indirect, *meshes, sky, *ibl));
+	rg.append(sky.draw(worldBuf, forward.Color_n, forward.Depth_n, swapchainSize.extent));
 	rg.append(forward.resolve());
 	rg.append(post.tonemap(forward.Resolved_n, "swapchain", swapchainSize.extent));
 	

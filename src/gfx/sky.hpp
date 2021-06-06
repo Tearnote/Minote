@@ -13,6 +13,17 @@ using namespace base;
 
 struct Atmosphere {
 	
+	static constexpr auto Transmittance_n = "atmosphere_transmittance";
+	static constexpr auto MultiScattering_n = "atmosphere_multiscattering";
+	
+	constexpr static auto TransmittanceFormat = vuk::Format::eR16G16B16A16Sfloat;
+	constexpr static auto TransmittanceWidth = 256u;
+	constexpr static auto TransmittanceHeight = 64u;
+	
+	constexpr static auto MultiScatteringFormat = vuk::Format::eR16G16B16A16Sfloat;
+	constexpr static auto MultiScatteringWidth = 32u;
+	constexpr static auto MultiScatteringHeight = 32u;
+	
 	struct Params {
 	
 		float BottomRadius; // Radius of the planet (center to ground)
@@ -48,14 +59,6 @@ struct Atmosphere {
 		
 	};
 	
-	constexpr static auto TransmittanceFormat = vuk::Format::eR16G16B16A16Sfloat;
-	constexpr static auto TransmittanceWidth = 256u;
-	constexpr static auto TransmittanceHeight = 64u;
-	
-	constexpr static auto MultiScatteringFormat = vuk::Format::eR16G16B16A16Sfloat;
-	constexpr static auto MultiScatteringWidth = 32u;
-	constexpr static auto MultiScatteringHeight = 32u;
-	
 	vuk::Texture transmittance;
 	vuk::Texture multiScattering;
 	vuk::Unique<vuk::Buffer> params;
@@ -72,9 +75,14 @@ private:
 
 struct Sky {
 	
-	constexpr static auto SkyViewFormat = vuk::Format::eB10G11R11UfloatPack32;
-	constexpr static auto SkyViewWidth = 192u;
-	constexpr static auto SkyViewHeight = 108u;
+	static constexpr auto CameraView_n = "sky_camera_view";
+	static constexpr auto CubemapView_n = "sky_cubemap_view";
+	static constexpr auto AerialPerspective_n = "sky_aerial_perspective";
+	static constexpr auto SunLuminance_n = "sky_sun_luminance";
+	
+	constexpr static auto ViewFormat = vuk::Format::eB10G11R11UfloatPack32;
+	constexpr static auto ViewWidth = 192u;
+	constexpr static auto ViewHeight = 108u;
 	
 	constexpr static auto AerialPerspectiveFormat = vuk::Format::eR16G16B16A16Sfloat;
 	constexpr static auto AerialPerspectiveWidth = 32u;
@@ -83,8 +91,8 @@ struct Sky {
 	
 	Atmosphere const& atmosphere;
 	
-	vuk::Texture skyView;
-	vuk::Texture skyCubemapView;
+	vuk::Texture cameraView;
+	vuk::Texture cubemapView;
 	vuk::Texture aerialPerspective;
 	vuk::Unique<vuk::Buffer> sunLuminance;
 	
@@ -93,10 +101,10 @@ struct Sky {
 	auto calculate(vuk::Buffer world, Camera const& camera) -> vuk::RenderGraph;
 	
 	auto draw(vuk::Buffer world, vuk::Name targetColor,
-		vuk::Name targetDepth) -> vuk::RenderGraph;
+		vuk::Name targetDepth, vuk::Extent2D targetSize) -> vuk::RenderGraph;
 	
 	auto drawCubemap(vuk::Buffer world, vuk::Name target,
-		uvec2 targetSize) -> vuk::RenderGraph;
+		vuk::Extent2D targetSize) -> vuk::RenderGraph;
 	
 private:
 	

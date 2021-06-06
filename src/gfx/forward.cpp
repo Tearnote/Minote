@@ -57,7 +57,7 @@ auto Forward::zPrepass(vuk::Buffer _world, Indirect& _indirect, Meshes& _meshes)
 			   .bind_uniform_buffer(0, 0, _world)
 			   .bind_vertex_buffer(0, *_meshes.verticesBuf, 0, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
 			   .bind_index_buffer(*_meshes.indicesBuf, vuk::IndexType::eUint16)
-			   .bind_storage_buffer(0, 1, _indirect.instancesBuf)
+			   .bind_storage_buffer(0, 1, _indirect.instancesCulledBuf)
 			   .bind_graphics_pipeline("z_prepass");
 			cmd.draw_indexed_indirect(_indirect.commandsCount, _indirect.commandsBuf, sizeof(Indirect::Command));
 		},
@@ -73,7 +73,8 @@ auto Forward::zPrepass(vuk::Buffer _world, Indirect& _indirect, Meshes& _meshes)
 	
 }
 
-auto Forward::draw(vuk::Buffer _world, Indirect& _indirect, Meshes& _meshes, IBLMap& _ibl) -> vuk::RenderGraph {
+auto Forward::draw(vuk::Buffer _world, Indirect& _indirect,
+	Meshes& _meshes, Sky& _sky, IBLMap& _ibl) -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
 	
@@ -83,25 +84,28 @@ auto Forward::draw(vuk::Buffer _world, Indirect& _indirect, Meshes& _meshes, IBL
 			vuk::Resource(_indirect.Commands_n,        vuk::Resource::Type::eBuffer, vuk::eIndirectRead),
 			vuk::Resource(_indirect.InstancesCulled_n, vuk::Resource::Type::eBuffer, vuk::eVertexRead),
 			vuk::Resource(_ibl.Filtered_n,             vuk::Resource::Type::eImage,  vuk::eFragmentSampled),
-			"sky_aerial_perspective"_image(vuk::eFragmentSampled),
-			"sky_sun_luminance"_buffer(vuk::eFragmentRead),
+			vuk::Resource(_sky.AerialPerspective_n,    vuk::Resource::Type::eImage,  vuk::eFragmentSampled),
+			vuk::Resource(_sky.SunLuminance_n,         vuk::Resource::Type::eBuffer, vuk::eFragmentRead),
 			vuk::Resource(Color_n,                     vuk::Resource::Type::eImage,  vuk::eColorWrite),
 			vuk::Resource(Depth_n,                     vuk::Resource::Type::eImage,  vuk::eDepthStencilRW),
 		},
-		.execute = [this, _world, &_indirect, &_meshes, &_ibl](vuk::CommandBuffer& cmd) {
-			auto sunLuminanceBuf = cmd.get_resource_buffer("sky_sun_luminance");
-			cmd.set_viewport(0, vuk::Rect2D::framebuffer())
-			   .set_scissor(0, vuk::Rect2D::framebuffer())
-			   .bind_uniform_buffer(0, 0, _world)
+		.execute = [this, _world, &_indirect, &_meshes, &_sky, &_ibl](vuk::CommandBuffer& cmd) {
+			
+			cmd.set_viewport(0, vuk::Rect2D{ .extent = size })
+			   .set_scissor(0, vuk::Rect2D{ .extent = size })
+			   
 			   .bind_vertex_buffer(0, *_meshes.verticesBuf, 0, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
-			   .bind_vertex_buffer(1, *_meshes.normalsBuf, 1, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
-			   .bind_vertex_buffer(2, *_meshes.colorsBuf, 2, vuk::Packed{vuk::Format::eR16G16B16A16Unorm})
+			   .bind_vertex_buffer(1, *_meshes.normalsBuf,  1, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
+			   .bind_vertex_buffer(2, *_meshes.colorsBuf,   2, vuk::Packed{vuk::Format::eR16G16B16A16Unorm})
 			   .bind_index_buffer(*_meshes.indicesBuf, vuk::IndexType::eUint16)
-			   .bind_storage_buffer(0, 1, _indirect.instancesBuf)
-			   .bind_storage_buffer(0, 2, sunLuminanceBuf)
+			   
+			   .bind_uniform_buffer(0, 0, _world)
+			   .bind_storage_buffer(0, 1, _indirect.instancesCulledBuf)
+			   .bind_storage_buffer(0, 2, *_sky.sunLuminance)
 			   .bind_sampled_image(0, 3, _ibl.Filtered_n, TrilinearClamp)
-			   .bind_sampled_image(0, 4, "sky_aerial_perspective", TrilinearClamp)
+			   .bind_sampled_image(0, 4, _sky.AerialPerspective_n, TrilinearClamp)
 			   .bind_graphics_pipeline("object");
+			
 			cmd.draw_indexed_indirect(_indirect.commandsCount, _indirect.commandsBuf, sizeof(Indirect::Command));
 		},
 	});
