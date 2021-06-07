@@ -198,9 +198,9 @@ void Engine::render() {
 	world.viewportSize = {swapchain->extent.width, swapchain->extent.height};
 	world.cameraPos = camera.position;
 	auto swapchainSize = vuk::Dimension2D::absolute(swapchain->extent);
-
-	static auto sunPitch = radians(7.2f);
-	static auto sunYaw = radians(30.0f);
+	
+	static auto sunPitch = 7.2_deg;
+	static auto sunYaw = 30.0_deg;
 #if IMGUI
 	ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 60.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
 	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
