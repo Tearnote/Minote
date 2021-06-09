@@ -15,6 +15,7 @@
 #include "base/log.hpp"
 #include "gfx/modules/indirect.hpp"
 #include "gfx/modules/forward.hpp"
+#include "gfx/modules/bloom.hpp"
 #include "gfx/modules/post.hpp"
 #include "gfx/base.hpp"
 #include "main.hpp"
@@ -227,6 +228,7 @@ void Engine::render() {
 	auto sky = modules::Sky(ptc, *atmosphere);
 	auto forward = modules::Forward(ptc, swapchainSize.extent);
 	auto post = modules::Post(ptc);
+	auto bloom = modules::Bloom(ptc, forward.size);
 	
 	// Set up the rendergraph
 	
@@ -240,6 +242,7 @@ void Engine::render() {
 	rg.append(forward.draw(worldBuf, indirect, *meshes, sky, *ibl));
 	rg.append(sky.draw(worldBuf, forward.Color_n, forward.Depth_n, swapchainSize.extent));
 	rg.append(forward.resolve());
+	rg.append(bloom.apply(forward.Resolved_n));
 	rg.append(post.tonemap(forward.Resolved_n, "swapchain", swapchainSize.extent));
 	
 #if IMGUI

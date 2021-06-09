@@ -1,0 +1,97 @@
+#version 460
+#pragma shader_stage(compute)
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(binding = 0) uniform sampler2D source;
+layout(binding = 1, r11f_g11f_b10f) restrict writeonly uniform image2D target;
+
+shared vec4 outer[gl_WorkGroupSize.x + 2][gl_WorkGroupSize.y + 2];
+shared vec4 inner[gl_WorkGroupSize.x + 1][gl_WorkGroupSize.y + 1];
+
+#include "util.glsl"
+
+// https://github.com/keijiro/KinoBloom/blob/master/Assets/Kino/Bloom/Shader/Bloom.cginc
+vec4 KarisAverage(vec4 s1, vec4 s2, vec4 s3, vec4 s4) {
+	
+	float s1w = 1.0 / (luma(s1.rgb) + 1.0);
+	float s2w = 1.0 / (luma(s2.rgb) + 1.0);
+	float s3w = 1.0 / (luma(s3.rgb) + 1.0);
+	float s4w = 1.0 / (luma(s4.rgb) + 1.0);
+	float one_div_wsum = 1.0 / (s1w + s2w + s3w + s4w);
+	
+	return (s1 * s1w + s2 * s2w + s3 * s3w + s4 * s4w) * one_div_wsum;
+	
+}
+
+void main() {
+	
+	const uvec2 gid = gl_GlobalInvocationID.xy;
+	const uvec2 lid = gl_LocalInvocationID.xy;
+	const ivec2 sourceSize = textureSize(source, 0);
+	const ivec2 targetSize = imageSize(target);
+	
+	vec2 uv = (vec2(gid) + vec2(0.5)) / vec2(targetSize);
+	vec2 texel = vec2(1.0) / vec2(sourceSize);
+	vec2 texel2 = texel * 2.0;
+	
+	if (lid.x <= 1)
+		outer[lid.x  ][lid.y+2] = textureLod(source, uv + vec2(-texel2.x, texel2.y), 0.0);
+	if (lid.y <= 1)
+		outer[lid.x+2][lid.y  ] = textureLod(source, uv + vec2(texel2.x, -texel2.y), 0.0);
+	if (lid.x <= 1 && lid.y <= 1)
+		outer[lid.x  ][lid.y  ] = textureLod(source, uv - texel2, 0.0);
+	
+	outer[lid.x+2][lid.y+2] = textureLod(source, uv + texel2, 0.0);
+	
+	if (lid.x == 0)
+		inner[lid.x  ][lid.y+1] = textureLod(source, uv + vec2(-texel.x, texel.y), 0.0);
+	if (lid.y == 0)
+		inner[lid.x+1][lid.y  ] = textureLod(source, uv + vec2(texel.x, -texel.y), 0.0);
+	if (lid.x == 0 && lid.y == 0)
+		inner[lid.x  ][lid.y  ] = textureLod(source, uv - texel, 0.0);
+	
+	inner[lid.x+1][lid.y+1] = textureLod(source, uv + texel, 0.0);
+	
+	memoryBarrierShared();
+	barrier();
+	
+	if (any(greaterThanEqual(gid, targetSize)))
+		return;
+	
+	vec4 resultInner = KarisAverage(
+		inner[lid.x  ][lid.y  ],
+		inner[lid.x+1][lid.y  ],
+		inner[lid.x  ][lid.y+1],
+		inner[lid.x+1][lid.y+1]);
+	
+	vec4 resultOuter1 = KarisAverage(
+		outer[lid.x  ][lid.y  ],
+		outer[lid.x+1][lid.y  ],
+		outer[lid.x  ][lid.y+1],
+		outer[lid.x+1][lid.y+1]);
+	vec4 resultOuter2 = KarisAverage(
+		outer[lid.x+1][lid.y  ],
+		outer[lid.x+2][lid.y  ],
+		outer[lid.x+1][lid.y+1],
+		outer[lid.x+2][lid.y+1]);
+	vec4 resultOuter3 = KarisAverage(
+		outer[lid.x  ][lid.y+1],
+		outer[lid.x+1][lid.y+1],
+		outer[lid.x  ][lid.y+2],
+		outer[lid.x+1][lid.y+2]);
+	vec4 resultOuter4 = KarisAverage(
+		outer[lid.x+1][lid.y+1],
+		outer[lid.x+2][lid.y+1],
+		outer[lid.x+1][lid.y+2],
+		outer[lid.x+2][lid.y+2]);
+	
+	vec4 result =
+		resultInner  * 0.5   +
+		resultOuter1 * 0.125 +
+		resultOuter2 * 0.125 +
+		resultOuter3 * 0.125 +
+		resultOuter4 * 0.125;
+	imageStore(target, ivec2(gid), result);
+	
+}

@@ -61,6 +61,7 @@ add_executable(Minote
         src/gfx/modules/indirect.hpp src/gfx/modules/indirect.cpp
         src/gfx/modules/forward.hpp src/gfx/modules/forward.cpp
         src/gfx/modules/meshes.hpp src/gfx/modules/meshes.cpp
+        src/gfx/modules/bloom.hpp src/gfx/modules/bloom.cpp
         src/gfx/modules/world.hpp src/gfx/modules/world.cpp
         src/gfx/modules/post.hpp src/gfx/modules/post.cpp
         src/gfx/modules/ibl.hpp src/gfx/modules/ibl.cpp
@@ -242,10 +243,13 @@ set(SHADER_SOURCES
         src/glsl/sky/skyDrawCubemap.comp
         src/glsl/sky/skyGenSkyView.comp
         src/glsl/sky/skyDraw.vert src/glsl/sky/skyDraw.frag
+        src/glsl/bloomDownKaris.comp
         src/glsl/iblPostfilter.comp
         src/glsl/iblPrefilter.comp
+        src/glsl/bloomDown.comp
         src/glsl/zprepass.vert src/glsl/zprepass.frag
         src/glsl/tonemap.vert src/glsl/tonemap.frag
+        src/glsl/bloomUp.comp
         src/glsl/object.vert src/glsl/object.frag
         src/glsl/imgui.vert src/glsl/imgui.frag
         src/glsl/cull.comp)

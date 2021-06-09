@@ -29,7 +29,13 @@ vec3 srgbDecode(vec3 color) {
    return vec3(r, g, b);
 }
 
-float Luminance(vec3 rgb) {
+float Luminance(vec3 color) {
     const vec3 W = vec3(0.2125, 0.7154, 0.0721);
-    return dot(rgb, W);
+    return dot(color, W);
+}
+
+// https://github.com/hughsk/glsl-luma/blob/master/index.glsl
+float luma(vec3 color) {
+    const vec3 W = vec3(0.299, 0.587, 0.114);
+    return dot(color, W);
 }
