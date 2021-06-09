@@ -210,7 +210,7 @@ void Engine::render() {
 	world.sunDirection = vec3(1.0f, 0.0f, 0.0f);
 	world.sunDirection = glm::mat3(make_rotate(sunPitch, {0.0f, -1.0f, 0.0f})) * world.sunDirection;
 	world.sunDirection = glm::mat3(make_rotate(sunYaw, {0.0f, 0.0f, 1.0f})) * world.sunDirection;
-	static auto sunIlluminance = 4.0f;
+	static auto sunIlluminance = 8.0f;
 #if IMGUI
 	ImGui::SliderFloat("Sun illuminance", &sunIlluminance, 0.01f, 100.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
 #endif //IMGUI
