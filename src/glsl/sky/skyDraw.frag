@@ -35,6 +35,6 @@ void main() {
 
 	SkyViewLutParamsToUv(IntersectGround, viewZenithCosAngle, lightViewCosAngle, viewSize, viewHeight, uv);
 	vec3 skyView = textureLod(skyView, uv, 0.0).rgb;
-	vec3 sun = GetSunLuminance(WorldPos, WorldDir, Atmosphere.BottomRadius);
+	vec3 sun = GetSunLuminance(WorldPos, WorldDir, Atmosphere.BottomRadius) * (120000.0 / world.sunIlluminance);
 	out_color = vec4(skyView + sun, 1.0);
 }
