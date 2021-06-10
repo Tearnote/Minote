@@ -11,11 +11,12 @@ struct Bloom {
 	static constexpr auto Bloom_n = "bloom";
 	
 	static constexpr auto BloomFormat = vuk::Format::eB10G11R11UfloatPack32;
-	static constexpr auto BloomStrength = 6u;
+	static constexpr auto BloomPasses = 6u;
+	static constexpr auto BloomStrength = 1.0f / 128.0f;
 	
 	vuk::Extent2D size;
 	vuk::Texture bloom;
-	std::array<vuk::Unique<vuk::ImageView>, BloomStrength> bloomViews;
+	std::array<vuk::Unique<vuk::ImageView>, BloomPasses> bloomViews;
 	
 	Bloom(vuk::PerThreadContext&, vuk::Extent2D size);
 	

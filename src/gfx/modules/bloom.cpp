@@ -11,19 +11,19 @@ using namespace base;
 
 Bloom::Bloom(vuk::PerThreadContext& _ptc, vuk::Extent2D _size) {
 	
-	assert(_size.width  >= (1 << BloomStrength));
-	assert(_size.height >= (1 << BloomStrength));
+	assert(_size.width  >= (1 << BloomPasses));
+	assert(_size.height >= (1 << BloomPasses));
 	
 	size = _size;
 	
 	bloom = _ptc.allocate_texture(vuk::ImageCreateInfo{
 		.format = BloomFormat,
 		.extent = {_size.width >> 1, _size.height >> 1, 1},
-		.mipLevels = BloomStrength,
+		.mipLevels = BloomPasses,
 		.usage = vuk::ImageUsageFlagBits::eStorage | vuk::ImageUsageFlagBits::eSampled,
 	});
 	
-	for (auto i = 0u; i < BloomStrength; i += 1) {
+	for (auto i = 0u; i < BloomPasses; i += 1) {
 		
 		bloomViews[i] = _ptc.create_image_view(vuk::ImageViewCreateInfo{
 			.image = *bloom.image,
@@ -75,7 +75,7 @@ auto Bloom::apply(vuk::Name _target) -> vuk::RenderGraph {
 		},
 		.execute = [this, _target](vuk::CommandBuffer& cmd) {
 			
-			for (auto i = 0u; i < BloomStrength; i += 1) {
+			for (auto i = 0u; i < BloomPasses; i += 1) {
 				
 				if (i == 0) {
 					
@@ -95,7 +95,7 @@ auto Bloom::apply(vuk::Name _target) -> vuk::RenderGraph {
 				
 			}
 			
-			cmd.image_barrier(Bloom_n, vuk::eComputeSampled, vuk::eComputeRW, 0, BloomStrength - 1);
+			cmd.image_barrier(Bloom_n, vuk::eComputeSampled, vuk::eComputeRW, 0, BloomPasses - 1);
 			
 		},
 	});
@@ -108,15 +108,15 @@ auto Bloom::apply(vuk::Name _target) -> vuk::RenderGraph {
 		},
 		.execute = [this, _target](vuk::CommandBuffer& cmd) {
 			
-			for (auto _i = 0u; _i < BloomStrength; _i += 1) {
-				auto i = BloomStrength - _i - 1;
+			for (auto _i = 0u; _i < BloomPasses; _i += 1) {
+				auto i = BloomPasses - _i - 1;
 				
 				cmd.image_barrier(Bloom_n, vuk::eComputeRW, vuk::eComputeSampled, i, 1);
 				cmd.bind_sampled_image(0, 0, *bloomViews[i], LinearClamp);
 				if (i == 0) {
 					
 					cmd.bind_storage_image(0, 1, _target);
-					cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, 1.0f / 64.0f);
+					cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, BloomStrength);
 					
 				} else {
 					
