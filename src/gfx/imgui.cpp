@@ -4,6 +4,7 @@
 
 #if IMGUI
 
+#include <cmath>
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/Context.hpp"
 #include "base/types.hpp"
@@ -14,7 +15,74 @@ using namespace base;
 
 // Functions copied and customized from vuk examples source
 
+auto LinearImVec4(float r, float g, float b, float a) -> ImVec4 {
+	
+	constexpr auto power = 2.2f;
+	
+	return ImVec4(
+		std::pow(r, power),
+		std::pow(g, power),
+		std::pow(b, power),
+		std::pow(a, power));
+	
+};
+
 ImguiData ImGui_ImplVuk_Init(vuk::PerThreadContext& ptc) {
+	
+	// Set theme
+	ImGui::GetStyle().FrameRounding = 4.0f;
+	ImGui::GetStyle().GrabRounding = 4.0f;
+	
+	ImVec4* colors = ImGui::GetStyle().Colors;
+	colors[ImGuiCol_Text] = LinearImVec4(0.95f, 0.96f, 0.98f, 1.00f);
+	colors[ImGuiCol_TextDisabled] = LinearImVec4(0.36f, 0.42f, 0.47f, 1.00f);
+	colors[ImGuiCol_WindowBg] = LinearImVec4(0.11f, 0.15f, 0.17f, 1.00f);
+	colors[ImGuiCol_ChildBg] = LinearImVec4(0.15f, 0.18f, 0.22f, 1.00f);
+	colors[ImGuiCol_PopupBg] = LinearImVec4(0.08f, 0.08f, 0.08f, 0.94f);
+	colors[ImGuiCol_Border] = LinearImVec4(0.08f, 0.10f, 0.12f, 1.00f);
+	colors[ImGuiCol_BorderShadow] = LinearImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+	colors[ImGuiCol_FrameBg] = LinearImVec4(0.20f, 0.25f, 0.29f, 1.00f);
+	colors[ImGuiCol_FrameBgHovered] = LinearImVec4(0.12f, 0.20f, 0.28f, 1.00f);
+	colors[ImGuiCol_FrameBgActive] = LinearImVec4(0.09f, 0.12f, 0.14f, 1.00f);
+	colors[ImGuiCol_TitleBg] = LinearImVec4(0.09f, 0.12f, 0.14f, 0.65f);
+	colors[ImGuiCol_TitleBgActive] = LinearImVec4(0.08f, 0.10f, 0.12f, 1.00f);
+	colors[ImGuiCol_TitleBgCollapsed] = LinearImVec4(0.00f, 0.00f, 0.00f, 0.51f);
+	colors[ImGuiCol_MenuBarBg] = LinearImVec4(0.15f, 0.18f, 0.22f, 1.00f);
+	colors[ImGuiCol_ScrollbarBg] = LinearImVec4(0.02f, 0.02f, 0.02f, 0.39f);
+	colors[ImGuiCol_ScrollbarGrab] = LinearImVec4(0.20f, 0.25f, 0.29f, 1.00f);
+	colors[ImGuiCol_ScrollbarGrabHovered] = LinearImVec4(0.18f, 0.22f, 0.25f, 1.00f);
+	colors[ImGuiCol_ScrollbarGrabActive] = LinearImVec4(0.09f, 0.21f, 0.31f, 1.00f);
+	colors[ImGuiCol_CheckMark] = LinearImVec4(0.28f, 0.56f, 1.00f, 1.00f);
+	colors[ImGuiCol_SliderGrab] = LinearImVec4(0.28f, 0.56f, 1.00f, 1.00f);
+	colors[ImGuiCol_SliderGrabActive] = LinearImVec4(0.37f, 0.61f, 1.00f, 1.00f);
+	colors[ImGuiCol_Button] = LinearImVec4(0.20f, 0.25f, 0.29f, 1.00f);
+	colors[ImGuiCol_ButtonHovered] = LinearImVec4(0.28f, 0.56f, 1.00f, 1.00f);
+	colors[ImGuiCol_ButtonActive] = LinearImVec4(0.06f, 0.53f, 0.98f, 1.00f);
+	colors[ImGuiCol_Header] = LinearImVec4(0.20f, 0.25f, 0.29f, 0.55f);
+	colors[ImGuiCol_HeaderHovered] = LinearImVec4(0.26f, 0.59f, 0.98f, 0.80f);
+	colors[ImGuiCol_HeaderActive] = LinearImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+	colors[ImGuiCol_Separator] = LinearImVec4(0.20f, 0.25f, 0.29f, 1.00f);
+	colors[ImGuiCol_SeparatorHovered] = LinearImVec4(0.10f, 0.40f, 0.75f, 0.78f);
+	colors[ImGuiCol_SeparatorActive] = LinearImVec4(0.10f, 0.40f, 0.75f, 1.00f);
+	colors[ImGuiCol_ResizeGrip] = LinearImVec4(0.26f, 0.59f, 0.98f, 0.25f);
+	colors[ImGuiCol_ResizeGripHovered] = LinearImVec4(0.26f, 0.59f, 0.98f, 0.67f);
+	colors[ImGuiCol_ResizeGripActive] = LinearImVec4(0.26f, 0.59f, 0.98f, 0.95f);
+	colors[ImGuiCol_Tab] = LinearImVec4(0.11f, 0.15f, 0.17f, 1.00f);
+	colors[ImGuiCol_TabHovered] = LinearImVec4(0.26f, 0.59f, 0.98f, 0.80f);
+	colors[ImGuiCol_TabActive] = LinearImVec4(0.20f, 0.25f, 0.29f, 1.00f);
+	colors[ImGuiCol_TabUnfocused] = LinearImVec4(0.11f, 0.15f, 0.17f, 1.00f);
+	colors[ImGuiCol_TabUnfocusedActive] = LinearImVec4(0.11f, 0.15f, 0.17f, 1.00f);
+	colors[ImGuiCol_PlotLines] = LinearImVec4(0.61f, 0.61f, 0.61f, 1.00f);
+	colors[ImGuiCol_PlotLinesHovered] = LinearImVec4(1.00f, 0.43f, 0.35f, 1.00f);
+	colors[ImGuiCol_PlotHistogram] = LinearImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+	colors[ImGuiCol_PlotHistogramHovered] = LinearImVec4(1.00f, 0.60f, 0.00f, 1.00f);
+	colors[ImGuiCol_TextSelectedBg] = LinearImVec4(0.26f, 0.59f, 0.98f, 0.35f);
+	colors[ImGuiCol_DragDropTarget] = LinearImVec4(1.00f, 1.00f, 0.00f, 0.90f);
+	colors[ImGuiCol_NavHighlight] = LinearImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+	colors[ImGuiCol_NavWindowingHighlight] = LinearImVec4(1.00f, 1.00f, 1.00f, 0.70f);
+	colors[ImGuiCol_NavWindowingDimBg] = LinearImVec4(0.80f, 0.80f, 0.80f, 0.20f);
+	colors[ImGuiCol_ModalWindowDimBg] = LinearImVec4(0.80f, 0.80f, 0.80f, 0.35f);
+	
 	auto& io = ImGui::GetIO();
 	io.BackendRendererName = "imgui_impl_vuk";
 	io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;  // We can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
