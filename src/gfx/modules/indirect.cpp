@@ -16,9 +16,21 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 	
 	// Create the command list
 	
-	auto sortedMeshIDs = hashmap<ID, u32>();
 	auto commands = std::vector<Command>();
 	commands.reserve(_meshes.size());
+	for (auto& descriptor: _meshes.descriptors) {
+		
+		commands.emplace_back(Command{
+			.indexCount = descriptor.indexCount,
+			.instanceCount = 0, // counted during the next loop
+			.firstIndex = descriptor.indexOffset,
+			.vertexOffset = i32(descriptor.vertexOffset),
+			.firstInstance = 0, // calculated later
+			.meshRadius = descriptor.radius});
+		
+	}
+	
+	// Count instances per mesh
 	
 	for (auto id = ObjectID(0); id < _objects.size(); id += 1) {
 		
@@ -27,22 +39,8 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 			continue;
 		
 		auto meshID = _objects.meshIDs[id];
-		if (!sortedMeshIDs.contains(meshID)) {
-			
-			auto& descriptor = _meshes.at(meshID);
-			sortedMeshIDs.emplace(meshID, commands.size());
-			commands.emplace_back(Command{
-				.indexCount = descriptor.indexCount,
-				.instanceCount = 0, // counted during the loop
-				.firstIndex = descriptor.indexOffset,
-				.vertexOffset = i32(descriptor.vertexOffset),
-				.firstInstance = 0, // calculated later
-				.meshRadius = descriptor.radius,
-			});
-			
-		}
-		
-		commands[sortedMeshIDs.at(meshID)].instanceCount += 1;
+		auto meshIndex = _meshes.descriptorIDs.at(meshID);
+		commands[meshIndex].instanceCount += 1;
 		
 	}
 	
@@ -68,7 +66,7 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 			continue;
 		
 		auto meshID = _objects.meshIDs[id];
-		auto meshIndex = sortedMeshIDs.at(meshID);
+		auto meshIndex = _meshes.descriptorIDs.at(meshID);
 		auto& command = commands[meshIndex];
 		auto instanceIndex = command.firstInstance + command.instanceCount;
 		auto& material = _objects.materials[id];
@@ -77,7 +75,7 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 			.tint = material.tint,
 			.roughness = material.roughness,
 			.metalness = material.metalness,
-			.meshID = meshIndex,
+			.meshID = u32(meshIndex),
 		};
 		
 		command.instanceCount += 1;
