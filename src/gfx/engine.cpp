@@ -67,7 +67,16 @@ Engine::Engine(sys::Window& window, Version version) {
 #if VK_VALIDATION
 		.enable_layer("VK_LAYER_KHRONOS_validation")
 		.add_validation_feature_enable(VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT)
+		.add_validation_feature_enable(VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT)
 		.set_debug_callback(debugCallback)
+		.set_debug_messenger_severity(
+			VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT |
+			VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+			VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
+		.set_debug_messenger_type(
+			VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+			VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+			VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
 #endif //VK_VALIDATION
 		.set_app_name(AppTitle)
 		.set_engine_name("vuk")
@@ -99,6 +108,9 @@ Engine::Engine(sys::Window& window, Version version) {
 		.set_minimum_version(1, 2)
 		.set_required_features(physicalDeviceFeatures)
 		.set_required_features_12(physicalDeviceVulkan12Features)
+#if VK_VALIDATION
+		.add_required_extension("VK_KHR_shader_non_semantic_info")
+#endif //VK_VALIDATION
 		.select();
 	if (!physicalDeviceSelectorResult)
 		throw std::runtime_error(fmt::format("Failed to find a suitable GPU for Vulkan: {}", physicalDeviceSelectorResult.error().message()));
