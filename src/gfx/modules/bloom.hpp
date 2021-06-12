@@ -10,7 +10,8 @@ struct Bloom {
 	
 	static constexpr auto Bloom_n = "bloom";
 	
-	static constexpr auto BloomFormat = vuk::Format::eB10G11R11UfloatPack32;
+	// static constexpr auto BloomFormat = vuk::Format::eB10G11R11UfloatPack32;
+	static constexpr auto BloomFormat = vuk::Format::eR16G16B16A16Sfloat;
 	static constexpr auto BloomPasses = 6u;
 	static constexpr auto BloomStrength = 1.0f / 128.0f;
 	
