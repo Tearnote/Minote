@@ -239,7 +239,7 @@ auto Sky::calculate(vuk::Buffer _world, Camera const& _camera) -> vuk::RenderGra
 			   .bind_sampled_image(0, 3, atmosphere.MultiScattering_n, LinearClamp)
 			   .bind_storage_image(1, 0, CubemapView_n)
 			   .bind_compute_pipeline("sky_gen_sky_view");
-			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0_zu, vec3(0_m, 0_m, 1_m));
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0_zu, CubemapCamera);
 			cmd.dispatch_invocations(ViewWidth, ViewHeight, 1);
 			
 		},
@@ -373,7 +373,7 @@ auto Sky::drawCubemap(vuk::Buffer _world, vuk::Name _target,
 					0.0f, 0.0f, -1.0f,
 				}});
 			
-			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0_zu, vec3(0_m, 0_m, 1_m));
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0_zu, CubemapCamera);
 			
 			cmd.dispatch_invocations(_targetSize.width, _targetSize.height, 6);
 			

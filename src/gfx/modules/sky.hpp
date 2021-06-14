@@ -10,6 +10,7 @@
 namespace minote::gfx::modules {
 
 using namespace base;
+using namespace base::literals;
 
 struct Atmosphere {
 	
@@ -88,6 +89,8 @@ struct Sky {
 	constexpr static auto AerialPerspectiveWidth = 32u;
 	constexpr static auto AerialPerspectiveHeight = 32u;
 	constexpr static auto AerialPerspectiveDepth = 32u;
+	
+	constexpr static auto CubemapCamera = vec3(0_m, 0_m, 10_m);
 	
 	Atmosphere const& atmosphere;
 	
