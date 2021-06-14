@@ -55,10 +55,11 @@ void Meshes::addGltf(std::string_view name, std::span<char const> mesh) {
 			assert(accessor.component_type == cgltf_component_type_r_32f);
 			assert(accessor.type == cgltf_type_vec3);
 
-			// Calculate the furthest point from the origin (for frustum culling)
-			auto pmin = vec3(accessor.min[0], accessor.min[1], accessor.min[2]);
-			auto pmax = vec3(accessor.max[0], accessor.max[1], accessor.max[2]);
-			auto pfar = max(abs(pmin), abs(pmax));
+			// Calculate the AABB for BVH generation, and furthest point from
+			// the origin (for frustum culling)
+			desc.aabbMin = vec3(accessor.min[0], accessor.min[1], accessor.min[2]);
+			desc.aabbMax = vec3(accessor.max[0], accessor.max[1], accessor.max[2]);
+			auto pfar = max(abs(desc.aabbMin), abs(desc.aabbMax));
 			desc.radius = length(pfar);
 
 			auto* typedBuffer = (vec3*)(buffer);

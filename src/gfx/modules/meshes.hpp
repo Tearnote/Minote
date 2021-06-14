@@ -32,6 +32,8 @@ struct Meshes {
 		u32 indexCount;
 		u32 vertexOffset;
 		f32 radius;
+		vec3 aabbMin;
+		vec3 aabbMax;
 	
 	};
 	std::vector<Descriptor> descriptors;

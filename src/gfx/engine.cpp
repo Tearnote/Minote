@@ -172,6 +172,9 @@ void Engine::uploadAssets() {
 	ImGui::GetIO().DisplaySize = ImVec2(f32(swapchain->extent.width), f32(swapchain->extent.height));
 #endif //IMGUI
 	
+	// Generate acceleration structures
+	bvh.generateMeshesBvh(*meshes);
+	
 	// Upload static data
 	meshes->upload(ptc);
 	
