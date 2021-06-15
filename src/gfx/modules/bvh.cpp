@@ -7,9 +7,11 @@
 #include "bvh/triangle.hpp"
 #include "bvh/vector.hpp"
 #include "bvh/bvh.hpp"
-#include "base/log.hpp"
+#include "base/util.hpp"
 
 namespace minote::gfx::modules {
+
+using namespace base::literals;
 
 void Bvh::generateMeshesBvh(Meshes const& _meshes) {
 	
@@ -19,6 +21,8 @@ void Bvh::generateMeshesBvh(Meshes const& _meshes) {
 	for (auto& [id, _]: _meshes.descriptorIDs) {
 		
 		auto& descriptor = _meshes.at(id);
+		
+		// Generate list of triangle primitives
 		
 		auto triangles = std::vector<Triangle>();
 		triangles.reserve(descriptor.indexCount);
@@ -44,6 +48,8 @@ void Bvh::generateMeshesBvh(Meshes const& _meshes) {
 			
 		}
 		
+		// Build the BVH
+		
 		auto bvh = bvh::Bvh<float>();
 		auto builder = bvh::SweepSahBuilder(bvh);
 		builder.max_leaf_size = 2;
@@ -59,11 +65,129 @@ void Bvh::generateMeshesBvh(Meshes const& _meshes) {
 		auto [aabbs, centers] = bvh::compute_bounding_boxes_and_centers(triangles.data(), triangles.size());
 		builder.build(globalAABB, aabbs.get(), centers.get(), triangles.size());
 		
-		for (auto i = 0u; i < bvh.node_count; i += 1) {
-			//L.trace("Node {}: count {}, first child/prim {}", i, bvh.nodes[i].primitive_count, bvh.nodes[i].first_child_or_primitive);
+		// Establish depth-first ordering
+		
+		auto totalDepthFirstNodes = 0_zu;
+		auto depthFirstOrder = std::vector<usize>(bvh.node_count);
+		{
+			auto stack = std::vector<usize>();
+			auto counter = 0_zu;
+			auto nodeIndex = 0_zu;
+			while (true) {
+				
+				auto& node = bvh.nodes[nodeIndex];
+				depthFirstOrder[nodeIndex] = counter;
+				counter += 1;
+				counter += node.primitive_count == 2? 2 : 0;
+				
+				if (!node.is_leaf()) {
+					
+					nodeIndex = node.first_child_or_primitive;
+					stack.emplace_back(node.first_child_or_primitive + 1);
+					
+				} else {
+					
+					if (stack.empty())
+						break;
+					nodeIndex = stack.back();
+					stack.pop_back();
+					
+				}
+				
+			}
+			
+			totalDepthFirstNodes = counter;
+			
 		}
 		
-		L.trace("BVH generation complete: {}", +id);
+		// Build depth-first BVH
+		
+		auto depthFirstBvh = std::vector<Node>(totalDepthFirstNodes);
+		{
+			struct StackLink {
+				
+				usize index;
+				usize miss;
+				
+			};
+			
+			auto stack = std::vector<StackLink>();
+			auto missLink = -1_zu;
+			auto nodeIndex = 0_zu;
+			while (true) {
+				
+				auto& node = bvh.nodes[nodeIndex];
+				auto depthFirstIndex = depthFirstOrder[nodeIndex];
+				
+				// Create internal node
+				
+				if (node.primitive_count != 1) {
+					
+					depthFirstBvh[depthFirstIndex] = Node{
+						.inter = {
+							.aabbMin = vec3(
+								node.bounds[0],
+								node.bounds[1],
+								node.bounds[2]),
+							.isLeaf = 0u,
+							.aabbMax = vec3(
+								node.bounds[3],
+								node.bounds[4],
+								node.bounds[5]),
+							.miss = u32(missLink) }};
+					assert(missLink > depthFirstIndex);
+					
+					depthFirstIndex += 1;
+					
+				}
+				
+				// Create leaf node(s)
+				
+				for (auto i = 0_zu; i < node.primitive_count; i += 1) {
+					
+					auto primitive = node.first_child_or_primitive + i;
+					auto index = primitive * 3 + descriptor.indexOffset;
+					auto miss = depthFirstIndex + i + 1;
+					if (miss == depthFirstBvh.size())
+						miss = -1_zu;
+					
+					depthFirstBvh[depthFirstIndex + i] = Node{
+						.leaf = {
+							.indices = uvec3(
+								_meshes.indices[index  ],
+								_meshes.indices[index+1],
+								_meshes.indices[index+2]),
+							.isLeaf = 1u,
+							.miss = u32(miss) }};
+					
+				}
+				
+				if (!node.is_leaf()) {
+					
+					// Internal node, enter first child and put second child on stack
+					
+					nodeIndex = node.first_child_or_primitive;
+					stack.emplace_back(StackLink{
+						.index = node.first_child_or_primitive + 1,
+						.miss = missLink });
+					missLink = depthFirstOrder[bvh.sibling(nodeIndex)];
+					
+				} else {
+					
+					// Leaf node, get next task from the top of stack
+					
+					if (stack.empty())
+						break;
+					auto& back = stack.back();
+					nodeIndex = back.index;
+					missLink = back.miss;
+					stack.pop_back();
+					
+				}
+				
+			}
+			
+		}
 		
 	}
 	
