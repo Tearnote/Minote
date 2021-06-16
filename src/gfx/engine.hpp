@@ -56,7 +56,7 @@ struct Engine {
 	Objects objects;
 	modules::World world;
 	Camera camera;
-	modules::Bvh bvh;
+	std::optional<modules::Bvh> bvh;
 	
 	std::optional<modules::Atmosphere> atmosphere;
 	std::optional<modules::IBLMap> ibl;

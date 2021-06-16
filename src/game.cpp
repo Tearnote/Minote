@@ -67,7 +67,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 			engine.objects.destroy(obj);
 	};
 	
-	auto const Expand = 0u;
+	auto const Expand = 40u;
 	auto prescale = vec3(1_m, 1_m, 1_m);
 	auto rotation = mat3(make_rotate(180_deg, {1.0f, 0.0f, 0.0f}));
 	constexpr auto Spacing = 25_m;

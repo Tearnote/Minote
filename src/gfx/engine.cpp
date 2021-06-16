@@ -143,12 +143,14 @@ Engine::Engine(sys::Window& window, Version version) {
 	
 	// Create user-facing modules
 	meshes = modules::Meshes();
+	bvh = modules::Bvh();
 }
 
 Engine::~Engine() {
 	context->wait_idle();
 	ibl.reset();
 	atmosphere.reset();
+	bvh.reset();
 	meshes.reset();
 #if IMGUI
 	imguiData.font_texture.view.reset();
@@ -173,7 +175,7 @@ void Engine::uploadAssets() {
 #endif //IMGUI
 	
 	// Generate acceleration structures
-	bvh.generateMeshesBvh(*meshes);
+	bvh->generateMeshesBvh(ptc, *meshes);
 	
 	// Upload static data
 	meshes->upload(ptc);

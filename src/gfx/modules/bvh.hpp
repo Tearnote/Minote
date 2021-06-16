@@ -1,5 +1,7 @@
 #pragma once
 
+#include "vuk/Context.hpp"
+#include "vuk/Buffer.hpp"
 #include "gfx/modules/meshes.hpp"
 
 namespace minote::gfx::modules {
@@ -32,10 +34,20 @@ struct Bvh {
 		
 	};
 	
+	struct Descriptor {
+		
+		u32 offset;
+		u32 nodeCount;
+		
+	};
+	
 	static_assert(sizeof(Node::Inter) == sizeof(Node::Leaf));
 	static_assert(sizeof(Node::Inter) == sizeof(Node));
 	
-	void generateMeshesBvh(Meshes const&);
+	vuk::Unique<vuk::Buffer> bvhBuf;
+	vuk::Unique<vuk::Buffer> descriptorsBuf;
+	
+	void generateMeshesBvh(vuk::PerThreadContext&, Meshes const&);
 	
 };
 

@@ -13,14 +13,15 @@ namespace minote::gfx::modules {
 
 using namespace base::literals;
 
-void Bvh::generateMeshesBvh(Meshes const& _meshes) {
+void Bvh::generateMeshesBvh(vuk::PerThreadContext& _ptc, Meshes const& _meshes) {
+	
+	auto depthFirstBvh = std::vector<Node>();
+	auto bvhDescriptors = std::vector<Descriptor>();
 	
 	using Vector3  = bvh::Vector3<float>;
 	using Triangle = bvh::Triangle<float>;
 	
-	for (auto& [id, _]: _meshes.descriptorIDs) {
-		
-		auto& descriptor = _meshes.at(id);
+	for (auto& descriptor: _meshes.descriptors) {
 		
 		// Generate list of triangle primitives
 		
@@ -102,7 +103,6 @@ void Bvh::generateMeshesBvh(Meshes const& _meshes) {
 		
 		// Build depth-first BVH
 		
-		auto depthFirstBvh = std::vector<Node>(totalDepthFirstNodes);
 		{
 			struct StackLink {
 				
@@ -114,6 +114,13 @@ void Bvh::generateMeshesBvh(Meshes const& _meshes) {
 			auto stack = std::vector<StackLink>();
 			auto missLink = -1_zu;
 			auto nodeIndex = 0_zu;
+			auto offset = depthFirstBvh.size();
+			
+			bvhDescriptors.emplace_back(Descriptor{
+				.offset = u32(offset),
+				.nodeCount = u32(totalDepthFirstNodes) });
+			depthFirstBvh.resize(depthFirstBvh.size() + totalDepthFirstNodes);
+			
 			while (true) {
 				
 				auto& node = bvh.nodes[nodeIndex];
@@ -123,7 +130,7 @@ void Bvh::generateMeshesBvh(Meshes const& _meshes) {
 				
 				if (node.primitive_count != 1) {
 					
-					depthFirstBvh[depthFirstIndex] = Node{
+					depthFirstBvh[offset + depthFirstIndex] = Node{
 						.inter = {
 							.aabbMin = vec3(
 								node.bounds[0],
@@ -151,7 +158,7 @@ void Bvh::generateMeshesBvh(Meshes const& _meshes) {
 					if (miss == depthFirstBvh.size())
 						miss = -1_zu;
 					
-					depthFirstBvh[depthFirstIndex + i] = Node{
+					depthFirstBvh[offset + depthFirstIndex + i] = Node{
 						.leaf = {
 							.indices = uvec3(
 								_meshes.indices[index  ],
@@ -190,6 +197,13 @@ void Bvh::generateMeshesBvh(Meshes const& _meshes) {
 		}
 		
 	}
+	
+	// Upload to GPU
+	
+	bvhBuf = _ptc.create_buffer<Node>(vuk::MemoryUsage::eGPUonly,
+		vuk::BufferUsageFlagBits::eStorageBuffer, std::span(depthFirstBvh)).first;
+	descriptorsBuf = _ptc.create_buffer<Descriptor>(vuk::MemoryUsage::eGPUonly,
+		vuk::BufferUsageFlagBits::eStorageBuffer, std::span(bvhDescriptors)).first;
 	
 }
 
