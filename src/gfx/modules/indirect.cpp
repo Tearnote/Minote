@@ -32,7 +32,7 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 	
 	// Count instances per mesh
 	
-	for (auto id = ObjectID(0); id < _objects.size(); id += 1) {
+	for (auto size = _objects.size(), id = ObjectID(0); id < size; id += 1) {
 		
 		auto& metadata = _objects.metadata[id];
 		if (!metadata.exists || !metadata.visible)
@@ -47,7 +47,7 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 	// Calculate command list instance offsets
 	
 	auto commandOffset = 0_zu;
-	for (auto i = 0_zu; i < commands.size(); i += 1) {
+	for (auto size = commands.size(), i = 0_zu; i < size; i += 1) {
 		
 		auto& command = commands[i];
 		command.firstInstance = commandOffset;
@@ -59,7 +59,7 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 	// Create the instance vector sorted by mesh ID
 	
 	auto sortedInstances = std::vector<Instance>(commandOffset);
-	for (auto id = ObjectID(0); id < _objects.size(); id += 1) {
+	for (auto size = _objects.size(), id = ObjectID(0); id < size; id += 1) {
 		
 		auto& metadata = _objects.metadata[id];
 		if (!metadata.exists || !metadata.visible)
