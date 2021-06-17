@@ -4,6 +4,7 @@
 
 #include <exception>
 #include <vector>
+#include "optick.h"
 #include "base/math.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"
@@ -25,6 +26,8 @@ using namespace base::literals;
 constexpr auto UpdateTick = 1_s / 120;
 
 void game(sys::Glfw&, sys::Window& window) try {
+	
+	OPTICK_THREAD("Game");
 
 	// *** Initialization ***
 
@@ -153,6 +156,8 @@ void game(sys::Glfw&, sys::Window& window) try {
 	auto nextUpdate = sys::Glfw::getTime();
 	
 	while (!window.isClosing()) {
+		OPTICK_FRAME("Renderer");
+		
 		// Input
 		mapper.collectKeyInputs(window);
 
@@ -224,11 +229,14 @@ void game(sys::Glfw&, sys::Window& window) try {
 		
 		// Graphics
 		
-		auto rotateTransform = make_rotate(180_deg, {1.0f, 0.0f, 0.0f});
-		auto rotateTransformAnim = make_rotate(f32(radians(f64(sys::Glfw::getTime().count()) / 20000000.0)), {0.0f, 0.0f, 1.0f});
-		for (auto& obj: dynamicObjects) {
-			obj.rotation = mat3(rotateTransformAnim * rotateTransform);
-			engine.objects.update(obj);
+		{
+			OPTICK_EVENT("Update spinny squares");
+			auto rotateTransform = make_rotate(180_deg, {1.0f, 0.0f, 0.0f});
+			auto rotateTransformAnim = make_rotate(f32(radians(f64(sys::Glfw::getTime().count()) / 20000000.0)), {0.0f, 0.0f, 1.0f});
+			for (auto& obj: dynamicObjects) {
+				obj.rotation = mat3(rotateTransformAnim * rotateTransform);
+				engine.objects.update(obj);
+			}
 		}
 		
 		engine.render();

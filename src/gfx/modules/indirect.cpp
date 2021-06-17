@@ -1,6 +1,7 @@
 #include "gfx/modules/indirect.hpp"
 
 #include <cstring>
+#include "optick.h"
 #include "vuk/CommandBuffer.hpp"
 #include "base/hashmap.hpp"
 #include "base/math.hpp"
@@ -14,99 +15,125 @@ using namespace base::literals;
 Indirect::Indirect(vuk::PerThreadContext& _ptc,
 	Objects const& _objects, Meshes const& _meshes) {
 	
+	OPTICK_EVENT("Indirect::Indirect");
+	
 	// Create the command list
 	
 	auto commands = std::vector<Command>();
-	commands.reserve(_meshes.size());
-	for (auto& descriptor: _meshes.descriptors) {
+	{
+		OPTICK_EVENT("Create command list");
 		
-		commands.emplace_back(Command{
-			.indexCount = descriptor.indexCount,
-			.instanceCount = 0, // counted during the next loop
-			.firstIndex = descriptor.indexOffset,
-			.vertexOffset = i32(descriptor.vertexOffset),
-			.firstInstance = 0, // calculated later
-			.meshRadius = descriptor.radius});
-		
+		commands.reserve(_meshes.size());
+		for (auto& descriptor: _meshes.descriptors) {
+			
+			commands.emplace_back(Command{
+				.indexCount = descriptor.indexCount,
+				.instanceCount = 0, // counted during the next loop
+				.firstIndex = descriptor.indexOffset,
+				.vertexOffset = i32(descriptor.vertexOffset),
+				.firstInstance = 0, // calculated later
+				.meshRadius = descriptor.radius});
+			
+		}
 	}
 	
 	// Count instances per mesh
 	
-	for (auto size = _objects.size(), id = ObjectID(0); id < size; id += 1) {
+	{
+		OPTICK_EVENT("Count instances per mesh");
 		
-		auto& metadata = _objects.metadata[id];
-		if (!metadata.exists || !metadata.visible)
-			continue;
-		
-		auto meshID = _objects.meshIDs[id];
-		auto meshIndex = _meshes.descriptorIDs.at(meshID);
-		commands[meshIndex].instanceCount += 1;
-		
+		for (auto size = _objects.size(), id = ObjectID(0); id < size; id += 1) {
+			
+			auto& metadata = _objects.metadata[id];
+			if (!metadata.exists || !metadata.visible)
+				continue;
+			
+			auto meshID = _objects.meshIDs[id];
+			auto meshIndex = _meshes.descriptorIDs.at(meshID);
+			commands[meshIndex].instanceCount += 1;
+			
+		}
 	}
 	
 	// Calculate command list instance offsets
 	
 	auto commandOffset = 0_zu;
-	for (auto size = commands.size(), i = 0_zu; i < size; i += 1) {
+	{
+		OPTICK_EVENT("Calculate command list instance offsets");
 		
-		auto& command = commands[i];
-		command.firstInstance = commandOffset;
-		commandOffset += command.instanceCount;
-		command.instanceCount = 0;
-		
+		for (auto size = commands.size(), i = 0_zu; i < size; i += 1) {
+			
+			auto& command = commands[i];
+			command.firstInstance = commandOffset;
+			commandOffset += command.instanceCount;
+			command.instanceCount = 0;
+			
+		}
 	}
 	
 	// Create the instance vector sorted by mesh ID
 	
 	auto sortedInstances = std::vector<Instance>(commandOffset);
-	for (auto size = _objects.size(), id = ObjectID(0); id < size; id += 1) {
+	{
+		OPTICK_EVENT("Create the instance vector");
 		
-		auto& metadata = _objects.metadata[id];
-		if (!metadata.exists || !metadata.visible)
-			continue;
-		
-		auto meshID = _objects.meshIDs[id];
-		auto meshIndex = _meshes.descriptorIDs.at(meshID);
-		auto& command = commands[meshIndex];
-		auto instanceIndex = command.firstInstance + command.instanceCount;
-		auto& material = _objects.materials[id];
-		sortedInstances[instanceIndex] = Instance{
-			.transform = _objects.transforms[id],
-			.tint = material.tint,
-			.roughness = material.roughness,
-			.metalness = material.metalness,
-			.meshID = u32(meshIndex),
-		};
-		
-		command.instanceCount += 1;
-		
+		for (auto size = _objects.size(), id = ObjectID(0); id < size; id += 1) {
+			
+			auto& metadata = _objects.metadata[id];
+			if (!metadata.exists || !metadata.visible)
+				continue;
+			
+			auto meshID = _objects.meshIDs[id];
+			auto meshIndex = _meshes.descriptorIDs.at(meshID);
+			auto& command = commands[meshIndex];
+			auto instanceIndex = command.firstInstance + command.instanceCount;
+			auto& material = _objects.materials[id];
+			sortedInstances[instanceIndex] = Instance{
+				.transform = _objects.transforms[id],
+				.tint = material.tint,
+				.roughness = material.roughness,
+				.metalness = material.metalness,
+				.meshID = u32(meshIndex),
+			};
+			
+			command.instanceCount += 1;
+			
+		}
 	}
 	
 	// Clear instance count for GPU culling
 	
-	for (auto& cmd: commands)
-		cmd.instanceCount = 0;
+	{
+		OPTICK_EVENT("Clear instance count");
+		
+		for (auto& cmd: commands)
+			cmd.instanceCount = 0;
+	}
 	
 	// Create and upload the buffers
 	
-	commandsCount = commands.size();
-	commandsBuf = _ptc.allocate_scratch_buffer(
-		vuk::MemoryUsage::eCPUtoGPU,
-		vuk::BufferUsageFlagBits::eIndirectBuffer | vuk::BufferUsageFlagBits::eStorageBuffer,
-		sizeof(Command) * commands.size(), alignof(Command));
-	std::memcpy(commandsBuf.mapped_ptr, commands.data(), sizeof(Command) * commands.size());
-	
-	instancesCount = sortedInstances.size();
-	instancesBuf = _ptc.allocate_scratch_buffer(
-		vuk::MemoryUsage::eCPUtoGPU,
-		vuk::BufferUsageFlagBits::eStorageBuffer,
-		sizeof(Instance) * sortedInstances.size(), alignof(Instance));
-	std::memcpy(instancesBuf.mapped_ptr, sortedInstances.data(), sizeof(Instance) * sortedInstances.size());
-	
-	instancesCulledBuf = _ptc.allocate_scratch_buffer(
-		vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eStorageBuffer,
-		sizeof(Instance) * sortedInstances.size(), alignof(Instance));
+	{
+		OPTICK_EVENT("Upload buffers");
+		
+		commandsCount = commands.size();
+		commandsBuf = _ptc.allocate_scratch_buffer(
+			vuk::MemoryUsage::eCPUtoGPU,
+			vuk::BufferUsageFlagBits::eIndirectBuffer | vuk::BufferUsageFlagBits::eStorageBuffer,
+			sizeof(Command) * commands.size(), alignof(Command));
+		std::memcpy(commandsBuf.mapped_ptr, commands.data(), sizeof(Command) * commands.size());
+		
+		instancesCount = sortedInstances.size();
+		instancesBuf = _ptc.allocate_scratch_buffer(
+			vuk::MemoryUsage::eCPUtoGPU,
+			vuk::BufferUsageFlagBits::eStorageBuffer,
+			sizeof(Instance) * sortedInstances.size(), alignof(Instance));
+		std::memcpy(instancesBuf.mapped_ptr, sortedInstances.data(), sizeof(Instance) * sortedInstances.size());
+		
+		instancesCulledBuf = _ptc.allocate_scratch_buffer(
+			vuk::MemoryUsage::eGPUonly,
+			vuk::BufferUsageFlagBits::eStorageBuffer,
+			sizeof(Instance) * sortedInstances.size(), alignof(Instance));
+	}
 	
 	// Prepare the culling shader
 	

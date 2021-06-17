@@ -110,9 +110,10 @@ target_link_libraries(Minote PRIVATE volk)
 set(VUK_LINK_TO_LOADER OFF CACHE BOOL "")
 set(VUK_USE_VULKAN_SDK OFF CACHE BOOL "")
 set(VUK_USE_SHADERC OFF CACHE BOOL "")
+set(VUK_USE_OPTICK ON CACHE BOOL "")
 FetchContent_Declare(vuk
         GIT_REPOSITORY https://github.com/Tearnote/vuk
-        GIT_TAG 707de5633e74d0cb701c332306ce20cef5906a6e)
+        GIT_TAG 920bc87ac00bbfb364f336078732e0a170a77bee)
 FetchContent_MakeAvailable(vuk)
 target_compile_definitions(vuk PRIVATE VK_NO_PROTOTYPES)
 target_compile_definitions(vuk PRIVATE VUK_CUSTOM_VULKAN_HEADER="volk.h")
@@ -244,6 +245,15 @@ target_link_libraries(Minote PRIVATE bvh)
 
 find_package(OpenMP REQUIRED)
 target_link_libraries(Minote PRIVATE OpenMP::OpenMP_CXX)
+
+set(OPTICK_INSTALL_TARGETS OFF CACHE BOOL "")
+set(OPTICK_USE_VULKAN ON CACHE BOOL "")
+FetchContent_Declare(optick
+        GIT_REPOSITORY https://github.com/Tearnote/optick
+        GIT_TAG 201fe55bee71891656a0be89d0bcc5b019dd317b)
+FetchContent_MakeAvailable(optick)
+target_link_libraries(Minote PRIVATE OptickCore)
+target_link_libraries(vuk PRIVATE OptickCore)
 
 # Shader compilation
 

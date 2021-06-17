@@ -6,6 +6,7 @@
 #include <cstring>
 #include <cassert>
 #include "VkBootstrap.h"
+#include "optick.h"
 #include "GLFW/glfw3.h"
 #include "fmt/core.h"
 #include "volk.h"
@@ -141,6 +142,31 @@ Engine::Engine(sys::Window& window, Version version) {
 	// Create swapchain
 	swapchain = context->add_swapchain(createSwapchain());
 	
+	// Initialize profiling
+	auto optickVulkanFunctions = Optick::VulkanFunctions{
+		PFN_vkGetPhysicalDeviceProperties_(vkGetPhysicalDeviceProperties),
+		PFN_vkCreateQueryPool_(vkCreateQueryPool),
+		PFN_vkCreateCommandPool_(vkCreateCommandPool),
+		PFN_vkAllocateCommandBuffers_(vkAllocateCommandBuffers),
+		PFN_vkCreateFence_(vkCreateFence),
+		PFN_vkCmdResetQueryPool_(vkCmdResetQueryPool),
+		PFN_vkQueueSubmit_(vkQueueSubmit),
+		PFN_vkWaitForFences_(vkWaitForFences),
+		PFN_vkResetCommandBuffer_(vkResetCommandBuffer),
+		PFN_vkCmdWriteTimestamp_(vkCmdWriteTimestamp),
+		PFN_vkGetQueryPoolResults_(vkGetQueryPoolResults),
+		PFN_vkBeginCommandBuffer_(vkBeginCommandBuffer),
+		PFN_vkEndCommandBuffer_(vkEndCommandBuffer),
+		PFN_vkResetFences_(vkResetFences),
+		PFN_vkDestroyCommandPool_(vkDestroyCommandPool),
+		PFN_vkDestroyQueryPool_(vkDestroyQueryPool),
+		PFN_vkDestroyFence_(vkDestroyFence),
+		PFN_vkFreeCommandBuffers_(vkFreeCommandBuffers) };
+	OPTICK_GPU_INIT_VULKAN(
+		&device.device, &device.physical_device.physical_device,
+		&context->graphics_queue, &context->graphics_queue_family_index, 1,
+		&optickVulkanFunctions);
+	
 	// Create user-facing modules
 	meshes = modules::Meshes();
 	bvh = modules::Bvh();
@@ -199,6 +225,8 @@ void Engine::uploadAssets() {
 }
 
 void Engine::render() {
+	
+	OPTICK_EVENT("Engine::render");
 	
 	// Prepare per-frame data
 	
@@ -306,6 +334,7 @@ void Engine::render() {
 	
 	// Present to screen
 	
+	OPTICK_GPU_FLIP(swapchain);
 	auto presentInfo = VkPresentInfoKHR{
 		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 		.waitSemaphoreCount = 1,

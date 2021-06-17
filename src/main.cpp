@@ -16,6 +16,7 @@
 #endif //NOMINMAX
 #include <windows.h>
 #endif //_WIN32
+#include "optick.h"
 #include "base/version.hpp"
 #include "base/file.hpp"
 #include "base/log.hpp"
@@ -31,6 +32,8 @@ using namespace base;
 
 auto main(int, char*[]) -> int try {
 	// *** Initialization ***
+	
+	OPTICK_THREAD("Main");
 
 	// Unicode support
 #ifdef _WIN32
