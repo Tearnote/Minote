@@ -14,10 +14,10 @@
 #include "vuk/RenderGraph.hpp"
 #include "base/math.hpp"
 #include "base/log.hpp"
-#include "gfx/modules/indirect.hpp"
-#include "gfx/modules/forward.hpp"
-#include "gfx/modules/bloom.hpp"
-#include "gfx/modules/post.hpp"
+#include "gfx/module/indirect.hpp"
+#include "gfx/module/forward.hpp"
+#include "gfx/module/bloom.hpp"
+#include "gfx/module/post.hpp"
 #include "gfx/base.hpp"
 #include "main.hpp"
 
@@ -72,8 +72,8 @@ Engine::Engine(sys::Window& window, Version version) {
 		.set_debug_callback(debugCallback)
 		.set_debug_messenger_severity(
 			VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT |
-			VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-			VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
+			VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT /*|
+			VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT*/)
 		.set_debug_messenger_type(
 			VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
 			VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
@@ -168,8 +168,8 @@ Engine::Engine(sys::Window& window, Version version) {
 		&optickVulkanFunctions);
 	
 	// Create user-facing modules
-	meshes = modules::Meshes();
-	bvh = modules::Bvh();
+	meshes = Meshes();
+	bvh = Bvh();
 }
 
 Engine::~Engine() {
@@ -207,8 +207,8 @@ void Engine::uploadAssets() {
 	meshes->upload(ptc);
 	
 	// Create pipeline components
-	atmosphere = modules::Atmosphere(ptc, modules::Atmosphere::Params::earth());
-	ibl = modules::IBLMap(ptc);
+	atmosphere = Atmosphere(ptc, Atmosphere::Params::earth());
+	ibl = IBLMap(ptc);
 	
 	// Finalize uploads
 	ptc.wait_all_transfers();
@@ -269,11 +269,11 @@ void Engine::render() {
 	// Initialize modules
 	
 	auto worldBuf = world.upload(ptc);
-	auto indirect = modules::Indirect(ptc, objects, *meshes);
-	auto sky = modules::Sky(ptc, *atmosphere);
-	auto forward = modules::Forward(ptc, swapchainSize.extent);
-	auto post = modules::Post(ptc);
-	auto bloom = modules::Bloom(ptc, forward.size);
+	auto indirect = Indirect(ptc, objects, *meshes);
+	auto sky = Sky(ptc, *atmosphere);
+	auto forward = Forward(ptc, swapchainSize.extent);
+	auto post = Post(ptc);
+	auto bloom = Bloom(ptc, forward.size);
 	
 	// Set up the rendergraph
 	

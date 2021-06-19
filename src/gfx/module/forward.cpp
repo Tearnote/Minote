@@ -1,9 +1,9 @@
-#include "gfx/modules/forward.hpp"
+#include "gfx/module/forward.hpp"
 
 #include "vuk/CommandBuffer.hpp"
 #include "gfx/samplers.hpp"
 
-namespace minote::gfx::modules {
+namespace minote::gfx {
 
 Forward::Forward(vuk::PerThreadContext& _ptc, vuk::Extent2D _targetSize) {
 	

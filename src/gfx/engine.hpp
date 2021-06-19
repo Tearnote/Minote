@@ -7,16 +7,16 @@
 #include "VkBootstrap.h"
 #include "volk.h"
 #include "vuk/Context.hpp"
+#include "base/container/hashmap.hpp"
 #include "base/version.hpp"
-#include "base/hashmap.hpp"
 #include "base/math.hpp"
 #include "base/id.hpp"
 #include "sys/window.hpp"
-#include "gfx/modules/meshes.hpp"
-#include "gfx/modules/world.hpp"
-#include "gfx/modules/sky.hpp"
-#include "gfx/modules/ibl.hpp"
-#include "gfx/modules/bvh.hpp"
+#include "gfx/module/meshes.hpp"
+#include "gfx/module/world.hpp"
+#include "gfx/module/sky.hpp"
+#include "gfx/module/ibl.hpp"
+#include "gfx/module/bvh.hpp"
 #include "gfx/objects.hpp"
 #include "gfx/camera.hpp"
 #if IMGUI
@@ -52,14 +52,14 @@ struct Engine {
 	ImguiData imguiData;
 #endif //IMGUI
 	
-	std::optional<modules::Meshes> meshes;
+	std::optional<Meshes> meshes;
 	Objects objects;
-	modules::World world;
+	World world;
 	Camera camera;
-	std::optional<modules::Bvh> bvh;
+	std::optional<Bvh> bvh;
 	
-	std::optional<modules::Atmosphere> atmosphere;
-	std::optional<modules::IBLMap> ibl;
+	std::optional<Atmosphere> atmosphere;
+	std::optional<IBLMap> ibl;
 	
 	auto createSwapchain(VkSwapchainKHR old = VK_NULL_HANDLE) -> vuk::Swapchain;
 	void refreshSwapchain();

@@ -3,12 +3,12 @@
 #include "vuk/RenderGraph.hpp"
 #include "vuk/Context.hpp"
 #include "vuk/Buffer.hpp"
-#include "gfx/modules/meshes.hpp"
-#include "gfx/modules/world.hpp"
+#include "gfx/module/meshes.hpp"
+#include "gfx/module/world.hpp"
 #include "gfx/objects.hpp"
 #include "base/types.hpp"
 
-namespace minote::gfx::modules {
+namespace minote::gfx {
 
 using namespace base;
 

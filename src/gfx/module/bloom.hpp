@@ -4,7 +4,7 @@
 #include "vuk/RenderGraph.hpp"
 #include "vuk/Context.hpp"
 
-namespace minote::gfx::modules {
+namespace minote::gfx {
 
 struct Bloom {
 	

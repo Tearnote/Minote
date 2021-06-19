@@ -1,13 +1,13 @@
-#include "gfx/modules/indirect.hpp"
+#include "gfx/module/indirect.hpp"
 
 #include <cstring>
 #include "optick.h"
 #include "vuk/CommandBuffer.hpp"
-#include "base/hashmap.hpp"
+#include "base/container/hashmap.hpp"
 #include "base/math.hpp"
 #include "base/util.hpp"
 
-namespace minote::gfx::modules {
+namespace minote::gfx {
 
 using namespace base;
 using namespace base::literals;

@@ -5,12 +5,12 @@
 #include <span>
 #include "vuk/Context.hpp"
 #include "vuk/Buffer.hpp"
-#include "base/hashmap.hpp"
+#include "base/container/hashmap.hpp"
 #include "base/types.hpp"
 #include "base/math.hpp"
 #include "base/id.hpp"
 
-namespace minote::gfx::modules {
+namespace minote::gfx {
 
 using namespace base;
 

@@ -1,4 +1,4 @@
-#include "gfx/modules/bvh.hpp"
+#include "gfx/module/bvh.hpp"
 
 #include <cassert>
 #include <vector>
@@ -9,7 +9,7 @@
 #include "bvh/bvh.hpp"
 #include "base/util.hpp"
 
-namespace minote::gfx::modules {
+namespace minote::gfx {
 
 using namespace base::literals;
 

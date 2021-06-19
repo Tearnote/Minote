@@ -41,12 +41,21 @@ endif()
 # Main executable
 
 add_executable(Minote
+        src/base/container/hashmap.hpp
+        src/base/container/ivector.hpp
+        src/base/container/svector.hpp
+        src/base/container/vector.hpp
+        src/base/container/sarray.hpp
+        src/base/container/array.hpp
+        src/base/container/ring.hpp src/base/container/ring.tpp
+        src/base/memory/poolalloc.hpp
+        src/base/memory/nullalloc.hpp
+        src/base/memory/arena.hpp src/base/memory/arena.cpp
+        src/base/memory/pool.hpp
         src/base/concepts.hpp
-        src/base/hashmap.hpp
         src/base/version.hpp
         src/base/tween.hpp
         src/base/types.hpp
-        src/base/ring.hpp src/base/ring.tpp
         src/base/util.hpp
         src/base/math.hpp
         src/base/time.hpp
@@ -58,16 +67,16 @@ add_executable(Minote
         src/sys/keyboard.hpp src/sys/keyboard.cpp
         src/sys/window.hpp src/sys/window.tpp src/sys/window.cpp
         src/sys/glfw.hpp src/sys/glfw.cpp
-        src/gfx/modules/iblCoeffs.hpp
-        src/gfx/modules/indirect.hpp src/gfx/modules/indirect.cpp
-        src/gfx/modules/forward.hpp src/gfx/modules/forward.cpp
-        src/gfx/modules/meshes.hpp src/gfx/modules/meshes.cpp
-        src/gfx/modules/bloom.hpp src/gfx/modules/bloom.cpp
-        src/gfx/modules/world.hpp src/gfx/modules/world.cpp
-        src/gfx/modules/post.hpp src/gfx/modules/post.cpp
-        src/gfx/modules/ibl.hpp src/gfx/modules/ibl.cpp
-        src/gfx/modules/sky.hpp src/gfx/modules/sky.cpp
-        src/gfx/modules/bvh.hpp src/gfx/modules/bvh.cpp
+        src/gfx/module/iblCoeffs.hpp
+        src/gfx/module/indirect.hpp src/gfx/module/indirect.cpp
+        src/gfx/module/forward.hpp src/gfx/module/forward.cpp
+        src/gfx/module/meshes.hpp src/gfx/module/meshes.cpp
+        src/gfx/module/bloom.hpp src/gfx/module/bloom.cpp
+        src/gfx/module/world.hpp src/gfx/module/world.cpp
+        src/gfx/module/post.hpp src/gfx/module/post.cpp
+        src/gfx/module/ibl.hpp src/gfx/module/ibl.cpp
+        src/gfx/module/sky.hpp src/gfx/module/sky.cpp
+        src/gfx/module/bvh.hpp src/gfx/module/bvh.cpp
         src/gfx/samplers.hpp
         src/gfx/objects.hpp src/gfx/objects.cpp
         src/gfx/engine.hpp src/gfx/engine.cpp
@@ -78,6 +87,7 @@ add_executable(Minote
         src/mapper.hpp src/mapper.tpp src/mapper.cpp
         src/assets.hpp src/assets.tpp src/assets.cpp
         src/config.hpp
+        src/memory.hpp
         src/game.hpp src/game.cpp
         src/main.hpp src/main.cpp
         src/mino.hpp src/mino.tpp)
@@ -254,6 +264,13 @@ FetchContent_Declare(optick
 FetchContent_MakeAvailable(optick)
 target_link_libraries(Minote PRIVATE OptickCore)
 target_link_libraries(vuk PRIVATE OptickCore)
+
+FetchContent_Declare(abseil
+        GIT_REPOSITORY https://github.com/abseil/abseil-cpp
+        GIT_TAG 311bbd2e50ea35e921a08186840d3b6ca279e880)
+FetchContent_MakeAvailable(abseil)
+target_link_libraries(Minote PRIVATE absl::fixed_array)
+target_link_libraries(Minote PRIVATE absl::inlined_vector)
 
 # Shader compilation
 

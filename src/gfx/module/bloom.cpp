@@ -1,11 +1,11 @@
-#include "gfx/modules/bloom.hpp"
+#include "gfx/module/bloom.hpp"
 
 #include <cassert>
 #include "vuk/CommandBuffer.hpp"
 #include "base/types.hpp"
 #include "gfx/samplers.hpp"
 
-namespace minote::gfx::modules {
+namespace minote::gfx {
 
 using namespace base;
 

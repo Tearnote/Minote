@@ -2,9 +2,9 @@
 
 #include "vuk/Context.hpp"
 #include "vuk/Buffer.hpp"
-#include "gfx/modules/meshes.hpp"
+#include "gfx/module/meshes.hpp"
 
-namespace minote::gfx::modules {
+namespace minote::gfx {
 
 struct Bvh {
 	

@@ -22,7 +22,7 @@
 
 #include "base/math.hpp"
 
-namespace minote::gfx::modules {
+namespace minote::gfx {
 
 using namespace base;
 

@@ -12,7 +12,7 @@
 #include "assets.hpp"
 #include "mapper.hpp"
 //#include "playstate.hpp"
-#include "config.hpp"
+#include "memory.hpp"
 #include "main.hpp"
 
 #include "GLFW/glfw3.h"
@@ -30,6 +30,8 @@ void game(sys::Glfw&, sys::Window& window) try {
 	OPTICK_THREAD("Game");
 
 	// *** Initialization ***
+	
+	attachArenas();
 
 	auto mapper = Mapper();
 	auto engine = gfx::Engine(window, AppVersion);
