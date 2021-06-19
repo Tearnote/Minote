@@ -55,6 +55,18 @@ consteval auto operator ""_zu(unsigned long long val) -> size_t {
 	return static_cast<size_t>(val);
 }
 
+consteval auto operator ""_kb(unsigned long long val) -> signed long long {
+	return val * 1024;
+}
+
+consteval auto operator ""_mb(unsigned long long val) -> signed long long {
+	return val * 1024 * 1024;
+}
+
+consteval auto operator ""_gb(unsigned long long val) -> signed long long {
+	return val * 1024 * 1024 * 1024;
+}
+
 }
 
 }
