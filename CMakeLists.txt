@@ -144,14 +144,6 @@ add_library(pcg ${pcg_SOURCE_DIR}/pcg_basic.h ${pcg_SOURCE_DIR}/pcg_basic.c)
 target_include_directories(pcg PUBLIC ${pcg_SOURCE_DIR})
 target_link_libraries(Minote PRIVATE pcg)
 
-if(NOT TARGET robin_hood)
-    FetchContent_Declare(robin_hood
-            GIT_REPOSITORY https://github.com/martinus/robin-hood-hashing
-            GIT_TAG f7aa87e65e6e3bac0dd92df14f192ca882b54d74)
-    FetchContent_MakeAvailable(robin_hood)
-endif()
-target_link_libraries(Minote PRIVATE robin_hood)
-
 FetchContent_Declare(fmt
         GIT_REPOSITORY https://github.com/fmtlib/fmt
         GIT_TAG 95da4847274c42c110fd5bf1bf61d3f94be4a08e)
@@ -269,8 +261,9 @@ FetchContent_Declare(abseil
         GIT_REPOSITORY https://github.com/abseil/abseil-cpp
         GIT_TAG 311bbd2e50ea35e921a08186840d3b6ca279e880)
 FetchContent_MakeAvailable(abseil)
-target_link_libraries(Minote PRIVATE absl::fixed_array)
 target_link_libraries(Minote PRIVATE absl::inlined_vector)
+target_link_libraries(Minote PRIVATE absl::flat_hash_map)
+target_link_libraries(Minote PRIVATE absl::fixed_array)
 
 # Shader compilation
 

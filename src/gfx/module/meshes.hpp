@@ -9,6 +9,7 @@
 #include "base/types.hpp"
 #include "base/math.hpp"
 #include "base/id.hpp"
+#include "memory.hpp"
 
 namespace minote::gfx {
 
@@ -37,7 +38,7 @@ struct Meshes {
 	
 	};
 	std::vector<Descriptor> descriptors;
-	hashmap<ID, size_t> descriptorIDs;
+	hashmap<ID, size_t, Permanent> descriptorIDs;
 	
 	void addGltf(std::string_view name, std::span<char const> mesh);
 	

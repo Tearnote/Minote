@@ -18,6 +18,9 @@ struct NullAllocator {
 	
 	template<typename U>
 	struct rebind { typedef NullAllocator<U> other; };
+	NullAllocator() = default;
+	template<typename U>
+	NullAllocator(NullAllocator<U>) {}
 	
 };
 

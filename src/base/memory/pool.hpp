@@ -5,10 +5,11 @@
 #include "base/container/sarray.hpp"
 #include "base/memory/arena.hpp"
 #include "base/types.hpp"
+#include "base/util.hpp"
 
 namespace minote::base {
 
-using namespace minote::literals;
+using namespace literals;
 
 struct Pool {
 	
