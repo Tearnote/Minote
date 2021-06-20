@@ -251,7 +251,7 @@ set(OPTICK_INSTALL_TARGETS OFF CACHE BOOL "")
 set(OPTICK_USE_VULKAN ON CACHE BOOL "")
 FetchContent_Declare(optick
         GIT_REPOSITORY https://github.com/Tearnote/optick
-        GIT_TAG 7900ddf566444ed765c563f61e715a2e43cbbfa2)
+        GIT_TAG acb520ea18914f2bff5615041eec14161ddc97a5)
 FetchContent_MakeAvailable(optick)
 target_link_libraries(Minote PRIVATE OptickCore)
 target_link_libraries(vuk PRIVATE OptickCore)

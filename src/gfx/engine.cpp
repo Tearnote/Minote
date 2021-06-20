@@ -6,6 +6,7 @@
 #include <cstring>
 #include <cassert>
 #include "VkBootstrap.h"
+#include "optick_core.h"
 #include "optick.h"
 #include "GLFW/glfw3.h"
 #include "quill/Fmt.h"
@@ -171,6 +172,7 @@ Engine::Engine(sys::Window& window, Version version) {
 
 Engine::~Engine() {
 	context->wait_idle();
+	Optick::Core::Get().Shutdown();
 	ibl.reset();
 	atmosphere.reset();
 	bvh.reset();
