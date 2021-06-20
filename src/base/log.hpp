@@ -1,101 +1,23 @@
 #pragma once
 
-#include <utility>
-#include "base/file.hpp"
+#include <string_view>
+#include "quill/Quill.h"
 
 namespace minote::base {
 
 struct Log {
-
-	// Logging level. Messages with level lower than this will be ignored
-	enum struct Level {
-		None,
-		Trace,
-		Debug,
-		Info,
-		Warn,
-		Error,
-		Crit,
-		Size
-	} level = Level::None;
-
-	// If true, messages are printed to stdout (<=Info) or stderr (>=Warn)
-	bool console = false;
-
-	// Create a logger with both file and console logging disabled.
-	Log() noexcept = default;
-
-	// Create a logger that writes into an open file.
-	explicit Log(file&& _logfile) noexcept { enableFile(std::move(_logfile)); }
-
-	// Clean up by closing any open logfile.
-	~Log() noexcept { disableFile(); }
-
-	// Enable logging to a file. Any open logfile will be closed.
-	void enableFile(file&& logfile);
-
-	// Disable file logging, cleanly closing any currently open logfile.
-	void disableFile();
-
-	// true if file logging is enabled.
-	[[nodiscard]]
-	auto isFileEnabled() const -> bool { return logfile; }
-
-	// Log a Trace level message. Meant for "printf debugging", do not leave any trace() calls
-	// in committed code.
-	// Example: pos.x = 3, pos.y = 7
-	template<typename S, typename... Args>
-	void trace(S const& fmt, Args&&... args);
-
-	// Log a Debug level message. Meant for diagnostic information that only makes sense
-	// to a developer.
-	// Example: Shader compilation successful
-	template<typename S, typename... Args>
-	void debug(S const& fmt, Args&&... args);
-
-	// Log an Info level message. Meant for information that is understandable by
-	// an inquisitive end user.
-	// Example: Player settings saved to database
-	template<typename S, typename... Args>
-	void info(S const& fmt, Args&&... args);
-
-	// Log a Warn level message. Meant for failures that cause a subsystem to run in
-	// a limited capacity.
-	// Example: Could not load texture
-	template<typename S, typename... Args>
-	void warn(S const& fmt, Args&&... args);
-
-	// Log an Error level message. Meant for failures that a subsystem cannot recover from.
-	// Example: Could not find any audio device
-	template<typename S, typename... Args>
-	void error(S const& fmt, Args&&... args);
-
-	// Log a Crit level message. Meant for failures that the entire application cannot recover
-	// from.
-	// Example: Failed to initialize OpenGL
-	template<typename S, typename... Args>
-	void crit(S const& fmt, Args&&... args);
-
-	// Log a message at the specified level. Useful for mapping of external log level enums.
-	template<typename S, typename... Args>
-	void log(Level level, S const& fmt, Args&&... args);
-
-	// Moveable, not copyable
-	Log(Log const&) = delete;
-	auto operator=(Log const&) -> Log& = delete;
-	Log(Log&&) noexcept = default;
-	auto operator=(Log&&) noexcept -> Log& = default;
-
-private:
-
-	// File to write messages into. File logging is disabled if logfile is not open
-	file logfile;
-
+	
+	inline static quill::Logger* logger;
+	
+	static void init(std::string_view filename);
+	
 };
 
-// Global logger available for convenience
-inline Log L;
+#define L_TRACE(fmt, ...) LOG_TRACE_L1(Log::logger, fmt, ##__VA_ARGS__)
+#define L_DEBUG(fmt, ...) LOG_DEBUG(Log::logger, fmt, ##__VA_ARGS__)
+#define L_INFO(fmt, ...) LOG_INFO(Log::logger, fmt, ##__VA_ARGS__)
+#define L_WARN(fmt, ...) LOG_WARNING(Log::logger, fmt, ##__VA_ARGS__)
+#define L_ERROR(fmt, ...) LOG_ERROR(Log::logger, fmt, ##__VA_ARGS__)
+#define L_CRIT(fmt, ...) LOG_CRITICAL(Log::logger, fmt, ##__VA_ARGS__)
 
 }
-
-#include "base/log.tpp"

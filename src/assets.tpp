@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdexcept>
-#include "fmt/core.h"
+#include "quill/Fmt.h"
 #include "base/util.hpp"
 
 namespace minote {

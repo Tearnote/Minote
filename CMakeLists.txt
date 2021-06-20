@@ -60,16 +60,14 @@ add_executable(Minote
         src/base/concepts.hpp
         src/base/version.hpp
         src/base/string.hpp
-        src/base/format.hpp
         src/base/tween.hpp
         src/base/types.hpp
         src/base/util.hpp
         src/base/math.hpp
         src/base/time.hpp
         src/base/ease.hpp
-        src/base/log.hpp src/base/log.tpp src/base/log.cpp
+        src/base/log.hpp src/base/log.cpp
         src/base/rng.hpp
-        src/base/file.hpp src/base/file.cpp
         src/base/id.hpp
         src/sys/keyboard.hpp src/sys/keyboard.cpp
         src/sys/window.hpp src/sys/window.tpp src/sys/window.cpp
@@ -150,12 +148,6 @@ FetchContent_MakeAvailable(pcg)
 add_library(pcg ${pcg_SOURCE_DIR}/pcg_basic.h ${pcg_SOURCE_DIR}/pcg_basic.c)
 target_include_directories(pcg PUBLIC ${pcg_SOURCE_DIR})
 target_link_libraries(Minote PRIVATE pcg)
-
-FetchContent_Declare(fmt
-        GIT_REPOSITORY https://github.com/fmtlib/fmt
-        GIT_TAG 95da4847274c42c110fd5bf1bf61d3f94be4a08e)
-FetchContent_MakeAvailable(fmt)
-target_link_libraries(Minote PRIVATE fmt)
 
 target_compile_definitions(Minote PRIVATE GLM_FORCE_SIZE_T_LENGTH)
 target_compile_definitions(Minote PRIVATE GLM_FORCE_UNRESTRICTED_GENTYPE)
@@ -271,6 +263,13 @@ FetchContent_MakeAvailable(abseil)
 target_link_libraries(Minote PRIVATE absl::inlined_vector)
 target_link_libraries(Minote PRIVATE absl::flat_hash_map)
 target_link_libraries(Minote PRIVATE absl::fixed_array)
+
+set(QUILL_USE_BOUNDED_QUEUE ON CACHE BOOL "")
+FetchContent_Declare(quill
+        GIT_REPOSITORY https://github.com/odygrd/quill
+        GIT_TAG fa9b53f49732765ed242b7372ec4197e89f381ee)
+FetchContent_MakeAvailable(quill)
+target_link_libraries(Minote PRIVATE quill::quill)
 
 # Shader compilation
 

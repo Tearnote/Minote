@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <cstdlib>
 #include <utility>
-#include "fmt/core.h"
+#include "quill/Fmt.h"
 #include "base/log.hpp"
 
 namespace minote::base {

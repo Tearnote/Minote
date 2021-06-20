@@ -6,7 +6,7 @@
 #include <cstring>
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
-#include "fmt/core.h"
+#include "quill/Fmt.h"
 #include "base/util.hpp"
 
 namespace minote::gfx {

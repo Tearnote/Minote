@@ -8,7 +8,7 @@
 #include <cassert>
 #include <mutex>
 #include "GLFW/glfw3.h"
-#include "fmt/core.h"
+#include "quill/Fmt.h"
 #if IMGUI
 #include "backends/imgui_impl_glfw.h"
 #endif //IMGUI
@@ -48,7 +48,7 @@ void Window::keyCallback(GLFWwindow* handle, int rawKeycode, int rawScancode, in
 	try {
 		window.inputs.push_back(input);
 	} catch (...) {
-		L.warn(R"(Window "{}" input queue full, key "{}" {} event dropped)",
+		L_WARN(R"(Window "{}" input queue full, key "{}" {} event dropped)",
 			window.title(), name, state == State::Pressed? "press" : "release");
 	}
 }
@@ -61,7 +61,7 @@ void Window::framebufferResizeCallback(GLFWwindow* handle, int width, int height
 
 	auto newSize = uvec2(width, height);
 	window.m_size = newSize;
-	L.info(R"(Window "{}" resized to {}x{})", window.title(), newSize.x, newSize.y);
+	L_INFO(R"(Window "{}" resized to {}x{})", window.title(), newSize.x, newSize.y);
 }
 
 // Function to run when the window is rescaled. This might happen when dragging
@@ -74,7 +74,7 @@ void Window::windowScaleCallback(GLFWwindow* handle, float xScale, float) {
 	auto& window = getWindow(handle);
 
 	window.m_scale = xScale;
-	L.info(R"(Window "{}" DPI scaling changed to {})", window.title(), xScale);
+	L_INFO(R"(Window "{}" DPI scaling changed to {})", window.title(), xScale);
 }
 
 void Window::cursorPosCallback(GLFWwindow* handle, double xPos, double yPos) {
@@ -155,14 +155,14 @@ Window::Window(Glfw const& _glfw, std::string_view _title, bool fullscreen, uvec
 	glfwSetInputMode(m_handle, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 #endif //IMGUI
 
-	L.info(R"(Window "{}" created at {}x{} *{:.2f}{})",
+	L_INFO(R"(Window "{}" created at {}x{} *{:.2f}{})",
 		title(), size().x, size().y, scale(), fullscreen ? " fullscreen" : "");
 }
 
 Window::~Window() {
 	glfwDestroyWindow(m_handle);
 
-	L.info(R"(Window "{}" closed)", title());
+	L_INFO(R"(Window "{}" closed)", title());
 }
 
 auto Window::isClosing() const -> bool {
@@ -176,7 +176,7 @@ void Window::requestClose() {
 
 	glfwSetWindowShouldClose(m_handle, true);
 
-	L.info(R"(Window "{}" close requested)", title());
+	L_INFO(R"(Window "{}" close requested)", title());
 }
 
 }

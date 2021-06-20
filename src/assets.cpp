@@ -1,7 +1,7 @@
 #include "assets.hpp"
 
 #include <stdexcept>
-#include "fmt/core.h"
+#include "quill/Fmt.h"
 #include "base/log.hpp"
 
 namespace minote {
@@ -18,7 +18,7 @@ Assets::Assets(std::string_view _path) {
 
 Assets::~Assets() {
 	if (auto result = sqlite3_close(db); result != SQLITE_OK)
-		L.warn(R"(Failed to close database "{}": {})", path, sqlite3_errstr(result));
+		L_WARN(R"(Failed to close database "{}": {})", path, sqlite3_errstr(result));
 }
 
 }

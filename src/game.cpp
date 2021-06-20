@@ -244,8 +244,8 @@ void game(sys::Glfw&, sys::Window& window) try {
 	}
 	
 } catch (std::exception const& e) {
-	L.crit("Unhandled exception on game thread: {}", e.what());
-	L.crit("Cannot recover, shutting down. Please report this error to the developer");
+	L_CRIT("Unhandled exception on game thread: {}", e.what());
+	L_CRIT("Cannot recover, shutting down. Please report this error to the developer");
 	window.requestClose();
 }
 

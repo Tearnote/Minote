@@ -1,20 +1,29 @@
 #include "base/log.hpp"
 
-#include <system_error>
-#include <utility>
+#include <string>
+#include "quill/Quill.h"
 
 namespace minote::base {
 
-void Log::enableFile(file&& _logfile) {
-	if (logfile) disableFile();
-
-	logfile = std::move(_logfile);
-}
-
-void Log::disableFile() try {
-	logfile.close();
-} catch (std::system_error const& e) {
-	fmt::print(cerr, R"(Could not close logfile "{}": {})", logfile.where(), e.what());
+void Log::init(std::string_view _filename) {
+	
+	quill::enable_console_colours();
+	quill::start(true);
+	
+	auto file = quill::file_handler(std::string(_filename), "w");
+	auto console = quill::stdout_handler();
+	
+	file->set_pattern(
+		QUILL_STRING("%(ascii_time) [%(level_name)] %(message)"),
+		"%H:%M:%S.%Qns",
+		quill::Timezone::LocalTime);
+	console->set_pattern(
+		QUILL_STRING("%(ascii_time) %(message)"),
+		"%H:%M:%S",
+		quill::Timezone::LocalTime);
+	
+	logger = quill::create_logger("main", {file, console});
+	
 }
 
 }

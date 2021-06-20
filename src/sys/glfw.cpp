@@ -12,14 +12,16 @@
 #endif //WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif //_WIN32
-#include "fmt/core.h"
+#include "quill/Fmt.h"
 #include "GLFW/glfw3.h"
+#include "base/util.hpp"
 #include "base/time.hpp"
 #include "base/log.hpp"
 
 namespace minote::sys {
 
 using namespace base;
+using namespace base::literals;
 
 Glfw::Glfw() {
 	assert(!exists);
@@ -32,7 +34,7 @@ Glfw::Glfw() {
 #endif //_WIN32
 
 	exists = true;
-	L.debug("GLFW initialized");
+	L_DEBUG("GLFW initialized");
 }
 
 Glfw::~Glfw() {
@@ -42,7 +44,7 @@ Glfw::~Glfw() {
 	glfwTerminate();
 
 	exists = false;
-	L.debug("GLFW cleaned up");
+	L_DEBUG("GLFW cleaned up");
 }
 
 void Glfw::poll() {

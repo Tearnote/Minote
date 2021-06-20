@@ -18,7 +18,7 @@
 #endif //_WIN32
 #include "optick.h"
 #include "base/version.hpp"
-#include "base/file.hpp"
+#include "base/time.hpp"
 #include "base/log.hpp"
 #include "sys/window.hpp"
 #include "sys/glfw.hpp"
@@ -29,33 +29,24 @@
 
 using namespace minote; // Because we can't namespace main()
 using namespace base;
+using namespace base::literals;
 
 auto main(int, char*[]) -> int try {
 	// *** Initialization ***
 	
 	OPTICK_THREAD("Main");
-
-	// Unicode support
 #ifdef _WIN32
 	SetConsoleOutputCP(65001); // Set Windows cmd encoding to UTF-8
 #endif //_WIN32
 
-	// Global logging
-	L.level = Log::Level::Trace;
 #ifndef NDEBUG
-	L.console = true;
 	constexpr auto Logpath = "minote-debug.log";
 #else //NDEBUG
 	constexpr auto Logpath = "minote.log";
 #endif //NDEBUG
-	try {
-		auto logfile = file(Logpath, "w");
-		L.enableFile(std::move(logfile));
-	} catch (std::system_error const& e) {
-		L.warn("{}", Logpath, e.what());
-	}
+	Log::init(Logpath);
 
-	L.info("Starting up {} {}", AppTitle, AppVersion);
+	L_INFO("Starting up {} {}", AppTitle, AppVersion);
 
 	// Window creation
 	auto glfw = sys::Glfw();
@@ -78,7 +69,7 @@ auto main(int, char*[]) -> int try {
 
 	return EXIT_SUCCESS;
 } catch (std::exception const& e) {
-	L.crit("Unhandled exception on main thread: {}", e.what());
-	L.crit("Cannot recover, shutting down. Please report this error to the developer");
+	L_CRIT("Unhandled exception on main thread: {}", e.what());
+	L_CRIT("Cannot recover, shutting down. Please report this error to the developer");
 	return EXIT_FAILURE;
 }

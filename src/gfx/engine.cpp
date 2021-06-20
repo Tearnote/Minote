@@ -8,7 +8,7 @@
 #include "VkBootstrap.h"
 #include "optick.h"
 #include "GLFW/glfw3.h"
-#include "fmt/core.h"
+#include "quill/Fmt.h"
 #include "volk.h"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
@@ -34,18 +34,6 @@ VKAPI_ATTR auto VKAPI_CALL debugCallback(
 	void*) -> VkBool32 {
 	assert(data);
 
-	auto const severity = [severityCode] {
-		if (severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
-			return Log::Level::Error;
-		if (severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
-			return Log::Level::Warn;
-		if (severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
-			return Log::Level::Info;
-		if (severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
-			return Log::Level::Debug;
-		throw std::logic_error(fmt::format("Unknown Vulkan diagnostic message severity: #{}", severityCode));
-	}();
-
 	auto type = [typeCode]() {
 		if (typeCode & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
 			return "[VulkanPerf]";
@@ -56,7 +44,16 @@ VKAPI_ATTR auto VKAPI_CALL debugCallback(
 		throw std::logic_error(fmt::format("Unknown Vulkan diagnostic message type: #{}", typeCode));
 	}();
 
-	L.log(severity, "{} {}", type, data->pMessage);
+	     if (severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+		L_ERROR("{} {}", type, data->pMessage);
+	else if (severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+		L_WARN("{} {}", type, data->pMessage);
+	else if (severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
+		L_INFO("{} {}", type, data->pMessage);
+	else if (severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
+		L_DEBUG("{} {}", type, data->pMessage);
+	else
+		throw std::logic_error(fmt::format("Unknown Vulkan diagnostic message severity: #{}", severityCode));
 
 	return VK_FALSE;
 }
@@ -89,7 +86,7 @@ Engine::Engine(sys::Window& window, Version version) {
 	instance = instanceResult.value();
 	volkInitializeCustom(instance.fp_vkGetInstanceProcAddr);
 	volkLoadInstanceOnly(instance.instance);
-	L.debug("Vulkan instance created");
+	L_DEBUG("Vulkan instance created");
 
 	// Create surface
 	glfwCreateWindowSurface(instance.instance, window.handle(), nullptr, &surface);
@@ -123,7 +120,7 @@ Engine::Engine(sys::Window& window, Version version) {
 		throw std::runtime_error(fmt::format("Failed to create Vulkan device: {}", deviceResult.error().message()));
 	device = deviceResult.value();
 	volkLoadDevice(device.device);
-	L.debug("Vulkan device created");
+	L_DEBUG("Vulkan device created");
 
 	// Get queues
 	auto graphicsQueue = device.get_queue(vkb::QueueType::graphics).value();
