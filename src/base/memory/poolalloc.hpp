@@ -5,22 +5,22 @@
 
 namespace minote::base {
 
-template<typename T, Pool& P, usize Slot>
+template<typename T, Pool& P, usize Slot, typename Buf>
 struct PoolAllocator {
 	
 	using value_type = T;
 	
-	auto allocate(usize elem) -> T* { return (T*)(P.at(Slot).allocate(sizeof(T) * elem, alignof(T))); }
+	auto allocate(usize elem) -> T* { return (T*)(P.at<Buf>(Slot).allocate(sizeof(T) * elem, alignof(T))); }
 	void deallocate(T*, usize) {}
 	
-	auto operator==(PoolAllocator<T, P, Slot> const&) const -> bool { return true; }
-	auto operator!=(PoolAllocator<T, P, Slot> const&) const -> bool = default;
+	auto operator==(PoolAllocator<T, P, Slot, Buf> const&) const -> bool { return true; }
+	auto operator!=(PoolAllocator<T, P, Slot, Buf> const&) const -> bool = default;
 	
 	template<typename U>
-	struct rebind { typedef PoolAllocator<U, P, Slot> other; };
+	struct rebind { typedef PoolAllocator<U, P, Slot, Buf> other; };
 	PoolAllocator() = default;
 	template<typename U>
-	PoolAllocator(PoolAllocator<U, P, Slot>) {}
+	PoolAllocator(PoolAllocator<U, P, Slot, Buf>) {}
 	
 };
 

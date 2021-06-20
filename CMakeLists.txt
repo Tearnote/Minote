@@ -16,6 +16,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(MINOTE_USE_VULKAN_SDK "Use the Vulkan SDK for libraries instead of manual fetching" OFF)
 
+set(DISABLED_WARNINGS "-Wno-unknown-pragmas")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${DISABLED_WARNINGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DISABLED_WARNINGS}")
+
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif()
@@ -51,9 +55,12 @@ add_executable(Minote
         src/base/memory/poolalloc.hpp
         src/base/memory/nullalloc.hpp
         src/base/memory/arena.hpp src/base/memory/arena.cpp
+        src/base/memory/stack.hpp
         src/base/memory/pool.hpp
         src/base/concepts.hpp
         src/base/version.hpp
+        src/base/string.hpp
+        src/base/format.hpp
         src/base/tween.hpp
         src/base/types.hpp
         src/base/util.hpp
@@ -252,7 +259,7 @@ set(OPTICK_INSTALL_TARGETS OFF CACHE BOOL "")
 set(OPTICK_USE_VULKAN ON CACHE BOOL "")
 FetchContent_Declare(optick
         GIT_REPOSITORY https://github.com/Tearnote/optick
-        GIT_TAG 201fe55bee71891656a0be89d0bcc5b019dd317b)
+        GIT_TAG b13fe56dc61c07962621ae320e8fa64fb78d0ab4)
 FetchContent_MakeAvailable(optick)
 target_link_libraries(Minote PRIVATE OptickCore)
 target_link_libraries(vuk PRIVATE OptickCore)

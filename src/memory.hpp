@@ -2,6 +2,7 @@
 
 #include "base/memory/poolalloc.hpp"
 #include "base/memory/arena.hpp"
+#include "base/memory/stack.hpp"
 #include "base/memory/pool.hpp"
 #include "base/util.hpp"
 
@@ -13,26 +14,39 @@ using namespace base::literals;
 enum struct PoolSlot {
 	Permanent = 0,
 	PerFrame = 1,
-	Temporary = 2,
+	Scratch = 2,
 	MaxSlot = Pool::MaxSlots,
 };
 
 inline auto GlobalPool = Pool();
 
 template<typename T>
-using Permanent = PoolAllocator<T, GlobalPool, +PoolSlot::Permanent>;
+using Permanent = PoolAllocator<T, GlobalPool, +PoolSlot::Permanent, Arena>;
 
 template<typename T>
-using PerFrame = PoolAllocator<T, GlobalPool, +PoolSlot::PerFrame>;
+using PerFrame = PoolAllocator<T, GlobalPool, +PoolSlot::PerFrame, Arena>;
 
 template<typename T>
-using Temporary = PoolAllocator<T, GlobalPool, +PoolSlot::Temporary>;
+using Scratch = PoolAllocator<T, GlobalPool, +PoolSlot::Scratch, Stack>;
 
-inline void attachArenas() {
+struct ScratchMarker {
+	
+	ScratchMarker(): marker(GlobalPool.at<Stack>(+PoolSlot::Scratch)) {}
+	
+private:
+	
+	StackMarker marker;
+	
+};
+
+template<typename T>
+using StdAlloc = std::allocator<T>;
+
+inline void attachPoolResources() {
 	
 	GlobalPool.attach(+PoolSlot::Permanent, Arena("Permanent", 16_mb));
 	GlobalPool.attach(+PoolSlot::PerFrame, Arena("Per-frame", 16_mb));
-	GlobalPool.attach(+PoolSlot::Temporary, Arena("Temporary", 16_mb));
+	GlobalPool.attach(+PoolSlot::Scratch, Stack("Scratch", 16_mb));
 	
 }
 

@@ -9,6 +9,7 @@
 #include "fmt/chrono.h"
 #include "base/file.hpp"
 #include "base/util.hpp"
+#include "absl/strings/str_cat.h"
 
 namespace minote::base {
 

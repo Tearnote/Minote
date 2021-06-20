@@ -4,7 +4,9 @@
 
 #include <exception>
 #include <vector>
+#include "GLFW/glfw3.h"
 #include "optick.h"
+#include "imgui.h"
 #include "base/math.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"
@@ -14,9 +16,6 @@
 //#include "playstate.hpp"
 #include "memory.hpp"
 #include "main.hpp"
-
-#include "GLFW/glfw3.h"
-#include "imgui.h"
 
 namespace minote {
 
@@ -31,7 +30,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 
 	// *** Initialization ***
 	
-	attachArenas();
+	attachPoolResources();
 
 	auto mapper = Mapper();
 	auto engine = gfx::Engine(window, AppVersion);

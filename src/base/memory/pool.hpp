@@ -1,8 +1,9 @@
 #pragma once
 
-#include <optional>
+#include <variant>
 #include <utility>
 #include "base/container/sarray.hpp"
+#include "base/memory/stack.hpp"
 #include "base/memory/arena.hpp"
 #include "base/types.hpp"
 #include "base/util.hpp"
@@ -15,15 +16,21 @@ struct Pool {
 	
 	static constexpr auto MaxSlots = 8_zu;
 	
-	Pool(): arenas(MaxSlots) {}
+	Pool(): buffers(MaxSlots) {}
 	
-	void attach(usize slot, Arena&& arena) { arenas[slot] = std::move(arena); }
+	template<typename T>
+	void attach(usize slot, T&& buffer) { buffers[slot] = std::move(buffer); }
 	
-	auto at(usize slot) -> Arena& { return *arenas[slot]; }
+	template<typename T>
+	auto at(usize slot) -> T& { return std::get<T>(buffers[slot]); }
 	
 private:
 	
-	sarray<std::optional<Arena>, MaxSlots> arenas;
+	sarray<std::variant<
+		std::monostate,
+		Arena,
+		Stack
+	>, MaxSlots> buffers;
 	
 };
 

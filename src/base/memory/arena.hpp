@@ -20,7 +20,7 @@ struct Arena {
 	Arena(Arena&&);
 	auto operator=(Arena&&) -> Arena&;
 	
-// private:
+// protected:
 	
 	std::string name;
 	void* mem;
