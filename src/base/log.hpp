@@ -9,7 +9,7 @@ struct Log {
 	
 	inline static quill::Logger* logger;
 	
-	static void init(std::string_view filename);
+	static void init(std::string_view filename, quill::LogLevel level);
 	
 };
 

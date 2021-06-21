@@ -5,7 +5,7 @@
 
 namespace minote::base {
 
-void Log::init(std::string_view _filename) {
+void Log::init(std::string_view _filename, quill::LogLevel _level) {
 	
 	quill::enable_console_colours();
 	quill::start(true);
@@ -23,6 +23,7 @@ void Log::init(std::string_view _filename) {
 		quill::Timezone::LocalTime);
 	
 	logger = quill::create_logger("main", {file, console});
+	logger->set_log_level(_level);
 	
 }
 

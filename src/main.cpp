@@ -44,7 +44,7 @@ auto main(int, char*[]) -> int try {
 #else //NDEBUG
 	constexpr auto Logpath = "minote.log";
 #endif //NDEBUG
-	Log::init(Logpath);
+	Log::init(Logpath, LOG_LEVEL);
 
 	L_INFO("Starting up {} {}", AppTitle, AppVersion);
 
