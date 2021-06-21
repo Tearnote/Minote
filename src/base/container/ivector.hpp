@@ -5,7 +5,8 @@
 
 namespace minote::base {
 
-template<typename T, usize N, template<typename> typename Allocator>
+// Inlined vector. Stored on stack initially, switches to heap above N elements.
+template<typename T, usize N, template<typename> typename Allocator = std::allocator>
 using ivector = absl::InlinedVector<T, N, Allocator<T>>;
 
 }

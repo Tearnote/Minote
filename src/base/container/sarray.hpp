@@ -5,6 +5,8 @@
 
 namespace minote::base {
 
+// Static array. Stored entirely on stack, with size provided at runtime.
+// Elements are not initialized.
 template<typename T, usize N>
 using sarray = absl::FixedArray<T, N, NullAllocator<T>>;
 

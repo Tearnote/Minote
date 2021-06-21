@@ -5,7 +5,8 @@
 
 namespace minote::base {
 
-template<typename Key, typename T, template<typename> typename Allocator>
+// Unordered hash map. References aren't stable.
+template<typename Key, typename T, template<typename> typename Allocator = std::allocator>
 using hashmap = absl::flat_hash_map<Key, T,
 	absl::container_internal::hash_default_hash<Key>,
 	absl::container_internal::hash_default_eq<Key>,

@@ -4,7 +4,8 @@
 
 namespace minote::base {
 
-template<typename T, template<typename> typename Allocator>
+// Standard vector, reallocates if capacity is exceeded.
+template<typename T, template<typename> typename Allocator = std::allocator>
 using vector = std::vector<T, Allocator<T>>;
 
 }
