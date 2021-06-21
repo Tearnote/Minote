@@ -1,21 +1,23 @@
 #include "base/memory/arena.hpp"
 
-#include <stdexcept>
 #include <cstdlib>
 #include <utility>
-#include "quill/Fmt.h"
+#include "base/error.hpp"
 #include "base/log.hpp"
 
 namespace minote::base {
 
-Arena::Arena(std::string_view _name, usize _capacity):
+Arena::Arena(string_view _name, usize _capacity):
 	name(_name), capacity(_capacity) {
 	
 	used = 0;
 	mem = std::malloc(capacity);
 	if (!mem)
-		throw std::runtime_error(fmt::format(
-			"Failed to allocate {} bytes for allocator {}", capacity, name));
+		throw runtime_error_fmt(
+			"Failed to allocate {} bytes for allocator {}",
+			capacity, name);
+	
+	L_DEBUG("Created arena {} with capacity of {} bytes", name, capacity);
 	
 }
 
@@ -33,9 +35,9 @@ auto Arena::allocate(usize _bytes, usize _align) -> void* {
 	
 	used = offset + _bytes;
 	if (used > capacity)
-		throw std::runtime_error(fmt::format(
-			"Allocator {} over capacity: current usage {} bytes out of {}",
-			name, used, capacity));
+		throw runtime_error_fmt(
+			"Arena {} over capacity: current usage is {} bytes out of {}",
+			name, used, capacity);
 	
 	return ptr;
 	

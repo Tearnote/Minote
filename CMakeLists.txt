@@ -46,10 +46,8 @@ endif()
 
 add_executable(Minote
         src/base/container/hashmap.hpp
-        src/base/container/ivector.hpp
-        src/base/container/svector.hpp
         src/base/container/vector.hpp
-        src/base/container/sarray.hpp
+        src/base/container/string.hpp
         src/base/container/array.hpp
         src/base/container/ring.hpp src/base/container/ring.tpp
         src/base/memory/poolalloc.hpp
@@ -59,7 +57,8 @@ add_executable(Minote
         src/base/memory/pool.hpp
         src/base/concepts.hpp
         src/base/version.hpp
-        src/base/string.hpp
+        src/base/format.hpp
+        src/base/error.hpp
         src/base/tween.hpp
         src/base/types.hpp
         src/base/util.hpp

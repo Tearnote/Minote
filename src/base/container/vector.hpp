@@ -1,11 +1,17 @@
 #pragma once
 
-#include <vector>
+#include "absl/container/inlined_vector.h"
+#include "base/memory/nullalloc.hpp"
+#include "base/types.hpp"
 
 namespace minote::base {
 
-// Standard vector, reallocates if capacity is exceeded.
-template<typename T, template<typename> typename Allocator = std::allocator>
-using vector = std::vector<T, Allocator<T>>;
+// Inlined vector. Stored on stack initially, switches to heap above N elements.
+template<typename T, usize N, template<typename> typename Allocator = std::allocator>
+using ivector = absl::InlinedVector<T, N, Allocator<T>>;
+
+// Static vector. Stored entirely on stack, throws if capacity is exceeded.
+template<typename T, usize N>
+using svector = ivector<T, N, NullAllocator>;
 
 }

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "absl/container/fixed_array.h"
+#include "base/memory/nullalloc.hpp"
+#include "base/types.hpp"
 
 namespace minote::base {
 
@@ -8,5 +10,10 @@ namespace minote::base {
 // or heap, depending on total size. Elements are not initialized.
 template<typename T, template<typename> typename Allocator = std::allocator>
 using array = absl::FixedArray<T, absl::kFixedArrayUseDefault, Allocator<T>>;
+
+// Static array. Stored entirely on stack, with size provided at runtime.
+// Elements are not initialized.
+template<typename T, usize N>
+using sarray = absl::FixedArray<T, N, NullAllocator<T>>;
 
 }
