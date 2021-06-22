@@ -1,11 +1,12 @@
 #include "base/log.hpp"
 
-#include <string>
+#include <string> // std::string needed by quill API
+#include "base/container/string.hpp"
 #include "quill/Quill.h"
 
 namespace minote::base {
 
-void Log::init(std::string_view _filename, quill::LogLevel _level) {
+void Log::init(string_view _filename, quill::LogLevel _level) {
 	
 	quill::enable_console_colours();
 	quill::start(true);
