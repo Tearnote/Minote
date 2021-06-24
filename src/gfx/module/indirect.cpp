@@ -184,7 +184,7 @@ auto Indirect::frustumCull(World const& _world) -> vuk::RenderGraph {
 					vec4 frustumY = projectionT[3] + projectionT[1];
 					frustumX /= length(vec3(frustumX));
 					frustumY /= length(vec3(frustumY));
-					return vec4(frustumX.x, frustumX.z, frustumY.y, frustumY.z);
+					return vec4{frustumX.x(), frustumX.z(), frustumY.y(), frustumY.z()};
 				}(),
 				.instancesCount = u32(instancesCount),
 			};

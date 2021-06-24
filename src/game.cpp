@@ -72,23 +72,23 @@ void game(sys::Glfw&, sys::Window& window) try {
 	};
 	
 	auto const Expand = 40u;
-	auto prescale = vec3(1_m, 1_m, 1_m);
-	auto rotation = mat3(make_rotate(180_deg, {1.0f, 0.0f, 0.0f}));
+	auto prescale = vec3{1_m, 1_m, 1_m};
+	auto rotation = mat3::rotate({1.0f, 0.0f, 0.0f}, 180_deg);
 	constexpr auto Spacing = 25_m;
 	for (auto x = -Spacing * Expand; x <= Spacing * Expand; x += Spacing)
 	for (auto y = -Spacing * Expand; y <= Spacing * Expand; y += Spacing) {
-		auto offset = vec3(x, y, 0);
+		auto offset = vec3{x, y, 0};
 		staticObjects.emplace_back(engine.objects.createStatic(gfx::Object{
 			.mesh = "block"_id,
-			.position = vec3(0_m, 0_m, 0_m) + offset,
-			.scale = vec3(12.0f, 12.0f, 1.0f) * prescale,
+			.position = vec3{0_m, 0_m, 0_m} + offset,
+			.scale = vec3{12.0f, 12.0f, 1.0f} * prescale,
 			.rotation = rotation,
 			.tint = {0.9f, 0.9f, 1.0f, 1.0f},
 			.roughness = 0.6f,
 			.metalness = 0.1f}));
 		staticObjects.emplace_back(engine.objects.createStatic(gfx::Object{
 			.mesh = "block"_id,
-			.position = vec3(-4_m, -4_m, 2_m) + offset,
+			.position = vec3{-4_m, -4_m, 2_m} + offset,
 			.scale = prescale,
 			.rotation = rotation,
 			.tint = {0.9f, 0.1f, 0.1f, 1.0f},
@@ -96,7 +96,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 			.metalness = 0.1f}));
 		staticObjects.emplace_back(engine.objects.createStatic(gfx::Object{
 			.mesh = "block"_id,
-			.position = vec3(4_m, -4_m, 2_m) + offset,
+			.position = vec3{4_m, -4_m, 2_m} + offset,
 			.scale = prescale,
 			.rotation = rotation,
 			.tint = {0.9f, 0.1f, 0.1f, 1.0f},
@@ -104,7 +104,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 			.metalness = 0.1f}));
 		staticObjects.emplace_back(engine.objects.createStatic(gfx::Object{
 			.mesh = "block"_id,
-			.position = vec3(-4_m, 4_m, 2_m) + offset,
+			.position = vec3{-4_m, 4_m, 2_m} + offset,
 			.scale = prescale,
 			.rotation = rotation,
 			.tint = {0.9f, 0.1f, 0.1f, 1.0f},
@@ -112,7 +112,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 			.metalness = 0.1f}));
 		staticObjects.emplace_back(engine.objects.createStatic(gfx::Object{
 			.mesh = "block"_id,
-			.position = vec3(4_m, 4_m, 2_m) + offset,
+			.position = vec3{4_m, 4_m, 2_m} + offset,
 			.scale = prescale,
 			.rotation = rotation,
 			.tint = {0.9f, 0.1f, 0.1f, 1.0f},
@@ -120,7 +120,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 			.metalness = 0.1f}));
 		staticObjects.emplace_back(engine.objects.createStatic(gfx::Object{
 			.mesh = "block"_id,
-			.position = vec3(7_m, 0_m, 2_m) + offset,
+			.position = vec3{7_m, 0_m, 2_m} + offset,
 			.scale = prescale,
 			.rotation = rotation,
 			.tint = {0.1f, 0.1f, 0.9f, 1.0f},
@@ -128,23 +128,23 @@ void game(sys::Glfw&, sys::Window& window) try {
 			.metalness = 0.1f}));
 		dynamicObjects.emplace_back(engine.objects.createDynamic(gfx::Object{
 			.mesh = "block"_id,
-			.position = vec3(0_m, 0_m, 2.5_m) + offset,
-			.scale = vec3(1_m, 1_m, 1_m) * vec3(1.5f, 1.5f, 1.5f),
+			.position = vec3{0_m, 0_m, 2.5_m} + offset,
+			.scale = vec3{1_m, 1_m, 1_m} * vec3{1.5f, 1.5f, 1.5f},
 			.tint = {0.2f, 0.9f, 0.5f, 1.0f},
 			.roughness = 0.2f,
 			.metalness = 0.9f}));
 		for (auto i = 0.0f; i <= 1.0f; i += 0.125f) {
-			auto offset2 = offset + vec3((i - 0.5f) * 2.0f * 8_m, 0_m, 0_m);
+			auto offset2 = offset + vec3{(i - 0.5f) * 2.0f * 8_m, 0_m, 0_m};
 			staticObjects.emplace_back(engine.objects.createStatic(gfx::Object{
 				.mesh = "sphere"_id,
-				.position = vec3(0_m, 8_m, 2_m) + offset2,
+				.position = vec3{0_m, 8_m, 2_m} + offset2,
 				.scale = prescale,
 				.tint = {1.0f, 1.0f, 1.0f, 1.0f},
 				.roughness = i,
 				.metalness = 0.9f}));
 			staticObjects.emplace_back(engine.objects.createStatic(gfx::Object{
 				.mesh = "sphere"_id,
-				.position = vec3(0_m, -8_m, 2_m) + offset2,
+				.position = vec3{0_m, -8_m, 2_m} + offset2,
 				.scale = prescale,
 				.tint = {1.0f, 1.0f, 1.0f, 1.0f},
 				.roughness = i,
@@ -218,9 +218,9 @@ void game(sys::Glfw&, sys::Window& window) try {
 				cursorOffset += cursorNewPos - cursorLastPos;
 				cursorLastPos = cursorNewPos;
 			}
-			cursorOffset.y = -cursorOffset.y;
+			cursorOffset.y() = -cursorOffset.y();
 			
-			engine.camera.rotate(cursorOffset.x, cursorOffset.y);
+			engine.camera.rotate(cursorOffset.x(), cursorOffset.y());
 			engine.camera.roam({
 				float(camRight) - float(camLeft),
 				0.0f,
@@ -232,10 +232,10 @@ void game(sys::Glfw&, sys::Window& window) try {
 		
 		{
 			OPTICK_EVENT("Update spinny squares");
-			auto rotateTransform = make_rotate(180_deg, {1.0f, 0.0f, 0.0f});
-			auto rotateTransformAnim = make_rotate(f32(radians(f64(sys::Glfw::getTime().count()) / 20000000.0)), {0.0f, 0.0f, 1.0f});
+			auto rotateTransform = mat3::rotate({1.0f, 0.0f, 0.0f}, 180_deg);
+			auto rotateTransformAnim = mat3::rotate({0.0f, 0.0f, 1.0f}, f32(radians(f64(sys::Glfw::getTime().count()) / 20000000.0)));
 			for (auto& obj: dynamicObjects) {
-				obj.rotation = mat3(rotateTransformAnim * rotateTransform);
+				obj.rotation = rotateTransformAnim * rotateTransform;
 				engine.objects.update(obj);
 			}
 		}

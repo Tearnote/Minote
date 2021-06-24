@@ -59,9 +59,9 @@ void Window::framebufferResizeCallback(GLFWwindow* handle, int width, int height
 	assert(height >= 0);
 	auto& window = getWindow(handle);
 
-	auto newSize = uvec2(width, height);
-	window.m_size = newSize;
-	L_INFO(R"(Window "{}" resized to {}x{})", window.title(), newSize.x, newSize.y);
+	auto newSize = ivec2{width, height};
+	window.m_size = uvec2(newSize);
+	L_INFO(R"(Window "{}" resized to {}x{})", window.title(), newSize.x(), newSize.y());
 }
 
 // Function to run when the window is rescaled. This might happen when dragging
@@ -81,7 +81,7 @@ void Window::cursorPosCallback(GLFWwindow* handle, double xPos, double yPos) {
 	assert(handle);
 	auto& window = getWindow(handle);
 
-	window.m_mousePos.store({xPos, yPos});
+	window.m_mousePos.store({f32(xPos), f32(yPos)});
 }
 
 void Window::mouseButtonCallback(GLFWwindow* handle, int button, int action, int) {
@@ -94,7 +94,7 @@ void Window::mouseButtonCallback(GLFWwindow* handle, int button, int action, int
 
 Window::Window(Glfw const& _glfw, std::string_view _title, bool fullscreen, uvec2 _size):
 	glfw(_glfw), m_title(_title) {
-	assert(_size.x > 0 && _size.y > 0);
+	assert(_size.x() > 0 && _size.y() > 0);
 
 	// *** Set up context params ***
 
@@ -112,11 +112,11 @@ Window::Window(Glfw const& _glfw, std::string_view _title, bool fullscreen, uvec
 		throw std::runtime_error(
 			fmt::format("Failed to query video mode: {}", Glfw::getError()));
 	if (fullscreen)
-		_size = {mode->width, mode->height};
+		_size = uvec2(ivec2{mode->width, mode->height});
 	else
 		monitor = nullptr;
 
-	m_handle = glfwCreateWindow(_size.x, _size.y, m_title.c_str(), monitor, nullptr);
+	m_handle = glfwCreateWindow(_size.x(), _size.y(), m_title.c_str(), monitor, nullptr);
 	if (!m_handle)
 		throw std::runtime_error(
 			fmt::format(R"(Failed to init window "{}": {})", title(), Glfw::getError()));
@@ -125,12 +125,12 @@ Window::Window(Glfw const& _glfw, std::string_view _title, bool fullscreen, uvec
 
 	// Real size might be different from requested size because of DPI scaling
 	auto realSize = ivec2();
-	glfwGetFramebufferSize(m_handle, &realSize.x, &realSize.y);
-	if (realSize == ivec2(0, 0))
+	glfwGetFramebufferSize(m_handle, &realSize.x(), &realSize.y());
+	if (realSize == ivec2(0))
 		throw std::runtime_error(
 			fmt::format(R"(Failed to retrieve window "{}" framebuffer size: {})", _title,
 				Glfw::getError()));
-	m_size = realSize;
+	m_size = uvec2(realSize);
 
 	auto realScale = 0.0f;
 	glfwGetWindowContentScale(m_handle, &realScale, nullptr);
@@ -156,7 +156,7 @@ Window::Window(Glfw const& _glfw, std::string_view _title, bool fullscreen, uvec
 #endif //IMGUI
 
 	L_INFO(R"(Window "{}" created at {}x{} *{:.2f}{})",
-		title(), size().x, size().y, scale(), fullscreen ? " fullscreen" : "");
+		title(), size().x(), size().y(), scale(), fullscreen ? " fullscreen" : "");
 }
 
 Window::~Window() {

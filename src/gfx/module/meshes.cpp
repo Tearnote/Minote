@@ -57,8 +57,8 @@ void Meshes::addGltf(std::string_view name, std::span<char const> mesh) {
 
 			// Calculate the AABB for BVH generation, and furthest point from
 			// the origin (for frustum culling)
-			desc.aabbMin = vec3(accessor.min[0], accessor.min[1], accessor.min[2]);
-			desc.aabbMax = vec3(accessor.max[0], accessor.max[1], accessor.max[2]);
+			desc.aabbMin = vec3{accessor.min[0], accessor.min[1], accessor.min[2]};
+			desc.aabbMax = vec3{accessor.max[0], accessor.max[1], accessor.max[2]};
 			auto pfar = max(abs(desc.aabbMin), abs(desc.aabbMax));
 			desc.radius = length(pfar);
 

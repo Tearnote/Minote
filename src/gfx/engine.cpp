@@ -229,13 +229,10 @@ void Engine::render() {
 	
 	// Prepare per-frame data
 	
-	auto viewport = uvec2(swapchain->extent.width, swapchain->extent.height);
+	auto viewport = uvec2{swapchain->extent.width, swapchain->extent.height};
 	auto rawview = camera.transform();
 	// auto zFlip = make_scale({-1.0f, -1.0f, 1.0f});
-	world.projection = infinitePerspective(VerticalFov, f32(viewport.x) / f32(viewport.y), NearPlane);
-	// Reverse-Z
-	world.projection[2][2] = 0.0f;
-	world.projection[3][2] *= -1.0f;
+	world.projection = perspective(VerticalFov, f32(viewport.x()) / f32(viewport.y()), NearPlane);
 	// world.view = zFlip * rawview;
 	world.view = rawview;
 	world.viewProjection = world.projection * world.view;
@@ -251,9 +248,9 @@ void Engine::render() {
 	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
 #endif //IMGUI
 	// sunPitch = radians(6.0f - glfwGetTime() / 2.0);
-	world.sunDirection = vec3(1.0f, 0.0f, 0.0f);
-	world.sunDirection = glm::mat3(make_rotate(sunPitch, {0.0f, -1.0f, 0.0f})) * world.sunDirection;
-	world.sunDirection = glm::mat3(make_rotate(sunYaw, {0.0f, 0.0f, 1.0f})) * world.sunDirection;
+	world.sunDirection = vec3{1.0f, 0.0f, 0.0f};
+	world.sunDirection = mat3::rotate({0.0f, -1.0f, 0.0f}, sunPitch) * world.sunDirection;
+	world.sunDirection = mat3::rotate({0.0f, 0.0f, 1.0f}, sunYaw) * world.sunDirection;
 	static auto sunIlluminance = 8.0f;
 #if IMGUI
 	ImGui::SliderFloat("Sun illuminance", &sunIlluminance, 0.01f, 100.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);

@@ -90,7 +90,7 @@ struct Sky {
 	constexpr static auto AerialPerspectiveHeight = 32u;
 	constexpr static auto AerialPerspectiveDepth = 32u;
 	
-	constexpr static auto CubemapCamera = vec3(0_m, 0_m, 10_m);
+	constexpr static auto CubemapCamera = vec3{0_m, 0_m, 10_m};
 	
 	Atmosphere const& atmosphere;
 	

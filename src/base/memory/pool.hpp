@@ -20,8 +20,6 @@ struct Pool {
 	
 	static constexpr auto MaxSlots = 8_zu;
 	
-	Pool(): buffers(MaxSlots) {}
-	
 	template<typename T>
 	void attach(usize slot, T&& buffer) { buffers[slot] = std::move(buffer); }
 	

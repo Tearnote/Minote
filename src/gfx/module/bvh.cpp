@@ -36,9 +36,9 @@ void Bvh::generateMeshesBvh(vuk::PerThreadContext& _ptc, Meshes const& _meshes) 
 				auto element = _meshes.indices[_index + descriptor.indexOffset];
 				auto vertexIdx = element + descriptor.vertexOffset;
 				return Vector3(
-					_meshes.vertices[vertexIdx].x,
-					_meshes.vertices[vertexIdx].y,
-					_meshes.vertices[vertexIdx].z);
+					_meshes.vertices[vertexIdx].x(),
+					_meshes.vertices[vertexIdx].y(),
+					_meshes.vertices[vertexIdx].z());
 				
 			};
 			
@@ -56,13 +56,13 @@ void Bvh::generateMeshesBvh(vuk::PerThreadContext& _ptc, Meshes const& _meshes) 
 		builder.max_leaf_size = 2;
 		auto globalAABB = bvh::BoundingBox(
 			Vector3(
-				descriptor.aabbMin.x,
-				descriptor.aabbMin.y,
-				descriptor.aabbMin.z),
+				descriptor.aabbMin.x(),
+				descriptor.aabbMin.y(),
+				descriptor.aabbMin.z()),
 			Vector3(
-				descriptor.aabbMax.x,
-				descriptor.aabbMax.y,
-				descriptor.aabbMax.z));
+				descriptor.aabbMax.x(),
+				descriptor.aabbMax.y(),
+				descriptor.aabbMax.z()));
 		auto [aabbs, centers] = bvh::compute_bounding_boxes_and_centers(triangles.data(), triangles.size());
 		builder.build(globalAABB, aabbs.get(), centers.get(), triangles.size());
 		
@@ -132,15 +132,15 @@ void Bvh::generateMeshesBvh(vuk::PerThreadContext& _ptc, Meshes const& _meshes) 
 					
 					depthFirstBvh[offset + depthFirstIndex] = Node{
 						.inter = {
-							.aabbMin = vec3(
+							.aabbMin = vec3{
 								node.bounds[0],
 								node.bounds[1],
-								node.bounds[2]),
+								node.bounds[2]},
 							.isLeaf = 0u,
-							.aabbMax = vec3(
+							.aabbMax = vec3{
 								node.bounds[3],
 								node.bounds[4],
-								node.bounds[5]),
+								node.bounds[5]},
 							.miss = u32(missLink) }};
 					assert(missLink > depthFirstIndex);
 					
@@ -160,10 +160,10 @@ void Bvh::generateMeshesBvh(vuk::PerThreadContext& _ptc, Meshes const& _meshes) 
 					
 					depthFirstBvh[offset + depthFirstIndex + i] = Node{
 						.leaf = {
-							.indices = uvec3(
+							.indices = uvec3{
 								_meshes.indices[index  ],
 								_meshes.indices[index+1],
-								_meshes.indices[index+2]),
+								_meshes.indices[index+2]},
 							.isLeaf = 1u,
 							.miss = u32(miss) }};
 					

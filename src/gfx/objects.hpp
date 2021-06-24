@@ -35,9 +35,9 @@ struct Objects {
 		
 		vec3 position = {0.0f, 0.0f, 0.0f};
 		vec3 scale = {1.0f, 1.0f, 1.0f};
-		mat3 rotation = mat3(1.0f);
+		mat3 rotation = mat3::identity();
 		
-		vec4 tint = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+		vec4 tint = {1.0f, 1.0f, 1.0f, 1.0f};
 		f32 roughness;
 		f32 metalness;
 		

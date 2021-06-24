@@ -6,16 +6,16 @@ using namespace base::literals;
 
 auto Camera::direction() -> vec3 {
 	
-	return vec3(
+	return vec3{
 		cosf(pitch) * cosf(yaw),
 		cosf(pitch) * sinf(yaw),
-		sinf(pitch));
+		sinf(pitch)};
 	
 }
 
 auto Camera::transform() -> mat4 {
 	
-	return lookAt(position, position + direction(), {0.0f, 0.0f, -1.0f});
+	return look(position, direction(), {0.0f, 0.0f, -1.0f});
 	
 }
 
@@ -39,13 +39,13 @@ void Camera::shift(vec3 distance) {
 void Camera::roam(vec3 distance) {
 	
 	auto fwd = direction();
-	auto right = vec3(fwd.y, -fwd.x, 0.0f);
-	auto up = vec3(-fwd.y, fwd.z, fwd.x);
+	auto right = vec3{fwd.y(), -fwd.x(), 0.0f};
+	auto up = vec3{-fwd.y(), fwd.z(), fwd.x()};
 	
 	shift(
-		distance.x * right +
-		distance.y * up +
-		distance.z * fwd);
+		distance.x() * right +
+		distance.y() * up +
+		distance.z() * fwd);
 	
 }
 

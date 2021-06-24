@@ -61,8 +61,8 @@ add_executable(Minote
         src/base/error.hpp
         src/base/tween.hpp
         src/base/types.hpp
+        src/base/math.hpp src/base/math.tpp
         src/base/util.hpp
-        src/base/math.hpp
         src/base/time.hpp
         src/base/ease.hpp
         src/base/log.hpp src/base/log.cpp
@@ -147,17 +147,6 @@ FetchContent_MakeAvailable(pcg)
 add_library(pcg ${pcg_SOURCE_DIR}/pcg_basic.h ${pcg_SOURCE_DIR}/pcg_basic.c)
 target_include_directories(pcg PUBLIC ${pcg_SOURCE_DIR})
 target_link_libraries(Minote PRIVATE pcg)
-
-target_compile_definitions(Minote PRIVATE GLM_FORCE_SIZE_T_LENGTH)
-target_compile_definitions(Minote PRIVATE GLM_FORCE_UNRESTRICTED_GENTYPE)
-target_compile_definitions(Minote PRIVATE GLM_FORCE_LEFT_HANDED)
-target_compile_definitions(Minote PRIVATE GLM_FORCE_DEPTH_ZERO_TO_ONE)
-target_compile_definitions(Minote PRIVATE GLM_FORCE_XYZW_ONLY)
-FetchContent_Declare(glm
-        GIT_REPOSITORY https://github.com/g-truc/glm
-        GIT_TAG 4abd46483ab3cadda5cdb40dcd28e6f3b789d621)
-FetchContent_MakeAvailable(glm)
-target_include_directories(Minote PRIVATE ${glm_SOURCE_DIR}) # The target isn't working for some reason
 
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "")
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "")

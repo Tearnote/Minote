@@ -17,8 +17,8 @@ auto Atmosphere::Params::earth() -> Params {
 	
 	auto const EarthRayleighScaleHeight = 8.0f;
 	auto const EarthMieScaleHeight = 1.2f;
-	auto const MieScattering = vec3(0.003996f, 0.003996f, 0.003996f);
-	auto const MieExtinction = vec3(0.004440f, 0.004440f, 0.004440f);
+	auto const MieScattering = vec3{0.003996f, 0.003996f, 0.003996f};
+	auto const MieExtinction = vec3{0.004440f, 0.004440f, 0.004440f};
 	
 	return Params{
 		.BottomRadius = 6360.0f,
@@ -347,31 +347,30 @@ auto Sky::drawCubemap(vuk::Buffer _world, vuk::Name _target,
 			
 			auto* sides = cmd.map_scratch_uniform_binding<std::array<mat4, 6>>(1, 2);
 			*sides = std::to_array<mat4>({
-				mat3{
+				mat4(mat3{
 					0.0f, 0.0f, -1.0f,
 					0.0f, -1.0f, 0.0f,
-					1.0f, 0.0f, 0.0f,
-				}, mat3{
+					1.0f, 0.0f, 0.0f}),
+				mat4(mat3{
 					0.0f, 0.0f, 1.0f,
 					0.0f, -1.0f, 0.0f,
+					-1.0f, 0.0f, 0.0f}),
+				mat4(mat3{
+					1.0f, 0.0f, 0.0f,
+					0.0f, 0.0f, 1.0f,
+					0.0f, 1.0f, 0.0f}),
+				mat4(mat3{
+					1.0f, 0.0f, 0.0f,
+					0.0f, 0.0f, -1.0f,
+					0.0f, -1.0f, 0.0f}),
+				mat4(mat3{
+					1.0f, 0.0f, 0.0f,
+					0.0f, -1.0f, 0.0f,
+					0.0f, 0.0f, 1.0f}),
+				mat4(mat3{
 					-1.0f, 0.0f, 0.0f,
-				}, mat3{
-					1.0f, 0.0f, 0.0f,
-					0.0f, 0.0f, 1.0f,
-					0.0f, 1.0f, 0.0f,
-				}, mat3{
-					1.0f, 0.0f, 0.0f,
-					0.0f, 0.0f, -1.0f,
 					0.0f, -1.0f, 0.0f,
-				}, mat3{
-					1.0f, 0.0f, 0.0f,
-					0.0f, -1.0f, 0.0f,
-					0.0f, 0.0f, 1.0f,
-				}, mat3{
-					-1.0f, 0.0f, 0.0f,
-					0.0f, -1.0f, 0.0f,
-					0.0f, 0.0f, -1.0f,
-				}});
+					0.0f, 0.0f, -1.0f})});
 			
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0_zu, CubemapCamera);
 			

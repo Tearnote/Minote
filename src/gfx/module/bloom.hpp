@@ -13,7 +13,7 @@ struct Bloom {
 	// static constexpr auto BloomFormat = vuk::Format::eB10G11R11UfloatPack32;
 	static constexpr auto BloomFormat = vuk::Format::eR16G16B16A16Sfloat;
 	static constexpr auto BloomPasses = 6u;
-	static constexpr auto BloomStrength = 1.0f / 128.0f;
+	static constexpr auto BloomStrength = 1.0f / 64.0f;
 	
 	vuk::Extent2D size;
 	vuk::Texture bloom;

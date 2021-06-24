@@ -12,8 +12,8 @@ auto Objects::create() -> ObjectID {
 		
 		metadata.emplace_back();
 		meshIDs.emplace_back();
-		transforms.emplace_back(1.0f);
-		prevTransforms.emplace_back(1.0f);
+		transforms.emplace_back(mat4::identity());
+		prevTransforms.emplace_back(mat4::identity());
 		materials.emplace_back();
 		
 		return size() - 1;
@@ -25,8 +25,8 @@ auto Objects::create() -> ObjectID {
 		
 		metadata[id] = Metadata();
 		meshIDs[id] = ID();
-		transforms[id] = mat4(1.0f);
-		prevTransforms[id] = mat4(1.0f);
+		transforms[id] = mat4::identity();
+		prevTransforms[id] = mat4::identity();
 		materials[id] = Material();
 		
 		return id;
@@ -37,10 +37,15 @@ auto Objects::create() -> ObjectID {
 
 auto Objects::createStatic(Object const& _object) -> ObjectID {
 	
-	auto transform =
-		make_translate(_object.position) *
-		mat4(_object.rotation) *
-		make_scale(_object.scale);
+	auto translation = mat4::translate(_object.position);
+	auto rotation = mat4(_object.rotation);
+	auto scale = mat4::scale(_object.scale);
+	
+	auto transform = translation * rotation * scale;
+	// auto transform =
+	// 	mat4::translate(_object.position) *
+	// 	mat4(_object.rotation) *
+	// 	mat4::scale(_object.scale);
 	
 	auto id = create();
 	metadata[id].visible    = _object.visible;
@@ -85,9 +90,9 @@ void Objects::updatePrevTransforms() {
 void Objects::update(Object const& _object) {
 	
 	auto transform =
-		make_translate(_object.position) *
+		mat4::translate(_object.position) *
 		mat4(_object.rotation) *
-		make_scale(_object.scale);
+		mat4::scale(_object.scale);
 	
 	metadata[_object.id].visible    = _object.visible;
 	meshIDs[_object.id]             = _object.mesh;
