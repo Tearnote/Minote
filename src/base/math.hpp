@@ -22,6 +22,7 @@ using std::sin;
 using std::cos;
 using std::tan;
 
+// Degrees to radians conversion
 template<arithmetic T, std::floating_point Prec = f32>
 constexpr auto radians(T deg) -> Prec { return Prec(deg) * Tau / Prec(360); }
 
@@ -42,12 +43,9 @@ constexpr auto radians(T deg) -> Prec { return Prec(deg) * Tau / Prec(360); }
 template<std::integral T>
 constexpr auto tmod(T num, T div) { return num % div + (num % div < 0) * div; }
 
+// Classic GLSL-style scalar clamp
 template<arithmetic T>
-constexpr auto clamp(T val, T vmin, T vmax) -> T {
-	
-	return max(vmin, min(val, vmax));
-	
-}
+constexpr auto clamp(T val, T vmin, T vmax) -> T { return max(vmin, min(val, vmax)); }
 
 //=== Compound types
 
@@ -59,8 +57,13 @@ struct vec {
 	
 	//=== Creation
 	
+	// Uninitialized init
 	constexpr vec() = default;
+	
+	// Fill the vector with copies of the value
 	explicit constexpr vec(T fillVal) { fill(fillVal); }
+	
+	// Create the vector with provided component values
 	constexpr vec(std::initializer_list<T>);
 	
 	//=== Conversions
@@ -117,13 +120,13 @@ struct vec {
 	
 	constexpr auto fill(T val) { arr.fill(val); }
 	
-	//=== Operations
+	//=== Vector operations
 	
 	// Component-wise arithmetic
 	
 	constexpr auto operator+=(vec<Dim, T> const&) -> vec<Dim, T>&;
 	constexpr auto operator-=(vec<Dim, T> const&) -> vec<Dim, T>&;
-	constexpr auto operator*=(vec<Dim, T> const&) -> vec<Dim, T>&;
+	constexpr auto operator*=(vec<Dim, T> const&) -> vec<Dim, T>&; // Component-wise
 	constexpr auto operator/=(vec<Dim, T> const&) -> vec<Dim, T>&;
 	
 	// Scalar arithmetic
@@ -146,7 +149,7 @@ template<usize Dim, arithmetic T>
 constexpr auto operator-(vec<Dim, T> const&, vec<Dim, T> const&) -> vec<Dim, T>;
 
 template<usize Dim, arithmetic T>
-constexpr auto operator*(vec<Dim, T> const&, vec<Dim, T> const&) -> vec<Dim, T>;
+constexpr auto operator*(vec<Dim, T> const&, vec<Dim, T> const&) -> vec<Dim, T>; // Component-wise
 
 template<usize Dim, arithmetic T>
 constexpr auto operator/(vec<Dim, T> const&, vec<Dim, T> const&) -> vec<Dim, T>;
@@ -180,22 +183,32 @@ constexpr auto operator/(T left, vec<Dim, T> const& right) -> vec<Dim, T> { retu
 
 // Unary vector operations
 
+// Component-wise absolute value
 template<usize Dim, std::floating_point T>
 constexpr auto abs(vec<Dim, T> const&) -> vec<Dim, T>;
 
+// Vector length as Euclidean distance
 template<usize Dim, std::floating_point T>
-constexpr auto length(vec<Dim, T> const& v) -> T { static_assert(std::is_floating_point_v<T>); return std::sqrt(length2(v)); }
+constexpr auto length(vec<Dim, T> const& v) -> T {
+	
+	static_assert(std::is_floating_point_v<T>);
+	return std::sqrt(length2(v));
+	
+}
 
+// Square of vector length (faster to compute than length)
 template<usize Dim, std::floating_point T>
 constexpr auto length2(vec<Dim, T> const& v) -> T { return dot(v, v); }
 
+// true if vector has the length of 1 (within reasonable epsilon)
 template<usize Dim, std::floating_point T>
 constexpr auto isUnit(vec<Dim, T> const& v) -> bool { return (abs(length2(v) - 1) < (1.0 / 16.0)); }
 
+// Constructs a vector in the same direction but length 1
 template<usize Dim, std::floating_point T>
 constexpr auto normalize(vec<Dim, T> const&) -> vec<Dim, T>;
 
-//=== Aliases
+//=== GLSL-like vector aliases
 
 using vec2 = vec<2, f32>;
 using vec3 = vec<3, f32>;
@@ -223,16 +236,31 @@ struct mat {
 	
 	//=== Creation
 	
+	// Uninitialized init
 	constexpr mat() = default;
+	
+	// Compose a matrix out of all component values, in column-major order
 	constexpr mat(std::initializer_list<Prec>);
+	
+	// Compose a matrix out of column vectors
 	constexpr mat(std::initializer_list<col_t> list) { std::copy(list.begin(), list.end(), arr.begin()); }
+	
+	// Create a matrix that is a no-op on multiplication
 	static constexpr auto identity() -> mat<Dim, Prec>;
-	static constexpr auto translate(vec<3, Prec> shift) -> mat<Dim, Prec>;
+	
+	// Classic translation, rotation and scale matrices for vector manipulation
+	
+	static constexpr auto translate(vec<3, Prec> shift) -> mat<Dim, Prec>; // Cannot be mat3
 	static constexpr auto rotate(vec<3, Prec> axis, Prec angle) -> mat<Dim, Prec>;
 	static constexpr auto scale(vec<3, Prec> scale) -> mat<Dim, Prec>;
 	static constexpr auto scale(Prec scale) -> mat<Dim, Prec>;
 	
 	//=== Conversion
+	
+	// Type cast
+	template<arithmetic U>
+	requires (!std::same_as<Prec, U>)
+	explicit constexpr mat(mat<Dim, U> const&);
 	
 	// Dimension cast
 	template<usize N>
@@ -249,16 +277,18 @@ struct mat {
 	
 	constexpr auto fill(Prec val) { for (auto& col: arr) col.fill(val); }
 	
+	//=== Operations
+	
+	// Scalar arithmetic
+	
+	constexpr auto operator*=(Prec) -> mat<Dim, Prec>&; // Component-wise
+	constexpr auto operator/=(Prec) -> mat<Dim, Prec>&; // Component-wise
+	
 private:
 	
 	sarray<col_t, Dim> arr;
 	
 };
-
-using mat3 = mat<3, f32>;
-using mat4 = mat<4, f32>;
-
-//=== Operations
 
 // Binary matrix operations
 
@@ -269,41 +299,55 @@ template<usize Dim, std::floating_point Prec>
 constexpr auto operator*(mat<Dim, Prec> const&, vec<Dim, Prec> const&) -> vec<Dim, Prec>;
 
 template<usize Dim, std::floating_point Prec>
-constexpr auto operator*(mat<Dim, Prec> const&, Prec) -> mat<Dim, Prec>;
+constexpr auto operator*(mat<Dim, Prec> const&, Prec) -> mat<Dim, Prec>; // Component-wise
 template<usize Dim, std::floating_point Prec>
-constexpr auto operator*(Prec left, mat<Dim, Prec> const& right) -> mat<Dim, Prec> { return right * left; }
+constexpr auto operator*(Prec left, mat<Dim, Prec> const& right) -> mat<Dim, Prec> { return right * left; } // Component-wise
 
 template<usize Dim, std::floating_point Prec>
-constexpr auto operator/(mat<Dim, Prec> const&, Prec) -> mat<Dim, Prec>;
+constexpr auto operator/(mat<Dim, Prec> const&, Prec) -> mat<Dim, Prec>; // Component-wise
 
 // Unary matrix operations
 
+// Creates a matrix with rows transposed with columns
 template<usize Dim, std::floating_point Prec>
 constexpr auto transpose(mat<Dim, Prec> const&) -> mat<Dim, Prec>;
 
+// Creates a matrix that results in identity when multiplied with the original (slow!)
 template<usize Dim, std::floating_point Prec>
 constexpr auto inverse(mat<Dim, Prec> const&) -> mat<Dim, Prec>;
 
 // Specialized matrix generators
 
+// Variant of lookAt matrix. Dir is a unit vector of the camera direction.
+// Dir and Up are both required to be unit vectors
 template<std::floating_point Prec = f32>
 constexpr auto look(vec<3, Prec> pos, vec<3, Prec> dir, vec<3, Prec> up) -> mat<4, Prec>;
 
+// Creates a perspective matrix. The matrix uses inverted infinite depth:
+// 1.0 at zNear, 0.0 at infinity.
 template<std::floating_point Prec = f32>
 constexpr auto perspective(Prec vFov, Prec aspectRatio, Prec zNear) -> mat<4, Prec>;
+
+//=== GLSL-like matrix aliases
+
+using mat3 = mat<3, f32>;
+using mat4 = mat<4, f32>;
 
 //=== Conversion literals
 
 namespace literals {
 
-constexpr float operator""_m(unsigned long long int val) { return float(val) * 0.001f; }
-constexpr float operator""_m(long double val) { return float(val) * 0.001f; }
+consteval auto operator""_cm(unsigned long long int val) -> f32 { return f64(val) * 0.000'001; }
+consteval auto operator""_cm(long double val) -> f32 { return f64(val) * 0.000'001; }
 
-constexpr float operator""_km(unsigned long long int val) { return float(val); }
-constexpr float operator""_km(long double val) { return float(val); }
+consteval auto operator""_m(unsigned long long int val) -> f32 { return f64(val) * 0.001; }
+consteval auto operator""_m(long double val) -> f32 { return f64(val) * 0.001; }
 
-constexpr float operator""_deg(unsigned long long int val) { return radians(float(val)); }
-constexpr float operator""_deg(long double val) { return radians(float(val)); }
+consteval auto operator""_km(unsigned long long int val) -> f32 { return val; }
+consteval auto operator""_km(long double val) -> f32 { return val; }
+
+consteval auto operator""_deg(unsigned long long int val) -> f32 { return radians(f64(val)); }
+consteval auto operator""_deg(long double val) -> f32 { return radians(val); }
 
 }
 

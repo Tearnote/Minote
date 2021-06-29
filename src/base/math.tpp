@@ -337,6 +337,17 @@ constexpr auto mat<Dim, Prec>::scale(Prec _scale) -> mat<Dim, Prec> {
 }
 
 template<usize Dim, std::floating_point Prec>
+template<arithmetic U>
+requires (!std::same_as<Prec, U>)
+constexpr mat<Dim, Prec>::mat(mat<Dim, U> const& _other) {
+	
+	for (auto x = 0_zu; x < Dim; x += 1)
+		for (auto y = 0_zu; y < Dim; y += 1)
+			arr[x][y] = _other[x][y];
+	
+}
+
+template<usize Dim, std::floating_point Prec>
 template<usize N>
 requires (N != Dim)
 constexpr mat<Dim, Prec>::mat(mat<N, Prec> const& _other) {
@@ -348,6 +359,28 @@ constexpr mat<Dim, Prec>::mat(mat<N, Prec> const& _other) {
 	for (auto x = 0_zu; x < Smaller; x += 1)
 		for (auto y = 0_zu; y < Smaller; y += 1)
 			arr[x][y] = _other[x][y];
+	
+}
+
+template<usize Dim, std::floating_point Prec>
+constexpr auto mat<Dim, Prec>::operator*=(Prec _other) -> mat<Dim, Prec>& {
+	
+	for (auto x = 0_zu; x < Dim; x += 1)
+		for (auto y = 0_zu; y < Dim; y += 1)
+			arr[x][y] *= _other;
+	
+	return *this;
+	
+}
+
+template<usize Dim, std::floating_point Prec>
+constexpr auto mat<Dim, Prec>::operator/=(Prec _other) -> mat<Dim, Prec>& {
+	
+	for (auto x = 0_zu; x < Dim; x += 1)
+		for (auto y = 0_zu; y < Dim; y += 1)
+			arr[x][y] /= _other;
+	
+	return *this;
 	
 }
 
@@ -394,12 +427,8 @@ constexpr auto operator*(mat<Dim, Prec> const& _left, vec<Dim, Prec> const& _rig
 template<usize Dim, std::floating_point Prec>
 constexpr auto operator*(mat<Dim, Prec> const& _left, Prec _right) -> mat<Dim, Prec> {
 	
-	auto result = mat<Dim, Prec>();
-	
-	for (auto x = 0_zu; x < Dim; x += 1)
-		for (auto y = 0_zu; y < Dim; y += 1)
-			result[x][y] = _left[x][y] * _right;
-	
+	auto result = _left;
+	result *= _right;
 	return result;
 	
 }
@@ -407,12 +436,8 @@ constexpr auto operator*(mat<Dim, Prec> const& _left, Prec _right) -> mat<Dim, P
 template<usize Dim, std::floating_point Prec>
 constexpr auto operator/(mat<Dim, Prec> const& _left, Prec _right) -> mat<Dim, Prec> {
 	
-	auto result = mat<Dim, Prec>();
-	
-	for (auto x = 0_zu; x < Dim; x += 1)
-		for (auto y = 0_zu; y < Dim; y += 1)
-			result[x][y] = _left[x][y] / _right;
-	
+	auto result = _left;
+	result /= _right;
 	return result;
 	
 }
