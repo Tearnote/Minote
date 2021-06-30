@@ -11,10 +11,10 @@ auto Objects::create() -> ObjectID {
 	if (deletedIDs.empty()) {
 		
 		metadata.emplace_back();
-		meshIDs.emplace_back();
-		transforms.emplace_back(mat4::identity());
-		prevTransforms.emplace_back(mat4::identity());
-		materials.emplace_back();
+		meshIndex.emplace_back();
+		transform.emplace_back(mat4::identity());
+		prevTransform.emplace_back(mat4::identity());
+		material.emplace_back();
 		
 		return size() - 1;
 		
@@ -22,13 +22,7 @@ auto Objects::create() -> ObjectID {
 		
 		auto id = deletedIDs.back();
 		deletedIDs.pop_back();
-		
-		metadata[id] = Metadata();
-		meshIDs[id] = ID();
-		transforms[id] = mat4::identity();
-		prevTransforms[id] = mat4::identity();
-		materials[id] = Material();
-		
+		metadata[id].exists = true;
 		return id;
 		
 	}
@@ -37,24 +31,19 @@ auto Objects::create() -> ObjectID {
 
 auto Objects::createStatic(Object const& _object) -> ObjectID {
 	
-	auto translation = mat4::translate(_object.position);
-	auto rotation = mat4(_object.rotation);
-	auto scale = mat4::scale(_object.scale);
-	
-	auto transform = translation * rotation * scale;
-	// auto transform =
-	// 	mat4::translate(_object.position) *
-	// 	mat4(_object.rotation) *
-	// 	mat4::scale(_object.scale);
+	auto objTransform =
+		mat4::translate(_object.position) *
+		mat4(_object.rotation) *
+		mat4::scale(_object.scale);
 	
 	auto id = create();
-	metadata[id].visible    = _object.visible;
-	meshIDs[id]             = _object.mesh;
-	transforms[id]          = transform;
-	prevTransforms[id]      = transform;
-	materials[id].tint      = _object.tint;
-	materials[id].roughness = _object.roughness;
-	materials[id].metalness = _object.metalness;
+	metadata[id].visible   = _object.visible;
+	meshIndex[id]          = meshes.descriptorIDs.at(_object.mesh);
+	transform[id]          = objTransform;
+	prevTransform[id]      = objTransform;
+	material[id].tint      = _object.tint;
+	material[id].roughness = _object.roughness;
+	material[id].metalness = _object.metalness;
 	
 	return id;
 	
@@ -83,23 +72,23 @@ void Objects::destroy(Object const& _object) {
 
 void Objects::updatePrevTransforms() {
 	
-	std::memcpy(prevTransforms.data(), transforms.data(), sizeof(mat4) * size());
+	std::memcpy(prevTransform.data(), transform.data(), sizeof(mat4) * size());
 	
 }
 
 void Objects::update(Object const& _object) {
 	
-	auto transform =
+	auto objTransform =
 		mat4::translate(_object.position) *
 		mat4(_object.rotation) *
 		mat4::scale(_object.scale);
 	
-	metadata[_object.id].visible    = _object.visible;
-	meshIDs[_object.id]             = _object.mesh;
-	transforms[_object.id]          = transform;
-	materials[_object.id].tint      = _object.tint;
-	materials[_object.id].roughness = _object.roughness;
-	materials[_object.id].metalness = _object.metalness;
+	metadata[_object.id].visible   = _object.visible;
+	meshIndex[_object.id]          = meshes.descriptorIDs.at(_object.mesh);
+	transform[_object.id]          = objTransform;
+	material[_object.id].tint      = _object.tint;
+	material[_object.id].roughness = _object.roughness;
+	material[_object.id].metalness = _object.metalness;
 	
 	
 }

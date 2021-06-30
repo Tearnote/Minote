@@ -53,7 +53,7 @@ struct Engine {
 #endif //IMGUI
 	
 	std::optional<Meshes> meshes;
-	Objects objects;
+	std::optional<Objects> objects;
 	World world;
 	Camera camera;
 	std::optional<Bvh> bvh;

@@ -167,6 +167,7 @@ Engine::Engine(sys::Window& window, Version version) {
 	
 	// Create user-facing modules
 	meshes = Meshes();
+	objects.emplace(*meshes);
 	bvh = Bvh();
 }
 
@@ -176,6 +177,7 @@ Engine::~Engine() {
 	ibl.reset();
 	atmosphere.reset();
 	bvh.reset();
+	objects.reset();
 	meshes.reset();
 #if IMGUI
 	imguiData.font_texture.view.reset();
@@ -265,7 +267,7 @@ void Engine::render() {
 	// Initialize modules
 	
 	auto worldBuf = world.upload(ptc);
-	auto indirect = Indirect(ptc, objects, *meshes);
+	auto indirect = Indirect(ptc, *objects, *meshes);
 	auto sky = Sky(ptc, *atmosphere);
 	auto forward = Forward(ptc, swapchainSize.extent);
 	auto post = Post(ptc);

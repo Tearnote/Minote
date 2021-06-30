@@ -63,12 +63,12 @@ void game(sys::Glfw&, sys::Window& window) try {
 	auto staticObjects = std::vector<gfx::ObjectID>();
 	defer {
 		for (auto id: staticObjects)
-			engine.objects.destroy(id);
+			engine.objects->destroy(id);
 	};
 	auto dynamicObjects = std::vector<gfx::Object>();
 	defer {
 		for (auto& obj: dynamicObjects)
-			engine.objects.destroy(obj);
+			engine.objects->destroy(obj);
 	};
 	
 	auto const Expand = 40u;
@@ -78,7 +78,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 	for (auto x = -Spacing * Expand; x <= Spacing * Expand; x += Spacing)
 	for (auto y = -Spacing * Expand; y <= Spacing * Expand; y += Spacing) {
 		auto offset = vec3{x, y, 0};
-		staticObjects.emplace_back(engine.objects.createStatic(gfx::Object{
+		staticObjects.emplace_back(engine.objects->createStatic(gfx::Object{
 			.mesh = "block"_id,
 			.position = vec3{0_m, 0_m, 0_m} + offset,
 			.scale = vec3{12.0f, 12.0f, 1.0f} * prescale,
@@ -86,7 +86,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 			.tint = {0.9f, 0.9f, 1.0f, 1.0f},
 			.roughness = 0.6f,
 			.metalness = 0.1f}));
-		staticObjects.emplace_back(engine.objects.createStatic(gfx::Object{
+		staticObjects.emplace_back(engine.objects->createStatic(gfx::Object{
 			.mesh = "block"_id,
 			.position = vec3{-4_m, -4_m, 2_m} + offset,
 			.scale = prescale,
@@ -94,7 +94,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 			.tint = {0.9f, 0.1f, 0.1f, 1.0f},
 			.roughness = 0.6f,
 			.metalness = 0.1f}));
-		staticObjects.emplace_back(engine.objects.createStatic(gfx::Object{
+		staticObjects.emplace_back(engine.objects->createStatic(gfx::Object{
 			.mesh = "block"_id,
 			.position = vec3{4_m, -4_m, 2_m} + offset,
 			.scale = prescale,
@@ -102,7 +102,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 			.tint = {0.9f, 0.1f, 0.1f, 1.0f},
 			.roughness = 0.6f,
 			.metalness = 0.1f}));
-		staticObjects.emplace_back(engine.objects.createStatic(gfx::Object{
+		staticObjects.emplace_back(engine.objects->createStatic(gfx::Object{
 			.mesh = "block"_id,
 			.position = vec3{-4_m, 4_m, 2_m} + offset,
 			.scale = prescale,
@@ -110,7 +110,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 			.tint = {0.9f, 0.1f, 0.1f, 1.0f},
 			.roughness = 0.6f,
 			.metalness = 0.1f}));
-		staticObjects.emplace_back(engine.objects.createStatic(gfx::Object{
+		staticObjects.emplace_back(engine.objects->createStatic(gfx::Object{
 			.mesh = "block"_id,
 			.position = vec3{4_m, 4_m, 2_m} + offset,
 			.scale = prescale,
@@ -118,7 +118,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 			.tint = {0.9f, 0.1f, 0.1f, 1.0f},
 			.roughness = 0.6f,
 			.metalness = 0.1f}));
-		staticObjects.emplace_back(engine.objects.createStatic(gfx::Object{
+		staticObjects.emplace_back(engine.objects->createStatic(gfx::Object{
 			.mesh = "block"_id,
 			.position = vec3{7_m, 0_m, 2_m} + offset,
 			.scale = prescale,
@@ -126,7 +126,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 			.tint = {0.1f, 0.1f, 0.9f, 1.0f},
 			.roughness = 0.6f,
 			.metalness = 0.1f}));
-		dynamicObjects.emplace_back(engine.objects.createDynamic(gfx::Object{
+		dynamicObjects.emplace_back(engine.objects->createDynamic(gfx::Object{
 			.mesh = "block"_id,
 			.position = vec3{0_m, 0_m, 2.5_m} + offset,
 			.scale = vec3{1_m, 1_m, 1_m} * vec3{1.5f, 1.5f, 1.5f},
@@ -135,14 +135,14 @@ void game(sys::Glfw&, sys::Window& window) try {
 			.metalness = 0.9f}));
 		for (auto i = 0.0f; i <= 1.0f; i += 0.125f) {
 			auto offset2 = offset + vec3{(i - 0.5f) * 2.0f * 8_m, 0_m, 0_m};
-			staticObjects.emplace_back(engine.objects.createStatic(gfx::Object{
+			staticObjects.emplace_back(engine.objects->createStatic(gfx::Object{
 				.mesh = "sphere"_id,
 				.position = vec3{0_m, 8_m, 2_m} + offset2,
 				.scale = prescale,
 				.tint = {1.0f, 1.0f, 1.0f, 1.0f},
 				.roughness = i,
 				.metalness = 0.9f}));
-			staticObjects.emplace_back(engine.objects.createStatic(gfx::Object{
+			staticObjects.emplace_back(engine.objects->createStatic(gfx::Object{
 				.mesh = "sphere"_id,
 				.position = vec3{0_m, -8_m, 2_m} + offset2,
 				.scale = prescale,
@@ -236,7 +236,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 			auto rotateTransformAnim = mat3::rotate({0.0f, 0.0f, 1.0f}, f32(radians(f64(sys::Glfw::getTime().count()) / 20000000.0)));
 			for (auto& obj: dynamicObjects) {
 				obj.rotation = rotateTransformAnim * rotateTransform;
-				engine.objects.update(obj);
+				engine.objects->update(obj);
 			}
 		}
 		

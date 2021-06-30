@@ -48,8 +48,7 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 			if (!metadata.exists || !metadata.visible)
 				continue;
 			
-			auto meshID = _objects.meshIDs[id];
-			auto meshIndex = _meshes.descriptorIDs.at(meshID);
+			auto meshIndex = _objects.meshIndex[id];
 			commands[meshIndex].instanceCount += 1;
 			
 		}
@@ -83,13 +82,12 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 			if (!metadata.exists || !metadata.visible)
 				continue;
 			
-			auto meshID = _objects.meshIDs[id];
-			auto meshIndex = _meshes.descriptorIDs.at(meshID);
+			auto meshIndex = _objects.meshIndex[id];
 			auto& command = commands[meshIndex];
 			auto instanceIndex = command.firstInstance + command.instanceCount;
-			auto& material = _objects.materials[id];
+			auto& material = _objects.material[id];
 			sortedInstances[instanceIndex] = Instance{
-				.transform = _objects.transforms[id],
+				.transform = _objects.transform[id],
 				.tint = material.tint,
 				.roughness = material.roughness,
 				.metalness = material.metalness,

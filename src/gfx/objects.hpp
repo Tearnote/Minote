@@ -4,6 +4,7 @@
 #include "base/types.hpp"
 #include "base/math.hpp"
 #include "base/id.hpp"
+#include "gfx/module/meshes.hpp"
 
 namespace minote::gfx {
 
@@ -46,10 +47,12 @@ struct Objects {
 	};
 	
 	std::vector<Metadata> metadata;
-	std::vector<ID> meshIDs;
-	std::vector<mat4> transforms;
-	std::vector<mat4> prevTransforms;
-	std::vector<Material> materials;
+	std::vector<usize> meshIndex;
+	std::vector<mat4> transform;
+	std::vector<mat4> prevTransform;
+	std::vector<Material> material;
+	
+	explicit Objects(Meshes const& _meshes): meshes(_meshes) {}
 	
 	[[nodiscard]]
 	auto create() -> ObjectID;
@@ -70,6 +73,7 @@ struct Objects {
 	
 private:
 	
+	Meshes const& meshes;
 	std::vector<ObjectID> deletedIDs;
 	
 };
