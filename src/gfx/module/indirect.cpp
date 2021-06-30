@@ -2,6 +2,7 @@
 
 #include <cstring>
 #include "optick.h"
+#include "imgui.h"
 #include "vuk/CommandBuffer.hpp"
 #include "base/container/hashmap.hpp"
 #include "base/math.hpp"
@@ -20,118 +21,91 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 	// Create the command list
 	
 	auto commands = std::vector<Command>();
-	{
-		OPTICK_EVENT("Create command list");
+	commands.reserve(_meshes.size());
+	
+	for (auto& descriptor: _meshes.descriptors) {
 		
-		commands.reserve(_meshes.size());
-		for (auto& descriptor: _meshes.descriptors) {
-			
-			commands.emplace_back(Command{
-				.indexCount = descriptor.indexCount,
-				.instanceCount = 0, // counted during the next loop
-				.firstIndex = descriptor.indexOffset,
-				.vertexOffset = i32(descriptor.vertexOffset),
-				.firstInstance = 0, // calculated later
-				.meshRadius = descriptor.radius});
-			
-		}
+		commands.emplace_back(Command{
+			.indexCount = descriptor.indexCount,
+			.instanceCount = 0, // counted during the next loop
+			.firstIndex = descriptor.indexOffset,
+			.vertexOffset = i32(descriptor.vertexOffset),
+			.firstInstance = 0, // calculated later
+			.meshRadius = descriptor.radius});
+		
 	}
 	
 	// Count instances per mesh
 	
-	{
-		OPTICK_EVENT("Count instances per mesh");
+	for (auto size = _objects.size(), id = ObjectID(0); id < size; id += 1) {
 		
-		for (auto size = _objects.size(), id = ObjectID(0); id < size; id += 1) {
-			
-			auto& metadata = _objects.metadata[id];
-			if (!metadata.exists || !metadata.visible)
-				continue;
-			
-			auto meshIndex = _objects.meshIndex[id];
-			commands[meshIndex].instanceCount += 1;
-			
-		}
+		auto& metadata = _objects.metadata[id];
+		if (!metadata.exists || !metadata.visible)
+			continue;
+		
+		auto meshIndex = _objects.meshIndex[id];
+		commands[meshIndex].instanceCount += 1;
+		
 	}
 	
 	// Calculate command list instance offsets
 	
 	auto commandOffset = 0_zu;
-	{
-		OPTICK_EVENT("Calculate command list instance offsets");
-		
-		for (auto size = commands.size(), i = 0_zu; i < size; i += 1) {
-			
-			auto& command = commands[i];
-			command.firstInstance = commandOffset;
-			commandOffset += command.instanceCount;
-			command.instanceCount = 0;
-			
-		}
-	}
 	
-	// Create the instance vector sorted by mesh ID
-	
-	auto sortedInstances = std::vector<Instance>(commandOffset);
-	{
-		OPTICK_EVENT("Create the instance vector");
+	for (auto size = commands.size(), i = 0_zu; i < size; i += 1) {
 		
-		for (auto size = _objects.size(), id = ObjectID(0); id < size; id += 1) {
-			
-			auto& metadata = _objects.metadata[id];
-			if (!metadata.exists || !metadata.visible)
-				continue;
-			
-			auto meshIndex = _objects.meshIndex[id];
-			auto& command = commands[meshIndex];
-			auto instanceIndex = command.firstInstance + command.instanceCount;
-			auto& material = _objects.material[id];
-			sortedInstances[instanceIndex] = Instance{
-				.transform = _objects.transform[id],
-				.tint = material.tint,
-				.roughness = material.roughness,
-				.metalness = material.metalness,
-				.meshID = u32(meshIndex),
-			};
-			
-			command.instanceCount += 1;
-			
-		}
+		auto& command = commands[i];
+		command.firstInstance = commandOffset;
+		commandOffset += command.instanceCount;
+		command.instanceCount = 0;
+		
 	}
 	
 	// Clear instance count for GPU culling
 	
-	{
-		OPTICK_EVENT("Clear instance count");
-		
-		for (auto& cmd: commands)
-			cmd.instanceCount = 0;
-	}
+	for (auto& cmd: commands)
+		cmd.instanceCount = 0;
 	
 	// Create and upload the buffers
 	
-	{
-		OPTICK_EVENT("Upload buffers");
+	commandsCount = commands.size();
+	commandsBuf = _ptc.allocate_scratch_buffer(
+		vuk::MemoryUsage::eCPUtoGPU,
+		vuk::BufferUsageFlagBits::eIndirectBuffer | vuk::BufferUsageFlagBits::eStorageBuffer,
+		sizeof(Command) * commands.size(), alignof(Command));
+	std::memcpy(commandsBuf.mapped_ptr, commands.data(), sizeof(Command) * commands.size());
+	
+	instancesCount = _objects.size();
+	auto createAndUpload = [this, &_ptc]<typename T>(std::vector<T> const& _data) {
 		
-		commandsCount = commands.size();
-		commandsBuf = _ptc.allocate_scratch_buffer(
-			vuk::MemoryUsage::eCPUtoGPU,
-			vuk::BufferUsageFlagBits::eIndirectBuffer | vuk::BufferUsageFlagBits::eStorageBuffer,
-			sizeof(Command) * commands.size(), alignof(Command));
-		std::memcpy(commandsBuf.mapped_ptr, commands.data(), sizeof(Command) * commands.size());
-		
-		instancesCount = sortedInstances.size();
-		instancesBuf = _ptc.allocate_scratch_buffer(
+		auto buf = _ptc.allocate_scratch_buffer(
 			vuk::MemoryUsage::eCPUtoGPU,
 			vuk::BufferUsageFlagBits::eStorageBuffer,
-			sizeof(Instance) * sortedInstances.size(), alignof(Instance));
-		std::memcpy(instancesBuf.mapped_ptr, sortedInstances.data(), sizeof(Instance) * sortedInstances.size());
+			sizeof(T) * instancesCount, alignof(T));
+		std::memcpy(buf.mapped_ptr, _data.data(), sizeof(T) * instancesCount);
+		return buf;
 		
-		instancesCulledBuf = _ptc.allocate_scratch_buffer(
+	};
+	auto createEmpty = [this, &_ptc]<typename T>(std::vector<T> const&) {
+		
+		return _ptc.allocate_scratch_buffer(
 			vuk::MemoryUsage::eGPUonly,
 			vuk::BufferUsageFlagBits::eStorageBuffer,
-			sizeof(Instance) * sortedInstances.size(), alignof(Instance));
-	}
+			sizeof(T) * instancesCount, alignof(T));
+		
+	};
+	
+	metadataBuf      = createAndUpload(_objects.metadata);
+	meshIndexBuf     = createAndUpload(_objects.meshIndex);
+	transformBuf     = createAndUpload(_objects.transform);
+	prevTransformBuf = createAndUpload(_objects.prevTransform);
+	materialBuf      = createAndUpload(_objects.material);
+	
+	transformCulledBuf     = createEmpty(_objects.transform);
+	prevTransformCulledBuf = createEmpty(_objects.prevTransform);
+	materialCulledBuf      = createEmpty(_objects.material);
+	
+	ImGui::Text("Object count: %llu", instancesCount);
 	
 	// Prepare the culling shader
 	
@@ -159,21 +133,33 @@ auto Indirect::frustumCull(World const& _world) -> vuk::RenderGraph {
 	rg.add_pass({
 		.name = "Frustum culling",
 		.resources = {
-			vuk::Resource(Commands_n,        vuk::Resource::Type::eBuffer, vuk::eComputeRW),
-			vuk::Resource(Instances_n,       vuk::Resource::Type::eBuffer, vuk::eComputeRead),
-			vuk::Resource(InstancesCulled_n, vuk::Resource::Type::eBuffer, vuk::eComputeWrite),
+			vuk::Resource(Commands_n,            vuk::Resource::Type::eBuffer, vuk::eComputeRW),
+			vuk::Resource(Metadata_n,            vuk::Resource::Type::eBuffer, vuk::eComputeRead),
+			vuk::Resource(MeshIndex_n,           vuk::Resource::Type::eBuffer, vuk::eComputeRead),
+			vuk::Resource(Transform_n,           vuk::Resource::Type::eBuffer, vuk::eComputeRead),
+			vuk::Resource(PrevTransform_n,       vuk::Resource::Type::eBuffer, vuk::eComputeRead),
+			vuk::Resource(Material_n,            vuk::Resource::Type::eBuffer, vuk::eComputeRead),
+			vuk::Resource(TransformCulled_n,     vuk::Resource::Type::eBuffer, vuk::eComputeWrite),
+			vuk::Resource(PrevTransformCulled_n, vuk::Resource::Type::eBuffer, vuk::eComputeWrite),
+			vuk::Resource(MaterialCulled_n,      vuk::Resource::Type::eBuffer, vuk::eComputeWrite),
 		},
 		.execute = [this, view, projection](vuk::CommandBuffer& cmd) {
 			cmd.bind_storage_buffer(0, 0, commandsBuf)
-			   .bind_storage_buffer(0, 1, instancesBuf)
-			   .bind_storage_buffer(0, 2, instancesCulledBuf)
+			   .bind_storage_buffer(0, 1, metadataBuf)
+			   .bind_storage_buffer(0, 2, meshIndexBuf)
+			   .bind_storage_buffer(0, 3, transformBuf)
+			   .bind_storage_buffer(0, 4, prevTransformBuf)
+			   .bind_storage_buffer(0, 5, materialBuf)
+			   .bind_storage_buffer(0, 6, transformCulledBuf)
+			   .bind_storage_buffer(0, 7, prevTransformCulledBuf)
+			   .bind_storage_buffer(0, 8, materialCulledBuf)
 			   .bind_compute_pipeline("cull");
 			struct CullData {
 				mat4 view;
 				vec4 frustum;
 				u32 instancesCount;
 			};
-			auto* cullData = cmd.map_scratch_uniform_binding<CullData>(0, 3);
+			auto* cullData = cmd.map_scratch_uniform_binding<CullData>(0, 9);
 			*cullData = CullData{
 				.view = view,
 				.frustum = [this, projection] {
@@ -194,12 +180,36 @@ auto Indirect::frustumCull(World const& _world) -> vuk::RenderGraph {
 		commandsBuf,
 		vuk::eTransferDst,
 		vuk::eNone);
-	rg.attach_buffer(Instances_n,
-		instancesBuf,
+	rg.attach_buffer(Metadata_n,
+		metadataBuf,
 		vuk::eTransferDst,
 		vuk::eNone);
-	rg.attach_buffer(InstancesCulled_n,
-		instancesCulledBuf,
+	rg.attach_buffer(MeshIndex_n,
+		meshIndexBuf,
+		vuk::eTransferDst,
+		vuk::eNone);
+	rg.attach_buffer(Transform_n,
+		transformBuf,
+		vuk::eTransferDst,
+		vuk::eNone);
+	rg.attach_buffer(PrevTransform_n,
+		prevTransformBuf,
+		vuk::eTransferDst,
+		vuk::eNone);
+	rg.attach_buffer(Material_n,
+		materialBuf,
+		vuk::eTransferDst,
+		vuk::eNone);
+	rg.attach_buffer(TransformCulled_n,
+		transformCulledBuf,
+		vuk::eNone,
+		vuk::eNone);
+	rg.attach_buffer(PrevTransformCulled_n,
+		prevTransformCulledBuf,
+		vuk::eNone,
+		vuk::eNone);
+	rg.attach_buffer(MaterialCulled_n,
+		materialCulledBuf,
 		vuk::eNone,
 		vuk::eNone);
 	

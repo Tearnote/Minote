@@ -16,8 +16,8 @@ struct Objects {
 	
 	struct Metadata {
 		
-		bool visible = true;
-		bool exists = true;
+		u32 visible = true;
+		u32 exists = true;
 		
 	};
 	
@@ -26,6 +26,7 @@ struct Objects {
 		vec4 tint = vec4(1.0f);
 		f32 roughness;
 		f32 metalness;
+		vec2 pad;
 		
 	};
 	
@@ -47,7 +48,7 @@ struct Objects {
 	};
 	
 	std::vector<Metadata> metadata;
-	std::vector<usize> meshIndex;
+	std::vector<u32> meshIndex;
 	std::vector<mat4> transform;
 	std::vector<mat4> prevTransform;
 	std::vector<Material> material;

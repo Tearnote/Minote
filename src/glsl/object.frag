@@ -9,13 +9,26 @@ layout(location = 4) in vec3 f_viewPosition;
 
 layout(location = 0) out vec4 out_color;
 
-layout(binding = 2) restrict readonly buffer SunLuminance {
+layout(std430, binding = 1) readonly buffer Transform {
+	mat4 transform[];
+};
+
+struct Material {
+	vec4 tint;
+	float roughness;
+	float metalness;
+	vec2 pad;
+};
+layout(std430, binding = 2) readonly buffer Materials {
+	Material materials[];
+};
+
+layout(binding = 3) restrict readonly buffer SunLuminance {
 	vec3 sunLuminance;
 };
-layout(binding = 3) uniform samplerCube cubemap;
-layout(binding = 4) uniform sampler3D aerialPerspective;
+layout(binding = 4) uniform samplerCube cubemap;
+layout(binding = 5) uniform sampler3D aerialPerspective;
 
-#include "instance.glsl"
 #include "world.glsl"
 #include "util.glsl"
 
@@ -43,7 +56,7 @@ float AerialPerspectiveDepthToSlice(float depth) {
 }
 
 void main() {
-	const Instance instance = instances.data[InstanceIndex];
+	const Material material = materials[InstanceIndex];
 
 	const float mipCount = 8;
 
@@ -66,20 +79,20 @@ void main() {
 	sunColor *= sunset;
 
 	// PBR calculation
-	vec3 f0 = max(f_color.rgb * instance.metalness, vec3(0.04));
+	vec3 f0 = max(f_color.rgb * material.metalness, vec3(0.04));
 
 	vec3 iblDiffuse = textureLod(cubemap, normal, mipCount - 2.0).rgb;
 	vec3 sunDiffuse = sunColor * max(dot(normal, world.sunDirection), 0.0);
-	vec3 diffuse = f_color.rgb * (iblDiffuse + sunDiffuse) * (1.0 - instance.metalness);
+	vec3 diffuse = f_color.rgb * (iblDiffuse + sunDiffuse) * (1.0 - material.metalness);
 
 	vec3 reflection = reflect(viewDirection, normal);
-	float iblMip = max(7.0 - 0.480898 * log(2.0 / pow(instance.roughness, 4.0) - 1.0), 0.0);
+	float iblMip = max(7.0 - 0.480898 * log(2.0 / pow(material.roughness, 4.0) - 1.0), 0.0);
 	vec3 iblSpecular = vec3(textureLod(cubemap, -reflection, iblMip));
 	const float sunMinRoughness = 1.0 / 16.0;
-	vec3 sunSpecular = sunColor * D_Approx(max(instance.roughness, sunMinRoughness), dot(-reflection, world.sunDirection));
+	vec3 sunSpecular = sunColor * D_Approx(max(material.roughness, sunMinRoughness), dot(-reflection, world.sunDirection));
 	vec3 specular = iblSpecular + sunSpecular;
 
-	out_color = vec4(mix(diffuse, specular, envBRDFApprox(f0, NoV, instance.roughness)), f_color.a);
+	out_color = vec4(mix(diffuse, specular, envBRDFApprox(f0, NoV, material.roughness)), f_color.a);
 
 	// Aerial perspective
 	float depth = 1.0 - gl_FragCoord.z; // Reverse-z

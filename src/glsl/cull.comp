@@ -15,22 +15,42 @@ layout (binding = 0, std430) buffer Draws {
 	Command draws[];
 };
 
-struct Instance {
-	mat4 transform;
+struct Metadata {
+	uint visible;
+	uint exists;
+};
+struct Material {
 	vec4 tint;
 	float roughness;
 	float metalness;
-	uint meshID;
-	float pad0;
+	vec2 pad;
 };
-layout (binding = 1, std430) readonly buffer Instances {
-	Instance instances[];
+layout (binding = 1, std430) readonly buffer Metadatas {
+	Metadata metadata[];
 };
-layout (binding = 2, std430) writeonly buffer InstancesCulled {
-	Instance instancesCulled[];
+layout (binding = 2, std430) readonly buffer MeshIndex {
+	uint meshIndex[];
+};
+layout (binding = 3, std430) readonly buffer Transform {
+	mat4 transform[];
+};
+layout (binding = 4, std430) readonly buffer PrevTransform {
+	mat4 prevTransform[];
+};
+layout (binding = 5, std430) readonly buffer Materials {
+	Material material[];
+};
+layout (binding = 6, std430) writeonly buffer TransformCulled {
+	mat4 transformCulled[];
+};
+layout (binding = 7, std430) writeonly buffer PrevTransformCulled {
+	mat4 prevTransformCulled[];
+};
+layout (binding = 8, std430) writeonly buffer MaterialsCulled {
+	Material materialCulled[];
 };
 
-layout(binding = 3) uniform CullData {
+layout(binding = 9) uniform CullData {
 	mat4 view;
 	vec4 frustum;
 	uint instancesCount;
@@ -44,25 +64,29 @@ float maxScale(mat4 transform) {
 }
 
 bool visible(uint gid, float radius) {
-	vec3 center = (view * instances[gid].transform[3]).xyz;
+	vec3 center = (view * transform[gid][3]).xyz;
 
 	bool result = true;
 	result = result && center.z * frustum[1] - abs(center.x) * frustum[0] > -radius;
 	result = result && center.z * frustum[3] - abs(center.y) * frustum[2] > -radius;
-
+	
 	return result;
 }
 
 void main() {
 	const uint gid = gl_GlobalInvocationID.x;
 	if (gid >= instancesCount) return;
-
-	uint meshID = instances[gid].meshID;
-	float scale = maxScale(instances[gid].transform);
-	float radius = draws[meshID].meshRadius;
+	if (metadata[gid].visible == 0 || metadata[gid].exists == 0) return;
+	
+	uint meshIndex = meshIndex[gid];
+	float scale = maxScale(transform[gid]);
+	float radius = draws[meshIndex].meshRadius;
 	if (!visible(gid, radius * scale)) return;
-
-	uint offset = draws[meshID].firstInstance;
-	uint index = atomicAdd(draws[meshID].instanceCount, 1);
-	instancesCulled[offset + index] = instances[gid];
+	
+	uint offset = draws[meshIndex].firstInstance;
+	uint index = offset + atomicAdd(draws[meshIndex].instanceCount, 1);
+	
+	transformCulled[index] = transform[gid];
+	prevTransformCulled[index] = prevTransform[gid];
+	materialCulled[index] = material[gid];
 }

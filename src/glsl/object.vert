@@ -11,16 +11,29 @@ layout(location = 2) out vec4 f_color;
 layout(location = 3) out vec3 f_normal;
 layout(location = 4) out vec3 f_viewPosition;
 
-#include "instance.glsl"
+layout(std430, binding = 1) readonly buffer Transform {
+	mat4 transforms[];
+};
+
+struct Material {
+	vec4 tint;
+	float roughness;
+	float metalness;
+	vec2 pad;
+};
+layout(std430, binding = 2) readonly buffer Materials {
+	Material materials[];
+};
+
 #include "world.glsl"
 
 void main() {
 	InstanceIndex = gl_InstanceIndex;
-	const Instance instance = instances.data[InstanceIndex];
+	const mat4 transform = transforms[InstanceIndex];
 
-	gl_Position = world.viewProjection * instance.transform * vec4(v_position, 1.0);
-	f_position = vec3(instance.transform * vec4(v_position, 1.0));
-	f_color = v_color * instance.tint;
-	f_normal = mat3(transpose(inverse(instance.transform))) * v_normal;
+	gl_Position = world.viewProjection * transform * vec4(v_position, 1.0);
+	f_position = vec3(transform * vec4(v_position, 1.0));
+	f_color = v_color * materials[InstanceIndex].tint;
+	f_normal = mat3(transpose(inverse(transform))) * v_normal;
 	f_viewPosition = vec3(inverse(world.view) * vec4(0.0, 0.0, 0.0, 1.0));
 }
