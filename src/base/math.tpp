@@ -1,3 +1,6 @@
+// Some algorithms are adapted from GLM code:
+// https://github.com/g-truc/glm
+
 #pragma once
 
 #include <algorithm>
@@ -217,7 +220,7 @@ constexpr auto operator/(vec<Dim, T> const& _left, T _right) -> vec<Dim, T> {
 	
 }
 
-template<usize Dim, std::floating_point T>
+template<usize Dim, floating_point T>
 constexpr auto abs(vec<Dim, T> const& _vec) -> vec<Dim, T> {
 	
 	auto result = vec<Dim, T>();
@@ -229,7 +232,7 @@ constexpr auto abs(vec<Dim, T> const& _vec) -> vec<Dim, T> {
 	
 }
 
-template<usize Dim, std::floating_point T>
+template<usize Dim, floating_point T>
 constexpr auto normalize(vec<Dim, T> const& _vec) -> vec<Dim, T> {
 	
 	if constexpr (Dim == 4) {
@@ -243,7 +246,7 @@ constexpr auto normalize(vec<Dim, T> const& _vec) -> vec<Dim, T> {
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr mat<Dim, Prec>::mat(std::initializer_list<Prec> _list) {
 	
 	assert(_list.size() == Dim * Dim);
@@ -259,7 +262,7 @@ constexpr mat<Dim, Prec>::mat(std::initializer_list<Prec> _list) {
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto mat<Dim, Prec>::identity() -> mat<Dim, Prec> {
 	
 	auto result = mat<Dim, Prec>();
@@ -272,7 +275,7 @@ constexpr auto mat<Dim, Prec>::identity() -> mat<Dim, Prec> {
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto mat<Dim, Prec>::translate(vec<3, Prec> _shift) -> mat<Dim, Prec> {
 	
 	static_assert(Dim == 4, "Translation matrix requires order of 4");
@@ -285,13 +288,13 @@ constexpr auto mat<Dim, Prec>::translate(vec<3, Prec> _shift) -> mat<Dim, Prec> 
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto mat<Dim, Prec>::rotate(vec<3, Prec> _axis, Prec _angle) -> mat<Dim, Prec> {
 	
 	assert(isUnit(_axis));
 	
-	auto sinT = std::sin(_angle);
-	auto cosT = std::cos(_angle);
+	auto sinT = sin(_angle);
+	auto cosT = cos(_angle);
 	auto temp = _axis * (Prec(1) - cosT);
 	
 	auto result = mat<Dim, Prec>::identity();
@@ -312,7 +315,7 @@ constexpr auto mat<Dim, Prec>::rotate(vec<3, Prec> _axis, Prec _angle) -> mat<Di
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto mat<Dim, Prec>::scale(vec<3, Prec> _scale) -> mat<Dim, Prec> {
 	
 	auto result = mat<Dim, Prec>::identity();
@@ -324,7 +327,7 @@ constexpr auto mat<Dim, Prec>::scale(vec<3, Prec> _scale) -> mat<Dim, Prec> {
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto mat<Dim, Prec>::scale(Prec _scale) -> mat<Dim, Prec> {
 	
 	auto result = mat<Dim, Prec>::identity();
@@ -336,7 +339,7 @@ constexpr auto mat<Dim, Prec>::scale(Prec _scale) -> mat<Dim, Prec> {
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 template<arithmetic U>
 requires (!std::same_as<Prec, U>)
 constexpr mat<Dim, Prec>::mat(mat<Dim, U> const& _other) {
@@ -347,7 +350,7 @@ constexpr mat<Dim, Prec>::mat(mat<Dim, U> const& _other) {
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 template<usize N>
 requires (N != Dim)
 constexpr mat<Dim, Prec>::mat(mat<N, Prec> const& _other) {
@@ -362,7 +365,7 @@ constexpr mat<Dim, Prec>::mat(mat<N, Prec> const& _other) {
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto mat<Dim, Prec>::operator*=(Prec _other) -> mat<Dim, Prec>& {
 	
 	for (auto x = 0_zu; x < Dim; x += 1)
@@ -373,7 +376,7 @@ constexpr auto mat<Dim, Prec>::operator*=(Prec _other) -> mat<Dim, Prec>& {
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto mat<Dim, Prec>::operator/=(Prec _other) -> mat<Dim, Prec>& {
 	
 	for (auto x = 0_zu; x < Dim; x += 1)
@@ -384,7 +387,7 @@ constexpr auto mat<Dim, Prec>::operator/=(Prec _other) -> mat<Dim, Prec>& {
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto operator*(mat<Dim, Prec> const& _left, mat<Dim, Prec> const& _right) -> mat<Dim, Prec> {
 	
 	static_assert(Dim == 3 || Dim == 4, "Unsupported matrix order for multiplication");
@@ -410,7 +413,7 @@ constexpr auto operator*(mat<Dim, Prec> const& _left, mat<Dim, Prec> const& _rig
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto operator*(mat<Dim, Prec> const& _left, vec<Dim, Prec> const& _right) -> vec<Dim, Prec> {
 	
 	auto leftT = transpose(_left);
@@ -424,7 +427,7 @@ constexpr auto operator*(mat<Dim, Prec> const& _left, vec<Dim, Prec> const& _rig
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto operator*(mat<Dim, Prec> const& _left, Prec _right) -> mat<Dim, Prec> {
 	
 	auto result = _left;
@@ -433,7 +436,7 @@ constexpr auto operator*(mat<Dim, Prec> const& _left, Prec _right) -> mat<Dim, P
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto operator/(mat<Dim, Prec> const& _left, Prec _right) -> mat<Dim, Prec> {
 	
 	auto result = _left;
@@ -442,7 +445,7 @@ constexpr auto operator/(mat<Dim, Prec> const& _left, Prec _right) -> mat<Dim, P
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto transpose(mat<Dim, Prec> const& _mat) -> mat<Dim, Prec> {
 	
 	auto result = mat<Dim, Prec>();
@@ -455,7 +458,7 @@ constexpr auto transpose(mat<Dim, Prec> const& _mat) -> mat<Dim, Prec> {
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto inverse(mat<Dim, Prec> const& _mat) -> mat<Dim, Prec> {
 	
 	static_assert(Dim == 3 || Dim == 4, "Unsupported matrix order for inversion");
@@ -541,7 +544,7 @@ constexpr auto inverse(mat<Dim, Prec> const& _mat) -> mat<Dim, Prec> {
 	
 }
 
-template<std::floating_point Prec>
+template<floating_point Prec>
 constexpr auto look(vec<3, Prec> _pos, vec<3, Prec> _dir, vec<3, Prec> _up) -> mat<4, Prec> {
 	
 	assert(isUnit(_dir));
@@ -569,7 +572,7 @@ constexpr auto look(vec<3, Prec> _pos, vec<3, Prec> _dir, vec<3, Prec> _up) -> m
 	
 }
 
-template<std::floating_point Prec = f32>
+template<floating_point Prec = f32>
 constexpr auto perspective(Prec _vFov, Prec _aspectRatio, Prec _zNear) -> mat<4, Prec> {
 	
 	auto range = tan(_vFov / Prec(2)) * _zNear;

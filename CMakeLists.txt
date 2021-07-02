@@ -56,7 +56,6 @@ add_executable(Minote
         src/base/memory/stack.hpp
         src/base/memory/pool.hpp
         src/base/concepts.hpp
-        src/base/version.hpp
         src/base/format.hpp
         src/base/error.hpp
         src/base/tween.hpp

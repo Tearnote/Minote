@@ -233,7 +233,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 		{
 			OPTICK_EVENT("Update spinny squares");
 			auto rotateTransform = mat3::rotate({1.0f, 0.0f, 0.0f}, 180_deg);
-			auto rotateTransformAnim = mat3::rotate({0.0f, 0.0f, 1.0f}, f32(radians(f64(sys::Glfw::getTime().count()) / 20000000.0)));
+			auto rotateTransformAnim = mat3::rotate({0.0f, 0.0f, 1.0f}, radians(ratio(sys::Glfw::getTime(), 20_ms)));
 			for (auto& obj: dynamicObjects) {
 				obj.rotation = rotateTransformAnim * rotateTransform;
 				engine.objects->update(obj);

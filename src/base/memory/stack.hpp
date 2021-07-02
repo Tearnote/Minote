@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string_view>
+#include "base/container/string.hpp"
 #include "base/memory/arena.hpp"
 #include "base/types.hpp"
 
@@ -12,7 +12,7 @@ struct StackMarker;
 // multiple allocations at once.
 struct Stack: public Arena {
 	
-	Stack(std::string_view name, usize capacity): Arena(name, capacity) {}
+	Stack(string_view name, usize capacity): Arena(name, capacity) {}
 	
 	friend StackMarker;
 	

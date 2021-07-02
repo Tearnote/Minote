@@ -1,38 +1,25 @@
 #pragma once
 
-#include <concepts>
-#include <chrono>
 #include "base/concepts.hpp"
 #include "base/types.hpp"
 
 namespace minote::base {
 
-// Main timestamp/duration type
-using nsec = std::chrono::nanoseconds;
+// Main timestamp/duration type. Has enough resolution to largely ignore
+// rounding error, and wraps after >100 years.
+using nsec = i64;
 
 // Create nsec from a count of seconds
-constexpr auto seconds(arithmetic auto val) {
-	return nsec(nsec::rep(val * 1'000'000'000));
-}
+template<arithmetic T>
+constexpr auto seconds(T val) -> nsec { return val * 1'000'000'000; }
 
 // Create nsec from a count of milliseconds
-constexpr auto milliseconds(arithmetic auto val) {
-	return nsec(nsec::rep(val * 1'000'000));
-}
+template<arithmetic T>
+constexpr auto milliseconds(T val) { return val * 1'000'000; }
 
-// If you use nsec's operators with floating-point numbers, the resulting value will
-// be represented with a temporary higher precision type. use round() on the result to bring
-// it back to nsec.
-template<typename Rep, typename Period>
-constexpr auto round(std::chrono::duration<Rep, Period> val) {
-	return std::chrono::round<nsec>(val);
-}
-
-// Compute (left / right) with floating-point instead of integer division.
-template<std::floating_point T = f32>
-constexpr auto ratio(nsec const left, nsec const right) {
-	return T(double(left.count()) / double(right.count()));
-}
+// Get an accurate floating-point ratio between two nsecs
+template<floating_point T = f32>
+constexpr auto ratio(nsec left, nsec right) -> T { return f64(left) / f64(right); }
 
 namespace literals {
 

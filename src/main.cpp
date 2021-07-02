@@ -17,7 +17,6 @@
 #include <windows.h>
 #endif //_WIN32
 #include "optick.h"
-#include "base/version.hpp"
 #include "base/time.hpp"
 #include "base/log.hpp"
 #include "sys/window.hpp"
@@ -64,7 +63,7 @@ auto main(int, char*[]) -> int try {
 		if (ImGui::GetIO().Fonts->IsBuilt())
 			ImGui_ImplGlfw_NewFrame();
 #endif //IMGUI
-		std::this_thread::sleep_for(1_ms);
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 
 	return EXIT_SUCCESS;
