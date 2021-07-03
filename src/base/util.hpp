@@ -1,6 +1,7 @@
 #pragma once
 
 #include <type_traits>
+#include <ranges>
 #include <tuple>
 #include "base/concepts.hpp"
 #include "base/types.hpp"
@@ -9,6 +10,11 @@ namespace minote::base {
 
 // Simple SemVer type
 using Version = std::tuple<u32, u32, u32>;
+
+// Selective imports of ranges library
+
+using std::ranges::views::iota;
+using std::ranges::views::reverse;
 
 // Template replacement for the C offsetof() macro. Unfortunately, it cannot be constexpr within
 // the current rules of the language.

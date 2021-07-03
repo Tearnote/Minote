@@ -271,7 +271,7 @@ void Engine::render() {
 	auto sky = Sky(ptc, *atmosphere);
 	auto forward = Forward(ptc, swapchainSize.extent);
 	auto post = Post(ptc);
-	auto bloom = Bloom(ptc, forward.size);
+	auto bloom = Bloom(ptc, {forward.size.width,  forward.size.height});
 	
 	// Set up the rendergraph
 	
