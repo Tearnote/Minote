@@ -14,8 +14,10 @@ struct ID {
 	explicit constexpr ID(string_view str): id(Basis) {
 		
 		for (auto ch: str) {
+			
 			id ^= ch;
 			id *= Prime;
+			
 		}
 		
 	}
@@ -26,8 +28,8 @@ struct ID {
 	
 private:
 	
-	static constexpr u32 Prime = 16777619u;
-	static constexpr u32 Basis = 2166136261u;
+	static constexpr auto Prime = 16777619u;
+	static constexpr auto Basis = 2166136261u;
 	
 	u32 id;
 	

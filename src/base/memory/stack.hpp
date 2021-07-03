@@ -22,8 +22,8 @@ struct Stack: public Arena {
 // resource since the marker was created are freed when the scope ends.
 struct StackMarker {
 	
-	explicit StackMarker(Stack& stack): stack(stack), marker(stack.used) {}
-	~StackMarker() { stack.used = marker; }
+	explicit StackMarker(Stack& stack): m_stack(stack), m_marker(stack.m_used) {}
+	~StackMarker() { m_stack.m_used = m_marker; }
 	
 	// Not copyable
 	// Not moveable
@@ -32,8 +32,8 @@ struct StackMarker {
 	
 private:
 	
-	Stack& stack;
-	usize marker;
+	Stack& m_stack;
+	usize m_marker;
 	
 };
 

@@ -23,8 +23,8 @@ void Log::init(string_view _filename, quill::LogLevel _level) {
 		"%H:%M:%S",
 		quill::Timezone::LocalTime);
 	
-	logger = quill::create_logger("main", {file, console});
-	logger->set_log_level(_level);
+	m_logger = quill::create_logger("main", {file, console});
+	m_logger->set_log_level(_level);
 	
 }
 

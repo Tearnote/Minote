@@ -23,7 +23,8 @@ constexpr auto ratio(nsec left, nsec right) -> T { return f64(left) / f64(right)
 
 namespace literals {
 
-// Create nsec from second/millisecond literal
+// Create nsec from second/millisecond literals
+
 constexpr auto operator""_s(unsigned long long val) { return seconds(val); }
 constexpr auto operator""_s(long double val) { return seconds(val); }
 constexpr auto operator""_ms(unsigned long long val) { return milliseconds(val); }

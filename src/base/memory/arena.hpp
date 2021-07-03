@@ -12,8 +12,10 @@ struct Arena {
 	Arena(string_view name, usize capacity);
 	~Arena();
 	
+	// Perform aligned allocation. Returned memory is uninitialized
 	auto allocate(usize bytes, usize align) -> void*;
 	
+	// Free everything
 	void reset();
 	
 	// Not copyable
@@ -25,10 +27,10 @@ struct Arena {
 	
 protected:
 	
-	sstring name;
-	void* mem;
-	usize capacity;
-	usize used;
+	sstring m_name;
+	void* m_mem;
+	usize m_capacity;
+	usize m_used;
 	
 };
 

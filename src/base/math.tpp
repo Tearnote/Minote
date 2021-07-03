@@ -4,6 +4,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cassert>
 #include "base/util.hpp"
 
 namespace minote::base {
@@ -13,8 +14,8 @@ using namespace base::literals;
 template<usize Dim, arithmetic T>
 constexpr vec<Dim, T>::vec(std::initializer_list<T> _list) {
 	
-	assert(_list.size() == arr.size());
-	std::copy(_list.begin(), _list.end(), arr.begin());
+	assert(_list.size() == m_arr.size());
+	std::copy(_list.begin(), _list.end(), m_arr.begin());
 	
 }
 
@@ -23,8 +24,8 @@ template<arithmetic U>
 requires (!std::same_as<T, U>)
 constexpr vec<Dim, T>::vec(vec<Dim, U> const& _other) {
 	
-	for (auto i = 0_zu; i < Dim; i += 1)
-		arr[i] = T(_other[i]);
+	for (auto i: iota(0_zu, Dim))
+		m_arr[i] = T(_other[i]);
 	
 }
 
@@ -33,8 +34,8 @@ template<usize N>
 requires (N > Dim)
 constexpr vec<Dim, T>::vec(vec<N, T> const& _other) {
 	
-	for (auto i = 0_zu; i < Dim; i += 1)
-		arr[i] = _other[i];
+	for (auto i: iota(0_zu, Dim))
+		m_arr[i] = _other[i];
 	
 }
 
@@ -43,17 +44,17 @@ template<usize N>
 requires (N < Dim)
 constexpr vec<Dim, T>::vec(vec<N, T> const& _other, T _fill) {
 	
-	arr.fill(_fill);
-	for (auto i = 0_zu; i < N; i += 1)
-		arr[i] = _other[i];
+	m_arr.fill(_fill);
+	for (auto i: iota(0_zu, N))
+		m_arr[i] = _other[i];
 	
 }
 
 template<usize Dim, arithmetic T>
 constexpr auto vec<Dim, T>::operator+=(vec<Dim, T> const& _other) -> vec<Dim, T>& {
 	
-	for (auto i = 0_zu; i < Dim; i += 1)
-		arr[i] += _other[i];
+	for (auto i: iota(0_zu, Dim))
+		m_arr[i] += _other[i];
 	
 	return *this;
 	
@@ -62,8 +63,8 @@ constexpr auto vec<Dim, T>::operator+=(vec<Dim, T> const& _other) -> vec<Dim, T>
 template<usize Dim, arithmetic T>
 constexpr auto vec<Dim, T>::operator-=(vec<Dim, T> const& _other) -> vec<Dim, T>& {
 	
-	for (auto i = 0_zu; i < Dim; i += 1)
-		arr[i] -= _other[i];
+	for (auto i: iota(0_zu, Dim))
+		m_arr[i] -= _other[i];
 	
 	return *this;
 	
@@ -72,8 +73,8 @@ constexpr auto vec<Dim, T>::operator-=(vec<Dim, T> const& _other) -> vec<Dim, T>
 template<usize Dim, arithmetic T>
 constexpr auto vec<Dim, T>::operator*=(vec<Dim, T> const& _other) -> vec<Dim, T>& {
 	
-	for (auto i = 0_zu; i < Dim; i += 1)
-		arr[i] *= _other[i];
+	for (auto i: iota(0_zu, Dim))
+		m_arr[i] *= _other[i];
 	
 	return *this;
 	
@@ -82,8 +83,8 @@ constexpr auto vec<Dim, T>::operator*=(vec<Dim, T> const& _other) -> vec<Dim, T>
 template<usize Dim, arithmetic T>
 constexpr auto vec<Dim, T>::operator/=(vec<Dim, T> const& _other) -> vec<Dim, T>& {
 	
-	for (auto i = 0_zu; i < Dim; i += 1)
-		arr[i] /= _other[i];
+	for (auto i: iota(0_zu, Dim))
+		m_arr[i] /= _other[i];
 	
 	return *this;
 	
@@ -92,8 +93,8 @@ constexpr auto vec<Dim, T>::operator/=(vec<Dim, T> const& _other) -> vec<Dim, T>
 template<usize Dim, arithmetic T>
 constexpr auto vec<Dim, T>::operator*=(T _other) -> vec<Dim, T>& {
 	
-	for (auto i = 0_zu; i < Dim; i += 1)
-		arr[i] *= _other;
+	for (auto i: iota(0_zu, Dim))
+		m_arr[i] *= _other;
 	
 	return *this;
 	
@@ -102,8 +103,8 @@ constexpr auto vec<Dim, T>::operator*=(T _other) -> vec<Dim, T>& {
 template<usize Dim, arithmetic T>
 constexpr auto vec<Dim, T>::operator/=(T _other) -> vec<Dim, T>& {
 	
-	for (auto i = 0_zu; i < Dim; i += 1)
-		arr[i] /= _other;
+	for (auto i: iota(0_zu, Dim))
+		m_arr[i] /= _other;
 	
 	return *this;
 	
@@ -148,7 +149,7 @@ constexpr auto operator/(vec<Dim, T> const& _left, vec<Dim, T> const& _right) ->
 template<usize Dim, arithmetic T>
 constexpr auto operator==(vec<Dim, T> const& _left, vec<Dim, T> const& _right) -> bool {
 	
-	for (auto i = 0_zu; i < Dim; i += 1)
+	for (auto i: iota(0_zu, Dim))
 		if (_left[i] != _right[i])
 			return false;
 	
@@ -161,7 +162,7 @@ constexpr auto min(vec<Dim, T> const& _left, vec<Dim, T> const& _right) -> vec<D
 	
 	auto result = vec<Dim, T>();
 	
-	for (auto i = 0_zu; i < Dim; i += 1)
+	for (auto i: iota(0_zu, Dim))
 		result[i] = min(_left[i], _right[i]);
 	
 	return result;
@@ -173,7 +174,7 @@ constexpr auto max(vec<Dim, T> const& _left, vec<Dim, T> const& _right) -> vec<D
 	
 	auto result = vec<Dim, T>();
 	
-	for (auto i = 0_zu; i < Dim; i += 1)
+	for (auto i: iota(0_zu, Dim))
 		result[i] = max(_left[i], _right[i]);
 	
 	return result;
@@ -185,7 +186,7 @@ constexpr auto dot(vec<Dim, T> const& _left, vec<Dim, T> const& _right) -> T {
 	
 	auto result = T(0);
 	
-	for (auto i = 0_zu; i < Dim; i += 1)
+	for (auto i: iota(0_zu, Dim))
 		result += _left[i] * _right[i];
 	
 	return result;
@@ -225,7 +226,7 @@ constexpr auto abs(vec<Dim, T> const& _vec) -> vec<Dim, T> {
 	
 	auto result = vec<Dim, T>();
 	
-	for (auto i = 0_zu; i < Dim; i += 1)
+	for (auto i: iota(0_zu, Dim))
 		result[i] = abs(_vec[i]);
 	
 	return result;
@@ -252,10 +253,10 @@ constexpr mat<Dim, Prec>::mat(std::initializer_list<Prec> _list) {
 	assert(_list.size() == Dim * Dim);
 	
 	auto it = _list.begin();
-	for (auto x = 0_zu; x < Dim; x += 1)
-		for (auto y = 0_zu; y < Dim; y += 1) {
+	for (auto x: iota(0_zu, Dim))
+		for (auto y: iota(0_zu, Dim)) {
 			
-			arr[x][y] = *it;
+			m_arr[x][y] = *it;
 			it += 1;
 			
 		}
@@ -266,10 +267,10 @@ template<usize Dim, floating_point Prec>
 constexpr auto mat<Dim, Prec>::identity() -> mat<Dim, Prec> {
 	
 	auto result = mat<Dim, Prec>();
-	result.arr.fill(col_t(Prec(0)));
+	result.fill(0);
 	
-	for (auto i = 0_zu; i < Dim; i += 1)
-		result[i][i] = Prec(1);
+	for (auto i: iota(0_zu, Dim))
+		result[i][i] = 1;
 	
 	return result;
 	
@@ -320,7 +321,7 @@ constexpr auto mat<Dim, Prec>::scale(vec<3, Prec> _scale) -> mat<Dim, Prec> {
 	
 	auto result = mat<Dim, Prec>::identity();
 	
-	for (auto i = 0_zu; i < 3; i += 1)
+	for (auto i: iota(0_zu, 3_zu))
 		result[i][i] = _scale[i];
 	
 	return result;
@@ -332,7 +333,7 @@ constexpr auto mat<Dim, Prec>::scale(Prec _scale) -> mat<Dim, Prec> {
 	
 	auto result = mat<Dim, Prec>::identity();
 	
-	for (auto i = 0_zu; i < 3; i += 1)
+	for (auto i: iota(0_zu, 3_zu))
 		result[i][i] = _scale;
 	
 	return result;
@@ -344,9 +345,9 @@ template<arithmetic U>
 requires (!std::same_as<Prec, U>)
 constexpr mat<Dim, Prec>::mat(mat<Dim, U> const& _other) {
 	
-	for (auto x = 0_zu; x < Dim; x += 1)
-		for (auto y = 0_zu; y < Dim; y += 1)
-			arr[x][y] = _other[x][y];
+	for (auto x: iota(0_zu, Dim))
+		for (auto y: iota(0_zu, Dim))
+			m_arr[x][y] = _other[x][y];
 	
 }
 
@@ -359,18 +360,18 @@ constexpr mat<Dim, Prec>::mat(mat<N, Prec> const& _other) {
 		*this = identity();
 	
 	constexpr auto Smaller = std::min(Dim, N);
-	for (auto x = 0_zu; x < Smaller; x += 1)
-		for (auto y = 0_zu; y < Smaller; y += 1)
-			arr[x][y] = _other[x][y];
+	for (auto x: iota(0_zu, Smaller))
+		for (auto y: iota(0_zu, Smaller))
+			m_arr[x][y] = _other[x][y];
 	
 }
 
 template<usize Dim, floating_point Prec>
 constexpr auto mat<Dim, Prec>::operator*=(Prec _other) -> mat<Dim, Prec>& {
 	
-	for (auto x = 0_zu; x < Dim; x += 1)
-		for (auto y = 0_zu; y < Dim; y += 1)
-			arr[x][y] *= _other;
+	for (auto x: iota(0_zu, Dim))
+		for (auto y: iota(0_zu, Dim))
+			m_arr[x][y] *= _other;
 	
 	return *this;
 	
@@ -379,9 +380,9 @@ constexpr auto mat<Dim, Prec>::operator*=(Prec _other) -> mat<Dim, Prec>& {
 template<usize Dim, floating_point Prec>
 constexpr auto mat<Dim, Prec>::operator/=(Prec _other) -> mat<Dim, Prec>& {
 	
-	for (auto x = 0_zu; x < Dim; x += 1)
-		for (auto y = 0_zu; y < Dim; y += 1)
-			arr[x][y] /= _other;
+	for (auto x: iota(0_zu, Dim))
+		for (auto y: iota(0_zu, Dim))
+			m_arr[x][y] /= _other;
 	
 	return *this;
 	
@@ -420,7 +421,7 @@ constexpr auto operator*(mat<Dim, Prec> const& _left, vec<Dim, Prec> const& _rig
 	
 	auto result = vec<Dim, Prec>();
 	
-	for (auto i = 0_zu; i < Dim; i += 1)
+	for (auto i: iota(0_zu, Dim))
 		result[i] = dot(leftT[i], _right);
 	
 	return result;
@@ -450,8 +451,8 @@ constexpr auto transpose(mat<Dim, Prec> const& _mat) -> mat<Dim, Prec> {
 	
 	auto result = mat<Dim, Prec>();
 	
-	for (auto x = 0_zu; x < Dim; x += 1)
-		for (auto y = 0_zu; y < Dim; y += 1)
+	for (auto x: iota(0_zu, Dim))
+		for (auto y: iota(0_zu, Dim))
 			result[x][y] = _mat[y][x];
 	
 	return result;

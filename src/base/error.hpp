@@ -5,7 +5,7 @@
 #include "base/format.hpp"
 
 namespace minote::base {
-	
+
 using std::runtime_error;
 
 template<typename... Args>

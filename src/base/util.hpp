@@ -29,7 +29,7 @@ inline auto offset_of(T1 T2::*member) -> usize {
 }
 
 // Align a size to a given boundary.
-constexpr auto alignSize(usize size, usize boundary) -> usize {
+constexpr auto align(usize size, usize boundary) -> usize {
 	
 	if (boundary == 0) return size;
 	return (size + boundary - 1) & ~(boundary - 1);

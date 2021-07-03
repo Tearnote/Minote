@@ -92,20 +92,20 @@ struct vec {
 	
 	//=== Member access
 	
-	constexpr auto at(usize n) -> T& { return arr[n]; }
-	constexpr auto at(usize n) const -> T { return arr[n]; }
+	constexpr auto at(usize n) -> T& { return m_arr[n]; }
+	constexpr auto at(usize n) const -> T { return m_arr[n]; }
 	
 	constexpr auto operator[](usize n) -> T& { return at(n); }
 	constexpr auto operator[](usize n) const -> T { return at(n); }
 	
-	constexpr auto x() -> T& { static_assert(Dim >= 1); return arr[0]; }
-	constexpr auto x() const -> T { static_assert(Dim >= 1); return arr[0]; }
-	constexpr auto y() -> T& { static_assert(Dim >= 2); return arr[1]; }
-	constexpr auto y() const -> T { static_assert(Dim >= 2); return arr[1]; }
-	constexpr auto z() -> T& { static_assert(Dim >= 3); return arr[2]; }
-	constexpr auto z() const -> T { static_assert(Dim >= 3); return arr[2]; }
-	constexpr auto w() -> T& { static_assert(Dim >= 4); return arr[3]; }
-	constexpr auto w() const -> T { static_assert(Dim >= 4); return arr[3]; }
+	constexpr auto x() -> T& { static_assert(Dim >= 1); return m_arr[0]; }
+	constexpr auto x() const -> T { static_assert(Dim >= 1); return m_arr[0]; }
+	constexpr auto y() -> T& { static_assert(Dim >= 2); return m_arr[1]; }
+	constexpr auto y() const -> T { static_assert(Dim >= 2); return m_arr[1]; }
+	constexpr auto z() -> T& { static_assert(Dim >= 3); return m_arr[2]; }
+	constexpr auto z() const -> T { static_assert(Dim >= 3); return m_arr[2]; }
+	constexpr auto w() -> T& { static_assert(Dim >= 4); return m_arr[3]; }
+	constexpr auto w() const -> T { static_assert(Dim >= 4); return m_arr[3]; }
 	
 	constexpr auto r() -> T& { return x(); }
 	constexpr auto r() const -> T { return x(); }
@@ -125,7 +125,7 @@ struct vec {
 	constexpr auto t() -> T& { return w(); }
 	constexpr auto t() const -> T { return w(); }
 	
-	constexpr auto fill(T val) { arr.fill(val); }
+	constexpr auto fill(T val) { m_arr.fill(val); }
 	
 	//=== Vector operations
 	
@@ -143,7 +143,7 @@ struct vec {
 	
 private:
 	
-	sarray<T, Dim> arr;
+	sarray<T, Dim> m_arr;
 	
 };
 
@@ -250,7 +250,7 @@ struct mat {
 	constexpr mat(std::initializer_list<Prec>);
 	
 	// Compose a matrix out of column vectors
-	constexpr mat(std::initializer_list<col_t> list) { std::copy(list.begin(), list.end(), arr.begin()); }
+	constexpr mat(std::initializer_list<col_t> list) { std::copy(list.begin(), list.end(), m_arr.begin()); }
 	
 	// Create a matrix that is a no-op on multiplication
 	static constexpr auto identity() -> mat<Dim, Prec>;
@@ -276,13 +276,13 @@ struct mat {
 	
 	//=== Member access
 	
-	constexpr auto at(usize x, usize y) -> Prec& { return arr[x][y]; }
-	constexpr auto at(usize x, usize y) const -> Prec { return arr[x][y]; }
+	constexpr auto at(usize x, usize y) -> Prec& { return m_arr[x][y]; }
+	constexpr auto at(usize x, usize y) const -> Prec { return m_arr[x][y]; }
 	
-	constexpr auto operator[](usize x) -> col_t& { return arr[x]; }
-	constexpr auto operator[](usize x) const -> col_t const& { return arr[x]; }
+	constexpr auto operator[](usize x) -> col_t& { return m_arr[x]; }
+	constexpr auto operator[](usize x) const -> col_t const& { return m_arr[x]; }
 	
-	constexpr auto fill(Prec val) { for (auto& col: arr) col.fill(val); }
+	constexpr auto fill(Prec val) { for (auto& col: m_arr) col.fill(val); }
 	
 	//=== Operations
 	
@@ -293,7 +293,7 @@ struct mat {
 	
 private:
 	
-	sarray<col_t, Dim> arr;
+	sarray<col_t, Dim> m_arr;
 	
 };
 

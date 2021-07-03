@@ -3,41 +3,41 @@
 #include <cstdlib>
 #include <utility>
 #include "base/error.hpp"
+#include "base/util.hpp"
 #include "base/log.hpp"
 
 namespace minote::base {
 
 Arena::Arena(string_view _name, usize _capacity):
-	name(_name), capacity(_capacity) {
+	m_name(_name), m_capacity(_capacity) {
 	
-	used = 0;
-	mem = std::malloc(capacity);
-	if (!mem)
+	m_used = 0;
+	m_mem = std::malloc(m_capacity);
+	if (!m_mem)
 		throw runtime_error_fmt(
 			"Failed to allocate {} bytes for allocator {}",
-			capacity, name);
+			m_capacity, m_name);
 	
-	L_DEBUG("Created arena {} with capacity of {} bytes", name, capacity);
+	L_DEBUG("Created arena {} with capacity of {} bytes", m_name, m_capacity);
 	
 }
 
 Arena::~Arena() {
 	
-	std::free(mem);
+	std::free(m_mem);
 	
 }
 
 auto Arena::allocate(usize _bytes, usize _align) -> void* {
 	
-	auto offset = used;
-	offset += (_align - offset % _align) % _align;
-	auto ptr = (void*)((char*)(mem) + offset);
+	auto offset = align(m_used, _align);
+	auto ptr = (void*)((char*)(m_mem) + offset);
 	
-	used = offset + _bytes;
-	if (used > capacity)
+	m_used = offset + _bytes;
+	if (m_used > m_capacity)
 		throw runtime_error_fmt(
 			"Arena {} over capacity: current usage is {} bytes out of {}",
-			name, used, capacity);
+			m_name, m_used, m_capacity);
 	
 	return ptr;
 	
@@ -45,7 +45,7 @@ auto Arena::allocate(usize _bytes, usize _align) -> void* {
 
 void Arena::reset() {
 	
-	used = 0;
+	m_used = 0;
 	
 }
 
@@ -57,13 +57,13 @@ Arena::Arena(Arena&& _other) {
 
 auto Arena::operator=(Arena&& _other) -> Arena& {
 	
-	name = std::move(_other.name);
-	mem = _other.mem;
-	capacity = _other.capacity;
-	used = _other.used;
+	m_name = std::move(_other.m_name);
+	m_mem = _other.m_mem;
+	m_capacity = _other.m_capacity;
+	m_used = _other.m_used;
 	
-	_other.mem = nullptr;
-	_other.used = 0;
+	_other.m_mem = nullptr; // std::free() is a no-op with nullptr
+	_other.m_used = 0;
 	
 	return *this;
 	

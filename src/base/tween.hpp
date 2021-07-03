@@ -26,8 +26,8 @@ struct Tween {
 	
 };
 
-template<floating_point T>
-constexpr auto Tween<T>::apply(nsec time) const -> Prec {
+template<floating_point Prec>
+constexpr auto Tween<Prec>::apply(nsec time) const -> Prec {
 	
 	if (start >= time) return from;
 	if (start + duration <= time) return to;

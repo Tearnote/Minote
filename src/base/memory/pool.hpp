@@ -20,11 +20,14 @@ struct Pool {
 	
 	static constexpr auto MaxSlots = 8_zu;
 	
+	// Move a memory resource into a numbered slot. Any previous resource
+	// in the same slot is destroyed.
 	template<typename T>
-	void attach(usize slot, T&& buffer) { buffers[slot] = std::move(buffer); }
+	void attach(usize slot, T&& buffer) { m_buffers[slot] = std::move(buffer); }
 	
+	// Retrieve a previously attached memory resource, or std::monostate if empty
 	template<typename T>
-	auto at(usize slot) -> T& { return std::get<T>(buffers[slot]); }
+	auto at(usize slot) -> T& { return std::get<T>(m_buffers[slot]); }
 	
 private:
 	
@@ -32,7 +35,7 @@ private:
 		std::monostate,
 		Arena,
 		Stack
-	>, MaxSlots> buffers;
+	>, MaxSlots> m_buffers;
 	
 };
 
