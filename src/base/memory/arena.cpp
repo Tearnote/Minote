@@ -18,7 +18,7 @@ Arena::Arena(string_view _name, usize _capacity):
 			"Failed to allocate {} bytes for allocator {}",
 			m_capacity, m_name);
 	
-	L_DEBUG("Created arena {} with capacity of {} bytes", m_name, m_capacity);
+	L_DEBUG("Created allocator {} with capacity of {} bytes", m_name, m_capacity);
 	
 }
 
@@ -36,8 +36,15 @@ auto Arena::allocate(usize _bytes, usize _align) -> void* {
 	m_used = offset + _bytes;
 	if (m_used > m_capacity)
 		throw runtime_error_fmt(
-			"Arena {} over capacity: current usage is {} bytes out of {}",
+			"Allocator {} over capacity: current usage is {} bytes out of {}",
 			m_name, m_used, m_capacity);
+	
+	if (f64(m_used) / f64(m_capacity) >= 0.95)
+		L_DEBUG("Allocator {} at 95% usage", m_name);
+	else if (f64(m_used) / f64(m_capacity) >= 0.90)
+		L_DEBUG("Allocator {} at 90% usage", m_name);
+	else if (f64(m_used) / f64(m_capacity) >= 0.80)
+		L_DEBUG("Allocator {} at 80% usage", m_name);
 	
 	return ptr;
 	
