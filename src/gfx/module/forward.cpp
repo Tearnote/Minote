@@ -2,12 +2,13 @@
 
 #include "vuk/CommandBuffer.hpp"
 #include "gfx/samplers.hpp"
+#include "gfx/base.hpp"
 
 namespace minote::gfx {
 
-Forward::Forward(vuk::PerThreadContext& _ptc, vuk::Extent2D _targetSize) {
+Forward::Forward(vuk::PerThreadContext& _ptc, uvec2 _size) {
 	
-	size = _targetSize;
+	m_size = _size;
 	
 	if (!pipelinesCreated) {
 		
@@ -40,7 +41,7 @@ Forward::Forward(vuk::PerThreadContext& _ptc, vuk::Extent2D _targetSize) {
 	
 }
 
-auto Forward::zPrepass(vuk::Buffer _world, Indirect& _indirect, Meshes& _meshes) -> vuk::RenderGraph {
+auto Forward::zPrepass(vuk::Buffer _world, Indirect const& _indirect, Meshes const& _meshes) -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
 	
@@ -49,23 +50,23 @@ auto Forward::zPrepass(vuk::Buffer _world, Indirect& _indirect, Meshes& _meshes)
 		.resources = {
 			vuk::Resource(_indirect.Commands_n,        vuk::Resource::Type::eBuffer, vuk::eIndirectRead),
 			vuk::Resource(_indirect.TransformCulled_n, vuk::Resource::Type::eBuffer, vuk::eVertexRead),
-			vuk::Resource(Depth_n,                     vuk::Resource::Type::eImage,  vuk::eDepthStencilRW),
-		},
+			vuk::Resource(Depth_n,                     vuk::Resource::Type::eImage,  vuk::eDepthStencilRW) },
 		.execute = [this, _world, &_indirect, &_meshes](vuk::CommandBuffer& cmd) {
-			cmd.set_viewport(0, vuk::Rect2D{ .extent = size })
-			   .set_scissor(0, vuk::Rect2D{ .extent = size })
+			
+			cmd.set_viewport(0, vuk::Rect2D{ .extent = vukExtent(m_size) })
+			   .set_scissor(0, vuk::Rect2D{ .extent = vukExtent(m_size) })
 			   .bind_uniform_buffer(0, 0, _world)
 			   .bind_vertex_buffer(0, *_meshes.verticesBuf, 0, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
 			   .bind_index_buffer(*_meshes.indicesBuf, vuk::IndexType::eUint16)
 			   .bind_storage_buffer(0, 1, _indirect.transformCulledBuf)
 			   .bind_graphics_pipeline("z_prepass");
 			cmd.draw_indexed_indirect(_indirect.commandsCount, _indirect.commandsBuf, sizeof(Indirect::Command));
-		},
-	});
+			
+		}});
 	
 	rg.attach_managed(Depth_n,
 		DepthFormat,
-		vuk::Dimension2D::absolute(size),
+		vuk::Dimension2D::absolute(vukExtent(m_size)),
 		SampleCount,
 		vuk::ClearDepthStencil{0.0f, 0});
 	
@@ -73,8 +74,8 @@ auto Forward::zPrepass(vuk::Buffer _world, Indirect& _indirect, Meshes& _meshes)
 	
 }
 
-auto Forward::draw(vuk::Buffer _world, Indirect& _indirect,
-	Meshes& _meshes, Sky& _sky, IBLMap& _ibl) -> vuk::RenderGraph {
+auto Forward::draw(vuk::Buffer _world, Indirect const& _indirect,
+	Meshes const& _meshes, Sky const& _sky, IBLMap const& _ibl) -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
 	
@@ -92,8 +93,8 @@ auto Forward::draw(vuk::Buffer _world, Indirect& _indirect,
 		},
 		.execute = [this, _world, &_indirect, &_meshes, &_sky, &_ibl](vuk::CommandBuffer& cmd) {
 			
-			cmd.set_viewport(0, vuk::Rect2D{ .extent = size })
-			   .set_scissor(0, vuk::Rect2D{ .extent = size })
+			cmd.set_viewport(0, vuk::Rect2D{ .extent = vukExtent(m_size) })
+			   .set_scissor(0, vuk::Rect2D{ .extent = vukExtent(m_size) })
 			   
 			   .bind_vertex_buffer(0, *_meshes.verticesBuf, 0, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
 			   .bind_vertex_buffer(1, *_meshes.normalsBuf,  1, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
@@ -114,7 +115,7 @@ auto Forward::draw(vuk::Buffer _world, Indirect& _indirect,
 	
 	rg.attach_managed(Color_n,
 		ColorFormat,
-		vuk::Dimension2D::absolute(size),
+		vuk::Dimension2D::absolute(vukExtent(m_size)),
 		SampleCount,
 		vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	
@@ -130,7 +131,7 @@ auto Forward::resolve() -> vuk::RenderGraph {
 	
 	rg.attach_managed(Resolved_n,
 		ColorFormat,
-		vuk::Dimension2D::absolute(size),
+		vuk::Dimension2D::absolute(vukExtent(m_size)),
 		vuk::Samples::e1,
 		vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 		

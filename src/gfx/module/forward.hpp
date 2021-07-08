@@ -5,32 +5,44 @@
 #include "gfx/module/indirect.hpp"
 #include "gfx/module/sky.hpp"
 #include "gfx/module/ibl.hpp"
+#include "base/math.hpp"
 
 namespace minote::gfx {
 
+using namespace base;
+
+// Forward PBR renderer of mesh instances. Performs Z-prepass and MSAA+resolve.
+// Uses one light source, one diffuse+specular cubemap, and draws a skyline
+// in the background.
 struct Forward {
 	
-	static constexpr auto Depth_n = "forward_depth";
-	static constexpr auto Color_n = "forward_color";
+	static constexpr auto Depth_n = "forward_depth"; // MSAA
+	static constexpr auto Color_n = "forward_color"; // MSAA
 	static constexpr auto Resolved_n = "forward_resolved";
 	
 	static constexpr auto ColorFormat = vuk::Format::eR16G16B16A16Sfloat;
 	static constexpr auto DepthFormat = vuk::Format::eD32Sfloat;
 	static constexpr auto SampleCount = vuk::Samples::e4;
 	
-	vuk::Extent2D size;
+	// Prepare for rendering into managed images of specified size
+	Forward(vuk::PerThreadContext&, uvec2 size);
 	
-	Forward(vuk::PerThreadContext&, vuk::Extent2D targetSize);
+	auto size() const -> uvec2 { return m_size; }
 	
-	auto zPrepass(vuk::Buffer world, Indirect&, Meshes&) -> vuk::RenderGraph;
+	// Perform Z-prepass, filling in the Depth_n image
+	auto zPrepass(vuk::Buffer world, Indirect const&, Meshes const&) -> vuk::RenderGraph;
 	
-	auto draw(vuk::Buffer world, Indirect&, Meshes&, Sky&, IBLMap&) -> vuk::RenderGraph;
+	// Using Depth_n, render into Color_n
+	auto draw(vuk::Buffer world, Indirect const&, Meshes const&, Sky const&, IBLMap const&) -> vuk::RenderGraph;
 	
+	// Resolve Color_n into Resolved_n
 	auto resolve() -> vuk::RenderGraph;
 	
 private:
 	
 	inline static bool pipelinesCreated = false;
+	
+	uvec2 m_size;
 	
 };
 

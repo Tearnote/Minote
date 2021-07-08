@@ -269,9 +269,9 @@ void Engine::render() {
 	auto worldBuf = world.upload(ptc);
 	auto indirect = Indirect(ptc, *objects, *meshes);
 	auto sky = Sky(ptc, *atmosphere);
-	auto forward = Forward(ptc, swapchainSize.extent);
+	auto forward = Forward(ptc, {swapchainSize.extent.width, swapchainSize.extent.height});
 	auto post = Post(ptc);
-	auto bloom = Bloom(ptc, {forward.size.width,  forward.size.height});
+	auto bloom = Bloom(ptc, forward.size());
 	
 	// Set up the rendergraph
 	

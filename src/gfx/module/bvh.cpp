@@ -18,8 +18,8 @@ void Bvh::generateMeshesBvh(vuk::PerThreadContext& _ptc, Meshes const& _meshes) 
 	auto depthFirstBvh = std::vector<Node>();
 	auto bvhDescriptors = std::vector<Descriptor>();
 	
-	using Vector3  = bvh::Vector3<float>;
-	using Triangle = bvh::Triangle<float>;
+	using Vector3  = bvh::Vector3<f32>;
+	using Triangle = bvh::Triangle<f32>;
 	
 	for (auto& descriptor: _meshes.descriptors) {
 		

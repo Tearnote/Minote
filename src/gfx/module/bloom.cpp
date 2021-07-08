@@ -95,8 +95,7 @@ auto Bloom::apply(vuk::Name _target) -> vuk::RenderGraph {
 			// Mipmap usage requires manual barrier management
 			cmd.image_barrier(Bloom_n, vuk::eComputeSampled, vuk::eComputeRW, 0, BloomPasses - 1);
 			
-		},
-	});
+		}});
 	
 	// Upsample pass: same as downsample, but in reverse order
 	rg.add_pass({
@@ -127,8 +126,7 @@ auto Bloom::apply(vuk::Name _target) -> vuk::RenderGraph {
 				
 			}
 			
-		},
-	});
+		}});
 	
 	rg.attach_image(Bloom_n,
 		vuk::ImageAttachment::from_texture(m_bloom),

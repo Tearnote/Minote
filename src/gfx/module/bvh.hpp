@@ -6,10 +6,16 @@
 
 namespace minote::gfx {
 
+// Acceleration structures for GPU compute raytracing. A triangle BVH is built
+// for each model at startup, and then an instance BVH every frame. This
+// two-level structure can be used for raytracing on GPU, such as light source
+// visibility test.
 struct Bvh {
 	
+	// Single node of a BVH. Contents depend on the isLeaf member.
 	union Node {
 		
+		// Internal node
 		struct Inter {
 			
 			vec3 aabbMin;
@@ -19,6 +25,7 @@ struct Bvh {
 			
 		};
 		
+		// Leaf node, pointing at a specific triangle
 		struct Leaf {
 			
 			uvec3 indices;
@@ -34,6 +41,8 @@ struct Bvh {
 		
 	};
 	
+	// BVH descriptor, pointing at the first node of a mesh's BVH
+	// in the combined buffer
 	struct Descriptor {
 		
 		u32 offset;
@@ -47,6 +56,8 @@ struct Bvh {
 	vuk::Unique<vuk::Buffer> bvhBuf;
 	vuk::Unique<vuk::Buffer> descriptorsBuf;
 	
+	// Generate and upload a BVH of every mesh. Call this once, before meshes
+	// are uploaded.
 	void generateMeshesBvh(vuk::PerThreadContext&, Meshes const&);
 	
 };
