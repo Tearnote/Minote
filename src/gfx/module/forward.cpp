@@ -67,7 +67,7 @@ auto Forward::zPrepass(vuk::Buffer _world, Indirect const& _indirect, Meshes con
 	rg.attach_managed(Depth_n,
 		DepthFormat,
 		vuk::Dimension2D::absolute(vukExtent(m_size)),
-		SampleCount,
+		vuk::Samples::e1,
 		vuk::ClearDepthStencil{0.0f, 0});
 	
 	return rg;
@@ -116,25 +116,9 @@ auto Forward::draw(vuk::Buffer _world, Indirect const& _indirect,
 	rg.attach_managed(Color_n,
 		ColorFormat,
 		vuk::Dimension2D::absolute(vukExtent(m_size)),
-		SampleCount,
-		vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
-	
-	return rg;
-	
-}
-
-auto Forward::resolve() -> vuk::RenderGraph {
-	
-	auto rg = vuk::RenderGraph();
-	
-	rg.resolve_resource_into(Resolved_n, Color_n);
-	
-	rg.attach_managed(Resolved_n,
-		ColorFormat,
-		vuk::Dimension2D::absolute(vukExtent(m_size)),
 		vuk::Samples::e1,
 		vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
-		
+	
 	return rg;
 	
 }
