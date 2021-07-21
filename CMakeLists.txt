@@ -79,7 +79,6 @@ add_executable(Minote
         src/gfx/module/post.hpp src/gfx/module/post.cpp
         src/gfx/module/ibl.hpp src/gfx/module/ibl.cpp
         src/gfx/module/sky.hpp src/gfx/module/sky.cpp
-        src/gfx/module/bvh.hpp src/gfx/module/bvh.cpp
         src/gfx/samplers.hpp
         src/gfx/objects.hpp src/gfx/objects.cpp
         src/gfx/engine.hpp src/gfx/engine.cpp
@@ -224,12 +223,6 @@ add_library(cgltf ${cgltf_SOURCE_DIR}/cgltf.h ${cgltf_SOURCE_DIR}/cgltf_write.h)
 set_target_properties(cgltf PROPERTIES LINKER_LANGUAGE C)
 target_include_directories(cgltf PUBLIC ${cgltf_SOURCE_DIR})
 target_link_libraries(Minote PRIVATE cgltf)
-
-FetchContent_Declare(bvh
-        GIT_REPOSITORY https://github.com/madmann91/bvh
-        GIT_TAG fac27c6a30520426d0d52164563bf607258d3d16)
-FetchContent_MakeAvailable(bvh)
-target_link_libraries(Minote PRIVATE bvh)
 
 find_package(OpenMP REQUIRED)
 target_link_libraries(Minote PRIVATE OpenMP::OpenMP_CXX)

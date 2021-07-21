@@ -168,7 +168,6 @@ Engine::Engine(sys::Window& window, Version version) {
 	// Create user-facing modules
 	meshes = Meshes();
 	objects.emplace(*meshes);
-	bvh = Bvh();
 }
 
 Engine::~Engine() {
@@ -176,7 +175,6 @@ Engine::~Engine() {
 	Optick::Core::Get().Shutdown();
 	ibl.reset();
 	atmosphere.reset();
-	bvh.reset();
 	objects.reset();
 	meshes.reset();
 #if IMGUI
@@ -200,9 +198,6 @@ void Engine::uploadAssets() {
 	imguiData = ImGui_ImplVuk_Init(ptc);
 	ImGui::GetIO().DisplaySize = ImVec2(f32(swapchain->extent.width), f32(swapchain->extent.height));
 #endif //IMGUI
-	
-	// Generate acceleration structures
-	bvh->generateMeshesBvh(ptc, *meshes);
 	
 	// Upload static data
 	meshes->upload(ptc);

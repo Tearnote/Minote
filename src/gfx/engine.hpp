@@ -16,7 +16,6 @@
 #include "gfx/module/world.hpp"
 #include "gfx/module/sky.hpp"
 #include "gfx/module/ibl.hpp"
-#include "gfx/module/bvh.hpp"
 #include "gfx/objects.hpp"
 #include "gfx/camera.hpp"
 #if IMGUI
@@ -56,7 +55,6 @@ struct Engine {
 	std::optional<Objects> objects;
 	World world;
 	Camera camera;
-	std::optional<Bvh> bvh;
 	
 	std::optional<Atmosphere> atmosphere;
 	std::optional<IBLMap> ibl;
