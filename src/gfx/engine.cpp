@@ -16,9 +16,9 @@
 #include "base/math.hpp"
 #include "base/log.hpp"
 #include "gfx/module/indirect.hpp"
+#include "gfx/module/tonemap.hpp"
 #include "gfx/module/forward.hpp"
 #include "gfx/module/bloom.hpp"
-#include "gfx/module/post.hpp"
 #include "gfx/base.hpp"
 #include "main.hpp"
 
@@ -265,7 +265,7 @@ void Engine::render() {
 	auto indirect = Indirect(ptc, *objects, *meshes);
 	auto sky = Sky(ptc, *atmosphere);
 	auto forward = Forward(ptc, {swapchainSize.extent.width, swapchainSize.extent.height});
-	auto post = Post(ptc);
+	auto tonemap = Tonemap(ptc);
 	auto bloom = Bloom(ptc, forward.size());
 	
 	// Set up the rendergraph
@@ -275,12 +275,12 @@ void Engine::render() {
 	rg.append(sky.calculate(worldBuf, camera));
 	rg.append(sky.drawCubemap(worldBuf, ibl->Unfiltered_n, {ibl->BaseSize, ibl->BaseSize}));
 	rg.append(ibl->filter());
-	rg.append(indirect.frustumCull(world));
+	rg.append(indirect.sortAndCull(world));
 	rg.append(forward.zPrepass(worldBuf, indirect, *meshes));
 	rg.append(forward.draw(worldBuf, indirect, *meshes, sky, *ibl));
 	rg.append(sky.draw(worldBuf, forward.Color_n, forward.Depth_n, swapchainSize.extent));
 	rg.append(bloom.apply(forward.Color_n));
-	rg.append(post.tonemap(forward.Color_n, "swapchain", swapchainSize.extent));
+	rg.append(tonemap.apply(forward.Color_n, "swapchain", swapchainSize.extent));
 	
 #if IMGUI
 	ImGui::Render();

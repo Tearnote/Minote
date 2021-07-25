@@ -1,14 +1,14 @@
-#include "gfx/module/post.hpp"
+#include "gfx/module/tonemap.hpp"
 
-#include <vector>
 #include "vuk/CommandBuffer.hpp"
 #include "base/types.hpp"
+#include "gfx/base.hpp"
 
 namespace minote::gfx {
 
 using namespace base;
 
-Post::Post(vuk::PerThreadContext& _ptc) {
+Tonemap::Tonemap(vuk::PerThreadContext& _ptc) {
 	
 	if (!pipelinesCreated) {
 		
@@ -27,8 +27,7 @@ Post::Post(vuk::PerThreadContext& _ptc) {
 	
 }
 
-auto Post::tonemap(vuk::Name _source, vuk::Name _target,
-	vuk::Extent2D _targetSize) -> vuk::RenderGraph {
+auto Tonemap::apply(vuk::Name _source, vuk::Name _target, uvec2 _targetSize) -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
 	
@@ -36,16 +35,16 @@ auto Post::tonemap(vuk::Name _source, vuk::Name _target,
 		.name = "Tonemapping",
 		.resources = {
 			vuk::Resource(_source, vuk::Resource::Type::eImage, vuk::eFragmentSampled),
-			vuk::Resource(_target, vuk::Resource::Type::eImage, vuk::eColorWrite),
-		},
+			vuk::Resource(_target, vuk::Resource::Type::eImage, vuk::eColorWrite) },
 		.execute = [_source, _targetSize](vuk::CommandBuffer& cmd) {
-			cmd.set_viewport(0, vuk::Rect2D{ .extent = _targetSize })
-			   .set_scissor(0, vuk::Rect2D{ .extent = _targetSize })
+			
+			cmd.set_viewport(0, vuk::Rect2D{ .extent = vukExtent(_targetSize) })
+			   .set_scissor(0, vuk::Rect2D{ .extent = vukExtent(_targetSize) })
 			   .bind_sampled_image(0, 0, _source, {})
 			   .bind_graphics_pipeline("tonemap");
 			cmd.draw(3, 1, 0, 0);
-		},
-	});
+			
+		}});
 	
 	return rg;
 	

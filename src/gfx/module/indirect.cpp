@@ -121,7 +121,7 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 	
 }
 
-auto Indirect::frustumCull(World const& _world) -> vuk::RenderGraph {
+auto Indirect::sortAndCull(World const& _world) -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
 	

@@ -73,9 +73,9 @@ add_executable(Minote
         src/gfx/module/iblCoeffs.hpp
         src/gfx/module/indirect.hpp src/gfx/module/indirect.cpp
         src/gfx/module/forward.hpp src/gfx/module/forward.cpp
+        src/gfx/module/tonemap.hpp src/gfx/module/tonemap.cpp
         src/gfx/module/bloom.hpp src/gfx/module/bloom.cpp
         src/gfx/module/world.hpp src/gfx/module/world.cpp
-        src/gfx/module/post.hpp src/gfx/module/post.cpp
         src/gfx/module/ibl.hpp src/gfx/module/ibl.cpp
         src/gfx/module/sky.hpp src/gfx/module/sky.cpp
         src/gfx/samplers.hpp
