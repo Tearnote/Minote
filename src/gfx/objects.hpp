@@ -4,7 +4,7 @@
 #include "base/types.hpp"
 #include "base/math.hpp"
 #include "base/id.hpp"
-#include "gfx/module/meshes.hpp"
+#include "gfx/meshes.hpp"
 
 namespace minote::gfx {
 

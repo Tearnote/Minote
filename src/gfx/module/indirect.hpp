@@ -3,8 +3,8 @@
 #include "vuk/RenderGraph.hpp"
 #include "vuk/Context.hpp"
 #include "vuk/Buffer.hpp"
-#include "gfx/module/meshes.hpp"
 #include "gfx/module/world.hpp"
+#include "gfx/meshes.hpp"
 #include "gfx/objects.hpp"
 #include "base/types.hpp"
 

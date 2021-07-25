@@ -1,4 +1,4 @@
-#include "gfx/module/meshes.hpp"
+#include "gfx/meshes.hpp"
 
 #include <string_view>
 #include <stdexcept>
