@@ -50,7 +50,6 @@ struct Objects {
 	std::vector<Metadata> metadata;
 	std::vector<u32> meshIndex;
 	std::vector<mat4> transform;
-	std::vector<mat4> prevTransform;
 	std::vector<Material> material;
 	
 	explicit Objects(Meshes const& _meshes): meshes(_meshes) {}
@@ -66,8 +65,6 @@ struct Objects {
 	void destroy(Object const&);
 	
 	void update(Object const&);
-	
-	void updatePrevTransforms();
 	
 	[[nodiscard]]
 	auto size() const -> usize { return metadata.size(); }

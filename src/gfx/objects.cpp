@@ -13,7 +13,6 @@ auto Objects::create() -> ObjectID {
 		metadata.emplace_back();
 		meshIndex.emplace_back();
 		transform.emplace_back(mat4::identity());
-		prevTransform.emplace_back(mat4::identity());
 		material.emplace_back();
 		
 		return size() - 1;
@@ -40,7 +39,6 @@ auto Objects::createStatic(Object const& _object) -> ObjectID {
 	metadata[id].visible   = _object.visible;
 	meshIndex[id]          = meshes.descriptorIDs.at(_object.mesh);
 	transform[id]          = objTransform;
-	prevTransform[id]      = objTransform;
 	material[id].tint      = _object.tint;
 	material[id].roughness = _object.roughness;
 	material[id].metalness = _object.metalness;
@@ -67,12 +65,6 @@ void Objects::destroy(ObjectID _id) {
 void Objects::destroy(Object const& _object) {
 	
 	destroy(_object.id);
-	
-}
-
-void Objects::updatePrevTransforms() {
-	
-	std::memcpy(prevTransform.data(), transform.data(), sizeof(mat4) * size());
 	
 }
 

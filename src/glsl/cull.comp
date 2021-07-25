@@ -34,23 +34,17 @@ layout (binding = 2, std430) readonly buffer MeshIndex {
 layout (binding = 3, std430) readonly buffer Transform {
 	mat4 transform[];
 };
-layout (binding = 4, std430) readonly buffer PrevTransform {
-	mat4 prevTransform[];
-};
-layout (binding = 5, std430) readonly buffer Materials {
+layout (binding = 4, std430) readonly buffer Materials {
 	Material material[];
 };
-layout (binding = 6, std430) writeonly buffer TransformCulled {
+layout (binding = 5, std430) writeonly buffer TransformCulled {
 	mat4 transformCulled[];
 };
-layout (binding = 7, std430) writeonly buffer PrevTransformCulled {
-	mat4 prevTransformCulled[];
-};
-layout (binding = 8, std430) writeonly buffer MaterialsCulled {
+layout (binding = 6, std430) writeonly buffer MaterialsCulled {
 	Material materialCulled[];
 };
 
-layout(binding = 9) uniform CullData {
+layout(binding = 7) uniform CullData {
 	mat4 view;
 	vec4 frustum;
 	uint instancesCount;
@@ -87,6 +81,5 @@ void main() {
 	uint index = offset + atomicAdd(draws[meshIndex].instanceCount, 1);
 	
 	transformCulled[index] = transform[gid];
-	prevTransformCulled[index] = prevTransform[gid];
 	materialCulled[index] = material[gid];
 }

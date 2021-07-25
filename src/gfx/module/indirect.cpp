@@ -95,15 +95,13 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 		
 	};
 	
-	metadataBuf      = createAndUpload(_objects.metadata);
-	meshIndexBuf     = createAndUpload(_objects.meshIndex);
-	transformBuf     = createAndUpload(_objects.transform);
-	prevTransformBuf = createAndUpload(_objects.prevTransform);
-	materialBuf      = createAndUpload(_objects.material);
+	metadataBuf  = createAndUpload(_objects.metadata);
+	meshIndexBuf = createAndUpload(_objects.meshIndex);
+	transformBuf = createAndUpload(_objects.transform);
+	materialBuf  = createAndUpload(_objects.material);
 	
-	transformCulledBuf     = createEmpty(_objects.transform);
-	prevTransformCulledBuf = createEmpty(_objects.prevTransform);
-	materialCulledBuf      = createEmpty(_objects.material);
+	transformCulledBuf = createEmpty(_objects.transform);
+	materialCulledBuf  = createEmpty(_objects.material);
 	
 	ImGui::Text("Object count: %llu", instancesCount);
 	
@@ -137,10 +135,8 @@ auto Indirect::frustumCull(World const& _world) -> vuk::RenderGraph {
 			vuk::Resource(Metadata_n,            vuk::Resource::Type::eBuffer, vuk::eComputeRead),
 			vuk::Resource(MeshIndex_n,           vuk::Resource::Type::eBuffer, vuk::eComputeRead),
 			vuk::Resource(Transform_n,           vuk::Resource::Type::eBuffer, vuk::eComputeRead),
-			vuk::Resource(PrevTransform_n,       vuk::Resource::Type::eBuffer, vuk::eComputeRead),
 			vuk::Resource(Material_n,            vuk::Resource::Type::eBuffer, vuk::eComputeRead),
 			vuk::Resource(TransformCulled_n,     vuk::Resource::Type::eBuffer, vuk::eComputeWrite),
-			vuk::Resource(PrevTransformCulled_n, vuk::Resource::Type::eBuffer, vuk::eComputeWrite),
 			vuk::Resource(MaterialCulled_n,      vuk::Resource::Type::eBuffer, vuk::eComputeWrite),
 		},
 		.execute = [this, view, projection](vuk::CommandBuffer& cmd) {
@@ -148,11 +144,9 @@ auto Indirect::frustumCull(World const& _world) -> vuk::RenderGraph {
 			   .bind_storage_buffer(0, 1, metadataBuf)
 			   .bind_storage_buffer(0, 2, meshIndexBuf)
 			   .bind_storage_buffer(0, 3, transformBuf)
-			   .bind_storage_buffer(0, 4, prevTransformBuf)
-			   .bind_storage_buffer(0, 5, materialBuf)
-			   .bind_storage_buffer(0, 6, transformCulledBuf)
-			   .bind_storage_buffer(0, 7, prevTransformCulledBuf)
-			   .bind_storage_buffer(0, 8, materialCulledBuf)
+			   .bind_storage_buffer(0, 4, materialBuf)
+			   .bind_storage_buffer(0, 5, transformCulledBuf)
+			   .bind_storage_buffer(0, 6, materialCulledBuf)
 			   .bind_compute_pipeline("cull");
 			
 			struct CullData {
@@ -160,7 +154,7 @@ auto Indirect::frustumCull(World const& _world) -> vuk::RenderGraph {
 				vec4 frustum;
 				u32 instancesCount;
 			};
-			auto* cullData = cmd.map_scratch_uniform_binding<CullData>(0, 9);
+			auto* cullData = cmd.map_scratch_uniform_binding<CullData>(0, 7);
 			*cullData = CullData{
 				.view = view,
 				.frustum = [this, projection] {
@@ -195,20 +189,12 @@ auto Indirect::frustumCull(World const& _world) -> vuk::RenderGraph {
 		transformBuf,
 		vuk::eTransferDst,
 		vuk::eNone);
-	rg.attach_buffer(PrevTransform_n,
-		prevTransformBuf,
-		vuk::eTransferDst,
-		vuk::eNone);
 	rg.attach_buffer(Material_n,
 		materialBuf,
 		vuk::eTransferDst,
 		vuk::eNone);
 	rg.attach_buffer(TransformCulled_n,
 		transformCulledBuf,
-		vuk::eNone,
-		vuk::eNone);
-	rg.attach_buffer(PrevTransformCulled_n,
-		prevTransformCulledBuf,
 		vuk::eNone,
 		vuk::eNone);
 	rg.attach_buffer(MaterialCulled_n,

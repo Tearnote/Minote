@@ -21,10 +21,8 @@ struct Indirect {
 	static constexpr auto Metadata_n = "indirect_metadata";
 	static constexpr auto MeshIndex_n = "indirect_meshindex";
 	static constexpr auto Transform_n = "indirect_transform";
-	static constexpr auto PrevTransform_n = "indirect_prevtransform";
 	static constexpr auto Material_n = "indirect_material";
 	static constexpr auto TransformCulled_n = "indirect_transform_culled";
-	static constexpr auto PrevTransformCulled_n = "indirect_prevtransform_culled";
 	static constexpr auto MaterialCulled_n = "indirect_material_culled";
 	
 	struct Command {
@@ -46,10 +44,8 @@ struct Indirect {
 	vuk::Buffer metadataBuf;
 	vuk::Buffer meshIndexBuf;
 	vuk::Buffer transformBuf;
-	vuk::Buffer prevTransformBuf;
 	vuk::Buffer materialBuf;
 	vuk::Buffer transformCulledBuf;
-	vuk::Buffer prevTransformCulledBuf;
 	vuk::Buffer materialCulledBuf;
 	
 	Indirect(vuk::PerThreadContext&, Objects const&, Meshes const&);
