@@ -5,6 +5,7 @@
 #include "imgui.h"
 #include "vuk/CommandBuffer.hpp"
 #include "base/container/hashmap.hpp"
+#include "base/container/vector.hpp"
 #include "base/math.hpp"
 #include "base/util.hpp"
 
@@ -20,9 +21,7 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 	
 	// Create the command list
 	
-	auto commands = std::vector<Command>();
-	commands.reserve(_meshes.size());
-	
+	auto commands = svector<Command, 256>();
 	for (auto& descriptor: _meshes.descriptors) {
 		
 		commands.emplace_back(Command{
@@ -30,14 +29,14 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 			.instanceCount = 0, // counted during the next loop
 			.firstIndex = descriptor.indexOffset,
 			.vertexOffset = i32(descriptor.vertexOffset),
-			.firstInstance = 0, // calculated later
-			.meshRadius = descriptor.radius});
+			.firstInstance = 0, // calculated later in this function
+			.meshRadius = descriptor.radius });
 		
 	}
 	
 	// Count instances per mesh
 	
-	for (auto size = _objects.size(), id = ObjectID(0); id < size; id += 1) {
+	for (auto id: iota(ObjectID(0), _objects.size())) {
 		
 		auto& metadata = _objects.metadata[id];
 		if (!metadata.exists || !metadata.visible)
@@ -48,11 +47,11 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 		
 	}
 	
-	// Calculate command list instance offsets
+	// Calculate command list instance offsets (prefix sum)
 	
 	auto commandOffset = 0_zu;
 	
-	for (auto size = commands.size(), i = 0_zu; i < size; i += 1) {
+	for (auto i: iota(0_zu, commands.size())) {
 		
 		auto& command = commands[i];
 		command.firstInstance = commandOffset;
@@ -76,22 +75,23 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 	std::memcpy(commandsBuf.mapped_ptr, commands.data(), sizeof(Command) * commands.size());
 	
 	instancesCount = _objects.size();
-	auto createAndUpload = [this, &_ptc]<typename T>(std::vector<T> const& _data) {
+	auto createAndUpload = [this, &_ptc]<typename T>(std::vector<T> const& data) {
 		
 		auto buf = _ptc.allocate_scratch_buffer(
 			vuk::MemoryUsage::eCPUtoGPU,
 			vuk::BufferUsageFlagBits::eStorageBuffer,
 			sizeof(T) * instancesCount, alignof(T));
-		std::memcpy(buf.mapped_ptr, _data.data(), sizeof(T) * instancesCount);
+		std::memcpy(buf.mapped_ptr, data.data(), sizeof(T) * instancesCount);
 		return buf;
 		
 	};
-	auto createEmpty = [this, &_ptc]<typename T>(std::vector<T> const&) {
+	auto createEmpty = [this, &_ptc, commandOffset]<typename T>(std::vector<T> const&) {
 		
+		// No need for the full instancesCount - we know how many instances are enabled
 		return _ptc.allocate_scratch_buffer(
 			vuk::MemoryUsage::eGPUonly,
 			vuk::BufferUsageFlagBits::eStorageBuffer,
-			sizeof(T) * instancesCount, alignof(T));
+			sizeof(T) * commandOffset, alignof(T));
 		
 	};
 	
@@ -154,6 +154,7 @@ auto Indirect::frustumCull(World const& _world) -> vuk::RenderGraph {
 			   .bind_storage_buffer(0, 7, prevTransformCulledBuf)
 			   .bind_storage_buffer(0, 8, materialCulledBuf)
 			   .bind_compute_pipeline("cull");
+			
 			struct CullData {
 				mat4 view;
 				vec4 frustum;
@@ -163,15 +164,17 @@ auto Indirect::frustumCull(World const& _world) -> vuk::RenderGraph {
 			*cullData = CullData{
 				.view = view,
 				.frustum = [this, projection] {
+					
 					auto projectionT = transpose(projection);
 					vec4 frustumX = projectionT[3] + projectionT[0];
 					vec4 frustumY = projectionT[3] + projectionT[1];
 					frustumX /= length(vec3(frustumX));
 					frustumY /= length(vec3(frustumY));
 					return vec4{frustumX.x(), frustumX.z(), frustumY.y(), frustumY.z()};
+				
 				}(),
-				.instancesCount = u32(instancesCount),
-			};
+				.instancesCount = u32(instancesCount) };
+			
 			cmd.dispatch_invocations(instancesCount);
 		},
 	});

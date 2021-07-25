@@ -12,6 +12,9 @@ namespace minote::gfx {
 
 using namespace base;
 
+// Indirect module turns object lists into instance buffers and a command buffer
+// for indirect drawing. Frustum culling must be performed to avoid processing
+// unnecessary instances.
 struct Indirect {
 	
 	static constexpr auto Commands_n = "indirect_commands";
@@ -35,7 +38,6 @@ struct Indirect {
 		f32 meshRadius;
 		
 	};
-	
 	
 	usize commandsCount;
 	vuk::Buffer commandsBuf;
