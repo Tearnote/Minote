@@ -3,6 +3,7 @@
 #include "vuk/CommandBuffer.hpp"
 #include "base/types.hpp"
 #include "base/math.hpp"
+#include "base/util.hpp"
 #include "gfx/module/iblCoeffs.hpp"
 #include "gfx/samplers.hpp"
 
@@ -10,9 +11,9 @@ namespace minote::gfx {
 
 using namespace base;
 
-IBLMap::IBLMap(vuk::PerThreadContext& ptc) {
+IBLMap::IBLMap(vuk::PerThreadContext& _ptc) {
 	
-	mapUnfiltered = ptc.ctx.allocate_texture(vuk::ImageCreateInfo{
+	mapUnfiltered = _ptc.ctx.allocate_texture(vuk::ImageCreateInfo{
 		.flags = vuk::ImageCreateFlagBits::eCubeCompatible,
 		.format = Format,
 		.extent = {BaseSize, BaseSize, 1},
@@ -21,20 +22,17 @@ IBLMap::IBLMap(vuk::PerThreadContext& ptc) {
 		.usage =
 			vuk::ImageUsageFlagBits::eStorage |
 			vuk::ImageUsageFlagBits::eSampled |
-			vuk::ImageUsageFlagBits::eTransferSrc,
-	});
-	mapUnfiltered.view = ptc.create_image_view(vuk::ImageViewCreateInfo{
+			vuk::ImageUsageFlagBits::eTransferSrc });
+	mapUnfiltered.view = _ptc.create_image_view(vuk::ImageViewCreateInfo{
 		.image = *mapUnfiltered.image,
 		.viewType = vuk::ImageViewType::eCube,
 		.format = mapUnfiltered.format,
 		.subresourceRange = vuk::ImageSubresourceRange{
 			.aspectMask = vuk::ImageAspectFlagBits::eColor,
 			.levelCount = VK_REMAINING_MIP_LEVELS,
-			.layerCount = 6,
-		},
-	});
+			.layerCount = 6 }});
 	
-	mapFiltered = ptc.ctx.allocate_texture(vuk::ImageCreateInfo{
+	mapFiltered = _ptc.ctx.allocate_texture(vuk::ImageCreateInfo{
 		.flags = vuk::ImageCreateFlagBits::eCubeCompatible,
 		.format = Format,
 		.extent = {BaseSize, BaseSize, 1},
@@ -43,22 +41,19 @@ IBLMap::IBLMap(vuk::PerThreadContext& ptc) {
 		.usage =
 			vuk::ImageUsageFlagBits::eStorage |
 			vuk::ImageUsageFlagBits::eSampled |
-			vuk::ImageUsageFlagBits::eTransferDst,
-	});
-	mapFiltered.view = ptc.create_image_view(vuk::ImageViewCreateInfo{
+			vuk::ImageUsageFlagBits::eTransferDst });
+	mapFiltered.view = _ptc.create_image_view(vuk::ImageViewCreateInfo{
 		.image = *mapFiltered.image,
 		.viewType = vuk::ImageViewType::eCube,
 		.format = mapFiltered.format,
 		.subresourceRange = vuk::ImageSubresourceRange{
 			.aspectMask = vuk::ImageAspectFlagBits::eColor,
 			.levelCount = VK_REMAINING_MIP_LEVELS,
-			.layerCount = 6,
-		},
-	});
+			.layerCount = 6 }});
 	
-	for (auto i = 0u; i < arrayViewsUnfiltered.size(); i += 1) {
+	for (auto i: iota(0u, arrayViewsUnfiltered.size())) {
 		
-		arrayViewsUnfiltered[i] = ptc.create_image_view(vuk::ImageViewCreateInfo{
+		arrayViewsUnfiltered[i] = _ptc.create_image_view(vuk::ImageViewCreateInfo{
 			.image = *mapUnfiltered.image,
 			.viewType = vuk::ImageViewType::e2DArray,
 			.format = mapUnfiltered.format,
@@ -66,15 +61,13 @@ IBLMap::IBLMap(vuk::PerThreadContext& ptc) {
 				.aspectMask = vuk::ImageAspectFlagBits::eColor,
 				.baseMipLevel = i,
 				.levelCount = 1,
-				.layerCount = 6,
-			},
-		});
+				.layerCount = 6 }});
 		
 	}
 	
-	for (auto i = 0u; i < arrayViewsFiltered.size(); i += 1) {
+	for (auto i: iota(0u, arrayViewsFiltered.size())) {
 		
-		arrayViewsFiltered[i] = ptc.create_image_view(vuk::ImageViewCreateInfo{
+		arrayViewsFiltered[i] = _ptc.create_image_view(vuk::ImageViewCreateInfo{
 			.image = *mapFiltered.image,
 			.viewType = vuk::ImageViewType::e2DArray,
 			.format = mapFiltered.format,
@@ -82,9 +75,7 @@ IBLMap::IBLMap(vuk::PerThreadContext& ptc) {
 				.aspectMask = vuk::ImageAspectFlagBits::eColor,
 				.baseMipLevel = i,
 				.levelCount = 1,
-				.layerCount = 6,
-			},
-		});
+				.layerCount = 6 }});
 		
 	}
 	
@@ -94,13 +85,13 @@ IBLMap::IBLMap(vuk::PerThreadContext& ptc) {
 		iblPrefilterPci.add_spirv(std::vector<u32>{
 #include "spv/iblPrefilter.comp.spv"
 		}, "iblPrefilter.comp");
-		ptc.ctx.create_named_pipeline("ibl_prefilter", iblPrefilterPci);
+		_ptc.ctx.create_named_pipeline("ibl_prefilter", iblPrefilterPci);
 		
 		auto iblPostfilterPci = vuk::ComputePipelineCreateInfo();
 		iblPostfilterPci.add_spirv(std::vector<u32>{
 #include "spv/iblPostfilter.comp.spv"
 		}, "iblPostfilter.comp");
-		ptc.ctx.create_named_pipeline("ibl_postfilter", iblPostfilterPci);
+		_ptc.ctx.create_named_pipeline("ibl_postfilter", iblPostfilterPci);
 		
 		pipelinesCreated = true;
 		
@@ -115,11 +106,11 @@ auto IBLMap::filter() -> vuk::RenderGraph {
 	rg.add_pass({
 		.name = "IBL prefilter",
 		.resources = {
-			vuk::Resource(Unfiltered_n, vuk::Resource::Type::eImage, vuk::eComputeRW),
-		},
+			vuk::Resource(Unfiltered_n, vuk::Resource::Type::eImage, vuk::eComputeRW) },
 		.execute = [this](vuk::CommandBuffer& cmd) {
 			
-			for (auto i = 1u; i < MipCount; i += 1) {
+			for (auto i: iota(1u, MipCount)) {
+				
 				if (i != 1)
 					cmd.image_barrier(Unfiltered_n, vuk::eComputeWrite, vuk::eComputeRead);
 				
@@ -128,17 +119,16 @@ auto IBLMap::filter() -> vuk::RenderGraph {
 				   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, float(i - 1))
 				   .bind_compute_pipeline("ibl_prefilter");
 				cmd.dispatch_invocations(BaseSize >> i, BaseSize >> i, 6);
+				
 			}
 			
-		},
-	});
+		}});
 	
 	rg.add_pass({
 		.name = "IBL postfilter",
 		.resources = {
 			vuk::Resource(Unfiltered_n, vuk::Resource::Type::eImage, vuk::eComputeRead),
-			vuk::Resource(Filtered_n,   vuk::Resource::Type::eImage, vuk::eComputeWrite),
-		},
+			vuk::Resource(Filtered_n,   vuk::Resource::Type::eImage, vuk::eComputeWrite) },
 		.execute = [this](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_sampled_image(0, 0, Unfiltered_n, TrilinearClamp)
@@ -156,35 +146,31 @@ auto IBLMap::filter() -> vuk::RenderGraph {
 			
 			cmd.dispatch_invocations(21840, 6);
 			
-		},
-	});
+		}});
 	
 	rg.add_pass({
 		.name = "IBL mip 0 copy",
 		.resources = {
 			vuk::Resource(Unfiltered_n, vuk::Resource::Type::eImage, vuk::eTransferSrc),
-			vuk::Resource(Filtered_n,   vuk::Resource::Type::eImage, vuk::eTransferDst),
-		},
+			vuk::Resource(Filtered_n,   vuk::Resource::Type::eImage, vuk::eTransferDst) },
 		.execute = [this](vuk::CommandBuffer& cmd) {
 			
 			cmd.image_barrier(Unfiltered_n, vuk::eComputeRead,  vuk::eTransferSrc);
 			cmd.image_barrier(Filtered_n,   vuk::eComputeWrite, vuk::eTransferDst);
 			
-			cmd.blit_image(Unfiltered_n, Filtered_n, vuk::ImageBlit{
-				.srcSubresource = vuk::ImageSubresourceLayers{
-					.aspectMask = vuk::ImageAspectFlagBits::eColor,
-					.layerCount = 6,
-				},
-				.srcOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{BaseSize, BaseSize, 1}},
-				.dstSubresource = vuk::ImageSubresourceLayers{
-					.aspectMask = vuk::ImageAspectFlagBits::eColor,
-					.layerCount = 6,
-				},
-				.dstOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{BaseSize, BaseSize, 1}},
-			}, vuk::Filter::eNearest);
+			cmd.blit_image(Unfiltered_n, Filtered_n,
+				vuk::ImageBlit{
+					.srcSubresource = vuk::ImageSubresourceLayers{
+						.aspectMask = vuk::ImageAspectFlagBits::eColor,
+						.layerCount = 6 },
+					.srcOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{BaseSize, BaseSize, 1}},
+					.dstSubresource = vuk::ImageSubresourceLayers{
+						.aspectMask = vuk::ImageAspectFlagBits::eColor,
+						.layerCount = 6 },
+					.dstOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{BaseSize, BaseSize, 1}} },
+				vuk::Filter::eNearest);
 			
-		},
-	});
+		}});
 	
 	rg.attach_image(Unfiltered_n,
 		vuk::ImageAttachment::from_texture(mapUnfiltered),
@@ -196,6 +182,7 @@ auto IBLMap::filter() -> vuk::RenderGraph {
 		vuk::eNone);
 	
 	return rg;
+	
 }
 
 }

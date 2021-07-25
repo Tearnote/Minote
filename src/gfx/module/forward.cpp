@@ -89,8 +89,7 @@ auto Forward::draw(vuk::Buffer _world, Indirect const& _indirect,
 			vuk::Resource(_sky.AerialPerspective_n,    vuk::Resource::Type::eImage,  vuk::eFragmentSampled),
 			vuk::Resource(_sky.SunLuminance_n,         vuk::Resource::Type::eBuffer, vuk::eFragmentRead),
 			vuk::Resource(Color_n,                     vuk::Resource::Type::eImage,  vuk::eColorWrite),
-			vuk::Resource(Depth_n,                     vuk::Resource::Type::eImage,  vuk::eDepthStencilRW),
-		},
+			vuk::Resource(Depth_n,                     vuk::Resource::Type::eImage,  vuk::eDepthStencilRW) },
 		.execute = [this, _world, &_indirect, &_meshes, &_sky, &_ibl](vuk::CommandBuffer& cmd) {
 			
 			cmd.set_viewport(0, vuk::Rect2D{ .extent = vukExtent(m_size) })
@@ -110,8 +109,8 @@ auto Forward::draw(vuk::Buffer _world, Indirect const& _indirect,
 			   .bind_graphics_pipeline("object");
 			
 			cmd.draw_indexed_indirect(_indirect.commandsCount, _indirect.commandsBuf, sizeof(Indirect::Command));
-		},
-	});
+			
+		}});
 	
 	rg.attach_managed(Color_n,
 		ColorFormat,
