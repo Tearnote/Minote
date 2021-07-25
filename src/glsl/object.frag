@@ -92,7 +92,7 @@ void main() {
 	vec3 sunSpecular = sunColor * D_Approx(max(material.roughness, sunMinRoughness), dot(-reflection, world.sunDirection));
 	vec3 specular = iblSpecular + sunSpecular;
 
-	out_color = vec4(mix(diffuse, specular, envBRDFApprox(f0, NoV, material.roughness)), f_color.a);
+	vec4 surface = vec4(mix(diffuse, specular, envBRDFApprox(f0, NoV, material.roughness)), f_color.a);
 
 	// Aerial perspective
 	float depth = 1.0 - gl_FragCoord.z; // Reverse-z
@@ -105,5 +105,6 @@ void main() {
 	}
 	float w = sqrt(Slice / textureSize(aerialPerspective, 0).z);	// squared distribution
 
-	const vec4 AP = Weight * textureLod(aerialPerspective, vec3(gl_FragCoord.xy / vec2(world.viewportSize), w), 0.0);
+	vec4 AP = Weight * textureLod(aerialPerspective, vec3(gl_FragCoord.xy / vec2(world.viewportSize), w), 0.0);
+	out_color = surface + AP;
 }
