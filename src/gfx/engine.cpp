@@ -278,9 +278,9 @@ void Engine::render() {
 	rg.append(indirect.sortAndCull(world));
 	rg.append(forward.zPrepass(worldBuf, indirect, *meshes));
 	rg.append(forward.draw(worldBuf, indirect, *meshes, sky, *ibl));
-	rg.append(sky.draw(worldBuf, forward.Color_n, forward.Depth_n, swapchainSize.extent));
+	rg.append(sky.draw(worldBuf, forward.Color_n, forward.Depth_n, {swapchainSize.extent.width, swapchainSize.extent.height}));
 	rg.append(bloom.apply(forward.Color_n));
-	rg.append(tonemap.apply(forward.Color_n, "swapchain", swapchainSize.extent));
+	rg.append(tonemap.apply(forward.Color_n, "swapchain", {swapchainSize.extent.width, swapchainSize.extent.height}));
 	
 #if IMGUI
 	ImGui::Render();

@@ -12,6 +12,8 @@ namespace minote::gfx {
 using namespace base;
 using namespace base::literals;
 
+// Precalculated representation of a planet's atmosphere. Once created, it can
+// be used repeatedly to sample the sky at any elevation and sun position.
 struct Atmosphere {
 	
 	static constexpr auto Transmittance_n = "atmosphere_transmittance";
@@ -56,6 +58,7 @@ struct Atmosphere {
 		
 		vec3 GroundAlbedo;
 		
+		// Return params that model Earth's atmosphere
 		static auto earth() -> Params;
 		
 	};
@@ -64,8 +67,10 @@ struct Atmosphere {
 	vuk::Texture multiScattering;
 	vuk::Unique<vuk::Buffer> params;
 	
+	// Initialize the atmospheric buffers.
 	Atmosphere(vuk::PerThreadContext&, Params const&);
 	
+	// Fill the lookup tables. Only needs to be executed once.
 	auto precalculate() -> vuk::RenderGraph;
 	
 private:
@@ -74,6 +79,8 @@ private:
 	
 };
 
+// Module for rendering sky backgrounds, IBL cubemaps and other position-dependent
+// lookup tables.
 struct Sky {
 	
 	static constexpr auto CameraView_n = "sky_camera_view";
@@ -90,9 +97,8 @@ struct Sky {
 	constexpr static auto AerialPerspectiveHeight = 32u;
 	constexpr static auto AerialPerspectiveDepth = 32u;
 	
+	// World-space center of the camera for drawCubemap()
 	constexpr static auto CubemapCamera = vec3{0_m, 0_m, 10_m};
-	
-	Atmosphere const& atmosphere;
 	
 	vuk::Texture cameraView;
 	vuk::Texture cubemapView;
@@ -101,17 +107,22 @@ struct Sky {
 	
 	Sky(vuk::PerThreadContext&, Atmosphere const&);
 	
+	// Fill lookup tables required for the two functions below.
 	auto calculate(vuk::Buffer world, Camera const& camera) -> vuk::RenderGraph;
 	
+	// Draw the sky in the background of an image (where depth is 0.0).
 	auto draw(vuk::Buffer world, vuk::Name targetColor,
-		vuk::Name targetDepth, vuk::Extent2D targetSize) -> vuk::RenderGraph;
+		vuk::Name targetDepth, uvec2 targetSize) -> vuk::RenderGraph;
 	
+	// Draw the sky into an existing IBLMap. Target is the mip 0 of provided image.
 	auto drawCubemap(vuk::Buffer world, vuk::Name target,
-		vuk::Extent2D targetSize) -> vuk::RenderGraph;
+		uvec2 targetSize) -> vuk::RenderGraph;
 	
 private:
 	
 	inline static bool pipelinesCreated = false;
+	
+	Atmosphere const& atmosphere;
 	
 };
 

@@ -17,4 +17,6 @@ using array = absl::FixedArray<T, absl::kFixedArrayUseDefault, Allocator<T>>;
 template<typename T, usize N>
 using sarray = std::array<T, N>;
 
+using std::to_array;
+
 }
