@@ -29,38 +29,38 @@ using namespace std::string_literals;
 
 #if VK_VALIDATION
 VKAPI_ATTR auto VKAPI_CALL debugCallback(
-	VkDebugUtilsMessageSeverityFlagBitsEXT severityCode,
-	VkDebugUtilsMessageTypeFlagsEXT typeCode,
-	VkDebugUtilsMessengerCallbackDataEXT const* data,
+	VkDebugUtilsMessageSeverityFlagBitsEXT _severityCode,
+	VkDebugUtilsMessageTypeFlagsEXT _typeCode,
+	VkDebugUtilsMessengerCallbackDataEXT const* _data,
 	void*) -> VkBool32 {
-	assert(data);
+	assert(_data);
 
-	auto type = [typeCode]() {
-		if (typeCode & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
+	auto type = [_typeCode]() {
+		if (_typeCode & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
 			return "[VulkanPerf]";
-		if (typeCode & VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)
+		if (_typeCode & VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)
 			return "[VulkanSpec]";
-		if (typeCode & VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT)
+		if (_typeCode & VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT)
 			return "[Vulkan]";
-		throw std::logic_error(fmt::format("Unknown Vulkan diagnostic message type: #{}", typeCode));
+		throw std::logic_error(fmt::format("Unknown Vulkan diagnostic message type: #{}", _typeCode));
 	}();
 
-	     if (severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
-		L_ERROR("{} {}", type, data->pMessage);
-	else if (severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
-		L_WARN("{} {}", type, data->pMessage);
-	else if (severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
-		L_INFO("{} {}", type, data->pMessage);
-	else if (severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
-		L_DEBUG("{} {}", type, data->pMessage);
+	     if (_severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+		L_ERROR("{} {}", type, _data->pMessage);
+	else if (_severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+		L_WARN("{} {}", type, _data->pMessage);
+	else if (_severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
+		L_INFO("{} {}", type, _data->pMessage);
+	else if (_severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
+		L_DEBUG("{} {}", type, _data->pMessage);
 	else
-		throw std::logic_error(fmt::format("Unknown Vulkan diagnostic message severity: #{}", severityCode));
+		throw std::logic_error(fmt::format("Unknown Vulkan diagnostic message severity: #{}", _severityCode));
 
 	return VK_FALSE;
 }
 #endif //VK_VALIDATION
 
-Engine::Engine(sys::Window& window, Version version) {
+Engine::Engine(sys::Window& _window, Version _version) {
 	// Create instance
 	auto instanceResult = vkb::InstanceBuilder()
 #if VK_VALIDATION
@@ -80,17 +80,17 @@ Engine::Engine(sys::Window& window, Version version) {
 		.set_app_name(AppTitle)
 		.set_engine_name("vuk")
 		.require_api_version(1, 2, 0)
-		.set_app_version(std::get<0>(version), std::get<1>(version), std::get<2>(version))
+		.set_app_version(std::get<0>(_version), std::get<1>(_version), std::get<2>(_version))
 		.build();
 	if (!instanceResult)
 		throw std::runtime_error(fmt::format("Failed to create a Vulkan instance: {}", instanceResult.error().message()));
-	instance = instanceResult.value();
-	volkInitializeCustom(instance.fp_vkGetInstanceProcAddr);
-	volkLoadInstanceOnly(instance.instance);
+	m_instance = instanceResult.value();
+	volkInitializeCustom(m_instance.fp_vkGetInstanceProcAddr);
+	volkLoadInstanceOnly(m_instance.instance);
 	L_DEBUG("Vulkan instance created");
 
 	// Create surface
-	glfwCreateWindowSurface(instance.instance, window.handle(), nullptr, &surface);
+	glfwCreateWindowSurface(m_instance.instance, _window.handle(), nullptr, &m_surface);
 
 	// Select physical device
 	auto physicalDeviceFeatures = VkPhysicalDeviceFeatures{
@@ -102,8 +102,8 @@ Engine::Engine(sys::Window& window, Version version) {
 		.runtimeDescriptorArray = VK_TRUE,
 		.hostQueryReset = VK_TRUE,
 	};
-	auto physicalDeviceSelectorResult = vkb::PhysicalDeviceSelector(instance)
-		.set_surface(surface)
+	auto physicalDeviceSelectorResult = vkb::PhysicalDeviceSelector(m_instance)
+		.set_surface(m_surface)
 		.set_minimum_version(1, 2)
 		.set_required_features(physicalDeviceFeatures)
 		.set_required_features_12(physicalDeviceVulkan12Features)
@@ -119,26 +119,26 @@ Engine::Engine(sys::Window& window, Version version) {
 	auto deviceResult = vkb::DeviceBuilder(physicalDevice).build();
 	if (!deviceResult)
 		throw std::runtime_error(fmt::format("Failed to create Vulkan device: {}", deviceResult.error().message()));
-	device = deviceResult.value();
-	volkLoadDevice(device.device);
+	m_device = deviceResult.value();
+	volkLoadDevice(m_device.device);
 	L_DEBUG("Vulkan device created");
 
 	// Get queues
-	auto graphicsQueue = device.get_queue(vkb::QueueType::graphics).value();
-	auto graphicsQueueFamilyIndex = device.get_queue_index(vkb::QueueType::graphics).value();
-	auto transferQueuePresent = device.get_dedicated_queue(vkb::QueueType::present).has_value();
-	auto transferQueue = transferQueuePresent? device.get_dedicated_queue(vkb::QueueType::present).value() : VK_NULL_HANDLE;
-	auto transferQueueFamilyIndex = transferQueuePresent? device.get_dedicated_queue_index(vkb::QueueType::present).value() : VK_QUEUE_FAMILY_IGNORED;
+	auto graphicsQueue = m_device.get_queue(vkb::QueueType::graphics).value();
+	auto graphicsQueueFamilyIndex = m_device.get_queue_index(vkb::QueueType::graphics).value();
+	auto transferQueuePresent = m_device.get_dedicated_queue(vkb::QueueType::present).has_value();
+	auto transferQueue = transferQueuePresent? m_device.get_dedicated_queue(vkb::QueueType::present).value() : VK_NULL_HANDLE;
+	auto transferQueueFamilyIndex = transferQueuePresent? m_device.get_dedicated_queue_index(vkb::QueueType::present).value() : VK_QUEUE_FAMILY_IGNORED;
 
 	// Create vuk context
-	context.emplace(vuk::ContextCreateParameters{
-		instance.instance, device.device, physicalDevice.physical_device,
+	m_context.emplace(vuk::ContextCreateParameters{
+		m_instance.instance, m_device.device, physicalDevice.physical_device,
 		graphicsQueue, graphicsQueueFamilyIndex,
 		transferQueue, transferQueueFamilyIndex
 	});
 	
 	// Create swapchain
-	swapchain = context->add_swapchain(createSwapchain());
+	m_swapchain = m_context->add_swapchain(createSwapchain());
 	
 	// Initialize profiling
 	auto optickVulkanFunctions = Optick::VulkanFunctions{
@@ -161,56 +161,56 @@ Engine::Engine(sys::Window& window, Version version) {
 		PFN_vkDestroyFence_(vkDestroyFence),
 		PFN_vkFreeCommandBuffers_(vkFreeCommandBuffers) };
 	OPTICK_GPU_INIT_VULKAN(
-		&device.device, &device.physical_device.physical_device,
-		&context->graphics_queue, &context->graphics_queue_family_index, 1,
+		&m_device.device, &m_device.physical_device.physical_device,
+		&m_context->graphics_queue, &m_context->graphics_queue_family_index, 1,
 		&optickVulkanFunctions);
 	
 	// Create user-facing modules
-	meshes = Meshes();
-	objects.emplace(*meshes);
+	m_meshes = Meshes();
+	m_objects.emplace(*m_meshes);
 }
 
 Engine::~Engine() {
-	context->wait_idle();
+	m_context->wait_idle();
 	Optick::Core::Get().Shutdown();
-	ibl.reset();
-	atmosphere.reset();
-	objects.reset();
-	meshes.reset();
+	m_ibl.reset();
+	m_atmosphere.reset();
+	m_objects.reset();
+	m_meshes.reset();
 #if IMGUI
-	imguiData.font_texture.view.reset();
-	imguiData.font_texture.image.reset();
+	m_imguiData.font_texture.view.reset();
+	m_imguiData.font_texture.image.reset();
 #endif //IMGUI
 	// This performs cleanups for all inflight frames
 	for (auto i = 0u; i < vuk::Context::FC; i++)
-		context->begin();
-	context.reset();
-	vkb::destroy_device(device);
-	vkDestroySurfaceKHR(instance.instance, surface, nullptr);
-	vkb::destroy_instance(instance);
+		m_context->begin();
+	m_context.reset();
+	vkb::destroy_device(m_device);
+	vkDestroySurfaceKHR(m_instance.instance, m_surface, nullptr);
+	vkb::destroy_instance(m_instance);
 }
 
 void Engine::uploadAssets() {
-	auto ifc = context->begin();
+	auto ifc = m_context->begin();
 	auto ptc = ifc.begin();
 	
 #if IMGUI
-	imguiData = ImGui_ImplVuk_Init(ptc);
-	ImGui::GetIO().DisplaySize = ImVec2(f32(swapchain->extent.width), f32(swapchain->extent.height));
+	m_imguiData = ImGui_ImplVuk_Init(ptc);
+	ImGui::GetIO().DisplaySize = ImVec2(f32(m_swapchain->extent.width), f32(m_swapchain->extent.height));
 #endif //IMGUI
 	
 	// Upload static data
-	meshes->upload(ptc);
+	m_meshes->upload(ptc);
 	
 	// Create pipeline components
-	atmosphere = Atmosphere(ptc, Atmosphere::Params::earth());
-	ibl = IBLMap(ptc);
+	m_atmosphere = Atmosphere(ptc, Atmosphere::Params::earth());
+	m_ibl = IBLMap(ptc);
 	
 	// Finalize uploads
 	ptc.wait_all_transfers();
 	
 	// Perform precalculations
-	auto precalc = atmosphere->precalculate();
+	auto precalc = m_atmosphere->precalculate();
 	auto erg = std::move(precalc).link(ptc);
 	vuk::execute_submit_and_wait(ptc, std::move(erg));
 	
@@ -226,17 +226,17 @@ void Engine::render() {
 	
 	// Prepare per-frame data
 	
-	auto viewport = uvec2{swapchain->extent.width, swapchain->extent.height};
-	auto rawview = camera.transform();
+	auto viewport = uvec2{m_swapchain->extent.width, m_swapchain->extent.height};
+	auto rawview = m_camera.transform();
 	// auto zFlip = make_scale({-1.0f, -1.0f, 1.0f});
-	world.projection = perspective(VerticalFov, f32(viewport.x()) / f32(viewport.y()), NearPlane);
+	m_world.projection = perspective(VerticalFov, f32(viewport.x()) / f32(viewport.y()), NearPlane);
 	// world.view = zFlip * rawview;
-	world.view = rawview;
-	world.viewProjection = world.projection * world.view;
-	world.viewProjectionInverse = inverse(world.viewProjection);
-	world.viewportSize = {swapchain->extent.width, swapchain->extent.height};
-	world.cameraPos = camera.position;
-	auto swapchainSize = vuk::Dimension2D::absolute(swapchain->extent);
+	m_world.view = rawview;
+	m_world.viewProjection = m_world.projection * m_world.view;
+	m_world.viewProjectionInverse = inverse(m_world.viewProjection);
+	m_world.viewportSize = {m_swapchain->extent.width, m_swapchain->extent.height};
+	m_world.cameraPos = m_camera.position;
+	auto swapchainSize = vuk::Dimension2D::absolute(m_swapchain->extent);
 	
 	static auto sunPitch = 7.2_deg;
 	static auto sunYaw = 30.0_deg;
@@ -245,25 +245,25 @@ void Engine::render() {
 	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
 #endif //IMGUI
 	// sunPitch = radians(6.0f - glfwGetTime() / 2.0);
-	world.sunDirection = vec3{1.0f, 0.0f, 0.0f};
-	world.sunDirection = mat3::rotate({0.0f, -1.0f, 0.0f}, sunPitch) * world.sunDirection;
-	world.sunDirection = mat3::rotate({0.0f, 0.0f, 1.0f}, sunYaw) * world.sunDirection;
+	m_world.sunDirection = vec3{1.0f, 0.0f, 0.0f};
+	m_world.sunDirection = mat3::rotate({0.0f, -1.0f, 0.0f}, sunPitch) * m_world.sunDirection;
+	m_world.sunDirection = mat3::rotate({0.0f, 0.0f, 1.0f}, sunYaw) * m_world.sunDirection;
 	static auto sunIlluminance = 4.0f;
 #if IMGUI
 	ImGui::SliderFloat("Sun illuminance", &sunIlluminance, 0.01f, 100.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
 #endif //IMGUI
-	world.sunIlluminance = vec3(sunIlluminance);
+	m_world.sunIlluminance = vec3(sunIlluminance);
 	
 	// Begin draw
 	
-	auto ifc = context->begin();
+	auto ifc = m_context->begin();
 	auto ptc = ifc.begin();
 	
 	// Initialize modules
 	
-	auto worldBuf = world.upload(ptc);
-	auto indirect = Indirect(ptc, *objects, *meshes);
-	auto sky = Sky(ptc, *atmosphere);
+	auto worldBuf = m_world.upload(ptc);
+	auto indirect = Indirect(ptc, *m_objects, *m_meshes);
+	auto sky = Sky(ptc, *m_atmosphere);
 	auto forward = Forward(ptc, {swapchainSize.extent.width, swapchainSize.extent.height});
 	auto tonemap = Tonemap(ptc);
 	auto bloom = Bloom(ptc, forward.size());
@@ -272,22 +272,22 @@ void Engine::render() {
 	
 	auto rg = vuk::RenderGraph();
 	
-	rg.append(sky.calculate(worldBuf, camera));
-	rg.append(sky.drawCubemap(worldBuf, ibl->Unfiltered_n, {ibl->BaseSize, ibl->BaseSize}));
-	rg.append(ibl->filter());
-	rg.append(indirect.sortAndCull(world));
-	rg.append(forward.zPrepass(worldBuf, indirect, *meshes));
-	rg.append(forward.draw(worldBuf, indirect, *meshes, sky, *ibl));
+	rg.append(sky.calculate(worldBuf, m_camera));
+	rg.append(sky.drawCubemap(worldBuf, m_ibl->Unfiltered_n, {m_ibl->BaseSize, m_ibl->BaseSize}));
+	rg.append(m_ibl->filter());
+	rg.append(indirect.sortAndCull(m_world));
+	rg.append(forward.zPrepass(worldBuf, indirect, *m_meshes));
+	rg.append(forward.draw(worldBuf, indirect, *m_meshes, sky, *m_ibl));
 	rg.append(sky.draw(worldBuf, forward.Color_n, forward.Depth_n, {swapchainSize.extent.width, swapchainSize.extent.height}));
 	rg.append(bloom.apply(forward.Color_n));
 	rg.append(tonemap.apply(forward.Color_n, "swapchain", {swapchainSize.extent.width, swapchainSize.extent.height}));
 	
 #if IMGUI
 	ImGui::Render();
-	ImGui_ImplVuk_Render(ptc, rg, "swapchain", "swapchain", imguiData, ImGui::GetDrawData());
+	ImGui_ImplVuk_Render(ptc, rg, "swapchain", "swapchain", m_imguiData, ImGui::GetDrawData());
 #endif //IMGUI
 	
-	rg.attach_swapchain("swapchain", swapchain, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
+	rg.attach_swapchain("swapchain", m_swapchain, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	auto erg = std::move(rg).link(ptc);
 	
 	// Acquire swapchain image
@@ -296,7 +296,7 @@ void Engine::render() {
 	auto swapchainImageIndex = [&, this] {
 		while (true) {
 			u32 result;
-			VkResult error = vkAcquireNextImageKHR(device.device, swapchain->swapchain, UINT64_MAX, presentSem, VK_NULL_HANDLE, &result);
+			VkResult error = vkAcquireNextImageKHR(m_device.device, m_swapchain->swapchain, UINT64_MAX, presentSem, VK_NULL_HANDLE, &result);
 			if (error == VK_SUCCESS || error == VK_SUBOPTIMAL_KHR)
 				return result;
 			if (error == VK_ERROR_OUT_OF_DATE_KHR)
@@ -308,7 +308,7 @@ void Engine::render() {
 	
 	// Build and submit the rendergraph
 	
-	auto commandBuffer = erg.execute(ptc, {{swapchain, swapchainImageIndex}});
+	auto commandBuffer = erg.execute(ptc, {{m_swapchain, swapchainImageIndex}});
 	
 	auto renderSem = ptc.acquire_semaphore();
 	auto waitStage = VkPipelineStageFlags(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
@@ -322,20 +322,20 @@ void Engine::render() {
 		.signalSemaphoreCount = 1,
 		.pSignalSemaphores = &renderSem,
 	};
-	context->submit_graphics(submitInfo, ptc.acquire_fence());
+	m_context->submit_graphics(submitInfo, ptc.acquire_fence());
 	
 	// Present to screen
 	
-	OPTICK_GPU_FLIP(swapchain);
+	OPTICK_GPU_FLIP(m_swapchain);
 	auto presentInfo = VkPresentInfoKHR{
 		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 		.waitSemaphoreCount = 1,
 		.pWaitSemaphores = &renderSem,
 		.swapchainCount = 1,
-		.pSwapchains = &swapchain->swapchain,
+		.pSwapchains = &m_swapchain->swapchain,
 		.pImageIndices = &swapchainImageIndex,
 	};
-	auto result = vkQueuePresentKHR(context->graphics_queue, &presentInfo);
+	auto result = vkQueuePresentKHR(m_context->graphics_queue, &presentInfo);
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 		refreshSwapchain();
 	else if (result != VK_SUCCESS)
@@ -349,9 +349,9 @@ void Engine::render() {
 	
 }
 
-auto Engine::createSwapchain(VkSwapchainKHR old) -> vuk::Swapchain {
-	auto vkbswapchainResult = vkb::SwapchainBuilder(device)
-		.set_old_swapchain(old)
+auto Engine::createSwapchain(VkSwapchainKHR _old) -> vuk::Swapchain {
+	auto vkbswapchainResult = vkb::SwapchainBuilder(m_device)
+		.set_old_swapchain(_old)
 		.set_image_usage_flags(VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT)
 		.build();
 	if (!vkbswapchainResult)
@@ -360,7 +360,7 @@ auto Engine::createSwapchain(VkSwapchainKHR old) -> vuk::Swapchain {
 
 	auto vuksw = vuk::Swapchain{
 		.swapchain = vkbswapchain.swapchain,
-		.surface = surface,
+		.surface = m_surface,
 		.format = vuk::Format(vkbswapchain.image_format),
 		.extent = { vkbswapchain.extent.width, vkbswapchain.extent.height },
 	};
@@ -374,13 +374,13 @@ auto Engine::createSwapchain(VkSwapchainKHR old) -> vuk::Swapchain {
 }
 
 void Engine::refreshSwapchain() {
-	for (auto iv: swapchain->image_views)
-		context->enqueue_destroy(iv);
-	auto newSwapchain = context->add_swapchain(createSwapchain(swapchain->swapchain));
-	context->remove_swapchain(swapchain);
-	swapchain = newSwapchain;
+	for (auto iv: m_swapchain->image_views)
+		m_context->enqueue_destroy(iv);
+	auto newSwapchain = m_context->add_swapchain(createSwapchain(m_swapchain->swapchain));
+	m_context->remove_swapchain(m_swapchain);
+	m_swapchain = newSwapchain;
 #if IMGUI
-	ImGui::GetIO().DisplaySize = ImVec2(f32(swapchain->extent.width), f32(swapchain->extent.height));
+	ImGui::GetIO().DisplaySize = ImVec2(f32(m_swapchain->extent.width), f32(m_swapchain->extent.height));
 #endif //IMGUI
 }
 
