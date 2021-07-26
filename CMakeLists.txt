@@ -75,7 +75,6 @@ add_executable(Minote
         src/gfx/module/forward.hpp src/gfx/module/forward.cpp
         src/gfx/module/tonemap.hpp src/gfx/module/tonemap.cpp
         src/gfx/module/bloom.hpp src/gfx/module/bloom.cpp
-        src/gfx/module/world.hpp src/gfx/module/world.cpp
         src/gfx/module/ibl.hpp src/gfx/module/ibl.cpp
         src/gfx/module/sky.hpp src/gfx/module/sky.cpp
         src/gfx/samplers.hpp
@@ -84,6 +83,7 @@ add_executable(Minote
         src/gfx/engine.hpp src/gfx/engine.cpp
         src/gfx/camera.hpp src/gfx/camera.cpp
         src/gfx/imgui.hpp src/gfx/imgui.cpp
+        src/gfx/world.hpp src/gfx/world.cpp
         src/gfx/base.hpp
         #src/playstate.hpp src/playstate.cpp
         src/mapper.hpp src/mapper.tpp src/mapper.cpp

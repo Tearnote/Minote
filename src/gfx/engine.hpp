@@ -12,12 +12,12 @@
 #include "base/math.hpp"
 #include "base/id.hpp"
 #include "sys/window.hpp"
-#include "gfx/module/world.hpp"
 #include "gfx/module/sky.hpp"
 #include "gfx/module/ibl.hpp"
 #include "gfx/objects.hpp"
 #include "gfx/meshes.hpp"
 #include "gfx/camera.hpp"
+#include "gfx/world.hpp"
 #if IMGUI
 #include "gfx/imgui.hpp"
 #endif //IMGUI

@@ -1,4 +1,4 @@
-#include "gfx/module/world.hpp"
+#include "gfx/world.hpp"
 
 namespace minote::gfx {
 

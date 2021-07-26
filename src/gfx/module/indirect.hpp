@@ -3,9 +3,9 @@
 #include "vuk/RenderGraph.hpp"
 #include "vuk/Context.hpp"
 #include "vuk/Buffer.hpp"
-#include "gfx/module/world.hpp"
-#include "gfx/meshes.hpp"
 #include "gfx/objects.hpp"
+#include "gfx/meshes.hpp"
+#include "gfx/world.hpp"
 #include "base/types.hpp"
 
 namespace minote::gfx {
