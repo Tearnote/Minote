@@ -30,9 +30,11 @@ VKAPI_ATTR auto VKAPI_CALL debugCallback(
 	VkDebugUtilsMessageTypeFlagsEXT _typeCode,
 	VkDebugUtilsMessengerCallbackDataEXT const* _data,
 	void*) -> VkBool32 {
+	
 	assert(_data);
-
+	
 	auto type = [_typeCode]() {
+		
 		if (_typeCode & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
 			return "[VulkanPerf]";
 		if (_typeCode & VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)
@@ -40,8 +42,9 @@ VKAPI_ATTR auto VKAPI_CALL debugCallback(
 		if (_typeCode & VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT)
 			return "[Vulkan]";
 		throw logic_error_fmt("Unknown Vulkan diagnostic message type: #{}", _typeCode);
+		
 	}();
-
+	
 	     if (_severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
 		L_ERROR("{} {}", type, _data->pMessage);
 	else if (_severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
@@ -52,13 +55,18 @@ VKAPI_ATTR auto VKAPI_CALL debugCallback(
 		L_DEBUG("{} {}", type, _data->pMessage);
 	else
 		throw logic_error_fmt("Unknown Vulkan diagnostic message severity: #{}", _severityCode);
-
+	
 	return VK_FALSE;
+	
 }
 #endif //VK_VALIDATION
 
 Engine::Engine(sys::Window& _window, Version _version) {
+	
+	OPTICK_EVENT("Engine::Engine");
+	
 	// Create instance
+	
 	auto instanceResult = vkb::InstanceBuilder()
 #if VK_VALIDATION
 		.enable_layer("VK_LAYER_KHRONOS_validation")
@@ -82,23 +90,26 @@ Engine::Engine(sys::Window& _window, Version _version) {
 	if (!instanceResult)
 		throw runtime_error_fmt("Failed to create a Vulkan instance: {}", instanceResult.error().message());
 	m_instance = instanceResult.value();
+	
 	volkInitializeCustom(m_instance.fp_vkGetInstanceProcAddr);
 	volkLoadInstanceOnly(m_instance.instance);
+	
 	L_DEBUG("Vulkan instance created");
-
+	
 	// Create surface
+	
 	glfwCreateWindowSurface(m_instance.instance, _window.handle(), nullptr, &m_surface);
-
+	
 	// Select physical device
+	
 	auto physicalDeviceFeatures = VkPhysicalDeviceFeatures{
-		.multiDrawIndirect = VK_TRUE,
-	};
+		.multiDrawIndirect = VK_TRUE };
 	auto physicalDeviceVulkan12Features = VkPhysicalDeviceVulkan12Features{
 		.descriptorBindingPartiallyBound = VK_TRUE,
 		.descriptorBindingVariableDescriptorCount = VK_TRUE,
 		.runtimeDescriptorArray = VK_TRUE,
-		.hostQueryReset = VK_TRUE,
-	};
+		.hostQueryReset = VK_TRUE };
+	
 	auto physicalDeviceSelectorResult = vkb::PhysicalDeviceSelector(m_instance)
 		.set_surface(m_surface)
 		.set_minimum_version(1, 2)
@@ -109,35 +120,52 @@ Engine::Engine(sys::Window& _window, Version _version) {
 #endif //VK_VALIDATION
 		.select();
 	if (!physicalDeviceSelectorResult)
-		throw runtime_error_fmt("Failed to find a suitable GPU for Vulkan: {}", physicalDeviceSelectorResult.error().message());
+		throw runtime_error_fmt("Failed to find a suitable GPU for Vulkan: {}",
+			physicalDeviceSelectorResult.error().message());
 	auto physicalDevice = physicalDeviceSelectorResult.value();
-
+	
+	L_INFO("GPU selected: {}", physicalDevice.properties.deviceName);
+	L_DEBUG("Vulkan driver version {}.{}.{}",
+		VK_API_VERSION_MAJOR(physicalDevice.properties.driverVersion),
+		VK_API_VERSION_MINOR(physicalDevice.properties.driverVersion),
+		VK_API_VERSION_PATCH(physicalDevice.properties.driverVersion));
+	
 	// Create device
+	
 	auto deviceResult = vkb::DeviceBuilder(physicalDevice).build();
 	if (!deviceResult)
 		throw runtime_error_fmt("Failed to create Vulkan device: {}", deviceResult.error().message());
 	m_device = deviceResult.value();
+	
 	volkLoadDevice(m_device.device);
+	
 	L_DEBUG("Vulkan device created");
-
+	
 	// Get queues
+	
 	auto graphicsQueue = m_device.get_queue(vkb::QueueType::graphics).value();
 	auto graphicsQueueFamilyIndex = m_device.get_queue_index(vkb::QueueType::graphics).value();
 	auto transferQueuePresent = m_device.get_dedicated_queue(vkb::QueueType::present).has_value();
-	auto transferQueue = transferQueuePresent? m_device.get_dedicated_queue(vkb::QueueType::present).value() : VK_NULL_HANDLE;
-	auto transferQueueFamilyIndex = transferQueuePresent? m_device.get_dedicated_queue_index(vkb::QueueType::present).value() : VK_QUEUE_FAMILY_IGNORED;
-
+	auto transferQueue = transferQueuePresent?
+		m_device.get_dedicated_queue(vkb::QueueType::present).value() :
+		VK_NULL_HANDLE;
+	auto transferQueueFamilyIndex = transferQueuePresent?
+		m_device.get_dedicated_queue_index(vkb::QueueType::present).value() :
+		VK_QUEUE_FAMILY_IGNORED;
+	
 	// Create vuk context
+	
 	m_context.emplace(vuk::ContextCreateParameters{
 		m_instance.instance, m_device.device, physicalDevice.physical_device,
 		graphicsQueue, graphicsQueueFamilyIndex,
-		transferQueue, transferQueueFamilyIndex
-	});
+		transferQueue, transferQueueFamilyIndex});
 	
 	// Create swapchain
+	
 	m_swapchain = m_context->add_swapchain(createSwapchain());
 	
 	// Initialize profiling
+	
 	auto optickVulkanFunctions = Optick::VulkanFunctions{
 		PFN_vkGetPhysicalDeviceProperties_(vkGetPhysicalDeviceProperties),
 		PFN_vkCreateQueryPool_(vkCreateQueryPool),
@@ -162,30 +190,58 @@ Engine::Engine(sys::Window& _window, Version _version) {
 		&m_context->graphics_queue, &m_context->graphics_queue_family_index, 1,
 		&optickVulkanFunctions);
 	
-	// Create user-facing modules
+	// Initialize user components
+	
 	m_meshes = Meshes();
 	m_objects.emplace(*m_meshes);
+	
+	L_INFO("Graphics engine initialized");
+	
 }
 
 Engine::~Engine() {
+	
+	OPTICK_EVENT("Engine::~Engine");
+	
+	// Await GPU idle
+	
 	m_context->wait_idle();
-	Optick::Core::Get().Shutdown();
+	
+	// Destroy direct resources
+	
 	m_ibl.reset();
 	m_atmosphere.reset();
 	m_objects.reset();
 	m_meshes.reset();
+	
+	// Cleanup external graphics systems
+	
 	m_imguiData.font_texture.view.reset();
 	m_imguiData.font_texture.image.reset();
-	// This performs cleanups for all inflight frames
-	for (auto i = 0u; i < vuk::Context::FC; i++)
+	Optick::Core::Get().Shutdown();
+	
+	// Cleanup vuk
+	
+	// This performs cleanup for all inflight frames
+	repeat(vuk::Context::FC, [this] {
 		m_context->begin();
+	});
 	m_context.reset();
+	
+	// Shut down Vulkan
+	
 	vkb::destroy_device(m_device);
 	vkDestroySurfaceKHR(m_instance.instance, m_surface, nullptr);
 	vkb::destroy_instance(m_instance);
+	
+	L_INFO("Graphics engine cleaned up");
+	
 }
 
 void Engine::uploadAssets() {
+	
+	OPTICK_EVENT("Engine::uploadAssets");
+	
 	auto ifc = m_context->begin();
 	auto ptc = ifc.begin();
 	
