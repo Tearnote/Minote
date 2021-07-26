@@ -2,17 +2,14 @@
 
 #include "config.hpp"
 
-#include <stdexcept>
-#include <cstring>
 #include <cassert>
-#include "VkBootstrap.h"
 #include "optick_core.h"
 #include "optick.h"
 #include "GLFW/glfw3.h"
-#include "quill/Fmt.h"
 #include "volk.h"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
+#include "base/error.hpp"
 #include "base/math.hpp"
 #include "base/log.hpp"
 #include "gfx/module/indirect.hpp"
@@ -42,7 +39,7 @@ VKAPI_ATTR auto VKAPI_CALL debugCallback(
 			return "[VulkanSpec]";
 		if (_typeCode & VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT)
 			return "[Vulkan]";
-		throw std::logic_error(fmt::format("Unknown Vulkan diagnostic message type: #{}", _typeCode));
+		throw logic_error_fmt("Unknown Vulkan diagnostic message type: #{}", _typeCode);
 	}();
 
 	     if (_severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
@@ -54,7 +51,7 @@ VKAPI_ATTR auto VKAPI_CALL debugCallback(
 	else if (_severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
 		L_DEBUG("{} {}", type, _data->pMessage);
 	else
-		throw std::logic_error(fmt::format("Unknown Vulkan diagnostic message severity: #{}", _severityCode));
+		throw logic_error_fmt("Unknown Vulkan diagnostic message severity: #{}", _severityCode);
 
 	return VK_FALSE;
 }
@@ -83,7 +80,7 @@ Engine::Engine(sys::Window& _window, Version _version) {
 		.set_app_version(std::get<0>(_version), std::get<1>(_version), std::get<2>(_version))
 		.build();
 	if (!instanceResult)
-		throw std::runtime_error(fmt::format("Failed to create a Vulkan instance: {}", instanceResult.error().message()));
+		throw runtime_error_fmt("Failed to create a Vulkan instance: {}", instanceResult.error().message());
 	m_instance = instanceResult.value();
 	volkInitializeCustom(m_instance.fp_vkGetInstanceProcAddr);
 	volkLoadInstanceOnly(m_instance.instance);
@@ -112,13 +109,13 @@ Engine::Engine(sys::Window& _window, Version _version) {
 #endif //VK_VALIDATION
 		.select();
 	if (!physicalDeviceSelectorResult)
-		throw std::runtime_error(fmt::format("Failed to find a suitable GPU for Vulkan: {}", physicalDeviceSelectorResult.error().message()));
+		throw runtime_error_fmt("Failed to find a suitable GPU for Vulkan: {}", physicalDeviceSelectorResult.error().message());
 	auto physicalDevice = physicalDeviceSelectorResult.value();
 
 	// Create device
 	auto deviceResult = vkb::DeviceBuilder(physicalDevice).build();
 	if (!deviceResult)
-		throw std::runtime_error(fmt::format("Failed to create Vulkan device: {}", deviceResult.error().message()));
+		throw runtime_error_fmt("Failed to create Vulkan device: {}", deviceResult.error().message());
 	m_device = deviceResult.value();
 	volkLoadDevice(m_device.device);
 	L_DEBUG("Vulkan device created");
@@ -290,7 +287,7 @@ void Engine::render() {
 			if (error == VK_ERROR_OUT_OF_DATE_KHR)
 				refreshSwapchain();
 			else
-				throw std::runtime_error(fmt::format("Unable to acquire swapchain image: error {}", error));
+				throw runtime_error_fmt("Unable to acquire swapchain image: error {}", error);
 		}
 	}();
 	
@@ -327,7 +324,7 @@ void Engine::render() {
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 		refreshSwapchain();
 	else if (result != VK_SUCCESS)
-		throw std::runtime_error(fmt::format("Unable to present to the screen: error {}", result));
+		throw runtime_error_fmt("Unable to present to the screen: error {}", result);
 	
 	// Clean up
 	
@@ -341,7 +338,7 @@ auto Engine::createSwapchain(VkSwapchainKHR _old) -> vuk::Swapchain {
 		.set_image_usage_flags(VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT)
 		.build();
 	if (!vkbswapchainResult)
-		throw std::runtime_error(fmt::format("Failed to create the swapchain: {}", vkbswapchainResult.error().message()));
+		throw runtime_error_fmt("Failed to create the swapchain: {}", vkbswapchainResult.error().message());
 	auto vkbswapchain = vkbswapchainResult.value();
 
 	auto vuksw = vuk::Swapchain{
