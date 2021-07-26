@@ -42,7 +42,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 	engine.uploadAssets();
 	
 	engine.camera = gfx::Camera{
-		.position = {-10_m, -26_m, 10_m},
+		.position = {-10_m, -26_m, 64_m + 10_m},
 		.yaw = 58_deg,
 		.pitch = -12_deg,
 		.lookSpeed = 1.0f / 256.0f,
@@ -71,13 +71,13 @@ void game(sys::Glfw&, sys::Window& window) try {
 			engine.objects->destroy(obj);
 	};
 	
-	auto const Expand = 10u;
+	auto const Expand = 20u;
 	auto prescale = vec3{1_m, 1_m, 1_m};
 	auto rotation = mat3::rotate({1.0f, 0.0f, 0.0f}, 180_deg);
 	constexpr auto Spacing = 25_m;
 	for (auto x = -Spacing * Expand; x <= Spacing * Expand; x += Spacing)
 	for (auto y = -Spacing * Expand; y <= Spacing * Expand; y += Spacing) {
-		auto offset = vec3{x, y, 0};
+		auto offset = vec3{x, y, 64_m};
 		staticObjects.emplace_back(engine.objects->createStatic(gfx::Object{
 			.mesh = "block"_id,
 			.position = vec3{0_m, 0_m, 0_m} + offset,
