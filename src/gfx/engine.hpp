@@ -1,9 +1,6 @@
 #pragma once
 
-#include "config.hpp"
-
 #include <optional>
-#include <span>
 #include "VkBootstrap.h"
 #include "volk.h"
 #include "vuk/Context.hpp"
@@ -15,9 +12,7 @@
 #include "gfx/meshes.hpp"
 #include "gfx/camera.hpp"
 #include "gfx/world.hpp"
-#if IMGUI
 #include "gfx/imgui.hpp"
-#endif //IMGUI
 
 namespace minote::gfx {
 
@@ -62,9 +57,7 @@ private:
 	vkb::Device m_device;
 	vuk::SwapChainRef m_swapchain;
 	std::optional<vuk::Context> m_context;
-#if IMGUI
 	ImguiData m_imguiData;
-#endif //IMGUI
 	
 	std::optional<Meshes> m_meshes;
 	std::optional<Objects> m_objects;

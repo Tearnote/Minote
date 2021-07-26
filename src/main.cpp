@@ -21,9 +21,7 @@
 #include "base/log.hpp"
 #include "sys/window.hpp"
 #include "sys/glfw.hpp"
-#if IMGUI
 #include "backends/imgui_impl_glfw.h"
-#endif //IMGUI
 #include "game.hpp"
 
 using namespace minote; // Because we can't namespace main()
@@ -59,10 +57,8 @@ auto main(int, char*[]) -> int try {
 	// Input thread loop
 	while (!window.isClosing()) {
 		glfw.poll();
-#if IMGUI
 		if (ImGui::GetIO().Fonts->IsBuilt())
 			ImGui_ImplGlfw_NewFrame();
-#endif //IMGUI
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 

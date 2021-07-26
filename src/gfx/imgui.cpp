@@ -1,9 +1,5 @@
 #include "gfx/imgui.hpp"
 
-#include "config.hpp"
-
-#if IMGUI
-
 #include <cmath>
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/Context.hpp"
@@ -240,5 +236,3 @@ void ImGui_ImplVuk_Render(vuk::PerThreadContext& ptc, vuk::RenderGraph& rg, vuk:
 }
 
 }
-
-#endif //IMGUI

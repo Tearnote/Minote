@@ -1,9 +1,5 @@
 #pragma once
 
-#include "config.hpp"
-
-#if IMGUI
-
 #include "imgui.h"
 #include "vuk/SampledImage.hpp"
 #include "vuk/RenderGraph.hpp"
@@ -22,5 +18,3 @@ void ImGui_ImplVuk_Render(vuk::PerThreadContext& ptc, vuk::RenderGraph& rg,
 	vuk::Name src_target, vuk::Name dst_target, ImguiData& data, ImDrawData* draw_data);
 
 }
-
-#endif //IMGUI

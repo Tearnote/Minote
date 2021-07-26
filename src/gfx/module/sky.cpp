@@ -1,7 +1,5 @@
 #include "gfx/module/sky.hpp"
 
-#include "config.hpp"
-
 #include "vuk/CommandBuffer.hpp"
 #include "base/container/array.hpp"
 #include "base/types.hpp"

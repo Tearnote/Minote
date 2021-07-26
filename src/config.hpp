@@ -7,12 +7,6 @@
 #endif
 
 #ifndef NDEBUG
-	#define IMGUI 1
-#else
-	#define IMGUI 1
-#endif
-
-#ifndef NDEBUG
 	#define VK_VALIDATION 1
 #else
 	#define VK_VALIDATION 0

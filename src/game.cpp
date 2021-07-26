@@ -170,10 +170,8 @@ void game(sys::Glfw&, sys::Window& window) try {
 			mapper.processActions([&](auto const& action) {
 				if (action.timestamp > nextUpdate) return false;
 				
-#if IMGUI
 				if (action.state == Mapper::Action::State::Pressed && ImGui::GetIO().WantCaptureKeyboard)
 					return false;
-#endif //IMGUI
 				
 				updateActions.push_back(action);
 				
@@ -208,11 +206,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 				lastButtonState = true;
 				cursorLastPos = cursorNewPos;
 			}
-			if (!window.mouseDown()
-#if IMGUI
-				|| ImGui::GetIO().WantCaptureMouse
-#endif //IMGUI
-			)
+			if (!window.mouseDown() || ImGui::GetIO().WantCaptureMouse)
 				lastButtonState = false;
 			if (lastButtonState) {
 				cursorOffset += cursorNewPos - cursorLastPos;

@@ -177,10 +177,8 @@ Engine::~Engine() {
 	m_atmosphere.reset();
 	m_objects.reset();
 	m_meshes.reset();
-#if IMGUI
 	m_imguiData.font_texture.view.reset();
 	m_imguiData.font_texture.image.reset();
-#endif //IMGUI
 	// This performs cleanups for all inflight frames
 	for (auto i = 0u; i < vuk::Context::FC; i++)
 		m_context->begin();
@@ -194,10 +192,8 @@ void Engine::uploadAssets() {
 	auto ifc = m_context->begin();
 	auto ptc = ifc.begin();
 	
-#if IMGUI
 	m_imguiData = ImGui_ImplVuk_Init(ptc);
 	ImGui::GetIO().DisplaySize = ImVec2(f32(m_swapchain->extent.width), f32(m_swapchain->extent.height));
-#endif //IMGUI
 	
 	// Upload static data
 	m_meshes->upload(ptc);
@@ -215,9 +211,7 @@ void Engine::uploadAssets() {
 	vuk::execute_submit_and_wait(ptc, std::move(erg));
 	
 	// Begin imgui frame so that first-frame calls succeed
-#if IMGUI
 	ImGui::NewFrame();
-#endif //IMGUI
 }
 
 void Engine::render() {
@@ -240,18 +234,14 @@ void Engine::render() {
 	
 	static auto sunPitch = 7.2_deg;
 	static auto sunYaw = 30.0_deg;
-#if IMGUI
 	ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 60.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
 	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
-#endif //IMGUI
 	// sunPitch = radians(6.0f - glfwGetTime() / 2.0);
 	m_world.sunDirection = vec3{1.0f, 0.0f, 0.0f};
 	m_world.sunDirection = mat3::rotate({0.0f, -1.0f, 0.0f}, sunPitch) * m_world.sunDirection;
 	m_world.sunDirection = mat3::rotate({0.0f, 0.0f, 1.0f}, sunYaw) * m_world.sunDirection;
 	static auto sunIlluminance = 4.0f;
-#if IMGUI
 	ImGui::SliderFloat("Sun illuminance", &sunIlluminance, 0.01f, 100.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
-#endif //IMGUI
 	m_world.sunIlluminance = vec3(sunIlluminance);
 	
 	// Begin draw
@@ -282,10 +272,8 @@ void Engine::render() {
 	rg.append(bloom.apply(forward.Color_n));
 	rg.append(tonemap.apply(forward.Color_n, "swapchain", {swapchainSize.extent.width, swapchainSize.extent.height}));
 	
-#if IMGUI
 	ImGui::Render();
 	ImGui_ImplVuk_Render(ptc, rg, "swapchain", "swapchain", m_imguiData, ImGui::GetDrawData());
-#endif //IMGUI
 	
 	rg.attach_swapchain("swapchain", m_swapchain, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	auto erg = std::move(rg).link(ptc);
@@ -343,9 +331,7 @@ void Engine::render() {
 	
 	// Clean up
 	
-#if IMGUI
 	ImGui::NewFrame();
-#endif //IMGUI
 	
 }
 
@@ -379,9 +365,7 @@ void Engine::refreshSwapchain() {
 	auto newSwapchain = m_context->add_swapchain(createSwapchain(m_swapchain->swapchain));
 	m_context->remove_swapchain(m_swapchain);
 	m_swapchain = newSwapchain;
-#if IMGUI
 	ImGui::GetIO().DisplaySize = ImVec2(f32(m_swapchain->extent.width), f32(m_swapchain->extent.height));
-#endif //IMGUI
 }
 
 }

@@ -1,7 +1,5 @@
 #include "window.hpp"
 
-#include "config.hpp"
-
 #include <string_view>
 #include <stdexcept>
 #include <optional>
@@ -9,9 +7,7 @@
 #include <mutex>
 #include "GLFW/glfw3.h"
 #include "quill/Fmt.h"
-#if IMGUI
 #include "backends/imgui_impl_glfw.h"
-#endif //IMGUI
 #include "base/math.hpp"
 #include "base/log.hpp"
 
@@ -146,14 +142,10 @@ Window::Window(Glfw const& _glfw, std::string_view _title, bool fullscreen, uvec
 	glfwSetMouseButtonCallback(m_handle, mouseButtonCallback);
 
 	// Initialize imgui input
-#if IMGUI
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGui::StyleColorsDark();
 	ImGui_ImplGlfw_InitForVulkan(m_handle, true);
-#else //IMGUI
-	glfwSetInputMode(m_handle, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-#endif //IMGUI
 
 	L_INFO(R"(Window "{}" created at {}x{} *{:.2f}{})",
 		title(), size().x(), size().y(), scale(), fullscreen ? " fullscreen" : "");
