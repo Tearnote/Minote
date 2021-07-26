@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cmath>
-#include "volk.h"
 #include "vuk/Types.hpp"
 #include "base/concepts.hpp"
 #include "base/types.hpp"
@@ -11,9 +9,12 @@ namespace minote::gfx {
 
 using namespace base;
 
+// Return the number a mipmaps that a square texture of the given size would have.
 constexpr auto mipmapCount(u32 size) {
-	return u32(std::floor(std::log2(size))) + 1;
+	return u32(floor(log2(size))) + 1;
 }
+
+// Conversion from vec[n] to vuk::Extent[n]D
 
 template<arithmetic T>
 constexpr auto vukExtent(vec<2, T> v) -> vuk::Extent2D { return {v[0], v[1]}; }

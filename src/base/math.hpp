@@ -2,6 +2,7 @@
 
 #include <initializer_list>
 #include <numbers>
+#include <cmath>
 #include "base/container/array.hpp"
 #include "base/concepts.hpp"
 #include "base/types.hpp"
@@ -23,8 +24,12 @@ constexpr auto Tau = Tau_v<f32>;
 using std::min;
 using std::max;
 using std::abs;
+using std::floor;
+
 using std::pow;
 using std::sqrt;
+using std::log2;
+
 using std::sin;
 using std::cos;
 using std::tan;

@@ -7,9 +7,9 @@ using namespace base::literals;
 auto Camera::direction() -> vec3 {
 	
 	return vec3{
-		cosf(pitch) * cosf(yaw),
-		cosf(pitch) * sinf(yaw),
-		sinf(pitch)};
+		cos(pitch) * cos(yaw),
+		cos(pitch) * sin(yaw),
+		sin(pitch)};
 	
 }
 
@@ -19,7 +19,7 @@ auto Camera::transform() -> mat4 {
 	
 }
 
-void Camera::rotate(float horz, float vert) {
+void Camera::rotate(f32 horz, f32 vert) {
 	
 	yaw -= horz * lookSpeed;
 	if (yaw <    0_deg) yaw += 360_deg;
