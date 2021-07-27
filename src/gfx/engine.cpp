@@ -270,31 +270,31 @@ void Engine::render() {
 	
 	// Prepare per-frame data
 	
+	// Basic scene properties
 	auto viewport = uvec2{m_swapchain->extent.width, m_swapchain->extent.height};
-	auto rawview = m_camera.transform();
-	// auto zFlip = make_scale({-1.0f, -1.0f, 1.0f});
 	m_world.projection = perspective(VerticalFov, f32(viewport.x()) / f32(viewport.y()), NearPlane);
-	// world.view = zFlip * rawview;
-	m_world.view = rawview;
+	m_world.view = m_camera.transform();
 	m_world.viewProjection = m_world.projection * m_world.view;
 	m_world.viewProjectionInverse = inverse(m_world.viewProjection);
-	m_world.viewportSize = {m_swapchain->extent.width, m_swapchain->extent.height};
+	m_world.viewportSize = viewport;
 	m_world.cameraPos = m_camera.position;
-	auto swapchainSize = vuk::Dimension2D::absolute(m_swapchain->extent);
 	
+	// Sun properties
 	static auto sunPitch = 7.2_deg;
 	static auto sunYaw = 30.0_deg;
 	ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 60.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
 	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
 	// sunPitch = radians(6.0f - glfwGetTime() / 2.0);
-	m_world.sunDirection = vec3{1.0f, 0.0f, 0.0f};
-	m_world.sunDirection = mat3::rotate({0.0f, -1.0f, 0.0f}, sunPitch) * m_world.sunDirection;
-	m_world.sunDirection = mat3::rotate({0.0f, 0.0f, 1.0f}, sunYaw) * m_world.sunDirection;
+	m_world.sunDirection =
+		mat3::rotate({0.0f, 0.0f, 1.0f}, sunYaw) *
+		mat3::rotate({0.0f, -1.0f, 0.0f}, sunPitch) *
+		vec3{1.0f, 0.0f, 0.0f};
+	
 	static auto sunIlluminance = 4.0f;
 	ImGui::SliderFloat("Sun illuminance", &sunIlluminance, 0.01f, 100.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
 	m_world.sunIlluminance = vec3(sunIlluminance);
 	
-	// Begin draw
+	// Begin frame
 	
 	auto ifc = m_context->begin();
 	auto ptc = ifc.begin();
@@ -304,7 +304,7 @@ void Engine::render() {
 	auto worldBuf = m_world.upload(ptc);
 	auto indirect = Indirect(ptc, *m_objects, *m_meshes);
 	auto sky = Sky(ptc, *m_atmosphere);
-	auto forward = Forward(ptc, {swapchainSize.extent.width, swapchainSize.extent.height});
+	auto forward = Forward(ptc, viewport);
 	auto tonemap = Tonemap(ptc);
 	auto bloom = Bloom(ptc, forward.size());
 	
@@ -313,39 +313,44 @@ void Engine::render() {
 	auto rg = vuk::RenderGraph();
 	
 	rg.append(sky.calculate(worldBuf, m_camera));
-	rg.append(sky.drawCubemap(worldBuf, m_ibl->Unfiltered_n, {m_ibl->BaseSize, m_ibl->BaseSize}));
+	rg.append(sky.drawCubemap(worldBuf, m_ibl->Unfiltered_n, uvec2(m_ibl->BaseSize)));
 	rg.append(m_ibl->filter());
 	rg.append(indirect.sortAndCull(m_world));
 	rg.append(forward.zPrepass(worldBuf, indirect, *m_meshes));
 	rg.append(forward.draw(worldBuf, indirect, *m_meshes, sky, *m_ibl));
-	rg.append(sky.draw(worldBuf, forward.Color_n, forward.Depth_n, {swapchainSize.extent.width, swapchainSize.extent.height}));
+	rg.append(sky.draw(worldBuf, forward.Color_n, forward.Depth_n, viewport));
 	rg.append(bloom.apply(forward.Color_n));
-	rg.append(tonemap.apply(forward.Color_n, "swapchain", {swapchainSize.extent.width, swapchainSize.extent.height}));
+	rg.append(tonemap.apply(forward.Color_n, "swapchain", viewport));
 	
 	ImGui::Render();
 	ImGui_ImplVuk_Render(ptc, rg, "swapchain", "swapchain", m_imguiData, ImGui::GetDrawData());
 	
 	rg.attach_swapchain("swapchain", m_swapchain, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
-	auto erg = std::move(rg).link(ptc);
 	
 	// Acquire swapchain image
 	
 	auto presentSem = ptc.acquire_semaphore();
 	auto swapchainImageIndex = [&, this] {
+		
 		while (true) {
-			u32 result;
-			VkResult error = vkAcquireNextImageKHR(m_device.device, m_swapchain->swapchain, UINT64_MAX, presentSem, VK_NULL_HANDLE, &result);
+			
+			auto result = 0u;
+			auto error = vkAcquireNextImageKHR(m_device.device, m_swapchain->swapchain,
+				UINT64_MAX, presentSem, VK_NULL_HANDLE, &result);
 			if (error == VK_SUCCESS || error == VK_SUBOPTIMAL_KHR)
 				return result;
 			if (error == VK_ERROR_OUT_OF_DATE_KHR)
 				refreshSwapchain();
 			else
 				throw runtime_error_fmt("Unable to acquire swapchain image: error {}", error);
+			
 		}
+		
 	}();
 	
 	// Build and submit the rendergraph
 	
+	auto erg = std::move(rg).link(ptc);
 	auto commandBuffer = erg.execute(ptc, {{m_swapchain, swapchainImageIndex}});
 	
 	auto renderSem = ptc.acquire_semaphore();
@@ -358,8 +363,7 @@ void Engine::render() {
 		.commandBufferCount = 1,
 		.pCommandBuffers = &commandBuffer,
 		.signalSemaphoreCount = 1,
-		.pSignalSemaphores = &renderSem,
-	};
+		.pSignalSemaphores = &renderSem};
 	m_context->submit_graphics(submitInfo, ptc.acquire_fence());
 	
 	// Present to screen
@@ -371,8 +375,7 @@ void Engine::render() {
 		.pWaitSemaphores = &renderSem,
 		.swapchainCount = 1,
 		.pSwapchains = &m_swapchain->swapchain,
-		.pImageIndices = &swapchainImageIndex,
-	};
+		.pImageIndices = &swapchainImageIndex};
 	auto result = vkQueuePresentKHR(m_context->graphics_queue, &presentInfo);
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 		refreshSwapchain();
@@ -386,9 +389,10 @@ void Engine::render() {
 }
 
 auto Engine::createSwapchain(VkSwapchainKHR _old) -> vuk::Swapchain {
+	
 	auto vkbswapchainResult = vkb::SwapchainBuilder(m_device)
 		.set_old_swapchain(_old)
-		.set_image_usage_flags(VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+		.set_image_usage_flags(VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
 		.build();
 	if (!vkbswapchainResult)
 		throw runtime_error_fmt("Failed to create the swapchain: {}", vkbswapchainResult.error().message());
@@ -398,8 +402,7 @@ auto Engine::createSwapchain(VkSwapchainKHR _old) -> vuk::Swapchain {
 		.swapchain = vkbswapchain.swapchain,
 		.surface = m_surface,
 		.format = vuk::Format(vkbswapchain.image_format),
-		.extent = { vkbswapchain.extent.width, vkbswapchain.extent.height },
-	};
+		.extent = {vkbswapchain.extent.width, vkbswapchain.extent.height}};
 	auto imgs = vkbswapchain.get_images();
 	auto ivs = vkbswapchain.get_image_views();
 	for (auto& img: *imgs)
@@ -407,15 +410,20 @@ auto Engine::createSwapchain(VkSwapchainKHR _old) -> vuk::Swapchain {
 	for (auto& iv: *ivs)
 		vuksw.image_views.emplace_back().payload = iv;
 	return vuksw;
+	
 }
 
 void Engine::refreshSwapchain() {
+	
 	for (auto iv: m_swapchain->image_views)
 		m_context->enqueue_destroy(iv);
+	
 	auto newSwapchain = m_context->add_swapchain(createSwapchain(m_swapchain->swapchain));
 	m_context->remove_swapchain(m_swapchain);
 	m_swapchain = newSwapchain;
+	
 	ImGui::GetIO().DisplaySize = ImVec2(f32(m_swapchain->extent.width), f32(m_swapchain->extent.height));
+	
 }
 
 }

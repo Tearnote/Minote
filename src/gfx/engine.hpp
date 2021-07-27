@@ -62,7 +62,11 @@ private:
 	std::optional<Atmosphere> m_atmosphere;
 	std::optional<IBLMap> m_ibl;
 	
+	// Create a swapchain object, optionally reusing resources from an existing one.
 	auto createSwapchain(VkSwapchainKHR old = VK_NULL_HANDLE) -> vuk::Swapchain;
+	
+	// Once a swapchain is detected to be invalid or out of date, use this function
+	// to replace it with a fresh one.
 	void refreshSwapchain();
 	
 };
