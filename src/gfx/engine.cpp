@@ -61,7 +61,8 @@ VKAPI_ATTR auto VKAPI_CALL debugCallback(
 }
 #endif //VK_VALIDATION
 
-Engine::Engine(sys::Window& _window, Version _version) {
+Engine::Engine(sys::Window& _window, Meshes&& _meshes):
+	m_meshes(std::move(_meshes)) {
 	
 	OPTICK_EVENT("Engine::Engine");
 	
@@ -85,7 +86,7 @@ Engine::Engine(sys::Window& _window, Version _version) {
 		.set_app_name(AppTitle)
 		.set_engine_name("vuk")
 		.require_api_version(1, 2, 0)
-		.set_app_version(std::get<0>(_version), std::get<1>(_version), std::get<2>(_version))
+		.set_app_version(std::get<0>(AppVersion), std::get<1>(AppVersion), std::get<2>(AppVersion))
 		.build();
 	if (!instanceResult)
 		throw runtime_error_fmt("Failed to create a Vulkan instance: {}", instanceResult.error().message());
@@ -190,10 +191,35 @@ Engine::Engine(sys::Window& _window, Version _version) {
 		&m_context->graphics_queue, &m_context->graphics_queue_family_index, 1,
 		&optickVulkanFunctions);
 	
+	// Initialize internal systems
+	
+	auto ifc = m_context->begin();
+	auto ptc = ifc.begin();
+	
+	m_imguiData = ImGui_ImplVuk_Init(ptc);
+	ImGui::GetIO().DisplaySize = ImVec2(f32(m_swapchain->extent.width), f32(m_swapchain->extent.height));
+	// Begin imgui frame so that first-frame calls succeed
+	ImGui::NewFrame();
+	
+	// Initialize persistent resources
+	
+	m_meshes->upload(ptc);
+	m_atmosphere = Atmosphere(ptc, Atmosphere::Params::earth());
+	m_ibl = IBLMap(ptc);
+	
+	// Perform precalculations
+	auto precalc = m_atmosphere->precalculate();
+	
 	// Initialize user components
 	
-	m_meshes = Meshes();
 	m_objects.emplace(*m_meshes);
+	
+	// Finalize
+	
+	ptc.wait_all_transfers();
+	
+	auto erg = std::move(precalc).link(ptc);
+	vuk::execute_submit_and_wait(ptc, std::move(erg));
 	
 	L_INFO("Graphics engine initialized");
 	
@@ -214,7 +240,7 @@ Engine::~Engine() {
 	m_objects.reset();
 	m_meshes.reset();
 	
-	// Cleanup external graphics systems
+	// Cleanup internal systems
 	
 	m_imguiData.font_texture.view.reset();
 	m_imguiData.font_texture.image.reset();
@@ -236,35 +262,6 @@ Engine::~Engine() {
 	
 	L_INFO("Graphics engine cleaned up");
 	
-}
-
-void Engine::uploadAssets() {
-	
-	OPTICK_EVENT("Engine::uploadAssets");
-	
-	auto ifc = m_context->begin();
-	auto ptc = ifc.begin();
-	
-	m_imguiData = ImGui_ImplVuk_Init(ptc);
-	ImGui::GetIO().DisplaySize = ImVec2(f32(m_swapchain->extent.width), f32(m_swapchain->extent.height));
-	
-	// Upload static data
-	m_meshes->upload(ptc);
-	
-	// Create pipeline components
-	m_atmosphere = Atmosphere(ptc, Atmosphere::Params::earth());
-	m_ibl = IBLMap(ptc);
-	
-	// Finalize uploads
-	ptc.wait_all_transfers();
-	
-	// Perform precalculations
-	auto precalc = m_atmosphere->precalculate();
-	auto erg = std::move(precalc).link(ptc);
-	vuk::execute_submit_and_wait(ptc, std::move(erg));
-	
-	// Begin imgui frame so that first-frame calls succeed
-	ImGui::NewFrame();
 }
 
 void Engine::render() {

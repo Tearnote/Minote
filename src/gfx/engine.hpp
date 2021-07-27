@@ -25,12 +25,10 @@ struct Engine {
 	static constexpr auto VerticalFov = 45_deg;
 	static constexpr auto NearPlane = 0.1_m;
 	
-	// Initialize Vulkan on the window.
-	explicit Engine(sys::Window& window, Version version);
+	// Initialize Vulkan on the window. Meshes should be filled up and ready
+	// for GPU upload.
+	explicit Engine(sys::Window& window, Meshes&& meshes);
 	~Engine();
-	
-	// After adding all meshes, call this to finalize them and upload to GPU.
-	void uploadAssets();
 	
 	// Render all objects to the screen.
 	void render();
@@ -39,9 +37,6 @@ struct Engine {
 	auto operator=(Engine const&) -> Engine& = delete;
 	
 	// Subcomponent access
-	
-	// Use to add models, then call uploadAssets()
-	auto meshes() -> Meshes& { return *m_meshes; }
 	
 	// Use freely to add/remove/modify objects for drawing
 	auto objects() -> Objects& { return *m_objects; }

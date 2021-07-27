@@ -31,15 +31,16 @@ void game(sys::Glfw&, sys::Window& window) try {
 	// *** Initialization ***
 	
 	attachPoolResources();
-
+	
 	auto mapper = Mapper();
-	auto engine = gfx::Engine(window, AppVersion);
-
+	
+	gfx::Meshes meshes;
+	
 	auto assets = Assets(AssetsPath);
-	assets.loadModels([&engine](auto name, auto data) {
-		engine.meshes().addGltf(name, data);
+	assets.loadModels([&meshes](auto name, auto data) {
+		meshes.addGltf(name, data);
 	});
-	engine.uploadAssets();
+	auto engine = gfx::Engine(window, std::move(meshes));
 	
 	engine.camera() = gfx::Camera{
 		.position = {-10_m, -26_m, 64_m + 10_m},
