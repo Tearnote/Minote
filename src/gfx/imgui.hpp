@@ -6,15 +6,20 @@
 
 namespace minote::gfx {
 
+// GPU resources used by Imgui
 struct ImguiData {
-	vuk::Texture font_texture;
-	vuk::SamplerCreateInfo font_sci;
-	std::unique_ptr<vuk::SampledImage> font_si;
+	
+	vuk::Texture fontTex;
+	std::unique_ptr<vuk::SampledImage> fontSI;
+	
 };
 
-auto ImGui_ImplVuk_Init(vuk::PerThreadContext& ptc) -> ImguiData;
+// Initialize Imgui. Run once after Vulkan is initialized, and keep the result
+// struct around as long as Imgui is being used.
+auto ImGui_ImplVuk_Init(vuk::PerThreadContext&) -> ImguiData;
 
-void ImGui_ImplVuk_Render(vuk::PerThreadContext& ptc, vuk::RenderGraph& rg,
-	vuk::Name src_target, vuk::Name dst_target, ImguiData& data, ImDrawData* draw_data);
+// Draw all GUI elements that were queued up for this frame.
+void ImGui_ImplVuk_Render(vuk::PerThreadContext&, vuk::RenderGraph&,
+	vuk::Name source, vuk::Name target, ImguiData&, ImDrawData*);
 
 }

@@ -17,4 +17,11 @@ constexpr auto TrilinearClamp = vuk::SamplerCreateInfo{
 	.addressModeU = vuk::SamplerAddressMode::eClampToEdge,
 	.addressModeV = vuk::SamplerAddressMode::eClampToEdge};
 
+constexpr auto TrilinearRepeat = vuk::SamplerCreateInfo{
+	.magFilter = vuk::Filter::eLinear,
+	.minFilter = vuk::Filter::eLinear,
+	.mipmapMode = vuk::SamplerMipmapMode::eLinear,
+	.addressModeU = vuk::SamplerAddressMode::eRepeat,
+	.addressModeV = vuk::SamplerAddressMode::eRepeat};
+
 }

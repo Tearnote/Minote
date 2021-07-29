@@ -242,8 +242,8 @@ Engine::~Engine() {
 	
 	// Cleanup internal systems
 	
-	m_imguiData.font_texture.view.reset();
-	m_imguiData.font_texture.image.reset();
+	m_imguiData.fontTex.view.reset();
+	m_imguiData.fontTex.image.reset();
 	Optick::Core::Get().Shutdown();
 	
 	// Cleanup vuk
