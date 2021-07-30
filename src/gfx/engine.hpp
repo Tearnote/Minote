@@ -1,11 +1,8 @@
 #pragma once
 
 #include <optional>
-#include "VkBootstrap.h"
-#include "volk.h"
-#include "vuk/Context.hpp"
 #include "base/math.hpp"
-#include "sys/window.hpp"
+#include "sys/vulkan.hpp"
 #include "gfx/module/sky.hpp"
 #include "gfx/module/ibl.hpp"
 #include "gfx/objects.hpp"
@@ -25,9 +22,9 @@ struct Engine {
 	static constexpr auto VerticalFov = 45_deg;
 	static constexpr auto NearPlane = 0.1_m;
 	
-	// Initialize Vulkan on the window. Meshes should be filled up and ready
-	// for GPU upload.
-	explicit Engine(sys::Window& window, MeshList&& meshes);
+	// Initialize the engine on a Vulkan-initialized window. Mesh list will
+	// be consumed and uploaded to GPU.
+	Engine(sys::Vulkan&, MeshList&&);
 	~Engine();
 	
 	// Render all objects to the screen.
@@ -46,13 +43,9 @@ struct Engine {
 	
 private:
 	
-	vkb::Instance m_instance;
-	VkSurfaceKHR m_surface;
-	vkb::Device m_device;
-	vuk::SwapChainRef m_swapchain;
-	std::optional<vuk::Context> m_context;
-	ImguiData m_imguiData;
+	sys::Vulkan& m_vk;
 	
+	ImguiData m_imguiData;
 	std::optional<MeshBuffer> m_meshes;
 	std::optional<Objects> m_objects;
 	Camera m_camera;
@@ -60,9 +53,6 @@ private:
 	World m_world;
 	std::optional<Atmosphere> m_atmosphere;
 	std::optional<IBLMap> m_ibl;
-	
-	// Create a swapchain object, optionally reusing resources from an existing one.
-	auto createSwapchain(VkSwapchainKHR old = VK_NULL_HANDLE) -> vuk::Swapchain;
 	
 	// Once a swapchain is detected to be invalid or out of date, use this function
 	// to replace it with a fresh one.

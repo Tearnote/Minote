@@ -10,6 +10,7 @@
 #include "base/math.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"
+#include "sys/vulkan.hpp"
 #include "gfx/engine.hpp"
 #include "assets.hpp"
 #include "mapper.hpp"
@@ -42,7 +43,8 @@ void game(sys::Glfw&, sys::Window& window) try {
 		
 	});
 	
-	auto engine = gfx::Engine(window, std::move(meshList));
+	auto vulkan = sys::Vulkan(window);
+	auto engine = gfx::Engine(vulkan, std::move(meshList));
 	
 	engine.camera() = gfx::Camera{
 		.position = {-10_m, -26_m, 64_m + 10_m},

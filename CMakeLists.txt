@@ -69,6 +69,7 @@ add_executable(Minote
         src/base/id.hpp
         src/sys/keyboard.hpp src/sys/keyboard.cpp
         src/sys/window.hpp src/sys/window.tpp src/sys/window.cpp
+        src/sys/vulkan.hpp src/sys/vulkan.cpp
         src/sys/glfw.hpp src/sys/glfw.cpp
         src/gfx/module/iblCoeffs.hpp
         src/gfx/module/indirect.hpp src/gfx/module/indirect.cpp
