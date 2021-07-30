@@ -52,7 +52,7 @@ struct Objects {
 	std::vector<mat4> transform;
 	std::vector<Material> material;
 	
-	explicit Objects(Meshes const& _meshes): meshes(_meshes) {}
+	explicit Objects(MeshBuffer const& _meshes): meshes(_meshes) {}
 	
 	[[nodiscard]]
 	auto create() -> ObjectID;
@@ -71,7 +71,7 @@ struct Objects {
 	
 private:
 	
-	Meshes const& meshes;
+	MeshBuffer const& meshes;
 	std::vector<ObjectID> deletedIDs;
 	
 };

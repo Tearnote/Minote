@@ -239,8 +239,8 @@ void ImGui_ImplVuk_Render(vuk::PerThreadContext& _ptc, vuk::RenderGraph& _rg,
 							
 							// Apply scissor/clipping rectangle
 							auto scissor = vuk::Rect2D{
-								.offset = {clip_rect.x, clip_rect.y},
-								.extent = {clip_rect.z - clip_rect.x, clip_rect.w - clip_rect.y} };
+								.offset = {i32(clip_rect.x), i32(clip_rect.y)},
+								.extent = {u32(clip_rect.z - clip_rect.x), u32(clip_rect.w - clip_rect.y)} };
 							cmd.set_scissor(0, scissor);
 							
 							// Bind texture

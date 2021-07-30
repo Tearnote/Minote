@@ -28,10 +28,10 @@ struct Forward {
 	auto size() const -> uvec2 { return m_size; }
 	
 	// Perform Z-prepass, filling in the Depth_n image
-	auto zPrepass(vuk::Buffer world, Indirect const&, Meshes const&) -> vuk::RenderGraph;
+	auto zPrepass(vuk::Buffer world, Indirect const&, MeshBuffer const&) -> vuk::RenderGraph;
 	
 	// Using Depth_n, render into Color_n
-	auto draw(vuk::Buffer world, Indirect const&, Meshes const&, Sky const&, IBLMap const&) -> vuk::RenderGraph;
+	auto draw(vuk::Buffer world, Indirect const&, MeshBuffer const&, Sky const&, IBLMap const&) -> vuk::RenderGraph;
 	
 private:
 	

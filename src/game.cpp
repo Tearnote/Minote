@@ -34,13 +34,15 @@ void game(sys::Glfw&, sys::Window& window) try {
 	
 	auto mapper = Mapper();
 	
-	gfx::Meshes meshes;
-	
+	auto meshList = gfx::MeshList();
 	auto assets = Assets(AssetsPath);
-	assets.loadModels([&meshes](auto name, auto data) {
-		meshes.addGltf(name, data);
+	assets.loadModels([&meshList](auto name, auto data) {
+		
+		meshList.addGltf(name, data);
+		
 	});
-	auto engine = gfx::Engine(window, std::move(meshes));
+	
+	auto engine = gfx::Engine(window, std::move(meshList));
 	
 	engine.camera() = gfx::Camera{
 		.position = {-10_m, -26_m, 64_m + 10_m},

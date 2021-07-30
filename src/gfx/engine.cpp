@@ -61,8 +61,7 @@ VKAPI_ATTR auto VKAPI_CALL debugCallback(
 }
 #endif //VK_VALIDATION
 
-Engine::Engine(sys::Window& _window, Meshes&& _meshes):
-	m_meshes(std::move(_meshes)) {
+Engine::Engine(sys::Window& _window, MeshList&& _meshList) {
 	
 	OPTICK_EVENT("Engine::Engine");
 	
@@ -203,7 +202,7 @@ Engine::Engine(sys::Window& _window, Meshes&& _meshes):
 	
 	// Initialize persistent resources
 	
-	m_meshes->upload(ptc);
+	m_meshes = std::move(_meshList).upload(ptc);
 	m_atmosphere = Atmosphere(ptc, Atmosphere::Params::earth());
 	m_ibl = IBLMap(ptc);
 	

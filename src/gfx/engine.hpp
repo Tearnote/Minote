@@ -27,7 +27,7 @@ struct Engine {
 	
 	// Initialize Vulkan on the window. Meshes should be filled up and ready
 	// for GPU upload.
-	explicit Engine(sys::Window& window, Meshes&& meshes);
+	explicit Engine(sys::Window& window, MeshList&& meshes);
 	~Engine();
 	
 	// Render all objects to the screen.
@@ -44,7 +44,6 @@ struct Engine {
 	// Use freely to modify the rendering camera
 	auto camera() -> Camera& { return m_camera; }
 	
-	
 private:
 	
 	vkb::Instance m_instance;
@@ -54,7 +53,7 @@ private:
 	std::optional<vuk::Context> m_context;
 	ImguiData m_imguiData;
 	
-	std::optional<Meshes> m_meshes;
+	std::optional<MeshBuffer> m_meshes;
 	std::optional<Objects> m_objects;
 	Camera m_camera;
 	

@@ -1,12 +1,12 @@
 #include "gfx/meshes.hpp"
 
-#include <string_view>
-#include <stdexcept>
+#include <utility>
 #include <cassert>
 #include <cstring>
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
 #include "quill/Fmt.h"
+#include "base/error.hpp"
 #include "base/util.hpp"
 
 namespace minote::gfx {
@@ -14,91 +14,121 @@ namespace minote::gfx {
 using namespace base;
 using namespace base::literals;
 
-void Meshes::addGltf(std::string_view name, std::span<char const> mesh) {
-	auto options = cgltf_options{
-		.type = cgltf_file_type_glb,
-	};
+void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
+	
+	// Load and parse
+	
+	auto options = cgltf_options{ .type = cgltf_file_type_glb };
 	auto* gltf = (cgltf_data*)(nullptr);
-	if (auto result = cgltf_parse(&options, mesh.data(), mesh.size_bytes(), &gltf); result != cgltf_result_success)
-		throw std::runtime_error(fmt::format(R"(Failed to parse mesh "{}": error code {})", name, result));
+	if (auto result = cgltf_parse(&options, _mesh.data(), _mesh.size_bytes(), &gltf); result != cgltf_result_success)
+		throw runtime_error_fmt(R"(Failed to parse mesh "{}": error code {})", _name, result);
 	defer { cgltf_free(gltf); };
 	cgltf_load_buffers(&options, gltf, nullptr);
-
+	
+	// Choose mesh and primitive
+	
 	assert(gltf->meshes_count == 1);
 	assert(gltf->meshes->primitives_count == 1);
 	auto& primitive = *gltf->meshes->primitives;
-
+	
+	// Fetch index data
+	
 	assert(primitive.indices);
 	auto& indexAccessor = *primitive.indices;
 	auto* indexBuffer = (char const*)(indexAccessor.buffer_view->buffer->data);
 	assert(indexBuffer);
 	indexBuffer += indexAccessor.buffer_view->offset;
-
-	descriptorIDs.emplace(name, descriptors.size());
+	
+	// Write mesh descriptor
+	
+	descriptorIDs.emplace(_name, descriptors.size());
 	auto& desc = descriptors.emplace_back(Descriptor{
 		.indexOffset = u32(indices.size()),
 		.indexCount = u32(indexAccessor.count),
-		.vertexOffset = u32(vertices.size()),
-	});
+		.vertexOffset = u32(vertices.size()) });
+	
+	// Write index data
+	
 	assert(indexAccessor.component_type == cgltf_component_type_r_16u);
 	assert(indexAccessor.type == cgltf_type_scalar);
 	auto* indexTypedBuffer = (u16*)(indexBuffer);
 	indices.insert(indices.end(), indexTypedBuffer, indexTypedBuffer + indexAccessor.count);
-
-	for (auto attrIdx = 0_zu; attrIdx < primitive.attributes_count; attrIdx += 1) {
+	
+	// Fetch all vertex attributes
+	
+	for (auto attrIdx: iota(0_zu, primitive.attributes_count)) {
+		
 		auto& accessor = *primitive.attributes[attrIdx].data;
 		auto* buffer = (char const*)(accessor.buffer_view->buffer->data);
 		assert(buffer);
 		buffer += accessor.buffer_view->offset;
-
+		
+		// Write vertex position
+		
 		if (std::strcmp(primitive.attributes[attrIdx].name, "POSITION") == 0) {
+			
 			assert(accessor.component_type == cgltf_component_type_r_32f);
 			assert(accessor.type == cgltf_type_vec3);
-
-			// Calculate the AABB for BVH generation, and furthest point from
-			// the origin (for frustum culling)
+			
+			// Calculate the AABB and furthest point from the origin
 			desc.aabbMin = vec3{accessor.min[0], accessor.min[1], accessor.min[2]};
 			desc.aabbMax = vec3{accessor.max[0], accessor.max[1], accessor.max[2]};
 			auto pfar = max(abs(desc.aabbMin), abs(desc.aabbMax));
 			desc.radius = length(pfar);
-
+			
 			auto* typedBuffer = (vec3*)(buffer);
 			vertices.insert(vertices.end(), typedBuffer, typedBuffer + accessor.count);
 			continue;
+			
 		}
-
+		
+		// Write vertex normal
+		
 		if (std::strcmp(primitive.attributes[attrIdx].name, "NORMAL") == 0) {
+			
 			assert(accessor.component_type == cgltf_component_type_r_32f);
 			assert(accessor.type == cgltf_type_vec3);
-
+			
 			auto* typedBuffer = (vec3*)(buffer);
 			normals.insert(normals.end(), typedBuffer, typedBuffer + accessor.count);
 			continue;
+			
 		}
-
+		
+		// Write vertex color
+		
 		if (std::strcmp(primitive.attributes[attrIdx].name, "COLOR_0") == 0) {
+			
 			assert(accessor.component_type == cgltf_component_type_r_16u);
 			assert(accessor.type == cgltf_type_vec4);
 
 			auto* typedBuffer = (u16vec4*)(buffer);
 			colors.insert(colors.end(), typedBuffer, typedBuffer + accessor.count);
 			continue;
+			
 		}
-
+		
 		assert(false);
+		
 	}
+	
 }
 
-void Meshes::upload(vuk::PerThreadContext& _ptc) {
+auto MeshList::upload(vuk::PerThreadContext& _ptc) && -> MeshBuffer {
 	
-	verticesBuf = _ptc.create_buffer<vec3>(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(vertices)).first;
-	normalsBuf  = _ptc.create_buffer<vec3>(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(normals)).first;
-	colorsBuf   = _ptc.create_buffer<u16vec4>(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eVertexBuffer, std::span(colors)).first;
-	indicesBuf  = _ptc.create_buffer<u16>(vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eIndexBuffer, std::span(indices)).first;
+	auto result = MeshBuffer{
+		.verticesBuf = _ptc.create_buffer<vec3>(vuk::MemoryUsage::eGPUonly,
+			vuk::BufferUsageFlagBits::eVertexBuffer, std::span(vertices)).first,
+		.normalsBuf = _ptc.create_buffer<vec3>(vuk::MemoryUsage::eGPUonly,
+			vuk::BufferUsageFlagBits::eVertexBuffer, std::span(normals)).first,
+		.colorsBuf = _ptc.create_buffer<u16vec4>(vuk::MemoryUsage::eGPUonly,
+			vuk::BufferUsageFlagBits::eVertexBuffer, std::span(colors)).first,
+		.indicesBuf = _ptc.create_buffer<u16>(vuk::MemoryUsage::eGPUonly,
+			vuk::BufferUsageFlagBits::eIndexBuffer, std::span(indices)).first,
+		.descriptors = std::move(descriptors),
+		.descriptorIDs = std::move(descriptorIDs) };
+	
+	// Clean up in this case isn't a temporary
 	
 	vertices.clear();
 	vertices.shrink_to_fit();
@@ -108,6 +138,8 @@ void Meshes::upload(vuk::PerThreadContext& _ptc) {
 	colors.shrink_to_fit();
 	indices.clear();
 	indices.shrink_to_fit();
+	
+	return result;
 	
 }
 

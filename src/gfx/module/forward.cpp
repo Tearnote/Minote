@@ -41,7 +41,7 @@ Forward::Forward(vuk::PerThreadContext& _ptc, uvec2 _size) {
 	
 }
 
-auto Forward::zPrepass(vuk::Buffer _world, Indirect const& _indirect, Meshes const& _meshes) -> vuk::RenderGraph {
+auto Forward::zPrepass(vuk::Buffer _world, Indirect const& _indirect, MeshBuffer const& _meshes) -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
 	
@@ -75,7 +75,7 @@ auto Forward::zPrepass(vuk::Buffer _world, Indirect const& _indirect, Meshes con
 }
 
 auto Forward::draw(vuk::Buffer _world, Indirect const& _indirect,
-	Meshes const& _meshes, Sky const& _sky, IBLMap const& _ibl) -> vuk::RenderGraph {
+	MeshBuffer const& _meshes, Sky const& _sky, IBLMap const& _ibl) -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
 	

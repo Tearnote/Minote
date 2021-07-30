@@ -15,7 +15,7 @@ using namespace base;
 using namespace base::literals;
 
 Indirect::Indirect(vuk::PerThreadContext& _ptc,
-	Objects const& _objects, Meshes const& _meshes) {
+	Objects const& _objects, MeshBuffer const& _meshes) {
 	
 	OPTICK_EVENT("Indirect::Indirect");
 	

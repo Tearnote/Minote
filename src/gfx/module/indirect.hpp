@@ -46,7 +46,7 @@ struct Indirect {
 	vuk::Buffer materialCulledBuf;
 	
 	// Upload object data into temporary buffers.
-	Indirect(vuk::PerThreadContext&, Objects const&, Meshes const&);
+	Indirect(vuk::PerThreadContext&, Objects const&, MeshBuffer const&);
 	
 	// Perform sorting and frustum culling to fill in the Culled_n buffers.
 	auto sortAndCull(World const&) -> vuk::RenderGraph;

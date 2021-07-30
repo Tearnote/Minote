@@ -21,9 +21,6 @@ enum struct PoolSlot {
 inline auto GlobalPool = Pool();
 
 template<typename T>
-using Permanent = PoolAllocator<T, GlobalPool, +PoolSlot::Permanent, Arena>;
-
-template<typename T>
 using PerFrame = PoolAllocator<T, GlobalPool, +PoolSlot::PerFrame, Arena>;
 
 template<typename T>
@@ -44,7 +41,6 @@ using StdAlloc = std::allocator<T>;
 
 inline void attachPoolResources() {
 	
-	GlobalPool.attach(+PoolSlot::Permanent, Arena("Permanent", 16_mb));
 	GlobalPool.attach(+PoolSlot::PerFrame, Arena("Per-frame", 16_mb));
 	GlobalPool.attach(+PoolSlot::Scratch, Stack("Scratch", 16_mb));
 	
