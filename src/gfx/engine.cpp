@@ -42,7 +42,7 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	m_meshes = std::move(_meshList).upload(ptc);
 	m_atmosphere = Atmosphere(ptc, Atmosphere::Params::earth());
 	m_ibl = IBLMap(ptc);
-	m_objects.emplace(*m_meshes);
+	m_objects = Objects();
 	
 	// Perform precalculations
 	auto precalc = m_atmosphere->precalculate();
@@ -126,7 +126,7 @@ void Engine::render() {
 	rg.append(sky.calculate(worldBuf, m_camera));
 	rg.append(sky.drawCubemap(worldBuf, m_ibl->Unfiltered_n, uvec2(m_ibl->BaseSize)));
 	rg.append(m_ibl->filter());
-	rg.append(indirect.sortAndCull(m_world));
+	rg.append(indirect.sortAndCull(m_world, *m_meshes));
 	rg.append(forward.zPrepass(worldBuf, indirect, *m_meshes));
 	rg.append(forward.draw(worldBuf, indirect, *m_meshes, sky, *m_ibl));
 	rg.append(sky.draw(worldBuf, forward.Color_n, forward.Depth_n, viewport));

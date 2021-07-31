@@ -42,7 +42,7 @@ void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
 	// Write mesh descriptor
 	
 	descriptorIDs.emplace(_name, descriptors.size());
-	auto& desc = descriptors.emplace_back(Descriptor{
+	auto& desc = descriptors.emplace_back(MeshDescriptor{
 		.indexOffset = u32(indices.size()),
 		.indexCount = u32(indexAccessor.count),
 		.vertexOffset = u32(vertices.size()) });
@@ -71,9 +71,9 @@ void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
 			assert(accessor.type == cgltf_type_vec3);
 			
 			// Calculate the AABB and furthest point from the origin
-			desc.aabbMin = vec3{accessor.min[0], accessor.min[1], accessor.min[2]};
-			desc.aabbMax = vec3{accessor.max[0], accessor.max[1], accessor.max[2]};
-			auto pfar = max(abs(desc.aabbMin), abs(desc.aabbMax));
+			auto aabbMin = vec3{accessor.min[0], accessor.min[1], accessor.min[2]};
+			auto aabbMax = vec3{accessor.max[0], accessor.max[1], accessor.max[2]};
+			auto pfar = max(abs(aabbMin), abs(aabbMax));
 			desc.radius = length(pfar);
 			
 			auto* typedBuffer = (vec3*)(buffer);
@@ -125,10 +125,12 @@ auto MeshList::upload(vuk::PerThreadContext& _ptc) && -> MeshBuffer {
 			vuk::BufferUsageFlagBits::eVertexBuffer, std::span(colors)).first,
 		.indicesBuf = _ptc.create_buffer<u16>(vuk::MemoryUsage::eGPUonly,
 			vuk::BufferUsageFlagBits::eIndexBuffer, std::span(indices)).first,
-		.descriptors = std::move(descriptors),
+		.descriptorBuf = _ptc.create_buffer<MeshDescriptor>(vuk::MemoryUsage::eGPUonly,
+			vuk::BufferUsageFlagBits::eStorageBuffer, std::span(descriptors)).first,
 		.descriptorIDs = std::move(descriptorIDs) };
+	result.descriptors = std::move(descriptors); // Must still exist for descriptorBuf creation
 	
-	// Clean up in this case isn't a temporary
+	// Clean up in case this isn't a temporary
 	
 	vertices.clear();
 	vertices.shrink_to_fit();

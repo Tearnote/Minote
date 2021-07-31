@@ -9,24 +9,26 @@ struct Command {
 	uint firstIndex;
 	uint vertexOffset;
 	uint firstInstance;
-	float meshRadius;
 };
 layout (binding = 0, std430) buffer Draws {
 	Command draws[];
 };
 
-struct Metadata {
-	uint visible;
-	uint exists;
+struct Descriptor {
+	uint indexOffset;
+	uint indexCount;
+	uint vertexOffset;
+	float radius;
 };
+layout (binding = 1, std430) buffer Descriptors {
+	Descriptor descriptors[];
+};
+
 struct Material {
 	vec4 tint;
 	float roughness;
 	float metalness;
-	vec2 pad;
-};
-layout (binding = 1, std430) readonly buffer Metadatas {
-	Metadata metadata[];
+	vec2 pad0;
 };
 layout (binding = 2, std430) readonly buffer MeshIndex {
 	uint meshIndex[];
@@ -37,14 +39,17 @@ layout (binding = 3, std430) readonly buffer Transform {
 layout (binding = 4, std430) readonly buffer Materials {
 	Material material[];
 };
-layout (binding = 5, std430) writeonly buffer TransformCulled {
+layout (binding = 5, std430) writeonly buffer MeshIndexCulled {
+	uint meshIndexCulled[];
+};
+layout (binding = 6, std430) writeonly buffer TransformCulled {
 	mat4 transformCulled[];
 };
-layout (binding = 6, std430) writeonly buffer MaterialsCulled {
+layout (binding = 7, std430) writeonly buffer MaterialsCulled {
 	Material materialCulled[];
 };
 
-layout(binding = 7) uniform CullData {
+layout(binding = 8) uniform CullData {
 	mat4 view;
 	vec4 frustum;
 	uint instancesCount;
@@ -70,16 +75,16 @@ bool visible(uint gid, float radius) {
 void main() {
 	const uint gid = gl_GlobalInvocationID.x;
 	if (gid >= instancesCount) return;
-	if (metadata[gid].visible == 0 || metadata[gid].exists == 0) return;
 	
-	uint meshIndex = meshIndex[gid];
+	uint index = meshIndex[gid];
 	float scale = maxScale(transform[gid]);
-	float radius = draws[meshIndex].meshRadius;
+	float radius = descriptors[index].radius;
 	if (!visible(gid, radius * scale)) return;
 	
-	uint offset = draws[meshIndex].firstInstance;
-	uint index = offset + atomicAdd(draws[meshIndex].instanceCount, 1);
+	uint offset = draws[index].firstInstance;
+	uint newid = offset + atomicAdd(draws[index].instanceCount, 1);
 	
-	transformCulled[index] = transform[gid];
-	materialCulled[index] = material[gid];
+	meshIndexCulled[newid] = meshIndex[gid];
+	transformCulled[newid] = transform[gid];
+	materialCulled[newid] = material[gid];
 }

@@ -1,13 +1,14 @@
 #include "gfx/module/indirect.hpp"
 
 #include <cstring>
+#include <span>
 #include "optick.h"
 #include "imgui.h"
 #include "vuk/CommandBuffer.hpp"
-#include "base/container/hashmap.hpp"
-#include "base/container/vector.hpp"
+#include "base/container/array.hpp"
 #include "base/math.hpp"
 #include "base/util.hpp"
+#include "memory.hpp"
 
 namespace minote::gfx {
 
@@ -19,31 +20,44 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 	
 	OPTICK_EVENT("Indirect::Indirect");
 	
+	auto _ = ScratchMarker();
+	
 	// Create the command list
 	
-	auto commands = svector<Command, 256>();
+	auto commands = ivector<VkDrawIndexedIndirectCommand>();
 	for (auto& descriptor: _meshes.descriptors) {
 		
-		commands.emplace_back(Command{
+		commands.emplace_back(VkDrawIndexedIndirectCommand{
 			.indexCount = descriptor.indexCount,
-			.instanceCount = 0, // counted during the next loop
+			.instanceCount = 0, // counted in the next loop
 			.firstIndex = descriptor.indexOffset,
 			.vertexOffset = i32(descriptor.vertexOffset),
-			.firstInstance = 0, // calculated later in this function
-			.meshRadius = descriptor.radius });
+			.firstInstance = 0 }); // calculated later via prefix sum
 		
 	}
 	
-	// Count instances per mesh
+	// Iterate through all valid instances
 	
+	auto meshIndices = array<u32, Scratch>(_objects.size());
+	auto transforms = array<mat4, Scratch>(_objects.size());
+	auto materials = array<Objects::Material, Scratch>(_objects.size());
+	
+	instancesCount = 0;
 	for (auto id: iota(ObjectID(0), _objects.size())) {
 		
 		auto& metadata = _objects.metadata[id];
 		if (!metadata.exists || !metadata.visible)
 			continue;
 		
-		auto meshIndex = _objects.meshIndex[id];
+		auto meshID = _objects.meshID[id];
+		auto meshIndex = _meshes.descriptorIDs.at(meshID);
 		commands[meshIndex].instanceCount += 1;
+		
+		meshIndices[instancesCount] = meshIndex;
+		transforms[instancesCount] = _objects.transform[id];
+		materials[instancesCount] = _objects.material[id];
+		
+		instancesCount += 1;
 		
 	}
 	
@@ -60,7 +74,7 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 		
 	}
 	
-	// Clear instance count for GPU culling
+	// Clear instance count for GPU culling purposes
 	
 	for (auto& cmd: commands)
 		cmd.instanceCount = 0;
@@ -71,11 +85,10 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 	commandsBuf = _ptc.allocate_scratch_buffer(
 		vuk::MemoryUsage::eCPUtoGPU,
 		vuk::BufferUsageFlagBits::eIndirectBuffer | vuk::BufferUsageFlagBits::eStorageBuffer,
-		sizeof(Command) * commands.size(), alignof(Command));
-	std::memcpy(commandsBuf.mapped_ptr, commands.data(), sizeof(Command) * commands.size());
+		sizeof(VkDrawIndexedIndirectCommand) * commands.size(), alignof(VkDrawIndexedIndirectCommand));
+	std::memcpy(commandsBuf.mapped_ptr, commands.data(), sizeof(VkDrawIndexedIndirectCommand) * commands.size());
 	
-	instancesCount = _objects.size();
-	auto createAndUpload = [this, &_ptc]<typename T>(std::vector<T> const& data) {
+	auto createAndUpload = [this, &_ptc]<typename T>(std::span<T> data) {
 		
 		auto buf = _ptc.allocate_scratch_buffer(
 			vuk::MemoryUsage::eCPUtoGPU,
@@ -85,23 +98,22 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 		return buf;
 		
 	};
-	auto createEmpty = [this, &_ptc, commandOffset]<typename T>(std::vector<T> const&) {
+	auto createEmpty = [this, &_ptc, commandOffset]<typename T>(std::span<T>) {
 		
-		// No need for the full instancesCount - we know how many instances are enabled
 		return _ptc.allocate_scratch_buffer(
 			vuk::MemoryUsage::eGPUonly,
 			vuk::BufferUsageFlagBits::eStorageBuffer,
-			sizeof(T) * commandOffset, alignof(T));
+			sizeof(T) * instancesCount, alignof(T));
 		
 	};
 	
-	metadataBuf  = createAndUpload(_objects.metadata);
-	meshIndexBuf = createAndUpload(_objects.meshIndex);
-	transformBuf = createAndUpload(_objects.transform);
-	materialBuf  = createAndUpload(_objects.material);
+	meshIndexBuf = createAndUpload(std::span(meshIndices));
+	transformBuf = createAndUpload(std::span(transforms));
+	materialBuf  = createAndUpload(std::span(materials));
 	
-	transformCulledBuf = createEmpty(_objects.transform);
-	materialCulledBuf  = createEmpty(_objects.material);
+	meshIndexCulledBuf = createEmpty(std::span(meshIndices));
+	transformCulledBuf = createEmpty(std::span(transforms));
+	materialCulledBuf  = createEmpty(std::span(materials));
 	
 	ImGui::Text("Object count: %llu", instancesCount);
 	
@@ -121,7 +133,7 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 	
 }
 
-auto Indirect::sortAndCull(World const& _world) -> vuk::RenderGraph {
+auto Indirect::sortAndCull(World const& _world, MeshBuffer const& _meshes) -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
 	
@@ -132,21 +144,22 @@ auto Indirect::sortAndCull(World const& _world) -> vuk::RenderGraph {
 		.name = "Frustum culling",
 		.resources = {
 			vuk::Resource(Commands_n,            vuk::Resource::Type::eBuffer, vuk::eComputeRW),
-			vuk::Resource(Metadata_n,            vuk::Resource::Type::eBuffer, vuk::eComputeRead),
 			vuk::Resource(MeshIndex_n,           vuk::Resource::Type::eBuffer, vuk::eComputeRead),
 			vuk::Resource(Transform_n,           vuk::Resource::Type::eBuffer, vuk::eComputeRead),
 			vuk::Resource(Material_n,            vuk::Resource::Type::eBuffer, vuk::eComputeRead),
+			vuk::Resource(MeshIndexCulled_n,     vuk::Resource::Type::eBuffer, vuk::eComputeWrite),
 			vuk::Resource(TransformCulled_n,     vuk::Resource::Type::eBuffer, vuk::eComputeWrite),
 			vuk::Resource(MaterialCulled_n,      vuk::Resource::Type::eBuffer, vuk::eComputeWrite),
 		},
-		.execute = [this, view, projection](vuk::CommandBuffer& cmd) {
+		.execute = [this, &_meshes, view, projection](vuk::CommandBuffer& cmd) {
 			cmd.bind_storage_buffer(0, 0, commandsBuf)
-			   .bind_storage_buffer(0, 1, metadataBuf)
+			   .bind_storage_buffer(0, 1, *_meshes.descriptorBuf)
 			   .bind_storage_buffer(0, 2, meshIndexBuf)
 			   .bind_storage_buffer(0, 3, transformBuf)
 			   .bind_storage_buffer(0, 4, materialBuf)
-			   .bind_storage_buffer(0, 5, transformCulledBuf)
-			   .bind_storage_buffer(0, 6, materialCulledBuf)
+			   .bind_storage_buffer(0, 5, meshIndexCulledBuf)
+			   .bind_storage_buffer(0, 6, transformCulledBuf)
+			   .bind_storage_buffer(0, 7, materialCulledBuf)
 			   .bind_compute_pipeline("cull");
 			
 			struct CullData {
@@ -154,7 +167,7 @@ auto Indirect::sortAndCull(World const& _world) -> vuk::RenderGraph {
 				vec4 frustum;
 				u32 instancesCount;
 			};
-			auto* cullData = cmd.map_scratch_uniform_binding<CullData>(0, 7);
+			auto* cullData = cmd.map_scratch_uniform_binding<CullData>(0, 8);
 			*cullData = CullData{
 				.view = view,
 				.frustum = [this, projection] {
@@ -177,10 +190,6 @@ auto Indirect::sortAndCull(World const& _world) -> vuk::RenderGraph {
 		commandsBuf,
 		vuk::eTransferDst,
 		vuk::eNone);
-	rg.attach_buffer(Metadata_n,
-		metadataBuf,
-		vuk::eTransferDst,
-		vuk::eNone);
 	rg.attach_buffer(MeshIndex_n,
 		meshIndexBuf,
 		vuk::eTransferDst,
@@ -192,6 +201,10 @@ auto Indirect::sortAndCull(World const& _world) -> vuk::RenderGraph {
 	rg.attach_buffer(Material_n,
 		materialBuf,
 		vuk::eTransferDst,
+		vuk::eNone);
+	rg.attach_buffer(MeshIndexCulled_n,
+		meshIndexCulledBuf,
+		vuk::eNone,
 		vuk::eNone);
 	rg.attach_buffer(TransformCulled_n,
 		transformCulledBuf,

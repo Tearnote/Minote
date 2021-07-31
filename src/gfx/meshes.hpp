@@ -14,6 +14,16 @@ namespace minote::gfx {
 
 using namespace base;
 
+// Mesh metadata structure, for vertex access and analysis
+struct MeshDescriptor {
+	
+	u32 indexOffset;
+	u32 indexCount;
+	u32 vertexOffset;
+	f32 radius;
+	
+};
+
 // A set of buffers storing vertex data for all meshes, and how to access each
 // mesh within the buffer.
 struct MeshBuffer {
@@ -25,20 +35,9 @@ struct MeshBuffer {
 	
 	vuk::Unique<vuk::Buffer> indicesBuf;
 	
-	// Describes offsets of each mesh. Also contains a few per-mesh properties,
-	// which can be useful for constructing spatial structures.
-	struct Descriptor {
-		
-		u32 indexOffset;
-		u32 indexCount;
-		u32 vertexOffset;
-		f32 radius;
-		vec3 aabbMin;
-		vec3 aabbMax;
-		
-	};
-	svector<Descriptor, 256> descriptors; // Packed list of descriptors
-	hashmap<ID, usize> descriptorIDs; // Mapping from IDs to descriptor indices
+	ivector<MeshDescriptor> descriptors; // CPU-side mesh metadata
+	vuk::Unique<vuk::Buffer> descriptorBuf; // GPU-accessible mesh metadata
+	hashmap<ID, usize> descriptorIDs; // Mapping from IDs to descriptor buffer indices
 	
 };
 
@@ -62,15 +61,13 @@ struct MeshList {
 	
 private:
 	
-	using Descriptor = MeshBuffer::Descriptor;
-	
-	svector<Descriptor, 256> descriptors;
+	ivector<MeshDescriptor> descriptors;
 	hashmap<ID, usize> descriptorIDs;
 	
-	std::vector<vec3> vertices;
-	std::vector<vec3> normals;
-	std::vector<u16vec4> colors;
-	std::vector<u16> indices;
+	ivector<vec3> vertices;
+	ivector<vec3> normals;
+	ivector<u16vec4> colors;
+	ivector<u16> indices;
 	
 };
 

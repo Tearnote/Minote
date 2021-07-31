@@ -18,30 +18,18 @@ using namespace base;
 struct Indirect {
 	
 	static constexpr auto Commands_n = "indirect_commands";
-	static constexpr auto Metadata_n = "indirect_metadata";
 	static constexpr auto MeshIndex_n = "indirect_meshindex";
 	static constexpr auto Transform_n = "indirect_transform";
 	static constexpr auto Material_n = "indirect_material";
+	static constexpr auto MeshIndexCulled_n = "indirect_meshindex_culled";
 	static constexpr auto TransformCulled_n = "indirect_transform_culled";
 	static constexpr auto MaterialCulled_n = "indirect_material_culled";
-	
-	// A VkDrawIndexedIndirectCommand struct, expanded with custom data
-	struct Command {
-		
-		u32 indexCount;
-		u32 instanceCount;
-		u32 firstIndex;
-		i32 vertexOffset;
-		u32 firstInstance;
-		// =====
-		f32 meshRadius;
-		
-	};
 	
 	usize commandsCount;
 	vuk::Buffer commandsBuf;
 	
 	usize instancesCount;
+	vuk::Buffer meshIndexCulledBuf;
 	vuk::Buffer transformCulledBuf;
 	vuk::Buffer materialCulledBuf;
 	
@@ -49,13 +37,12 @@ struct Indirect {
 	Indirect(vuk::PerThreadContext&, Objects const&, MeshBuffer const&);
 	
 	// Perform sorting and frustum culling to fill in the Culled_n buffers.
-	auto sortAndCull(World const&) -> vuk::RenderGraph;
+	auto sortAndCull(World const&, MeshBuffer const&) -> vuk::RenderGraph;
 	
 private:
 	
 	inline static bool pipelinesCreated = false;
 	
-	vuk::Buffer metadataBuf;
 	vuk::Buffer meshIndexBuf;
 	vuk::Buffer transformBuf;
 	vuk::Buffer materialBuf;
