@@ -4,8 +4,10 @@ cmake_minimum_required(VERSION 3.17)
 project(Minote VERSION 0.0
         DESCRIPTION "Modern action puzzle game"
         LANGUAGES C CXX)
-cmake_policy(SET CMP0077 NEW)
-set(CMAKE_C_STANDARD 99)
+set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+set(CMAKE_POLICY_DEFAULT_CMP0117 NEW)
+set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED)
 set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
@@ -16,31 +18,27 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(MINOTE_USE_VULKAN_SDK "Use the Vulkan SDK for libraries instead of manual fetching" OFF)
 
-set(DISABLED_WARNINGS "-Wno-unknown-pragmas")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${DISABLED_WARNINGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DISABLED_WARNINGS}")
-
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif()
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:AVX2 /fp:fast /GR-")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX2 /fp:fast /GR-")
+
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -Wl,--gc-sections -mfpmath=sse -mmmx -msse -msse2")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -Wl,--gc-sections -mfpmath=sse -mmmx -msse -msse2")
-    if(CMAKE_BUILD_TYPE STREQUAL "Release")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -s")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s")
-    endif()
-    if(WIN32)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mwindows")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mwindows")
-    endif()
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Gw /Gy")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gw /Gy")
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif()
 
-if(WIN32)
-    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-    set(BUILD_SHARED_LIBS OFF)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
+else()
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDebug")
 endif()
+
+set(BUILD_SHARED_LIBS OFF)
 
 # Main executable
 
@@ -49,7 +47,6 @@ add_executable(Minote
         src/base/container/vector.hpp
         src/base/container/string.hpp
         src/base/container/array.hpp
-        src/base/container/ring.hpp src/base/container/ring.tpp
         src/base/memory/poolalloc.hpp
         src/base/memory/nullalloc.hpp
         src/base/memory/arena.hpp src/base/memory/arena.cpp
@@ -68,7 +65,7 @@ add_executable(Minote
         src/base/rng.hpp
         src/base/id.hpp
         src/sys/keyboard.hpp src/sys/keyboard.cpp
-        src/sys/window.hpp src/sys/window.tpp src/sys/window.cpp
+        src/sys/window.hpp src/sys/window.cpp
         src/sys/vulkan.hpp src/sys/vulkan.cpp
         src/sys/glfw.hpp src/sys/glfw.cpp
         src/gfx/module/iblCoeffs.hpp
@@ -87,21 +84,15 @@ add_executable(Minote
         src/gfx/world.hpp src/gfx/world.cpp
         src/gfx/base.hpp
         #src/playstate.hpp src/playstate.cpp
-        src/mapper.hpp src/mapper.tpp src/mapper.cpp
         src/assets.hpp src/assets.tpp src/assets.cpp
+        src/mapper.hpp src/mapper.cpp
         src/config.hpp
         src/memory.hpp
         src/game.hpp src/game.cpp
         src/main.hpp src/main.cpp
         src/mino.hpp src/mino.tpp)
-target_compile_options(Minote PRIVATE -Wall -Wextra -Wno-missing-field-initializers -fno-rtti)
-if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set_property(TARGET Minote PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-endif()
 target_include_directories(Minote PRIVATE src)
-if(WIN32)
-    target_link_libraries(Minote PRIVATE winmm)
-endif()
+target_link_libraries(Minote PRIVATE winmm)
 
 # Libraries
 
@@ -220,20 +211,19 @@ FetchContent_Declare(cgltf
         GIT_REPOSITORY https://github.com/jkuhlmann/cgltf
         GIT_TAG 1bdc84d3bb81fa69bcf71ed5cafe63e58df1448a)
 FetchContent_MakeAvailable(cgltf)
-add_library(cgltf ${cgltf_SOURCE_DIR}/cgltf.h ${cgltf_SOURCE_DIR}/cgltf_write.h)
-set_target_properties(cgltf PROPERTIES LINKER_LANGUAGE C)
-target_include_directories(cgltf PUBLIC ${cgltf_SOURCE_DIR})
+add_library(cgltf INTERFACE ${cgltf_SOURCE_DIR}/cgltf.h ${cgltf_SOURCE_DIR}/cgltf_write.h)
+target_include_directories(cgltf INTERFACE ${cgltf_SOURCE_DIR})
 target_link_libraries(Minote PRIVATE cgltf)
-
-find_package(OpenMP REQUIRED)
-target_link_libraries(Minote PRIVATE OpenMP::OpenMP_CXX)
 
 set(OPTICK_INSTALL_TARGETS OFF CACHE BOOL "")
 set(OPTICK_USE_VULKAN ON CACHE BOOL "")
 FetchContent_Declare(optick
         GIT_REPOSITORY https://github.com/Tearnote/optick
-        GIT_TAG acb520ea18914f2bff5615041eec14161ddc97a5)
+        GIT_TAG 5428b267f43f890e3cb13bef97f112a38fad839b)
 FetchContent_MakeAvailable(optick)
+target_compile_definitions(OptickCore PRIVATE VK_NO_PROTOTYPES)
+target_compile_definitions(OptickCore PRIVATE OPTICK_CUSTOM_VULKAN_HEADER="volk.h")
+target_link_libraries(OptickCore PRIVATE volk)
 target_link_libraries(Minote PRIVATE OptickCore)
 target_link_libraries(vuk PRIVATE OptickCore)
 
@@ -286,7 +276,7 @@ endforeach()
 
 add_custom_target(Compile_shaders DEPENDS ${SHADER_OUTPUTS})
 if(NOT MINOTE_USE_VULKAN_SDK)
-add_dependencies(Compile_shaders shaderc)
+        add_dependencies(Compile_shaders shaderc)
 endif()
 target_include_directories(Minote PRIVATE ${PROJECT_BINARY_DIR}/generated)
 add_dependencies(Minote Compile_shaders)

@@ -65,7 +65,8 @@ auto Glfw::getTime() -> nsec {
 }
 
 auto Glfw::getKeyName(Keycode keycode, Scancode scancode) const -> std::string_view {
-	return glfwGetKeyName(+keycode, +scancode)?: "Unknown";
+	auto result = glfwGetKeyName(+keycode, +scancode);
+	return result? result : "Unknown";
 }
 
 }

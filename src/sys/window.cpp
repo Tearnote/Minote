@@ -42,7 +42,7 @@ void Window::keyCallback(GLFWwindow* handle, int rawKeycode, int rawScancode, in
 
 	auto lock = std::scoped_lock(window.inputsMutex);
 	try {
-		window.inputs.push_back(input);
+		window.inputs.push(input);
 	} catch (...) {
 		L_WARN(R"(Window "{}" input queue full, key "{}" {} event dropped)",
 			window.title(), name, state == State::Pressed? "press" : "release");

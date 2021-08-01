@@ -1,11 +1,12 @@
 #pragma once
 
 #include <string_view>
+#include <concepts>
 #include <string>
 #include <atomic>
 #include <mutex>
+#include <queue>
 #include "base/types.hpp"
-#include "base/container/ring.hpp"
 #include "base/time.hpp"
 #include "base/math.hpp"
 #include "sys/keyboard.hpp"
@@ -62,7 +63,14 @@ struct Window {
 	// returned false) remain in the queue.
 	template<typename F>
 		requires std::predicate<F, KeyInput const&>
-	void processInputs(F func);
+	void processInputs(F func) {
+		auto lock = std::scoped_lock(inputsMutex);
+		
+		while(!inputs.empty()) {
+			if(!func(inputs.front())) return;
+			inputs.pop();
+		}
+	}
 
 	// Provide the raw GLFW handle. While required for certain tasks like Vulkan surface
 	// creation, be careful with any operations that might require synchronization.
@@ -92,7 +100,7 @@ private:
 	std::string m_title;
 
 	// Queue of collected keyboard inputs
-	ring<KeyInput, InputQueueSize> inputs;
+	std::queue<KeyInput> inputs;
 	mutable std::mutex inputsMutex;
 
 	// Size in physical pixels
@@ -124,5 +132,3 @@ private:
 };
 
 }
-
-#include "sys/window.tpp"

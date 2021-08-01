@@ -1,7 +1,8 @@
 #pragma once
 
 #include <optional>
-#include "base/container/ring.hpp"
+#include <concepts>
+#include <queue>
 #include "base/time.hpp"
 #include "sys/window.hpp"
 
@@ -41,15 +42,18 @@ struct Mapper {
 
 	template<typename F>
 		requires std::predicate<F, Action const&>
-	void processActions(F func);
+	void processActions(F func) {
+		while(!actions.empty()) {
+			if(!func(actions.front())) return;
+			actions.pop();
+		}
+	}
 
 private:
 
 	// Processed inputs, ready to be retrieved with peek/dequeueAction()
-	ring<Action, 64> actions;
+	std::queue<Action> actions;
 
 };
 
 }
-
-#include "mapper.tpp"

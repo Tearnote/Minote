@@ -573,7 +573,7 @@ constexpr auto look(vec<3, Prec> _pos, vec<3, Prec> _dir, vec<3, Prec> _up) -> m
 	
 }
 
-template<floating_point Prec = f32>
+template<floating_point Prec>
 constexpr auto perspective(Prec _vFov, Prec _aspectRatio, Prec _zNear) -> mat<4, Prec> {
 	
 	auto range = tan(_vFov / Prec(2)) * _zNear;

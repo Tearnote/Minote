@@ -209,15 +209,15 @@ constexpr auto length(vec<Dim, T> const& v) -> T {
 }
 
 // Square of vector length (faster to compute than length)
-template<usize Dim, std::floating_point T>
+template<usize Dim, floating_point T>
 constexpr auto length2(vec<Dim, T> const& v) -> T { return dot(v, v); }
 
 // true if vector has the length of 1 (within reasonable epsilon)
-template<usize Dim, std::floating_point T>
+template<usize Dim, floating_point T>
 constexpr auto isUnit(vec<Dim, T> const& v) -> bool { return (abs(length2(v) - 1) < (1.0 / 16.0)); }
 
 // Constructs a vector in the same direction but length 1
-template<usize Dim, std::floating_point T>
+template<usize Dim, floating_point T>
 constexpr auto normalize(vec<Dim, T> const&) -> vec<Dim, T>;
 
 //=== GLSL-like vector aliases

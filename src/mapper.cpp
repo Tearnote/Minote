@@ -62,7 +62,7 @@ void Mapper::collectKeyInputs(sys::Window& window) {
 		auto timestamp = sys::Glfw::getTime();
 
 		try {
-			actions.push_back({
+			actions.push({
 				.type = type,
 				.state = state,
 				.timestamp = timestamp,
