@@ -4,6 +4,8 @@
 
 namespace minote::gfx {
 
+// Commonly used sampler presets.
+
 constexpr auto LinearClamp = vuk::SamplerCreateInfo{
 	.magFilter = vuk::Filter::eLinear,
 	.minFilter = vuk::Filter::eLinear,

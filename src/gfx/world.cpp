@@ -1,5 +1,7 @@
 #include "gfx/world.hpp"
 
+#include <cstring>
+
 namespace minote::gfx {
 
 auto World::upload(vuk::PerThreadContext& _ptc) -> vuk::Buffer {

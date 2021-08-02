@@ -8,6 +8,7 @@ namespace minote::gfx {
 
 using namespace base;
 
+// Struct of global data, commonly used by shaders.
 struct World {
 	
 	mat4 view;
@@ -17,12 +18,13 @@ struct World {
 	uvec2 viewportSize;
 	vec2 pad0;
 	vec3 cameraPos;
-	float pad1;
+	f32 pad1;
 	
 	vec3 sunDirection;
-	float pad2;
+	f32 pad2;
 	vec3 sunIlluminance;
 	
+	// Upload the world data to the GPU, to be used as a uniform.
 	auto upload(vuk::PerThreadContext&) -> vuk::Buffer;
 	
 };
