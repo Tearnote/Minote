@@ -1,5 +1,8 @@
 #ifdef SKY_USE_WORLD
 #include "../world.glsl"
+layout(binding = 0) uniform WorldConstants {
+	World world;
+};
 #endif
 
 #define PI 3.1415926535897932384626433832795
@@ -302,8 +305,9 @@ vec3 GetMultipleScattering(vec3 scattering, vec3 extinction, vec3 worldPos, floa
 }
 #endif
 
-SingleScatteringResult IntegrateScatteredLuminance(in vec3 WorldPos, in vec3 WorldDir, in vec3 SunDir,
-in bool ground, in float SampleCountIni, in bool VariableSampleCount, in bool MieRayPhase, in float tMaxMax) {
+SingleScatteringResult IntegrateScatteredLuminance(vec3 WorldPos, vec3 WorldDir, vec3 SunDir,
+bool ground, float SampleCountIni, bool VariableSampleCount, bool MieRayPhase, float tMaxMax,
+vec3 SunIlluminance) {
 	SingleScatteringResult result = {vec3(0), vec3(0), vec3(0), vec3(0), vec3(0), vec3(0)};
 
 	// Compute next intersection with atmosphere or ground
@@ -331,7 +335,7 @@ in bool ground, in float SampleCountIni, in bool VariableSampleCount, in bool Mi
 	if (VariableSampleCount) {
 		SampleCount = mix(RAYMARCH_MIN_SPP, RAYMARCH_MAX_SPP, clamp(tMax*0.01, 0.0, 1.0));
 		SampleCountFloor = floor(SampleCount);
-		tMaxFloor = tMax * SampleCountFloor / SampleCount;	// rescale tMax to map to the last entire step segment.
+		tMaxFloor = tMax * SampleCountFloor / SampleCount; // rescale tMax to map to the last entire step segment.
 	}
 	float dt = tMax / SampleCount;
 
@@ -340,16 +344,12 @@ in bool ground, in float SampleCountIni, in bool VariableSampleCount, in bool Mi
 	const vec3 wi = SunDir;
 	const vec3 wo = WorldDir;
 	float cosTheta = dot(wi, wo);
-	float MiePhaseValue = CornetteShanksMiePhaseFunction(Atmosphere.MiePhaseG, -cosTheta);	// negate cosTheta due to WorldDir being a "in" direction.
+	float MiePhaseValue = CornetteShanksMiePhaseFunction(Atmosphere.MiePhaseG, -cosTheta); // negate cosTheta due to WorldDir being a "in" direction.
 	float RayleighPhaseValue = RayleighPhase(cosTheta);
 
-#ifdef ILLUMINANCE_IS_ONE
 	// When building the scattering factor, we assume light illuminance is 1 to compute a transfer function relative to identity illuminance of 1.
 	// This make the scattering factor independent of the light. It is now only linked to the atmosphere properties.
-	vec3 globalL = vec3(1.0);
-#else
-	vec3 globalL = world.sunIlluminance;
-#endif
+	vec3 globalL = SunIlluminance;
 
 	// Ray march the atmosphere to integrate optical depth
 	vec3 L = vec3(0.0);

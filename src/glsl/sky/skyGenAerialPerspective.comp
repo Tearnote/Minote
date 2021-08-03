@@ -71,7 +71,7 @@ void main() {
 	const bool VariableSampleCount = false;
 	const bool MieRayPhase = true;
 	SingleScatteringResult ss = IntegrateScatteredLuminance(WorldPos, WorldDir, SunDir,
-	ground, SampleCountIni, VariableSampleCount, MieRayPhase, tMaxMax);
+	ground, SampleCountIni, VariableSampleCount, MieRayPhase, tMaxMax, world.sunIlluminance);
 
 
 	const float Transmittance = dot(ss.Transmittance, vec3(1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0));

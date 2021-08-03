@@ -62,7 +62,7 @@ void main() {
 	const bool VariableSampleCount = true;
 	const bool MieRayPhase = true;
 	SingleScatteringResult ss = IntegrateScatteredLuminance(WorldPos, WorldDir, SunDir,
-	ground, SampleCountIni, VariableSampleCount, MieRayPhase, 9000000.0);
+	ground, SampleCountIni, VariableSampleCount, MieRayPhase, 9000000.0, world.sunIlluminance);
 
 	vec3 L = ss.L;
 	imageStore(skyView, ivec2(gid), vec4(L, 1.0));

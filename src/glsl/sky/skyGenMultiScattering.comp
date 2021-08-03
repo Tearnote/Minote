@@ -5,7 +5,6 @@ layout(local_size_x = 1, local_size_y = 1, local_size_z = 64) in;
 
 layout(set = 1, binding = 0, rgba16f) restrict writeonly uniform image2D multiScattering;
 
-#define ILLUMINANCE_IS_ONE
 #include "sky.glsl"
 
 shared vec3 MultiScatAs1SharedMem[64];
@@ -53,7 +52,7 @@ void main() {
 		WorldDir.y = sinTheta * sinPhi;
 		WorldDir.z = cosPhi;
 		SingleScatteringResult result = IntegrateScatteredLuminance(WorldPos, WorldDir, sunDir,
-		ground, SampleCountIni, VariableSampleCount, MieRayPhase, 9000000.0);
+		ground, SampleCountIni, VariableSampleCount, MieRayPhase, 9000000.0, vec3(1.0));
 
 		MultiScatAs1SharedMem[gid.z] = result.MultiScatAs1 * SphereSolidAngle / (sqrtSample * sqrtSample);
 		LSharedMem[gid.z] = result.L * SphereSolidAngle / (sqrtSample * sqrtSample);
