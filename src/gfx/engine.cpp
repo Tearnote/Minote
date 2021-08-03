@@ -42,7 +42,7 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	m_meshes = std::move(_meshList).upload(ptc);
 	m_atmosphere = Atmosphere(ptc, Atmosphere::Params::earth());
 	m_ibl = IBLMap(ptc);
-	m_objects = Objects();
+	m_objects = ObjectPool();
 	
 	// Perform precalculations
 	auto precalc = m_atmosphere->precalculate();

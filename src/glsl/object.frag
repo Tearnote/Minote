@@ -1,6 +1,8 @@
 #version 460
 #pragma shader_stage(fragment)
 
+#include "types.glsl"
+
 layout(location = 0) in flat uint InstanceIndex;
 layout(location = 1) in vec3 f_position;
 layout(location = 2) in vec4 f_color;
@@ -9,15 +11,8 @@ layout(location = 4) in vec3 f_viewPosition;
 
 layout(location = 0) out vec4 out_color;
 
-layout(std430, binding = 1) readonly buffer Transform {
-	mat4 transform[];
-};
-
-struct Material {
-	vec4 tint;
-	float roughness;
-	float metalness;
-	vec2 pad;
+layout(std430, binding = 1) readonly buffer RowTransforms {
+	RowTransform transforms[];
 };
 layout(std430, binding = 2) readonly buffer Materials {
 	Material materials[];

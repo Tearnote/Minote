@@ -345,6 +345,69 @@ constexpr auto perspective(Prec vFov, Prec aspectRatio, Prec zNear) -> mat<4, Pr
 using mat3 = mat<3, f32>;
 using mat4 = mat<4, f32>;
 
+// Quaternion, equivalent to a vec4 but with unique operations available.
+// Main purpose is representing rotations. Data layout is {w, x, y, z}.
+template<floating_point Prec = f32>
+struct qua {
+	
+	//=== Creation
+	
+	// Uninitialized init
+	constexpr qua() = default;
+	
+	// Create the quaternion with provided {w, x, y, z} values
+	constexpr qua(std::initializer_list<Prec>);
+	
+	// Convert a position vector into a quaternion
+	template<usize N>
+	requires (N == 3 || N == 4)
+	constexpr qua(vec<N, Prec> const&);
+	
+	// Create a unit quaternion that represents no rotation
+	static constexpr auto identity() -> qua<Prec> { return qua<Prec>{1, 0, 0, 0}; }
+	
+	// Create a unit quaternion that represents a rotation around an arbitrary axis
+	static constexpr auto angleAxis(Prec angle, vec<3, Prec> axis) -> qua<Prec>;
+	
+	//=== Conversion
+	
+	// Type cast
+	template<arithmetic U>
+	requires (!std::same_as<Prec, U>)
+	explicit constexpr qua(qua<U> const&);
+	
+	//=== Member access
+	
+	constexpr auto at(usize n) -> Prec& { return m_arr[n]; }
+	constexpr auto at(usize n) const -> Prec { return m_arr[n]; }
+	
+	constexpr auto operator[](usize n) -> Prec& { return at(n); }
+	constexpr auto operator[](usize n) const -> Prec { return at(n); }
+	
+	constexpr auto w() -> Prec& { return m_arr[0]; }
+	constexpr auto w() const -> Prec { return m_arr[0]; }
+	constexpr auto x() -> Prec& { return m_arr[1]; }
+	constexpr auto x() const -> Prec { return m_arr[1]; }
+	constexpr auto y() -> Prec& { return m_arr[2]; }
+	constexpr auto y() const -> Prec { return m_arr[2]; }
+	constexpr auto z() -> Prec& { return m_arr[3]; }
+	constexpr auto z() const -> Prec { return m_arr[3]; }
+	
+private:
+	
+	sarray<Prec, 4> m_arr;
+	
+};
+
+// Binary quaternion operations
+
+template<floating_point Prec>
+constexpr auto operator*(qua<Prec> const&, qua<Prec> const&) -> qua<Prec>;
+
+//=== Quaternion alias
+
+using quat = qua<f32>;
+
 //=== Conversion literals
 
 namespace literals {

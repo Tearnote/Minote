@@ -594,4 +594,61 @@ constexpr auto perspective(Prec _vFov, Prec _aspectRatio, Prec _zNear) -> mat<4,
 	
 }
 
+template<floating_point Prec>
+constexpr qua<Prec>::qua(std::initializer_list<Prec> _list) {
+	
+	assert(_list.size() == m_arr.size());
+	std::copy(_list.begin(), _list.end(), m_arr.begin());
+	
+}
+
+template<floating_point Prec>
+template<usize N>
+requires (N == 3 || N == 4)
+constexpr qua<Prec>::qua(vec<N, Prec> const& _other) {
+	
+	m_arr[0] = 0;
+	m_arr[1] = _other.x();
+	m_arr[2] = _other.y();
+	m_arr[3] = _other.z();
+	
+}
+
+template<floating_point Prec>
+constexpr auto qua<Prec>::angleAxis(Prec _angle, vec<3, Prec> _axis) -> qua<Prec> {
+	
+	assert(isUnit(_axis));
+	
+	auto halfAngle = _angle / Prec(2);
+	auto sinHalfAngle = sin(halfAngle);
+	
+	return qua<Prec>{
+		cos(halfAngle),
+		sinHalfAngle * _axis[0],
+		sinHalfAngle * _axis[1],
+		sinHalfAngle * _axis[2]};
+	
+}
+
+template<floating_point Prec>
+template<arithmetic U>
+requires (!std::same_as<Prec, U>)
+constexpr qua<Prec>::qua(qua<U> const& _other) {
+	
+	for (auto i: iota(0_zu, m_arr.size()))
+		m_arr[i] = _other[i];
+	
+}
+
+template<floating_point Prec>
+constexpr auto operator*(qua<Prec> const& _l, qua<Prec> const& _r) -> qua<Prec> {
+	
+	return qua<Prec>{
+		-_l.x() * _r.x() - _l.y() * _r.y() - _l.z() * _r.z() + _l.w() * _r.w(),
+		 _l.x() * _r.w() + _l.y() * _r.z() - _l.z() * _r.y() + _l.w() * _r.x(),
+		-_l.x() * _r.z() + _l.y() * _r.w() + _l.z() * _r.x() + _l.w() * _r.y(),
+		 _l.x() * _r.y() - _l.y() * _r.x() + _l.z() * _r.w() + _l.w() * _r.z()};
+	
+}
+
 }

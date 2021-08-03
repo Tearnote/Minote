@@ -36,7 +36,7 @@ struct Engine {
 	// Subcomponent access
 	
 	// Use freely to add/remove/modify objects for drawing
-	auto objects() -> Objects& { return *m_objects; }
+	auto objects() -> ObjectPool& { return *m_objects; }
 	
 	// Use freely to modify the rendering camera
 	auto camera() -> Camera& { return m_camera; }
@@ -47,7 +47,7 @@ private:
 	
 	ImguiData m_imguiData;
 	std::optional<MeshBuffer> m_meshes;
-	std::optional<Objects> m_objects;
+	std::optional<ObjectPool> m_objects;
 	Camera m_camera;
 	
 	World m_world;

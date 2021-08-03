@@ -1,6 +1,8 @@
 #version 460
 #pragma shader_stage(vertex)
 
+#include "types.glsl"
+
 layout(location = 0) in vec3 v_position;
 layout(location = 1) in vec3 v_normal;
 layout(location = 2) in vec4 v_color;
@@ -11,15 +13,8 @@ layout(location = 2) out vec4 f_color;
 layout(location = 3) out vec3 f_normal;
 layout(location = 4) out vec3 f_viewPosition;
 
-layout(std430, binding = 1) readonly buffer Transform {
-	mat4 transforms[];
-};
-
-struct Material {
-	vec4 tint;
-	float roughness;
-	float metalness;
-	vec2 pad;
+layout(std430, binding = 1) readonly buffer RowTransforms {
+	RowTransform transforms[];
 };
 layout(std430, binding = 2) readonly buffer Materials {
 	Material materials[];
@@ -29,7 +24,7 @@ layout(std430, binding = 2) readonly buffer Materials {
 
 void main() {
 	InstanceIndex = gl_InstanceIndex;
-	const mat4 transform = transforms[InstanceIndex];
+	const mat4 transform = getTransform(transforms[gl_InstanceIndex]);
 
 	gl_Position = world.viewProjection * transform * vec4(v_position, 1.0);
 	f_position = vec3(transform * vec4(v_position, 1.0));

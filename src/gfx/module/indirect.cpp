@@ -16,7 +16,7 @@ using namespace base;
 using namespace base::literals;
 
 Indirect::Indirect(vuk::PerThreadContext& _ptc,
-	Objects const& _objects, MeshBuffer const& _meshes) {
+	ObjectPool const& _objects, MeshBuffer const& _meshes) {
 	
 	OPTICK_EVENT("Indirect::Indirect");
 	
@@ -39,8 +39,8 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 	// Iterate through all valid instances
 	
 	auto meshIndices = array<u32, Scratch>(_objects.size());
-	auto transforms = array<mat4, Scratch>(_objects.size());
-	auto materials = array<Objects::Material, Scratch>(_objects.size());
+	auto transforms = array<ObjectPool::Transform, Scratch>(_objects.size());
+	auto materials = array<ObjectPool::Material, Scratch>(_objects.size());
 	
 	instancesCount = 0;
 	for (auto id: iota(ObjectID(0), _objects.size())) {
@@ -49,13 +49,13 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 		if (!metadata.exists || !metadata.visible)
 			continue;
 		
-		auto meshID = _objects.meshID[id];
+		auto meshID = _objects.meshIDs[id];
 		auto meshIndex = _meshes.descriptorIDs.at(meshID);
 		commands[meshIndex].instanceCount += 1;
 		
 		meshIndices[instancesCount] = meshIndex;
-		transforms[instancesCount] = _objects.transform[id];
-		materials[instancesCount] = _objects.material[id];
+		transforms[instancesCount] = _objects.transforms[id];
+		materials[instancesCount] = _objects.materials[id];
 		
 		instancesCount += 1;
 		
@@ -98,12 +98,12 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 		return buf;
 		
 	};
-	auto createEmpty = [this, &_ptc, commandOffset]<typename T>(std::span<T>) {
+	auto createEmpty = [this, &_ptc](usize bytes) {
 		
 		return _ptc.allocate_scratch_buffer(
 			vuk::MemoryUsage::eGPUonly,
 			vuk::BufferUsageFlagBits::eStorageBuffer,
-			sizeof(T) * instancesCount, alignof(T));
+			bytes, sizeof(f32));
 		
 	};
 	
@@ -111,9 +111,9 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 	transformBuf = createAndUpload(std::span(transforms));
 	materialBuf  = createAndUpload(std::span(materials));
 	
-	meshIndexCulledBuf = createEmpty(std::span(meshIndices));
-	transformCulledBuf = createEmpty(std::span(transforms));
-	materialCulledBuf  = createEmpty(std::span(materials));
+	meshIndexCulledBuf = createEmpty(sizeof(u32) * instancesCount);
+	transformCulledBuf = createEmpty(sizeof(vec4) * 3 * instancesCount);
+	materialCulledBuf  = createEmpty(sizeof(ObjectPool::Material) * instancesCount);
 	
 	ImGui::Text("Object count: %llu", instancesCount);
 	

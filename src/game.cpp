@@ -66,7 +66,6 @@ void game(sys::Glfw&, sys::Window& window) try {
 	// Create renderable objects
 	
 	auto dynamicObjects = std::vector<gfx::ObjectID>();
-	auto dynamicObjectPositions = std::vector<vec3>();
 	defer {
 		for (auto id: dynamicObjects)
 			engine.objects().destroy(id);
@@ -74,109 +73,100 @@ void game(sys::Glfw&, sys::Window& window) try {
 	
 	auto const Expand = 20u;
 	auto prescale = vec3{1_m, 1_m, 1_m};
-	auto rotation = mat3::rotate({1.0f, 0.0f, 0.0f}, 180_deg);
+	auto rotation = quat::angleAxis(180_deg, {1.0f, 0.0f, 0.0f});
 	constexpr auto Spacing = 25_m;
 	for (auto x = -Spacing * Expand; x <= Spacing * Expand; x += Spacing)
 	for (auto y = -Spacing * Expand; y <= Spacing * Expand; y += Spacing) {
 		auto offset = vec3{x, y, 64_m};
 		
-		auto block1 = engine.objects().create();
-		engine.objects().meshID[block1] = "block"_id;
-		engine.objects().transform[block1] = 
-			mat4::translate(vec3{0_m, 0_m, 0_m} + offset) *
-			mat4(rotation) *
-			mat4::scale(vec3{12.0f, 12.0f, 1.0f} * prescale);
-		engine.objects().material[block1] = gfx::Objects::Material{
-			.tint = {0.9f, 0.9f, 1.0f, 1.0f},
-			.roughness = 0.6f,
-			.metalness = 0.1f};
+		auto block1_id = engine.objects().create();
+		auto block1 = engine.objects().get(block1_id);
+		block1.meshID = "block"_id;
+		block1.transform.position = offset;
+		block1.transform.scale = vec3{12.0f, 12.0f, 1.0f} * prescale;
+		block1.transform.rotation = rotation;
+		block1.material.tint = {0.9f, 0.9f, 1.0f, 1.0f};
+		block1.material.roughness = 0.6f;
+		block1.material.metalness = 0.1f;
 		
-		auto block2 = engine.objects().create();
-		engine.objects().meshID[block2] = "block"_id;
-		engine.objects().transform[block2] = 
-			mat4::translate(vec3{-4_m, -4_m, 2_m} + offset) *
-			mat4(rotation) *
-			mat4::scale(prescale);
-		engine.objects().material[block2] = gfx::Objects::Material{
-			.tint = {0.9f, 0.1f, 0.1f, 1.0f},
-			.roughness = 0.6f,
-			.metalness = 0.1f};
+		auto block2_id = engine.objects().create();
+		auto block2 = engine.objects().get(block2_id);
+		block2.meshID = "block"_id;
+		block2.transform.position = vec3{-4_m, -4_m, 2_m} + offset;
+		block2.transform.scale = prescale;
+		block2.transform.rotation = rotation;
+		block2.material.tint = {0.9f, 0.1f, 0.1f, 1.0f};
+		block2.material.roughness = 0.6f;
+		block2.material.metalness = 0.1f;
 		
-		auto block3 = engine.objects().create();
-		engine.objects().meshID[block3] = "block"_id;
-		engine.objects().transform[block3] = 
-			mat4::translate(vec3{4_m, -4_m, 2_m} + offset) *
-			mat4(rotation) *
-			mat4::scale(prescale);
-		engine.objects().material[block3] = gfx::Objects::Material{
-			.tint = {0.9f, 0.1f, 0.1f, 1.0f},
-			.roughness = 0.6f,
-			.metalness = 0.1f};
+		auto block3_id = engine.objects().create();
+		auto block3 = engine.objects().get(block3_id);
+		block3.meshID = "block"_id;
+		block3.transform.position = vec3{4_m, -4_m, 2_m} + offset;
+		block3.transform.scale = prescale;
+		block3.transform.rotation = rotation;
+		block3.material.tint = {0.9f, 0.1f, 0.1f, 1.0f};
+		block3.material.roughness = 0.6f;
+		block3.material.metalness = 0.1f;
 		
-		auto block4 = engine.objects().create();
-		engine.objects().meshID[block4] = "block"_id;
-		engine.objects().transform[block4] = 
-			mat4::translate(vec3{-4_m, 4_m, 2_m} + offset) *
-			mat4(rotation) *
-			mat4::scale(prescale);
-		engine.objects().material[block4] = gfx::Objects::Material{
-			.tint = {0.9f, 0.1f, 0.1f, 1.0f},
-			.roughness = 0.6f,
-			.metalness = 0.1f};
+		auto block4_id = engine.objects().create();
+		auto block4 = engine.objects().get(block4_id);
+		block4.meshID = "block"_id;
+		block4.transform.position = vec3{-4_m, 4_m, 2_m} + offset;
+		block4.transform.scale = prescale;
+		block4.transform.rotation = rotation;
+		block4.material.tint = {0.9f, 0.1f, 0.1f, 1.0f};
+		block4.material.roughness = 0.6f;
+		block4.material.metalness = 0.1f;
 		
-		auto block5 = engine.objects().create();
-		engine.objects().meshID[block5] = "block"_id;
-		engine.objects().transform[block5] = 
-			mat4::translate(vec3{4_m, 4_m, 2_m} + offset) *
-			mat4(rotation) *
-			mat4::scale(prescale);
-		engine.objects().material[block5] = gfx::Objects::Material{
-			.tint = {0.9f, 0.1f, 0.1f, 1.0f},
-			.roughness = 0.6f,
-			.metalness = 0.1f};
+		auto block5_id = engine.objects().create();
+		auto block5 = engine.objects().get(block5_id);
+		block5.meshID = "block"_id;
+		block5.transform.position = vec3{4_m, 4_m, 2_m} + offset;
+		block5.transform.scale = prescale;
+		block5.transform.rotation = rotation;
+		block5.material.tint = {0.9f, 0.1f, 0.1f, 1.0f};
+		block5.material.roughness = 0.6f;
+		block5.material.metalness = 0.1f;
 		
-		auto block6 = engine.objects().create();
-		engine.objects().meshID[block6] = "block"_id;
-		engine.objects().transform[block6] = 
-			mat4::translate(vec3{7_m, 0_m, 2_m} + offset) *
-			mat4(rotation) *
-			mat4::scale(prescale);
-		engine.objects().material[block6] = gfx::Objects::Material{
-			.tint = {0.1f, 0.1f, 0.9f, 1.0f},
-			.roughness = 0.6f,
-			.metalness = 0.1f};
+		auto block6_id = engine.objects().create();
+		auto block6 = engine.objects().get(block6_id);
+		block6.meshID = "block"_id;
+		block6.transform.position = vec3{7_m, 0_m, 2_m} + offset;
+		block6.transform.scale = prescale;
+		block6.transform.rotation = rotation;
+		block6.material.tint = {0.1f, 0.1f, 0.9f, 1.0f};
+		block6.material.roughness = 0.6f;
+		block6.material.metalness = 0.1f;
 		
-		auto block7 = engine.objects().create();
-		dynamicObjects.emplace_back(block7);
-		dynamicObjectPositions.emplace_back(vec3{0_m, 0_m, 2.5_m} + offset);
-		engine.objects().meshID[block7] = "block"_id;
-		engine.objects().material[block7] = gfx::Objects::Material{
-			.tint = {0.2f, 0.9f, 0.5f, 1.0f},
-			.roughness = 0.2f,
-			.metalness = 0.9f};
+		auto block7_id = engine.objects().create();
+		auto block7 = engine.objects().get(block7_id);
+		dynamicObjects.emplace_back(block7_id);
+		block7.meshID = "block"_id;
+		block7.transform.position = vec3{0_m, 0_m, 2.5_m} + offset;
+		block7.transform.scale = vec3{1.5f, 1.5f, 1.5f} * prescale;
+		block7.material.tint = {0.2f, 0.9f, 0.5f, 1.0f};
+		block7.material.roughness = 0.2f;
+		block7.material.metalness = 0.9f;
 		
 		for (auto i = 0.0f; i <= 1.0f; i += 0.125f) {
 			auto offset2 = offset + vec3{(i - 0.5f) * 2.0f * 8_m, 0_m, 0_m};
 			
-			auto sphere1 = engine.objects().create();
-			engine.objects().meshID[sphere1] = "sphere"_id;
-			engine.objects().transform[sphere1] = 
-				mat4::translate(vec3{0_m, 8_m, 2_m} + offset2) *
-				mat4::scale(prescale);
-			engine.objects().material[sphere1] = gfx::Objects::Material{
-				.tint = {1.0f, 1.0f, 1.0f, 1.0f},
-				.roughness = i,
-				.metalness = 0.9f};
+			auto sphere1_id = engine.objects().create();
+			auto sphere1 = engine.objects().get(sphere1_id);
+			sphere1.meshID = "sphere"_id;
+			sphere1.transform.position = vec3{0_m, 8_m, 2_m} + offset2;
+			sphere1.transform.scale = prescale;
+			sphere1.material.roughness = i;
+			sphere1.material.metalness = 0.9f;
 			
-			auto sphere2 = engine.objects().create();
-			engine.objects().meshID[sphere2] = "sphere"_id;
-			engine.objects().transform[sphere2] = 
-				mat4::translate(vec3{0_m, -8_m, 2_m} + offset2) *
-				mat4::scale(prescale);
-			engine.objects().material[sphere2] = gfx::Objects::Material{
-				.tint = {1.0f, 1.0f, 1.0f, 1.0f},
-				.roughness = i,
-				.metalness = 0.1f};
+			auto sphere2_id = engine.objects().create();
+			auto sphere2 = engine.objects().get(sphere2_id);
+			sphere2.meshID = "sphere"_id;
+			sphere2.transform.position = vec3{0_m, -8_m, 2_m} + offset2;
+			sphere2.transform.scale = prescale;
+			sphere2.material.roughness = i;
+			sphere2.material.metalness = 0.1f;
 		}
 	}
 	
@@ -254,14 +244,10 @@ void game(sys::Glfw&, sys::Window& window) try {
 		
 		{
 			OPTICK_EVENT("Update spinny squares");
-			auto rotateTransform = mat3::rotate({1.0f, 0.0f, 0.0f}, 180_deg);
-			auto rotateTransformAnim = mat3::rotate({0.0f, 0.0f, 1.0f}, radians(ratio(sys::Glfw::getTime(), 20_ms)));
-			for (auto& obj: dynamicObjects) {
-			engine.objects().transform[obj] = 
-				mat4::translate(dynamicObjectPositions[&obj - &dynamicObjects[0]]) *
-				mat4(rotateTransformAnim * rotateTransform) *
-				mat4::scale(vec3{1.5f, 1.5f, 1.5f} * prescale);
-			}
+			auto rotateTransform = quat::angleAxis(180_deg, {1.0f, 0.0f, 0.0f});
+			auto rotateTransformAnim = quat::angleAxis(radians(ratio(sys::Glfw::getTime(), 20_ms)), {0.0f, 0.0f, 1.0f});
+			for (auto& obj: dynamicObjects)
+				engine.objects().get(obj).transform.rotation = rotateTransformAnim * rotateTransform;
 		}
 		
 		engine.render();

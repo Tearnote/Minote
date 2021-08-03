@@ -3,10 +3,11 @@
 #include "vuk/RenderGraph.hpp"
 #include "vuk/Context.hpp"
 #include "vuk/Buffer.hpp"
+#include "base/container/array.hpp"
+#include "base/types.hpp"
 #include "gfx/objects.hpp"
 #include "gfx/meshes.hpp"
 #include "gfx/world.hpp"
-#include "base/types.hpp"
 
 namespace minote::gfx {
 
@@ -34,7 +35,7 @@ struct Indirect {
 	vuk::Buffer materialCulledBuf;
 	
 	// Upload object data into temporary buffers.
-	Indirect(vuk::PerThreadContext&, Objects const&, MeshBuffer const&);
+	Indirect(vuk::PerThreadContext&, ObjectPool const&, MeshBuffer const&);
 	
 	// Perform sorting and frustum culling to fill in the Culled_n buffers.
 	auto sortAndCull(World const&, MeshBuffer const&) -> vuk::RenderGraph;
