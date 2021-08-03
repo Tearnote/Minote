@@ -2,6 +2,7 @@
 #pragma shader_stage(fragment)
 
 #include "types.glsl"
+#include "world.glsl"
 
 layout(location = 0) in flat uint InstanceIndex;
 layout(location = 1) in vec3 f_position;
@@ -10,6 +11,10 @@ layout(location = 3) in vec3 f_normal;
 layout(location = 4) in vec3 f_viewPosition;
 
 layout(location = 0) out vec4 out_color;
+
+layout(binding = 0) uniform WorldConstants {
+	World world;
+};
 
 layout(std430, binding = 1) readonly buffer RowTransforms {
 	RowTransform transforms[];
@@ -24,7 +29,6 @@ layout(binding = 3) restrict readonly buffer SunLuminance {
 layout(binding = 4) uniform samplerCube cubemap;
 layout(binding = 5) uniform sampler3D aerialPerspective;
 
-#include "world.glsl"
 #include "util.glsl"
 
 vec3 envBRDFApprox(vec3 f0, float NoV, float roughness) {

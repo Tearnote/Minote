@@ -2,6 +2,7 @@
 #pragma shader_stage(vertex)
 
 #include "types.glsl"
+#include "world.glsl"
 
 layout(location = 0) in vec3 v_position;
 layout(location = 1) in vec3 v_normal;
@@ -13,14 +14,16 @@ layout(location = 2) out vec4 f_color;
 layout(location = 3) out vec3 f_normal;
 layout(location = 4) out vec3 f_viewPosition;
 
+layout(binding = 0) uniform WorldConstants {
+	World world;
+};
+
 layout(std430, binding = 1) readonly buffer RowTransforms {
 	RowTransform transforms[];
 };
 layout(std430, binding = 2) readonly buffer Materials {
 	Material materials[];
 };
-
-#include "world.glsl"
 
 void main() {
 	InstanceIndex = gl_InstanceIndex;

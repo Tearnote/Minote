@@ -1,4 +1,4 @@
-layout(binding = 0) uniform World {
+struct World {
 	
 	mat4 view;
 	mat4 projection;
@@ -13,4 +13,4 @@ layout(binding = 0) uniform World {
 	float pad2;
 	vec3 sunIlluminance;
 	
-} world;
+};
