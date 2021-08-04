@@ -1,14 +1,18 @@
 #version 460
 #pragma shader_stage(fragment)
 
+#include "../world.glsl"
+#include "sky.glsl"
+
 layout(location = 0) in vec2 f_texCoords;
 
 layout(location = 0) out vec4 out_color;
 
-layout(set = 1, binding = 0) uniform sampler2D skyView;
+layout(binding = 0) uniform WorldConstants {
+	World world;
+};
 
-#define SKY_USE_WORLD
-#include "sky.glsl"
+layout(set = 1, binding = 0) uniform sampler2D skyView;
 
 void main() {
 	const ivec2 viewSize = textureSize(skyView, 0);
@@ -35,6 +39,6 @@ void main() {
 
 	SkyViewLutParamsToUv(IntersectGround, viewZenithCosAngle, lightViewCosAngle, viewSize, viewHeight, uv);
 	vec3 skyView = textureLod(skyView, uv, 0.0).rgb;
-	vec3 sun = GetSunLuminance(WorldPos, WorldDir, Atmosphere.BottomRadius) * (120000.0 / world.sunIlluminance);
+	vec3 sun = GetSunLuminance(WorldPos, WorldDir, Atmosphere.BottomRadius, world.sunDirection, world.sunIlluminance) * (120000.0 / world.sunIlluminance);
 	out_color = vec4(skyView + sun, 1.0);
 }

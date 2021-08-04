@@ -3,6 +3,13 @@
 
 layout(local_size_x = 8, local_size_y = 8) in;
 
+#include "../world.glsl"
+#include "sky.glsl"
+
+layout(binding = 0) uniform WorldConstants {
+	World world;
+};
+
 layout(set = 1, binding = 0) uniform sampler2D skyView;
 layout(set = 1, binding = 1, rgba16f) restrict writeonly uniform imageCube cubemap;
 layout(set = 1, binding = 2) uniform Sides {
@@ -14,9 +21,6 @@ layout(set = 1, binding = 3) restrict writeonly buffer SunLuminance {
 layout(push_constant) uniform ProbePosition {
 	vec3 probePosition;
 };
-
-#define SKY_USE_WORLD
-#include "sky.glsl"
 
 void main() {
 	const uvec3 gid = gl_GlobalInvocationID;
@@ -52,7 +56,7 @@ void main() {
 	// 	vec3 sun = GetSunLuminance(WorldPos, world.sunDirection, Atmosphere.BottomRadius);
 	// 	sunLuminance = sun;
 	// }
-	vec3 sun = GetSunLuminance(WorldPos, world.sunDirection, Atmosphere.BottomRadius);
+	vec3 sun = GetSunLuminance(WorldPos, world.sunDirection, Atmosphere.BottomRadius, world.sunDirection, world.sunIlluminance);
 	if (any(notEqual(sun, vec3(0.0))))
 		sunLuminance = sun;
 }

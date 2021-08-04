@@ -1,18 +1,7 @@
-#ifdef SKY_USE_WORLD
-#include "../world.glsl"
-layout(binding = 0) uniform WorldConstants {
-	World world;
-};
-#endif
-
 #define PI 3.1415926535897932384626433832795
 
 #ifndef MULTIPLE_SCATTERING_ENABLED
 #define MULTIPLE_SCATTERING_ENABLED 0
-#endif
-
-#ifndef RENDER_SUN_DISK
-#define RENDER_SUN_DISK 1
 #endif
 
 #define PLANET_RADIUS_OFFSET 0.01
@@ -265,10 +254,10 @@ void SkyViewLutParamsToUv(in bool IntersectGround, in float viewZenithCosAngle, 
 	uv = vec2(fromUnitToSubUvs(uv.x, viewSize.x), fromUnitToSubUvs(uv.y, viewSize.y));
 }
 
-#ifdef SKY_USE_WORLD
-vec3 GetSunLuminance(vec3 WorldPos, vec3 WorldDir, float PlanetRadius) {
-#if RENDER_SUN_DISK
-	if (dot(WorldDir, world.sunDirection) > cos(0.5*0.505*3.14159 / 180.0)) {
+#ifndef TRANSMITTANCE_DISABLED
+vec3 GetSunLuminance(vec3 WorldPos, vec3 WorldDir, float PlanetRadius,
+	vec3 SunDirection, vec3 SunIlluminance) {
+	if (dot(WorldDir, SunDirection) > cos(0.5*0.505*3.14159 / 180.0)) {
 		float t = raySphereIntersectNearest(WorldPos, WorldDir, vec3(0.0), PlanetRadius);
 		if (t < 0.0) { // no intersection
 			vec2 uvUp;
@@ -276,18 +265,17 @@ vec3 GetSunLuminance(vec3 WorldPos, vec3 WorldDir, float PlanetRadius) {
 			
 			float pHeight = length(WorldPos);
 			const vec3 UpVector = WorldPos / pHeight;
-			float SunZenithCosAngle = dot(world.sunDirection, UpVector);
+			float SunZenithCosAngle = dot(SunDirection, UpVector);
 			vec2 uvSun;
 			LutTransmittanceParamsToUv(pHeight, SunZenithCosAngle, uvSun);
 			
-			vec3 SunLuminanceInSpace = world.sunIlluminance / textureLod(TransmittanceLutTexture, uvUp, 0.0).rgb;
+			vec3 SunLuminanceInSpace = SunIlluminance / textureLod(TransmittanceLutTexture, uvUp, 0.0).rgb;
 			return SunLuminanceInSpace * textureLod(TransmittanceLutTexture, uvSun, 0.0).rgb;
 		}
 	}
-#endif
 	return vec3(0.0);
 }
-#endif
+#endif //TRANSMITTANCE_DISABLED
 
 #define AP_KM_PER_SLICE 4.0
 float AerialPerspectiveSliceToDepth(float slice) {
