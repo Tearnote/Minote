@@ -1,6 +1,6 @@
 # Project information
 
-cmake_minimum_required(VERSION 3.17)
+cmake_minimum_required(VERSION 3.20)
 project(Minote VERSION 0.0
         DESCRIPTION "Modern action puzzle game"
         LANGUAGES C CXX)
@@ -91,6 +91,20 @@ add_executable(Minote
         src/game.hpp src/game.cpp
         src/main.hpp src/main.cpp
         src/mino.hpp src/mino.tpp)
+target_precompile_headers(Minote PRIVATE
+        src/base/container/hashmap.hpp
+        src/base/container/vector.hpp
+        src/base/container/string.hpp
+        src/base/container/array.hpp
+        src/base/concepts.hpp
+        src/base/format.hpp
+        src/base/error.hpp
+        src/base/types.hpp
+        src/base/math.hpp
+        src/base/util.hpp
+        src/base/log.hpp
+        src/config.hpp
+        src/memory.hpp)
 target_include_directories(Minote PRIVATE src)
 target_link_libraries(Minote PRIVATE winmm)
 
