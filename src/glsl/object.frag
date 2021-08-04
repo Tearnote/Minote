@@ -1,8 +1,9 @@
 #version 460
 #pragma shader_stage(fragment)
 
-#include "types.glsl"
-#include "world.glsl"
+#include "include/types.glsl"
+#include "include/world.glsl"
+#include "include/util.glsl"
 
 layout(location = 0) in flat uint InstanceIndex;
 layout(location = 1) in vec3 f_position;
@@ -28,8 +29,6 @@ layout(binding = 3) restrict readonly buffer SunLuminance {
 };
 layout(binding = 4) uniform samplerCube cubemap;
 layout(binding = 5) uniform sampler3D aerialPerspective;
-
-#include "util.glsl"
 
 vec3 envBRDFApprox(vec3 f0, float NoV, float roughness) {
 	vec4 c0 = vec4(-1.0, -0.0275, -0.572, 0.022);

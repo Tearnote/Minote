@@ -1,7 +1,7 @@
 #version 460
 #pragma shader_stage(fragment)
 
-#include "../world.glsl"
+#include "../include/world.glsl"
 #include "sky.glsl"
 
 layout(location = 0) in vec2 f_texCoords;

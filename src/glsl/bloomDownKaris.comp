@@ -9,7 +9,7 @@ layout(binding = 1, rgba16f) restrict writeonly uniform image2D target;
 shared vec4 outer[gl_WorkGroupSize.x + 2][gl_WorkGroupSize.y + 2];
 shared vec4 inner[gl_WorkGroupSize.x + 1][gl_WorkGroupSize.y + 1];
 
-#include "util.glsl"
+#include "include/util.glsl"
 
 // https://github.com/keijiro/KinoBloom/blob/master/Assets/Kino/Bloom/Shader/Bloom.cginc
 vec4 KarisAverage(vec4 s1, vec4 s2, vec4 s3, vec4 s4) {
