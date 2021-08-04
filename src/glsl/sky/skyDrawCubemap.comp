@@ -32,7 +32,7 @@ void main() {
 	vec3 dir = mat3(sides[gid.z]) * vec3(cubeUv, 1.0);
 
 	vec3 WorldDir = normalize(dir);
-	vec3 WorldPos = probePosition + vec3(0.0, 0.0, Atmosphere.BottomRadius);
+	vec3 WorldPos = probePosition + vec3(0.0, 0.0, atmo.bottomRadius);
 
 	float viewHeight = length(WorldPos);
 
@@ -46,17 +46,13 @@ void main() {
 	lightOnPlane = normalize(lightOnPlane);
 	float lightViewCosAngle = lightOnPlane.x;
 
-	bool IntersectGround = raySphereIntersectNearest(WorldPos, WorldDir, vec3(0.0), Atmosphere.BottomRadius) >= 0.0;
+	bool IntersectGround = raySphereIntersectNearest(WorldPos, WorldDir, vec3(0.0), atmo.bottomRadius) >= 0.0;
 
-	SkyViewLutParamsToUv(IntersectGround, viewZenithCosAngle, lightViewCosAngle, viewSize, viewHeight, uv);
+	skyViewLutParamsToUv(IntersectGround, viewZenithCosAngle, lightViewCosAngle, viewSize, viewHeight, uv);
 	vec4 result = vec4(textureLod(skyView, uv, 0.0).rgb, 1.0);
 	imageStore(cubemap, ivec3(gid), result);
 	
-	// if (all(equal(gid, uvec3(0)))) {
-	// 	vec3 sun = GetSunLuminance(WorldPos, world.sunDirection, Atmosphere.BottomRadius);
-	// 	sunLuminance = sun;
-	// }
-	vec3 sun = GetSunLuminance(WorldPos, world.sunDirection, Atmosphere.BottomRadius, world.sunDirection, world.sunIlluminance);
+	vec3 sun = getSunLuminance(WorldPos, world.sunDirection, world.sunDirection, world.sunIlluminance);
 	if (any(notEqual(sun, vec3(0.0))))
 		sunLuminance = sun;
 }

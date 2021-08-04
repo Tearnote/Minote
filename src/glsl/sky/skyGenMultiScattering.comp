@@ -21,7 +21,7 @@ void main() {
 	float cosSunZenithAngle = uv.x * 2.0 - 1.0;
 	vec3 sunDir = vec3(0.0, sqrt(clamp(1.0 - cosSunZenithAngle * cosSunZenithAngle, 0.0, 1.0)), cosSunZenithAngle);
 	// We adjust again viewHeight according to PLANET_RADIUS_OFFSET to be in a valid range.
-	float viewHeight = Atmosphere.BottomRadius + clamp(uv.y + PLANET_RADIUS_OFFSET, 0.0, 1.0) * (Atmosphere.TopRadius - Atmosphere.BottomRadius - PLANET_RADIUS_OFFSET);
+	float viewHeight = atmo.bottomRadius + clamp(uv.y + PLANET_RADIUS_OFFSET, 0.0, 1.0) * (atmo.topRadius - atmo.bottomRadius - PLANET_RADIUS_OFFSET);
 
 	vec3 WorldPos = vec3(0.0, 0.0, viewHeight);
 	vec3 WorldDir = vec3(0.0, 0.0, 1.0);
@@ -51,10 +51,10 @@ void main() {
 		WorldDir.x = cosTheta * sinPhi;
 		WorldDir.y = sinTheta * sinPhi;
 		WorldDir.z = cosPhi;
-		SingleScatteringResult result = IntegrateScatteredLuminance(WorldPos, WorldDir, sunDir,
+		SingleScatteringResult result = integrateScatteredLuminance(WorldPos, WorldDir, sunDir,
 		ground, SampleCountIni, VariableSampleCount, MieRayPhase, 9000000.0, vec3(1.0));
 
-		MultiScatAs1SharedMem[gid.z] = result.MultiScatAs1 * SphereSolidAngle / (sqrtSample * sqrtSample);
+		MultiScatAs1SharedMem[gid.z] = result.multiScatAs1 * SphereSolidAngle / (sqrtSample * sqrtSample);
 		LSharedMem[gid.z] = result.L * SphereSolidAngle / (sqrtSample * sqrtSample);
 	}
 #undef SQRTSAMPLECOUNT

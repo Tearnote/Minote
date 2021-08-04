@@ -21,7 +21,7 @@ void main() {
 	vec4 HPos = world.viewProjectionInverse * vec4(ClipSpace, 1.0);
 
 	vec3 WorldDir = normalize(HPos.xyz);
-	vec3 WorldPos = world.cameraPos + vec3(0.0, 0.0, Atmosphere.BottomRadius);
+	vec3 WorldPos = world.cameraPos + vec3(0.0, 0.0, atmo.bottomRadius);
 
 	float viewHeight = length(WorldPos);
 
@@ -35,10 +35,10 @@ void main() {
 	lightOnPlane = normalize(lightOnPlane);
 	float lightViewCosAngle = lightOnPlane.x;
 
-	bool IntersectGround = raySphereIntersectNearest(WorldPos, WorldDir, vec3(0.0), Atmosphere.BottomRadius) >= 0.0;
+	bool IntersectGround = raySphereIntersectNearest(WorldPos, WorldDir, vec3(0.0), atmo.bottomRadius) >= 0.0;
 
-	SkyViewLutParamsToUv(IntersectGround, viewZenithCosAngle, lightViewCosAngle, viewSize, viewHeight, uv);
+	skyViewLutParamsToUv(IntersectGround, viewZenithCosAngle, lightViewCosAngle, viewSize, viewHeight, uv);
 	vec3 skyView = textureLod(skyView, uv, 0.0).rgb;
-	vec3 sun = GetSunLuminance(WorldPos, WorldDir, Atmosphere.BottomRadius, world.sunDirection, world.sunIlluminance) * (120000.0 / world.sunIlluminance);
+	vec3 sun = getSunLuminance(WorldPos, WorldDir, world.sunDirection, world.sunIlluminance) * (120000.0 / world.sunIlluminance);
 	out_color = vec4(skyView + sun, 1.0);
 }
