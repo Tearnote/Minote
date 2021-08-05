@@ -2,7 +2,6 @@
 #pragma shader_stage(fragment)
 
 #include "include/types.glsl"
-#include "include/world.glsl"
 #include "include/util.glsl"
 
 layout(location = 0) in flat uint InstanceIndex;
