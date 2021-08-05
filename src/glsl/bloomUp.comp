@@ -3,32 +3,32 @@
 
 layout(local_size_x = 16, local_size_y = 16) in;
 
-layout(binding = 0) uniform sampler2D source;
-layout(binding = 1, rgba16f) restrict uniform image2D target;
+layout(binding = 0) uniform sampler2D s_source;
+layout(binding = 1, rgba16f) restrict uniform image2D i_target;
 layout(push_constant) uniform Constants {
-	float power;
+	float u_power;
 };
 
-shared vec4 inner[gl_WorkGroupSize.x + 1][gl_WorkGroupSize.y + 1];
+shared vec4 sh_inner[gl_WorkGroupSize.x + 1][gl_WorkGroupSize.y + 1];
 
 void main() {
 	
 	const uvec2 gid = gl_GlobalInvocationID.xy;
 	const uvec2 lid = gl_LocalInvocationID.xy;
-	const ivec2 sourceSize = textureSize(source, 0);
-	const ivec2 targetSize = imageSize(target);
+	const ivec2 sourceSize = textureSize(s_source, 0);
+	const ivec2 targetSize = imageSize(i_target);
 	
 	vec2 uv = (vec2(gid) + vec2(0.5)) / vec2(targetSize);
 	vec2 texel = vec2(0.5) / vec2(targetSize);
 	
 	if (lid.x == 0)
-		inner[lid.x  ][lid.y+1] = textureLod(source, uv + vec2(-texel.x, texel.y), 0.0);
+		sh_inner[lid.x  ][lid.y+1] = textureLod(s_source, uv + vec2(-texel.x, texel.y), 0.0);
 	if (lid.y == 0)
-		inner[lid.x+1][lid.y  ] = textureLod(source, uv + vec2(texel.x, -texel.y), 0.0);
+		sh_inner[lid.x+1][lid.y  ] = textureLod(s_source, uv + vec2(texel.x, -texel.y), 0.0);
 	if (lid.x == 0 && lid.y == 0)
-		inner[lid.x  ][lid.y  ] = textureLod(source, uv - texel, 0.0);
+		sh_inner[lid.x  ][lid.y  ] = textureLod(s_source, uv - texel, 0.0);
 	
-	inner[lid.x+1][lid.y+1] = textureLod(source, uv + texel, 0.0);
+	sh_inner[lid.x+1][lid.y+1] = textureLod(s_source, uv + texel, 0.0);
 	
 	memoryBarrierShared();
 	barrier();
@@ -36,12 +36,13 @@ void main() {
 	if (any(greaterThanEqual(gid, targetSize)))
 		return;
 	
-	vec4 current = imageLoad(target, ivec2(gid));
+	vec4 current = imageLoad(i_target, ivec2(gid));
 	vec4 result =
-		inner[lid.x  ][lid.y  ] +
-		inner[lid.x+1][lid.y  ] +
-		inner[lid.x  ][lid.y+1] +
-		inner[lid.x+1][lid.y+1];
-	imageStore(target, ivec2(gid), current + result / 4.0 * power);
+		sh_inner[lid.x  ][lid.y  ] +
+		sh_inner[lid.x+1][lid.y  ] +
+		sh_inner[lid.x  ][lid.y+1] +
+		sh_inner[lid.x+1][lid.y+1];
+	
+	imageStore(i_target, ivec2(gid), current + result / 4.0 * u_power);
 	
 }
