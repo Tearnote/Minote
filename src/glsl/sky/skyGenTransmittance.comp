@@ -3,32 +3,34 @@
 
 layout(local_size_x = 8, local_size_y = 8) in;
 
-layout(set = 1, binding = 0, rgba16f) restrict writeonly uniform image2D transmittance;
-
 #define TRANSMITTANCE_DISABLED
 #include "sky.glsl"
 
-void main() {
-	const uvec2 gid = gl_GlobalInvocationID.xy;
-	const ivec2 size = imageSize(transmittance);
+layout(set = 1, binding = 0, rgba16f) restrict writeonly uniform image2D i_transmittance;
 
+void main() {
+	
+	const uvec2 gid = gl_GlobalInvocationID.xy;
+	const ivec2 size = imageSize(i_transmittance);
+	
 	// Compute camera position from LUT coords
 	vec2 uv = (vec2(gid) + vec2(0.5)) / vec2(size);
 	float viewHeight;
 	float viewZenithCosAngle;
 	uvToLutTransmittanceParams(viewHeight, viewZenithCosAngle, uv);
-
+	
 	// A few extra needed constants
-	vec3 WorldPos = vec3(0.0, 0.0, viewHeight);
-	vec3 WorldDir = vec3(0.0, sqrt(1.0 - viewZenithCosAngle * viewZenithCosAngle), viewZenithCosAngle);
-
+	vec3 worldPos = vec3(0.0, 0.0, viewHeight);
+	vec3 worldDir = vec3(0.0, sqrt(1.0 - viewZenithCosAngle * viewZenithCosAngle), viewZenithCosAngle);
+	
 	const bool ground = false;
-	const float SampleCountIni = 40.0;	// Can go as low as 10 sample but energy lost starts to be visible.
-	const bool VariableSampleCount = false;
-	const bool MieRayPhase = false;
-	vec3 result = exp(-integrateScatteredLuminance(WorldPos, WorldDir, vec3(1.0)/*unused*/,
-		ground, SampleCountIni, VariableSampleCount, MieRayPhase, 9000000.0, vec3(1.0)).opticalDepth);
-
+	const float sampleCountIni = 40.0;	// Can go as low as 10 sample but energy lost starts to be visible.
+	const bool variableSampleCount = false;
+	const bool mieRayPhase = false;
+	vec3 result = exp(-integrateScatteredLuminance(worldPos, worldDir, vec3(1.0)/*unused*/,
+		ground, sampleCountIni, variableSampleCount, mieRayPhase, 9000000.0, vec3(1.0)).opticalDepth);
+	
 	// Optical depth to transmittance
-	imageStore(transmittance, ivec2(gid), vec4(result, 1.0));
+	imageStore(i_transmittance, ivec2(gid), vec4(result, 1.0));
+	
 }

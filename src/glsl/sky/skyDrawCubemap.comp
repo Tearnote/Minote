@@ -7,52 +7,54 @@ layout(local_size_x = 8, local_size_y = 8) in;
 #include "sky.glsl"
 
 layout(binding = 0) uniform WorldConstants {
-	World world;
+	World u_world;
 };
 
-layout(set = 1, binding = 0) uniform sampler2D skyView;
-layout(set = 1, binding = 1, rgba16f) restrict writeonly uniform imageCube cubemap;
+layout(set = 1, binding = 0) uniform sampler2D s_skyView;
+layout(set = 1, binding = 1, rgba16f) restrict writeonly uniform imageCube i_cubemap;
 layout(set = 1, binding = 2) uniform Sides {
-	mat4 sides[6];
+	mat4 u_sides[6];
 };
 layout(set = 1, binding = 3) restrict writeonly buffer SunLuminance {
-	vec3 sunLuminance;
+	vec3 b_sunLuminance;
 };
 layout(push_constant) uniform ProbePosition {
-	vec3 probePosition;
+	vec3 u_probePosition;
 };
 
 void main() {
+	
 	const uvec3 gid = gl_GlobalInvocationID;
-	const ivec2 cubeSize = imageSize(cubemap);
-	const ivec2 viewSize = textureSize(skyView, 0);
-
+	const ivec2 cubeSize = imageSize(i_cubemap);
+	const ivec2 viewSize = textureSize(s_skyView, 0);
+	
 	vec2 cubeUv = (vec2(gid.xy) + vec2(0.5)) / vec2(cubeSize);
 	cubeUv = cubeUv * 2.0 - 1.0;
-	vec3 dir = mat3(sides[gid.z]) * vec3(cubeUv, 1.0);
-
-	vec3 WorldDir = normalize(dir);
-	vec3 WorldPos = probePosition + vec3(0.0, 0.0, atmo.bottomRadius);
-
-	float viewHeight = length(WorldPos);
-
+	vec3 dir = mat3(u_sides[gid.z]) * vec3(cubeUv, 1.0);
+	
+	vec3 worldDir = normalize(dir);
+	vec3 worldPos = u_probePosition + vec3(0.0, 0.0, u_atmo.bottomRadius);
+	
+	float viewHeight = length(worldPos);
+	
 	vec2 uv;
-	vec3 UpVector = normalize(WorldPos);
-	float viewZenithCosAngle = dot(WorldDir, UpVector);
-
-	vec3 sideVector = normalize(cross(UpVector, WorldDir)); // assumes non parallel vectors
-	vec3 forwardVector = normalize(cross(sideVector, UpVector)); // aligns toward the sun light but perpendicular to up vector
-	vec2 lightOnPlane = vec2(dot(world.sunDirection, forwardVector), dot(world.sunDirection, sideVector));
+	vec3 upVector = normalize(worldPos);
+	float viewZenithCosAngle = dot(worldDir, upVector);
+	
+	vec3 sideVector = normalize(cross(upVector, worldDir)); // assumes non parallel vectors
+	vec3 forwardVector = normalize(cross(sideVector, upVector)); // aligns toward the sun light but perpendicular to up vector
+	vec2 lightOnPlane = vec2(dot(u_world.sunDirection, forwardVector), dot(u_world.sunDirection, sideVector));
 	lightOnPlane = normalize(lightOnPlane);
 	float lightViewCosAngle = lightOnPlane.x;
-
-	bool IntersectGround = raySphereIntersectNearest(WorldPos, WorldDir, vec3(0.0), atmo.bottomRadius) >= 0.0;
-
-	skyViewLutParamsToUv(IntersectGround, viewZenithCosAngle, lightViewCosAngle, viewSize, viewHeight, uv);
-	vec4 result = vec4(textureLod(skyView, uv, 0.0).rgb, 1.0);
-	imageStore(cubemap, ivec3(gid), result);
 	
-	vec3 sun = getSunLuminance(WorldPos, world.sunDirection, world.sunDirection, world.sunIlluminance);
+	bool intersectGround = (raySphereIntersectNearest(worldPos, worldDir, vec3(0.0), u_atmo.bottomRadius) >= 0.0);
+	
+	skyViewLutParamsToUv(intersectGround, viewZenithCosAngle, lightViewCosAngle, viewSize, viewHeight, uv);
+	vec4 result = vec4(textureLod(s_skyView, uv, 0.0).rgb, 1.0);
+	imageStore(i_cubemap, ivec3(gid), result);
+	
+	vec3 sun = getSunLuminance(worldPos, u_world.sunDirection, u_world.sunDirection, u_world.sunIlluminance);
 	if (any(notEqual(sun, vec3(0.0))))
-		sunLuminance = sun;
+		b_sunLuminance = sun;
+	
 }
