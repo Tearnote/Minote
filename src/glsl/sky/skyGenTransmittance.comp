@@ -17,7 +17,7 @@ void main() {
 	vec2 uv = (vec2(gid) + vec2(0.5)) / vec2(size);
 	float viewHeight;
 	float viewZenithCosAngle;
-	uvToLutTransmittanceParams(viewHeight, viewZenithCosAngle, uv);
+	uvToLutTransmittanceParams(viewHeight, viewZenithCosAngle, uv, u_atmo.bottomRadius, u_atmo.topRadius);
 	
 	// A few extra needed constants
 	vec3 worldPos = vec3(0.0, 0.0, viewHeight);

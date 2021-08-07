@@ -42,7 +42,7 @@ using StdAlloc = std::allocator<T>;
 inline void attachPoolResources() {
 	
 	GlobalPool.attach(+PoolSlot::PerFrame, Arena("Per-frame", 16_mb));
-	GlobalPool.attach(+PoolSlot::Scratch, Stack("Scratch", 16_mb));
+	GlobalPool.attach(+PoolSlot::Scratch, Stack("Scratch", 32_mb));
 	
 }
 

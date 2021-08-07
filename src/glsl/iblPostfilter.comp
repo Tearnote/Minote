@@ -23,57 +23,68 @@
 
 layout(local_size_x = 64) in;
 
-layout(binding = 0) uniform samplerCube src;
-layout(binding = 1, rgba16f) restrict writeonly uniform image2DArray dst0;
-layout(binding = 2, rgba16f) restrict writeonly uniform image2DArray dst1;
-layout(binding = 3, rgba16f) restrict writeonly uniform image2DArray dst2;
-layout(binding = 4, rgba16f) restrict writeonly uniform image2DArray dst3;
-layout(binding = 5, rgba16f) restrict writeonly uniform image2DArray dst4;
-layout(binding = 6, rgba16f) restrict writeonly uniform image2DArray dst5;
-layout(binding = 7, rgba16f) restrict writeonly uniform image2DArray dst6;
-layout(binding = 8) uniform Coeffs {
-	vec4 coeffs[7][5][3][24];
-};
-
 #define NUM_TAPS 32
 #define BASE_RESOLUTION 128
 
-void get_dir(out vec3 dir, in vec2 uv, in uint face) {
-	switch (face) {
+layout(binding = 0) uniform samplerCube s_src;
+layout(binding = 1, rgba16f) restrict writeonly uniform image2DArray i_dst0;
+layout(binding = 2, rgba16f) restrict writeonly uniform image2DArray i_dst1;
+layout(binding = 3, rgba16f) restrict writeonly uniform image2DArray i_dst2;
+layout(binding = 4, rgba16f) restrict writeonly uniform image2DArray i_dst3;
+layout(binding = 5, rgba16f) restrict writeonly uniform image2DArray i_dst4;
+layout(binding = 6, rgba16f) restrict writeonly uniform image2DArray i_dst5;
+layout(binding = 7, rgba16f) restrict writeonly uniform image2DArray i_dst6;
+
+layout(binding = 8) uniform Coeffs {
+	vec4 u_coeffs[7][5][3][24];
+};
+
+void get_dir(out vec3 _dir, vec2 _uv, uint _face) {
+	
+	switch (_face) {
+		
 	case 0:
-		dir[0] = 1;
-		dir[1] = uv[1];
-		dir[2] = -uv[0];
+		_dir[0] = 1;
+		_dir[1] = _uv[1];
+		_dir[2] = -_uv[0];
 		break;
+		
 	case 1:
-		dir[0] = -1;
-		dir[1] = uv[1];
-		dir[2] = uv[0];
+		_dir[0] = -1;
+		_dir[1] = _uv[1];
+		_dir[2] = _uv[0];
 		break;
+		
 	case 2:
-		dir[0] = uv[0];
-		dir[1] = 1;
-		dir[2] = -uv[1];
+		_dir[0] = _uv[0];
+		_dir[1] = 1;
+		_dir[2] = -_uv[1];
 		break;
+		
 	case 3:
-		dir[0] = uv[0];
-		dir[1] = -1;
-		dir[2] = uv[1];
+		_dir[0] = _uv[0];
+		_dir[1] = -1;
+		_dir[2] = _uv[1];
 		break;
+		
 	case 4:
-		dir[0] = uv[0];
-		dir[1] = uv[1];
-		dir[2] = 1;
+		_dir[0] = _uv[0];
+		_dir[1] = _uv[1];
+		_dir[2] = 1;
 		break;
+		
 	default:
-		dir[0] = -uv[0];
-		dir[1] = uv[1];
-		dir[2] = -1;
+		_dir[0] = -_uv[0];
+		_dir[1] = _uv[1];
+		_dir[2] = -1;
 		break;
+		
 	}
+	
 }
 
 void main() {
+	
 	// INPUT: 
 	// id.x = the linear address of the texel (ignoring face) - max 21,840
 	// id.y = the face
@@ -81,179 +92,224 @@ void main() {
 	// id.x = texel x
 	// id.y = texel y
 	// id.z = face
-
+	
 	uvec3 id = gl_GlobalInvocationID;
-
+	
 	// determine which texel this is
 	int level = 0;
 	if (id.x < 128 * 128) {
+		
 		level = 0;
+		
 	} else if (id.x < 128 * 128 + 64 * 64) {
+		
 		level = 1;
 		id.x -= ( 128 * 128 );
+		
 	} else if (id.x < 128 * 128 + 64 * 64 + 32 * 32) {
+		
 		level = 2;
 		id.x -= ( 128 * 128 + 64 * 64 );
+		
 	} else if (id.x < 128 * 128 + 64 * 64 + 32 * 32 + 16 * 16) {
+		
 		level = 3;
 		id.x -= ( 128 * 128 + 64 * 64 + 32 * 32 );
+		
 	} else if (id.x < 128 * 128 + 64 * 64 + 32 * 32 + 16 * 16 + 8 * 8) {
+		
 		level = 4;
 		id.x -= ( 128 * 128 + 64 * 64 + 32 * 32 + 16 * 16 );
+		
 	} else if (id.x < 128 * 128 + 64 * 64 + 32 * 32 + 16 * 16 + 8 * 8 + 4 * 4) {
+		
 		level = 5;
 		id.x -= ( 128 * 128 + 64 * 64 + 32 * 32 + 16 * 16 + 8 * 8 );
+		
 	} else if (id.x < 128 * 128 + 64 * 64 + 32 * 32 + 16 * 16 + 8 * 8 + 4 * 4 + 2 * 2) {
+		
 		level = 6;
 		id.x -= ( 128 * 128 + 64 * 64 + 32 * 32 + 16 * 16 + 8 * 8 + 4 * 4 );
+		
 	} else {
+		
 		return;
+		
 	}
-
+	
 	// determine dir / pos for the texel
 	vec3 dir, adir, frameZ;
 	{
+		
 		id.z = id.y;
 		int res = BASE_RESOLUTION >> level;
 		id.y = id.x / res;
 		id.x -= id.y * res;
-
+		
 		vec2 uv;
 		uv.x = (float(id.x) * 2.0 + 1.0) / float(res) - 1.0;
 		uv.y = -(float(id.y) * 2.0 + 1.0) / float(res) + 1.0;
-
+		
 		get_dir(dir, uv, id.z);
 		frameZ = normalize(dir);
-
+		
 		adir[0] = abs(dir[0]);
 		adir[1] = abs(dir[1]);
 		adir[2] = abs(dir[2]);
+		
 	}
-
+	
 	// GGX gather colors
 	vec4 color = vec4(0.0);
 	for (int axis = 0; axis < 3; axis++) {
+		
 		const int otherAxis0 = 1 - (axis & 1) - (axis >> 1);
 		const int otherAxis1 = 2 - (axis >> 1);
-
+		
 		float frameweight = (max(adir[otherAxis0], adir[otherAxis1]) - 0.75) / 0.25;
 		if (frameweight > 0) {
+			
 			// determine frame
-			vec3 UpVector;
+			vec3 upVector;
 			switch (axis) {
+				
 			case 0:
-				UpVector = vec3(1.0, 0.0, 0.0);
+				upVector = vec3(1.0, 0.0, 0.0);
 				break;
+				
 			case 1:
-				UpVector = vec3(0.0, 1.0, 0.0);
+				upVector = vec3(0.0, 1.0, 0.0);
 				break;
+				
 			default:
-				UpVector = vec3(0.0, 0.0, 1.0);
+				upVector = vec3(0.0, 0.0, 1.0);
 				break;
+				
 			}
-			vec3 frameX = normalize(cross(UpVector, frameZ));
+			vec3 frameX = normalize(cross(upVector, frameZ));
 			vec3 frameY = cross(frameZ, frameX);
-
+			
 			// calculate parametrization for polynomial
-			float Nx = dir[otherAxis0];
-			float Ny = dir[otherAxis1];
-			float Nz = adir[axis];
-
-			float NmaxXY = max(abs(Ny), abs(Nx));
-			Nx /= NmaxXY;
-			Ny /= NmaxXY;
-
+			float nx = dir[otherAxis0];
+			float ny = dir[otherAxis1];
+			float nz = adir[axis];
+			
+			float nMaxXY = max(abs(ny), abs(nx));
+			nx /= nMaxXY;
+			ny /= nMaxXY;
+			
 			float theta;
-			if (Ny < Nx) {
-				if (Ny <= -0.999)
-					theta = Nx;
+			if (ny < nx) {
+				
+				if (ny <= -0.999)
+					theta = nx;
 				else
-					theta = Ny;
+					theta = ny;
+				
 			} else {
-				if (Ny >= 0.999)
-					theta = -Nx;
+				
+				if (ny >= 0.999)
+					theta = -nx;
 				else
-					theta = -Ny;
+					theta = -ny;
+				
 			}
-
+			
 			float phi;
-			if (Nz <= -0.999)
-				phi = -NmaxXY;
-			else if (Nz >= 0.999)
-				phi = NmaxXY;
+			if (nz <= -0.999)
+				phi = -nMaxXY;
+			else if (nz >= 0.999)
+				phi = nMaxXY;
 			else
-				phi = Nz;
-
+				phi = nz;
+			
 			float theta2 = theta*theta;
 			float phi2 = phi*phi;
-
+			
 			// sample
 			for (int iSuperTap = 0; iSuperTap < NUM_TAPS / 4; iSuperTap++) {
+				
 				const int index = (NUM_TAPS / 4) * axis + iSuperTap;
 				vec4 coeffsDir0[3];
 				vec4 coeffsDir1[3];
 				vec4 coeffsDir2[3];
 				vec4 coeffsLevel[3];
 				vec4 coeffsWeight[3];
-
+				
 				for (int iCoeff = 0; iCoeff < 3; iCoeff++) {
-					coeffsDir0[iCoeff] = coeffs[level][0][iCoeff][index];
-					coeffsDir1[iCoeff] = coeffs[level][1][iCoeff][index];
-					coeffsDir2[iCoeff] = coeffs[level][2][iCoeff][index];
-					coeffsLevel[iCoeff] = coeffs[level][3][iCoeff][index];
-					coeffsWeight[iCoeff] = coeffs[level][4][iCoeff][index];
+					
+					coeffsDir0[iCoeff]   = u_coeffs[level][0][iCoeff][index];
+					coeffsDir1[iCoeff]   = u_coeffs[level][1][iCoeff][index];
+					coeffsDir2[iCoeff]   = u_coeffs[level][2][iCoeff][index];
+					coeffsLevel[iCoeff]  = u_coeffs[level][3][iCoeff][index];
+					coeffsWeight[iCoeff] = u_coeffs[level][4][iCoeff][index];
+					
 				}
-
+				
 				for (int iSubTap = 0; iSubTap < 4; iSubTap++) {
+					
 					// determine sample attributes (dir, weight, level)
-					vec3 sample_dir
-						= frameX * (coeffsDir0[0][iSubTap] + coeffsDir0[1][iSubTap] * theta2 + coeffsDir0[2][iSubTap] * phi2)
-						+ frameY * (coeffsDir1[0][iSubTap] + coeffsDir1[1][iSubTap] * theta2 + coeffsDir1[2][iSubTap] * phi2)
-						+ frameZ * (coeffsDir2[0][iSubTap] + coeffsDir2[1][iSubTap] * theta2 + coeffsDir2[2][iSubTap] * phi2);
-
-					float sample_level = coeffsLevel[0][iSubTap] + coeffsLevel[1][iSubTap] * theta2 + coeffsLevel[2][iSubTap] * phi2;
-
-					float sample_weight = coeffsWeight[0][iSubTap] + coeffsWeight[1][iSubTap] * theta2 + coeffsWeight[2][iSubTap] * phi2;
-					sample_weight *= frameweight;
-
+					vec3 sampleDir =
+						frameX * (coeffsDir0[0][iSubTap] + coeffsDir0[1][iSubTap] * theta2 + coeffsDir0[2][iSubTap] * phi2) +
+						frameY * (coeffsDir1[0][iSubTap] + coeffsDir1[1][iSubTap] * theta2 + coeffsDir1[2][iSubTap] * phi2) +
+						frameZ * (coeffsDir2[0][iSubTap] + coeffsDir2[1][iSubTap] * theta2 + coeffsDir2[2][iSubTap] * phi2);
+					
+					float sampleLevel = coeffsLevel[0][iSubTap] + coeffsLevel[1][iSubTap] * theta2 + coeffsLevel[2][iSubTap] * phi2;
+					
+					float sampleWeight = coeffsWeight[0][iSubTap] + coeffsWeight[1][iSubTap] * theta2 + coeffsWeight[2][iSubTap] * phi2;
+					sampleWeight *= frameweight;
+					
 					// adjust for jacobian
-					sample_dir /= max(abs(sample_dir[0]), max(abs(sample_dir[1]), abs(sample_dir[2])));
-					sample_level += 0.75 * log2(dot(sample_dir, sample_dir));
-
+					sampleDir /= max(abs(sampleDir[0]), max(abs(sampleDir[1]), abs(sampleDir[2])));
+					sampleLevel += 0.75 * log2(dot(sampleDir, sampleDir));
+					
 					// sample cubemap
-					color.xyz += textureLod(src, sample_dir, sample_level + 1.0).xyz * sample_weight;
-					color.w += sample_weight;
+					color.xyz += textureLod(s_src, sampleDir, sampleLevel + 1.0).xyz * sampleWeight;
+					color.w += sampleWeight;
+					
 				}
+				
 			}
+			
 		}
+		
 	}
 	color /= color.w;
-
+	
 	// write color
 	color.xyz = max(vec3(0.0), color.xyz);
 	color.w = 1;
-
+	
 	switch (level) {
+		
 	case 0:
-		imageStore(dst0, ivec3(id), color);
+		imageStore(i_dst0, ivec3(id), color);
 		break;
+		
 	case 1:
-		imageStore(dst1, ivec3(id), color);
+		imageStore(i_dst1, ivec3(id), color);
 		break;
+		
 	case 2:
-		imageStore(dst2, ivec3(id), color);
+		imageStore(i_dst2, ivec3(id), color);
 		break;
+		
 	case 3:
-		imageStore(dst3, ivec3(id), color);
+		imageStore(i_dst3, ivec3(id), color);
 		break;
+		
 	case 4:
-		imageStore(dst4, ivec3(id), color);
+		imageStore(i_dst4, ivec3(id), color);
 		break;
+		
 	case 5:
-		imageStore(dst5, ivec3(id), color);
+		imageStore(i_dst5, ivec3(id), color);
 		break;
+		
 	default:
-		imageStore(dst6, ivec3(id), color);
+		imageStore(i_dst6, ivec3(id), color);
 		break;
+		
 	}
+	
 }

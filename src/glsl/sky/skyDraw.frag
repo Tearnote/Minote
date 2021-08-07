@@ -1,7 +1,7 @@
 #version 460
 #pragma shader_stage(fragment)
 
-#include "../include/types.glsl"
+#include "../types.glsl"
 #include "sky.glsl"
 
 layout(location = 0) in vec2 f_texCoords;
@@ -38,7 +38,7 @@ void main() {
 
 	bool intersectGround = (raySphereIntersectNearest(worldPos, worldDir, vec3(0.0), u_atmo.bottomRadius) >= 0.0);
 
-	skyViewLutParamsToUv(intersectGround, viewZenithCosAngle, lightViewCosAngle, viewSize, viewHeight, uv);
+	skyViewLutParamsToUv(intersectGround, viewZenithCosAngle, lightViewCosAngle, viewSize, viewHeight, uv, u_atmo.bottomRadius);
 	vec3 skyView = textureLod(s_skyView, uv, 0.0).rgb;
 	vec3 sun = getSunLuminance(worldPos, worldDir, u_world.sunDirection, u_world.sunIlluminance)
 		* (120000.0 / u_world.sunIlluminance);

@@ -3,7 +3,7 @@
 
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 64) in;
 
-#include "../include/constants.glsl"
+#include "../constants.glsl"
 #include "sky.glsl"
 
 layout(set = 1, binding = 0, rgba16f) restrict writeonly uniform image2D i_multiScattering;

@@ -1,19 +1,16 @@
 // Common functions for all atmospheric shaders
 
-#include "../include/constants.glsl"
+#include "../constants.glsl"
+#include "skyAccess.glsl"
 
 #ifndef MULTIPLE_SCATTERING_ENABLED
 #define MULTIPLE_SCATTERING_ENABLED 0
 #endif
 
-#define NONLINEARSKYVIEWLUT 1
-
 #define PLANET_RADIUS_OFFSET 0.01
 
 #define RAYMARCH_MIN_SPP 4.0
 #define RAYMARCH_MAX_SPP 14.0
-
-#define AP_KM_PER_SLICE 4.0
 
 struct MediumSampleRGB {
 	
@@ -89,22 +86,9 @@ layout(set = 0, binding = 1) uniform Atmosphere {
 #ifndef TRANSMITTANCE_DISABLED
 layout(set = 0, binding = 2) uniform sampler2D s_transmittanceLut;
 #endif //TRANSMITTANCE_DISABLED
-
 #if MULTIPLE_SCATTERING_ENABLED
 layout(set = 0, binding = 3) uniform sampler2D s_multiScatteringLut;
 #endif //MULTIPLE_SCATTERING_ENABLED
-
-float fromUnitToSubUvs(float _u, float _resolution) {
-	
-	return (_u + 0.5 / _resolution) * (_resolution / (_resolution + 1.0));
-	
-}
-
-float fromSubUvsToUnit(float _u, float _resolution) {
-	
-	return (_u - 0.5 / _resolution) * (_resolution / (_resolution - 1.0));
-	
-}
 
 vec3 getAlbedo(vec3 _scattering, vec3 _extinction) {
 	
@@ -155,6 +139,31 @@ float raySphereIntersectNearest(vec3 _r0, vec3 _rd, vec3 _s0, float _sR) {
 	
 }
 
+bool moveToTopAtmosphere(inout vec3 _worldPos, vec3 _worldDir, float _atmosphereTopRadius) {
+	
+	float viewHeight = length(_worldPos);
+	if (viewHeight > _atmosphereTopRadius) {
+		
+		float tTop = raySphereIntersectNearest(_worldPos, _worldDir, vec3(0.0), _atmosphereTopRadius);
+		if (tTop >= 0.0) {
+			
+			vec3 upVector = _worldPos / viewHeight;
+			vec3 upOffset = upVector * -PLANET_RADIUS_OFFSET;
+			_worldPos = _worldPos + _worldDir * tTop + upOffset;
+			
+		} else {
+			
+			// Ray is not intersecting the atmosphere
+			return false;
+			
+		}
+		
+	}
+	
+	return true; // ok to start tracing
+	
+}
+
 MediumSampleRGB sampleMediumRGB(vec3 _worldPos) {
 	
 	const float viewHeight = length(_worldPos) - u_atmo.bottomRadius;
@@ -188,115 +197,6 @@ MediumSampleRGB sampleMediumRGB(vec3 _worldPos) {
 	
 }
 
-void uvToLutTransmittanceParams(out float _viewHeight, out float _viewZenithCosAngle, vec2 _uv) {
-	
-	float x_mu = _uv.x;
-	float x_r = _uv.y;
-
-	float H = sqrt(u_atmo.topRadius * u_atmo.topRadius - u_atmo.bottomRadius * u_atmo.bottomRadius);
-	float rho = H * x_r;
-	_viewHeight = sqrt(rho * rho + u_atmo.bottomRadius * u_atmo.bottomRadius);
-
-	float d_min = u_atmo.topRadius - _viewHeight;
-	float d_max = rho + H;
-	float d = d_min + x_mu * (d_max - d_min);
-	_viewZenithCosAngle = d == 0.0 ? 1.0 : (H * H - rho * rho - d * d) / (2.0 * _viewHeight * d);
-	_viewZenithCosAngle = clamp(_viewZenithCosAngle, -1.0, 1.0);
-	
-}
-
-void lutTransmittanceParamsToUv(float _viewHeight, float _viewZenithCosAngle, out vec2 _uv) {
-	
-	float H = sqrt(max(0.0, u_atmo.topRadius * u_atmo.topRadius - u_atmo.bottomRadius * u_atmo.bottomRadius));
-	float rho = sqrt(max(0.0, _viewHeight * _viewHeight - u_atmo.bottomRadius * u_atmo.bottomRadius));
-	
-	float discriminant = _viewHeight * _viewHeight * (_viewZenithCosAngle * _viewZenithCosAngle - 1.0) +
-		u_atmo.topRadius * u_atmo.topRadius;
-	float d = max(0.0, (-_viewHeight * _viewZenithCosAngle + sqrt(discriminant))); // Distance to atmosphere boundary
-	
-	float d_min = u_atmo.topRadius - _viewHeight;
-	float d_max = rho + H;
-	float x_mu = (d - d_min) / (d_max - d_min);
-	float x_r = rho / H;
-	
-	_uv = vec2(x_mu, x_r);
-	
-}
-
-void uvToSkyViewLutParams(out float _viewZenithCosAngle, out float _lightViewCosAngle,
-	uvec2 _viewSize, float _viewHeight, vec2 _uv) {
-	
-	// Constrain uvs to valid sub texel range (avoid zenith derivative issue making LUT usage visible)
-	_uv = vec2(fromSubUvsToUnit(_uv.x, _viewSize.x), fromSubUvsToUnit(_uv.y, _viewSize.y));
-	
-	float vHorizon = sqrt(_viewHeight * _viewHeight - u_atmo.bottomRadius * u_atmo.bottomRadius);
-	float cosBeta = vHorizon / _viewHeight; // GroundToHorizonCos
-	float beta = acos(cosBeta);
-	float zenithHorizonAngle = PI - beta;
-	
-	if (_uv.y < 0.5) {
-		
-		float coord = 2.0 * _uv.y;
-#if NONLINEARSKYVIEWLUT
-		coord = 1.0 - coord;
-		coord *= coord;
-		coord = 1.0 - coord;
-#endif //NONLINEARSKYVIEWLUT
-		_viewZenithCosAngle = cos(zenithHorizonAngle * coord);
-		
-	} else {
-		
-		float coord = _uv.y * 2.0 - 1.0;
-#if NONLINEARSKYVIEWLUT
-		coord *= coord;
-#endif //NONLINEARSKYVIEWLUT
-		_viewZenithCosAngle = cos(zenithHorizonAngle + beta * coord);
-		
-	}
-	
-	float coord = _uv.x;
-	coord *= coord;
-	_lightViewCosAngle = -(coord * 2.0 - 1.0);
-	
-}
-
-void skyViewLutParamsToUv(bool _intersectGround, float _viewZenithCosAngle,
-	float _lightViewCosAngle, uvec2 _viewSize, float _viewHeight, out vec2 _uv) {
-		
-	float vHorizon = sqrt(_viewHeight * _viewHeight - u_atmo.bottomRadius * u_atmo.bottomRadius);
-	float cosBeta = vHorizon / _viewHeight; // GroundToHorizonCos
-	float beta = acos(cosBeta);
-	float zenithHorizonAngle = PI - beta;
-
-	if (!_intersectGround) {
-		
-		float coord = acos(_viewZenithCosAngle) / zenithHorizonAngle;
-#if NONLINEARSKYVIEWLUT
-		coord = 1.0 - coord;
-		coord = sqrt(coord);
-		coord = 1.0 - coord;
-#endif //NONLINEARSKYVIEWLUT
-		_uv.y = coord * 0.5;
-		
-	} else {
-		
-		float coord = (acos(_viewZenithCosAngle) - zenithHorizonAngle) / beta;
-#if NONLINEARSKYVIEWLUT
-		coord = sqrt(coord);
-#endif //NONLINEARSKYVIEWLUT
-		_uv.y = coord * 0.5 + 0.5;
-		
-	}
-	
-	float coord = -_lightViewCosAngle * 0.5 + 0.5;
-	coord = sqrt(coord);
-	_uv.x = coord;
-	
-	// Constrain uvs to valid sub texel range (avoid zenith derivative issue making LUT usage visible)
-	_uv = vec2(fromUnitToSubUvs(_uv.x, _viewSize.x), fromUnitToSubUvs(_uv.y, _viewSize.y));
-	
-}
-
 #ifndef TRANSMITTANCE_DISABLED
 
 vec3 getSunLuminance(vec3 _worldPos, vec3 _worldDir, vec3 _sunDirection, vec3 _sunIlluminance) {
@@ -307,13 +207,13 @@ vec3 getSunLuminance(vec3 _worldPos, vec3 _worldDir, vec3 _sunDirection, vec3 _s
 		if (t < 0.0) { // no intersection
 			
 			vec2 uvUp;
-			lutTransmittanceParamsToUv(u_atmo.bottomRadius, 1.0, uvUp);
+			lutTransmittanceParamsToUv(u_atmo.bottomRadius, 1.0, uvUp, u_atmo.bottomRadius, u_atmo.topRadius);
 			
 			float pHeight = length(_worldPos);
 			const vec3 upVector = _worldPos / pHeight;
 			float sunZenithCosAngle = dot(_sunDirection, upVector);
 			vec2 uvSun;
-			lutTransmittanceParamsToUv(pHeight, sunZenithCosAngle, uvSun);
+			lutTransmittanceParamsToUv(pHeight, sunZenithCosAngle, uvSun, u_atmo.bottomRadius, u_atmo.topRadius);
 			
 			vec3 sunLuminanceInSpace = _sunIlluminance / textureLod(s_transmittanceLut, uvUp, 0.0).rgb;
 			return sunLuminanceInSpace * textureLod(s_transmittanceLut, uvSun, 0.0).rgb;
@@ -327,12 +227,6 @@ vec3 getSunLuminance(vec3 _worldPos, vec3 _worldDir, vec3 _sunDirection, vec3 _s
 }
 
 #endif //TRANSMITTANCE_DISABLED
-
-float aerialPerspectiveSliceToDepth(float _slice) {
-	
-	return _slice * AP_KM_PER_SLICE;
-	
-}
 
 #if MULTIPLE_SCATTERING_ENABLED
 
@@ -458,7 +352,7 @@ SingleScatteringResult integrateScatteredLuminance(vec3 _worldPos, vec3 _worldDi
 		const vec3 upVector = P / pHeight;
 		float sunZenithCosAngle = dot(_sunDir, upVector);
 		vec2 uv;
-		lutTransmittanceParamsToUv(pHeight, sunZenithCosAngle, uv);
+		lutTransmittanceParamsToUv(pHeight, sunZenithCosAngle, uv, u_atmo.bottomRadius, u_atmo.topRadius);
 #ifndef TRANSMITTANCE_DISABLED
 		vec3 transmittanceToSun = textureLod(s_transmittanceLut, uv, 0.0).rgb;
 #else //TRANSMITTANCE_DISABLED
@@ -523,7 +417,7 @@ SingleScatteringResult integrateScatteredLuminance(vec3 _worldPos, vec3 _worldDi
 		const vec3 upVector = P / pHeight;
 		float sunZenithCosAngle = dot(_sunDir, upVector);
 		vec2 uv;
-		lutTransmittanceParamsToUv(pHeight, sunZenithCosAngle, uv);
+		lutTransmittanceParamsToUv(pHeight, sunZenithCosAngle, uv, u_atmo.bottomRadius, u_atmo.topRadius);
 #ifndef TRANSMITTANCE_DISABLED
 		vec3 transmittanceToSun = textureLod(s_transmittanceLut, uv, 0.0).rgb;
 #else //TRANSMITTANCE_DISABLED
@@ -539,30 +433,5 @@ SingleScatteringResult integrateScatteredLuminance(vec3 _worldPos, vec3 _worldDi
 	result.opticalDepth = opticalDepth;
 	result.transmittance = throughput;
 	return result;
-	
-}
-
-bool moveToTopAtmosphere(inout vec3 _worldPos, vec3 _worldDir, float _atmosphereTopRadius) {
-	
-	float viewHeight = length(_worldPos);
-	if (viewHeight > _atmosphereTopRadius) {
-		
-		float tTop = raySphereIntersectNearest(_worldPos, _worldDir, vec3(0.0), _atmosphereTopRadius);
-		if (tTop >= 0.0) {
-			
-			vec3 upVector = _worldPos / viewHeight;
-			vec3 upOffset = upVector * -PLANET_RADIUS_OFFSET;
-			_worldPos = _worldPos + _worldDir * tTop + upOffset;
-			
-		} else {
-			
-			// Ray is not intersecting the atmosphere
-			return false;
-			
-		}
-		
-	}
-	
-	return true; // ok to start tracing
 	
 }

@@ -3,7 +3,7 @@
 
 layout(local_size_x = 8, local_size_y = 8) in;
 
-#include "../include/types.glsl"
+#include "../types.glsl"
 #include "sky.glsl"
 
 layout(binding = 0) uniform WorldConstants {
@@ -18,7 +18,7 @@ layout(set = 1, binding = 2) uniform Sides {
 layout(set = 1, binding = 3) restrict writeonly buffer SunLuminance {
 	vec3 b_sunLuminance;
 };
-layout(push_constant) uniform ProbePosition {
+layout(push_constant) uniform PushConstants {
 	vec3 u_probePosition;
 };
 
@@ -49,7 +49,7 @@ void main() {
 	
 	bool intersectGround = (raySphereIntersectNearest(worldPos, worldDir, vec3(0.0), u_atmo.bottomRadius) >= 0.0);
 	
-	skyViewLutParamsToUv(intersectGround, viewZenithCosAngle, lightViewCosAngle, viewSize, viewHeight, uv);
+	skyViewLutParamsToUv(intersectGround, viewZenithCosAngle, lightViewCosAngle, viewSize, viewHeight, uv, u_atmo.bottomRadius);
 	vec4 result = vec4(textureLod(s_skyView, uv, 0.0).rgb, 1.0);
 	imageStore(i_cubemap, ivec3(gid), result);
 	

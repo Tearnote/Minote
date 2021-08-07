@@ -1,16 +1,15 @@
-#version 450 core
+#version 460
 #pragma shader_stage(fragment)
 
-layout(location = 0) out vec4 fColor;
+layout(location = 0) in vec4 f_color;
+layout(location = 1) in vec2 f_uv;
 
-layout(set=0, binding=0) uniform sampler2D sTexture;
+layout(location = 0) out vec4 out_color;
 
-layout(location = 0) in struct {
-    vec4 Color;
-    vec2 UV;
-} In;
+layout(binding = 0) uniform sampler2D s_texture;
 
-void main()
-{
-    fColor = In.Color * texture(sTexture, In.UV.st);
+void main() {
+	
+	out_color = f_color * texture(s_texture, f_uv.st);
+	
 }

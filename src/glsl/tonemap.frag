@@ -5,9 +5,9 @@ layout(location = 0) in vec2 f_texCoords;
 
 layout(location = 0) out vec4 out_color;
 
-layout(binding = 0) uniform sampler2D source;
+layout(binding = 0) uniform sampler2D s_source;
 
-vec3 uncharted2_tonemap_partial(vec3 x) {
+vec3 uncharted2TonemapPartial(vec3 x) {
 	
 	float A = 0.15;
 	float B = 0.50;
@@ -19,19 +19,21 @@ vec3 uncharted2_tonemap_partial(vec3 x) {
 	
 }
 
-vec3 uncharted2_filmic(vec3 v) {
+vec3 uncharted2Filmic(vec3 v) {
 	
 	float exposure_bias = 2.0;
-	vec3 curr = uncharted2_tonemap_partial(v * exposure_bias);
+	vec3 curr = uncharted2TonemapPartial(v * exposure_bias);
 	
 	vec3 W = vec3(8.0);
-	vec3 white_scale = vec3(1.0) / uncharted2_tonemap_partial(W);
+	vec3 white_scale = vec3(1.0) / uncharted2TonemapPartial(W);
 	return curr * white_scale;
 	
 }
 
 
 void main() {
-	out_color = texture(source, f_texCoords);
-	out_color = vec4(uncharted2_filmic(vec3(out_color)), 1.0);
+	
+	vec4 sourceTex = texture(s_source, f_texCoords);
+	out_color = vec4(uncharted2Filmic(vec3(sourceTex)), 1.0);
+	
 }

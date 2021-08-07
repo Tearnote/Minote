@@ -3,7 +3,7 @@
 
 layout(location = 0) out vec2 f_texCoords;
 
-#include "../include/util.glsl"
+#include "../util.glsl"
 
 void main() {
 	

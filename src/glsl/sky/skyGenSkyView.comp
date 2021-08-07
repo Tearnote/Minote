@@ -4,13 +4,13 @@
 layout(local_size_x = 8, local_size_y = 8) in;
 
 #define MULTIPLE_SCATTERING_ENABLED 1
-#include "../include/types.glsl"
+#include "../types.glsl"
 #include "sky.glsl"
 
 layout(binding = 0) uniform WorldConstants {
 	World u_world;
 };
-layout(push_constant) uniform ProbePosition {
+layout(push_constant) uniform PushConstants {
 	vec3 u_probePosition;
 };
 
@@ -39,7 +39,7 @@ void main() {
 	
 	float viewZenithCosAngle;
 	float lightViewCosAngle;
-	uvToSkyViewLutParams(viewZenithCosAngle, lightViewCosAngle, size, viewHeight, uv);
+	uvToSkyViewLutParams(viewZenithCosAngle, lightViewCosAngle, size, viewHeight, uv, u_atmo.bottomRadius);
 	
 	vec3 upVector = worldPos / viewHeight;
 	float sunZenithCosAngle = dot(upVector, u_world.sunDirection);

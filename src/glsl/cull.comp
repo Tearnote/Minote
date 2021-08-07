@@ -3,63 +3,67 @@
 
 layout(local_size_x = 64) in;
 
-#include "include/types.glsl"
+#include "types.glsl"
 
-layout (binding = 0, std430) buffer Draws {
-	IndirectCommand draws[];
+layout (binding = 0, std430) restrict buffer Draws {
+	IndirectCommand b_draws[];
 };
-layout (binding = 1, std430) buffer Descriptors {
-	MeshDescriptor descriptors[];
+layout (binding = 1, std430) restrict buffer Descriptors {
+	MeshDescriptor b_descriptors[];
 };
-layout (binding = 2, std430) readonly buffer MeshIndices {
-	uint meshIndices[];
+layout (binding = 2, std430) restrict readonly buffer MeshIndices {
+	uint b_meshIndices[];
 };
-layout (binding = 3, std430) readonly buffer Transforms {
-	Transform transforms[];
+layout (binding = 3, std430) restrict readonly buffer Transforms {
+	Transform b_transforms[];
 };
-layout (binding = 4, std430) readonly buffer Materials {
-	Material materials[];
+layout (binding = 4, std430) restrict readonly buffer Materials {
+	Material b_materials[];
 };
-layout (binding = 5, std430) writeonly buffer MeshIndicesCulled {
-	uint meshIndicesCulled[];
+layout (binding = 5, std430) restrict writeonly buffer MeshIndicesCulled {
+	uint b_meshIndicesCulled[];
 };
-layout (binding = 6, std430) writeonly buffer TransformsCulled {
-	RowTransform transformsCulled[];
+layout (binding = 6, std430) restrict writeonly buffer TransformsCulled {
+	RowTransform b_transformsCulled[];
 };
-layout (binding = 7, std430) writeonly buffer MaterialsCulled {
-	Material materialsCulled[];
+layout (binding = 7, std430) restrict writeonly buffer MaterialsCulled {
+	Material b_materialsCulled[];
 };
 layout(binding = 8) uniform CullData {
-	mat4 view;
-	vec4 frustum;
-	uint instancesCount;
+	mat4 u_view;
+	vec4 u_frustum;
+	uint u_instancesCount;
 };
 
-bool visible(uint gid, float radius) {
-	vec3 center = (view * vec4(transforms[gid].position, 1.0)).xyz;
-
+bool visible(uint _gid, float _radius) {
+	
+	vec3 center = (u_view * vec4(b_transforms[_gid].position, 1.0)).xyz;
+	
 	bool result = true;
-	result = result && center.z * frustum[1] - abs(center.x) * frustum[0] > -radius;
-	result = result && center.z * frustum[3] - abs(center.y) * frustum[2] > -radius;
+	result = result && center.z * u_frustum[1] - abs(center.x) * u_frustum[0] > -_radius;
+	result = result && center.z * u_frustum[3] - abs(center.y) * u_frustum[2] > -_radius;
 	
 	return result;
+	
 }
 
 void main() {
-	const uint gid = gl_GlobalInvocationID.x;
-	if (gid >= instancesCount) return;
 	
-	uint index = meshIndices[gid];
-	float scale = max(transforms[gid].scale.x,
-	              max(transforms[gid].scale.y,
-				      transforms[gid].scale.z));
-	float radius = descriptors[index].radius;
+	const uint gid = gl_GlobalInvocationID.x;
+	if (gid >= u_instancesCount) return;
+	
+	uint index = b_meshIndices[gid];
+	float scale = max(b_transforms[gid].scale.x,
+	              max(b_transforms[gid].scale.y,
+	                  b_transforms[gid].scale.z));
+	float radius = b_descriptors[index].radius;
 	if (!visible(gid, radius * scale)) return;
 	
-	uint offset = draws[index].firstInstance;
-	uint newid = offset + atomicAdd(draws[index].instanceCount, 1);
+	uint offset = b_draws[index].firstInstance;
+	uint newid = offset + atomicAdd(b_draws[index].instanceCount, 1);
 	
-	meshIndicesCulled[newid] = meshIndices[gid];
-	transformsCulled[newid] = encodeTransform(transforms[gid]);
-	materialsCulled[newid] = materials[gid];
+	b_meshIndicesCulled[newid] = b_meshIndices[gid];
+	b_transformsCulled[newid] = encodeTransform(b_transforms[gid]);
+	b_materialsCulled[newid] = b_materials[gid];
+	
 }
