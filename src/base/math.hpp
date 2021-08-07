@@ -1,6 +1,7 @@
 #pragma once
 
 #include <initializer_list>
+#include <type_traits>
 #include <numbers>
 #include <cmath>
 #include "base/container/array.hpp"
@@ -238,6 +239,21 @@ using u16vec2 = vec<2, u16>;
 using u16vec3 = vec<3, u16>;
 using u16vec4 = vec<4, u16>;
 
+static_assert(std::is_trivially_constructible_v<vec2>);
+static_assert(std::is_trivially_constructible_v<vec3>);
+static_assert(std::is_trivially_constructible_v<vec4>);
+static_assert(std::is_trivially_constructible_v<ivec2>);
+static_assert(std::is_trivially_constructible_v<ivec3>);
+static_assert(std::is_trivially_constructible_v<ivec4>);
+static_assert(std::is_trivially_constructible_v<uvec2>);
+static_assert(std::is_trivially_constructible_v<uvec3>);
+static_assert(std::is_trivially_constructible_v<uvec4>);
+static_assert(std::is_trivially_constructible_v<u8vec2>);
+static_assert(std::is_trivially_constructible_v<u8vec3>);
+static_assert(std::is_trivially_constructible_v<u8vec4>);
+static_assert(std::is_trivially_constructible_v<u16vec2>);
+static_assert(std::is_trivially_constructible_v<u16vec3>);
+
 // Generic matrix type, of order 3 or 4, and any floating-point precision
 template<usize Dim, floating_point Prec>
 struct mat {
@@ -345,6 +361,9 @@ constexpr auto perspective(Prec vFov, Prec aspectRatio, Prec zNear) -> mat<4, Pr
 using mat3 = mat<3, f32>;
 using mat4 = mat<4, f32>;
 
+static_assert(std::is_trivially_constructible_v<mat3>);
+static_assert(std::is_trivially_constructible_v<mat4>);
+
 // Quaternion, equivalent to a vec4 but with unique operations available.
 // Main purpose is representing rotations. Data layout is {w, x, y, z}.
 template<floating_point Prec = f32>
@@ -407,6 +426,8 @@ constexpr auto operator*(qua<Prec> const&, qua<Prec> const&) -> qua<Prec>;
 //=== Quaternion alias
 
 using quat = qua<f32>;
+
+static_assert(std::is_trivially_constructible_v<u16vec4>);
 
 //=== Conversion literals
 

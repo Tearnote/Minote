@@ -10,10 +10,10 @@ auto ObjectPool::create() -> ObjectID {
 	
 	if (m_deletedIDs.empty()) {
 		
-		metadata.emplace_back();
+		metadata.emplace_back(Metadata::make_default());
 		meshIDs.emplace_back();
-		transforms.emplace_back();
-		materials.emplace_back();
+		transforms.emplace_back(Transform::make_default());
+		materials.emplace_back(Material::make_default());
 		
 		return size() - 1;
 		
@@ -21,9 +21,9 @@ auto ObjectPool::create() -> ObjectID {
 		
 		auto id = m_deletedIDs.back();
 		m_deletedIDs.pop_back();
-		metadata[id] = Metadata();
-		transforms[id] = Transform();
-		materials[id] = Material();
+		metadata[id] = Metadata::make_default();
+		transforms[id] = Transform::make_default();
+		materials[id] = Material::make_default();
 		return id;
 		
 	}

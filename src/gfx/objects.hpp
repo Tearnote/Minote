@@ -1,5 +1,6 @@
 #pragma once
 
+#include <type_traits>
 #include "base/container/vector.hpp"
 #include "base/types.hpp"
 #include "base/math.hpp"
@@ -18,29 +19,50 @@ struct ObjectPool {
 	// Object state
 	struct Metadata {
 		
-		bool visible = true; // Invisible objects are temporarily excluded from drawing
-		bool exists = true; // Do not modify - internal garbage collection
+		bool visible; // Invisible objects are temporarily excluded from drawing
+		bool exists; // Do not modify - internal garbage collection
+		
+		// Construct with default values
+		static constexpr auto make_default() -> Metadata { return Metadata{true, true}; }
 		
 	};
 	
 	// Spatial properties
 	struct Transform {
 		
-		vec3 position = vec3(0.0f);
+		vec3 position;
 		f32 pad0;
-		vec3 scale = vec3(1.0f);
+		vec3 scale;
 		f32 pad1;
-		quat rotation = quat::identity();
+		quat rotation;
+		
+		// Construct with default values
+		static constexpr auto make_default() -> Transform {
+			
+			return Transform{
+				.position = vec3(0.0f),
+				.scale = vec3(1.0f),
+				.rotation = quat::identity()};
+			
+		}
 		
 	};
 	
 	// Shading properties
 	struct Material {
 		
-		vec4 tint = vec4(1.0f); // Per-vertex albedo is multiplied by this
+		vec4 tint; // Per-vertex albedo is multiplied by this
 		f32 roughness; // 0.0f - glossy, 1.0f - rough
 		f32 metalness; // 0.0f - dielectric, 1.0f - conductive
 		vec2 pad0;
+		
+		// Construct with default values
+		static constexpr auto make_default() -> Material {
+			
+			return Material{
+				.tint = vec4(1.0f)};
+			
+		}
 		
 	};
 	
@@ -53,6 +75,11 @@ struct ObjectPool {
 		Material& material;
 		
 	};
+	
+	// Ensure fast operation in large containers
+	static_assert(std::is_trivially_constructible_v<Metadata>);
+	static_assert(std::is_trivially_constructible_v<Transform>);
+	static_assert(std::is_trivially_constructible_v<Material>);
 	
 	// Return a handle to a new, uninitialized object. See above which fields
 	// do not have a default initializer. Remember to destroy() the object.

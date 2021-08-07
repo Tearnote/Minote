@@ -1,5 +1,6 @@
 #pragma once
 
+#include <type_traits>
 #include "base/container/string.hpp"
 #include "base/types.hpp"
 
@@ -8,32 +9,40 @@ namespace minote::base {
 // Resource ID. Created from a string, hashed at compile-time if possible.
 struct ID {
 	
-	constexpr ID(): id(0u) {}
+	// Trivial default constructor
+	constexpr ID() = default;
 	
 	// Hash string with FNV-1a
-	explicit constexpr ID(string_view str): id(Basis) {
+	explicit constexpr ID(string_view str): m_id(Basis) {
 		
 		for (auto ch: str) {
 			
-			id ^= ch;
-			id *= Prime;
+			m_id ^= ch;
+			m_id *= Prime;
 			
 		}
 		
 	}
 	
+	// Zero-initializing constructor
+	static constexpr auto make_default() -> ID { return ID(0u); }
+	
 	constexpr auto operator==(ID const&) const -> bool = default;
 	constexpr auto operator!=(ID const&) const -> bool = default;
-	constexpr auto operator+() const { return id; }
+	constexpr auto operator+() const { return m_id; }
 	
 private:
 	
 	static constexpr auto Prime = 16777619u;
 	static constexpr auto Basis = 2166136261u;
 	
-	u32 id;
+	u32 m_id;
+	
+	// Construct with specified hash
+	explicit constexpr ID(u32 id): m_id(id) {}
 	
 };
+static_assert(std::is_trivially_constructible_v<ID>);
 
 namespace literals {
 

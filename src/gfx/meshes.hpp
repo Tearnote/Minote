@@ -1,5 +1,6 @@
 #pragma once
 
+#include <type_traits>
 #include <span>
 #include "vuk/Context.hpp"
 #include "vuk/Buffer.hpp"
@@ -23,6 +24,9 @@ struct MeshDescriptor {
 	f32 radius;
 	
 };
+
+// Ensure fast operation in large containers
+static_assert(std::is_trivially_constructible_v<MeshDescriptor>);
 
 // A set of buffers storing vertex data for all meshes, and how to access each
 // mesh within the buffer.
