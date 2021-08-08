@@ -5,6 +5,6 @@
 
 namespace minote {
 
-void game(sys::Glfw& glfw, sys::Window& window);
+void game(sys::Window& window);
 
 }

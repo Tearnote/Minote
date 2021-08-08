@@ -2,11 +2,10 @@
 
 #include "config.hpp"
 
-#include <exception>
-#include <vector>
 #include "GLFW/glfw3.h"
 #include "optick.h"
 #include "imgui.h"
+#include "base/container/vector.hpp"
 #include "base/math.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"
@@ -14,7 +13,6 @@
 #include "gfx/engine.hpp"
 #include "assets.hpp"
 #include "mapper.hpp"
-//#include "playstate.hpp"
 #include "memory.hpp"
 #include "main.hpp"
 
@@ -23,27 +21,34 @@ namespace minote {
 using namespace base;
 using namespace base::literals;
 
-constexpr auto UpdateTick = 1_s / 120;
+// Rate of the logic update clock. Can be higher than display refresh rate.
+static constexpr auto LogicRate = 120;
+static constexpr auto LogicTick = 1_s / LogicRate;
 
-void game(sys::Glfw&, sys::Window& window) try {
+void game(sys::Window& _window) try {
 	
 	OPTICK_THREAD("Game");
-
-	// *** Initialization ***
+	
+	// Initialize core systems
 	
 	attachPoolResources();
 	
 	auto mapper = Mapper();
 	
+	auto vulkan = sys::Vulkan(_window);
+	
+	// Load assets
+	
 	auto meshList = gfx::MeshList();
-	auto assets = Assets(AssetsPath);
+	auto assets = Assets(Assets_p);
 	assets.loadModels([&meshList](auto name, auto data) {
 		
 		meshList.addGltf(name, data);
 		
 	});
 	
-	auto vulkan = sys::Vulkan(window);
+	// Start up graphics engine
+	
 	auto engine = gfx::Engine(vulkan, std::move(meshList));
 	
 	engine.camera() = gfx::Camera{
@@ -51,8 +56,9 @@ void game(sys::Glfw&, sys::Window& window) try {
 		.yaw = 58_deg,
 		.pitch = -12_deg,
 		.lookSpeed = 1.0f / 256.0f,
-		.moveSpeed = 1_m / 16.0f,
-	};
+		.moveSpeed = 1_m / 16.0f};
+	
+	// Makeshift freeform camera controls
 	auto camUp = false;
 	auto camDown = false;
 	auto camLeft = false;
@@ -61,22 +67,22 @@ void game(sys::Glfw&, sys::Window& window) try {
 	auto cursorLastPos = vec2();
 	auto lastButtonState = false;
 	
-	// PlayState play;
+	// Create test scene
 	
-	// Create renderable objects
-	
-	auto dynamicObjects = std::vector<gfx::ObjectID>();
+	// Keep track of the spinning cubes so that we can rotate them each frame
+	auto dynamicObjects = ivector<gfx::ObjectID>();
 	defer {
 		for (auto id: dynamicObjects)
 			engine.objects().destroy(id);
 	};
 	
-	auto const Expand = 20u;
-	auto prescale = vec3{1_m, 1_m, 1_m};
-	auto rotation = quat::angleAxis(180_deg, {1.0f, 0.0f, 0.0f});
+	/*constexpr*/ auto prescale = vec3{1_m, 1_m, 1_m};
+	/*constexpr*/ auto rotation = quat::angleAxis(180_deg, {1.0f, 0.0f, 0.0f});
+	constexpr auto Expand = 20u;
 	constexpr auto Spacing = 25_m;
 	for (auto x = -Spacing * Expand; x <= Spacing * Expand; x += Spacing)
 	for (auto y = -Spacing * Expand; y <= Spacing * Expand; y += Spacing) {
+		
 		auto offset = vec3{x, y, 64_m};
 		
 		auto block1_id = engine.objects().create();
@@ -150,6 +156,7 @@ void game(sys::Glfw&, sys::Window& window) try {
 		block7.material.metalness = 0.9f;
 		
 		for (auto i = 0.0f; i <= 1.0f; i += 0.125f) {
+			
 			auto offset2 = offset + vec3{(i - 0.5f) * 2.0f * 8_m, 0_m, 0_m};
 			
 			auto sphere1_id = engine.objects().create();
@@ -167,25 +174,31 @@ void game(sys::Glfw&, sys::Window& window) try {
 			sphere2.transform.scale = prescale;
 			sphere2.material.roughness = i;
 			sphere2.material.metalness = 0.1f;
+			
 		}
+		
 	}
 	
-	// *** Main loop ***
+	L_INFO("Game initialized");
+	
+	// Main loop
 	
 	auto nextUpdate = sys::Glfw::getTime();
 	
-	while (!window.isClosing()) {
+	while (!_window.isClosing()) {
+		
 		OPTICK_FRAME("Renderer");
 		
 		// Input
-		mapper.collectKeyInputs(window);
-
+		mapper.collectKeyInputs(_window);
+		
 		// Logic
-		auto updateActions = std::vector<Mapper::Action>();
-		updateActions.reserve(16);
+		auto updateActions = ivector<Mapper::Action, 256, PerFrame>();
 		while (nextUpdate <= sys::Glfw::getTime()) {
-			updateActions.clear();
+			
+			// Pull all suitable input events from the queue
 			mapper.processActions([&](auto const& action) {
+				
 				if (action.timestamp > nextUpdate) return false;
 				
 				if (action.state == Mapper::Action::State::Pressed && ImGui::GetIO().WantCaptureKeyboard)
@@ -196,8 +209,8 @@ void game(sys::Glfw&, sys::Window& window) try {
 				// Interpret quit events here for now
 				using Action = Mapper::Action::Type;
 				if (action.type == Action::Back)
-					window.requestClose();
-
+					_window.requestClose();
+				
 				// Placeholder camera input
 				auto state = action.state == Mapper::Action::State::Pressed? true : false;
 				if (action.type == Action::Drop)
@@ -212,23 +225,29 @@ void game(sys::Glfw&, sys::Window& window) try {
 					camFloat = state;
 				
 				return true;
+				
 			});
 			
-//			play.tick(updateActions);
-			nextUpdate += UpdateTick;
+			nextUpdate += LogicTick;
 			
 			// Placeholder camera controls
-			auto cursorNewPos = window.mousePos();
+			auto cursorNewPos = _window.mousePos();
 			auto cursorOffset = vec2();
-			if (!lastButtonState && window.mouseDown()) {
+			if (!lastButtonState && _window.mouseDown()) {
+				
 				lastButtonState = true;
 				cursorLastPos = cursorNewPos;
+				
 			}
-			if (!window.mouseDown() || ImGui::GetIO().WantCaptureMouse)
+			
+			if (!_window.mouseDown() || ImGui::GetIO().WantCaptureMouse)
 				lastButtonState = false;
+			
 			if (lastButtonState) {
+				
 				cursorOffset += cursorNewPos - cursorLastPos;
 				cursorLastPos = cursorNewPos;
+				
 			}
 			cursorOffset.y() = -cursorOffset.y();
 			
@@ -238,25 +257,35 @@ void game(sys::Glfw&, sys::Window& window) try {
 				0.0f,
 				float(camUp) - float(camDown)});
 			engine.camera().shift({0.0f, 0.0f, float(camFloat)});
+			
 		}
 		
 		// Graphics
 		
 		{
+			
 			OPTICK_EVENT("Update spinny squares");
-			auto rotateTransform = quat::angleAxis(180_deg, {1.0f, 0.0f, 0.0f});
+			/*constexpr*/ auto rotateTransform = quat::angleAxis(180_deg, {1.0f, 0.0f, 0.0f});
 			auto rotateTransformAnim = quat::angleAxis(radians(ratio(sys::Glfw::getTime(), 20_ms)), {0.0f, 0.0f, 1.0f});
 			for (auto& obj: dynamicObjects)
 				engine.objects().get(obj).transform.rotation = rotateTransformAnim * rotateTransform;
+			
 		}
 		
 		engine.render();
+		
+		// Cleanup frame resources
+		
+		resetPerFrameAllocator();
+		
 	}
 	
 } catch (std::exception const& e) {
+	
 	L_CRIT("Unhandled exception on game thread: {}", e.what());
 	L_CRIT("Cannot recover, shutting down. Please report this error to the developer");
-	window.requestClose();
+	_window.requestClose();
+	
 }
 
 }

@@ -11,7 +11,7 @@ namespace minote {
 using namespace base;
 using namespace base::literals;
 
-enum struct PoolSlot {
+enum struct PoolSlot: usize {
 	Permanent = 0,
 	PerFrame = 1,
 	Scratch = 2,
@@ -43,6 +43,12 @@ inline void attachPoolResources() {
 	
 	GlobalPool.attach(+PoolSlot::PerFrame, Arena("Per-frame", 16_mb));
 	GlobalPool.attach(+PoolSlot::Scratch, Stack("Scratch", 32_mb));
+	
+}
+
+inline void resetPerFrameAllocator() {
+	
+	GlobalPool.at<Arena>(+PoolSlot::PerFrame).reset();
 	
 }
 

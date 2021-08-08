@@ -35,13 +35,8 @@ auto main(int, char*[]) -> int try {
 #ifdef _WIN32
 	SetConsoleOutputCP(65001); // Set Windows cmd encoding to UTF-8
 #endif //_WIN32
-
-#ifndef NDEBUG
-	constexpr auto Logpath = "minote-debug.log";
-#else //NDEBUG
-	constexpr auto Logpath = "minote.log";
-#endif //NDEBUG
-	Log::init(Logpath, LOG_LEVEL);
+	
+	Log::init(Log_p, LOG_LEVEL);
 
 	L_INFO("Starting up {} {}", AppTitle, AppVersion);
 
@@ -52,7 +47,7 @@ auto main(int, char*[]) -> int try {
 	// *** Thread startup ***
 
 	// Game thread
-	auto gameThread = std::jthread(game, std::ref(glfw), std::ref(window));
+	auto gameThread = std::jthread(game, std::ref(window));
 
 	// Input thread loop
 	while (!window.isClosing()) {
