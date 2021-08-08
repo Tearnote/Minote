@@ -1,24 +1,31 @@
 #include "assets.hpp"
 
-#include <stdexcept>
-#include "quill/Fmt.h"
+#include "base/error.hpp"
 #include "base/log.hpp"
 
 namespace minote {
 
 using namespace base;
 
-Assets::Assets(std::string_view _path) {
-	path = std::string(_path);
-	if (auto result = sqlite3_open_v2(path.c_str(), &db, SQLITE_OPEN_READONLY, nullptr); result != SQLITE_OK) {
-		sqlite3_close(db);
-		throw std::runtime_error(fmt::format(R"(Failed to open database "{}": {})", path, sqlite3_errstr(result)));
+Assets::Assets(string_view _path) {
+	
+	m_path = sstring(_path);
+	if (auto result = sqlite3_open_v2(m_path.c_str(), &m_db, SQLITE_OPEN_READONLY, nullptr); result != SQLITE_OK) {
+		
+		sqlite3_close(m_db);
+		throw runtime_error_fmt("Failed to open database {}: {}", m_path, sqlite3_errstr(result));
+		
 	}
+	
+	L_INFO("Opened assets file {}", m_path);
+	
 }
 
 Assets::~Assets() {
-	if (auto result = sqlite3_close(db); result != SQLITE_OK)
-		L_WARN(R"(Failed to close database "{}": {})", path, sqlite3_errstr(result));
+	
+	if (auto result = sqlite3_close(m_db); result != SQLITE_OK)
+		L_WARN("Failed to close database {}: {}", m_path, sqlite3_errstr(result));
+	
 }
 
 }

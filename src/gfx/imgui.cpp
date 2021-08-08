@@ -6,6 +6,7 @@
 #include "base/types.hpp"
 #include "base/util.hpp"
 #include "base/math.hpp"
+#include "base/log.hpp"
 #include "gfx/samplers.hpp"
 
 namespace minote::gfx {
@@ -13,7 +14,8 @@ namespace minote::gfx {
 using namespace base;
 using namespace base::literals;
 
-auto LinearImVec4(f32 r, f32 g, f32 b, f32 a) -> ImVec4 {
+// Helper function to convert ImGui skins from sRGB to linear color
+static auto LinearImVec4(f32 r, f32 g, f32 b, f32 a) -> ImVec4 {
 	
 	constexpr auto power = 2.2f;
 	
@@ -119,6 +121,8 @@ auto ImGui_ImplVuk_Init(vuk::PerThreadContext& _ptc) -> ImguiData {
 	}, "imgui.frag");
 	imguiPci.set_blend(vuk::BlendPreset::eAlphaBlend);
 	_ptc.ctx.create_named_pipeline("imgui", imguiPci);
+	
+	L_DEBUG("ImGui initialized");
 	
 	return data;
 	

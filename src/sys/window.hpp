@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <atomic>
 #include <mutex>
 #include <queue>

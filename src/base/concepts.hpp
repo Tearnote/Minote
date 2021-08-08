@@ -1,7 +1,6 @@
 #pragma once
 
 #include <type_traits>
-#include <concepts>
 
 namespace minote::base {
 
@@ -16,12 +15,5 @@ concept arithmetic = std::is_arithmetic_v<T>;
 // Objects that can be safely copied with memcpy.
 template<typename T>
 concept trivially_copyable = std::is_trivially_copyable_v<T>;
-
-// Imports of built-in concepts
-
-using std::default_initializable;
-using std::floating_point;
-using std::invocable;
-using std::integral;
 
 }

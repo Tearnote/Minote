@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include "base/concepts.hpp"
 #include "base/types.hpp"
 
@@ -18,7 +19,7 @@ template<arithmetic T>
 constexpr auto milliseconds(T val) { return val * 1'000'000; }
 
 // Get an accurate floating-point ratio between two nsecs
-template<floating_point T = f32>
+template<std::floating_point T = f32>
 constexpr auto ratio(nsec left, nsec right) -> T { return f64(left) / f64(right); }
 
 namespace literals {

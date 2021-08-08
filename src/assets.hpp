@@ -1,33 +1,36 @@
 #pragma once
 
-#include <string_view>
 #include <concepts>
-#include <string>
 #include <span>
 #include "sqlite3.h"
+#include "base/container/string.hpp"
 
 namespace minote {
 
 struct Assets {
-
-	explicit Assets(std::string_view path);
+	
+	// Open the sqlite database containing game assets. File remains open
+	// until this object is destroyed.
+	explicit Assets(string_view path);
 	~Assets();
-
+	
+	// Iterate over all rows in the models table, and call the provided function
+	// on each model's data.
 	template<typename F>
-		requires std::invocable<F, std::string_view, std::span<char const>>
+	requires std::invocable<F, string_view, std::span<char const>>
 	void loadModels(F func);
-
+	
 	// Not moveable, not copyable
 	Assets(Assets const&) = delete;
 	auto operator=(Assets const&) -> Assets& = delete;
-	Assets(Assets&&) noexcept = delete;
-	auto operator=(Assets&&) noexcept -> Assets& = delete;
-
+	
 private:
-
-	sqlite3* db = nullptr;
-	std::string path;
-
+	
+	static constexpr auto Models_n = "models";
+	
+	sqlite3* m_db = nullptr;
+	sstring m_path;
+	
 };
 
 }

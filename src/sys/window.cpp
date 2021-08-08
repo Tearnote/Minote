@@ -25,7 +25,7 @@ static auto getWindow(GLFWwindow* _handle) -> Window& {
 void Window::keyCallback(GLFWwindow* _handle, int _rawKeycode, int _rawScancode, int _rawState,
 	int) {
 	
-	assert(handle);
+	assert(_handle);
 	if (_rawState == GLFW_REPEAT) return; // Key repeat is not used
 	auto& window = getWindow(_handle);
 	using State = KeyInput::State;
@@ -48,9 +48,9 @@ void Window::keyCallback(GLFWwindow* _handle, int _rawKeycode, int _rawScancode,
 
 void Window::framebufferResizeCallback(GLFWwindow* _handle, int _width, int _height) {
 	
-	assert(handle);
-	assert(width >= 0);
-	assert(height >= 0);
+	assert(_handle);
+	assert(_width >= 0);
+	assert(_height >= 0);
 	auto& window = getWindow(_handle);
 	
 	auto newSize = ivec2{_width, _height};
@@ -62,8 +62,8 @@ void Window::framebufferResizeCallback(GLFWwindow* _handle, int _width, int _hei
 
 void Window::windowScaleCallback(GLFWwindow* _handle, float _xScale, float) {
 	
-	assert(handle);
-	assert(xScale);
+	assert(_handle);
+	assert(_xScale);
 	// yScale seems to sometimes be 0.0, so it is not reliable
 	auto& window = getWindow(_handle);
 	
@@ -84,7 +84,7 @@ void Window::cursorPosCallback(GLFWwindow* _handle, double _xPos, double _yPos) 
 
 void Window::mouseButtonCallback(GLFWwindow* _handle, int _button, int _action, int) {
 	
-	assert(handle);
+	assert(_handle);
 	auto& window = getWindow(_handle);
 	
 	if (_button == GLFW_MOUSE_BUTTON_LEFT)

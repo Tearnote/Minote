@@ -1,6 +1,7 @@
 #pragma once
 
 #include <type_traits>
+#include <concepts>
 #include <ranges>
 #include <tuple>
 #include "base/concepts.hpp"
@@ -20,7 +21,7 @@ using std::ranges::views::reverse;
 // the current rules of the language.
 // Example: offset_of(&Point::y)
 // See: https://gist.github.com/graphitemaster/494f21190bb2c63c5516
-template<typename T1, default_initializable T2>
+template<typename T1, std::default_initializable T2>
 inline auto offset_of(T1 T2::*member) -> usize {
 	
 	static auto obj = T2();
@@ -38,7 +39,7 @@ constexpr auto align(usize size, usize boundary) -> usize {
 
 // Execute n times.
 template<typename F>
-requires invocable<F>
+requires std::invocable<F>
 constexpr void repeat(usize times, F func) {
 	
 	for (auto i = usize(0); i < times; i += 1)

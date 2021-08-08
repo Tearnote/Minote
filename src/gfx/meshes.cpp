@@ -3,11 +3,13 @@
 #include <utility>
 #include <cassert>
 #include <cstring>
+#include "optick.h"
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
 #include "quill/Fmt.h"
 #include "base/error.hpp"
 #include "base/util.hpp"
+#include "base/log.hpp"
 
 namespace minote::gfx {
 
@@ -15,6 +17,8 @@ using namespace base;
 using namespace base::literals;
 
 void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
+	
+	OPTICK_EVENT("MeshList::addGltf");
 	
 	// Load and parse
 	
@@ -112,9 +116,13 @@ void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
 		
 	}
 	
+	L_DEBUG("Parsed GLTF mesh {}", _name);
+	
 }
 
 auto MeshList::upload(vuk::PerThreadContext& _ptc) && -> MeshBuffer {
+	
+	OPTICK_EVENT("MeshList::upload");
 	
 	auto result = MeshBuffer{
 		.verticesBuf = _ptc.create_buffer<vec3>(vuk::MemoryUsage::eGPUonly,
@@ -142,6 +150,8 @@ auto MeshList::upload(vuk::PerThreadContext& _ptc) && -> MeshBuffer {
 	indices.shrink_to_fit();
 	
 	return result;
+	
+	L_DEBUG("Uploaded all meshes to GPU");
 	
 }
 
