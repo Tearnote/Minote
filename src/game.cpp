@@ -77,8 +77,8 @@ void game(sys::Window& _window) try {
 			engine.objects().destroy(id);
 	};
 	
-	/*constexpr*/ auto prescale = vec3{1_m, 1_m, 1_m};
-	/*constexpr*/ auto rotation = quat::angleAxis(180_deg, {1.0f, 0.0f, 0.0f});
+	constexpr auto prescale = vec3{1_m, 1_m, 1_m};
+	constexpr auto rotation = quat::angleAxis(180_deg, {1.0f, 0.0f, 0.0f});
 	constexpr auto Expand = 20u;
 	constexpr auto Spacing = 25_m;
 	for (auto x = -Spacing * Expand; x <= Spacing * Expand; x += Spacing)
@@ -266,7 +266,7 @@ void game(sys::Window& _window) try {
 		{
 			
 			OPTICK_EVENT("Update spinny squares");
-			/*constexpr*/ auto rotateTransform = quat::angleAxis(180_deg, {1.0f, 0.0f, 0.0f});
+			constexpr auto rotateTransform = quat::angleAxis(180_deg, {1.0f, 0.0f, 0.0f});
 			auto rotateTransformAnim = quat::angleAxis(radians(ratio(sys::Glfw::getTime(), 20_ms)), {0.0f, 0.0f, 1.0f});
 			for (auto& obj: dynamicObjects)
 				engine.objects().get(obj).transform.rotation = rotateTransformAnim * rotateTransform;

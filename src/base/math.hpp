@@ -4,7 +4,7 @@
 #include <type_traits>
 #include <concepts>
 #include <numbers>
-#include <cmath>
+#include "gcem.hpp"
 #include "base/container/array.hpp"
 #include "base/concepts.hpp"
 #include "base/types.hpp"
@@ -23,18 +23,18 @@ constexpr auto Tau = Tau_v<f32>;
 
 //=== Scalar operations
 
-using std::min;
-using std::max;
-using std::abs;
-using std::floor;
+using gcem::min;
+using gcem::max;
+using gcem::abs;
+using gcem::floor;
 
-using std::pow;
-using std::sqrt;
-using std::log2;
+using gcem::pow;
+using gcem::sqrt;
+using gcem::log2;
 
-using std::sin;
-using std::cos;
-using std::tan;
+using gcem::sin;
+using gcem::cos;
+using gcem::tan;
 
 // Degrees to radians conversion
 template<arithmetic T, std::floating_point Prec = f32>

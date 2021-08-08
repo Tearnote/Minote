@@ -256,6 +256,12 @@ FetchContent_Declare(quill
 FetchContent_MakeAvailable(quill)
 target_link_libraries(Minote PRIVATE quill::quill)
 
+FetchContent_Declare(gcem
+        GIT_REPOSITORY https://github.com/kthohr/gcem
+        GIT_TAG 8d0e62d9c9c47dfad2cb2d800281908cf7ff16c6)
+FetchContent_MakeAvailable(gcem)
+target_link_libraries(Minote PRIVATE gcem)
+
 # Shader compilation
 
 set(SHADER_SOURCES
