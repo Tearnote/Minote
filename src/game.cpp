@@ -2,6 +2,7 @@
 
 #include "config.hpp"
 
+#include <exception>
 #include "GLFW/glfw3.h"
 #include "optick.h"
 #include "imgui.h"
@@ -9,8 +10,8 @@
 #include "base/math.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"
-#include "sys/vulkan.hpp"
 #include "gfx/engine.hpp"
+#include "sys/vulkan.hpp"
 #include "assets.hpp"
 #include "mapper.hpp"
 #include "memory.hpp"
