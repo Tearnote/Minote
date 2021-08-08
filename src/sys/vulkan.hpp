@@ -8,13 +8,8 @@
 
 namespace minote::sys {
 
+// Initialization and cleanup of the basic Vulkan objects.
 struct Vulkan {
-	
-	explicit Vulkan(Window&);
-	~Vulkan();
-	
-	// Create a swapchain object, optionally reusing resources from an existing one.
-	auto createSwapchain(VkSwapchainKHR old = VK_NULL_HANDLE) -> vuk::Swapchain;
 	
 	vkb::Instance instance;
 	VkSurfaceKHR surface;
@@ -22,7 +17,16 @@ struct Vulkan {
 	vuk::SwapChainRef swapchain;
 	std::optional<vuk::Context> context;
 	
+	explicit Vulkan(Window&);
+	~Vulkan();
+	
+	// Create a swapchain object, optionally reusing resources from an existing one.
+	auto createSwapchain(VkSwapchainKHR old = VK_NULL_HANDLE) -> vuk::Swapchain;
+	
+	// Not copyable, not movable
+	Vulkan(Vulkan const&) = delete;
+	auto operator=(Vulkan const&) -> Vulkan& = delete;
+	
 };
-
 
 }

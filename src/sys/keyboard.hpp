@@ -1,6 +1,10 @@
 #pragma once
 
+#include "base/types.hpp"
+
 namespace minote::sys {
+
+using namespace base;
 
 // Platform-independent keycode. GLFW symbols are inlined to avoid including the header
 // See: https://www.glfw.org/docs/3.3/group__keys.html
@@ -132,16 +136,16 @@ enum struct Keycode {
 struct Scancode {
 
 	// Create the scancode. The default value is different from any real scancode.
-	constexpr explicit Scancode(int raw = -1) noexcept : code(raw) {}
+	constexpr explicit Scancode(i32 raw = -1) noexcept : m_code(raw) {}
 	explicit Scancode(Keycode);
 
 	constexpr auto operator==(Scancode const&) const -> bool = default;
 	constexpr auto operator!=(Scancode const&) const -> bool = default;
-	constexpr auto operator+() const { return code; }
+	constexpr auto operator+() const { return m_code; }
 
 private:
 
-	int code;
+	i32 m_code;
 
 };
 
