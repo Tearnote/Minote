@@ -10,10 +10,12 @@ namespace minote {
 
 using namespace base;
 
+// Converter of events from user input devices into logical game events.
 struct Mapper {
-
+	
+	// A logical input event
 	struct Action {
-
+		
 		enum struct Type {
 			None,
 			Left, Right,
@@ -23,37 +25,42 @@ struct Mapper {
 			Accept, Back,
 			Count,
 		};
-
+		
 		enum struct State {
 			Pressed,
 			Released,
 		};
-
+		
 		Type type;
 		State state;
 		nsec timestamp;
-
+		
 	};
-
-	// Dequeue all pending keyboard inputs from the given Window, translate them to actions
-	// and insert them into the actions queue. If the actions queue is full, the given Window's
-	// input queue will still have all of the unprocessed inputs.
-	void collectKeyInputs(sys::Window& window);
-
+	
+	// Dequeue all pending keyboard inputs from the given Window, translate them
+	// to actions and insert them into the actions queue.
+	void collectKeyInputs(sys::Window&);
+	
+	// Execute the provided function on every action currently in the queue.
+	// Processing stops prematurely if the function returns false.
+	// Inlined because of a bug in MSVC.
 	template<typename F>
-		requires std::predicate<F, Action const&>
+	requires std::predicate<F, Action const&>
 	void processActions(F func) {
-		while(!actions.empty()) {
-			if(!func(actions.front())) return;
-			actions.pop();
+		
+		while(!m_actions.empty()) {
+			
+			if(!func(m_actions.front())) return;
+			m_actions.pop();
+			
 		}
+		
 	}
-
+	
 private:
-
-	// Processed inputs, ready to be retrieved with peek/dequeueAction()
-	std::queue<Action> actions;
-
+	
+	std::queue<Action> m_actions;
+	
 };
 
 }

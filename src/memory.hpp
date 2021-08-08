@@ -11,6 +11,7 @@ namespace minote {
 using namespace base;
 using namespace base::literals;
 
+// Mapping of memory allocator usage in the pool
 enum struct PoolSlot: usize {
 	Permanent = 0,
 	PerFrame = 1,
@@ -20,25 +21,27 @@ enum struct PoolSlot: usize {
 
 inline auto GlobalPool = Pool();
 
+// Bump allocator, whose memory is freed at the end of each frame
 template<typename T>
 using PerFrame = PoolAllocator<T, GlobalPool, +PoolSlot::PerFrame, Arena>;
 
+// Stack allocator, to be used with a ScratchMarker at the start of a scope
 template<typename T>
 using Scratch = PoolAllocator<T, GlobalPool, +PoolSlot::Scratch, Stack>;
 
+// Marker struct that frees all scratch memory allocated since its creation
+// when it's destroyed
 struct ScratchMarker {
 	
-	ScratchMarker(): marker(GlobalPool.at<Stack>(+PoolSlot::Scratch)) {}
+	ScratchMarker(): m_marker(GlobalPool.at<Stack>(+PoolSlot::Scratch)) {}
 	
 private:
 	
-	StackMarker marker;
+	StackMarker m_marker;
 	
 };
 
-template<typename T>
-using StdAlloc = std::allocator<T>;
-
+// Initialize all memory allocators
 inline void attachPoolResources() {
 	
 	GlobalPool.attach(+PoolSlot::PerFrame, Arena("Per-frame", 16_mb));
@@ -46,6 +49,7 @@ inline void attachPoolResources() {
 	
 }
 
+// Call at the end of a frame to free all per-frame memory at once
 inline void resetPerFrameAllocator() {
 	
 	GlobalPool.at<Arena>(+PoolSlot::PerFrame).reset();
