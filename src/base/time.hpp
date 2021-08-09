@@ -12,11 +12,11 @@ using nsec = i64;
 
 // Create nsec from a count of seconds
 template<arithmetic T>
-constexpr auto seconds(T val) -> nsec { return val * 1'000'000'000; }
+constexpr auto seconds(T val) -> nsec { return val * 1'000'000'000LL; }
 
 // Create nsec from a count of milliseconds
 template<arithmetic T>
-constexpr auto milliseconds(T val) { return val * 1'000'000; }
+constexpr auto milliseconds(T val) { return val * 1'000'000LL; }
 
 // Get an accurate floating-point ratio between two nsecs
 template<std::floating_point T = f32>

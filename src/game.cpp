@@ -3,8 +3,8 @@
 #include "config.hpp"
 
 #include <exception>
-#include "GLFW/glfw3.h"
 #include "optick.h"
+#include "backends/imgui_impl_sdl.h"
 #include "imgui.h"
 #include "base/container/vector.hpp"
 #include "base/math.hpp"
@@ -65,8 +65,8 @@ void game(sys::Window& _window) try {
 	auto camLeft = false;
 	auto camRight = false;
 	auto camFloat = false;
-	auto cursorLastPos = vec2();
-	auto lastButtonState = false;
+	auto camMoving = false;
+	auto camOffset = vec2(0.0f);
 	
 	// Create test scene
 	
@@ -184,46 +184,66 @@ void game(sys::Window& _window) try {
 	
 	// Main loop
 	
-	auto nextUpdate = sys::Glfw::getTime();
+	auto nextUpdate = sys::System::getTime();
 	
-	while (!_window.isClosing()) {
+	while (!sys::System::isQuitting()) {
 		
 		OPTICK_FRAME("Renderer");
 		
-		// Input
-		mapper.collectKeyInputs(_window);
+		// Input handling
 		
-		// Logic
-		auto updateActions = ivector<Mapper::Action, 256, PerFrame>();
-		while (nextUpdate <= sys::Glfw::getTime()) {
+		ImGui_ImplSDL2_NewFrame(_window.handle());
+		
+		while (nextUpdate <= sys::System::getTime()) {
 			
-			// Pull all suitable input events from the queue
-			mapper.processActions([&](auto const& action) {
+			// Iterate over all events
+			
+			sys::System::forEachEvent([&] (const sys::System::Event& e) -> bool {
 				
-				if (action.timestamp > nextUpdate) return false;
+				// Don't handle events from the future
+				if (milliseconds(e.common.timestamp) > nextUpdate) return false;
 				
-				if (action.state == Mapper::Action::State::Pressed && ImGui::GetIO().WantCaptureKeyboard)
-					return false;
+				// Leave quit events alone
+				if (e.type == SDL_QUIT) return false;
 				
-				updateActions.push_back(action);
+				// Let ImGui handle all events it uses
+				ImGui_ImplSDL2_ProcessEvent(&e);
 				
-				// Interpret quit events here for now
-				using Action = Mapper::Action::Type;
-				if (action.type == Action::Back)
-					_window.requestClose();
+				// If ImGui wants exclusive control, leave now
+				if (e.type == SDL_KEYDOWN)
+					if (ImGui::GetIO().WantCaptureKeyboard) return true;
+				if (e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEMOTION)
+					if (ImGui::GetIO().WantCaptureMouse) return true;
 				
-				// Placeholder camera input
-				auto state = action.state == Mapper::Action::State::Pressed? true : false;
-				if (action.type == Action::Drop)
-					camUp = state;
-				if (action.type == Action::Lock)
-					camDown = state;
-				if (action.type == Action::Left)
-					camLeft = state;
-				if (action.type == Action::Right)
-					camRight = state;
-				if (action.type == Action::Skip)
-					camFloat = state;
+				// Camera motion
+				if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT)
+					camMoving = true;
+				if (e.type == SDL_MOUSEBUTTONUP && e.button.button == SDL_BUTTON_LEFT)
+					camMoving = false;
+				if (e.type == SDL_MOUSEMOTION)
+					camOffset += vec2{f32(e.motion.xrel), f32(e.motion.yrel)};
+				
+				// Game logic events
+				if (auto action = mapper.convert(e)) {
+					
+					// Quit event
+					if (action->type == Action::Type::Back)
+						sys::System::postQuitEvent();
+					
+					// Placeholder camera input
+					auto state = (action->state == Mapper::Action::State::Pressed? true : false);
+					if (action->type == Action::Type::Drop)
+						camUp = state;
+					if (action->type == Action::Type::Lock)
+						camDown = state;
+					if (action->type == Action::Type::Left)
+						camLeft = state;
+					if (action->type == Action::Type::Right)
+						camRight = state;
+					if (action->type == Action::Type::Skip)
+						camFloat = state;
+					
+				}
 				
 				return true;
 				
@@ -231,35 +251,23 @@ void game(sys::Window& _window) try {
 			
 			nextUpdate += LogicTick;
 			
-			// Placeholder camera controls
-			auto cursorNewPos = _window.mousePos();
-			auto cursorOffset = vec2();
-			if (!lastButtonState && _window.mouseDown()) {
-				
-				lastButtonState = true;
-				cursorLastPos = cursorNewPos;
-				
-			}
-			
-			if (!_window.mouseDown() || ImGui::GetIO().WantCaptureMouse)
-				lastButtonState = false;
-			
-			if (lastButtonState) {
-				
-				cursorOffset += cursorNewPos - cursorLastPos;
-				cursorLastPos = cursorNewPos;
-				
-			}
-			cursorOffset.y() = -cursorOffset.y();
-			
-			engine.camera().rotate(cursorOffset.x(), cursorOffset.y());
-			engine.camera().roam({
-				float(camRight) - float(camLeft),
-				0.0f,
-				float(camUp) - float(camDown)});
-			engine.camera().shift({0.0f, 0.0f, float(camFloat)});
-			
 		}
+		
+		// Logic
+		
+		// Camera update
+		camOffset.y() = -camOffset.y();
+		
+		if (camMoving)
+			engine.camera().rotate(camOffset.x(), camOffset.y());
+		
+		engine.camera().roam({
+			float(camRight) - float(camLeft),
+			0.0f,
+			float(camUp) - float(camDown)});
+		engine.camera().shift({0.0f, 0.0f, float(camFloat)});
+		
+		camOffset = vec2(0.0f);
 		
 		// Graphics
 		
@@ -267,7 +275,7 @@ void game(sys::Window& _window) try {
 			
 			OPTICK_EVENT("Update spinny squares");
 			constexpr auto rotateTransform = quat::angleAxis(180_deg, {1.0f, 0.0f, 0.0f});
-			auto rotateTransformAnim = quat::angleAxis(radians(ratio(sys::Glfw::getTime(), 20_ms)), {0.0f, 0.0f, 1.0f});
+			auto rotateTransformAnim = quat::angleAxis(radians(ratio(sys::System::getTime(), 20_ms)), {0.0f, 0.0f, 1.0f});
 			for (auto& obj: dynamicObjects)
 				engine.objects().get(obj).transform.rotation = rotateTransformAnim * rotateTransform;
 			
@@ -285,7 +293,7 @@ void game(sys::Window& _window) try {
 	
 	L_CRIT("Unhandled exception on game thread: {}", e.what());
 	L_CRIT("Cannot recover, shutting down. Please report this error to the developer");
-	_window.requestClose();
+	sys::System::postQuitEvent();
 	
 }
 

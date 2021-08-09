@@ -64,10 +64,9 @@ add_executable(Minote
         src/base/log.hpp src/base/log.cpp
         src/base/rng.hpp
         src/base/id.hpp
-        src/sys/keyboard.hpp src/sys/keyboard.cpp
         src/sys/window.hpp src/sys/window.cpp
         src/sys/vulkan.hpp src/sys/vulkan.cpp
-        src/sys/glfw.hpp src/sys/glfw.cpp
+        src/sys/system.hpp src/sys/system.cpp
         src/gfx/module/iblCoeffs.hpp
         src/gfx/module/indirect.hpp src/gfx/module/indirect.cpp
         src/gfx/module/forward.hpp src/gfx/module/forward.cpp
@@ -152,15 +151,12 @@ add_library(pcg ${pcg_SOURCE_DIR}/pcg_basic.h ${pcg_SOURCE_DIR}/pcg_basic.c)
 target_include_directories(pcg PUBLIC ${pcg_SOURCE_DIR})
 target_link_libraries(Minote PRIVATE pcg)
 
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "")
-set(GLFW_BUILD_TESTS OFF CACHE BOOL "")
-set(GLFW_BUILD_DOCS OFF CACHE BOOL "")
-target_compile_definitions(Minote PRIVATE GLFW_INCLUDE_NONE)
-FetchContent_Declare(glfw
-        GIT_REPOSITORY https://github.com/glfw/glfw
-        GIT_TAG 901d30b973c536f26b74bca1134c5892d54b251d) # 3.3.3
-FetchContent_MakeAvailable(glfw)
-target_link_libraries(Minote PRIVATE glfw)
+set(OPT_DEF_LIBC ON CACHE BOOL "")
+FetchContent_Declare(sdl
+        GIT_REPOSITORY https://github.com/libsdl-org/SDL
+        GIT_TAG release-2.0.14)
+FetchContent_MakeAvailable(sdl)
+target_link_libraries(Minote PRIVATE SDL2-static)
 
 FetchContent_Declare(imgui
         GIT_REPOSITORY https://github.com/ocornut/imgui
@@ -171,10 +167,10 @@ add_library(imgui
         ${imgui_SOURCE_DIR}/imconfig.h ${imgui_SOURCE_DIR}/imgui_internal.h
         ${imgui_SOURCE_DIR}/imgui_draw.cpp ${imgui_SOURCE_DIR}/imgui_tables.cpp
         ${imgui_SOURCE_DIR}/imgui_widgets.cpp ${imgui_SOURCE_DIR}/imgui_demo.cpp
-        ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.h ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp)
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl.h ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl.cpp)
 target_compile_definitions(imgui PRIVATE IMGUI_DISABLE_WIN32_FUNCTIONS)
 target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR})
-target_link_libraries(imgui PRIVATE glfw)
+target_link_libraries(imgui PRIVATE SDL2-static)
 target_link_libraries(Minote PRIVATE imgui)
 
 if(NOT MINOTE_USE_VULKAN_SDK)

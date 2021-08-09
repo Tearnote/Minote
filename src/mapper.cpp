@@ -1,95 +1,78 @@
 #include "mapper.hpp"
 
-#include "GLFW/glfw3.h"
+#include "SDL_events.h"
+#include "optick.h"
+#include "base/container/vector.hpp"
 #include "base/error.hpp"
 #include "base/util.hpp"
-#include "sys/glfw.hpp"
+#include "sys/system.hpp"
+#include "memory.hpp"
 
 namespace minote {
 
 using namespace base;
 using namespace base::literals;
 
-void Mapper::collectKeyInputs(sys::Window& _window) {
+auto Mapper::convert(SDL_Event const& _e) -> std::optional<Action> {
 	
-	_window.processInputs([this](auto const& key) {
+	if (_e.type != SDL_KEYDOWN && _e.type != SDL_KEYUP) return std::nullopt;
+	
+	auto type = [&] {
 		
-		// Hardcoded key mapping, for now
-		auto type = [=] {
+		switch(_e.key.keysym.scancode) {
 			
-			switch (+key.keycode) {
-				
-			case GLFW_KEY_UP:
-			case GLFW_KEY_W:
-				return Action::Type::Drop;
-				
-			case GLFW_KEY_DOWN:
-			case GLFW_KEY_S:
-				return Action::Type::Lock;
-				
-			case GLFW_KEY_LEFT:
-			case GLFW_KEY_A:
-				return Action::Type::Left;
-				
-			case GLFW_KEY_RIGHT:
-			case GLFW_KEY_D:
-				return Action::Type::Right;
-				
-			case GLFW_KEY_Z:
-			case GLFW_KEY_J:
-				return Action::Type::RotCCW;
-				
-			case GLFW_KEY_X:
-			case GLFW_KEY_K:
-				return Action::Type::RotCW;
-				
-			case GLFW_KEY_C:
-			case GLFW_KEY_L:
-				return Action::Type::RotCCW2;
-				
-			case GLFW_KEY_SPACE:
-				return Action::Type::Skip;
-				
-			case GLFW_KEY_ENTER:
-				return Action::Type::Accept;
-				
-			case GLFW_KEY_ESCAPE:
-				return Action::Type::Back;
-				
-			default:
-				return Action::Type::None;
-				
-			}
-			
-		}();
-		if (type == Action::Type::None) return true; // Key not recognized
+		case SDL_SCANCODE_UP:
+		case SDL_SCANCODE_W:
+			return Action::Type::Drop;
 		
-		using KeyState = sys::Window::KeyInput::State;
-		auto state = [=] {
+		case SDL_SCANCODE_DOWN:
+		case SDL_SCANCODE_S:
+			return Action::Type::Lock;
 			
-			switch (key.state) {
-				
-			case KeyState::Pressed:
-				return Action::State::Pressed;
-				
-			case KeyState::Released:
-				return Action::State::Released;
-				
-			default:
-				throw logic_error_fmt("Encountered invalid key state: {}", +key.state);
-				
-			}
+		case SDL_SCANCODE_LEFT:
+		case SDL_SCANCODE_A:
+			return Action::Type::Left;
 			
-		}();
+		case SDL_SCANCODE_RIGHT:
+		case SDL_SCANCODE_D:
+			return Action::Type::Right;
+			
+		case SDL_SCANCODE_Z:
+		case SDL_SCANCODE_J:
+			return Action::Type::RotCCW;
+			
+		case SDL_SCANCODE_X:
+		case SDL_SCANCODE_K:
+			return Action::Type::RotCW;
+			
+		case SDL_SCANCODE_C:
+		case SDL_SCANCODE_L:
+			return Action::Type::RotCCW2;
+			
+		case SDL_SCANCODE_SPACE:
+			return Action::Type::Skip;
+			
+		case SDL_SCANCODE_RETURN:
+			return Action::Type::Accept;
+			
+		case SDL_SCANCODE_ESCAPE:
+			return Action::Type::Back;
+			
+		default:
+			return Action::Type::None;
+			
+		}
 		
-		// No issues, add the translated event
-		m_actions.push({
-			.type = type,
-			.state = state,
-			.timestamp = sys::Glfw::getTime()});
-		return true;
-		
-	});
+	}();
+	if (type == Action::Type::None) return std::nullopt;
+	
+	auto state = _e.type == SDL_KEYDOWN?
+		Action::State::Pressed :
+		Action::State::Released;
+	
+	return Action{
+		.type = type,
+		.state = state};
 	
 }
 

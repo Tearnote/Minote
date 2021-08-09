@@ -18,8 +18,6 @@
 #include "optick.h"
 #include "base/log.hpp"
 #include "sys/window.hpp"
-#include "sys/glfw.hpp"
-#include "backends/imgui_impl_glfw.h"
 #include "game.hpp"
 
 using namespace minote; // Because we can't namespace main()
@@ -42,22 +40,18 @@ auto main(int, char*[]) -> int try {
 		AppTitle, std::get<0>(AppVersion), std::get<1>(AppVersion), std::get<2>(AppVersion));
 	
 	// Window creation
-	auto glfw = sys::Glfw();
-	auto window = sys::Window(glfw, AppTitle, false, {1280, 720});
+	auto system = sys::System();
+	auto window = sys::Window(system, AppTitle, false, {1280, 720});
 	
 	// Thread startup
 	
 	auto gameThread = std::jthread(game, std::ref(window));
 	
 	// Input thread loop
-	while (!window.isClosing()) {
-		
-		glfw.poll();
-		
-		if (ImGui::GetIO().Fonts->IsBuilt()) // Hack
-			ImGui_ImplGlfw_NewFrame();
+	while (!sys::System::isQuitting()) {
 		
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		system.poll();
 		
 	}
 	

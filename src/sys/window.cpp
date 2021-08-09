@@ -3,9 +3,10 @@
 #include <optional>
 #include <cassert>
 #include <mutex>
-#include "GLFW/glfw3.h"
+#include "SDL_vulkan.h"
+#include "SDL_video.h"
 #include "quill/Fmt.h"
-#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_sdl.h"
 #include "base/error.hpp"
 #include "base/math.hpp"
 #include "base/log.hpp"
@@ -13,39 +14,7 @@
 namespace minote::sys {
 
 using namespace base;
-
-// Retrieve the Window from raw GLFW handle by user pointer.
-static auto getWindow(GLFWwindow* _handle) -> Window& {
-	
-	assert(_handle);
-	return *(Window*)(glfwGetWindowUserPointer(_handle));
-	
-}
-
-void Window::keyCallback(GLFWwindow* _handle, int _rawKeycode, int _rawScancode, int _rawState,
-	int) {
-	
-	assert(_handle);
-	if (_rawState == GLFW_REPEAT) return; // Key repeat is not used
-	auto& window = getWindow(_handle);
-	using State = KeyInput::State;
-	
-	auto keycode = Keycode(_rawKeycode);
-	auto scancode = Scancode(_rawScancode);
-	auto name = window.m_glfw.getKeyName(keycode, scancode);
-	auto state = _rawState == GLFW_PRESS? State::Pressed : State::Released;
-	auto input = KeyInput{
-		.keycode = keycode,
-		.scancode = scancode,
-		.name = name,
-		.state = state,
-		.timestamp = Glfw::getTime()};
-	
-	auto lock = std::scoped_lock(window.m_inputsMutex);
-	window.m_inputs.push(input);
-	
-}
-
+/*
 void Window::framebufferResizeCallback(GLFWwindow* _handle, int _width, int _height) {
 	
 	assert(_handle);
@@ -72,110 +41,53 @@ void Window::windowScaleCallback(GLFWwindow* _handle, float _xScale, float) {
 	L_INFO(R"(Window "{}" DPI scaling changed to {})", window.title(), _xScale);
 	
 }
-
-void Window::cursorPosCallback(GLFWwindow* _handle, double _xPos, double _yPos) {
-	
-	assert(_handle);
-	auto& window = getWindow(_handle);
-	
-	window.m_mousePos.store({f32(_xPos), f32(_yPos)});
-	
-}
-
-void Window::mouseButtonCallback(GLFWwindow* _handle, int _button, int _action, int) {
-	
-	assert(_handle);
-	auto& window = getWindow(_handle);
-	
-	if (_button == GLFW_MOUSE_BUTTON_LEFT)
-		window.m_mouseDown.store(_action == GLFW_PRESS? true : false);
-	
-}
-
-Window::Window(Glfw const& _glfw, std::string_view _title, bool _fullscreen, uvec2 _size):
-	m_glfw(_glfw), m_title(_title) {
+*/
+Window::Window(System const& _system, string_view _title, bool _fullscreen, uvec2 _size):
+	m_system(_system), m_title(_title) {
 	
 	assert(_size.x() > 0 && _size.y() > 0);
 	
-	// Set up context params
+	// Create window
 	
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE); // Declare DPI awareness
-	
-	// Create the window handle
-	
-	auto* monitor = glfwGetPrimaryMonitor();
-	if (!monitor) throw runtime_error_fmt(
-		"Failed to query primary monitor: {}", Glfw::getError());
-	auto const* mode = glfwGetVideoMode(monitor);
-	if (!mode) throw runtime_error_fmt(
-		"Failed to query video mode: {}", Glfw::getError());
-	if (_fullscreen)
-		_size = uvec2(ivec2{mode->width, mode->height});
-	else
-		monitor = nullptr;
-	
-	m_handle = glfwCreateWindow(_size.x(), _size.y(), m_title.c_str(), monitor, nullptr);
-	if (!m_handle) throw runtime_error_fmt(
-		R"(Failed to init window "{}": {})", title(), Glfw::getError());
+	m_handle = SDL_CreateWindow(m_title.c_str(),
+		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+		_size.x(), _size.y(),
+		SDL_WINDOW_RESIZABLE |
+		SDL_WINDOW_ALLOW_HIGHDPI |
+		SDL_WINDOW_VULKAN |
+		(_fullscreen? SDL_WINDOW_FULLSCREEN_DESKTOP : 0));
+	if(!m_handle)
+		throw runtime_error_fmt("Failed to create window {}: {}", m_title, SDL_GetError());
 	
 	// Set window properties
 	
 	// Real size might be different from requested size because of DPI scaling
 	auto realSize = ivec2();
-	glfwGetFramebufferSize(m_handle, &realSize.x(), &realSize.y());
-	if (realSize == ivec2(0)) throw runtime_error_fmt(
-		R"(Failed to retrieve window "{}" framebuffer size: {})",
-		_title, Glfw::getError());
+	SDL_Vulkan_GetDrawableSize(m_handle, &realSize.x(), &realSize.y());
 	m_size = uvec2(realSize);
 	
-	auto realScale = 0.0f;
-	glfwGetWindowContentScale(m_handle, &realScale, nullptr);
-	m_scale = realScale;
-	
-	// Set up window callbacks
-	
-	glfwSetWindowUserPointer(m_handle, this);
-	glfwSetKeyCallback(m_handle, keyCallback);
-	glfwSetFramebufferSizeCallback(m_handle, framebufferResizeCallback);
-	glfwSetWindowContentScaleCallback(m_handle, windowScaleCallback);
-	glfwSetCursorPosCallback(m_handle, cursorPosCallback);
-	glfwSetMouseButtonCallback(m_handle, mouseButtonCallback);
+	auto dpi = 0.0f;
+	SDL_GetDisplayDPI(SDL_GetWindowDisplayIndex(m_handle), nullptr, nullptr, &dpi);
+	m_dpi = dpi;
 	
 	// Initialize imgui input
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGui::StyleColorsDark();
-	ImGui_ImplGlfw_InitForVulkan(m_handle, true);
+	ImGui_ImplSDL2_InitForVulkan(m_handle);
 	
-	L_INFO(R"(Window "{}" created at {}x{} *{:.2f}{})",
-		title(), size().x(), size().y(), scale(), _fullscreen ? " fullscreen" : "");
+	L_INFO("Window {} created at {}x{}, {} DPI{}",
+		m_title, realSize.x(), realSize.y(), dpi, _fullscreen? ", fullscreen" : "");
 	
 }
 
 Window::~Window() {
 	
-	glfwDestroyWindow(m_handle);
+	ImGui_ImplSDL2_Shutdown();
 	
-	L_INFO(R"(Window "{}" closed)", title());
+	SDL_DestroyWindow(m_handle);
 	
-}
-
-auto Window::isClosing() const -> bool {
-	
-	auto lock = std::scoped_lock(m_handleMutex);
-	return glfwWindowShouldClose(m_handle);
-	
-}
-
-void Window::requestClose() {
-	
-	auto lock = std::scoped_lock(m_handleMutex);
-	if (glfwWindowShouldClose(m_handle)) return;
-	
-	glfwSetWindowShouldClose(m_handle, true);
-	
-	L_INFO(R"(Window "{}" close requested)", title());
+	L_INFO("Window {} closed", title());
 	
 }
 

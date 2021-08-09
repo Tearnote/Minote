@@ -5,7 +5,7 @@
 #include <cassert>
 #include "optick_core.h"
 #include "optick.h"
-#include "GLFW/glfw3.h"
+#include "SDL_vulkan.h"
 #include "base/error.hpp"
 #include "base/log.hpp"
 #include "main.hpp"
@@ -86,7 +86,7 @@ Vulkan::Vulkan(Window& _window) {
 	
 	// Create surface
 	
-	glfwCreateWindowSurface(instance.instance, _window.handle(), nullptr, &surface);
+	SDL_Vulkan_CreateSurface(_window.handle(), instance.instance, &surface);
 	
 	// Select physical device
 	

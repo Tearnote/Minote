@@ -95,7 +95,6 @@ void Engine::render() {
 	static auto sunYaw = 30.0_deg;
 	ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 60.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
 	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
-	// sunPitch = radians(6.0f - glfwGetTime() / 2.0);
 	m_world.sunDirection =
 		mat3::rotate({0.0f, 0.0f, 1.0f}, sunYaw) *
 		mat3::rotate({0.0f, -1.0f, 0.0f}, sunPitch) *
