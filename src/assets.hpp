@@ -7,6 +7,8 @@
 
 namespace minote {
 
+using namespace base;
+
 struct Assets {
 	
 	// Open the sqlite database containing game assets. File remains open

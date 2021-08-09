@@ -2,7 +2,7 @@
 
 #include <string_view>
 #include <string>
-#include "base/memory/nullalloc.hpp"
+#include "base/container/nullalloc.hpp"
 
 namespace minote::base {
 

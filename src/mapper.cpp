@@ -6,7 +6,6 @@
 #include "base/error.hpp"
 #include "base/util.hpp"
 #include "sys/system.hpp"
-#include "memory.hpp"
 
 namespace minote {
 

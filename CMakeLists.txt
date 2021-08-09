@@ -43,15 +43,11 @@ set(BUILD_SHARED_LIBS OFF)
 # Main executable
 
 add_executable(Minote
+        src/base/container/nullalloc.hpp
         src/base/container/hashmap.hpp
         src/base/container/vector.hpp
         src/base/container/string.hpp
         src/base/container/array.hpp
-        src/base/memory/poolalloc.hpp
-        src/base/memory/nullalloc.hpp
-        src/base/memory/arena.hpp src/base/memory/arena.cpp
-        src/base/memory/stack.hpp
-        src/base/memory/pool.hpp
         src/base/concepts.hpp
         src/base/format.hpp
         src/base/error.hpp
@@ -86,7 +82,6 @@ add_executable(Minote
         src/assets.hpp src/assets.tpp src/assets.cpp
         src/mapper.hpp src/mapper.cpp
         src/config.hpp
-        src/memory.hpp
         src/game.hpp src/game.cpp
         src/main.hpp src/main.cpp
         src/mino.hpp src/mino.tpp)
@@ -102,8 +97,7 @@ target_precompile_headers(Minote PRIVATE
         src/base/math.hpp
         src/base/util.hpp
         src/base/log.hpp
-        src/config.hpp
-        src/memory.hpp)
+        src/config.hpp)
 target_include_directories(Minote PRIVATE src)
 target_link_libraries(Minote PRIVATE winmm)
 

@@ -8,7 +8,6 @@
 #include "base/container/array.hpp"
 #include "base/math.hpp"
 #include "base/util.hpp"
-#include "memory.hpp"
 
 namespace minote::gfx {
 
@@ -19,8 +18,6 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 	ObjectPool const& _objects, MeshBuffer const& _meshes) {
 	
 	OPTICK_EVENT("Indirect::Indirect");
-	
-	auto _ = ScratchMarker();
 	
 	// Create the command list
 	
@@ -38,9 +35,9 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 	
 	// Iterate through all valid instances
 	
-	auto meshIndices = array<u32, Scratch>(_objects.size());
-	auto transforms = array<ObjectPool::Transform, Scratch>(_objects.size());
-	auto materials = array<ObjectPool::Material, Scratch>(_objects.size());
+	auto meshIndices = array<u32>(_objects.size());
+	auto transforms = array<ObjectPool::Transform>(_objects.size());
+	auto materials = array<ObjectPool::Material>(_objects.size());
 	
 	instancesCount = 0;
 	for (auto id: iota(ObjectID(0), _objects.size())) {

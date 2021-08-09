@@ -14,7 +14,6 @@
 #include "sys/vulkan.hpp"
 #include "assets.hpp"
 #include "mapper.hpp"
-#include "memory.hpp"
 #include "main.hpp"
 
 namespace minote {
@@ -31,8 +30,6 @@ void game(sys::Window& _window) try {
 	OPTICK_THREAD("Game");
 	
 	// Initialize core systems
-	
-	attachPoolResources();
 	
 	auto mapper = Mapper();
 	
@@ -282,10 +279,6 @@ void game(sys::Window& _window) try {
 		}
 		
 		engine.render();
-		
-		// Cleanup frame resources
-		
-		resetPerFrameAllocator();
 		
 	}
 	
