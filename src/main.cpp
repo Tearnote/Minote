@@ -43,6 +43,8 @@ auto windowResize(void* _engine, SDL_Event* _e) -> int {
 	engine.refreshSwapchain(newSize);
 	engine.render(true);
 	
+	L_INFO("Window resized to {}x{}", newSize.x(), newSize.y());
+	
 	return 0;
 	
 }

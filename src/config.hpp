@@ -3,7 +3,7 @@
 #ifndef NDEBUG
 #define LOG_LEVEL quill::LogLevel::TraceL3
 #else
-#define LOG_LEVEL quill::LogLevel::Info
+#define LOG_LEVEL quill::LogLevel::Debug
 #endif
 
 #ifndef NDEBUG
