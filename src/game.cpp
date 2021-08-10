@@ -258,7 +258,7 @@ void game(GameParams const& _params) try {
 			
 		}
 		
-		engine.render();
+		engine.render(false);
 		
 	}
 	

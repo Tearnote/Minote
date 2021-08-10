@@ -150,7 +150,7 @@ Vulkan::Vulkan(Window& _window) {
 	
 	// Create swapchain
 	
-	swapchain = context->add_swapchain(createSwapchain());
+	swapchain = context->add_swapchain(createSwapchain(_window.size()));
 	
 	// Initialize profiling
 	
@@ -212,9 +212,10 @@ Vulkan::~Vulkan() {
 	
 }
 
-auto Vulkan::createSwapchain(VkSwapchainKHR _old) -> vuk::Swapchain {
+auto Vulkan::createSwapchain(uvec2 _size, VkSwapchainKHR _old) -> vuk::Swapchain {
 	
 	auto vkbswapchainResult = vkb::SwapchainBuilder(device)
+		.set_desired_extent(_size.x(), _size.y())
 		.set_old_swapchain(_old)
 		.set_image_usage_flags(VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
 		.build();

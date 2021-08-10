@@ -31,6 +31,7 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	
 	auto ifc = m_vk.context->begin();
 	auto ptc = ifc.begin();
+	m_swapchainDirty = false;
 	
 	m_imguiData = ImGui_ImplVuk_Init(ptc);
 	ImGui::GetIO().DisplaySize = ImVec2(
@@ -75,9 +76,19 @@ Engine::~Engine() {
 	
 }
 
-void Engine::render() {
+void Engine::render(bool _repaint) {
 	
 	OPTICK_EVENT("Engine::render");
+	
+	// Quit if repaint needed
+	if (m_swapchainDirty) return;
+	
+	// Lock the renderer
+	if (_repaint)
+		m_renderLock.lock();
+	else
+		if (!m_renderLock.try_lock()) return;
+	defer { m_renderLock.unlock(); };
 	
 	// Prepare per-frame data
 	
@@ -140,23 +151,17 @@ void Engine::render() {
 	// Acquire swapchain image
 	
 	auto presentSem = ptc.acquire_semaphore();
-	auto swapchainImageIndex = [&, this] {
+	auto swapchainImageIndex = u32(0);
+	auto error = vkAcquireNextImageKHR(m_vk.device.device, m_vk.swapchain->swapchain,
+		UINT64_MAX, presentSem, VK_NULL_HANDLE, &swapchainImageIndex);
+	if (error == VK_ERROR_OUT_OF_DATE_KHR) {
 		
-		while (true) {
-			
-			auto result = 0u;
-			auto error = vkAcquireNextImageKHR(m_vk.device.device, m_vk.swapchain->swapchain,
-				UINT64_MAX, presentSem, VK_NULL_HANDLE, &result);
-			if (error == VK_SUCCESS || error == VK_SUBOPTIMAL_KHR)
-				return result;
-			if (error == VK_ERROR_OUT_OF_DATE_KHR)
-				refreshSwapchain();
-			else
-				throw runtime_error_fmt("Unable to acquire swapchain image: error {}", error);
-			
-		}
+		m_swapchainDirty = true;
+		return; // Requires repaint
 		
-	}();
+	}
+	if (error != VK_SUCCESS && error != VK_SUBOPTIMAL_KHR) // Unknown result
+		throw runtime_error_fmt("Unable to acquire swapchain image: error {}", error);
 	
 	// Build and submit the rendergraph
 	
@@ -187,9 +192,9 @@ void Engine::render() {
 		.pSwapchains = &m_vk.swapchain->swapchain,
 		.pImageIndices = &swapchainImageIndex};
 	auto result = vkQueuePresentKHR(m_vk.context->graphics_queue, &presentInfo);
-	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
-		refreshSwapchain();
-	else if (result != VK_SUCCESS)
+	if (result == VK_ERROR_OUT_OF_DATE_KHR)
+		m_swapchainDirty = true; // No need to return, only cleanup is left
+	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
 		throw runtime_error_fmt("Unable to present to the screen: error {}", result);
 	
 	// Clean up
@@ -198,14 +203,18 @@ void Engine::render() {
 	
 }
 
-void Engine::refreshSwapchain() {
+void Engine::refreshSwapchain(uvec2 _newSize) {
+	
+	std::lock_guard lock(m_renderLock);
 	
 	for (auto iv: m_vk.swapchain->image_views)
 		m_vk.context->enqueue_destroy(iv);
 	
-	auto newSwapchain = m_vk.context->add_swapchain(m_vk.createSwapchain(m_vk.swapchain->swapchain));
+	auto newSwapchain = m_vk.context->add_swapchain(m_vk.createSwapchain(_newSize, m_vk.swapchain->swapchain));
+	m_vk.context->enqueue_destroy(m_vk.swapchain->swapchain);
 	m_vk.context->remove_swapchain(m_vk.swapchain);
 	m_vk.swapchain = newSwapchain;
+	m_swapchainDirty = false;
 	
 	ImGui::GetIO().DisplaySize = ImVec2(
 		f32(m_vk.swapchain->extent.width),

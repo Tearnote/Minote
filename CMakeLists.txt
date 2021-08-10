@@ -124,7 +124,7 @@ set(VUK_USE_SHADERC OFF CACHE BOOL "")
 set(VUK_USE_OPTICK ON CACHE BOOL "")
 FetchContent_Declare(vuk
         GIT_REPOSITORY https://github.com/Tearnote/vuk
-        GIT_TAG 920bc87ac00bbfb364f336078732e0a170a77bee)
+        GIT_TAG 43f8b9600b91a6ee49e778d4cf69a102b6e9d159)
 FetchContent_MakeAvailable(vuk)
 target_compile_definitions(vuk PRIVATE VK_NO_PROTOTYPES)
 target_compile_definitions(vuk PRIVATE VUK_CUSTOM_VULKAN_HEADER="volk.h")

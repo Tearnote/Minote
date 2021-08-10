@@ -16,6 +16,7 @@
 #include <windows.h>
 #endif //_WIN32
 #include "optick.h"
+#include "base/math.hpp"
 #include "base/log.hpp"
 #include "sys/window.hpp"
 #include "sys/vulkan.hpp"
@@ -28,6 +29,22 @@
 using namespace minote; // Because we can't namespace main()
 using namespace base;
 using namespace base::literals;
+
+auto windowResize(void* _engine, SDL_Event* _e) -> int {
+	
+	// Filter for resize events only
+	if (_e->type != SDL_WINDOWEVENT) return 0;
+	if (_e->window.event != SDL_WINDOWEVENT_RESIZED) return 0;
+	
+	// Recreate swapchain and redraw
+	auto newSize = uvec2{u32(_e->window.data1), u32(_e->window.data2)};
+	auto& engine = *(gfx::Engine*)(_engine);
+	engine.refreshSwapchain(newSize);
+	engine.render(true);
+	
+	return 0;
+	
+}
 
 auto main(int, char*[]) -> int try {
 	
@@ -66,6 +83,10 @@ auto main(int, char*[]) -> int try {
 		.window = window,
 		.engine = engine,
 		.mapper = mapper});
+	
+	// Add window resize handler
+	SDL_AddEventWatch(&windowResize, &engine);
+	defer { SDL_DelEventWatch(&windowResize, &engine); };
 	
 	// Input thread loop
 	while (!sys::System::isQuitting()) {

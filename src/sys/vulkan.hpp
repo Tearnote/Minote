@@ -4,6 +4,7 @@
 #include "VkBootstrap.h"
 #include "volk.h"
 #include "vuk/Context.hpp"
+#include "base/math.hpp"
 #include "sys/window.hpp"
 
 namespace minote::sys {
@@ -21,7 +22,7 @@ struct Vulkan {
 	~Vulkan();
 	
 	// Create a swapchain object, optionally reusing resources from an existing one.
-	auto createSwapchain(VkSwapchainKHR old = VK_NULL_HANDLE) -> vuk::Swapchain;
+	auto createSwapchain(uvec2 size, VkSwapchainKHR old = VK_NULL_HANDLE) -> vuk::Swapchain;
 	
 	// Not copyable, not movable
 	Vulkan(Vulkan const&) = delete;

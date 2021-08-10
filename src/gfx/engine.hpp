@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <mutex>
 #include "base/math.hpp"
 #include "sys/vulkan.hpp"
 #include "gfx/module/sky.hpp"
@@ -27,8 +28,14 @@ struct Engine {
 	Engine(sys::Vulkan&, MeshList&&);
 	~Engine();
 	
-	// Render all objects to the screen.
-	void render();
+	// Render all objects to the screen. If repaint is false, the function will
+	// only render it no other thread is currently rendering. Otherwise it will
+	// block until a frame can be successfully renderered. To avoid deadlock,
+	// only ever use repaint=true on one thread.
+	void render(bool repaint);
+	
+	// Use this function when the surface is resized to recreate the swapchain.
+	void refreshSwapchain(uvec2 newSize);
 	
 	Engine(Engine const&) = delete;
 	auto operator=(Engine const&) -> Engine& = delete;
@@ -45,6 +52,9 @@ private:
 	
 	sys::Vulkan& m_vk;
 	
+	std::mutex m_renderLock;
+	bool m_swapchainDirty;
+	
 	ImguiData m_imguiData;
 	std::optional<MeshBuffer> m_meshes;
 	std::optional<ObjectPool> m_objects;
@@ -53,10 +63,6 @@ private:
 	World m_world;
 	std::optional<Atmosphere> m_atmosphere;
 	std::optional<IBLMap> m_ibl;
-	
-	// Once a swapchain is detected to be invalid or out of date, use this function
-	// to replace it with a fresh one.
-	void refreshSwapchain();
 	
 };
 
