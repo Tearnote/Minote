@@ -10,10 +10,6 @@
 #include "base/math.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"
-#include "gfx/engine.hpp"
-#include "sys/vulkan.hpp"
-#include "assets.hpp"
-#include "mapper.hpp"
 #include "main.hpp"
 
 namespace minote {
@@ -25,29 +21,13 @@ using namespace base::literals;
 static constexpr auto LogicRate = 120;
 static constexpr auto LogicTick = 1_s / LogicRate;
 
-void game(sys::Window& _window) try {
+void game(GameParams const& _params) try {
+	
+	auto& window = _params.window;
+	auto& engine = _params.engine;
+	auto& mapper = _params.mapper;
 	
 	OPTICK_THREAD("Game");
-	
-	// Initialize core systems
-	
-	auto mapper = Mapper();
-	
-	auto vulkan = sys::Vulkan(_window);
-	
-	// Load assets
-	
-	auto meshList = gfx::MeshList();
-	auto assets = Assets(Assets_p);
-	assets.loadModels([&meshList](auto name, auto data) {
-		
-		meshList.addGltf(name, data);
-		
-	});
-	
-	// Start up graphics engine
-	
-	auto engine = gfx::Engine(vulkan, std::move(meshList));
 	
 	engine.camera() = gfx::Camera{
 		.position = {-10_m, -26_m, 64_m + 10_m},
@@ -189,7 +169,7 @@ void game(sys::Window& _window) try {
 		
 		// Input handling
 		
-		ImGui_ImplSDL2_NewFrame(_window.handle());
+		ImGui_ImplSDL2_NewFrame(window.handle());
 		
 		while (nextUpdate <= sys::System::getTime()) {
 			

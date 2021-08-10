@@ -18,6 +18,11 @@
 #include "optick.h"
 #include "base/log.hpp"
 #include "sys/window.hpp"
+#include "sys/vulkan.hpp"
+#include "gfx/meshes.hpp"
+#include "gfx/engine.hpp"
+#include "mapper.hpp"
+#include "assets.hpp"
 #include "game.hpp"
 
 using namespace minote; // Because we can't namespace main()
@@ -26,26 +31,41 @@ using namespace base::literals;
 
 auto main(int, char*[]) -> int try {
 	
-	// Initialization
-	
 	OPTICK_THREAD("Main");
 	
+	// Initialize logging
 #ifdef _WIN32
 	SetConsoleOutputCP(65001); // Set Windows terminal encoding to UTF-8
 #endif //_WIN32
-	
 	Log::init(Log_p, LOG_LEVEL);
-	
 	L_INFO("Starting up {} {}.{}.{}",
 		AppTitle, std::get<0>(AppVersion), std::get<1>(AppVersion), std::get<2>(AppVersion));
 	
-	// Window creation
+	// Initialize systems
 	auto system = sys::System();
 	auto window = sys::Window(system, AppTitle, false, {1280, 720});
+	auto vulkan = sys::Vulkan(window);
 	
-	// Thread startup
+	// Load assets
+	auto meshList = gfx::MeshList();
+	auto assets = Assets(Assets_p);
+	assets.loadModels([&meshList](auto name, auto data) {
+		
+		meshList.addGltf(name, data);
+		
+	});
 	
-	auto gameThread = std::jthread(game, std::ref(window));
+	// Start up graphics engine
+	auto engine = gfx::Engine(vulkan, std::move(meshList));
+	
+	// Initialize helpers
+	auto mapper = Mapper();
+	
+	// Start the game thread
+	auto gameThread = std::jthread(game, GameParams{
+		.window = window,
+		.engine = engine,
+		.mapper = mapper});
 	
 	// Input thread loop
 	while (!sys::System::isQuitting()) {
