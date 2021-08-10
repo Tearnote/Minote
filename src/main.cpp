@@ -38,6 +38,7 @@ auto windowResize(void* _engine, SDL_Event* _e) -> int {
 	
 	// Recreate swapchain and redraw
 	auto newSize = uvec2{u32(_e->window.data1), u32(_e->window.data2)};
+	if (newSize.x() == 0 || newSize.y() == 0) return 0; // Minimized
 	auto& engine = *(gfx::Engine*)(_engine);
 	engine.refreshSwapchain(newSize);
 	engine.render(true);
