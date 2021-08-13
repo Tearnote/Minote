@@ -3,7 +3,7 @@
 #include "config.hpp"
 
 #include <exception>
-#include "optick.h"
+#include "Tracy.hpp"
 #include "backends/imgui_impl_sdl.h"
 #include "imgui.h"
 #include "base/container/vector.hpp"
@@ -23,11 +23,12 @@ static constexpr auto LogicTick = 1_s / LogicRate;
 
 void game(GameParams const& _params) try {
 	
+	ZoneScoped;
+	tracy::SetThreadName("Game");
+	
 	auto& window = _params.window;
 	auto& engine = _params.engine;
 	auto& mapper = _params.mapper;
-	
-	OPTICK_THREAD("Game");
 	
 	engine.camera() = gfx::Camera{
 		.position = {-10_m, -26_m, 64_m + 10_m},
@@ -165,13 +166,13 @@ void game(GameParams const& _params) try {
 	
 	while (!sys::System::isQuitting()) {
 		
-		OPTICK_FRAME("Renderer");
-		
 		// Input handling
 		
 		ImGui_ImplSDL2_NewFrame(window.handle());
 		
 		while (nextUpdate <= sys::System::getTime()) {
+			
+			FrameMarkStart("Logic");
 			
 			// Iterate over all events
 			
@@ -228,6 +229,8 @@ void game(GameParams const& _params) try {
 			
 			nextUpdate += LogicTick;
 			
+			FrameMarkEnd("Logic");
+			
 		}
 		
 		// Logic
@@ -250,7 +253,7 @@ void game(GameParams const& _params) try {
 		
 		{
 			
-			OPTICK_EVENT("Update spinny squares");
+			ZoneScopedN("Rotating blocks");
 			constexpr auto rotateTransform = quat::angleAxis(180_deg, {1.0f, 0.0f, 0.0f});
 			auto rotateTransformAnim = quat::angleAxis(radians(ratio(sys::System::getTime(), 20_ms)), {0.0f, 0.0f, 1.0f});
 			for (auto& obj: dynamicObjects)

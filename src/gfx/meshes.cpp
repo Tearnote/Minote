@@ -3,7 +3,7 @@
 #include <utility>
 #include <cassert>
 #include <cstring>
-#include "optick.h"
+#include "Tracy.hpp"
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
 #include "quill/Fmt.h"
@@ -18,7 +18,7 @@ using namespace base::literals;
 
 void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
 	
-	OPTICK_EVENT("MeshList::addGltf");
+	ZoneScoped;
 	
 	// Load and parse
 	
@@ -122,7 +122,7 @@ void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
 
 auto MeshList::upload(vuk::PerThreadContext& _ptc) && -> MeshBuffer {
 	
-	OPTICK_EVENT("MeshList::upload");
+	ZoneScoped;
 	
 	auto result = MeshBuffer{
 		.verticesBuf = _ptc.create_buffer<vec3>(vuk::MemoryUsage::eGPUonly,

@@ -2,7 +2,7 @@
 
 #include <cstring>
 #include <span>
-#include "optick.h"
+#include "Tracy.hpp"
 #include "imgui.h"
 #include "vuk/CommandBuffer.hpp"
 #include "base/container/array.hpp"
@@ -17,7 +17,7 @@ using namespace base::literals;
 Indirect::Indirect(vuk::PerThreadContext& _ptc,
 	ObjectPool const& _objects, MeshBuffer const& _meshes) {
 	
-	OPTICK_EVENT("Indirect::Indirect");
+	ZoneScoped;
 	
 	// Create the command list
 	

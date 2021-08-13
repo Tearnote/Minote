@@ -1,7 +1,6 @@
 #include "mapper.hpp"
 
 #include "SDL_events.h"
-#include "optick.h"
 #include "base/container/vector.hpp"
 #include "base/error.hpp"
 #include "base/util.hpp"

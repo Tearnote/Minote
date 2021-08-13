@@ -22,8 +22,8 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif()
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:AVX2 /fp:fast /GR-")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX2 /fp:fast /GR-")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:AVX2 /fp:fast /GR- /GF")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX2 /fp:fast /GR- /GF")
 
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Gw /Gy")
@@ -121,10 +121,10 @@ target_link_libraries(Minote PRIVATE volk)
 set(VUK_LINK_TO_LOADER OFF CACHE BOOL "")
 set(VUK_USE_VULKAN_SDK OFF CACHE BOOL "")
 set(VUK_USE_SHADERC OFF CACHE BOOL "")
-set(VUK_USE_OPTICK ON CACHE BOOL "")
+set(VUK_USE_TRACY ON CACHE BOOL "")
 FetchContent_Declare(vuk
         GIT_REPOSITORY https://github.com/Tearnote/vuk
-        GIT_TAG 43f8b9600b91a6ee49e778d4cf69a102b6e9d159)
+        GIT_TAG bf9140b1fe7455150bafdb7424900da243015d8d)
 FetchContent_MakeAvailable(vuk)
 target_compile_definitions(vuk PRIVATE VK_NO_PROTOTYPES)
 target_compile_definitions(vuk PRIVATE VUK_CUSTOM_VULKAN_HEADER="volk.h")
@@ -219,17 +219,22 @@ add_library(cgltf INTERFACE ${cgltf_SOURCE_DIR}/cgltf.h ${cgltf_SOURCE_DIR}/cglt
 target_include_directories(cgltf INTERFACE ${cgltf_SOURCE_DIR})
 target_link_libraries(Minote PRIVATE cgltf)
 
-set(OPTICK_INSTALL_TARGETS OFF CACHE BOOL "")
-set(OPTICK_USE_VULKAN ON CACHE BOOL "")
-FetchContent_Declare(optick
-        GIT_REPOSITORY https://github.com/Tearnote/optick
-        GIT_TAG 5428b267f43f890e3cb13bef97f112a38fad839b)
-FetchContent_MakeAvailable(optick)
-target_compile_definitions(OptickCore PRIVATE VK_NO_PROTOTYPES)
-target_compile_definitions(OptickCore PRIVATE OPTICK_CUSTOM_VULKAN_HEADER="volk.h")
-target_link_libraries(OptickCore PRIVATE volk)
-target_link_libraries(Minote PRIVATE OptickCore)
-target_link_libraries(vuk PRIVATE OptickCore)
+if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(TRACY_ENABLE ON CACHE BOOL "")
+    set(TRACY_NO_FRAME_IMAGE ON CACHE BOOL "")
+    set(TRACY_ONLY_LOCALHOST ON CACHE BOOL "")
+    set(TRACY_NO_BROADCAST ON CACHE BOOL "")
+else()
+    set(TRACY_ENABLE OFF CACHE BOOL "")
+endif()
+FetchContent_Declare(tracy
+        GIT_REPOSITORY https://github.com/Tearnote/tracy
+        GIT_TAG 5ccaae3b671326ae31229c7beea5f060cc82f997)
+FetchContent_MakeAvailable(tracy)
+target_compile_definitions(TracyClient PUBLIC TRACY_CUSTOM_VULKAN_HEADER="volk.h")
+target_link_libraries(TracyClient PRIVATE volk)
+target_link_libraries(vuk PRIVATE TracyClient)
+target_link_libraries(Minote PRIVATE TracyClient)
 
 FetchContent_Declare(abseil
         GIT_REPOSITORY https://github.com/abseil/abseil-cpp
@@ -239,7 +244,6 @@ target_link_libraries(Minote PRIVATE absl::inlined_vector)
 target_link_libraries(Minote PRIVATE absl::flat_hash_map)
 target_link_libraries(Minote PRIVATE absl::fixed_array)
 
-set(QUILL_USE_BOUNDED_QUEUE ON CACHE BOOL "")
 FetchContent_Declare(quill
         GIT_REPOSITORY https://github.com/odygrd/quill
         GIT_TAG fa9b53f49732765ed242b7372ec4197e89f381ee)

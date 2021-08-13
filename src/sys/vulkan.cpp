@@ -3,9 +3,8 @@
 #include "config.hpp"
 
 #include <cassert>
-#include "optick_core.h"
-#include "optick.h"
 #include "SDL_vulkan.h"
+#include "Tracy.hpp"
 #include "base/error.hpp"
 #include "base/log.hpp"
 #include "main.hpp"
@@ -51,7 +50,7 @@ VKAPI_ATTR auto VKAPI_CALL debugCallback(
 
 Vulkan::Vulkan(Window& _window) {
 	
-	OPTICK_EVENT("Vulkan::Vulkan");
+	ZoneScoped;
 	
 	// Create instance
 	
@@ -106,6 +105,9 @@ Vulkan::Vulkan(Window& _window) {
 #if VK_VALIDATION
 		.add_required_extension("VK_KHR_shader_non_semantic_info")
 #endif //VK_VALIDATION
+#ifdef TRACY_ENABLE
+		.add_required_extension("VK_EXT_calibrated_timestamps")
+#endif //TRACY_ENABLE
 		.select();
 	if (!physicalDeviceSelectorResult)
 		throw runtime_error_fmt("Failed to find a suitable GPU for Vulkan: {}",
@@ -152,47 +154,17 @@ Vulkan::Vulkan(Window& _window) {
 	
 	swapchain = context->add_swapchain(createSwapchain(_window.size()));
 	
-	// Initialize profiling
-	
-	auto optickVulkanFunctions = Optick::VulkanFunctions{
-		PFN_vkGetPhysicalDeviceProperties_(vkGetPhysicalDeviceProperties),
-		PFN_vkCreateQueryPool_(vkCreateQueryPool),
-		PFN_vkCreateCommandPool_(vkCreateCommandPool),
-		PFN_vkAllocateCommandBuffers_(vkAllocateCommandBuffers),
-		PFN_vkCreateFence_(vkCreateFence),
-		PFN_vkCmdResetQueryPool_(vkCmdResetQueryPool),
-		PFN_vkQueueSubmit_(vkQueueSubmit),
-		PFN_vkWaitForFences_(vkWaitForFences),
-		PFN_vkResetCommandBuffer_(vkResetCommandBuffer),
-		PFN_vkCmdWriteTimestamp_(vkCmdWriteTimestamp),
-		PFN_vkGetQueryPoolResults_(vkGetQueryPoolResults),
-		PFN_vkBeginCommandBuffer_(vkBeginCommandBuffer),
-		PFN_vkEndCommandBuffer_(vkEndCommandBuffer),
-		PFN_vkResetFences_(vkResetFences),
-		PFN_vkDestroyCommandPool_(vkDestroyCommandPool),
-		PFN_vkDestroyQueryPool_(vkDestroyQueryPool),
-		PFN_vkDestroyFence_(vkDestroyFence),
-		PFN_vkFreeCommandBuffers_(vkFreeCommandBuffers) };
-	OPTICK_GPU_INIT_VULKAN(
-		&device.device, &device.physical_device.physical_device,
-		&context->graphics_queue, &context->graphics_queue_family_index, 1,
-		&optickVulkanFunctions);
-	
 	L_INFO("Vulkan initialized");
 	
 }
 
 Vulkan::~Vulkan() {
 	
-	OPTICK_EVENT("Vulkan::~Vulkan");
+	ZoneScoped;
 	
 	// Await GPU idle
 	
 	context->wait_idle();
-	
-	// Cleanup GPU profiling
-	
-	Optick::Core::Get().Shutdown();
 	
 	// Cleanup vuk
 	

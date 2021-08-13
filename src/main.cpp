@@ -15,7 +15,7 @@
 #endif //NOMINMAX
 #include <windows.h>
 #endif //_WIN32
-#include "optick.h"
+#include "Tracy.hpp"
 #include "base/math.hpp"
 #include "base/log.hpp"
 #include "sys/window.hpp"
@@ -30,7 +30,8 @@ using namespace minote; // Because we can't namespace main()
 using namespace base;
 using namespace base::literals;
 
-auto windowResize(void* _engine, SDL_Event* _e) -> int {
+// Callback for window resize events.
+static auto windowResize(void* _engine, SDL_Event* _e) -> int {
 	
 	// Filter for resize events only
 	if (_e->type != SDL_WINDOWEVENT) return 0;
@@ -51,7 +52,7 @@ auto windowResize(void* _engine, SDL_Event* _e) -> int {
 
 auto main(int, char*[]) -> int try {
 	
-	OPTICK_THREAD("Main");
+	tracy::SetThreadName("Input");
 	
 	// Initialize logging
 #ifdef _WIN32
@@ -95,7 +96,10 @@ auto main(int, char*[]) -> int try {
 	while (!sys::System::isQuitting()) {
 		
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		
+		FrameMarkStart("Input");
 		system.poll();
+		FrameMarkEnd("Input");
 		
 	}
 	

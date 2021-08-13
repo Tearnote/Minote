@@ -1,6 +1,6 @@
 #pragma once
 
-#include "optick.h"
+#include "Tracy.hpp"
 #include "base/error.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"
@@ -13,7 +13,7 @@ template<typename F>
 requires std::invocable<F, string_view, std::span<char const>>
 void Assets::loadModels(F _func) {
 	
-	OPTICK_EVENT("Assets::loadModels");
+	ZoneScoped;
 	
 	auto modelsQueryStr = fmt::format("SELECT * FROM {}", Models_n);
 	

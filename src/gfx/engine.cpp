@@ -3,7 +3,8 @@
 #include "config.hpp"
 
 #include <cassert>
-#include "optick.h"
+#include "Tracy.hpp"
+#include "TracyVulkan.hpp"
 #include "volk.h"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
@@ -25,7 +26,7 @@ using namespace std::string_literals;
 Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	m_vk(_vk) {
 	
-	OPTICK_EVENT("Engine::Engine");
+	ZoneScoped;
 	
 	// Initialize internal resources
 	
@@ -61,7 +62,7 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 
 Engine::~Engine() {
 	
-	OPTICK_EVENT("Engine::~Engine");
+	ZoneScoped;
 	
 	m_vk.context->wait_idle();
 	
@@ -78,16 +79,13 @@ Engine::~Engine() {
 
 void Engine::render(bool _repaint) {
 	
-	OPTICK_EVENT("Engine::render");
+	ZoneScoped;
 	
 	// Quit if repaint needed
 	if (m_swapchainDirty) return;
 	
 	// Lock the renderer
-	if (_repaint)
-		m_renderLock.lock();
-	else
-		if (!m_renderLock.try_lock()) return;
+	m_renderLock.lock();
 	defer { m_renderLock.unlock(); };
 	
 	// Prepare per-frame data
@@ -167,6 +165,7 @@ void Engine::render(bool _repaint) {
 	
 	auto erg = std::move(rg).link(ptc);
 	auto commandBuffer = erg.execute(ptc, {{m_vk.swapchain, swapchainImageIndex}});
+	TracyVkCollect(m_vk.context->profiler, commandBuffer);
 	
 	auto renderSem = ptc.acquire_semaphore();
 	auto waitStage = VkPipelineStageFlags(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
@@ -183,7 +182,6 @@ void Engine::render(bool _repaint) {
 	
 	// Present to screen
 	
-	OPTICK_GPU_FLIP(m_vk.swapchain);
 	auto presentInfo = VkPresentInfoKHR{
 		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 		.waitSemaphoreCount = 1,
@@ -200,6 +198,7 @@ void Engine::render(bool _repaint) {
 	// Clean up
 	
 	ImGui::NewFrame();
+	FrameMark;
 	
 }
 

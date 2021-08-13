@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <mutex>
+#include "Tracy.hpp"
 #include "base/math.hpp"
 #include "sys/vulkan.hpp"
 #include "gfx/module/sky.hpp"
@@ -52,7 +53,7 @@ private:
 	
 	sys::Vulkan& m_vk;
 	
-	std::mutex m_renderLock;
+	TracyLockable(std::mutex, m_renderLock);
 	bool m_swapchainDirty;
 	
 	ImguiData m_imguiData;

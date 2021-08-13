@@ -30,7 +30,6 @@ vec3 uncharted2Filmic(vec3 v) {
 	
 }
 
-
 void main() {
 	
 	vec4 sourceTex = texture(s_source, f_texCoords);
