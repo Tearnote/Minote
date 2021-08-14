@@ -63,13 +63,13 @@ add_executable(Minote
         src/sys/window.hpp src/sys/window.cpp
         src/sys/vulkan.hpp src/sys/vulkan.cpp
         src/sys/system.hpp src/sys/system.cpp
-        src/gfx/module/iblCoeffs.hpp
-        src/gfx/module/indirect.hpp src/gfx/module/indirect.cpp
-        src/gfx/module/forward.hpp src/gfx/module/forward.cpp
-        src/gfx/module/tonemap.hpp src/gfx/module/tonemap.cpp
-        src/gfx/module/bloom.hpp src/gfx/module/bloom.cpp
-        src/gfx/module/ibl.hpp src/gfx/module/ibl.cpp
-        src/gfx/module/sky.hpp src/gfx/module/sky.cpp
+        src/gfx/modules/iblCoeffs.hpp
+        src/gfx/modules/indirect.hpp src/gfx/modules/indirect.cpp
+        src/gfx/modules/forward.hpp src/gfx/modules/forward.cpp
+        src/gfx/modules/tonemap.hpp src/gfx/modules/tonemap.cpp
+        src/gfx/modules/bloom.hpp src/gfx/modules/bloom.cpp
+        src/gfx/modules/ibl.hpp src/gfx/modules/ibl.cpp
+        src/gfx/modules/sky.hpp src/gfx/modules/sky.cpp
         src/gfx/samplers.hpp
         src/gfx/objects.hpp src/gfx/objects.cpp
         src/gfx/meshes.hpp src/gfx/meshes.cpp

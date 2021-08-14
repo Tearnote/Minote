@@ -2,9 +2,9 @@
 
 #include "vuk/RenderGraph.hpp"
 #include "vuk/Context.hpp"
-#include "gfx/module/indirect.hpp"
-#include "gfx/module/sky.hpp"
-#include "gfx/module/ibl.hpp"
+#include "gfx/modules/indirect.hpp"
+#include "gfx/modules/sky.hpp"
+#include "gfx/modules/ibl.hpp"
 #include "base/math.hpp"
 
 namespace minote::gfx {

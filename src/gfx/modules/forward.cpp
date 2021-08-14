@@ -1,4 +1,4 @@
-#include "gfx/module/forward.hpp"
+#include "gfx/modules/forward.hpp"
 
 #include "vuk/CommandBuffer.hpp"
 #include "gfx/samplers.hpp"
