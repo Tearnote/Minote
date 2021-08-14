@@ -4,9 +4,9 @@
 #include <span>
 #include "vuk/Context.hpp"
 #include "vuk/Buffer.hpp"
-#include "base/container/hashmap.hpp"
-#include "base/container/string.hpp"
-#include "base/container/vector.hpp"
+#include "base/containers/hashmap.hpp"
+#include "base/containers/string.hpp"
+#include "base/containers/vector.hpp"
 #include "base/types.hpp"
 #include "base/math.hpp"
 #include "base/id.hpp"

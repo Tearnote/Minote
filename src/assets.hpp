@@ -3,7 +3,7 @@
 #include <concepts>
 #include <span>
 #include "sqlite3.h"
-#include "base/container/string.hpp"
+#include "base/containers/string.hpp"
 
 namespace minote {
 

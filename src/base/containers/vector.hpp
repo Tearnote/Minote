@@ -1,7 +1,7 @@
 #pragma once
 
 #include "absl/container/inlined_vector.h"
-#include "base/container/nullalloc.hpp"
+#include "base/containers/nullalloc.hpp"
 #include "base/types.hpp"
 
 namespace minote::base {

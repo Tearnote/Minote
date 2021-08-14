@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/container/string.hpp"
+#include "base/containers/string.hpp"
 #include "quill/Quill.h"
 
 namespace minote::base {

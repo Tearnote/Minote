@@ -3,8 +3,8 @@
 #include <string> // std::string needed by quill API
 #include "quill/Quill.h"
 #include "Tracy.hpp"
-#include "base/container/string.hpp"
-#include "base/container/array.hpp"
+#include "base/containers/string.hpp"
+#include "base/containers/array.hpp"
 #include "base/util.hpp"
 
 namespace minote::base {

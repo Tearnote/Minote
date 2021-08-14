@@ -1,7 +1,7 @@
 #pragma once
 
 #include <atomic>
-#include "base/container/string.hpp"
+#include "base/containers/string.hpp"
 #include "base/types.hpp"
 #include "base/math.hpp"
 #include "sys/system.hpp"

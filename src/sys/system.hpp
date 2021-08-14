@@ -2,7 +2,7 @@
 
 #include <concepts>
 #include "SDL_events.h"
-#include "base/container/string.hpp"
+#include "base/containers/string.hpp"
 #include "base/time.hpp"
 
 namespace minote::sys {

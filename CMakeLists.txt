@@ -43,11 +43,11 @@ set(BUILD_SHARED_LIBS OFF)
 # Main executable
 
 add_executable(Minote
-        src/base/container/nullalloc.hpp
-        src/base/container/hashmap.hpp
-        src/base/container/vector.hpp
-        src/base/container/string.hpp
-        src/base/container/array.hpp
+        src/base/containers/nullalloc.hpp
+        src/base/containers/hashmap.hpp
+        src/base/containers/vector.hpp
+        src/base/containers/string.hpp
+        src/base/containers/array.hpp
         src/base/concepts.hpp
         src/base/format.hpp
         src/base/error.hpp
@@ -86,10 +86,10 @@ add_executable(Minote
         src/main.hpp src/main.cpp
         src/mino.hpp src/mino.tpp)
 target_precompile_headers(Minote PRIVATE
-        src/base/container/hashmap.hpp
-        src/base/container/vector.hpp
-        src/base/container/string.hpp
-        src/base/container/array.hpp
+        src/base/containers/hashmap.hpp
+        src/base/containers/vector.hpp
+        src/base/containers/string.hpp
+        src/base/containers/array.hpp
         src/base/concepts.hpp
         src/base/format.hpp
         src/base/error.hpp

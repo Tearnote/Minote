@@ -1,7 +1,7 @@
 #pragma once
 
 #include <type_traits>
-#include "base/container/string.hpp"
+#include "base/containers/string.hpp"
 #include "base/types.hpp"
 
 namespace minote::base {

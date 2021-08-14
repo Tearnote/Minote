@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string_view> // base/container/string.hpp would cause a circular dependency
+#include <string_view> // base/containers/string.hpp would cause a circular dependency
 #include <functional>
 #include <stdexcept>
 #include <utility>
