@@ -201,7 +201,9 @@ MediumSampleRGB sampleMediumRGB(vec3 _worldPos) {
 
 vec3 getSunLuminance(vec3 _worldPos, vec3 _worldDir, vec3 _sunDirection, vec3 _sunIlluminance) {
 	
-	if (dot(_worldDir, _sunDirection) > cos(0.5 * 0.505 * 3.14159 / 180.0)) {
+	const float SunRadius = 0.5 * 0.505 * 3.14159 / 180.0;
+	
+	if (dot(_worldDir, _sunDirection) > cos(SunRadius)) {
 		
 		float t = raySphereIntersectNearest(_worldPos, _worldDir, vec3(0.0), u_atmo.bottomRadius);
 		if (t < 0.0) { // no intersection
@@ -215,8 +217,12 @@ vec3 getSunLuminance(vec3 _worldPos, vec3 _worldDir, vec3 _sunDirection, vec3 _s
 			vec2 uvSun;
 			lutTransmittanceParamsToUv(pHeight, sunZenithCosAngle, uvSun, u_atmo.bottomRadius, u_atmo.topRadius);
 			
+			float angle = acos(dot(_worldDir, _sunDirection));
+			float radiusRatio = angle / (SunRadius);
+			float limbDarkening = sqrt(clamp(1.0 - radiusRatio*radiusRatio, 0.0001, 1.0));
+			
 			vec3 sunLuminanceInSpace = _sunIlluminance / textureLod(s_transmittanceLut, uvUp, 0.0).rgb;
-			return sunLuminanceInSpace * textureLod(s_transmittanceLut, uvSun, 0.0).rgb;
+			return sunLuminanceInSpace * textureLod(s_transmittanceLut, uvSun, 0.0).rgb * limbDarkening;
 			
 		}
 		
