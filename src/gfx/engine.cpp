@@ -11,6 +11,7 @@
 #include "base/error.hpp"
 #include "base/math.hpp"
 #include "base/log.hpp"
+#include "gfx/modules/cubeFilter.hpp"
 #include "gfx/modules/indirect.hpp"
 #include "gfx/modules/tonemap.hpp"
 #include "gfx/modules/forward.hpp"
@@ -28,10 +29,14 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	
 	ZoneScoped;
 	
-	// Initialize internal resources
-	
 	auto ifc = m_vk.context->begin();
 	auto ptc = ifc.begin();
+	
+	// Compile pipelines
+	
+	CubeFilter::compile(ptc);
+	
+	// Initialize internal resources
 	m_swapchainDirty = false;
 	
 	m_imguiData = ImGui_ImplVuk_Init(ptc);
@@ -43,8 +48,16 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	
 	m_meshes = std::move(_meshList).upload(ptc);
 	m_atmosphere = Atmosphere(ptc, Atmosphere::Params::earth());
-	m_ibl = IBLMap(ptc);
 	m_objects = ObjectPool();
+	
+	m_iblUnfiltered.emplace(ptc, "ibl_unfiltered", 256, vuk::Format::eR16G16B16A16Sfloat,
+		vuk::ImageUsageFlagBits::eStorage |
+		vuk::ImageUsageFlagBits::eSampled |
+		vuk::ImageUsageFlagBits::eTransferSrc);
+	m_iblFiltered.emplace(ptc, "ibl_filtered", 256, vuk::Format::eR16G16B16A16Sfloat,
+		vuk::ImageUsageFlagBits::eStorage |
+		vuk::ImageUsageFlagBits::eSampled |
+		vuk::ImageUsageFlagBits::eTransferSrc);
 	
 	// Perform precalculations
 	auto precalc = m_atmosphere->precalculate();
@@ -66,7 +79,9 @@ Engine::~Engine() {
 	
 	m_vk.context->wait_idle();
 	
-	m_ibl.reset();
+	m_iblFiltered.reset();
+	m_iblUnfiltered.reset();
+	
 	m_atmosphere.reset();
 	m_objects.reset();
 	m_meshes.reset();
@@ -132,11 +147,11 @@ void Engine::render(bool _repaint) {
 	auto rg = vuk::RenderGraph();
 	
 	rg.append(sky.calculate(worldBuf, m_camera));
-	rg.append(sky.drawCubemap(worldBuf, m_ibl->Unfiltered_n, uvec2(m_ibl->BaseSize)));
-	rg.append(m_ibl->filter());
+	rg.append(sky.drawCubemap(worldBuf, *m_iblUnfiltered));
+	rg.append(CubeFilter::apply("IBL", *m_iblUnfiltered, *m_iblFiltered));
 	rg.append(indirect.sortAndCull(m_world, *m_meshes));
 	rg.append(forward.zPrepass(worldBuf, indirect, *m_meshes));
-	rg.append(forward.draw(worldBuf, indirect, *m_meshes, sky, *m_ibl));
+	rg.append(forward.draw(worldBuf, indirect, *m_meshes, sky, *m_iblFiltered));
 	rg.append(sky.draw(worldBuf, forward.Color_n, forward.Depth_n, viewport));
 	rg.append(bloom.apply(forward.Color_n));
 	rg.append(tonemap.apply(forward.Color_n, "swapchain", viewport));
@@ -145,6 +160,11 @@ void Engine::render(bool _repaint) {
 	ImGui_ImplVuk_Render(ptc, rg, "swapchain", "swapchain", m_imguiData, ImGui::GetDrawData());
 	
 	rg.attach_swapchain("swapchain", m_vk.swapchain, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
+	
+	// Attach used resources
+	
+	m_iblUnfiltered->attach(rg, vuk::eNone, vuk::eNone);
+	m_iblFiltered->attach(rg, vuk::eNone, vuk::eNone);
 	
 	// Acquire swapchain image
 	

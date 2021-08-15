@@ -63,12 +63,13 @@ add_executable(Minote
         src/sys/window.hpp src/sys/window.cpp
         src/sys/vulkan.hpp src/sys/vulkan.cpp
         src/sys/system.hpp src/sys/system.cpp
-        src/gfx/modules/iblCoeffs.hpp
+        src/gfx/resources/cubemap.hpp src/gfx/resources/cubemap.cpp
+        src/gfx/modules/cubeFilterCoeffs.hpp
+        src/gfx/modules/cubeFilter.hpp src/gfx/modules/cubeFilter.cpp
         src/gfx/modules/indirect.hpp src/gfx/modules/indirect.cpp
         src/gfx/modules/forward.hpp src/gfx/modules/forward.cpp
         src/gfx/modules/tonemap.hpp src/gfx/modules/tonemap.cpp
         src/gfx/modules/bloom.hpp src/gfx/modules/bloom.cpp
-        src/gfx/modules/ibl.hpp src/gfx/modules/ibl.cpp
         src/gfx/modules/sky.hpp src/gfx/modules/sky.cpp
         src/gfx/samplers.hpp
         src/gfx/objects.hpp src/gfx/objects.cpp
@@ -266,8 +267,8 @@ set(SHADER_SOURCES
         src/glsl/sky/skyGenSkyView.comp
         src/glsl/sky/skyDraw.vert src/glsl/sky/skyDraw.frag
         src/glsl/bloomDownKaris.comp
-        src/glsl/iblPostfilter.comp
-        src/glsl/iblPrefilter.comp
+        src/glsl/cubePostfilter.comp
+        src/glsl/cubePrefilter.comp
         src/glsl/bloomDown.comp
         src/glsl/zprepass.vert src/glsl/zprepass.frag
         src/glsl/tonemap.vert src/glsl/tonemap.frag

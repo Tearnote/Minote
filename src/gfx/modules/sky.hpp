@@ -5,6 +5,7 @@
 #include "vuk/Buffer.hpp"
 #include "vuk/Image.hpp"
 #include "base/math.hpp"
+#include "gfx/resources/cubemap.hpp"
 #include "gfx/camera.hpp"
 
 namespace minote::gfx {
@@ -115,8 +116,7 @@ struct Sky {
 		vuk::Name targetDepth, uvec2 targetSize) -> vuk::RenderGraph;
 	
 	// Draw the sky into an existing IBLMap. Target is the mip 0 of provided image.
-	auto drawCubemap(vuk::Buffer world, vuk::Name target,
-		uvec2 targetSize) -> vuk::RenderGraph;
+	auto drawCubemap(vuk::Buffer world, Cubemap& dst) -> vuk::RenderGraph;
 	
 private:
 	

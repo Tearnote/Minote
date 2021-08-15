@@ -2,9 +2,9 @@
 
 #include "vuk/RenderGraph.hpp"
 #include "vuk/Context.hpp"
+#include "gfx/resources/cubemap.hpp"
 #include "gfx/modules/indirect.hpp"
 #include "gfx/modules/sky.hpp"
-#include "gfx/modules/ibl.hpp"
 #include "base/math.hpp"
 
 namespace minote::gfx {
@@ -31,7 +31,7 @@ struct Forward {
 	auto zPrepass(vuk::Buffer world, Indirect const&, MeshBuffer const&) -> vuk::RenderGraph;
 	
 	// Using Depth_n, render into Color_n
-	auto draw(vuk::Buffer world, Indirect const&, MeshBuffer const&, Sky const&, IBLMap const&) -> vuk::RenderGraph;
+	auto draw(vuk::Buffer world, Indirect const&, MeshBuffer const&, Sky const&, Cubemap const&) -> vuk::RenderGraph;
 	
 private:
 	

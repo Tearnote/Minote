@@ -5,8 +5,8 @@
 #include "Tracy.hpp"
 #include "base/math.hpp"
 #include "sys/vulkan.hpp"
+#include "gfx/resources/cubemap.hpp"
 #include "gfx/modules/sky.hpp"
-#include "gfx/modules/ibl.hpp"
 #include "gfx/objects.hpp"
 #include "gfx/meshes.hpp"
 #include "gfx/camera.hpp"
@@ -63,7 +63,8 @@ private:
 	
 	World m_world;
 	std::optional<Atmosphere> m_atmosphere;
-	std::optional<IBLMap> m_ibl;
+	std::optional<Cubemap> m_iblUnfiltered;
+	std::optional<Cubemap> m_iblFiltered;
 	
 };
 

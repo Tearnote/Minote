@@ -10,7 +10,7 @@ namespace minote::gfx {
 using namespace base;
 
 // Return the number a mipmaps that a square texture of the given size would have.
-inline auto mipmapCount(u32 size) {
+constexpr auto mipmapCount(u32 size) {
 	return u32(floor(log2(size))) + 1;
 }
 

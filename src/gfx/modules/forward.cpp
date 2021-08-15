@@ -75,7 +75,7 @@ auto Forward::zPrepass(vuk::Buffer _world, Indirect const& _indirect, MeshBuffer
 }
 
 auto Forward::draw(vuk::Buffer _world, Indirect const& _indirect,
-	MeshBuffer const& _meshes, Sky const& _sky, IBLMap const& _ibl) -> vuk::RenderGraph {
+	MeshBuffer const& _meshes, Sky const& _sky, Cubemap const& _ibl) -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
 	
@@ -85,7 +85,7 @@ auto Forward::draw(vuk::Buffer _world, Indirect const& _indirect,
 			vuk::Resource(_indirect.Commands_n,        vuk::Resource::Type::eBuffer, vuk::eIndirectRead),
 			vuk::Resource(_indirect.TransformCulled_n, vuk::Resource::Type::eBuffer, vuk::eVertexRead),
 			vuk::Resource(_indirect.MaterialCulled_n,  vuk::Resource::Type::eBuffer, vuk::eVertexRead),
-			vuk::Resource(_ibl.Filtered_n,             vuk::Resource::Type::eImage,  vuk::eFragmentSampled),
+			vuk::Resource(_ibl.name,                   vuk::Resource::Type::eImage,  vuk::eFragmentSampled),
 			vuk::Resource(_sky.AerialPerspective_n,    vuk::Resource::Type::eImage,  vuk::eFragmentSampled),
 			vuk::Resource(_sky.SunLuminance_n,         vuk::Resource::Type::eBuffer, vuk::eFragmentRead),
 			vuk::Resource(Color_n,                     vuk::Resource::Type::eImage,  vuk::eColorWrite),
@@ -104,7 +104,7 @@ auto Forward::draw(vuk::Buffer _world, Indirect const& _indirect,
 			   .bind_storage_buffer(0, 1, _indirect.transformCulledBuf)
 			   .bind_storage_buffer(0, 2, _indirect.materialCulledBuf)
 			   .bind_storage_buffer(0, 3, *_sky.sunLuminance)
-			   .bind_sampled_image(0, 4, _ibl.Filtered_n, TrilinearClamp)
+			   .bind_sampled_image(0, 4, _ibl.texture, TrilinearClamp)
 			   .bind_sampled_image(0, 5, _sky.AerialPerspective_n, TrilinearClamp)
 			   .bind_graphics_pipeline("object");
 			

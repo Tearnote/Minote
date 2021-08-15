@@ -303,8 +303,7 @@ auto Sky::draw(vuk::Buffer _world, vuk::Name _targetColor,
 	
 }
 
-auto Sky::drawCubemap(vuk::Buffer _world, vuk::Name _target,
-	uvec2 _targetSize) -> vuk::RenderGraph {
+auto Sky::drawCubemap(vuk::Buffer _world, Cubemap& _dst) -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
 	
@@ -313,15 +312,15 @@ auto Sky::drawCubemap(vuk::Buffer _world, vuk::Name _target,
 		.resources = {
 			vuk::Resource(atmosphere.Transmittance_n, vuk::Resource::Type::eImage,  vuk::eFragmentSampled),
 			vuk::Resource(CubemapView_n,              vuk::Resource::Type::eImage,  vuk::eComputeSampled),
-			vuk::Resource(_target,                    vuk::Resource::Type::eImage,  vuk::eComputeWrite),
+			vuk::Resource(_dst.name,                  vuk::Resource::Type::eImage,  vuk::eComputeWrite),
 			vuk::Resource(SunLuminance_n,             vuk::Resource::Type::eBuffer, vuk::eComputeWrite) },
-		.execute = [this, _world, _target, _targetSize](vuk::CommandBuffer& cmd) {
+		.execute = [&, this](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_uniform_buffer(0, 1, *atmosphere.params)
 			   .bind_sampled_image(0, 2, atmosphere.Transmittance_n, LinearClamp)
 			   .bind_sampled_image(1, 0, CubemapView_n, LinearClamp)
-			   .bind_storage_image(1, 1, _target)
+			   .bind_storage_image(1, 1, _dst.name)
 			   .bind_storage_buffer(1, 3, *sunLuminance)
 			   .bind_compute_pipeline("sky_draw_cubemap");
 			
@@ -354,7 +353,7 @@ auto Sky::drawCubemap(vuk::Buffer _world, vuk::Name _target,
 			
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0_zu, CubemapCamera);
 			
-			cmd.dispatch_invocations(_targetSize.x(), _targetSize.y(), 6);
+			cmd.dispatch_invocations(_dst.texture.extent.width, _dst.texture.extent.height, 6);
 			
 		}});
 	
