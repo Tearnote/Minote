@@ -38,10 +38,10 @@ auto CubeFilter::apply(string_view _name, Cubemap& _src, Cubemap& _dst) -> vuk::
 	auto rg = vuk::RenderGraph();
 	
 	rg.add_pass({
-		.name = vuk::Name(sstring(_name) + " prefilt"),
+		.name = vuk::Name(string(_name) + " prefilter"),
 		.resources = {
 			vuk::Resource(_src.name, vuk::Resource::Type::eImage, vuk::eComputeRW) },
-		.execute = [&](vuk::CommandBuffer& cmd) {
+		.execute = [&_src](vuk::CommandBuffer& cmd) {
 			
 			for (auto i: iota(1u, MipCount)) {
 				
@@ -59,11 +59,11 @@ auto CubeFilter::apply(string_view _name, Cubemap& _src, Cubemap& _dst) -> vuk::
 		}});
 	
 	rg.add_pass({
-		.name = vuk::Name(sstring(_name) + " postfilt"),
+		.name = vuk::Name(string(_name) + " postfilter"),
 		.resources = {
 			vuk::Resource(_src.name, vuk::Resource::Type::eImage, vuk::eComputeRead),
 			vuk::Resource(_dst.name, vuk::Resource::Type::eImage, vuk::eComputeWrite) },
-		.execute = [&](vuk::CommandBuffer& cmd) {
+		.execute = [&_src, &_dst](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_sampled_image(0, 0, _src.name, TrilinearClamp)
 			   .bind_storage_image(0, 1, *_dst.arrayViews[1])
@@ -87,7 +87,7 @@ auto CubeFilter::apply(string_view _name, Cubemap& _src, Cubemap& _dst) -> vuk::
 		.resources = {
 			vuk::Resource(_src.name, vuk::Resource::Type::eImage, vuk::eTransferSrc),
 			vuk::Resource(_dst.name, vuk::Resource::Type::eImage, vuk::eTransferDst) },
-		.execute = [&](vuk::CommandBuffer& cmd) {
+		.execute = [&_src, &_dst](vuk::CommandBuffer& cmd) {
 			
 			cmd.image_barrier(_src.name, vuk::eComputeRead,  vuk::eTransferSrc);
 			cmd.image_barrier(_dst.name, vuk::eComputeWrite, vuk::eTransferDst);

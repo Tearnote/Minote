@@ -7,15 +7,14 @@
 namespace minote::base {
 
 // Standard string, stored on stack by default and relocated to heap if large.
-template<template<typename> typename Alloc = std::allocator>
-using string = std::basic_string<char, std::char_traits<char>, Alloc<char>>;
+using std::string;
 
 // Static string. Relies entirely on small string optimization. Throws if SSO
 // capacity is exceeded. Release-mode only.
 #if _ITERATOR_DEBUG_LEVEL == 0
-using sstring = string<NullAllocator>;
+using sstring = string<NullAllocator<char>>;
 #else //_ITERATOR_DEBUG_LEVEL
-using sstring = string<>;
+using sstring = string;
 #endif //_ITERATOR_DEBUG_LEVEL
 
 // Read-only view into a string, used for function arguments. Pass by value when

@@ -64,7 +64,7 @@ auto main(int, char*[]) -> int try {
 	
 	// Initialize systems
 	auto system = sys::System();
-	auto window = sys::Window(system, AppTitle, false, {1280, 720});
+	auto window = sys::Window(system, AppTitle, false, {1280, 704});
 	auto vulkan = sys::Vulkan(window);
 	
 	// Load assets

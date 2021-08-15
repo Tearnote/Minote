@@ -17,7 +17,6 @@ struct Cubemap {
 	
 	vuk::Name name;
 	vuk::Texture texture;
-	
 	// nth entry is an image array view into nth mipmap level
 	array<vuk::Unique<vuk::ImageView>> arrayViews;
 	

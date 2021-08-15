@@ -14,7 +14,6 @@ struct CubeFilter {
 	
 	// 1st mip is perfect specular, next mips are increasingly rough
 	static constexpr auto MipCount = 1u + 7u;
-	
 	// The technique only supports cubemaps of this size
 	static constexpr auto BaseSize = 256u;
 	
