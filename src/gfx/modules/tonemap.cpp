@@ -8,22 +8,16 @@ namespace minote::gfx {
 
 using namespace base;
 
-Tonemap::Tonemap(vuk::PerThreadContext& _ptc) {
+void Tonemap::compile(vuk::PerThreadContext& _ptc) {
 	
-	if (!pipelinesCreated) {
-		
-		auto tonemapPci = vuk::PipelineBaseCreateInfo();
-		tonemapPci.add_spirv(std::vector<u32>{
+	auto tonemapPci = vuk::PipelineBaseCreateInfo();
+	tonemapPci.add_spirv(std::vector<u32>{
 #include "spv/tonemap.vert.spv"
-		}, "blit.vert");
-		tonemapPci.add_spirv(std::vector<u32>{
+	}, "blit.vert");
+	tonemapPci.add_spirv(std::vector<u32>{
 #include "spv/tonemap.frag.spv"
-		}, "blit.frag");
-		_ptc.ctx.create_named_pipeline("tonemap", tonemapPci);
-		
-		pipelinesCreated = true;
-		
-	}
+	}, "blit.frag");
+	_ptc.ctx.create_named_pipeline("tonemap", tonemapPci);
 	
 }
 

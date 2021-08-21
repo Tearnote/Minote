@@ -35,6 +35,7 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	// Compile pipelines
 	
 	CubeFilter::compile(ptc);
+	Tonemap::compile(ptc);
 	Bloom::compile(ptc);
 	
 	// Initialize internal resources
@@ -140,7 +141,6 @@ void Engine::render(bool _repaint) {
 	auto indirect = Indirect(ptc, *m_objects, *m_meshes);
 	auto sky = Sky(ptc, *m_atmosphere);
 	auto forward = Forward(ptc, viewport);
-	auto tonemap = Tonemap(ptc);
 	
 	// Set up the rendergraph
 	
@@ -154,7 +154,7 @@ void Engine::render(bool _repaint) {
 	rg.append(forward.draw(worldBuf, indirect, *m_meshes, sky, *m_iblFiltered));
 	rg.append(sky.draw(worldBuf, forward.Color_n, forward.Depth_n, viewport));
 	rg.append(Bloom::apply(ptc, "Fb bloom", forward.Color_n, forward.size()));
-	rg.append(tonemap.apply(forward.Color_n, "swapchain", viewport));
+	rg.append(Tonemap::apply(forward.Color_n, "swapchain", viewport));
 	
 	ImGui::Render();
 	ImGui_ImplVuk_Render(ptc, rg, "swapchain", "swapchain", m_imguiData, ImGui::GetDrawData());
