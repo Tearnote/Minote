@@ -38,9 +38,6 @@ struct Engine {
 	// Use this function when the surface is resized to recreate the swapchain.
 	void refreshSwapchain(uvec2 newSize);
 	
-	Engine(Engine const&) = delete;
-	auto operator=(Engine const&) -> Engine& = delete;
-	
 	// Subcomponent access
 	
 	// Use freely to add/remove/modify objects for drawing
@@ -48,6 +45,12 @@ struct Engine {
 	
 	// Use freely to modify the rendering camera
 	auto camera() -> Camera& { return m_camera; }
+	
+	// Not copyable, not movable
+	Engine(Engine const&) = delete;
+	auto operator=(Engine const&) -> Engine& = delete;
+	Engine(Engine&&) = delete;
+	auto operator=(Engine&&) -> Engine& = delete;
 	
 private:
 	
@@ -62,7 +65,7 @@ private:
 	Camera m_camera;
 	
 	World m_world;
-	std::optional<Atmosphere> m_atmosphere;
+	Atmosphere m_atmosphere;
 	std::optional<Cubemap> m_iblUnfiltered;
 	std::optional<Cubemap> m_iblFiltered;
 	

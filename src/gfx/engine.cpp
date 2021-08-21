@@ -35,6 +35,7 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	// Compile pipelines
 	
 	CubeFilter::compile(ptc);
+	Atmosphere::compile(ptc);
 	Tonemap::compile(ptc);
 	Bloom::compile(ptc);
 	
@@ -49,7 +50,7 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	ImGui::NewFrame();
 	
 	m_meshes = std::move(_meshList).upload(ptc);
-	m_atmosphere = Atmosphere(ptc, Atmosphere::Params::earth());
+	m_atmosphere.upload(ptc, Atmosphere::Params::earth());
 	m_objects = ObjectPool();
 	
 	m_iblUnfiltered.emplace(ptc, "ibl_unfiltered", 256, vuk::Format::eR16G16B16A16Sfloat,
@@ -62,7 +63,7 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 		vuk::ImageUsageFlagBits::eTransferSrc);
 	
 	// Perform precalculations
-	auto precalc = m_atmosphere->precalculate();
+	auto precalc = m_atmosphere.precalculate();
 	
 	// Finalize
 	
@@ -81,10 +82,13 @@ Engine::~Engine() {
 	
 	m_vk.context->wait_idle();
 	
+	auto ifc = m_vk.context->begin();
+	auto ptc = ifc.begin();
+	
 	m_iblFiltered.reset();
 	m_iblUnfiltered.reset();
 	
-	m_atmosphere.reset();
+	m_atmosphere.cleanup(ptc);
 	m_objects.reset();
 	m_meshes.reset();
 	m_imguiData.fontTex.view.reset();
@@ -139,7 +143,7 @@ void Engine::render(bool _repaint) {
 	
 	auto worldBuf = m_world.upload(ptc, "world");
 	auto indirect = Indirect(ptc, *m_objects, *m_meshes);
-	auto sky = Sky(ptc, *m_atmosphere);
+	auto sky = Sky(ptc, m_atmosphere);
 	auto forward = Forward(ptc, viewport);
 	
 	// Set up the rendergraph
@@ -216,6 +220,8 @@ void Engine::render(bool _repaint) {
 		throw runtime_error_fmt("Unable to present to the screen: error {}", result);
 	
 	// Clean up
+	
+	worldBuf.recycle(ptc);
 	
 	ImGui::NewFrame();
 	FrameMark;

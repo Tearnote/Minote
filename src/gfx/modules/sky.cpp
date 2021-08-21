@@ -39,7 +39,23 @@ auto Atmosphere::Params::earth() -> Params {
 	
 }
 
-Atmosphere::Atmosphere(vuk::PerThreadContext& _ptc, Params const& _params) {
+void Atmosphere::compile(vuk::PerThreadContext& _ptc) {
+	
+	auto skyGenTransmittancePci = vuk::ComputePipelineCreateInfo();
+	skyGenTransmittancePci.add_spirv(std::vector<u32>{
+#include "spv/skyGenTransmittance.comp.spv"
+	}, "skyGenTransmittance.comp");
+	_ptc.ctx.create_named_pipeline("sky_gen_transmittance", skyGenTransmittancePci);
+
+	auto skyGenMultiScatteringPci = vuk::ComputePipelineCreateInfo();
+	skyGenMultiScatteringPci.add_spirv(std::vector<u32>{
+#include "spv/skyGenMultiScattering.comp.spv"
+	}, "skyGenMultiScattering.comp");
+	_ptc.ctx.create_named_pipeline("sky_gen_multi_scattering", skyGenMultiScatteringPci);
+	
+}
+
+void Atmosphere::upload(vuk::PerThreadContext& _ptc, Params const& _params) {
 	
 	transmittance = _ptc.allocate_texture(vuk::ImageCreateInfo{
 		.format = TransmittanceFormat,
@@ -51,29 +67,8 @@ Atmosphere::Atmosphere(vuk::PerThreadContext& _ptc, Params const& _params) {
 		.extent = {MultiScatteringWidth, MultiScatteringHeight, 1},
 		.usage = vuk::ImageUsageFlagBits::eStorage | vuk::ImageUsageFlagBits::eSampled });
 	
-	auto paramsNotConst = Params(_params); // Working around std::span dumbness
-	params = _ptc.create_buffer<Params>(
-		vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eUniformBuffer | vuk::BufferUsageFlagBits::eTransferDst,
-		std::span(&paramsNotConst, 1_zu)).first;
-	
-	if (!pipelinesCreated) {
-		
-		auto skyGenTransmittancePci = vuk::ComputePipelineCreateInfo();
-		skyGenTransmittancePci.add_spirv(std::vector<u32>{
-#include "spv/skyGenTransmittance.comp.spv"
-		}, "skyGenTransmittance.comp");
-		_ptc.ctx.create_named_pipeline("sky_gen_transmittance", skyGenTransmittancePci);
-
-		auto skyGenMultiScatteringPci = vuk::ComputePipelineCreateInfo();
-		skyGenMultiScatteringPci.add_spirv(std::vector<u32>{
-#include "spv/skyGenMultiScattering.comp.spv"
-		}, "skyGenMultiScattering.comp");
-		_ptc.ctx.create_named_pipeline("sky_gen_multi_scattering", skyGenMultiScatteringPci);
-		
-		pipelinesCreated = true;
-		
-	}
+	params = Buffer(_ptc, "Atmosphere::params", _params,
+		vuk::BufferUsageFlagBits::eUniformBuffer, vuk::MemoryUsage::eGPUonly);
 	
 }
 
@@ -87,7 +82,7 @@ auto Atmosphere::precalculate() -> vuk::RenderGraph {
 			vuk::Resource(Transmittance_n, vuk::Resource::Type::eImage, vuk::eComputeWrite) },
 		.execute = [this](vuk::CommandBuffer& cmd) {
 			
-			cmd.bind_uniform_buffer(0, 1, *params)
+			cmd.bind_uniform_buffer(0, 1, params)
 			   .bind_storage_image(1, 0, Transmittance_n)
 			   .bind_compute_pipeline("sky_gen_transmittance");
 			cmd.dispatch_invocations(TransmittanceWidth, TransmittanceHeight);
@@ -101,7 +96,7 @@ auto Atmosphere::precalculate() -> vuk::RenderGraph {
 			vuk::Resource(MultiScattering_n, vuk::Resource::Type::eImage, vuk::eComputeWrite) },
 		.execute = [this](vuk::CommandBuffer& cmd) {
 			
-			cmd.bind_uniform_buffer(0, 1, *params)
+			cmd.bind_uniform_buffer(0, 1, params)
 			   .bind_sampled_image(0, 2, Transmittance_n, LinearClamp)
 			   .bind_storage_image(1, 0, MultiScattering_n)
 			   .bind_compute_pipeline("sky_gen_multi_scattering");
@@ -119,6 +114,12 @@ auto Atmosphere::precalculate() -> vuk::RenderGraph {
 		vuk::Access::eComputeSampled);
 		
 	return rg;
+	
+}
+
+void Atmosphere::cleanup(vuk::PerThreadContext& _ptc) {
+	
+	params.recycle(_ptc);
 	
 }
 
@@ -201,7 +202,7 @@ auto Sky::calculate(Buffer<World> const& _world, Camera const& _camera) -> vuk::
 		.execute = [this, &_world, _camera](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
-			   .bind_uniform_buffer(0, 1, *atmosphere.params)
+			   .bind_uniform_buffer(0, 1, atmosphere.params)
 			   .bind_sampled_image(0, 2, atmosphere.Transmittance_n, LinearClamp)
 			   .bind_sampled_image(0, 3, atmosphere.MultiScattering_n, LinearClamp)
 			   .bind_storage_image(1, 0, CameraView_n)
@@ -220,7 +221,7 @@ auto Sky::calculate(Buffer<World> const& _world, Camera const& _camera) -> vuk::
 		.execute = [this, &_world](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
-			   .bind_uniform_buffer(0, 1, *atmosphere.params)
+			   .bind_uniform_buffer(0, 1, atmosphere.params)
 			   .bind_sampled_image(0, 2, atmosphere.Transmittance_n, LinearClamp)
 			   .bind_sampled_image(0, 3, atmosphere.MultiScattering_n, LinearClamp)
 			   .bind_storage_image(1, 0, CubemapView_n)
@@ -239,7 +240,7 @@ auto Sky::calculate(Buffer<World> const& _world, Camera const& _camera) -> vuk::
 		.execute = [this, &_world](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
-			   .bind_uniform_buffer(0, 1, *atmosphere.params)
+			   .bind_uniform_buffer(0, 1, atmosphere.params)
 			   .bind_sampled_image(0, 2, atmosphere.Transmittance_n, LinearClamp)
 			   .bind_sampled_image(0, 3, atmosphere.MultiScattering_n, LinearClamp)
 			   .bind_storage_image(1, 0, AerialPerspective_n)
@@ -291,7 +292,7 @@ auto Sky::draw(Buffer<World> const& _world, vuk::Name _targetColor,
 			cmd.set_viewport(0, vuk::Rect2D{ .extent = vukExtent(_targetSize) })
 			   .set_scissor(0, vuk::Rect2D{ .extent = vukExtent(_targetSize) })
 			   .bind_uniform_buffer(0, 0, _world)
-			   .bind_uniform_buffer(0, 1, *atmosphere.params)
+			   .bind_uniform_buffer(0, 1, atmosphere.params)
 			   .bind_sampled_image(0, 2, atmosphere.Transmittance_n, LinearClamp)
 			   .bind_sampled_image(1, 0, CameraView_n, LinearClamp)
 			   .bind_graphics_pipeline("sky_draw");
@@ -317,7 +318,7 @@ auto Sky::drawCubemap(Buffer<World> const& _world, Cubemap& _dst) -> vuk::Render
 		.execute = [&, this](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
-			   .bind_uniform_buffer(0, 1, *atmosphere.params)
+			   .bind_uniform_buffer(0, 1, atmosphere.params)
 			   .bind_sampled_image(0, 2, atmosphere.Transmittance_n, LinearClamp)
 			   .bind_sampled_image(1, 0, CubemapView_n, LinearClamp)
 			   .bind_storage_image(1, 1, _dst.name)

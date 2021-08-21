@@ -67,17 +67,24 @@ struct Atmosphere {
 	
 	vuk::Texture transmittance;
 	vuk::Texture multiScattering;
-	vuk::Unique<vuk::Buffer> params;
+	Buffer<Params> params;
 	
-	// Initialize the atmospheric buffers.
-	Atmosphere(vuk::PerThreadContext&, Params const&);
+	// Build required shaders.
+	static void compile(vuk::PerThreadContext&);
 	
-	// Fill the lookup tables. Only needs to be executed once.
+	// Construct the object. You may call upload() when ready.
+	Atmosphere() = default;
+	
+	// Upload the atmospheric buffers to GPU as per provided parameters. Object
+	// is not usable until all GPU transfers are finished.
+	void upload(vuk::PerThreadContext&, Params const&);
+	
+	// Fill the lookup tables. Requires upload() to be called first. Only needs
+	// to be executed once.
 	auto precalculate() -> vuk::RenderGraph;
 	
-private:
-	
-	inline static bool pipelinesCreated = false;
+	// Recycle all GPU resources.
+	void cleanup(vuk::PerThreadContext&);
 	
 };
 
