@@ -137,7 +137,7 @@ void Engine::render(bool _repaint) {
 	
 	// Initialize modules
 	
-	auto worldBuf = m_world.upload(ptc);
+	auto worldBuf = m_world.upload(ptc, "world");
 	auto indirect = Indirect(ptc, *m_objects, *m_meshes);
 	auto sky = Sky(ptc, *m_atmosphere);
 	auto forward = Forward(ptc, viewport);

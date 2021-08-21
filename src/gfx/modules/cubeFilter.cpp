@@ -30,10 +30,8 @@ void CubeFilter::compile(vuk::PerThreadContext& _ptc) {
 
 auto CubeFilter::apply(string_view _name, Cubemap& _src, Cubemap& _dst) -> vuk::RenderGraph {
 	
-	assert(_src.texture.extent.width == BaseSize);
-	assert(_src.texture.extent.height == BaseSize);
-	assert(_dst.texture.extent.width == BaseSize);
-	assert(_dst.texture.extent.height == BaseSize);
+	assert(_src.size() == uvec2(BaseSize));
+	assert(_dst.size() == uvec2(BaseSize));
 	
 	auto rg = vuk::RenderGraph();
 	

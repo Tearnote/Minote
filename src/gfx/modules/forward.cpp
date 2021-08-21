@@ -41,7 +41,8 @@ Forward::Forward(vuk::PerThreadContext& _ptc, uvec2 _size) {
 	
 }
 
-auto Forward::zPrepass(vuk::Buffer _world, Indirect const& _indirect, MeshBuffer const& _meshes) -> vuk::RenderGraph {
+auto Forward::zPrepass(Buffer<World> const& _world, Indirect const& _indirect,
+	MeshBuffer const& _meshes) -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
 	
@@ -51,7 +52,7 @@ auto Forward::zPrepass(vuk::Buffer _world, Indirect const& _indirect, MeshBuffer
 			vuk::Resource(_indirect.Commands_n,        vuk::Resource::Type::eBuffer, vuk::eIndirectRead),
 			vuk::Resource(_indirect.TransformCulled_n, vuk::Resource::Type::eBuffer, vuk::eVertexRead),
 			vuk::Resource(Depth_n,                     vuk::Resource::Type::eImage,  vuk::eDepthStencilRW) },
-		.execute = [this, _world, &_indirect, &_meshes](vuk::CommandBuffer& cmd) {
+		.execute = [this, &_world, &_indirect, &_meshes](vuk::CommandBuffer& cmd) {
 			
 			cmd.set_viewport(0, vuk::Rect2D{ .extent = vukExtent(m_size) })
 			   .set_scissor(0, vuk::Rect2D{ .extent = vukExtent(m_size) })
@@ -74,7 +75,7 @@ auto Forward::zPrepass(vuk::Buffer _world, Indirect const& _indirect, MeshBuffer
 	
 }
 
-auto Forward::draw(vuk::Buffer _world, Indirect const& _indirect,
+auto Forward::draw(Buffer<World> const& _world, Indirect const& _indirect,
 	MeshBuffer const& _meshes, Sky const& _sky, Cubemap const& _ibl) -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
@@ -90,7 +91,7 @@ auto Forward::draw(vuk::Buffer _world, Indirect const& _indirect,
 			vuk::Resource(_sky.SunLuminance_n,         vuk::Resource::Type::eBuffer, vuk::eFragmentRead),
 			vuk::Resource(Color_n,                     vuk::Resource::Type::eImage,  vuk::eColorWrite),
 			vuk::Resource(Depth_n,                     vuk::Resource::Type::eImage,  vuk::eDepthStencilRW) },
-		.execute = [this, _world, &_indirect, &_meshes, &_sky, &_ibl](vuk::CommandBuffer& cmd) {
+		.execute = [this, &_world, &_indirect, &_meshes, &_sky, &_ibl](vuk::CommandBuffer& cmd) {
 			
 			cmd.set_viewport(0, vuk::Rect2D{ .extent = vukExtent(m_size) })
 			   .set_scissor(0, vuk::Rect2D{ .extent = vukExtent(m_size) })

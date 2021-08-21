@@ -188,7 +188,7 @@ Sky::Sky(vuk::PerThreadContext& _ptc, Atmosphere const& _atmosphere):
 	
 }
 
-auto Sky::calculate(vuk::Buffer _world, Camera const& _camera) -> vuk::RenderGraph {
+auto Sky::calculate(Buffer<World> const& _world, Camera const& _camera) -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
 	
@@ -198,7 +198,7 @@ auto Sky::calculate(vuk::Buffer _world, Camera const& _camera) -> vuk::RenderGra
 			vuk::Resource(atmosphere.Transmittance_n,   vuk::Resource::Type::eImage, vuk::eComputeSampled),
 			vuk::Resource(atmosphere.MultiScattering_n, vuk::Resource::Type::eImage, vuk::eComputeSampled),
 			vuk::Resource(CameraView_n,                 vuk::Resource::Type::eImage, vuk::eComputeWrite) },
-		.execute = [this, _world, _camera](vuk::CommandBuffer& cmd) {
+		.execute = [this, &_world, _camera](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_uniform_buffer(0, 1, *atmosphere.params)
@@ -217,7 +217,7 @@ auto Sky::calculate(vuk::Buffer _world, Camera const& _camera) -> vuk::RenderGra
 			vuk::Resource(atmosphere.Transmittance_n,   vuk::Resource::Type::eImage, vuk::eComputeSampled),
 			vuk::Resource(atmosphere.MultiScattering_n, vuk::Resource::Type::eImage, vuk::eComputeSampled),
 			vuk::Resource(CubemapView_n,                vuk::Resource::Type::eImage, vuk::eComputeWrite) },
-		.execute = [this, _world](vuk::CommandBuffer& cmd) {
+		.execute = [this, &_world](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_uniform_buffer(0, 1, *atmosphere.params)
@@ -236,7 +236,7 @@ auto Sky::calculate(vuk::Buffer _world, Camera const& _camera) -> vuk::RenderGra
 			vuk::Resource(atmosphere.Transmittance_n,   vuk::Resource::Type::eImage, vuk::eComputeSampled),
 			vuk::Resource(atmosphere.MultiScattering_n, vuk::Resource::Type::eImage, vuk::eComputeSampled),
 			vuk::Resource(AerialPerspective_n,          vuk::Resource::Type::eImage, vuk::eComputeWrite) },
-		.execute = [this, _world](vuk::CommandBuffer& cmd) {
+		.execute = [this, &_world](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_uniform_buffer(0, 1, *atmosphere.params)
@@ -274,7 +274,7 @@ auto Sky::calculate(vuk::Buffer _world, Camera const& _camera) -> vuk::RenderGra
 	
 }
 
-auto Sky::draw(vuk::Buffer _world, vuk::Name _targetColor,
+auto Sky::draw(Buffer<World> const& _world, vuk::Name _targetColor,
 	vuk::Name _targetDepth, uvec2 _targetSize) -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
@@ -286,7 +286,7 @@ auto Sky::draw(vuk::Buffer _world, vuk::Name _targetColor,
 			vuk::Resource(CameraView_n,               vuk::Resource::Type::eImage, vuk::eFragmentSampled),
 			vuk::Resource(_targetColor,               vuk::Resource::Type::eImage, vuk::eColorWrite),
 			vuk::Resource(_targetDepth,               vuk::Resource::Type::eImage, vuk::eDepthStencilRW) },
-		.execute = [this, _world, _targetSize](vuk::CommandBuffer& cmd) {
+		.execute = [this, &_world, _targetSize](vuk::CommandBuffer& cmd) {
 			
 			cmd.set_viewport(0, vuk::Rect2D{ .extent = vukExtent(_targetSize) })
 			   .set_scissor(0, vuk::Rect2D{ .extent = vukExtent(_targetSize) })
@@ -303,7 +303,7 @@ auto Sky::draw(vuk::Buffer _world, vuk::Name _targetColor,
 	
 }
 
-auto Sky::drawCubemap(vuk::Buffer _world, Cubemap& _dst) -> vuk::RenderGraph {
+auto Sky::drawCubemap(Buffer<World> const& _world, Cubemap& _dst) -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
 	
@@ -353,7 +353,7 @@ auto Sky::drawCubemap(vuk::Buffer _world, Cubemap& _dst) -> vuk::RenderGraph {
 			
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0_zu, CubemapCamera);
 			
-			cmd.dispatch_invocations(_dst.texture.extent.width, _dst.texture.extent.height, 6);
+			cmd.dispatch_invocations(_dst.size().x(), _dst.size().y(), 6);
 			
 		}});
 	

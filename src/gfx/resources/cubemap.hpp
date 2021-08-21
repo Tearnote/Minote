@@ -5,6 +5,7 @@
 #include "vuk/Image.hpp"
 #include "base/containers/array.hpp"
 #include "base/types.hpp"
+#include "base/math.hpp"
 
 namespace minote::gfx {
 
@@ -22,6 +23,12 @@ struct Cubemap {
 	
 	// Create the cubemap. Each face will be a square.
 	Cubemap(vuk::PerThreadContext&, vuk::Name, u32 size, vuk::Format, vuk::ImageUsageFlags);
+	
+	// Return the size of a cubemap face.
+	auto size() const -> uvec2 { return uvec2{texture.extent.width, texture.extent.height}; }
+	
+	// Return the surface format.
+	auto format() const -> vuk::Format { return texture.format; }
 	
 	// Attach cubemap to rendergraph
 	void attach(vuk::RenderGraph&, vuk::Access initial, vuk::Access final);

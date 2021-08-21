@@ -2,11 +2,12 @@
 
 #include "vuk/RenderGraph.hpp"
 #include "vuk/Context.hpp"
-#include "vuk/Buffer.hpp"
 #include "vuk/Image.hpp"
 #include "base/math.hpp"
 #include "gfx/resources/cubemap.hpp"
+#include "gfx/resources/buffer.hpp"
 #include "gfx/camera.hpp"
+#include "gfx/world.hpp"
 
 namespace minote::gfx {
 
@@ -109,14 +110,14 @@ struct Sky {
 	Sky(vuk::PerThreadContext&, Atmosphere const&);
 	
 	// Fill lookup tables required for the two functions below.
-	auto calculate(vuk::Buffer world, Camera const& camera) -> vuk::RenderGraph;
+	auto calculate(Buffer<World> const&, Camera const& camera) -> vuk::RenderGraph;
 	
 	// Draw the sky in the background of an image (where depth is 0.0).
-	auto draw(vuk::Buffer world, vuk::Name targetColor,
+	auto draw(Buffer<World> const&, vuk::Name targetColor,
 		vuk::Name targetDepth, uvec2 targetSize) -> vuk::RenderGraph;
 	
 	// Draw the sky into an existing IBLMap. Target is the mip 0 of provided image.
-	auto drawCubemap(vuk::Buffer world, Cubemap& dst) -> vuk::RenderGraph;
+	auto drawCubemap(Buffer<World> const&, Cubemap& dst) -> vuk::RenderGraph;
 	
 private:
 	

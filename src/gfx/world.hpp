@@ -1,7 +1,9 @@
 #pragma once
 
 #include "vuk/Context.hpp"
-#include "vuk/Buffer.hpp"
+#include "vuk/Name.hpp"
+#include "gfx/resources/buffer.hpp"
+#include "base/types.hpp"
 #include "base/math.hpp"
 
 namespace minote::gfx {
@@ -25,7 +27,7 @@ struct World {
 	vec3 sunIlluminance;
 	
 	// Upload the world data to the GPU, to be used as a uniform.
-	auto upload(vuk::PerThreadContext&) -> vuk::Buffer;
+	auto upload(vuk::PerThreadContext&, vuk::Name) const -> Buffer<World>;
 	
 };
 
