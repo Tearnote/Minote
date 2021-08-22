@@ -57,8 +57,8 @@ auto Forward::zPrepass(Buffer<World> const& _world, Indirect const& _indirect,
 			cmd.set_viewport(0, vuk::Rect2D{ .extent = vukExtent(m_size) })
 			   .set_scissor(0, vuk::Rect2D{ .extent = vukExtent(m_size) })
 			   .bind_uniform_buffer(0, 0, _world)
-			   .bind_vertex_buffer(0, *_meshes.verticesBuf, 0, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
-			   .bind_index_buffer(*_meshes.indicesBuf, vuk::IndexType::eUint16)
+			   .bind_vertex_buffer(0, _meshes.verticesBuf, 0, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
+			   .bind_index_buffer(_meshes.indicesBuf, vuk::IndexType::eUint16)
 			   .bind_storage_buffer(0, 1, _indirect.transformCulledBuf)
 			   .bind_graphics_pipeline("z_prepass");
 			cmd.draw_indexed_indirect(_indirect.commandsCount, _indirect.commandsBuf, sizeof(VkDrawIndexedIndirectCommand));
@@ -96,10 +96,10 @@ auto Forward::draw(Buffer<World> const& _world, Indirect const& _indirect,
 			cmd.set_viewport(0, vuk::Rect2D{ .extent = vukExtent(m_size) })
 			   .set_scissor(0, vuk::Rect2D{ .extent = vukExtent(m_size) })
 			   
-			   .bind_vertex_buffer(0, *_meshes.verticesBuf, 0, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
-			   .bind_vertex_buffer(1, *_meshes.normalsBuf,  1, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
-			   .bind_vertex_buffer(2, *_meshes.colorsBuf,   2, vuk::Packed{vuk::Format::eR16G16B16A16Unorm})
-			   .bind_index_buffer(*_meshes.indicesBuf, vuk::IndexType::eUint16)
+			   .bind_vertex_buffer(0, _meshes.verticesBuf, 0, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
+			   .bind_vertex_buffer(1, _meshes.normalsBuf,  1, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
+			   .bind_vertex_buffer(2, _meshes.colorsBuf,   2, vuk::Packed{vuk::Format::eR16G16B16A16Unorm})
+			   .bind_index_buffer(_meshes.indicesBuf, vuk::IndexType::eUint16)
 			   
 			   .bind_uniform_buffer(0, 0, _world)
 			   .bind_storage_buffer(0, 1, _indirect.transformCulledBuf)

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include "base/util.hpp"
 
 namespace minote::gfx {
@@ -17,8 +18,9 @@ Buffer<T>::Buffer(vuk::PerThreadContext& _ptc, vuk::Name _name,
 }
 
 template<typename T>
-Buffer<T>::Buffer(vuk::PerThreadContext& _ptc, vuk::Name _name, T const& _data,
-	vuk::BufferUsageFlags _usage, vuk::MemoryUsage _memUsage) {
+Buffer<T>::Buffer(vuk::PerThreadContext& _ptc, vuk::Name _name,
+	std::span<T const> _data, vuk::BufferUsageFlags _usage,
+	vuk::MemoryUsage _memUsage) {
 	
 	assert(_memUsage == vuk::MemoryUsage::eCPUtoGPU ||
 	       _memUsage == vuk::MemoryUsage::eGPUonly);
@@ -29,12 +31,12 @@ Buffer<T>::Buffer(vuk::PerThreadContext& _ptc, vuk::Name _name, T const& _data,
 		_usage |= vuk::BufferUsageFlagBits::eTransferDst;
 	
 	handle = _ptc.allocate_buffer(_memUsage, _usage,
-		sizeof(T), alignof(T)).release();
+		_data.size_bytes(), alignof(T)).release();
 	
 	if (_memUsage == vuk::MemoryUsage::eCPUtoGPU)
-		std::memcpy(handle.mapped_ptr, &_data, sizeof(T));
+		std::memcpy(handle.mapped_ptr, _data.data(), _data.size_bytes());
 	else
-		_ptc.upload(handle, std::span(&_data, 1_zu));
+		_ptc.upload(handle, _data);
 	
 }
 

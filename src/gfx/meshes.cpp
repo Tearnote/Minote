@@ -7,6 +7,7 @@
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
 #include "quill/Fmt.h"
+#include "gfx/base.hpp"
 #include "base/error.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"
@@ -16,6 +17,16 @@ namespace minote::gfx {
 using namespace base;
 using namespace base::literals;
 
+void MeshBuffer::cleanup(vuk::PerThreadContext& _ptc) {
+	
+	verticesBuf.recycle(_ptc);
+	normalsBuf.recycle(_ptc);
+	colorsBuf.recycle(_ptc);
+	indicesBuf.recycle(_ptc);
+	descriptorBuf.recycle(_ptc);
+	
+}
+
 void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
 	
 	ZoneScoped;
@@ -23,7 +34,7 @@ void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
 	// Load and parse
 	
 	auto options = cgltf_options{ .type = cgltf_file_type_glb };
-	auto* gltf = (cgltf_data*)(nullptr);
+	auto* gltf = static_cast<cgltf_data*>(nullptr);
 	if (auto result = cgltf_parse(&options, _mesh.data(), _mesh.size_bytes(), &gltf); result != cgltf_result_success)
 		throw runtime_error_fmt(R"(Failed to parse mesh "{}": error code {})", _name, result);
 	defer { cgltf_free(gltf); };
@@ -39,7 +50,7 @@ void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
 	
 	assert(primitive.indices);
 	auto& indexAccessor = *primitive.indices;
-	auto* indexBuffer = (char const*)(indexAccessor.buffer_view->buffer->data);
+	auto* indexBuffer = static_cast<char const*>(indexAccessor.buffer_view->buffer->data);
 	assert(indexBuffer);
 	indexBuffer += indexAccessor.buffer_view->offset;
 	
@@ -55,7 +66,7 @@ void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
 	
 	assert(indexAccessor.component_type == cgltf_component_type_r_16u);
 	assert(indexAccessor.type == cgltf_type_scalar);
-	auto* indexTypedBuffer = (u16*)(indexBuffer);
+	auto* indexTypedBuffer = reinterpret_cast<u16 const*>(indexBuffer);
 	indices.insert(indices.end(), indexTypedBuffer, indexTypedBuffer + indexAccessor.count);
 	
 	// Fetch all vertex attributes
@@ -63,7 +74,7 @@ void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
 	for (auto attrIdx: iota(0_zu, primitive.attributes_count)) {
 		
 		auto& accessor = *primitive.attributes[attrIdx].data;
-		auto* buffer = (char const*)(accessor.buffer_view->buffer->data);
+		auto* buffer = static_cast<char const*>(accessor.buffer_view->buffer->data);
 		assert(buffer);
 		buffer += accessor.buffer_view->offset;
 		
@@ -80,7 +91,7 @@ void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
 			auto pfar = max(abs(aabbMin), abs(aabbMax));
 			desc.radius = length(pfar);
 			
-			auto* typedBuffer = (vec3*)(buffer);
+			auto* typedBuffer = reinterpret_cast<vec3 const*>(buffer);
 			vertices.insert(vertices.end(), typedBuffer, typedBuffer + accessor.count);
 			continue;
 			
@@ -93,7 +104,7 @@ void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
 			assert(accessor.component_type == cgltf_component_type_r_32f);
 			assert(accessor.type == cgltf_type_vec3);
 			
-			auto* typedBuffer = (vec3*)(buffer);
+			auto* typedBuffer = reinterpret_cast<vec3 const*>(buffer);
 			normals.insert(normals.end(), typedBuffer, typedBuffer + accessor.count);
 			continue;
 			
@@ -105,8 +116,8 @@ void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
 			
 			assert(accessor.component_type == cgltf_component_type_r_16u);
 			assert(accessor.type == cgltf_type_vec4);
-
-			auto* typedBuffer = (u16vec4*)(buffer);
+			
+			auto* typedBuffer = reinterpret_cast<u16vec4 const*>(buffer);
 			colors.insert(colors.end(), typedBuffer, typedBuffer + accessor.count);
 			continue;
 			
@@ -120,21 +131,21 @@ void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
 	
 }
 
-auto MeshList::upload(vuk::PerThreadContext& _ptc) && -> MeshBuffer {
+auto MeshList::upload(vuk::PerThreadContext& _ptc, vuk::Name _name) && -> MeshBuffer {
 	
 	ZoneScoped;
 	
 	auto result = MeshBuffer{
-		.verticesBuf = _ptc.create_buffer<vec3>(vuk::MemoryUsage::eGPUonly,
-			vuk::BufferUsageFlagBits::eVertexBuffer, std::span(vertices)).first,
-		.normalsBuf = _ptc.create_buffer<vec3>(vuk::MemoryUsage::eGPUonly,
-			vuk::BufferUsageFlagBits::eVertexBuffer, std::span(normals)).first,
-		.colorsBuf = _ptc.create_buffer<u16vec4>(vuk::MemoryUsage::eGPUonly,
-			vuk::BufferUsageFlagBits::eVertexBuffer, std::span(colors)).first,
-		.indicesBuf = _ptc.create_buffer<u16>(vuk::MemoryUsage::eGPUonly,
-			vuk::BufferUsageFlagBits::eIndexBuffer, std::span(indices)).first,
-		.descriptorBuf = _ptc.create_buffer<MeshDescriptor>(vuk::MemoryUsage::eGPUonly,
-			vuk::BufferUsageFlagBits::eStorageBuffer, std::span(descriptors)).first,
+		.verticesBuf = Buffer<vec3>(_ptc, nameAppend(_name, "vertices"), vertices,
+			vuk::BufferUsageFlagBits::eVertexBuffer, vuk::MemoryUsage::eGPUonly),
+		.normalsBuf = Buffer<vec3>(_ptc, nameAppend(_name, "normals"), normals,
+			vuk::BufferUsageFlagBits::eVertexBuffer, vuk::MemoryUsage::eGPUonly),
+		.colorsBuf = Buffer<u16vec4>(_ptc, nameAppend(_name, "colors"), colors,
+			vuk::BufferUsageFlagBits::eVertexBuffer, vuk::MemoryUsage::eGPUonly),
+		.indicesBuf = Buffer<u16>(_ptc, nameAppend(_name, "indices"), indices,
+			vuk::BufferUsageFlagBits::eIndexBuffer, vuk::MemoryUsage::eGPUonly),
+		.descriptorBuf = Buffer<MeshDescriptor>(_ptc, nameAppend(_name, "descriptors"), descriptors,
+			vuk::BufferUsageFlagBits::eStorageBuffer, vuk::MemoryUsage::eGPUonly),
 		.descriptorIDs = std::move(descriptorIDs) };
 	result.descriptors = std::move(descriptors); // Must still exist for descriptorBuf creation
 	

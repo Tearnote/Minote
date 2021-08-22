@@ -94,7 +94,7 @@ auto ImGui_ImplVuk_Init(vuk::PerThreadContext& _ptc) -> ImguiData {
 	// Create the font texture
 	
 	// Retrieve default font bitmap
-	auto* pixels = (unsigned char*)(nullptr);
+	auto* pixels = static_cast<unsigned char*>(nullptr);
 	auto width = int(0);
 	auto height = int(0);
 	io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);

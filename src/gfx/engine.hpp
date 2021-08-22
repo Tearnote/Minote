@@ -60,7 +60,7 @@ private:
 	bool m_swapchainDirty;
 	
 	ImguiData m_imguiData;
-	std::optional<MeshBuffer> m_meshes;
+	MeshBuffer m_meshes;
 	std::optional<ObjectPool> m_objects;
 	Camera m_camera;
 	

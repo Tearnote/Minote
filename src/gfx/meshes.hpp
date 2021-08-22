@@ -3,7 +3,7 @@
 #include <type_traits>
 #include <span>
 #include "vuk/Context.hpp"
-#include "vuk/Buffer.hpp"
+#include "gfx/resources/buffer.hpp"
 #include "base/containers/hashmap.hpp"
 #include "base/containers/string.hpp"
 #include "base/containers/vector.hpp"
@@ -33,15 +33,18 @@ static_assert(std::is_trivially_constructible_v<MeshDescriptor>);
 struct MeshBuffer {
 	
 	// These three are indexed together
-	vuk::Unique<vuk::Buffer> verticesBuf;
-	vuk::Unique<vuk::Buffer> normalsBuf;
-	vuk::Unique<vuk::Buffer> colorsBuf;
+	Buffer<vec3> verticesBuf;
+	Buffer<vec3> normalsBuf;
+	Buffer<u16vec4> colorsBuf;
 	
-	vuk::Unique<vuk::Buffer> indicesBuf;
+	Buffer<u16> indicesBuf;
 	
 	ivector<MeshDescriptor> descriptors; // CPU-side mesh metadata
-	vuk::Unique<vuk::Buffer> descriptorBuf; // GPU-accessible mesh metadata
+	Buffer<MeshDescriptor> descriptorBuf; // GPU-accessible mesh metadata
 	hashmap<ID, usize> descriptorIDs; // Mapping from IDs to descriptor buffer indices
+	
+	// Recycle all GPU resources
+	void cleanup(vuk::PerThreadContext&);
 	
 };
 
@@ -61,7 +64,7 @@ struct MeshList {
 	
 	// Convert into a MeshBuffer. The instance must be moved in,
 	// so all CPU-side resources are freed.
-	auto upload(vuk::PerThreadContext&) && -> MeshBuffer;
+	auto upload(vuk::PerThreadContext&, vuk::Name) && -> MeshBuffer;
 	
 private:
 	

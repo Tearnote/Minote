@@ -49,8 +49,8 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	// Begin imgui frame so that first-frame calls succeed
 	ImGui::NewFrame();
 	
-	m_meshes = std::move(_meshList).upload(ptc);
-	m_atmosphere.upload(ptc, Atmosphere::Params::earth());
+	m_meshes = std::move(_meshList).upload(ptc, "Meshes");
+	m_atmosphere.upload(ptc, "Earth", Atmosphere::Params::earth());
 	m_objects = ObjectPool();
 	
 	m_iblUnfiltered.emplace(ptc, "ibl_unfiltered", 256, vuk::Format::eR16G16B16A16Sfloat,
@@ -60,7 +60,7 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	m_iblFiltered.emplace(ptc, "ibl_filtered", 256, vuk::Format::eR16G16B16A16Sfloat,
 		vuk::ImageUsageFlagBits::eStorage |
 		vuk::ImageUsageFlagBits::eSampled |
-		vuk::ImageUsageFlagBits::eTransferSrc);
+		vuk::ImageUsageFlagBits::eTransferDst);
 	
 	// Perform precalculations
 	auto precalc = m_atmosphere.precalculate();
@@ -90,7 +90,7 @@ Engine::~Engine() {
 	
 	m_atmosphere.cleanup(ptc);
 	m_objects.reset();
-	m_meshes.reset();
+	m_meshes.cleanup(ptc);
 	m_imguiData.fontTex.view.reset();
 	m_imguiData.fontTex.image.reset();
 	
@@ -142,7 +142,7 @@ void Engine::render(bool _repaint) {
 	// Initialize modules
 	
 	auto worldBuf = m_world.upload(ptc, "world");
-	auto indirect = Indirect(ptc, *m_objects, *m_meshes);
+	auto indirect = Indirect(ptc, *m_objects, m_meshes);
 	auto sky = Sky(ptc, m_atmosphere);
 	auto forward = Forward(ptc, viewport);
 	
@@ -153,9 +153,9 @@ void Engine::render(bool _repaint) {
 	rg.append(sky.calculate(worldBuf, m_camera));
 	rg.append(sky.drawCubemap(worldBuf, *m_iblUnfiltered));
 	rg.append(CubeFilter::apply("IBL", *m_iblUnfiltered, *m_iblFiltered));
-	rg.append(indirect.sortAndCull(m_world, *m_meshes));
-	rg.append(forward.zPrepass(worldBuf, indirect, *m_meshes));
-	rg.append(forward.draw(worldBuf, indirect, *m_meshes, sky, *m_iblFiltered));
+	rg.append(indirect.sortAndCull(m_world, m_meshes));
+	rg.append(forward.zPrepass(worldBuf, indirect, m_meshes));
+	rg.append(forward.draw(worldBuf, indirect, m_meshes, sky, *m_iblFiltered));
 	rg.append(sky.draw(worldBuf, forward.Color_n, forward.Depth_n, viewport));
 	rg.append(Bloom::apply(ptc, "Fb bloom", forward.Color_n, forward.size()));
 	rg.append(Tonemap::apply(forward.Color_n, "swapchain", viewport));
@@ -164,6 +164,8 @@ void Engine::render(bool _repaint) {
 	ImGui_ImplVuk_Render(ptc, rg, "swapchain", "swapchain", m_imguiData, ImGui::GetDrawData());
 	
 	rg.attach_swapchain("swapchain", m_vk.swapchain, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
+	
+	rg.add_tracy_collection();
 	
 	// Attach used resources
 	
@@ -189,7 +191,6 @@ void Engine::render(bool _repaint) {
 	
 	auto erg = std::move(rg).link(ptc);
 	auto commandBuffer = erg.execute(ptc, {{m_vk.swapchain, swapchainImageIndex}});
-	TracyVkCollect(m_vk.context->profiler, commandBuffer);
 	
 	auto renderSem = ptc.acquire_semaphore();
 	auto waitStage = VkPipelineStageFlags(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);

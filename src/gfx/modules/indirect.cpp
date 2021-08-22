@@ -150,7 +150,7 @@ auto Indirect::sortAndCull(World const& _world, MeshBuffer const& _meshes) -> vu
 		},
 		.execute = [this, &_meshes, view, projection](vuk::CommandBuffer& cmd) {
 			cmd.bind_storage_buffer(0, 0, commandsBuf)
-			   .bind_storage_buffer(0, 1, *_meshes.descriptorBuf)
+			   .bind_storage_buffer(0, 1, _meshes.descriptorBuf)
 			   .bind_storage_buffer(0, 2, meshIndexBuf)
 			   .bind_storage_buffer(0, 3, transformBuf)
 			   .bind_storage_buffer(0, 4, materialBuf)

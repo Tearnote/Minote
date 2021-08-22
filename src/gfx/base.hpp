@@ -1,6 +1,8 @@
 #pragma once
 
 #include "vuk/Types.hpp"
+#include "vuk/Name.hpp"
+#include "base/containers/string.hpp"
 #include "base/concepts.hpp"
 #include "base/types.hpp"
 #include "base/math.hpp"
@@ -12,6 +14,20 @@ using namespace base;
 // Return the number a mipmaps that a square texture of the given size would have.
 constexpr auto mipmapCount(u32 size) {
 	return u32(floor(log2(size))) + 1;
+}
+
+// Create a new vuk Name by appending a provided suffix.
+inline auto nameAppend(vuk::Name name, string_view suffix) -> vuk::Name {
+	
+	auto str = string();
+	str.reserve(name.to_sv().size() + 1 + suffix.size() + 1);
+	
+	str.append(name.to_sv());
+	str.push_back(' ');
+	str.append(suffix);
+	
+	return vuk::Name(str);
+	
 }
 
 // Conversion from vec[n] to vuk::Extent[n]D

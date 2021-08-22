@@ -1,5 +1,6 @@
 #pragma once
 
+#include <span>
 #include "vuk/Context.hpp"
 #include "vuk/Buffer.hpp"
 #include "base/types.hpp"
@@ -26,8 +27,8 @@ struct Buffer {
 	
 	// Construct a buffer with the given data. If memory usage is GPU only,
 	// a transfer will be queued but not waited for.
-	Buffer(vuk::PerThreadContext&, vuk::Name, T const& data, vuk::BufferUsageFlags,
-		vuk::MemoryUsage = vuk::MemoryUsage::eCPUtoGPU);
+	Buffer(vuk::PerThreadContext&, vuk::Name, std::span<T const> data,
+		vuk::BufferUsageFlags, vuk::MemoryUsage = vuk::MemoryUsage::eCPUtoGPU);
 	
 	// Destroy the buffer after the current frame is fully finished drawing.
 	// If the buffer is valid, this must be called.

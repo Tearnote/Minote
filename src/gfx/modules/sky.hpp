@@ -77,7 +77,7 @@ struct Atmosphere {
 	
 	// Upload the atmospheric buffers to GPU as per provided parameters. Object
 	// is not usable until all GPU transfers are finished.
-	void upload(vuk::PerThreadContext&, Params const&);
+	void upload(vuk::PerThreadContext&, vuk::Name, Params const&);
 	
 	// Fill the lookup tables. Requires upload() to be called first. Only needs
 	// to be executed once.

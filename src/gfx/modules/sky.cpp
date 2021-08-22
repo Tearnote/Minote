@@ -55,7 +55,7 @@ void Atmosphere::compile(vuk::PerThreadContext& _ptc) {
 	
 }
 
-void Atmosphere::upload(vuk::PerThreadContext& _ptc, Params const& _params) {
+void Atmosphere::upload(vuk::PerThreadContext& _ptc, vuk::Name _name, Params const& _params) {
 	
 	transmittance = _ptc.allocate_texture(vuk::ImageCreateInfo{
 		.format = TransmittanceFormat,
@@ -67,7 +67,7 @@ void Atmosphere::upload(vuk::PerThreadContext& _ptc, Params const& _params) {
 		.extent = {MultiScatteringWidth, MultiScatteringHeight, 1},
 		.usage = vuk::ImageUsageFlagBits::eStorage | vuk::ImageUsageFlagBits::eSampled });
 	
-	params = Buffer(_ptc, "Atmosphere::params", _params,
+	params = Buffer(_ptc, nameAppend(_name, " params"), std::span(&_params, 1),
 		vuk::BufferUsageFlagBits::eUniformBuffer, vuk::MemoryUsage::eGPUonly);
 	
 }

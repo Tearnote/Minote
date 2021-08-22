@@ -17,7 +17,7 @@ void Assets::loadModels(F _func) {
 	
 	auto modelsQueryStr = fmt::format("SELECT * FROM {}", Models_n);
 	
-	auto modelsQuery = (sqlite3_stmt*)(nullptr);
+	auto modelsQuery = static_cast<sqlite3_stmt*>(nullptr);
 	if (auto result = sqlite3_prepare_v2(m_db, modelsQueryStr.c_str(), -1, &modelsQuery, nullptr); result != SQLITE_OK)
 		throw runtime_error_fmt("Failed to query database {}: {}", m_path, sqlite3_errstr(result));
 	defer { sqlite3_finalize(modelsQuery); };
@@ -34,9 +34,9 @@ void Assets::loadModels(F _func) {
 		if (sqlite3_column_type(modelsQuery, 1) != SQLITE_BLOB)
 			throw runtime_error_fmt("Invalid type in column 1 of table models in database {}", m_path);
 		
-		auto name = (char const*)(sqlite3_column_text(modelsQuery, 0));
+		auto name = reinterpret_cast<char const*>(sqlite3_column_text(modelsQuery, 0));
 		auto nameLen = sqlite3_column_bytes(modelsQuery, 0);
-		auto model = (char const*)(sqlite3_column_blob(modelsQuery, 1));
+		auto model = static_cast<char const*>(sqlite3_column_blob(modelsQuery, 1));
 		auto modelLen = sqlite3_column_bytes(modelsQuery, 1);
 		_func(string_view(name, nameLen), std::span(model, modelLen));
 		

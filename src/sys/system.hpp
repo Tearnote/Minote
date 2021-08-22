@@ -36,7 +36,7 @@ struct System {
 		
 		SDL_FilterEvents([](void* f, SDL_Event* e) -> int {
 			
-			auto& func = *(F*)f;
+			auto& func = *static_cast<F*>(f);
 			
 			if(func(*e))
 				return 0;
