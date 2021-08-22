@@ -66,8 +66,6 @@ private:
 	
 	World m_world;
 	Atmosphere m_atmosphere;
-	std::optional<Cubemap> m_iblUnfiltered;
-	std::optional<Cubemap> m_iblFiltered;
 	
 };
 

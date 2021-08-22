@@ -1,5 +1,6 @@
 #include "gfx/resources/cubemap.hpp"
 
+#include <cassert>
 #include "gfx/base.hpp"
 #include "base/util.hpp"
 
@@ -8,28 +9,35 @@ namespace minote::gfx {
 using namespace base;
 
 Cubemap::Cubemap(vuk::PerThreadContext& _ptc, vuk::Name _name, u32 _size,
-	vuk::Format _format, vuk::ImageUsageFlags _usage):
-	name(_name), arrayViews(mipmapCount(_size)) {
+	vuk::Format _format, vuk::ImageUsageFlags _usage) {
 	
-	texture = _ptc.ctx.allocate_texture(vuk::ImageCreateInfo{
+	name = _name;
+	arrayViews.reserve(mipmapCount(_size));
+	m_size = uvec2(_size);
+	m_format = _format;
+	
+	auto texture = _ptc.allocate_texture(vuk::ImageCreateInfo{
 		.flags = vuk::ImageCreateFlagBits::eCubeCompatible,
 		.format = _format,
 		.extent = {_size, _size, 1},
 		.mipLevels = mipmapCount(_size),
 		.arrayLayers = 6,
 		.usage = _usage });
-	texture.view = _ptc.create_image_view(vuk::ImageViewCreateInfo{
+		
+	image = texture.image.release();
+	view = _ptc.create_image_view(vuk::ImageViewCreateInfo{
 		.image = *texture.image,
 		.viewType = vuk::ImageViewType::eCube,
 		.format = texture.format,
 		.subresourceRange = vuk::ImageSubresourceRange{
 			.aspectMask = vuk::ImageAspectFlagBits::eColor,
 			.levelCount = VK_REMAINING_MIP_LEVELS,
-			.layerCount = 6 }});
+			.layerCount = 6 }})
+		.release();
 	
-	for (auto i: iota(0u, arrayViews.size())) {
+	for (auto i: iota(0u, mipmapCount(_size))) {
 		
-		arrayViews[i] = _ptc.create_image_view(vuk::ImageViewCreateInfo{
+		arrayViews.push_back(_ptc.create_image_view(vuk::ImageViewCreateInfo{
 			.image = *texture.image,
 			.viewType = vuk::ImageViewType::e2DArray,
 			.format = texture.format,
@@ -37,15 +45,48 @@ Cubemap::Cubemap(vuk::PerThreadContext& _ptc, vuk::Name _name, u32 _size,
 				.aspectMask = vuk::ImageAspectFlagBits::eColor,
 				.baseMipLevel = i,
 				.levelCount = 1,
-				.layerCount = 6 }});
+				.layerCount = 6 }})
+			.release());
 		
 	}
 	
 }
 
+void Cubemap::recycle(vuk::PerThreadContext& _ptc) {
+	
+	assert(image);
+	
+	_ptc.ctx.enqueue_destroy(image);
+	_ptc.ctx.enqueue_destroy(view);
+	for (auto iv: arrayViews)
+		_ptc.ctx.enqueue_destroy(iv);
+	
+}
+
 void Cubemap::attach(vuk::RenderGraph& _rg, vuk::Access _initial, vuk::Access _final) {
 	
-	_rg.attach_image(name, vuk::ImageAttachment::from_texture(texture), _initial, _final);
+	_rg.attach_image(name, vuk::ImageAttachment{
+		.image = image,
+		.image_view = view,
+		.extent = vukExtent(m_size),
+		.format = m_format },
+		_initial, _final);
+	
+}
+
+Cubemap::operator vuk::Texture() const {
+	
+	auto uImage = vuk::Unique<vuk::Image>();
+	*uImage = image;
+	
+	auto uView = vuk::Unique<vuk::ImageView>();
+	*uView = view;
+	
+	return vuk::Texture{
+		.image = std::move(uImage),
+		.view = std::move(uView),
+		.extent = {m_size.x(), m_size.y()},
+		.format = m_format };
 	
 }
 

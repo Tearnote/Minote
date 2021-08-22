@@ -53,15 +53,6 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	m_atmosphere.upload(ptc, "Earth", Atmosphere::Params::earth());
 	m_objects = ObjectPool();
 	
-	m_iblUnfiltered.emplace(ptc, "ibl_unfiltered", 256, vuk::Format::eR16G16B16A16Sfloat,
-		vuk::ImageUsageFlagBits::eStorage |
-		vuk::ImageUsageFlagBits::eSampled |
-		vuk::ImageUsageFlagBits::eTransferSrc);
-	m_iblFiltered.emplace(ptc, "ibl_filtered", 256, vuk::Format::eR16G16B16A16Sfloat,
-		vuk::ImageUsageFlagBits::eStorage |
-		vuk::ImageUsageFlagBits::eSampled |
-		vuk::ImageUsageFlagBits::eTransferDst);
-	
 	// Perform precalculations
 	auto precalc = m_atmosphere.precalculate();
 	
@@ -84,9 +75,6 @@ Engine::~Engine() {
 	
 	auto ifc = m_vk.context->begin();
 	auto ptc = ifc.begin();
-	
-	m_iblFiltered.reset();
-	m_iblUnfiltered.reset();
 	
 	m_atmosphere.cleanup(ptc);
 	m_objects.reset();
@@ -138,24 +126,40 @@ void Engine::render(bool _repaint) {
 	
 	auto ifc = m_vk.context->begin();
 	auto ptc = ifc.begin();
+	auto rg = vuk::RenderGraph();
+	
+	// Create per-frame resources
+	
+	auto iblUnfiltered = Cubemap(ptc, "ibl_unfiltered", 256, vuk::Format::eR16G16B16A16Sfloat,
+		vuk::ImageUsageFlagBits::eStorage |
+		vuk::ImageUsageFlagBits::eSampled |
+		vuk::ImageUsageFlagBits::eTransferSrc);
+	auto iblFiltered = Cubemap(ptc, "ibl_filtered", 256, vuk::Format::eR16G16B16A16Sfloat,
+		vuk::ImageUsageFlagBits::eStorage |
+		vuk::ImageUsageFlagBits::eSampled |
+		vuk::ImageUsageFlagBits::eTransferDst);
+	
+	auto worldBuf = m_world.upload(ptc, "world");
+	
+	// Attach resources
+	
+	iblUnfiltered.attach(rg, vuk::eNone, vuk::eNone);
+	iblFiltered.attach(rg, vuk::eNone, vuk::eNone);
 	
 	// Initialize modules
 	
-	auto worldBuf = m_world.upload(ptc, "world");
 	auto indirect = Indirect(ptc, *m_objects, m_meshes);
 	auto sky = Sky(ptc, m_atmosphere);
 	auto forward = Forward(ptc, viewport);
 	
 	// Set up the rendergraph
 	
-	auto rg = vuk::RenderGraph();
-	
 	rg.append(sky.calculate(worldBuf, m_camera));
-	rg.append(sky.drawCubemap(worldBuf, *m_iblUnfiltered));
-	rg.append(CubeFilter::apply("IBL", *m_iblUnfiltered, *m_iblFiltered));
+	rg.append(sky.drawCubemap(worldBuf, iblUnfiltered));
+	rg.append(CubeFilter::apply("IBL", iblUnfiltered, iblFiltered));
 	rg.append(indirect.sortAndCull(m_world, m_meshes));
 	rg.append(forward.zPrepass(worldBuf, indirect, m_meshes));
-	rg.append(forward.draw(worldBuf, indirect, m_meshes, sky, *m_iblFiltered));
+	rg.append(forward.draw(worldBuf, indirect, m_meshes, sky, iblFiltered));
 	rg.append(sky.draw(worldBuf, forward.Color_n, forward.Depth_n, viewport));
 	rg.append(Bloom::apply(ptc, "Fb bloom", forward.Color_n, forward.size()));
 	rg.append(Tonemap::apply(forward.Color_n, "swapchain", viewport));
@@ -166,11 +170,6 @@ void Engine::render(bool _repaint) {
 	rg.attach_swapchain("swapchain", m_vk.swapchain, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	
 	rg.add_tracy_collection();
-	
-	// Attach used resources
-	
-	m_iblUnfiltered->attach(rg, vuk::eNone, vuk::eNone);
-	m_iblFiltered->attach(rg, vuk::eNone, vuk::eNone);
 	
 	// Acquire swapchain image
 	
@@ -223,6 +222,8 @@ void Engine::render(bool _repaint) {
 	// Clean up
 	
 	worldBuf.recycle(ptc);
+	iblFiltered.recycle(ptc);
+	iblUnfiltered.recycle(ptc);
 	
 	ImGui::NewFrame();
 	FrameMark;

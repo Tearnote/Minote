@@ -105,7 +105,7 @@ auto Forward::draw(Buffer<World> const& _world, Indirect const& _indirect,
 			   .bind_storage_buffer(0, 1, _indirect.transformCulledBuf)
 			   .bind_storage_buffer(0, 2, _indirect.materialCulledBuf)
 			   .bind_storage_buffer(0, 3, *_sky.sunLuminance)
-			   .bind_sampled_image(0, 4, _ibl.texture, TrilinearClamp)
+			   .bind_sampled_image(0, 4, _ibl, TrilinearClamp)
 			   .bind_sampled_image(0, 5, _sky.AerialPerspective_n, TrilinearClamp)
 			   .bind_graphics_pipeline("object");
 			

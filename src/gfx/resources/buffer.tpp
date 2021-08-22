@@ -12,7 +12,7 @@ Buffer<T>::Buffer(vuk::PerThreadContext& _ptc, vuk::Name _name,
 	vuk::BufferUsageFlags _usage, usize _elements, vuk::MemoryUsage _memUsage) {
 	
 	name = _name;
-	handle = _ptc->allocate_buffer(_memUsage, _usage,
+	handle = _ptc.allocate_buffer(_memUsage, _usage,
 		sizeof(T) * _elements, alignof(T)).release();
 	
 }
