@@ -190,7 +190,7 @@ void Engine::render(bool _repaint) {
 	
 	// Build and submit the rendergraph
 	
-	auto erg = std::move(rg).link(ptc);
+	auto erg = std::move(rg).link(ptc, false);
 	auto commandBuffer = erg.execute(ptc, {{m_vk.swapchain, swapchainImageIndex}});
 	
 	auto renderSem = ptc.acquire_semaphore();
