@@ -148,7 +148,7 @@ void Engine::render(bool _repaint) {
 	
 	// Initialize modules
 	
-	auto indirect = Indirect(ptc, *m_objects, m_meshes);
+	auto indirect = Indirect(ptc, "Indirect", *m_objects, m_meshes);
 	auto sky = Sky(ptc, m_atmosphere);
 	auto forward = Forward(ptc, viewport);
 	
@@ -224,6 +224,8 @@ void Engine::render(bool _repaint) {
 	worldBuf.recycle(ptc);
 	iblFiltered.recycle(ptc);
 	iblUnfiltered.recycle(ptc);
+	
+	indirect.recycle(ptc);
 	
 	ImGui::NewFrame();
 	FrameMark;

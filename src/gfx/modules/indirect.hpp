@@ -2,9 +2,9 @@
 
 #include "vuk/RenderGraph.hpp"
 #include "vuk/Context.hpp"
-#include "vuk/Buffer.hpp"
 #include "base/containers/array.hpp"
 #include "base/types.hpp"
+#include "gfx/resources/buffer.hpp"
 #include "gfx/objects.hpp"
 #include "gfx/meshes.hpp"
 #include "gfx/world.hpp"
@@ -27,15 +27,18 @@ struct Indirect {
 	static constexpr auto MaterialCulled_n = "indirect_material_culled";
 	
 	usize commandsCount;
-	vuk::Buffer commandsBuf;
+	Buffer<VkDrawIndexedIndirectCommand> commandsBuf;
 	
 	usize instancesCount;
-	vuk::Buffer meshIndexCulledBuf;
-	vuk::Buffer transformCulledBuf;
-	vuk::Buffer materialCulledBuf;
+	Buffer<u32> meshIndexCulledBuf;
+	Buffer<vec4[3]> transformCulledBuf;
+	Buffer<ObjectPool::Material> materialCulledBuf;
 	
 	// Upload object data into temporary buffers.
-	Indirect(vuk::PerThreadContext&, ObjectPool const&, MeshBuffer const&);
+	Indirect(vuk::PerThreadContext&, vuk::Name, ObjectPool const&, MeshBuffer const&);
+	
+	// Clean up owned resources.
+	void recycle(vuk::PerThreadContext&);
 	
 	// Perform sorting and frustum culling to fill in the Culled_n buffers.
 	auto sortAndCull(World const&, MeshBuffer const&) -> vuk::RenderGraph;
@@ -44,9 +47,9 @@ private:
 	
 	inline static bool pipelinesCreated = false;
 	
-	vuk::Buffer meshIndexBuf;
-	vuk::Buffer transformBuf;
-	vuk::Buffer materialBuf;
+	Buffer<u32> meshIndexBuf;
+	Buffer<ObjectPool::Transform> transformBuf;
+	Buffer<ObjectPool::Material> materialBuf;
 	
 };
 

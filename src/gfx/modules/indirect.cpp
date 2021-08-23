@@ -8,13 +8,14 @@
 #include "base/containers/array.hpp"
 #include "base/math.hpp"
 #include "base/util.hpp"
+#include "gfx/base.hpp"
 
 namespace minote::gfx {
 
 using namespace base;
 using namespace base::literals;
 
-Indirect::Indirect(vuk::PerThreadContext& _ptc,
+Indirect::Indirect(vuk::PerThreadContext& _ptc, vuk::Name _name,
 	ObjectPool const& _objects, MeshBuffer const& _meshes) {
 	
 	ZoneScoped;
@@ -32,6 +33,8 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 			.firstInstance = 0 }); // calculated later via prefix sum
 		
 	}
+	
+	commandsCount = commands.size();
 	
 	// Iterate through all valid instances
 	
@@ -78,39 +81,29 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 	
 	// Create and upload the buffers
 	
-	commandsCount = commands.size();
-	commandsBuf = _ptc.allocate_scratch_buffer(
-		vuk::MemoryUsage::eCPUtoGPU,
-		vuk::BufferUsageFlagBits::eIndirectBuffer | vuk::BufferUsageFlagBits::eStorageBuffer,
-		sizeof(VkDrawIndexedIndirectCommand) * commands.size(), alignof(VkDrawIndexedIndirectCommand));
-	std::memcpy(commandsBuf.mapped_ptr, commands.data(), sizeof(VkDrawIndexedIndirectCommand) * commands.size());
+	commandsBuf = Buffer<VkDrawIndexedIndirectCommand>(_ptc,
+		nameAppend(_name, "commands"), commands,
+		vuk::BufferUsageFlagBits::eIndirectBuffer | vuk::BufferUsageFlagBits::eStorageBuffer);
 	
-	auto createAndUpload = [this, &_ptc]<typename T>(std::span<T> data) {
-		
-		auto buf = _ptc.allocate_scratch_buffer(
-			vuk::MemoryUsage::eCPUtoGPU,
-			vuk::BufferUsageFlagBits::eStorageBuffer,
-			sizeof(T) * instancesCount, alignof(T));
-		std::memcpy(buf.mapped_ptr, data.data(), sizeof(T) * instancesCount);
-		return buf;
-		
-	};
-	auto createEmpty = [this, &_ptc](usize bytes) {
-		
-		return _ptc.allocate_scratch_buffer(
-			vuk::MemoryUsage::eGPUonly,
-			vuk::BufferUsageFlagBits::eStorageBuffer,
-			bytes, sizeof(f32));
-		
-	};
+	meshIndexBuf = Buffer<u32>(_ptc,
+		nameAppend(_name, "indices"), meshIndices,
+		vuk::BufferUsageFlagBits::eStorageBuffer);
+	transformBuf = Buffer<ObjectPool::Transform>(_ptc,
+		nameAppend(_name, "transforms"), transforms,
+		vuk::BufferUsageFlagBits::eStorageBuffer);
+	materialBuf = Buffer<ObjectPool::Material>(_ptc,
+		nameAppend(_name, "materials"), materials,
+		vuk::BufferUsageFlagBits::eStorageBuffer);
 	
-	meshIndexBuf = createAndUpload(std::span(meshIndices));
-	transformBuf = createAndUpload(std::span(transforms));
-	materialBuf  = createAndUpload(std::span(materials));
-	
-	meshIndexCulledBuf = createEmpty(sizeof(u32) * instancesCount);
-	transformCulledBuf = createEmpty(sizeof(vec4) * 3 * instancesCount);
-	materialCulledBuf  = createEmpty(sizeof(ObjectPool::Material) * instancesCount);
+	meshIndexCulledBuf = Buffer<u32>(_ptc,
+		nameAppend(_name, "indicesCulled"),
+		vuk::BufferUsageFlagBits::eStorageBuffer, instancesCount);
+	transformCulledBuf = Buffer<vec4[3]>(_ptc,
+		nameAppend(_name, "transformsCulled"),
+		vuk::BufferUsageFlagBits::eStorageBuffer, instancesCount);
+	materialCulledBuf = Buffer<ObjectPool::Material>(_ptc,
+		nameAppend(_name, "materialsCulled"),
+		vuk::BufferUsageFlagBits::eStorageBuffer, instancesCount);
 	
 	ImGui::Text("Object count: %llu", instancesCount);
 	
@@ -130,6 +123,18 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc,
 	
 }
 
+void Indirect::recycle(vuk::PerThreadContext& _ptc) {
+	
+	_ptc.ctx.enqueue_destroy(commandsBuf);
+	_ptc.ctx.enqueue_destroy(meshIndexBuf);
+	_ptc.ctx.enqueue_destroy(transformBuf);
+	_ptc.ctx.enqueue_destroy(materialBuf);
+	_ptc.ctx.enqueue_destroy(meshIndexCulledBuf);
+	_ptc.ctx.enqueue_destroy(transformCulledBuf);
+	_ptc.ctx.enqueue_destroy(materialCulledBuf);
+	
+}
+
 auto Indirect::sortAndCull(World const& _world, MeshBuffer const& _meshes) -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
@@ -140,13 +145,13 @@ auto Indirect::sortAndCull(World const& _world, MeshBuffer const& _meshes) -> vu
 	rg.add_pass({
 		.name = "Frustum culling",
 		.resources = {
-			vuk::Resource(Commands_n,            vuk::Resource::Type::eBuffer, vuk::eComputeRW),
-			vuk::Resource(MeshIndex_n,           vuk::Resource::Type::eBuffer, vuk::eComputeRead),
-			vuk::Resource(Transform_n,           vuk::Resource::Type::eBuffer, vuk::eComputeRead),
-			vuk::Resource(Material_n,            vuk::Resource::Type::eBuffer, vuk::eComputeRead),
-			vuk::Resource(MeshIndexCulled_n,     vuk::Resource::Type::eBuffer, vuk::eComputeWrite),
-			vuk::Resource(TransformCulled_n,     vuk::Resource::Type::eBuffer, vuk::eComputeWrite),
-			vuk::Resource(MaterialCulled_n,      vuk::Resource::Type::eBuffer, vuk::eComputeWrite),
+			vuk::Resource(Commands_n,        vuk::Resource::Type::eBuffer, vuk::eComputeRW),
+			vuk::Resource(MeshIndex_n,       vuk::Resource::Type::eBuffer, vuk::eComputeRead),
+			vuk::Resource(Transform_n,       vuk::Resource::Type::eBuffer, vuk::eComputeRead),
+			vuk::Resource(Material_n,        vuk::Resource::Type::eBuffer, vuk::eComputeRead),
+			vuk::Resource(MeshIndexCulled_n, vuk::Resource::Type::eBuffer, vuk::eComputeWrite),
+			vuk::Resource(TransformCulled_n, vuk::Resource::Type::eBuffer, vuk::eComputeWrite),
+			vuk::Resource(MaterialCulled_n,  vuk::Resource::Type::eBuffer, vuk::eComputeWrite),
 		},
 		.execute = [this, &_meshes, view, projection](vuk::CommandBuffer& cmd) {
 			cmd.bind_storage_buffer(0, 0, commandsBuf)
