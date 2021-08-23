@@ -169,7 +169,9 @@ void Engine::render(bool _repaint) {
 	
 	rg.attach_swapchain("swapchain", m_vk.swapchain, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	
+#ifdef TRACY_ENABLE
 	rg.add_tracy_collection();
+#endif //TRACY_ENABLE
 	
 	// Acquire swapchain image
 	

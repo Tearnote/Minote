@@ -12,7 +12,7 @@ using std::string;
 // Static string. Relies entirely on small string optimization. Throws if SSO
 // capacity is exceeded. Release-mode only.
 #if _ITERATOR_DEBUG_LEVEL == 0
-using sstring = string<NullAllocator<char>>;
+using sstring = std::basic_string<char, std::char_traits<char>, NullAllocator<char>>;
 #else //_ITERATOR_DEBUG_LEVEL
 using sstring = string;
 #endif //_ITERATOR_DEBUG_LEVEL
