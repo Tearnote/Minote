@@ -61,7 +61,8 @@ auto Forward::zPrepass(Buffer<World> const& _world, Indirect const& _indirect,
 			   .bind_index_buffer(_meshes.indicesBuf, vuk::IndexType::eUint16)
 			   .bind_storage_buffer(0, 1, _indirect.transformCulledBuf)
 			   .bind_graphics_pipeline("z_prepass");
-			cmd.draw_indexed_indirect(_indirect.commandsCount, _indirect.commandsBuf, sizeof(VkDrawIndexedIndirectCommand));
+			
+			cmd.draw_indexed_indirect(_indirect.commandsCount, _indirect.commandsBuf);
 			
 		}});
 	
@@ -109,7 +110,7 @@ auto Forward::draw(Buffer<World> const& _world, Indirect const& _indirect,
 			   .bind_sampled_image(0, 5, _sky.AerialPerspective_n, TrilinearClamp)
 			   .bind_graphics_pipeline("object");
 			
-			cmd.draw_indexed_indirect(_indirect.commandsCount, _indirect.commandsBuf, sizeof(VkDrawIndexedIndirectCommand));
+			cmd.draw_indexed_indirect(_indirect.commandsCount, _indirect.commandsBuf);
 			
 		}});
 	
