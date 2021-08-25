@@ -5,7 +5,7 @@
 #include "base/types.hpp"
 #include "base/util.hpp"
 #include "gfx/samplers.hpp"
-#include "gfx/base.hpp"
+#include "gfx/util.hpp"
 
 namespace minote::gfx {
 

@@ -2,7 +2,7 @@
 
 #include "vuk/CommandBuffer.hpp"
 #include "gfx/samplers.hpp"
-#include "gfx/base.hpp"
+#include "gfx/util.hpp"
 
 namespace minote::gfx {
 

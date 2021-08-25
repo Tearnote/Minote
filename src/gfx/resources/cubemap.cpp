@@ -1,7 +1,7 @@
 #include "gfx/resources/cubemap.hpp"
 
 #include <cassert>
-#include "gfx/base.hpp"
+#include "gfx/util.hpp"
 #include "base/util.hpp"
 
 namespace minote::gfx {

@@ -7,7 +7,7 @@
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
 #include "quill/Fmt.h"
-#include "gfx/base.hpp"
+#include "gfx/util.hpp"
 #include "base/error.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"

@@ -8,7 +8,7 @@
 #include "base/containers/array.hpp"
 #include "base/math.hpp"
 #include "base/util.hpp"
-#include "gfx/base.hpp"
+#include "gfx/util.hpp"
 
 namespace minote::gfx {
 

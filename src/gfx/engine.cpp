@@ -16,7 +16,7 @@
 #include "gfx/modules/tonemap.hpp"
 #include "gfx/modules/forward.hpp"
 #include "gfx/modules/bloom.hpp"
-#include "gfx/base.hpp"
+#include "gfx/util.hpp"
 #include "main.hpp"
 
 namespace minote::gfx {
