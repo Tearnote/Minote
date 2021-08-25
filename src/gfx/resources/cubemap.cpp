@@ -74,20 +74,4 @@ void Cubemap::attach(vuk::RenderGraph& _rg, vuk::Access _initial, vuk::Access _f
 	
 }
 
-Cubemap::operator vuk::Texture() const {
-	
-	auto uImage = vuk::Unique<vuk::Image>();
-	*uImage = image;
-	
-	auto uView = vuk::Unique<vuk::ImageView>();
-	*uView = view;
-	
-	return vuk::Texture{
-		.image = std::move(uImage),
-		.view = std::move(uView),
-		.extent = {m_size.x(), m_size.y()},
-		.format = m_format };
-	
-}
-
 }

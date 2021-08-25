@@ -43,9 +43,6 @@ struct Cubemap {
 	// Attach cubemap to rendergraph
 	void attach(vuk::RenderGraph&, vuk::Access initial, vuk::Access final);
 	
-	// Convertible to vuk::Texture
-	operator vuk::Texture() const;
-	
 private:
 	
 	uvec2 m_size;
