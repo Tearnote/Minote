@@ -190,6 +190,7 @@ auto Vulkan::createSwapchain(uvec2 _size, VkSwapchainKHR _old) -> vuk::Swapchain
 		.set_desired_extent(_size.x(), _size.y())
 		.set_old_swapchain(_old)
 		.set_image_usage_flags(VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+		// .set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
 		.build();
 	if (!vkbswapchainResult)
 		throw runtime_error_fmt("Failed to create the swapchain: {}", vkbswapchainResult.error().message());

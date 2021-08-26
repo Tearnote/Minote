@@ -177,16 +177,22 @@ void Engine::render(bool _repaint) {
 	
 	auto presentSem = ptc.acquire_semaphore();
 	auto swapchainImageIndex = u32(0);
-	auto error = vkAcquireNextImageKHR(m_vk.device.device, m_vk.swapchain->swapchain,
-		UINT64_MAX, presentSem, VK_NULL_HANDLE, &swapchainImageIndex);
-	if (error == VK_ERROR_OUT_OF_DATE_KHR) {
+	{
 		
-		m_swapchainDirty = true;
-		return; // Requires repaint
+		ZoneScopedN("Acquire");
+		
+		auto error = vkAcquireNextImageKHR(m_vk.device.device, m_vk.swapchain->swapchain,
+			UINT64_MAX, presentSem, VK_NULL_HANDLE, &swapchainImageIndex);
+		if (error == VK_ERROR_OUT_OF_DATE_KHR) {
+			
+			m_swapchainDirty = true;
+			return; // Requires repaint
+			
+		}
+		if (error != VK_SUCCESS && error != VK_SUBOPTIMAL_KHR) // Unknown result
+			throw runtime_error_fmt("Unable to acquire swapchain image: error {}", error);
 		
 	}
-	if (error != VK_SUCCESS && error != VK_SUBOPTIMAL_KHR) // Unknown result
-		throw runtime_error_fmt("Unable to acquire swapchain image: error {}", error);
 	
 	// Build and submit the rendergraph
 	
@@ -208,18 +214,24 @@ void Engine::render(bool _repaint) {
 	
 	// Present to screen
 	
-	auto presentInfo = VkPresentInfoKHR{
-		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-		.waitSemaphoreCount = 1,
-		.pWaitSemaphores = &renderSem,
-		.swapchainCount = 1,
-		.pSwapchains = &m_vk.swapchain->swapchain,
-		.pImageIndices = &swapchainImageIndex};
-	auto result = vkQueuePresentKHR(m_vk.context->graphics_queue, &presentInfo);
-	if (result == VK_ERROR_OUT_OF_DATE_KHR)
-		m_swapchainDirty = true; // No need to return, only cleanup is left
-	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-		throw runtime_error_fmt("Unable to present to the screen: error {}", result);
+	{
+		
+		ZoneScopedN("Present");
+		
+		auto presentInfo = VkPresentInfoKHR{
+			.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+			.waitSemaphoreCount = 1,
+			.pWaitSemaphores = &renderSem,
+			.swapchainCount = 1,
+			.pSwapchains = &m_vk.swapchain->swapchain,
+			.pImageIndices = &swapchainImageIndex};
+		auto result = vkQueuePresentKHR(m_vk.context->graphics_queue, &presentInfo);
+		if (result == VK_ERROR_OUT_OF_DATE_KHR)
+			m_swapchainDirty = true; // No need to return, only cleanup is left
+		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+			throw runtime_error_fmt("Unable to present to the screen: error {}", result);
+		
+	}
 	
 	// Clean up
 	
