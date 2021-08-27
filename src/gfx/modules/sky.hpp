@@ -83,9 +83,6 @@ struct Atmosphere {
 	// to be executed once.
 	auto precalculate() -> vuk::RenderGraph;
 	
-	// Recycle all GPU resources.
-	void cleanup(vuk::PerThreadContext&);
-	
 };
 
 // Module for rendering sky backgrounds, IBL cubemaps and other position-dependent

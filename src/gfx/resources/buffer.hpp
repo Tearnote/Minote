@@ -15,7 +15,7 @@ template<typename T>
 struct Buffer {
 	
 	vuk::Name name;
-	vuk::Buffer handle;
+	vuk::Unique<vuk::Buffer> handle;
 	
 	// Construct an invalid buffer. It will destruct safely, but the only
 	// meaningful use is to overwrite it later.
@@ -30,21 +30,11 @@ struct Buffer {
 	Buffer(vuk::PerThreadContext&, vuk::Name, std::span<T const> data,
 		vuk::BufferUsageFlags, vuk::MemoryUsage = vuk::MemoryUsage::eCPUtoGPU);
 	
-	// Destroy the buffer after the current frame is fully finished drawing.
-	// If the buffer is valid, this must be called.
-	void recycle(vuk::PerThreadContext&);
-	
 	// Size of the buffer in bytes.
 	auto size() const -> usize { return handle.size; }
 	
-	// Not copyable, moveable
-	Buffer(Buffer<T> const&) = delete;
-	auto operator=(Buffer<T> const&) -> Buffer<T>& = delete;
-	Buffer(Buffer<T>&&);
-	auto operator=(Buffer<T>&&) -> Buffer<T>&;
-	
 	// Convertible to vuk::Buffer
-	operator vuk::Buffer() const { return handle; }
+	operator vuk::Buffer() const { return *handle; }
 	
 };
 

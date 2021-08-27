@@ -123,18 +123,6 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc, vuk::Name _name,
 	
 }
 
-void Indirect::recycle(vuk::PerThreadContext& _ptc) {
-	
-	_ptc.ctx.enqueue_destroy(commandsBuf);
-	_ptc.ctx.enqueue_destroy(meshIndexBuf);
-	_ptc.ctx.enqueue_destroy(transformBuf);
-	_ptc.ctx.enqueue_destroy(materialBuf);
-	_ptc.ctx.enqueue_destroy(meshIndexCulledBuf);
-	_ptc.ctx.enqueue_destroy(transformCulledBuf);
-	_ptc.ctx.enqueue_destroy(materialCulledBuf);
-	
-}
-
 auto Indirect::sortAndCull(World const& _world, MeshBuffer const& _meshes) -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();

@@ -17,16 +17,6 @@ namespace minote::gfx {
 using namespace base;
 using namespace base::literals;
 
-void MeshBuffer::cleanup(vuk::PerThreadContext& _ptc) {
-	
-	verticesBuf.recycle(_ptc);
-	normalsBuf.recycle(_ptc);
-	colorsBuf.recycle(_ptc);
-	indicesBuf.recycle(_ptc);
-	descriptorBuf.recycle(_ptc);
-	
-}
-
 void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
 	
 	ZoneScoped;

@@ -43,9 +43,6 @@ struct MeshBuffer {
 	Buffer<MeshDescriptor> descriptorBuf; // GPU-accessible mesh metadata
 	hashmap<ID, usize> descriptorIDs; // Mapping from IDs to descriptor buffer indices
 	
-	// Recycle all GPU resources
-	void cleanup(vuk::PerThreadContext&);
-	
 };
 
 // Structure storing mesh data as they're being loaded. After all meshes are

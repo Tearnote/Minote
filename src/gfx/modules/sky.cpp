@@ -117,12 +117,6 @@ auto Atmosphere::precalculate() -> vuk::RenderGraph {
 	
 }
 
-void Atmosphere::cleanup(vuk::PerThreadContext& _ptc) {
-	
-	params.recycle(_ptc);
-	
-}
-
 Sky::Sky(vuk::PerThreadContext& _ptc, Atmosphere const& _atmosphere):
 	atmosphere(_atmosphere) {
 	

@@ -13,27 +13,23 @@ Cubemap::Cubemap(vuk::PerThreadContext& _ptc, vuk::Name _name, u32 _size,
 	
 	name = _name;
 	arrayViews.reserve(mipmapCount(_size));
-	m_size = uvec2(_size);
-	m_format = _format;
 	
-	auto texture = _ptc.allocate_texture(vuk::ImageCreateInfo{
+	texture = _ptc.allocate_texture(vuk::ImageCreateInfo{
 		.flags = vuk::ImageCreateFlagBits::eCubeCompatible,
 		.format = _format,
 		.extent = {_size, _size, 1},
 		.mipLevels = mipmapCount(_size),
 		.arrayLayers = 6,
 		.usage = _usage });
-		
-	image = texture.image.release();
-	view = _ptc.create_image_view(vuk::ImageViewCreateInfo{
+	
+	texture.view = _ptc.create_image_view(vuk::ImageViewCreateInfo{
 		.image = *texture.image,
 		.viewType = vuk::ImageViewType::eCube,
 		.format = texture.format,
 		.subresourceRange = vuk::ImageSubresourceRange{
 			.aspectMask = vuk::ImageAspectFlagBits::eColor,
 			.levelCount = VK_REMAINING_MIP_LEVELS,
-			.layerCount = 6 }})
-		.release();
+			.layerCount = 6 }});
 	
 	for (auto i: iota(0u, mipmapCount(_size))) {
 		
@@ -45,32 +41,15 @@ Cubemap::Cubemap(vuk::PerThreadContext& _ptc, vuk::Name _name, u32 _size,
 				.aspectMask = vuk::ImageAspectFlagBits::eColor,
 				.baseMipLevel = i,
 				.levelCount = 1,
-				.layerCount = 6 }})
-			.release());
+				.layerCount = 6 }}));
 		
 	}
 	
 }
 
-void Cubemap::recycle(vuk::PerThreadContext& _ptc) {
-	
-	assert(image);
-	
-	_ptc.ctx.enqueue_destroy(image);
-	_ptc.ctx.enqueue_destroy(view);
-	for (auto iv: arrayViews)
-		_ptc.ctx.enqueue_destroy(iv);
-	
-}
-
 void Cubemap::attach(vuk::RenderGraph& _rg, vuk::Access _initial, vuk::Access _final) {
 	
-	_rg.attach_image(name, vuk::ImageAttachment{
-		.image = image,
-		.image_view = view,
-		.extent = vukExtent(m_size),
-		.format = m_format },
-		_initial, _final);
+	_rg.attach_image(name, vuk::ImageAttachment::from_texture(texture), _initial, _final);
 	
 }
 

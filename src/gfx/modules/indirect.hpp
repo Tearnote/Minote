@@ -37,9 +37,6 @@ struct Indirect {
 	// Upload object data into temporary buffers.
 	Indirect(vuk::PerThreadContext&, vuk::Name, ObjectPool const&, MeshBuffer const&);
 	
-	// Clean up owned resources.
-	void recycle(vuk::PerThreadContext&);
-	
 	// Perform sorting and frustum culling to fill in the Culled_n buffers.
 	auto sortAndCull(World const&, MeshBuffer const&) -> vuk::RenderGraph;
 	

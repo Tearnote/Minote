@@ -17,11 +17,9 @@ using namespace base;
 struct Cubemap {
 	
 	vuk::Name name;
-	
-	vuk::Image image;
-	vuk::ImageView view;
+	vuk::Texture texture;
 	// nth entry is an image array view into nth mipmap level
-	svector<vuk::ImageView, 16> arrayViews;
+	svector<vuk::Unique<vuk::ImageView>, 16> arrayViews;
 	
 	// Construct an invalid cubemap. It will destruct safely, but the only
 	// meaningful use is to overwrite it later.
@@ -30,23 +28,14 @@ struct Cubemap {
 	// Create the cubemap. Each face will be a square.
 	Cubemap(vuk::PerThreadContext&, vuk::Name, u32 size, vuk::Format, vuk::ImageUsageFlags);
 	
-	// Destroy the cubemap after the current frame is fully finished drawing.
-	// If the cubemap is valid, this must be called.
-	void recycle(vuk::PerThreadContext&);
-	
 	// Return the size of a cubemap face.
-	auto size() const -> uvec2 { return m_size; }
+	auto size() const -> uvec2 { return uvec2{texture.extent.width, texture.extent.height}; }
 	
 	// Return the surface format.
-	auto format() const -> vuk::Format { return m_format; }
+	auto format() const -> vuk::Format { return texture.format; }
 	
 	// Attach cubemap to rendergraph
 	void attach(vuk::RenderGraph&, vuk::Access initial, vuk::Access final);
-	
-private:
-	
-	uvec2 m_size;
-	vuk::Format m_format;
 	
 };
 

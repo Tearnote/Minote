@@ -73,12 +73,7 @@ Engine::~Engine() {
 	
 	m_vk.context->wait_idle();
 	
-	auto ifc = m_vk.context->begin();
-	auto ptc = ifc.begin();
-	
-	m_atmosphere.cleanup(ptc);
 	m_objects.reset();
-	m_meshes.cleanup(ptc);
 	m_imguiData.fontTex.view.reset();
 	m_imguiData.fontTex.image.reset();
 	
@@ -234,12 +229,6 @@ void Engine::render(bool _repaint) {
 	}
 	
 	// Clean up
-	
-	worldBuf.recycle(ptc);
-	iblFiltered.recycle(ptc);
-	iblUnfiltered.recycle(ptc);
-	
-	indirect.recycle(ptc);
 	
 	ImGui::NewFrame();
 	FrameMark;
