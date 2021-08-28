@@ -49,8 +49,8 @@ auto Forward::zPrepass(Buffer<World> const& _world, Indirect const& _indirect,
 	rg.add_pass({
 		.name = "Z-prepass",
 		.resources = {
-			vuk::Resource(_indirect.Commands_n,        vuk::Resource::Type::eBuffer, vuk::eIndirectRead),
-			vuk::Resource(_indirect.TransformCulled_n, vuk::Resource::Type::eBuffer, vuk::eVertexRead),
+			_indirect.commandsBuf.resource(vuk::eIndirectRead),
+			_indirect.transformsCulledBuf.resource(vuk::eVertexRead),
 			vuk::Resource(Depth_n,                     vuk::Resource::Type::eImage,  vuk::eDepthStencilRW) },
 		.execute = [this, &_world, &_indirect, &_meshes](vuk::CommandBuffer& cmd) {
 			
@@ -59,7 +59,7 @@ auto Forward::zPrepass(Buffer<World> const& _world, Indirect const& _indirect,
 			   .bind_uniform_buffer(0, 0, _world)
 			   .bind_vertex_buffer(0, _meshes.verticesBuf, 0, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
 			   .bind_index_buffer(_meshes.indicesBuf, vuk::IndexType::eUint16)
-			   .bind_storage_buffer(0, 1, _indirect.transformCulledBuf)
+			   .bind_storage_buffer(0, 1, _indirect.transformsCulledBuf)
 			   .bind_graphics_pipeline("z_prepass");
 			
 			cmd.draw_indexed_indirect(_indirect.commandsCount, _indirect.commandsBuf);
@@ -84,9 +84,9 @@ auto Forward::draw(Buffer<World> const& _world, Indirect const& _indirect,
 	rg.add_pass({
 		.name = "Object drawing",
 		.resources = {
-			vuk::Resource(_indirect.Commands_n,        vuk::Resource::Type::eBuffer, vuk::eIndirectRead),
-			vuk::Resource(_indirect.TransformCulled_n, vuk::Resource::Type::eBuffer, vuk::eVertexRead),
-			vuk::Resource(_indirect.MaterialCulled_n,  vuk::Resource::Type::eBuffer, vuk::eVertexRead),
+			_indirect.commandsBuf.resource(vuk::eIndirectRead),
+			_indirect.transformsCulledBuf.resource(vuk::eVertexRead),
+			_indirect.materialsCulledBuf.resource(vuk::eVertexRead),
 			vuk::Resource(_ibl.name,                   vuk::Resource::Type::eImage,  vuk::eFragmentSampled),
 			vuk::Resource(_sky.AerialPerspective_n,    vuk::Resource::Type::eImage,  vuk::eFragmentSampled),
 			vuk::Resource(_sky.SunLuminance_n,         vuk::Resource::Type::eBuffer, vuk::eFragmentRead),
@@ -103,8 +103,8 @@ auto Forward::draw(Buffer<World> const& _world, Indirect const& _indirect,
 			   .bind_index_buffer(_meshes.indicesBuf, vuk::IndexType::eUint16)
 			   
 			   .bind_uniform_buffer(0, 0, _world)
-			   .bind_storage_buffer(0, 1, _indirect.transformCulledBuf)
-			   .bind_storage_buffer(0, 2, _indirect.materialCulledBuf)
+			   .bind_storage_buffer(0, 1, _indirect.transformsCulledBuf)
+			   .bind_storage_buffer(0, 2, _indirect.materialsCulledBuf)
 			   .bind_storage_buffer(0, 3, *_sky.sunLuminance)
 			   .bind_sampled_image(0, 4, _ibl.texture, TrilinearClamp)
 			   .bind_sampled_image(0, 5, _sky.AerialPerspective_n, TrilinearClamp)

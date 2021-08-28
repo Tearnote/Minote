@@ -1,6 +1,7 @@
 #pragma once
 
 #include <span>
+#include "vuk/RenderGraph.hpp"
 #include "vuk/Context.hpp"
 #include "vuk/Buffer.hpp"
 #include "base/types.hpp"
@@ -35,6 +36,12 @@ struct Buffer {
 	
 	// Convertible to vuk::Buffer
 	operator vuk::Buffer() const { return *handle; }
+	
+	// Declare as a vuk::Resource.
+	auto resource(vuk::Access) const -> vuk::Resource;
+	
+	// Attach the buffer to the rendergraph.
+	void attach(vuk::RenderGraph&, vuk::Access initial, vuk::Access final);
 	
 };
 

@@ -34,6 +34,9 @@ struct Cubemap {
 	// Return the surface format.
 	auto format() const -> vuk::Format { return texture.format; }
 	
+	// Declare as a vuk::Resource.
+	auto resource(vuk::Access) const -> vuk::Resource;
+	
 	// Attach cubemap to rendergraph
 	void attach(vuk::RenderGraph&, vuk::Access initial, vuk::Access final);
 	

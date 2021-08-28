@@ -47,6 +47,12 @@ Cubemap::Cubemap(vuk::PerThreadContext& _ptc, vuk::Name _name, u32 _size,
 	
 }
 
+auto Cubemap::resource(vuk::Access _access) const -> vuk::Resource {
+	
+	return vuk::Resource(name, vuk::Resource::Type::eImage, _access);
+	
+}
+
 void Cubemap::attach(vuk::RenderGraph& _rg, vuk::Access _initial, vuk::Access _final) {
 	
 	_rg.attach_image(name, vuk::ImageAttachment::from_texture(texture), _initial, _final);

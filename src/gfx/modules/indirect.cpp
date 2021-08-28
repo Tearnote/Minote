@@ -85,23 +85,23 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc, vuk::Name _name,
 		nameAppend(_name, "commands"), commands,
 		vuk::BufferUsageFlagBits::eIndirectBuffer | vuk::BufferUsageFlagBits::eStorageBuffer);
 	
-	meshIndexBuf = Buffer<u32>(_ptc,
+	meshIndicesBuf = Buffer<u32>(_ptc,
 		nameAppend(_name, "indices"), meshIndices,
 		vuk::BufferUsageFlagBits::eStorageBuffer);
-	transformBuf = Buffer<ObjectPool::Transform>(_ptc,
+	transformsBuf = Buffer<ObjectPool::Transform>(_ptc,
 		nameAppend(_name, "transforms"), transforms,
 		vuk::BufferUsageFlagBits::eStorageBuffer);
-	materialBuf = Buffer<ObjectPool::Material>(_ptc,
+	materialsBuf = Buffer<ObjectPool::Material>(_ptc,
 		nameAppend(_name, "materials"), materials,
 		vuk::BufferUsageFlagBits::eStorageBuffer);
 	
-	meshIndexCulledBuf = Buffer<u32>(_ptc,
+	meshIndicesCulledBuf = Buffer<u32>(_ptc,
 		nameAppend(_name, "indicesCulled"),
 		vuk::BufferUsageFlagBits::eStorageBuffer, instancesCount);
-	transformCulledBuf = Buffer<vec4[3]>(_ptc,
+	transformsCulledBuf = Buffer<vec4[3]>(_ptc,
 		nameAppend(_name, "transformsCulled"),
 		vuk::BufferUsageFlagBits::eStorageBuffer, instancesCount);
-	materialCulledBuf = Buffer<ObjectPool::Material>(_ptc,
+	materialsCulledBuf = Buffer<ObjectPool::Material>(_ptc,
 		nameAppend(_name, "materialsCulled"),
 		vuk::BufferUsageFlagBits::eStorageBuffer, instancesCount);
 	
@@ -133,23 +133,22 @@ auto Indirect::sortAndCull(World const& _world, MeshBuffer const& _meshes) -> vu
 	rg.add_pass({
 		.name = "Frustum culling",
 		.resources = {
-			vuk::Resource(Commands_n,        vuk::Resource::Type::eBuffer, vuk::eComputeRW),
-			vuk::Resource(MeshIndex_n,       vuk::Resource::Type::eBuffer, vuk::eComputeRead),
-			vuk::Resource(Transform_n,       vuk::Resource::Type::eBuffer, vuk::eComputeRead),
-			vuk::Resource(Material_n,        vuk::Resource::Type::eBuffer, vuk::eComputeRead),
-			vuk::Resource(MeshIndexCulled_n, vuk::Resource::Type::eBuffer, vuk::eComputeWrite),
-			vuk::Resource(TransformCulled_n, vuk::Resource::Type::eBuffer, vuk::eComputeWrite),
-			vuk::Resource(MaterialCulled_n,  vuk::Resource::Type::eBuffer, vuk::eComputeWrite),
-		},
+			commandsBuf.resource(vuk::eComputeRW),
+			meshIndicesBuf.resource(vuk::eComputeRead),
+			transformsBuf.resource(vuk::eComputeRead),
+			materialsBuf.resource(vuk::eComputeRead),
+			meshIndicesCulledBuf.resource(vuk::eComputeWrite),
+			transformsCulledBuf.resource(vuk::eComputeWrite),
+			materialsCulledBuf.resource(vuk::eComputeWrite) },
 		.execute = [this, &_meshes, view, projection](vuk::CommandBuffer& cmd) {
 			cmd.bind_storage_buffer(0, 0, commandsBuf)
 			   .bind_storage_buffer(0, 1, _meshes.descriptorBuf)
-			   .bind_storage_buffer(0, 2, meshIndexBuf)
-			   .bind_storage_buffer(0, 3, transformBuf)
-			   .bind_storage_buffer(0, 4, materialBuf)
-			   .bind_storage_buffer(0, 5, meshIndexCulledBuf)
-			   .bind_storage_buffer(0, 6, transformCulledBuf)
-			   .bind_storage_buffer(0, 7, materialCulledBuf)
+			   .bind_storage_buffer(0, 2, meshIndicesBuf)
+			   .bind_storage_buffer(0, 3, transformsBuf)
+			   .bind_storage_buffer(0, 4, materialsBuf)
+			   .bind_storage_buffer(0, 5, meshIndicesCulledBuf)
+			   .bind_storage_buffer(0, 6, transformsCulledBuf)
+			   .bind_storage_buffer(0, 7, materialsCulledBuf)
 			   .bind_compute_pipeline("cull");
 			
 			struct CullData {
@@ -176,34 +175,13 @@ auto Indirect::sortAndCull(World const& _world, MeshBuffer const& _meshes) -> vu
 		},
 	});
 	
-	rg.attach_buffer(Commands_n,
-		commandsBuf,
-		vuk::eTransferDst,
-		vuk::eNone);
-	rg.attach_buffer(MeshIndex_n,
-		meshIndexBuf,
-		vuk::eTransferDst,
-		vuk::eNone);
-	rg.attach_buffer(Transform_n,
-		transformBuf,
-		vuk::eTransferDst,
-		vuk::eNone);
-	rg.attach_buffer(Material_n,
-		materialBuf,
-		vuk::eTransferDst,
-		vuk::eNone);
-	rg.attach_buffer(MeshIndexCulled_n,
-		meshIndexCulledBuf,
-		vuk::eNone,
-		vuk::eNone);
-	rg.attach_buffer(TransformCulled_n,
-		transformCulledBuf,
-		vuk::eNone,
-		vuk::eNone);
-	rg.attach_buffer(MaterialCulled_n,
-		materialCulledBuf,
-		vuk::eNone,
-		vuk::eNone);
+	commandsBuf.attach(rg, vuk::eTransferDst, vuk::eNone);
+	meshIndicesBuf.attach(rg, vuk::eTransferDst, vuk::eNone);
+	transformsBuf.attach(rg, vuk::eTransferDst, vuk::eNone);
+	materialsBuf.attach(rg, vuk::eTransferDst, vuk::eNone);
+	meshIndicesCulledBuf.attach(rg, vuk::eNone, vuk::eNone);
+	transformsCulledBuf.attach(rg, vuk::eNone, vuk::eNone);
+	materialsCulledBuf.attach(rg, vuk::eNone, vuk::eNone);
 	
 	return rg;
 	

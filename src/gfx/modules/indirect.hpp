@@ -18,21 +18,13 @@ using namespace base;
 // the instances and perform frustum culling.
 struct Indirect {
 	
-	static constexpr auto Commands_n = "indirect_commands";
-	static constexpr auto MeshIndex_n = "indirect_meshindex";
-	static constexpr auto Transform_n = "indirect_transform";
-	static constexpr auto Material_n = "indirect_material";
-	static constexpr auto MeshIndexCulled_n = "indirect_meshindex_culled";
-	static constexpr auto TransformCulled_n = "indirect_transform_culled";
-	static constexpr auto MaterialCulled_n = "indirect_material_culled";
-	
 	usize commandsCount;
 	Buffer<VkDrawIndexedIndirectCommand> commandsBuf;
 	
 	usize instancesCount;
-	Buffer<u32> meshIndexCulledBuf;
-	Buffer<vec4[3]> transformCulledBuf;
-	Buffer<ObjectPool::Material> materialCulledBuf;
+	Buffer<u32> meshIndicesCulledBuf;
+	Buffer<vec4[3]> transformsCulledBuf;
+	Buffer<ObjectPool::Material> materialsCulledBuf;
 	
 	// Upload object data into temporary buffers.
 	Indirect(vuk::PerThreadContext&, vuk::Name, ObjectPool const&, MeshBuffer const&);
@@ -44,9 +36,9 @@ private:
 	
 	inline static bool pipelinesCreated = false;
 	
-	Buffer<u32> meshIndexBuf;
-	Buffer<ObjectPool::Transform> transformBuf;
-	Buffer<ObjectPool::Material> materialBuf;
+	Buffer<u32> meshIndicesBuf;
+	Buffer<ObjectPool::Transform> transformsBuf;
+	Buffer<ObjectPool::Material> materialsBuf;
 	
 };
 
