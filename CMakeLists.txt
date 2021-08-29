@@ -63,6 +63,7 @@ add_executable(Minote
         src/sys/window.hpp src/sys/window.cpp
         src/sys/vulkan.hpp src/sys/vulkan.cpp
         src/sys/system.hpp src/sys/system.cpp
+        src/gfx/resources/texture2d.hpp src/gfx/resources/texture2d.cpp
         src/gfx/resources/cubemap.hpp src/gfx/resources/cubemap.cpp
         src/gfx/resources/buffer.hpp src/gfx/resources/buffer.tpp
         src/gfx/modules/cubeFilterCoeffs.hpp
