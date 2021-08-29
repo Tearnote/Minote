@@ -7,6 +7,7 @@
 #include "base/util.hpp"
 #include "gfx/modules/cubeFilterCoeffs.hpp"
 #include "gfx/samplers.hpp"
+#include "gfx/util.hpp"
 
 namespace minote::gfx {
 
@@ -36,7 +37,7 @@ auto CubeFilter::apply(string_view _name, Cubemap& _src, Cubemap& _dst) -> vuk::
 	auto rg = vuk::RenderGraph();
 	
 	rg.add_pass({
-		.name = vuk::Name(string(_name) + " prefilter"),
+		.name = nameAppend(_name, " prefilter"),
 		.resources = {
 			vuk::Resource(_src.name, vuk::Resource::Type::eImage, vuk::eComputeRW) },
 		.execute = [&_src](vuk::CommandBuffer& cmd) {
@@ -57,7 +58,7 @@ auto CubeFilter::apply(string_view _name, Cubemap& _src, Cubemap& _dst) -> vuk::
 		}});
 	
 	rg.add_pass({
-		.name = vuk::Name(string(_name) + " postfilter"),
+		.name = nameAppend(_name, " postfilter"),
 		.resources = {
 			vuk::Resource(_src.name, vuk::Resource::Type::eImage, vuk::eComputeRead),
 			vuk::Resource(_dst.name, vuk::Resource::Type::eImage, vuk::eComputeWrite) },
@@ -81,7 +82,7 @@ auto CubeFilter::apply(string_view _name, Cubemap& _src, Cubemap& _dst) -> vuk::
 		}});
 	
 	rg.add_pass({
-		.name = vuk::Name(sstring(_name) + " mip0 copy"),
+		.name = nameAppend(_name, " mip0 copy"),
 		.resources = {
 			vuk::Resource(_src.name, vuk::Resource::Type::eImage, vuk::eTransferSrc),
 			vuk::Resource(_dst.name, vuk::Resource::Type::eImage, vuk::eTransferDst) },

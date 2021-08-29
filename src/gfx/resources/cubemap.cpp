@@ -12,7 +12,6 @@ Cubemap::Cubemap(vuk::PerThreadContext& _ptc, vuk::Name _name, u32 _size,
 	vuk::Format _format, vuk::ImageUsageFlags _usage) {
 	
 	name = _name;
-	arrayViews.reserve(mipmapCount(_size));
 	
 	texture = _ptc.allocate_texture(vuk::ImageCreateInfo{
 		.flags = vuk::ImageCreateFlagBits::eCubeCompatible,

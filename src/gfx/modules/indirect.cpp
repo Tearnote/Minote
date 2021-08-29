@@ -5,7 +5,7 @@
 #include "Tracy.hpp"
 #include "imgui.h"
 #include "vuk/CommandBuffer.hpp"
-#include "base/containers/array.hpp"
+#include "base/containers/vector.hpp"
 #include "base/math.hpp"
 #include "base/util.hpp"
 #include "gfx/util.hpp"
@@ -38,9 +38,9 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc, vuk::Name _name,
 	
 	// Iterate through all valid instances
 	
-	auto meshIndices = array<u32>(_objects.size());
-	auto transforms = array<ObjectPool::Transform>(_objects.size());
-	auto materials = array<ObjectPool::Material>(_objects.size());
+	auto meshIndices = pvector<u32>(_objects.size());
+	auto transforms = pvector<ObjectPool::Transform>(_objects.size());
+	auto materials = pvector<ObjectPool::Material>(_objects.size());
 	
 	instancesCount = 0;
 	for (auto id: iota(ObjectID(0), _objects.size())) {

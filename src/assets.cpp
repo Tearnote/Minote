@@ -9,7 +9,7 @@ using namespace base;
 
 Assets::Assets(string_view _path) {
 	
-	m_path = sstring(_path);
+	m_path = string(_path);
 	if (auto result = sqlite3_open_v2(m_path.c_str(), &m_db, SQLITE_OPEN_READONLY, nullptr); result != SQLITE_OK) {
 		
 		sqlite3_close(m_db);

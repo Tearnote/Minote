@@ -319,7 +319,7 @@ auto Sky::drawCubemap(Buffer<World> const& _world, Cubemap& _dst) -> vuk::Render
 			   .bind_storage_buffer(1, 3, *sunLuminance)
 			   .bind_compute_pipeline("sky_draw_cubemap");
 			
-			auto* sides = cmd.map_scratch_uniform_binding<sarray<mat4, 6>>(1, 2);
+			auto* sides = cmd.map_scratch_uniform_binding<array<mat4, 6>>(1, 2);
 			*sides = to_array<mat4>({
 				mat4(mat3{
 					0.0f, 0.0f, -1.0f,

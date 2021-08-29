@@ -49,7 +49,7 @@ private:
 	System const& m_system;
 	
 	// Text displayed on the window's title bar
-	sstring m_title;
+	string m_title;
 	
 	// Size in physical pixels
 	std::atomic<uvec2> m_size;

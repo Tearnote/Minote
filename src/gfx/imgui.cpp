@@ -149,8 +149,8 @@ void ImGui_ImplVuk_Render(vuk::PerThreadContext& _ptc, vuk::RenderGraph& _rg,
 		
 		struct PC {
 			
-			sarray<f32, 2> scale;
-			sarray<f32, 2> translate;
+			array<f32, 2> scale;
+			array<f32, 2> translate;
 			
 		} pc;
 		pc.scale[0] = 2.0f / drawdata->DisplaySize.x;

@@ -43,7 +43,6 @@ set(BUILD_SHARED_LIBS OFF)
 # Main executable
 
 add_executable(Minote
-        src/base/containers/nullalloc.hpp
         src/base/containers/hashmap.hpp
         src/base/containers/vector.hpp
         src/base/containers/string.hpp
@@ -241,13 +240,21 @@ target_link_libraries(TracyClient PRIVATE volk)
 target_link_libraries(vuk PRIVATE TracyClient)
 target_link_libraries(Minote PRIVATE TracyClient)
 
-FetchContent_Declare(abseil
-        GIT_REPOSITORY https://github.com/abseil/abseil-cpp
-        GIT_TAG 311bbd2e50ea35e921a08186840d3b6ca279e880)
-FetchContent_MakeAvailable(abseil)
-target_link_libraries(Minote PRIVATE absl::inlined_vector)
-target_link_libraries(Minote PRIVATE absl::flat_hash_map)
-target_link_libraries(Minote PRIVATE absl::fixed_array)
+if(NOT TARGET robin_hood) # vuk already includes this
+    FetchContent_Declare(robin_hood
+            GIT_REPOSITORY https://github.com/martinus/robin-hood-hashing/
+            GIT_TAG 3.11.3)
+    FetchContent_MakeAvailable(robin_hood)
+endif()
+target_link_libraries(Minote PRIVATE robin_hood)
+
+FetchContent_Declare(itlib
+        GIT_REPOSITORY https://github.com/iboB/itlib
+        GIT_TAG v1.3.0)
+FetchContent_MakeAvailable(itlib)
+target_compile_definitions(itlib INTERFACE ITLIB_STATIC_VECTOR_ERROR_HANDLING=ITLIB_STATIC_VECTOR_ERROR_HANDLING_THROW)
+target_compile_definitions(itlib INTERFACE ITLIB_SMALL_VECTOR_ERROR_HANDLING=ITLIB_SMALL_VECTOR_ERROR_HANDLING_THROW)
+target_link_libraries(Minote PRIVATE itlib)
 
 FetchContent_Declare(quill
         GIT_REPOSITORY https://github.com/odygrd/quill

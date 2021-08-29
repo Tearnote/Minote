@@ -1,14 +1,12 @@
 #pragma once
 
 #include <utility>
-#include "absl/container/flat_hash_map.h"
+#include "robin_hood.h"
 
 namespace minote::base {
 
-// Unordered hash map. References aren't stable.
+// Unordered hash map. Pointers are stable.
 template<typename Key, typename T>
-using hashmap = absl::flat_hash_map<Key, T,
-	absl::container_internal::hash_default_hash<Key>,
-	absl::container_internal::hash_default_eq<Key>>;
+using hashmap = robin_hood::unordered_node_map<Key, T>;
 
 }

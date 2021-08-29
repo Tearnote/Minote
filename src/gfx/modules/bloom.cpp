@@ -45,7 +45,7 @@ auto Bloom::apply(vuk::PerThreadContext& _ptc, string_view _name, vuk::Name _dst
 		.extent = {_size.x() >> 1, _size.y() >> 1, 1},
 		.mipLevels = BloomPasses,
 		.usage = vuk::ImageUsageFlagBits::eStorage | vuk::ImageUsageFlagBits::eSampled });
-	auto bloomViews = sarray<vuk::ImageView, BloomPasses>();
+	auto bloomViews = array<vuk::ImageView, BloomPasses>();
 	
 	auto rg = vuk::RenderGraph();
 	

@@ -150,7 +150,7 @@ struct vec {
 	
 private:
 	
-	sarray<T, Dim> m_arr;
+	array<T, Dim> m_arr;
 	
 };
 
@@ -315,7 +315,7 @@ struct mat {
 	
 private:
 	
-	sarray<col_t, Dim> m_arr;
+	array<col_t, Dim> m_arr;
 	
 };
 
@@ -415,7 +415,7 @@ struct qua {
 	
 private:
 	
-	sarray<Prec, 4> m_arr;
+	array<Prec, 4> m_arr;
 	
 };
 

@@ -1,17 +1,23 @@
 #pragma once
 
-#include "absl/container/inlined_vector.h"
-#include "base/containers/nullalloc.hpp"
+#include "itlib/static_vector.hpp"
+#include "itlib/small_vector.hpp"
+#include "itlib/pod_vector.hpp"
 #include "base/types.hpp"
 
 namespace minote::base {
 
-// Inlined vector. Stored on stack initially, switches to heap above N elements.
-template<typename T, usize N = 256, template<typename> typename Allocator = std::allocator>
-using ivector = absl::InlinedVector<T, N, Allocator<T>>;
-
 // Static vector. Stored entirely on stack, throws if capacity is exceeded.
 template<typename T, usize N>
-using svector = ivector<T, N, NullAllocator>;
+using svector = itlib::static_vector<T, N>;
+
+// Inlined vector. Stored on stack initially, switches to heap above N elements.
+template<typename T, usize N = 16>
+using ivector = itlib::small_vector<T, N>;
+
+// POD vector. Only usable with POD types, but greatly optimized - raw memory
+// operations can be used, and construction/destruction is avoided.
+template<typename T>
+using pvector = itlib::pod_vector<T>;
 
 }

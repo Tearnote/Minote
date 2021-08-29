@@ -31,7 +31,7 @@ private:
 	static constexpr auto Models_n = "models";
 	
 	sqlite3* m_db = nullptr;
-	sstring m_path;
+	string m_path;
 	
 };
 
