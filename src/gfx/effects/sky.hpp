@@ -86,7 +86,7 @@ struct Atmosphere {
 	
 };
 
-// Module for rendering sky backgrounds, IBL cubemaps and other position-dependent
+// Effect for rendering sky backgrounds, IBL cubemaps and other position-dependent
 // lookup tables.
 struct Sky {
 	

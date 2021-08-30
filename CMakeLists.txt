@@ -66,13 +66,13 @@ add_executable(Minote
         src/gfx/resources/texture2d.hpp src/gfx/resources/texture2d.cpp
         src/gfx/resources/cubemap.hpp src/gfx/resources/cubemap.cpp
         src/gfx/resources/buffer.hpp src/gfx/resources/buffer.tpp
-        src/gfx/modules/cubeFilterCoeffs.hpp
-        src/gfx/modules/cubeFilter.hpp src/gfx/modules/cubeFilter.cpp
-        src/gfx/modules/indirect.hpp src/gfx/modules/indirect.cpp
-        src/gfx/modules/forward.hpp src/gfx/modules/forward.cpp
-        src/gfx/modules/tonemap.hpp src/gfx/modules/tonemap.cpp
-        src/gfx/modules/bloom.hpp src/gfx/modules/bloom.cpp
-        src/gfx/modules/sky.hpp src/gfx/modules/sky.cpp
+        src/gfx/effects/cubeFilterCoeffs.hpp
+        src/gfx/effects/cubeFilter.hpp src/gfx/effects/cubeFilter.cpp
+        src/gfx/effects/indirect.hpp src/gfx/effects/indirect.cpp
+        src/gfx/effects/forward.hpp src/gfx/effects/forward.cpp
+        src/gfx/effects/tonemap.hpp src/gfx/effects/tonemap.cpp
+        src/gfx/effects/bloom.hpp src/gfx/effects/bloom.cpp
+        src/gfx/effects/sky.hpp src/gfx/effects/sky.cpp
         src/gfx/samplers.hpp
         src/gfx/objects.hpp src/gfx/objects.cpp
         src/gfx/meshes.hpp src/gfx/meshes.cpp

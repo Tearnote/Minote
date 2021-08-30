@@ -4,8 +4,8 @@
 #include "vuk/Context.hpp"
 #include "gfx/resources/cubemap.hpp"
 #include "gfx/resources/buffer.hpp"
-#include "gfx/modules/indirect.hpp"
-#include "gfx/modules/sky.hpp"
+#include "gfx/effects/indirect.hpp"
+#include "gfx/effects/sky.hpp"
 #include "gfx/world.hpp"
 #include "base/math.hpp"
 

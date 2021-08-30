@@ -7,7 +7,7 @@
 #include "sys/vulkan.hpp"
 #include "gfx/resources/resourcepool.hpp"
 #include "gfx/resources/cubemap.hpp"
-#include "gfx/modules/sky.hpp"
+#include "gfx/effects/sky.hpp"
 #include "gfx/objects.hpp"
 #include "gfx/meshes.hpp"
 #include "gfx/camera.hpp"

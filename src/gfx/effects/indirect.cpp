@@ -1,4 +1,4 @@
-#include "gfx/modules/indirect.hpp"
+#include "gfx/effects/indirect.hpp"
 
 #include <cstring>
 #include <span>

@@ -14,7 +14,7 @@ namespace minote::gfx {
 
 using namespace base;
 
-// Indirect module turns object lists into instance buffers and a command buffer
+// Indirect effect turns object lists into instance buffers and a command buffer
 // for indirect drawing. A pass on the buffers must be performed to sort
 // the instances and perform frustum culling.
 struct Indirect {

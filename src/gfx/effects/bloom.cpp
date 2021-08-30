@@ -1,4 +1,4 @@
-#include "gfx/modules/bloom.hpp"
+#include "gfx/effects/bloom.hpp"
 
 #include <cassert>
 #include "vuk/CommandBuffer.hpp"

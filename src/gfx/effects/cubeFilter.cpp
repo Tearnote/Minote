@@ -1,11 +1,11 @@
-#include "gfx/modules/cubeFilter.hpp"
+#include "gfx/effects/cubeFilter.hpp"
 
 #include "vuk/CommandBuffer.hpp"
 #include "base/containers/string.hpp"
 #include "base/types.hpp"
 #include "base/math.hpp"
 #include "base/util.hpp"
-#include "gfx/modules/cubeFilterCoeffs.hpp"
+#include "gfx/effects/cubeFilterCoeffs.hpp"
 #include "gfx/samplers.hpp"
 #include "gfx/util.hpp"
 

@@ -1,4 +1,4 @@
-#include "gfx/modules/sky.hpp"
+#include "gfx/effects/sky.hpp"
 
 #include "vuk/CommandBuffer.hpp"
 #include "base/containers/array.hpp"

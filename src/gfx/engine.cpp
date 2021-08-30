@@ -11,11 +11,11 @@
 #include "base/error.hpp"
 #include "base/math.hpp"
 #include "base/log.hpp"
-#include "gfx/modules/cubeFilter.hpp"
-#include "gfx/modules/indirect.hpp"
-#include "gfx/modules/tonemap.hpp"
-#include "gfx/modules/forward.hpp"
-#include "gfx/modules/bloom.hpp"
+#include "gfx/effects/cubeFilter.hpp"
+#include "gfx/effects/indirect.hpp"
+#include "gfx/effects/tonemap.hpp"
+#include "gfx/effects/forward.hpp"
+#include "gfx/effects/bloom.hpp"
 #include "gfx/util.hpp"
 #include "main.hpp"
 
@@ -151,7 +151,7 @@ void Engine::render(bool _repaint) {
 	iblUnfiltered.attach(rg, vuk::eNone, vuk::eNone);
 	iblFiltered.attach(rg, vuk::eNone, vuk::eNone);
 	
-	// Initialize modules
+	// Initialize effects
 	
 	auto indirect = Indirect(framePool, "Indirect", *m_objects, *m_meshes);
 	auto sky = Sky(ptc, m_atmosphere);
