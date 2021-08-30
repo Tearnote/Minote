@@ -5,7 +5,7 @@
 #include "Tracy.hpp"
 #include "base/math.hpp"
 #include "sys/vulkan.hpp"
-#include "gfx/resources/resourcepool.hpp"
+#include "gfx/resources/pool.hpp"
 #include "gfx/resources/cubemap.hpp"
 #include "gfx/effects/sky.hpp"
 #include "gfx/objects.hpp"
@@ -65,7 +65,7 @@ private:
 	std::optional<ObjectPool> m_objects;
 	Camera m_camera;
 	
-	ResourcePool m_permPool;
+	Pool m_permPool;
 	World m_world;
 	Atmosphere m_atmosphere;
 	

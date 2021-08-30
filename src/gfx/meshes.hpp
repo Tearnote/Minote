@@ -4,7 +4,7 @@
 #include <span>
 #include "vuk/Context.hpp"
 #include "gfx/resources/buffer.hpp"
-#include "gfx/resources/resourcepool.hpp"
+#include "gfx/resources/pool.hpp"
 #include "base/containers/hashmap.hpp"
 #include "base/containers/string.hpp"
 #include "base/containers/vector.hpp"
@@ -62,7 +62,7 @@ struct MeshList {
 	
 	// Convert into a MeshBuffer. The instance must be moved in,
 	// so all CPU-side resources are freed.
-	auto upload(ResourcePool&, vuk::Name) && -> MeshBuffer;
+	auto upload(Pool&, vuk::Name) && -> MeshBuffer;
 	
 private:
 	

@@ -6,7 +6,7 @@
 #include "base/math.hpp"
 #include "gfx/resources/cubemap.hpp"
 #include "gfx/resources/buffer.hpp"
-#include "gfx/resources/resourcepool.hpp"
+#include "gfx/resources/pool.hpp"
 #include "gfx/camera.hpp"
 #include "gfx/world.hpp"
 
@@ -78,7 +78,7 @@ struct Atmosphere {
 	
 	// Upload the atmospheric buffers to GPU as per provided parameters. Object
 	// is not usable until all GPU transfers are finished.
-	void upload(ResourcePool&, vuk::Name, Params const&);
+	void upload(Pool&, vuk::Name, Params const&);
 	
 	// Fill the lookup tables. Requires upload() to be called first. Only needs
 	// to be executed once.

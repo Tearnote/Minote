@@ -6,7 +6,7 @@ namespace minote::gfx {
 
 template<typename T>
 requires std::is_same_v<T, Texture2D>
-auto ResourcePool::make_texture(vuk::Name _name, uvec2 _size,
+auto Pool::make_texture(vuk::Name _name, uvec2 _size,
 	vuk::Format _format, vuk::ImageUsageFlags _usage, u32 _mips) -> Texture2D {
 	
 	auto& texture = [&, this]() -> vuk::Texture& {
@@ -37,7 +37,7 @@ auto ResourcePool::make_texture(vuk::Name _name, uvec2 _size,
 
 template<typename T>
 requires std::is_same_v<T, Cubemap>
-auto ResourcePool::make_texture(vuk::Name _name, u32 _size,
+auto Pool::make_texture(vuk::Name _name, u32 _size,
 	vuk::Format _format, vuk::ImageUsageFlags _usage) -> Cubemap {
 	
 	auto& texture = [&, this]() -> vuk::Texture& {
@@ -80,7 +80,7 @@ auto ResourcePool::make_texture(vuk::Name _name, u32 _size,
 }
 
 template<typename T>
-auto ResourcePool::make_buffer(vuk::Name _name, vuk::BufferUsageFlags _usage,
+auto Pool::make_buffer(vuk::Name _name, vuk::BufferUsageFlags _usage,
 	usize _elements, vuk::MemoryUsage _memUsage) -> Buffer<T> {
 	
 	assert(_memUsage == vuk::MemoryUsage::eCPUtoGPU ||
@@ -110,7 +110,7 @@ auto ResourcePool::make_buffer(vuk::Name _name, vuk::BufferUsageFlags _usage,
 }
 
 template<typename T>
-auto ResourcePool::make_buffer(vuk::Name _name, vuk::BufferUsageFlags _usage,
+auto Pool::make_buffer(vuk::Name _name, vuk::BufferUsageFlags _usage,
 	std::span<T const> _data, vuk::MemoryUsage _memUsage) -> Buffer<T> {
 	
 	assert(_memUsage == vuk::MemoryUsage::eCPUtoGPU ||

@@ -55,7 +55,7 @@ void Atmosphere::compile(vuk::PerThreadContext& _ptc) {
 	
 }
 
-void Atmosphere::upload(ResourcePool& _pool, vuk::Name _name, Params const& _params) {
+void Atmosphere::upload(Pool& _pool, vuk::Name _name, Params const& _params) {
 	
 	transmittance = _pool.ptc().allocate_texture(vuk::ImageCreateInfo{
 		.format = TransmittanceFormat,

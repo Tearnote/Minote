@@ -25,7 +25,7 @@ void Indirect::compile(vuk::PerThreadContext& _ptc) {
 	
 }
 
-Indirect::Indirect(ResourcePool& _pool, vuk::Name _name,
+Indirect::Indirect(Pool& _pool, vuk::Name _name,
 	ObjectPool const& _objects, MeshBuffer const& _meshes) {
 	
 	ZoneScoped;

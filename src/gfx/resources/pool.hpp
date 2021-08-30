@@ -17,14 +17,14 @@ namespace minote::gfx {
 using namespace base;
 
 // A pool for holding resources. 
-struct ResourcePool {
+struct Pool {
 	
 	// Create a pool with no PTC bound. Use setPtc() to bind one before making
 	// any elements.
-	ResourcePool() = default;
+	Pool() = default;
 	
 	// Create an empty pool.
-	ResourcePool(vuk::PerThreadContext& ptc): m_ptc(&ptc) {}
+	Pool(vuk::PerThreadContext& ptc): m_ptc(&ptc) {}
 	
 	// Create a texture, and return a Texture2D adapter to it. If a texture
 	// with the given name already exists, the texture will be reused.
@@ -72,4 +72,4 @@ private:
 
 }
 
-#include "gfx/resources/resourcepool.tpp"
+#include "gfx/resources/pool.tpp"

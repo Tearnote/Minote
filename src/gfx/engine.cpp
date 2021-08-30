@@ -131,7 +131,7 @@ void Engine::render(bool _repaint) {
 	
 	// Create per-frame resources
 	
-	auto framePool = ResourcePool(ptc);
+	auto framePool = Pool(ptc);
 	
 	auto iblUnfiltered = m_permPool.make_texture<Cubemap>("ibl_unfiltered",
 		256, vuk::Format::eR16G16B16A16Sfloat,

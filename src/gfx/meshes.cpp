@@ -121,7 +121,7 @@ void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
 	
 }
 
-auto MeshList::upload(ResourcePool& _pool, vuk::Name _name) && -> MeshBuffer {
+auto MeshList::upload(Pool& _pool, vuk::Name _name) && -> MeshBuffer {
 	
 	ZoneScoped;
 	

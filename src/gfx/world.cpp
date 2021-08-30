@@ -2,7 +2,7 @@
 
 namespace minote::gfx {
 
-auto World::upload(ResourcePool& _pool, vuk::Name _name) const -> Buffer<World> {
+auto World::upload(Pool& _pool, vuk::Name _name) const -> Buffer<World> {
 	
 	return _pool.make_buffer<World>(_name,
 		vuk::BufferUsageFlagBits::eUniformBuffer, std::span(this, 1));

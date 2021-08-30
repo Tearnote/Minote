@@ -4,7 +4,7 @@
 #include "vuk/Context.hpp"
 #include "base/containers/array.hpp"
 #include "base/types.hpp"
-#include "gfx/resources/resourcepool.hpp"
+#include "gfx/resources/pool.hpp"
 #include "gfx/resources/buffer.hpp"
 #include "gfx/objects.hpp"
 #include "gfx/meshes.hpp"
@@ -31,7 +31,7 @@ struct Indirect {
 	static void compile(vuk::PerThreadContext&);
 	
 	// Upload object data into temporary buffers.
-	Indirect(ResourcePool&, vuk::Name, ObjectPool const&, MeshBuffer const&);
+	Indirect(Pool&, vuk::Name, ObjectPool const&, MeshBuffer const&);
 	
 	// Perform sorting and frustum culling to fill in the Culled_n buffers.
 	auto sortAndCull(World const&, MeshBuffer const&) -> vuk::RenderGraph;
