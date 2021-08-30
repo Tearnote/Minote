@@ -48,7 +48,7 @@ auto CubeFilter::apply(string_view _name, Cubemap& _src, Cubemap& _dst) -> vuk::
 					cmd.image_barrier(_src.name, vuk::eComputeWrite, vuk::eComputeRead);
 				
 				cmd.bind_sampled_image(0, 0, _src.name, LinearClamp)
-				   .bind_storage_image(0, 1, *_src.arrayViews[i])
+				   .bind_storage_image(0, 1, *_src.mipView(i))
 				   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, float(i - 1))
 				   .bind_compute_pipeline("cube_prefilter");
 				cmd.dispatch_invocations(BaseSize >> i, BaseSize >> i, 6);
@@ -65,13 +65,13 @@ auto CubeFilter::apply(string_view _name, Cubemap& _src, Cubemap& _dst) -> vuk::
 		.execute = [&_src, &_dst](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_sampled_image(0, 0, _src.name, TrilinearClamp)
-			   .bind_storage_image(0, 1, *_dst.arrayViews[1])
-			   .bind_storage_image(0, 2, *_dst.arrayViews[2])
-			   .bind_storage_image(0, 3, *_dst.arrayViews[3])
-			   .bind_storage_image(0, 4, *_dst.arrayViews[4])
-			   .bind_storage_image(0, 5, *_dst.arrayViews[5])
-			   .bind_storage_image(0, 6, *_dst.arrayViews[6])
-			   .bind_storage_image(0, 7, *_dst.arrayViews[7])
+			   .bind_storage_image(0, 1, *_dst.mipView(1))
+			   .bind_storage_image(0, 2, *_dst.mipView(2))
+			   .bind_storage_image(0, 3, *_dst.mipView(3))
+			   .bind_storage_image(0, 4, *_dst.mipView(4))
+			   .bind_storage_image(0, 5, *_dst.mipView(5))
+			   .bind_storage_image(0, 6, *_dst.mipView(6))
+			   .bind_storage_image(0, 7, *_dst.mipView(7))
 			   .bind_compute_pipeline("cube_postfilter");
 			
 			auto* coeffs = cmd.map_scratch_uniform_binding<vec4[7][5][3][24]>(0, 8);

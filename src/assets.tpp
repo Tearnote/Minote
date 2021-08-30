@@ -1,5 +1,3 @@
-#pragma once
-
 #include "Tracy.hpp"
 #include "base/error.hpp"
 #include "base/util.hpp"

@@ -121,21 +121,21 @@ void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
 	
 }
 
-auto MeshList::upload(vuk::PerThreadContext& _ptc, vuk::Name _name) && -> MeshBuffer {
+auto MeshList::upload(ResourcePool& _pool, vuk::Name _name) && -> MeshBuffer {
 	
 	ZoneScoped;
 	
 	auto result = MeshBuffer{
-		.verticesBuf = Buffer<vec3>(_ptc, nameAppend(_name, "vertices"), vertices,
-			vuk::BufferUsageFlagBits::eVertexBuffer, vuk::MemoryUsage::eGPUonly),
-		.normalsBuf = Buffer<vec3>(_ptc, nameAppend(_name, "normals"), normals,
-			vuk::BufferUsageFlagBits::eVertexBuffer, vuk::MemoryUsage::eGPUonly),
-		.colorsBuf = Buffer<u16vec4>(_ptc, nameAppend(_name, "colors"), colors,
-			vuk::BufferUsageFlagBits::eVertexBuffer, vuk::MemoryUsage::eGPUonly),
-		.indicesBuf = Buffer<u16>(_ptc, nameAppend(_name, "indices"), indices,
-			vuk::BufferUsageFlagBits::eIndexBuffer, vuk::MemoryUsage::eGPUonly),
-		.descriptorBuf = Buffer<MeshDescriptor>(_ptc, nameAppend(_name, "descriptors"), descriptors,
-			vuk::BufferUsageFlagBits::eStorageBuffer, vuk::MemoryUsage::eGPUonly),
+		.verticesBuf = _pool.make_buffer<vec3>(nameAppend(_name, "vertices"),
+			vuk::BufferUsageFlagBits::eVertexBuffer, vertices, vuk::MemoryUsage::eGPUonly),
+		.normalsBuf = _pool.make_buffer<vec3>(nameAppend(_name, "normals"),
+			vuk::BufferUsageFlagBits::eVertexBuffer, normals, vuk::MemoryUsage::eGPUonly),
+		.colorsBuf = _pool.make_buffer<u16vec4>(nameAppend(_name, "colors"),
+			vuk::BufferUsageFlagBits::eVertexBuffer, colors, vuk::MemoryUsage::eGPUonly),
+		.indicesBuf = _pool.make_buffer<u16>(nameAppend(_name, "indices"),
+			vuk::BufferUsageFlagBits::eIndexBuffer, indices, vuk::MemoryUsage::eGPUonly),
+		.descriptorBuf = _pool.make_buffer<MeshDescriptor>(nameAppend(_name, "descriptors"),
+			vuk::BufferUsageFlagBits::eStorageBuffer, descriptors, vuk::MemoryUsage::eGPUonly),
 		.descriptorIDs = std::move(descriptorIDs) };
 	result.descriptors = std::move(descriptors); // Must still exist for descriptorBuf creation
 	

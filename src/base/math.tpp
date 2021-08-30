@@ -1,8 +1,6 @@
 // Some algorithms are adapted from GLM code:
 // https://github.com/g-truc/glm
 
-#pragma once
-
 #include <algorithm>
 #include <cassert>
 #include "base/util.hpp"

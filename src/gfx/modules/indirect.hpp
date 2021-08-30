@@ -4,6 +4,7 @@
 #include "vuk/Context.hpp"
 #include "base/containers/array.hpp"
 #include "base/types.hpp"
+#include "gfx/resources/resourcepool.hpp"
 #include "gfx/resources/buffer.hpp"
 #include "gfx/objects.hpp"
 #include "gfx/meshes.hpp"
@@ -26,15 +27,16 @@ struct Indirect {
 	Buffer<vec4[3]> transformsCulledBuf;
 	Buffer<ObjectPool::Material> materialsCulledBuf;
 	
+	// Build the shader.
+	static void compile(vuk::PerThreadContext&);
+	
 	// Upload object data into temporary buffers.
-	Indirect(vuk::PerThreadContext&, vuk::Name, ObjectPool const&, MeshBuffer const&);
+	Indirect(ResourcePool&, vuk::Name, ObjectPool const&, MeshBuffer const&);
 	
 	// Perform sorting and frustum culling to fill in the Culled_n buffers.
 	auto sortAndCull(World const&, MeshBuffer const&) -> vuk::RenderGraph;
 	
 private:
-	
-	inline static bool pipelinesCreated = false;
 	
 	Buffer<u32> meshIndicesBuf;
 	Buffer<ObjectPool::Transform> transformsBuf;

@@ -15,7 +15,17 @@ namespace minote::gfx {
 using namespace base;
 using namespace base::literals;
 
-Indirect::Indirect(vuk::PerThreadContext& _ptc, vuk::Name _name,
+void Indirect::compile(vuk::PerThreadContext& _ptc) {
+		
+	auto cullPci = vuk::ComputePipelineCreateInfo();
+	cullPci.add_spirv(std::vector<u32>{
+#include "spv/cull.comp.spv"
+	}, "cull.comp");
+	_ptc.ctx.create_named_pipeline("cull", cullPci);
+	
+}
+
+Indirect::Indirect(ResourcePool& _pool, vuk::Name _name,
 	ObjectPool const& _objects, MeshBuffer const& _meshes) {
 	
 	ZoneScoped;
@@ -81,45 +91,38 @@ Indirect::Indirect(vuk::PerThreadContext& _ptc, vuk::Name _name,
 	
 	// Create and upload the buffers
 	
-	commandsBuf = Buffer<VkDrawIndexedIndirectCommand>(_ptc,
-		nameAppend(_name, "commands"), commands,
-		vuk::BufferUsageFlagBits::eIndirectBuffer | vuk::BufferUsageFlagBits::eStorageBuffer);
+	commandsBuf = _pool.make_buffer<VkDrawIndexedIndirectCommand>(
+		nameAppend(_name, "commands"),
+		vuk::BufferUsageFlagBits::eIndirectBuffer | vuk::BufferUsageFlagBits::eStorageBuffer,
+		commands);
 	
-	meshIndicesBuf = Buffer<u32>(_ptc,
-		nameAppend(_name, "indices"), meshIndices,
-		vuk::BufferUsageFlagBits::eStorageBuffer);
-	transformsBuf = Buffer<ObjectPool::Transform>(_ptc,
-		nameAppend(_name, "transforms"), transforms,
-		vuk::BufferUsageFlagBits::eStorageBuffer);
-	materialsBuf = Buffer<ObjectPool::Material>(_ptc,
-		nameAppend(_name, "materials"), materials,
-		vuk::BufferUsageFlagBits::eStorageBuffer);
+	meshIndicesBuf = _pool.make_buffer<u32>(
+		nameAppend(_name, "indices"),
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		meshIndices);
+	transformsBuf = _pool.make_buffer<ObjectPool::Transform>(
+		nameAppend(_name, "transforms"),
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		transforms);
+	materialsBuf = _pool.make_buffer<ObjectPool::Material>(
+		nameAppend(_name, "materials"),
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		materials);
 	
-	meshIndicesCulledBuf = Buffer<u32>(_ptc,
+	meshIndicesCulledBuf = _pool.make_buffer<u32>(
 		nameAppend(_name, "indicesCulled"),
-		vuk::BufferUsageFlagBits::eStorageBuffer, instancesCount);
-	transformsCulledBuf = Buffer<vec4[3]>(_ptc,
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		instancesCount);
+	transformsCulledBuf = _pool.make_buffer<vec4[3]>(
 		nameAppend(_name, "transformsCulled"),
-		vuk::BufferUsageFlagBits::eStorageBuffer, instancesCount);
-	materialsCulledBuf = Buffer<ObjectPool::Material>(_ptc,
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		instancesCount);
+	materialsCulledBuf = _pool.make_buffer<ObjectPool::Material>(
 		nameAppend(_name, "materialsCulled"),
-		vuk::BufferUsageFlagBits::eStorageBuffer, instancesCount);
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		instancesCount);
 	
 	ImGui::Text("Object count: %llu", instancesCount);
-	
-	// Prepare the culling shader
-	
-	if (!pipelinesCreated) {
-		
-		auto cullPci = vuk::ComputePipelineCreateInfo();
-		cullPci.add_spirv(std::vector<u32>{
-#include "spv/cull.comp.spv"
-		}, "cull.comp");
-		_ptc.ctx.create_named_pipeline("cull", cullPci);
-		
-		pipelinesCreated = true;
-		
-	}
 	
 }
 

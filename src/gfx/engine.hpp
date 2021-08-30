@@ -5,6 +5,7 @@
 #include "Tracy.hpp"
 #include "base/math.hpp"
 #include "sys/vulkan.hpp"
+#include "gfx/resources/resourcepool.hpp"
 #include "gfx/resources/cubemap.hpp"
 #include "gfx/modules/sky.hpp"
 #include "gfx/objects.hpp"
@@ -60,10 +61,11 @@ private:
 	bool m_swapchainDirty;
 	
 	ImguiData m_imguiData;
-	MeshBuffer m_meshes;
+	std::optional<MeshBuffer> m_meshes;
 	std::optional<ObjectPool> m_objects;
 	Camera m_camera;
 	
+	ResourcePool m_permPool;
 	World m_world;
 	Atmosphere m_atmosphere;
 	

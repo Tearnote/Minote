@@ -31,11 +31,13 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	
 	auto ifc = m_vk.context->begin();
 	auto ptc = ifc.begin();
+	m_permPool.setPtc(ptc);
 	
 	// Compile pipelines
 	
 	CubeFilter::compile(ptc);
 	Atmosphere::compile(ptc);
+	Indirect::compile(ptc);
 	Tonemap::compile(ptc);
 	Bloom::compile(ptc);
 	
@@ -49,8 +51,8 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	// Begin imgui frame so that first-frame calls succeed
 	ImGui::NewFrame();
 	
-	m_meshes = std::move(_meshList).upload(ptc, "Meshes");
-	m_atmosphere.upload(ptc, "Earth", Atmosphere::Params::earth());
+	m_meshes.emplace(std::move(_meshList).upload(m_permPool, "Meshes"));
+	m_atmosphere.upload(m_permPool, "Earth", Atmosphere::Params::earth());
 	m_objects = ObjectPool();
 	
 	// Perform precalculations
@@ -73,6 +75,7 @@ Engine::~Engine() {
 	
 	m_vk.context->wait_idle();
 	
+	m_meshes.reset();
 	m_objects.reset();
 	m_imguiData.fontTex.view.reset();
 	m_imguiData.fontTex.image.reset();
@@ -121,20 +124,25 @@ void Engine::render(bool _repaint) {
 	
 	auto ifc = m_vk.context->begin();
 	auto ptc = ifc.begin();
+	m_permPool.setPtc(ptc);
 	auto rg = vuk::RenderGraph();
 	
 	// Create per-frame resources
 	
-	auto iblUnfiltered = Cubemap(ptc, "ibl_unfiltered", 256, vuk::Format::eR16G16B16A16Sfloat,
+	auto framePool = ResourcePool(ptc);
+	
+	auto iblUnfiltered = m_permPool.make_texture<Cubemap>("ibl_unfiltered",
+		256, vuk::Format::eR16G16B16A16Sfloat,
 		vuk::ImageUsageFlagBits::eStorage |
 		vuk::ImageUsageFlagBits::eSampled |
 		vuk::ImageUsageFlagBits::eTransferSrc);
-	auto iblFiltered = Cubemap(ptc, "ibl_filtered", 256, vuk::Format::eR16G16B16A16Sfloat,
+	auto iblFiltered = m_permPool.make_texture<Cubemap>("ibl_filtered",
+		256, vuk::Format::eR16G16B16A16Sfloat,
 		vuk::ImageUsageFlagBits::eStorage |
 		vuk::ImageUsageFlagBits::eSampled |
 		vuk::ImageUsageFlagBits::eTransferDst);
 	
-	auto worldBuf = m_world.upload(ptc, "world");
+	auto worldBuf = m_world.upload(m_permPool, "world");
 	
 	// Attach resources
 	
@@ -143,7 +151,7 @@ void Engine::render(bool _repaint) {
 	
 	// Initialize modules
 	
-	auto indirect = Indirect(ptc, "Indirect", *m_objects, m_meshes);
+	auto indirect = Indirect(framePool, "Indirect", *m_objects, *m_meshes);
 	auto sky = Sky(ptc, m_atmosphere);
 	auto forward = Forward(ptc, viewport);
 	
@@ -152,9 +160,9 @@ void Engine::render(bool _repaint) {
 	rg.append(sky.calculate(worldBuf, m_camera));
 	rg.append(sky.drawCubemap(worldBuf, iblUnfiltered));
 	rg.append(CubeFilter::apply("IBL", iblUnfiltered, iblFiltered));
-	rg.append(indirect.sortAndCull(m_world, m_meshes));
-	rg.append(forward.zPrepass(worldBuf, indirect, m_meshes));
-	rg.append(forward.draw(worldBuf, indirect, m_meshes, sky, iblFiltered));
+	rg.append(indirect.sortAndCull(m_world, *m_meshes));
+	rg.append(forward.zPrepass(worldBuf, indirect, *m_meshes));
+	rg.append(forward.draw(worldBuf, indirect, *m_meshes, sky, iblFiltered));
 	rg.append(sky.draw(worldBuf, forward.Color_n, forward.Depth_n, viewport));
 	rg.append(Bloom::apply(ptc, "Fb bloom", forward.Color_n, forward.size()));
 	rg.append(Tonemap::apply(forward.Color_n, "swapchain", viewport));

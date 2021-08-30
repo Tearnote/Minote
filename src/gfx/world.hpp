@@ -3,6 +3,7 @@
 #include "vuk/Context.hpp"
 #include "vuk/Name.hpp"
 #include "gfx/resources/buffer.hpp"
+#include "gfx/resources/resourcepool.hpp"
 #include "base/types.hpp"
 #include "base/math.hpp"
 
@@ -27,7 +28,7 @@ struct World {
 	vec3 sunIlluminance;
 	
 	// Upload the world data to the GPU, to be used as a uniform.
-	auto upload(vuk::PerThreadContext&, vuk::Name) const -> Buffer<World>;
+	auto upload(ResourcePool&, vuk::Name) const -> Buffer<World>;
 	
 };
 

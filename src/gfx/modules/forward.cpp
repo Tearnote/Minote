@@ -41,7 +41,7 @@ Forward::Forward(vuk::PerThreadContext& _ptc, uvec2 _size) {
 	
 }
 
-auto Forward::zPrepass(Buffer<World> const& _world, Indirect const& _indirect,
+auto Forward::zPrepass(Buffer<World> _world, Indirect const& _indirect,
 	MeshBuffer const& _meshes) -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
@@ -52,7 +52,7 @@ auto Forward::zPrepass(Buffer<World> const& _world, Indirect const& _indirect,
 			_indirect.commandsBuf.resource(vuk::eIndirectRead),
 			_indirect.transformsCulledBuf.resource(vuk::eVertexRead),
 			vuk::Resource(Depth_n,                     vuk::Resource::Type::eImage,  vuk::eDepthStencilRW) },
-		.execute = [this, &_world, &_indirect, &_meshes](vuk::CommandBuffer& cmd) {
+		.execute = [this, _world, &_indirect, &_meshes](vuk::CommandBuffer& cmd) {
 			
 			cmd.set_viewport(0, vuk::Rect2D{ .extent = vukExtent(m_size) })
 			   .set_scissor(0, vuk::Rect2D{ .extent = vukExtent(m_size) })
@@ -76,7 +76,7 @@ auto Forward::zPrepass(Buffer<World> const& _world, Indirect const& _indirect,
 	
 }
 
-auto Forward::draw(Buffer<World> const& _world, Indirect const& _indirect,
+auto Forward::draw(Buffer<World> _world, Indirect const& _indirect,
 	MeshBuffer const& _meshes, Sky const& _sky, Cubemap const& _ibl) -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
@@ -92,7 +92,7 @@ auto Forward::draw(Buffer<World> const& _world, Indirect const& _indirect,
 			vuk::Resource(_sky.SunLuminance_n,         vuk::Resource::Type::eBuffer, vuk::eFragmentRead),
 			vuk::Resource(Color_n,                     vuk::Resource::Type::eImage,  vuk::eColorWrite),
 			vuk::Resource(Depth_n,                     vuk::Resource::Type::eImage,  vuk::eDepthStencilRW) },
-		.execute = [this, &_world, &_indirect, &_meshes, &_sky, &_ibl](vuk::CommandBuffer& cmd) {
+		.execute = [this, _world, &_indirect, &_meshes, &_sky, &_ibl](vuk::CommandBuffer& cmd) {
 			
 			cmd.set_viewport(0, vuk::Rect2D{ .extent = vukExtent(m_size) })
 			   .set_scissor(0, vuk::Rect2D{ .extent = vukExtent(m_size) })
@@ -106,7 +106,7 @@ auto Forward::draw(Buffer<World> const& _world, Indirect const& _indirect,
 			   .bind_storage_buffer(0, 1, _indirect.transformsCulledBuf)
 			   .bind_storage_buffer(0, 2, _indirect.materialsCulledBuf)
 			   .bind_storage_buffer(0, 3, *_sky.sunLuminance)
-			   .bind_sampled_image(0, 4, _ibl.texture, TrilinearClamp)
+			   .bind_sampled_image(0, 4, _ibl, TrilinearClamp)
 			   .bind_sampled_image(0, 5, _sky.AerialPerspective_n, TrilinearClamp)
 			   .bind_graphics_pipeline("object");
 			

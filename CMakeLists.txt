@@ -62,6 +62,7 @@ add_executable(Minote
         src/sys/window.hpp src/sys/window.cpp
         src/sys/vulkan.hpp src/sys/vulkan.cpp
         src/sys/system.hpp src/sys/system.cpp
+        src/gfx/resources/resourcepool.hpp src/gfx/resources/resourcepool.tpp
         src/gfx/resources/texture2d.hpp src/gfx/resources/texture2d.cpp
         src/gfx/resources/cubemap.hpp src/gfx/resources/cubemap.cpp
         src/gfx/resources/buffer.hpp src/gfx/resources/buffer.tpp
@@ -128,7 +129,7 @@ if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 FetchContent_Declare(vuk
         GIT_REPOSITORY https://github.com/Tearnote/vuk
-        GIT_TAG 7ce570c707f44afba3b664cbd2bcb69b8f2829d2)
+        GIT_TAG 3b56c11a706f4b55558b98874f11d587d3d719f8)
 FetchContent_MakeAvailable(vuk)
 target_compile_definitions(vuk PRIVATE VK_NO_PROTOTYPES)
 target_compile_definitions(vuk PRIVATE VUK_CUSTOM_VULKAN_HEADER="volk.h")
