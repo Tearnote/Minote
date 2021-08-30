@@ -6,38 +6,36 @@
 
 namespace minote::gfx {
 
+void Forward::compile(vuk::PerThreadContext& _ptc) {
+	
+	auto zPrepassPci = vuk::PipelineBaseCreateInfo();
+	zPrepassPci.add_spirv(std::vector<u32>{
+#include "spv/zprepass.vert.spv"
+	}, "zprepass.vert");
+	zPrepassPci.add_spirv(std::vector<u32>{
+#include "spv/zprepass.frag.spv"
+	}, "zprepass.frag");
+	zPrepassPci.rasterization_state.cullMode = vuk::CullModeFlagBits::eBack;
+	zPrepassPci.depth_stencil_state.depthCompareOp = vuk::CompareOp::eGreater;
+	_ptc.ctx.create_named_pipeline("z_prepass", zPrepassPci);
+	
+	auto objectPci = vuk::PipelineBaseCreateInfo();
+	objectPci.add_spirv(std::vector<u32>{
+#include "spv/object.vert.spv"
+	}, "object.vert");
+	objectPci.add_spirv(std::vector<u32>{
+#include "spv/object.frag.spv"
+	}, "object.frag");
+	objectPci.rasterization_state.cullMode = vuk::CullModeFlagBits::eBack;
+	objectPci.depth_stencil_state.depthWriteEnable = false;
+	objectPci.depth_stencil_state.depthCompareOp = vuk::CompareOp::eEqual;
+	_ptc.ctx.create_named_pipeline("object", objectPci);
+	
+}
+
 Forward::Forward(vuk::PerThreadContext& _ptc, uvec2 _size) {
 	
 	m_size = _size;
-	
-	if (!pipelinesCreated) {
-		
-		auto zPrepassPci = vuk::PipelineBaseCreateInfo();
-		zPrepassPci.add_spirv(std::vector<u32>{
-#include "spv/zprepass.vert.spv"
-		}, "zprepass.vert");
-		zPrepassPci.add_spirv(std::vector<u32>{
-#include "spv/zprepass.frag.spv"
-		}, "zprepass.frag");
-		zPrepassPci.rasterization_state.cullMode = vuk::CullModeFlagBits::eBack;
-		zPrepassPci.depth_stencil_state.depthCompareOp = vuk::CompareOp::eGreater;
-		_ptc.ctx.create_named_pipeline("z_prepass", zPrepassPci);
-		
-		auto objectPci = vuk::PipelineBaseCreateInfo();
-		objectPci.add_spirv(std::vector<u32>{
-#include "spv/object.vert.spv"
-		}, "object.vert");
-		objectPci.add_spirv(std::vector<u32>{
-#include "spv/object.frag.spv"
-		}, "object.frag");
-		objectPci.rasterization_state.cullMode = vuk::CullModeFlagBits::eBack;
-		objectPci.depth_stencil_state.depthWriteEnable = false;
-		objectPci.depth_stencil_state.depthCompareOp = vuk::CompareOp::eEqual;
-		_ptc.ctx.create_named_pipeline("object", objectPci);
-		
-		pipelinesCreated = true;
-		
-	}
 	
 }
 

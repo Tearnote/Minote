@@ -38,8 +38,10 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	CubeFilter::compile(ptc);
 	Atmosphere::compile(ptc);
 	Indirect::compile(ptc);
+	Forward::compile(ptc);
 	Tonemap::compile(ptc);
 	Bloom::compile(ptc);
+	Sky::compile(ptc);
 	
 	// Initialize internal resources
 	m_swapchainDirty = false;

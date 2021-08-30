@@ -24,6 +24,9 @@ struct Forward {
 	static constexpr auto ColorFormat = vuk::Format::eR16G16B16A16Sfloat;
 	static constexpr auto DepthFormat = vuk::Format::eD32Sfloat;
 	
+	// Build the shader.
+	static void compile(vuk::PerThreadContext&);
+	
 	// Prepare for rendering into managed images of specified size
 	Forward(vuk::PerThreadContext&, uvec2 size);
 	
@@ -36,8 +39,6 @@ struct Forward {
 	auto draw(Buffer<World>, Indirect const&, MeshBuffer const&, Sky const&, Cubemap const&) -> vuk::RenderGraph;
 	
 private:
-	
-	inline static bool pipelinesCreated = false;
 	
 	uvec2 m_size;
 	

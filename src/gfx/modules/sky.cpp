@@ -119,6 +119,39 @@ auto Atmosphere::precalculate() -> vuk::RenderGraph {
 	
 }
 
+void Sky::compile(vuk::PerThreadContext& _ptc) {
+	
+	auto skyGenSkyViewPci = vuk::ComputePipelineCreateInfo();
+	skyGenSkyViewPci.add_spirv(std::vector<u32>{
+#include "spv/skyGenSkyView.comp.spv"
+	}, "skyGenSkyView.comp");
+	_ptc.ctx.create_named_pipeline("sky_gen_sky_view", skyGenSkyViewPci);
+	
+	auto skyDrawPci = vuk::PipelineBaseCreateInfo();
+	skyDrawPci.add_spirv(std::vector<u32>{
+#include "spv/skyDraw.vert.spv"
+	}, "skyDraw.vert");
+	skyDrawPci.add_spirv(std::vector<u32>{
+#include "spv/skyDraw.frag.spv"
+	}, "skyDraw.frag");
+	skyDrawPci.depth_stencil_state.depthWriteEnable = false;
+	skyDrawPci.depth_stencil_state.depthCompareOp = vuk::CompareOp::eEqual;
+	_ptc.ctx.create_named_pipeline("sky_draw", skyDrawPci);
+	
+	auto skyDrawCubemapPci = vuk::ComputePipelineCreateInfo();
+	skyDrawCubemapPci.add_spirv(std::vector<u32>{
+#include "spv/skyDrawCubemap.comp.spv"
+	}, "skyDrawCubemap.comp");
+	_ptc.ctx.create_named_pipeline("sky_draw_cubemap", skyDrawCubemapPci);
+	
+	auto skyAerialPerspectivePci = vuk::ComputePipelineCreateInfo();
+	skyAerialPerspectivePci.add_spirv(std::vector<u32>{
+#include "spv/skyGenAerialPerspective.comp.spv"
+	}, "skyGenAerialPerspectivePci.comp");
+	_ptc.ctx.create_named_pipeline("sky_gen_aerial_perspective", skyAerialPerspectivePci);
+	
+}
+
 Sky::Sky(vuk::PerThreadContext& _ptc, Atmosphere const& _atmosphere):
 	atmosphere(_atmosphere) {
 	
@@ -147,41 +180,6 @@ Sky::Sky(vuk::PerThreadContext& _ptc, Atmosphere const& _atmosphere):
 		vuk::MemoryUsage::eGPUonly,
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		sizeof(vec3), alignof(vec3));
-	
-	if (!pipelinesCreated) {
-		
-		auto skyGenSkyViewPci = vuk::ComputePipelineCreateInfo();
-		skyGenSkyViewPci.add_spirv(std::vector<u32>{
-#include "spv/skyGenSkyView.comp.spv"
-		}, "skyGenSkyView.comp");
-		_ptc.ctx.create_named_pipeline("sky_gen_sky_view", skyGenSkyViewPci);
-		
-		auto skyDrawPci = vuk::PipelineBaseCreateInfo();
-		skyDrawPci.add_spirv(std::vector<u32>{
-#include "spv/skyDraw.vert.spv"
-		}, "skyDraw.vert");
-		skyDrawPci.add_spirv(std::vector<u32>{
-#include "spv/skyDraw.frag.spv"
-		}, "skyDraw.frag");
-		skyDrawPci.depth_stencil_state.depthWriteEnable = false;
-		skyDrawPci.depth_stencil_state.depthCompareOp = vuk::CompareOp::eEqual;
-		_ptc.ctx.create_named_pipeline("sky_draw", skyDrawPci);
-		
-		auto skyDrawCubemapPci = vuk::ComputePipelineCreateInfo();
-		skyDrawCubemapPci.add_spirv(std::vector<u32>{
-#include "spv/skyDrawCubemap.comp.spv"
-		}, "skyDrawCubemap.comp");
-		_ptc.ctx.create_named_pipeline("sky_draw_cubemap", skyDrawCubemapPci);
-		
-		auto skyAerialPerspectivePci = vuk::ComputePipelineCreateInfo();
-		skyAerialPerspectivePci.add_spirv(std::vector<u32>{
-#include "spv/skyGenAerialPerspective.comp.spv"
-		}, "skyGenAerialPerspectivePci.comp");
-		_ptc.ctx.create_named_pipeline("sky_gen_aerial_perspective", skyAerialPerspectivePci);
-		
-		pipelinesCreated = true;
-		
-	}
 	
 }
 

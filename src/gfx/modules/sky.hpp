@@ -112,6 +112,9 @@ struct Sky {
 	vuk::Texture aerialPerspective;
 	vuk::Unique<vuk::Buffer> sunLuminance;
 	
+	// Build the shader.
+	static void compile(vuk::PerThreadContext&);
+	
 	Sky(vuk::PerThreadContext&, Atmosphere const&);
 	
 	// Fill lookup tables required for the two functions below.
@@ -125,8 +128,6 @@ struct Sky {
 	auto drawCubemap(Buffer<World> const&, Cubemap& dst) -> vuk::RenderGraph;
 	
 private:
-	
-	inline static bool pipelinesCreated = false;
 	
 	Atmosphere const& atmosphere;
 	
