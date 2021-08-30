@@ -144,7 +144,7 @@ void Engine::render(bool _repaint) {
 		vuk::ImageUsageFlagBits::eSampled |
 		vuk::ImageUsageFlagBits::eTransferDst);
 	
-	auto worldBuf = m_world.upload(m_permPool, "world");
+	auto worldBuf = m_world.upload(framePool, "world");
 	
 	// Attach resources
 	
