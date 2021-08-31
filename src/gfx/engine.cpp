@@ -143,19 +143,26 @@ void Engine::render(bool _repaint) {
 		vuk::ImageUsageFlagBits::eStorage |
 		vuk::ImageUsageFlagBits::eSampled |
 		vuk::ImageUsageFlagBits::eTransferDst);
-	
-	auto worldBuf = m_world.upload(framePool, "world");
-	
-	// Attach resources
-	
 	iblUnfiltered.attach(rg, vuk::eNone, vuk::eNone);
 	iblFiltered.attach(rg, vuk::eNone, vuk::eNone);
+	
+	auto depth = framePool.make_texture<Texture2D>("depth",
+		viewport, vuk::Format::eD32Sfloat,
+		vuk::ImageUsageFlagBits::eDepthStencilAttachment);
+	auto color = framePool.make_texture<Texture2D>("color",
+		viewport, vuk::Format::eR16G16B16A16Sfloat,
+		vuk::ImageUsageFlagBits::eColorAttachment |
+		vuk::ImageUsageFlagBits::eSampled |
+		vuk::ImageUsageFlagBits::eStorage);
+	depth.attach(rg, vuk::eNone, vuk::eNone);
+	color.attach(rg, vuk::eNone, vuk::eNone);
+	
+	auto worldBuf = m_world.upload(framePool, "world");
 	
 	// Initialize effects
 	
 	auto indirect = Indirect(framePool, "Indirect", *m_objects, *m_meshes);
 	auto sky = Sky(ptc, m_atmosphere);
-	auto forward = Forward(ptc, viewport);
 	
 	// Set up the rendergraph
 	
@@ -163,11 +170,11 @@ void Engine::render(bool _repaint) {
 	rg.append(sky.drawCubemap(worldBuf, iblUnfiltered));
 	rg.append(CubeFilter::apply("IBL", iblUnfiltered, iblFiltered));
 	rg.append(indirect.sortAndCull(m_world, *m_meshes));
-	rg.append(forward.zPrepass(worldBuf, indirect, *m_meshes));
-	rg.append(forward.draw(worldBuf, indirect, *m_meshes, sky, iblFiltered));
-	rg.append(sky.draw(worldBuf, forward.Color_n, forward.Depth_n, viewport));
-	rg.append(Bloom::apply(ptc, "Fb bloom", forward.Color_n, forward.size()));
-	rg.append(Tonemap::apply(forward.Color_n, "swapchain", viewport));
+	rg.append(Forward::zPrepass(depth, worldBuf, indirect, *m_meshes));
+	rg.append(Forward::draw(color, depth, worldBuf, indirect, *m_meshes, sky, iblFiltered));
+	rg.append(sky.draw(worldBuf, color.name, depth.name, viewport));
+	rg.append(Bloom::apply(ptc, "Fb bloom", color.name, color.size()));
+	rg.append(Tonemap::apply(color.name, "swapchain", viewport));
 	
 	ImGui::Render();
 	ImGui_ImplVuk_Render(ptc, rg, "swapchain", "swapchain", m_imguiData, ImGui::GetDrawData());

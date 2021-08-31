@@ -284,8 +284,8 @@ set(SHADER_SOURCES
         src/glsl/bloomDown.comp
         src/glsl/zprepass.vert src/glsl/zprepass.frag
         src/glsl/tonemap.vert src/glsl/tonemap.frag
+        src/glsl/forward.vert src/glsl/forward.frag
         src/glsl/bloomUp.comp
-        src/glsl/object.vert src/glsl/object.frag
         src/glsl/imgui.vert src/glsl/imgui.frag
         src/glsl/cull.comp)
 

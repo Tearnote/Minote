@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vuk/CommandBuffer.hpp"
 #include "vuk/Types.hpp"
 #include "vuk/Name.hpp"
 #include "base/containers/string.hpp"
@@ -37,5 +38,13 @@ constexpr auto vukExtent(vec<2, T> v) -> vuk::Extent2D { return {v[0], v[1]}; }
 
 template<arithmetic T>
 constexpr auto vukExtent(vec<3, T> v) -> vuk::Extent3D { return {v[0], v[1], v[2]}; }
+
+// Shorthand for setting rendering area
+inline void cmdSetViewportScissor(vuk::CommandBuffer cmd, uvec2 area) {
+	
+	cmd.set_viewport(0, vuk::Rect2D{ .extent = vukExtent(area) })
+	   .set_scissor(0, vuk::Rect2D{ .extent = vukExtent(area) });
+	
+}
 
 }

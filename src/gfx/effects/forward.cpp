@@ -19,42 +19,35 @@ void Forward::compile(vuk::PerThreadContext& _ptc) {
 	zPrepassPci.depth_stencil_state.depthCompareOp = vuk::CompareOp::eGreater;
 	_ptc.ctx.create_named_pipeline("z_prepass", zPrepassPci);
 	
-	auto objectPci = vuk::PipelineBaseCreateInfo();
-	objectPci.add_spirv(std::vector<u32>{
-#include "spv/object.vert.spv"
-	}, "object.vert");
-	objectPci.add_spirv(std::vector<u32>{
-#include "spv/object.frag.spv"
-	}, "object.frag");
-	objectPci.rasterization_state.cullMode = vuk::CullModeFlagBits::eBack;
-	objectPci.depth_stencil_state.depthWriteEnable = false;
-	objectPci.depth_stencil_state.depthCompareOp = vuk::CompareOp::eEqual;
-	_ptc.ctx.create_named_pipeline("object", objectPci);
+	auto forwardPci = vuk::PipelineBaseCreateInfo();
+	forwardPci.add_spirv(std::vector<u32>{
+#include "spv/forward.vert.spv"
+	}, "forward.vert");
+	forwardPci.add_spirv(std::vector<u32>{
+#include "spv/forward.frag.spv"
+	}, "forward.frag");
+	forwardPci.rasterization_state.cullMode = vuk::CullModeFlagBits::eBack;
+	forwardPci.depth_stencil_state.depthWriteEnable = false;
+	forwardPci.depth_stencil_state.depthCompareOp = vuk::CompareOp::eEqual;
+	_ptc.ctx.create_named_pipeline("forward", forwardPci);
 	
 }
 
-Forward::Forward(vuk::PerThreadContext& _ptc, uvec2 _size) {
-	
-	m_size = _size;
-	
-}
-
-auto Forward::zPrepass(Buffer<World> _world, Indirect const& _indirect,
-	MeshBuffer const& _meshes) -> vuk::RenderGraph {
+auto Forward::zPrepass(Texture2D _depth, Buffer<World> _world,
+	Indirect const& _indirect, MeshBuffer const& _meshes) -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
 	
 	rg.add_pass({
-		.name = "Z-prepass",
+		.name = nameAppend(_depth.name, "z-prepass"),
 		.resources = {
 			_indirect.commandsBuf.resource(vuk::eIndirectRead),
 			_indirect.transformsCulledBuf.resource(vuk::eVertexRead),
-			vuk::Resource(Depth_n,                     vuk::Resource::Type::eImage,  vuk::eDepthStencilRW) },
-		.execute = [this, _world, &_indirect, &_meshes](vuk::CommandBuffer& cmd) {
+			_depth.resource(vuk::eDepthStencilRW) },
+		.execute = [_depth, _world, &_indirect, &_meshes](vuk::CommandBuffer& cmd) {
 			
-			cmd.set_viewport(0, vuk::Rect2D{ .extent = vukExtent(m_size) })
-			   .set_scissor(0, vuk::Rect2D{ .extent = vukExtent(m_size) })
-			   .bind_uniform_buffer(0, 0, _world)
+			cmdSetViewportScissor(cmd, _depth.size());
+			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_vertex_buffer(0, _meshes.verticesBuf, 0, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
 			   .bind_index_buffer(_meshes.indicesBuf, vuk::IndexType::eUint16)
 			   .bind_storage_buffer(0, 1, _indirect.transformsCulledBuf)
@@ -64,38 +57,32 @@ auto Forward::zPrepass(Buffer<World> _world, Indirect const& _indirect,
 			
 		}});
 	
-	rg.attach_managed(Depth_n,
-		DepthFormat,
-		vuk::Dimension2D::absolute(vukExtent(m_size)),
-		vuk::Samples::e1,
-		vuk::ClearDepthStencil{0.0f, 0});
-	
 	return rg;
 	
 }
 
-auto Forward::draw(Buffer<World> _world, Indirect const& _indirect,
-	MeshBuffer const& _meshes, Sky const& _sky, Cubemap const& _ibl) -> vuk::RenderGraph {
+auto Forward::draw(Texture2D _color, Texture2D _depth, Buffer<World> _world,
+	Indirect const& _indirect, MeshBuffer const& _meshes,
+	Sky const& _sky, Cubemap _ibl) -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
 	
 	rg.add_pass({
-		.name = "Object drawing",
+		.name = nameAppend(_color.name, "forward shading"),
 		.resources = {
 			_indirect.commandsBuf.resource(vuk::eIndirectRead),
 			_indirect.transformsCulledBuf.resource(vuk::eVertexRead),
 			_indirect.materialsCulledBuf.resource(vuk::eVertexRead),
-			vuk::Resource(_ibl.name,                   vuk::Resource::Type::eImage,  vuk::eFragmentSampled),
-			vuk::Resource(_sky.AerialPerspective_n,    vuk::Resource::Type::eImage,  vuk::eFragmentSampled),
-			vuk::Resource(_sky.SunLuminance_n,         vuk::Resource::Type::eBuffer, vuk::eFragmentRead),
-			vuk::Resource(Color_n,                     vuk::Resource::Type::eImage,  vuk::eColorWrite),
-			vuk::Resource(Depth_n,                     vuk::Resource::Type::eImage,  vuk::eDepthStencilRW) },
-		.execute = [this, _world, &_indirect, &_meshes, &_sky, &_ibl](vuk::CommandBuffer& cmd) {
+			vuk::Resource(_ibl.name,                vuk::Resource::Type::eImage,  vuk::eFragmentSampled),
+			vuk::Resource(_sky.AerialPerspective_n, vuk::Resource::Type::eImage,  vuk::eFragmentSampled),
+			vuk::Resource(_sky.SunLuminance_n,      vuk::Resource::Type::eBuffer, vuk::eFragmentRead),
+			_color.resource(vuk::eColorWrite),
+			_depth.resource(vuk::eDepthStencilRW) },
+		.execute = [_color, _world, &_indirect, &_meshes, &_sky, _ibl](vuk::CommandBuffer& cmd) {
 			
-			cmd.set_viewport(0, vuk::Rect2D{ .extent = vukExtent(m_size) })
-			   .set_scissor(0, vuk::Rect2D{ .extent = vukExtent(m_size) })
+			cmdSetViewportScissor(cmd, _color.size());
 			   
-			   .bind_vertex_buffer(0, _meshes.verticesBuf, 0, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
+			cmd.bind_vertex_buffer(0, _meshes.verticesBuf, 0, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
 			   .bind_vertex_buffer(1, _meshes.normalsBuf,  1, vuk::Packed{vuk::Format::eR32G32B32Sfloat})
 			   .bind_vertex_buffer(2, _meshes.colorsBuf,   2, vuk::Packed{vuk::Format::eR16G16B16A16Unorm})
 			   .bind_index_buffer(_meshes.indicesBuf, vuk::IndexType::eUint16)
@@ -106,17 +93,11 @@ auto Forward::draw(Buffer<World> _world, Indirect const& _indirect,
 			   .bind_storage_buffer(0, 3, *_sky.sunLuminance)
 			   .bind_sampled_image(0, 4, _ibl, TrilinearClamp)
 			   .bind_sampled_image(0, 5, _sky.AerialPerspective_n, TrilinearClamp)
-			   .bind_graphics_pipeline("object");
+			   .bind_graphics_pipeline("forward");
 			
 			cmd.draw_indexed_indirect(_indirect.commandsCount, _indirect.commandsBuf);
 			
 		}});
-	
-	rg.attach_managed(Color_n,
-		ColorFormat,
-		vuk::Dimension2D::absolute(vukExtent(m_size)),
-		vuk::Samples::e1,
-		vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	
 	return rg;
 	

@@ -18,29 +18,16 @@ using namespace base;
 // in the background.
 struct Forward {
 	
-	static constexpr auto Depth_n = "forward_depth";
-	static constexpr auto Color_n = "forward_color";
-	
-	static constexpr auto ColorFormat = vuk::Format::eR16G16B16A16Sfloat;
-	static constexpr auto DepthFormat = vuk::Format::eD32Sfloat;
-	
 	// Build the shader.
 	static void compile(vuk::PerThreadContext&);
 	
-	// Prepare for rendering into managed images of specified size
-	Forward(vuk::PerThreadContext&, uvec2 size);
+	// Perform Z-prepass, filling in the depth texture
+	static auto zPrepass(Texture2D depth, Buffer<World>,
+		Indirect const&, MeshBuffer const&) -> vuk::RenderGraph;
 	
-	auto size() const -> uvec2 { return m_size; }
-	
-	// Perform Z-prepass, filling in the Depth_n image
-	auto zPrepass(Buffer<World>, Indirect const&, MeshBuffer const&) -> vuk::RenderGraph;
-	
-	// Using Depth_n, render into Color_n
-	auto draw(Buffer<World>, Indirect const&, MeshBuffer const&, Sky const&, Cubemap const&) -> vuk::RenderGraph;
-	
-private:
-	
-	uvec2 m_size;
+	// Perform shading on color image, making use of depth data
+	static auto draw(Texture2D color, Texture2D depth, Buffer<World>,
+		Indirect const&, MeshBuffer const&, Sky const&, Cubemap ibl) -> vuk::RenderGraph;
 	
 };
 
