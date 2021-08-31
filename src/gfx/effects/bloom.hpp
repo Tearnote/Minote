@@ -1,10 +1,9 @@
 #pragma once
 
-#include "base/containers/string.hpp"
-#include "base/containers/array.hpp"
-#include "base/math.hpp"
 #include "vuk/RenderGraph.hpp"
 #include "vuk/Context.hpp"
+#include "gfx/resources/texture2d.hpp"
+#include "gfx/resources/pool.hpp"
 
 namespace minote::gfx {
 
@@ -28,7 +27,7 @@ struct Bloom {
 	static void compile(vuk::PerThreadContext&);
 	
 	// Create a pass that applies bloom to the specified image.
-	static auto apply(vuk::PerThreadContext&, string_view name, vuk::Name dst, uvec2 size) -> vuk::RenderGraph;
+	static auto apply(Pool&, Texture2D target) -> vuk::RenderGraph;
 	
 };
 

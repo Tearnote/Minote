@@ -173,7 +173,7 @@ void Engine::render(bool _repaint) {
 	rg.append(Forward::zPrepass(depth, worldBuf, indirect, *m_meshes));
 	rg.append(Forward::draw(color, depth, worldBuf, indirect, *m_meshes, sky, iblFiltered));
 	rg.append(sky.draw(worldBuf, color.name, depth.name, viewport));
-	rg.append(Bloom::apply(ptc, "Fb bloom", color.name, color.size()));
+	rg.append(Bloom::apply(framePool, color));
 	rg.append(Tonemap::apply(color.name, "swapchain", viewport));
 	
 	ImGui::Render();
