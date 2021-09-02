@@ -13,8 +13,11 @@ using namespace base;
 // with a corresponding view.
 struct Cubemap: public Texture2D {
 	
-	// Create a 6-layer image view into a specified mipmap level.
+	// Create a cubemap image view into a specified mipmap level.
 	auto mipView(u32 mip) -> vuk::Unique<vuk::ImageView>;
+	
+	// Create a 6-layer image view into a specified mipmap level.
+	auto mipArrayView(u32 mip) -> vuk::Unique<vuk::ImageView>;
 	
 };
 

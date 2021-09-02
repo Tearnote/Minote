@@ -1,7 +1,7 @@
 #include "gfx/effects/cubeFilter.hpp"
 
+#include <cassert>
 #include "vuk/CommandBuffer.hpp"
-#include "base/containers/string.hpp"
 #include "base/types.hpp"
 #include "base/math.hpp"
 #include "base/util.hpp"
@@ -29,7 +29,7 @@ void CubeFilter::compile(vuk::PerThreadContext& _ptc) {
 	
 }
 
-auto CubeFilter::apply(string_view _name, Cubemap& _src, Cubemap& _dst) -> vuk::RenderGraph {
+auto CubeFilter::apply(Cubemap _src, Cubemap _dst) -> vuk::RenderGraph {
 	
 	assert(_src.size() == uvec2(BaseSize));
 	assert(_dst.size() == uvec2(BaseSize));
@@ -37,41 +37,42 @@ auto CubeFilter::apply(string_view _name, Cubemap& _src, Cubemap& _dst) -> vuk::
 	auto rg = vuk::RenderGraph();
 	
 	rg.add_pass({
-		.name = nameAppend(_name, " prefilter"),
+		.name = nameAppend(_src.name, "prefilter"),
 		.resources = {
-			vuk::Resource(_src.name, vuk::Resource::Type::eImage, vuk::eComputeRW) },
-		.execute = [&_src](vuk::CommandBuffer& cmd) {
+			_src.resource(vuk::eComputeWrite) },
+		.execute = [_src](vuk::CommandBuffer& cmd) mutable {
 			
 			for (auto i: iota(1u, MipCount)) {
 				
-				if (i != 1)
-					cmd.image_barrier(_src.name, vuk::eComputeWrite, vuk::eComputeRead);
+				cmd.image_barrier(_src.name, vuk::eComputeWrite, vuk::eComputeSampled, i-1, 1);
 				
-				cmd.bind_sampled_image(0, 0, _src.name, LinearClamp)
-				   .bind_storage_image(0, 1, *_src.mipView(i))
-				   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, float(i - 1))
+				cmd.bind_sampled_image(0, 0, *_src.mipView(i-1), LinearClamp)
+				   .bind_storage_image(0, 1, *_src.mipArrayView(i))
 				   .bind_compute_pipeline("cube_prefilter");
+				
 				cmd.dispatch_invocations(BaseSize >> i, BaseSize >> i, 6);
 				
 			}
 			
+			cmd.image_barrier(_src.name, vuk::eComputeSampled, vuk::eComputeWrite, 0, MipCount-1);
+			
 		}});
 	
 	rg.add_pass({
-		.name = nameAppend(_name, " postfilter"),
+		.name = nameAppend(_src.name, "postfilter"),
 		.resources = {
-			vuk::Resource(_src.name, vuk::Resource::Type::eImage, vuk::eComputeRead),
-			vuk::Resource(_dst.name, vuk::Resource::Type::eImage, vuk::eComputeWrite) },
-		.execute = [&_src, &_dst](vuk::CommandBuffer& cmd) {
+			_src.resource(vuk::eComputeRead),
+			_dst.resource(vuk::eComputeWrite) },
+		.execute = [_src, _dst](vuk::CommandBuffer& cmd) mutable {
 			
 			cmd.bind_sampled_image(0, 0, _src.name, TrilinearClamp)
-			   .bind_storage_image(0, 1, *_dst.mipView(1))
-			   .bind_storage_image(0, 2, *_dst.mipView(2))
-			   .bind_storage_image(0, 3, *_dst.mipView(3))
-			   .bind_storage_image(0, 4, *_dst.mipView(4))
-			   .bind_storage_image(0, 5, *_dst.mipView(5))
-			   .bind_storage_image(0, 6, *_dst.mipView(6))
-			   .bind_storage_image(0, 7, *_dst.mipView(7))
+			   .bind_storage_image(0, 1, *_dst.mipArrayView(1))
+			   .bind_storage_image(0, 2, *_dst.mipArrayView(2))
+			   .bind_storage_image(0, 3, *_dst.mipArrayView(3))
+			   .bind_storage_image(0, 4, *_dst.mipArrayView(4))
+			   .bind_storage_image(0, 5, *_dst.mipArrayView(5))
+			   .bind_storage_image(0, 6, *_dst.mipArrayView(6))
+			   .bind_storage_image(0, 7, *_dst.mipArrayView(7))
 			   .bind_compute_pipeline("cube_postfilter");
 			
 			auto* coeffs = cmd.map_scratch_uniform_binding<vec4[7][5][3][24]>(0, 8);
@@ -82,11 +83,11 @@ auto CubeFilter::apply(string_view _name, Cubemap& _src, Cubemap& _dst) -> vuk::
 		}});
 	
 	rg.add_pass({
-		.name = nameAppend(_name, " mip0 copy"),
+		.name = nameAppend(_src.name, "mip0 copy"),
 		.resources = {
-			vuk::Resource(_src.name, vuk::Resource::Type::eImage, vuk::eTransferSrc),
-			vuk::Resource(_dst.name, vuk::Resource::Type::eImage, vuk::eTransferDst) },
-		.execute = [&_src, &_dst](vuk::CommandBuffer& cmd) {
+			_src.resource(vuk::eTransferSrc),
+			_dst.resource(vuk::eTransferDst) },
+		.execute = [_src, _dst](vuk::CommandBuffer& cmd) {
 			
 			cmd.image_barrier(_src.name, vuk::eComputeRead,  vuk::eTransferSrc);
 			cmd.image_barrier(_dst.name, vuk::eComputeWrite, vuk::eTransferDst);

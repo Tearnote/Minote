@@ -26,10 +26,6 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 layout(binding = 0) uniform samplerCube s_src;
 layout(binding = 1, rgba16f) restrict writeonly uniform image2DArray i_dst;
 
-layout(push_constant) uniform PushConstants {
-	float u_lod;
-};
-
 void get_dir_0(out vec3 _dir, float _u, float _v) {
 	
 	_dir[0] = 1;
@@ -115,86 +111,86 @@ void main() {
 	switch (id.z) {
 	case 0:
 		get_dir_0(dir, u0, v0);
-		color = textureLod(s_src, dir, u_lod) * weights[0];
+		color = textureLod(s_src, dir, 0) * weights[0];
 		
 		get_dir_0(dir, u1, v0);
-		color += textureLod(s_src, dir, u_lod) * weights[1];
+		color += textureLod(s_src, dir, 0) * weights[1];
 		
 		get_dir_0(dir, u0, v1);
-		color += textureLod(s_src, dir, u_lod) * weights[2];
+		color += textureLod(s_src, dir, 0) * weights[2];
 		
 		get_dir_0(dir, u1, v1);
-		color += textureLod(s_src, dir, u_lod) * weights[3];
+		color += textureLod(s_src, dir, 0) * weights[3];
 		break;
 		
 	case 1:
 		get_dir_1(dir, u0, v0);
-		color = textureLod(s_src, dir, u_lod) * weights[0];
+		color = textureLod(s_src, dir, 0) * weights[0];
 		
 		get_dir_1(dir, u1, v0);
-		color += textureLod(s_src, dir, u_lod) * weights[1];
+		color += textureLod(s_src, dir, 0) * weights[1];
 		
 		get_dir_1(dir, u0, v1);
-		color += textureLod(s_src, dir, u_lod) * weights[2];
+		color += textureLod(s_src, dir, 0) * weights[2];
 		
 		get_dir_1(dir, u1, v1);
-		color += textureLod(s_src, dir, u_lod) * weights[3];
+		color += textureLod(s_src, dir, 0) * weights[3];
 		break;
 		
 	case 2:
 		get_dir_2(dir, u0, v0);
-		color = textureLod(s_src, dir, u_lod) * weights[0];
+		color = textureLod(s_src, dir, 0) * weights[0];
 		
 		get_dir_2(dir, u1, v0);
-		color += textureLod(s_src, dir, u_lod) * weights[1];
+		color += textureLod(s_src, dir, 0) * weights[1];
 		
 		get_dir_2(dir, u0, v1);
-		color += textureLod(s_src, dir, u_lod) * weights[2];
+		color += textureLod(s_src, dir, 0) * weights[2];
 		
 		get_dir_2(dir, u1, v1);
-		color += textureLod(s_src, dir, u_lod) * weights[3];
+		color += textureLod(s_src, dir, 0) * weights[3];
 		break;
 		
 	case 3:
 		get_dir_3(dir, u0, v0);
-		color = textureLod(s_src, dir, u_lod) * weights[0];
+		color = textureLod(s_src, dir, 0) * weights[0];
 		
 		get_dir_3(dir, u1, v0);
-		color += textureLod(s_src, dir, u_lod) * weights[1];
+		color += textureLod(s_src, dir, 0) * weights[1];
 		
 		get_dir_3(dir, u0, v1);
-		color += textureLod(s_src, dir, u_lod) * weights[2];
+		color += textureLod(s_src, dir, 0) * weights[2];
 		
 		get_dir_3(dir, u1, v1);
-		color += textureLod(s_src, dir, u_lod) * weights[3];
+		color += textureLod(s_src, dir, 0) * weights[3];
 		break;
 		
 	case 4:
 		get_dir_4(dir, u0, v0);
-		color = textureLod(s_src, dir, u_lod) * weights[0];
+		color = textureLod(s_src, dir, 0) * weights[0];
 		
 		get_dir_4(dir, u1, v0);
-		color += textureLod(s_src, dir, u_lod) * weights[1];
+		color += textureLod(s_src, dir, 0) * weights[1];
 		
 		get_dir_4(dir, u0, v1);
-		color += textureLod(s_src, dir, u_lod) * weights[2];
+		color += textureLod(s_src, dir, 0) * weights[2];
 		
 		get_dir_4(dir, u1, v1);
-		color += textureLod(s_src, dir, u_lod) * weights[3];
+		color += textureLod(s_src, dir, 0) * weights[3];
 		break;
 		
 	default:
 		get_dir_5(dir, u0, v0);
-		color = textureLod(s_src, dir, u_lod) * weights[0];
+		color = textureLod(s_src, dir, 0) * weights[0];
 		
 		get_dir_5(dir, u1, v0);
-		color += textureLod(s_src, dir, u_lod) * weights[1];
+		color += textureLod(s_src, dir, 0) * weights[1];
 		
 		get_dir_5(dir, u0, v1);
-		color += textureLod(s_src, dir, u_lod) * weights[2];
+		color += textureLod(s_src, dir, 0) * weights[2];
 		
 		get_dir_5(dir, u1, v1);
-		color += textureLod(s_src, dir, u_lod) * weights[3];
+		color += textureLod(s_src, dir, 0) * weights[3];
 		break;
 		
 	}

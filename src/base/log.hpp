@@ -7,20 +7,20 @@ namespace minote::base {
 
 // Logging facility. Basic set of features, but threaded and non-blocking - it's
 // safe to log even very rapid streams of messages with no performance penalty.
-// Features colors in console and {fmt} formatting.
+// Features color in console and {fmt} formatting.
 struct Log {
-	
+
 	// Start logging to console and specified logfile. All messages below
 	// the provided log level will be dropped.
 	static void init(string_view filename, quill::LogLevel level);
-	
+
 	// Do not call directly; for use with macros below
 	static auto logger() -> quill::Logger* { return m_logger; }
-	
+
 private:
-	
+
 	inline static quill::Logger* m_logger;
-	
+
 };
 
 // Logging functions, fmtlib formatting is supported.

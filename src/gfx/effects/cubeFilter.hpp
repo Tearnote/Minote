@@ -21,7 +21,7 @@ struct CubeFilter {
 	static void compile(vuk::PerThreadContext&);
 	
 	// Using mip0 of src as input, generate MipCount mips in dst.
-	static auto apply(string_view name, Cubemap& src, Cubemap& dst) -> vuk::RenderGraph;
+	static auto apply(Cubemap src, Cubemap dst) -> vuk::RenderGraph;
 	
 };
 

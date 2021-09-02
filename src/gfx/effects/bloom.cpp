@@ -4,6 +4,7 @@
 #include "vuk/CommandBuffer.hpp"
 #include "base/containers/string.hpp"
 #include "base/types.hpp"
+#include "base/util.hpp"
 #include "gfx/samplers.hpp"
 
 namespace minote::gfx {

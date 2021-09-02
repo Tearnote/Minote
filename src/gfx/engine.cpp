@@ -168,7 +168,7 @@ void Engine::render(bool _repaint) {
 	
 	rg.append(sky.calculate(worldBuf, m_camera));
 	rg.append(sky.drawCubemap(worldBuf, iblUnfiltered));
-	rg.append(CubeFilter::apply("IBL", iblUnfiltered, iblFiltered));
+	rg.append(CubeFilter::apply(iblUnfiltered, iblFiltered));
 	rg.append(indirect.sortAndCull(m_world, *m_meshes));
 	rg.append(Forward::zPrepass(depth, worldBuf, indirect, *m_meshes));
 	rg.append(Forward::draw(color, depth, worldBuf, indirect, *m_meshes, sky, iblFiltered));

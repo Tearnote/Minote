@@ -68,12 +68,12 @@ auto Forward::draw(Texture2D _color, Texture2D _depth, Buffer<World> _world,
 	auto rg = vuk::RenderGraph();
 	
 	rg.add_pass({
-		.name = nameAppend(_color.name, "forward shading"),
+		.name = nameAppend(_color.name, "forward"),
 		.resources = {
 			_indirect.commandsBuf.resource(vuk::eIndirectRead),
 			_indirect.transformsCulledBuf.resource(vuk::eVertexRead),
 			_indirect.materialsCulledBuf.resource(vuk::eVertexRead),
-			vuk::Resource(_ibl.name,                vuk::Resource::Type::eImage,  vuk::eFragmentSampled),
+			_ibl.resource(vuk::eFragmentSampled),
 			vuk::Resource(_sky.AerialPerspective_n, vuk::Resource::Type::eImage,  vuk::eFragmentSampled),
 			vuk::Resource(_sky.SunLuminance_n,      vuk::Resource::Type::eBuffer, vuk::eFragmentRead),
 			_color.resource(vuk::eColorWrite),
