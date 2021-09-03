@@ -4,6 +4,7 @@
 #include "vuk/Context.hpp"
 #include "vuk/Image.hpp"
 #include "base/math.hpp"
+#include "gfx/resources/texture2d.hpp"
 #include "gfx/resources/cubemap.hpp"
 #include "gfx/resources/buffer.hpp"
 #include "gfx/resources/pool.hpp"
@@ -19,16 +20,11 @@ using namespace base::literals;
 // be used repeatedly to sample the sky at any elevation and sun position.
 struct Atmosphere {
 	
-	static constexpr auto Transmittance_n = "atmosphere_transmittance";
-	static constexpr auto MultiScattering_n = "atmosphere_multiscattering";
-	
 	constexpr static auto TransmittanceFormat = vuk::Format::eR16G16B16A16Sfloat;
-	constexpr static auto TransmittanceWidth = 256u;
-	constexpr static auto TransmittanceHeight = 64u;
+	constexpr static auto TransmittanceSize = uvec2{256u, 64u};
 	
 	constexpr static auto MultiScatteringFormat = vuk::Format::eR16G16B16A16Sfloat;
-	constexpr static auto MultiScatteringWidth = 32u;
-	constexpr static auto MultiScatteringHeight = 32u;
+	constexpr static auto MultiScatteringSize = uvec2{32u, 32u};
 	
 	struct Params {
 	
@@ -66,8 +62,8 @@ struct Atmosphere {
 		
 	};
 	
-	vuk::Texture transmittance;
-	vuk::Texture multiScattering;
+	Texture2D transmittance;
+	Texture2D multiScattering;
 	Buffer<Params> params;
 	
 	// Build required shaders.
@@ -80,7 +76,7 @@ struct Atmosphere {
 	// is not usable until all GPU transfers are finished.
 	void upload(Pool&, vuk::Name, Params const&);
 	
-	// Fill the lookup tables. Requires upload() to be called first. Only needs
+	// Fill the lookup tables. Requires upload() to be called and completed first. Only needs
 	// to be executed once.
 	auto precalculate() -> vuk::RenderGraph;
 	
@@ -118,14 +114,14 @@ struct Sky {
 	Sky(vuk::PerThreadContext&, Atmosphere const&);
 	
 	// Fill lookup tables required for the two functions below.
-	auto calculate(Buffer<World> const&, Camera const& camera) -> vuk::RenderGraph;
+	auto calculate(Buffer<World>, Camera const& camera) -> vuk::RenderGraph;
 	
 	// Draw the sky in the background of an image (where depth is 0.0).
-	auto draw(Buffer<World> const&, vuk::Name targetColor,
+	auto draw(Buffer<World>, vuk::Name targetColor,
 		vuk::Name targetDepth, uvec2 targetSize) -> vuk::RenderGraph;
 	
 	// Draw the sky into an existing IBLMap. Target is the mip 0 of provided image.
-	auto drawCubemap(Buffer<World> const&, Cubemap& dst) -> vuk::RenderGraph;
+	auto drawCubemap(Buffer<World>, Cubemap _target) -> vuk::RenderGraph;
 	
 private:
 	
