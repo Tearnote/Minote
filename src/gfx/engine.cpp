@@ -133,12 +133,12 @@ void Engine::render(bool _repaint) {
 	
 	auto framePool = Pool(ptc);
 	
-	auto iblUnfiltered = m_permPool.make_texture<Cubemap>("ibl_unfiltered",
+	auto iblUnfiltered = Cubemap::make(m_permPool, "ibl_unfiltered",
 		256, vuk::Format::eR16G16B16A16Sfloat,
 		vuk::ImageUsageFlagBits::eStorage |
 		vuk::ImageUsageFlagBits::eSampled |
 		vuk::ImageUsageFlagBits::eTransferSrc);
-	auto iblFiltered = m_permPool.make_texture<Cubemap>("ibl_filtered",
+	auto iblFiltered = Cubemap::make(m_permPool, "ibl_filtered",
 		256, vuk::Format::eR16G16B16A16Sfloat,
 		vuk::ImageUsageFlagBits::eStorage |
 		vuk::ImageUsageFlagBits::eSampled |
@@ -146,10 +146,10 @@ void Engine::render(bool _repaint) {
 	iblUnfiltered.attach(rg, vuk::eNone, vuk::eNone);
 	iblFiltered.attach(rg, vuk::eNone, vuk::eNone);
 	
-	auto depth = framePool.make_texture<Texture2D>("depth",
+	auto depth = Texture2D::make(framePool, "depth",
 		viewport, vuk::Format::eD32Sfloat,
 		vuk::ImageUsageFlagBits::eDepthStencilAttachment);
-	auto color = framePool.make_texture<Texture2D>("color",
+	auto color = Texture2D::make(framePool, "color",
 		viewport, vuk::Format::eR16G16B16A16Sfloat,
 		vuk::ImageUsageFlagBits::eColorAttachment |
 		vuk::ImageUsageFlagBits::eSampled |

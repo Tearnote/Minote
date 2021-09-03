@@ -126,15 +126,15 @@ auto MeshList::upload(Pool& _pool, vuk::Name _name) && -> MeshBuffer {
 	ZoneScoped;
 	
 	auto result = MeshBuffer{
-		.verticesBuf = _pool.make_buffer<vec3>(nameAppend(_name, "vertices"),
+		.verticesBuf = Buffer<vec3>::make(_pool, nameAppend(_name, "vertices"),
 			vuk::BufferUsageFlagBits::eVertexBuffer, vertices, vuk::MemoryUsage::eGPUonly),
-		.normalsBuf = _pool.make_buffer<vec3>(nameAppend(_name, "normals"),
+		.normalsBuf = Buffer<vec3>::make(_pool, nameAppend(_name, "normals"),
 			vuk::BufferUsageFlagBits::eVertexBuffer, normals, vuk::MemoryUsage::eGPUonly),
-		.colorsBuf = _pool.make_buffer<u16vec4>(nameAppend(_name, "colors"),
+		.colorsBuf = Buffer<u16vec4>::make(_pool, nameAppend(_name, "colors"),
 			vuk::BufferUsageFlagBits::eVertexBuffer, colors, vuk::MemoryUsage::eGPUonly),
-		.indicesBuf = _pool.make_buffer<u16>(nameAppend(_name, "indices"),
+		.indicesBuf = Buffer<u16>::make(_pool, nameAppend(_name, "indices"),
 			vuk::BufferUsageFlagBits::eIndexBuffer, indices, vuk::MemoryUsage::eGPUonly),
-		.descriptorBuf = _pool.make_buffer<MeshDescriptor>(nameAppend(_name, "descriptors"),
+		.descriptorBuf = Buffer<MeshDescriptor>::make(_pool, nameAppend(_name, "descriptors"),
 			vuk::BufferUsageFlagBits::eStorageBuffer, descriptors, vuk::MemoryUsage::eGPUonly),
 		.descriptorIDs = std::move(descriptorIDs) };
 	result.descriptors = std::move(descriptors); // Must still exist for descriptorBuf creation

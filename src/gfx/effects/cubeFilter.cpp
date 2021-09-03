@@ -40,7 +40,7 @@ auto CubeFilter::apply(Cubemap _src, Cubemap _dst) -> vuk::RenderGraph {
 		.name = nameAppend(_src.name, "prefilter"),
 		.resources = {
 			_src.resource(vuk::eComputeWrite) },
-		.execute = [_src](vuk::CommandBuffer& cmd) mutable {
+		.execute = [_src](vuk::CommandBuffer& cmd) {
 			
 			for (auto i: iota(1u, MipCount)) {
 				
@@ -63,7 +63,7 @@ auto CubeFilter::apply(Cubemap _src, Cubemap _dst) -> vuk::RenderGraph {
 		.resources = {
 			_src.resource(vuk::eComputeRead),
 			_dst.resource(vuk::eComputeWrite) },
-		.execute = [_src, _dst](vuk::CommandBuffer& cmd) mutable {
+		.execute = [_src, _dst](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_sampled_image(0, 0, _src.name, TrilinearClamp)
 			   .bind_storage_image(0, 1, *_dst.mipArrayView(1))

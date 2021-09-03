@@ -57,17 +57,17 @@ void Atmosphere::compile(vuk::PerThreadContext& _ptc) {
 
 void Atmosphere::upload(Pool& _pool, vuk::Name _name, Params const& _params) {
 	
-	transmittance = _pool.make_texture<Texture2D>(nameAppend(_name, "transmittance"),
+	transmittance = Texture2D::make(_pool, nameAppend(_name, "transmittance"),
 		TransmittanceSize, TransmittanceFormat,
 		vuk::ImageUsageFlagBits::eStorage |
 		vuk::ImageUsageFlagBits::eSampled);
 	
-	multiScattering = _pool.make_texture<Texture2D>(nameAppend(_name, "multiScattering"),
+	multiScattering = Texture2D::make(_pool, nameAppend(_name, "multiScattering"),
 		MultiScatteringSize, MultiScatteringFormat,
 		vuk::ImageUsageFlagBits::eStorage |
 		vuk::ImageUsageFlagBits::eSampled);
 	
-	params = _pool.make_buffer<Params>(nameAppend(_name, "params"),
+	params = Buffer<Params>::make(_pool, nameAppend(_name, "params"),
 		vuk::BufferUsageFlagBits::eUniformBuffer,
 		std::span(&_params, 1),
 		vuk::MemoryUsage::eGPUonly);

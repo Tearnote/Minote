@@ -1,4 +1,76 @@
+#include "gfx/resources/buffer.hpp"
+
+#include <cassert>
+
 namespace minote::gfx {
+
+template<typename T>
+auto Buffer<T>::make(Pool& _pool, vuk::Name _name, vuk::BufferUsageFlags _usage,
+	usize _elements, vuk::MemoryUsage _memUsage) -> Buffer<T> {
+	
+	assert(_memUsage == vuk::MemoryUsage::eCPUtoGPU ||
+	       _memUsage == vuk::MemoryUsage::eGPUonly);
+	
+	auto& buffer = [&_pool, _name, _elements, _usage, _memUsage]() -> vuk::Buffer& {
+		
+		if (_pool.contains(_name)) {
+			
+			return *_pool.get<vuk::Unique<vuk::Buffer>>(_name);
+			
+		} else {
+			
+			auto size = sizeof(T) * _elements;
+			return *_pool.insert<vuk::Unique<vuk::Buffer>>(_name,
+				_pool.ptc().allocate_buffer(_memUsage, _usage, size, alignof(T)));
+			
+		}
+		
+	}();
+	
+	return Buffer<T>{
+		.name = _name,
+		.handle = &buffer };
+	
+}
+
+template<typename T>
+auto Buffer<T>::make(Pool& _pool, vuk::Name _name, vuk::BufferUsageFlags _usage,
+	std::span<T const> _data, vuk::MemoryUsage _memUsage) -> Buffer<T> {
+	
+	assert(_memUsage == vuk::MemoryUsage::eCPUtoGPU ||
+		_memUsage == vuk::MemoryUsage::eGPUonly);
+	
+	auto& buffer = [&_pool, _name, &_data, _usage, _memUsage]() -> vuk::Buffer& {
+		
+		if (_pool.contains(_name)) {
+			
+			return *_pool.get<vuk::Unique<vuk::Buffer>>(_name);
+			
+		} else {
+			
+			auto usage = _usage;
+			if (_memUsage == vuk::MemoryUsage::eGPUonly)
+				usage |= vuk::BufferUsageFlagBits::eTransferDst;
+			
+			return *_pool.insert<vuk::Unique<vuk::Buffer>>(_name,
+				_pool.ptc().allocate_buffer(_memUsage, usage, _data.size_bytes(), alignof(T)));
+			
+		}
+		
+	}();
+	
+	assert(buffer.size <= _data.size_bytes());
+	
+	if (_memUsage == vuk::MemoryUsage::eCPUtoGPU)
+		std::memcpy(buffer.mapped_ptr, _data.data(), _data.size_bytes());
+	else
+		_pool.ptc().upload(buffer, _data);
+	
+	return Buffer<T>{
+		.name = _name,
+		.handle = &buffer };
+	
+}
 
 template<typename T>
 auto Buffer<T>::resource(vuk::Access _access) const -> vuk::Resource {
@@ -13,5 +85,5 @@ void Buffer<T>::attach(vuk::RenderGraph& _rg, vuk::Access _initial, vuk::Access 
 	_rg.attach_buffer(name, *handle, _initial, _final);
 	
 }
-
+	
 }

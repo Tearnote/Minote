@@ -6,6 +6,7 @@
 #include "base/types.hpp"
 #include "base/util.hpp"
 #include "gfx/samplers.hpp"
+#include "gfx/util.hpp"
 
 namespace minote::gfx {
 
@@ -42,7 +43,7 @@ auto Bloom::apply(Pool& _pool, Texture2D _target) -> vuk::RenderGraph {
 	
 	auto rg = vuk::RenderGraph();
 	
-	auto bloomTemp = _pool.make_texture<Texture2D>(nameAppend(_target.name, "bloomTemp"),
+	auto bloomTemp = Texture2D::make(_pool, nameAppend(_target.name, "bloomTemp"),
 		_target.size() / 2u, BloomFormat,
 		vuk::ImageUsageFlagBits::eStorage |
 		vuk::ImageUsageFlagBits::eSampled,
@@ -55,7 +56,7 @@ auto Bloom::apply(Pool& _pool, Texture2D _target) -> vuk::RenderGraph {
 		.resources = {
 			_target.resource(vuk::eComputeSampled),
 			bloomTemp.resource(vuk::eComputeRW) },
-		.execute = [_target, temp=bloomTemp](vuk::CommandBuffer& cmd) mutable {
+		.execute = [_target, temp=bloomTemp](vuk::CommandBuffer& cmd) {
 			
 			for (auto i: iota(0u, BloomPasses)) {
 				
@@ -88,7 +89,7 @@ auto Bloom::apply(Pool& _pool, Texture2D _target) -> vuk::RenderGraph {
 		.resources = {
 			bloomTemp.resource(vuk::eComputeRW),
 			_target.resource(vuk::eComputeWrite) },
-		.execute = [_target, temp=bloomTemp](vuk::CommandBuffer& cmd) mutable {
+		.execute = [_target, temp=bloomTemp](vuk::CommandBuffer& cmd) {
 			
 			for (auto i: iota(0u, BloomPasses) | reverse) {
 				
