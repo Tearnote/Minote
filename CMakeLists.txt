@@ -234,7 +234,7 @@ else()
 endif()
 FetchContent_Declare(tracy
         GIT_REPOSITORY https://github.com/Tearnote/tracy
-        GIT_TAG 5ccaae3b671326ae31229c7beea5f060cc82f997)
+        GIT_TAG 8cab5244fd074f80847e778d8fcefab36a3976be)
 FetchContent_MakeAvailable(tracy)
 target_compile_definitions(TracyClient PUBLIC TRACY_CUSTOM_VULKAN_HEADER="volk.h")
 target_link_libraries(TracyClient PRIVATE volk)

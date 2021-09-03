@@ -144,6 +144,7 @@ auto Indirect::sortAndCull(World const& _world, MeshBuffer const& _meshes) -> vu
 			transformsCulledBuf.resource(vuk::eComputeWrite),
 			materialsCulledBuf.resource(vuk::eComputeWrite) },
 		.execute = [this, &_meshes, view, projection](vuk::CommandBuffer& cmd) {
+			
 			cmd.bind_storage_buffer(0, 0, commandsBuf)
 			   .bind_storage_buffer(0, 1, _meshes.descriptorBuf)
 			   .bind_storage_buffer(0, 2, meshIndicesBuf)
@@ -162,7 +163,7 @@ auto Indirect::sortAndCull(World const& _world, MeshBuffer const& _meshes) -> vu
 			auto* cullData = cmd.map_scratch_uniform_binding<CullData>(0, 8);
 			*cullData = CullData{
 				.view = view,
-				.frustum = [this, projection] {
+				.frustum = [projection] {
 					
 					auto projectionT = transpose(projection);
 					vec4 frustumX = projectionT[3] + projectionT[0];
