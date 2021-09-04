@@ -87,7 +87,7 @@ Engine::~Engine() {
 	
 }
 
-void Engine::render(bool _repaint) {
+void Engine::render() {
 	
 	ZoneScoped;
 	

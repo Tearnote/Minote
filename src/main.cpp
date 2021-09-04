@@ -42,7 +42,7 @@ static auto windowResize(void* _engine, SDL_Event* _e) -> int {
 	if (newSize.x() == 0 || newSize.y() == 0) return 0; // Minimized
 	auto& engine = *static_cast<gfx::Engine*>(_engine);
 	engine.refreshSwapchain(newSize);
-	engine.render(true);
+	engine.render();
 	
 	L_INFO("Window resized to {}x{}", newSize.x(), newSize.y());
 	

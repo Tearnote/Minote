@@ -260,8 +260,8 @@ void game(GameParams const& _params) try {
 				engine.objects().get(obj).transform.rotation = rotateTransformAnim * rotateTransform;
 
 		}
-
-		engine.render(false);
+		
+		engine.render();
 
 	}
 

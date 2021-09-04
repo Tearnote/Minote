@@ -34,7 +34,7 @@ struct Engine {
 	// only render it no other thread is currently rendering. Otherwise it will
 	// block until a frame can be successfully renderered. To avoid deadlock,
 	// only ever use repaint=true on one thread.
-	void render(bool repaint);
+	void render();
 	
 	// Use this function when the surface is resized to recreate the swapchain.
 	void refreshSwapchain(uvec2 newSize);
