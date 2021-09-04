@@ -18,10 +18,12 @@ struct Camera {
 	f32 moveSpeed;
 	
 	// Return a unit vector of the direction the camera is pointing in.
-	auto direction() -> vec3;
+	[[nodiscard]]
+	auto direction() const -> vec3;
 	
 	// Return a matrix that transforms from world space to view space.
-	auto transform() -> mat4;
+	[[nodiscard]]
+	auto transform() const -> mat4;
 	
 	// Change camera direction by the provided offsets, taking into account lookSpeed.
 	void rotate(f32 horz, f32 vert);

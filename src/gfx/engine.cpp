@@ -255,7 +255,7 @@ void Engine::render() {
 
 void Engine::refreshSwapchain(uvec2 _newSize) {
 	
-	std::lock_guard lock(m_renderLock);
+	auto lock = std::lock_guard(m_renderLock);
 	
 	for (auto iv: m_vk.swapchain->image_views)
 		m_vk.context->enqueue_destroy(iv);

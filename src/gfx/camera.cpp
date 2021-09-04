@@ -4,7 +4,7 @@ namespace minote::gfx {
 
 using namespace base::literals;
 
-auto Camera::direction() -> vec3 {
+auto Camera::direction() const -> vec3 {
 	
 	return vec3{
 		cos(pitch) * cos(yaw),
@@ -13,7 +13,7 @@ auto Camera::direction() -> vec3 {
 	
 }
 
-auto Camera::transform() -> mat4 {
+auto Camera::transform() const -> mat4 {
 	
 	return look(position, direction(), {0.0f, 0.0f, -1.0f});
 	
