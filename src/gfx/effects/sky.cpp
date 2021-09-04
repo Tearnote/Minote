@@ -74,14 +74,12 @@ void Atmosphere::upload(Pool& _pool, vuk::Name _name, Params const& _params) {
 	
 }
 
-auto Atmosphere::precalculate() -> vuk::RenderGraph {
+void Atmosphere::precalculate(vuk::RenderGraph& _rg) {
 	
-	auto rg = vuk::RenderGraph();
+	transmittance.attach(_rg, vuk::eNone, vuk::Access::eComputeSampled);
+	multiScattering.attach(_rg, vuk::eNone, vuk::Access::eComputeSampled);
 	
-	transmittance.attach(rg, vuk::eNone, vuk::Access::eComputeSampled);
-	multiScattering.attach(rg, vuk::eNone, vuk::Access::eComputeSampled);
-	
-	rg.add_pass({
+	_rg.add_pass({
 		.name = "Sky transmittance LUT",
 		.resources = {
 			transmittance.resource(vuk::eComputeWrite) },
@@ -94,7 +92,7 @@ auto Atmosphere::precalculate() -> vuk::RenderGraph {
 			
 		}});
 	
-	rg.add_pass({
+	_rg.add_pass({
 		.name = "Sky multiple scattering LUT",
 		.resources = {
 			transmittance.resource(vuk::eComputeSampled),
@@ -108,8 +106,6 @@ auto Atmosphere::precalculate() -> vuk::RenderGraph {
 			cmd.dispatch_invocations(multiScattering.size().x(), multiScattering.size().y(), 1);
 			
 		}});
-	
-	return rg;
 	
 }
 
@@ -177,14 +173,12 @@ Sky::Sky(vuk::PerThreadContext& _ptc, Atmosphere const& _atmosphere):
 	
 }
 
-auto Sky::calculate(Buffer<World> _world, Camera const& _camera) -> vuk::RenderGraph {
+void Sky::calculate(vuk::RenderGraph& _rg, Buffer<World> _world, Camera const& _camera) {
 	
-	auto rg = vuk::RenderGraph();
+	atmosphere.transmittance.attach(_rg, vuk::eComputeSampled, vuk::eComputeSampled);
+	atmosphere.multiScattering.attach(_rg, vuk::eComputeSampled, vuk::eComputeSampled);
 	
-	atmosphere.transmittance.attach(rg, vuk::eComputeSampled, vuk::eComputeSampled);
-	atmosphere.multiScattering.attach(rg, vuk::eComputeSampled, vuk::eComputeSampled);
-	
-	rg.add_pass({
+	_rg.add_pass({
 		.name = "Sky view LUT",
 		.resources = {
 			atmosphere.transmittance.resource(vuk::eComputeSampled),
@@ -203,7 +197,7 @@ auto Sky::calculate(Buffer<World> _world, Camera const& _camera) -> vuk::RenderG
 			
 		}});
 	
-	rg.add_pass({
+	_rg.add_pass({
 		.name = "Sky cubemap view LUT",
 		.resources = {
 			atmosphere.transmittance.resource(vuk::eComputeSampled),
@@ -222,7 +216,7 @@ auto Sky::calculate(Buffer<World> _world, Camera const& _camera) -> vuk::RenderG
 			
 		}});
 	
-	rg.add_pass({
+	_rg.add_pass({
 		.name = "Sky aerial perspective LUT",
 		.resources = {
 			atmosphere.transmittance.resource(vuk::eComputeSampled),
@@ -240,29 +234,25 @@ auto Sky::calculate(Buffer<World> _world, Camera const& _camera) -> vuk::RenderG
 			
 		}});
 	
-	rg.attach_image(CameraView_n,
+	_rg.attach_image(CameraView_n,
 		vuk::ImageAttachment::from_texture(cameraView),
 		vuk::eNone,
 		vuk::eNone);
-	rg.attach_image(CubemapView_n,
+	_rg.attach_image(CubemapView_n,
 		vuk::ImageAttachment::from_texture(cubemapView),
 		vuk::eNone,
 		vuk::eNone);
-	rg.attach_image(AerialPerspective_n,
+	_rg.attach_image(AerialPerspective_n,
 		vuk::ImageAttachment::from_texture(aerialPerspective),
 		vuk::eNone,
 		vuk::eNone);
 	
-	return rg;
-	
 }
 
-auto Sky::draw(Buffer<World> _world, vuk::Name _targetColor,
-	vuk::Name _targetDepth, uvec2 _targetSize) -> vuk::RenderGraph {
+void Sky::draw(vuk::RenderGraph& _rg, Buffer<World> _world, vuk::Name _targetColor,
+	vuk::Name _targetDepth, uvec2 _targetSize) {
 	
-	auto rg = vuk::RenderGraph();
-	
-	rg.add_pass({
+	_rg.add_pass({
 		.name = "Background sky",
 		.resources = {
 			atmosphere.transmittance.resource(vuk::eFragmentSampled),
@@ -282,15 +272,11 @@ auto Sky::draw(Buffer<World> _world, vuk::Name _targetColor,
 			
 		}});
 	
-	return rg;
-	
 }
 
-auto Sky::drawCubemap(Buffer<World> _world, Cubemap _target) -> vuk::RenderGraph {
+void Sky::drawCubemap(vuk::RenderGraph& _rg, Buffer<World> _world, Cubemap _target) {
 	
-	auto rg = vuk::RenderGraph();
-	
-	rg.add_pass({
+	_rg.add_pass({
 		.name = "Cubemap sky",
 		.resources = {
 			atmosphere.transmittance.resource(vuk::eFragmentSampled),
@@ -340,12 +326,11 @@ auto Sky::drawCubemap(Buffer<World> _world, Cubemap _target) -> vuk::RenderGraph
 			
 		}});
 	
-	rg.attach_buffer(SunLuminance_n,
+	_rg.attach_buffer(SunLuminance_n,
 		*sunLuminance,
 		vuk::eNone,
 		vuk::eNone);
 	
-	return rg;
 }
 
 }

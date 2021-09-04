@@ -15,7 +15,7 @@ struct Tonemap {
 	static void compile(vuk::PerThreadContext&);
 	
 	// Perform tonemaping from source to target. The target image is not created.
-	static auto apply(vuk::Name source, vuk::Name target, uvec2 targetSize) -> vuk::RenderGraph;
+	static void apply(vuk::RenderGraph&, vuk::Name source, vuk::Name target, uvec2 targetSize);
 	
 };
 

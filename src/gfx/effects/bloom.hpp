@@ -27,7 +27,7 @@ struct Bloom {
 	static void compile(vuk::PerThreadContext&);
 	
 	// Create a pass that applies bloom to the specified image.
-	static auto apply(Pool&, Texture2D target) -> vuk::RenderGraph;
+	static void apply(vuk::RenderGraph&, Pool&, Texture2D target);
 	
 };
 

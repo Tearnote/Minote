@@ -57,7 +57,7 @@ void game(GameParams const& _params) try {
 
 	constexpr auto prescale = vec3{1_m, 1_m, 1_m};
 	constexpr auto rotation = quat::angleAxis(180_deg, {1.0f, 0.0f, 0.0f});
-	constexpr auto Expand = 20u;
+	constexpr auto Expand = 10u;
 	constexpr auto Spacing = 25_m;
 	for (auto x = -Spacing * Expand; x <= Spacing * Expand; x += Spacing)
 	for (auto y = -Spacing * Expand; y <= Spacing * Expand; y += Spacing) {

@@ -21,11 +21,9 @@ void Tonemap::compile(vuk::PerThreadContext& _ptc) {
 	
 }
 
-auto Tonemap::apply(vuk::Name _source, vuk::Name _target, uvec2 _targetSize) -> vuk::RenderGraph {
+void Tonemap::apply(vuk::RenderGraph& _rg, vuk::Name _source, vuk::Name _target, uvec2 _targetSize) {
 	
-	auto rg = vuk::RenderGraph();
-	
-	rg.add_pass({
+	_rg.add_pass({
 		.name = "Tonemapping",
 		.resources = {
 			vuk::Resource(_source, vuk::Resource::Type::eImage, vuk::eFragmentSampled),
@@ -39,8 +37,6 @@ auto Tonemap::apply(vuk::Name _source, vuk::Name _target, uvec2 _targetSize) -> 
 			cmd.draw(3, 1, 0, 0);
 			
 		}});
-	
-	return rg;
 	
 }
 

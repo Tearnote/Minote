@@ -29,14 +29,12 @@ void CubeFilter::compile(vuk::PerThreadContext& _ptc) {
 	
 }
 
-auto CubeFilter::apply(Cubemap _src, Cubemap _dst) -> vuk::RenderGraph {
+void CubeFilter::apply(vuk::RenderGraph& _rg, Cubemap _src, Cubemap _dst) {
 	
 	assert(_src.size() == uvec2(BaseSize));
 	assert(_dst.size() == uvec2(BaseSize));
 	
-	auto rg = vuk::RenderGraph();
-	
-	rg.add_pass({
+	_rg.add_pass({
 		.name = nameAppend(_src.name, "prefilter"),
 		.resources = {
 			_src.resource(vuk::eComputeWrite) },
@@ -58,7 +56,7 @@ auto CubeFilter::apply(Cubemap _src, Cubemap _dst) -> vuk::RenderGraph {
 			
 		}});
 	
-	rg.add_pass({
+	_rg.add_pass({
 		.name = nameAppend(_src.name, "postfilter"),
 		.resources = {
 			_src.resource(vuk::eComputeRead),
@@ -82,7 +80,7 @@ auto CubeFilter::apply(Cubemap _src, Cubemap _dst) -> vuk::RenderGraph {
 			
 		}});
 	
-	rg.add_pass({
+	_rg.add_pass({
 		.name = nameAppend(_src.name, "mip0 copy"),
 		.resources = {
 			_src.resource(vuk::eTransferSrc),
@@ -105,8 +103,6 @@ auto CubeFilter::apply(Cubemap _src, Cubemap _dst) -> vuk::RenderGraph {
 				vuk::Filter::eNearest);
 			
 		}});
-	
-	return rg;
 	
 }
 

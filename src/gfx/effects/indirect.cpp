@@ -119,14 +119,12 @@ Indirect::Indirect(Pool& _pool, vuk::Name _name,
 	
 }
 
-auto Indirect::sortAndCull(World const& _world, MeshBuffer const& _meshes) -> vuk::RenderGraph {
-	
-	auto rg = vuk::RenderGraph();
+void Indirect::sortAndCull(vuk::RenderGraph& _rg, World const& _world, MeshBuffer const& _meshes) {
 	
 	auto& view = _world.view;
 	auto& projection = _world.projection;
 	
-	rg.add_pass({
+	_rg.add_pass({
 		.name = "Frustum culling",
 		.resources = {
 			commandsBuf.resource(vuk::eComputeRW),
@@ -172,15 +170,13 @@ auto Indirect::sortAndCull(World const& _world, MeshBuffer const& _meshes) -> vu
 		},
 	});
 	
-	commandsBuf.attach(rg, vuk::eTransferDst, vuk::eNone);
-	meshIndicesBuf.attach(rg, vuk::eTransferDst, vuk::eNone);
-	transformsBuf.attach(rg, vuk::eTransferDst, vuk::eNone);
-	materialsBuf.attach(rg, vuk::eTransferDst, vuk::eNone);
-	meshIndicesCulledBuf.attach(rg, vuk::eNone, vuk::eNone);
-	transformsCulledBuf.attach(rg, vuk::eNone, vuk::eNone);
-	materialsCulledBuf.attach(rg, vuk::eNone, vuk::eNone);
-	
-	return rg;
+	commandsBuf.attach(_rg, vuk::eTransferDst, vuk::eNone);
+	meshIndicesBuf.attach(_rg, vuk::eTransferDst, vuk::eNone);
+	transformsBuf.attach(_rg, vuk::eTransferDst, vuk::eNone);
+	materialsBuf.attach(_rg, vuk::eTransferDst, vuk::eNone);
+	meshIndicesCulledBuf.attach(_rg, vuk::eNone, vuk::eNone);
+	transformsCulledBuf.attach(_rg, vuk::eNone, vuk::eNone);
+	materialsCulledBuf.attach(_rg, vuk::eNone, vuk::eNone);
 	
 }
 

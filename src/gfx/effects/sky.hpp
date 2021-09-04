@@ -78,7 +78,7 @@ struct Atmosphere {
 	
 	// Fill the lookup tables. Requires upload() to be called and completed first. Only needs
 	// to be executed once.
-	auto precalculate() -> vuk::RenderGraph;
+	void precalculate(vuk::RenderGraph&);
 	
 };
 
@@ -114,14 +114,14 @@ struct Sky {
 	Sky(vuk::PerThreadContext&, Atmosphere const&);
 	
 	// Fill lookup tables required for the two functions below.
-	auto calculate(Buffer<World>, Camera const& camera) -> vuk::RenderGraph;
+	void calculate(vuk::RenderGraph&, Buffer<World>, Camera const& camera);
 	
 	// Draw the sky in the background of an image (where depth is 0.0).
-	auto draw(Buffer<World>, vuk::Name targetColor,
-		vuk::Name targetDepth, uvec2 targetSize) -> vuk::RenderGraph;
+	void draw(vuk::RenderGraph&, Buffer<World>, vuk::Name targetColor,
+		vuk::Name targetDepth, uvec2 targetSize);
 	
 	// Draw the sky into an existing IBLMap. Target is the mip 0 of provided image.
-	auto drawCubemap(Buffer<World>, Cubemap _target) -> vuk::RenderGraph;
+	void drawCubemap(vuk::RenderGraph&, Buffer<World>, Cubemap _target);
 	
 private:
 	

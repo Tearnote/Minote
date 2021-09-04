@@ -33,12 +33,10 @@ void Forward::compile(vuk::PerThreadContext& _ptc) {
 	
 }
 
-auto Forward::zPrepass(Texture2D _depth, Buffer<World> _world,
-	Indirect const& _indirect, MeshBuffer const& _meshes) -> vuk::RenderGraph {
+void Forward::zPrepass(vuk::RenderGraph& _rg, Texture2D _depth, Buffer<World> _world,
+	Indirect const& _indirect, MeshBuffer const& _meshes) {
 	
-	auto rg = vuk::RenderGraph();
-	
-	rg.add_pass({
+	_rg.add_pass({
 		.name = nameAppend(_depth.name, "z-prepass"),
 		.resources = {
 			_indirect.commandsBuf.resource(vuk::eIndirectRead),
@@ -57,17 +55,13 @@ auto Forward::zPrepass(Texture2D _depth, Buffer<World> _world,
 			
 		}});
 	
-	return rg;
-	
 }
 
-auto Forward::draw(Texture2D _color, Texture2D _depth, Buffer<World> _world,
-	Indirect const& _indirect, MeshBuffer const& _meshes,
-	Sky const& _sky, Cubemap _ibl) -> vuk::RenderGraph {
+void Forward::draw(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _depth,
+	Buffer<World> _world, Indirect const& _indirect, MeshBuffer const& _meshes,
+	Sky const& _sky, Cubemap _ibl) {
 	
-	auto rg = vuk::RenderGraph();
-	
-	rg.add_pass({
+	_rg.add_pass({
 		.name = nameAppend(_color.name, "forward"),
 		.resources = {
 			_indirect.commandsBuf.resource(vuk::eIndirectRead),
@@ -98,8 +92,6 @@ auto Forward::draw(Texture2D _color, Texture2D _depth, Buffer<World> _world,
 			cmd.draw_indexed_indirect(_indirect.commandsCount, _indirect.commandsBuf);
 			
 		}});
-	
-	return rg;
 	
 }
 

@@ -34,7 +34,7 @@ struct Indirect {
 	Indirect(Pool&, vuk::Name, ObjectPool const&, MeshBuffer const&);
 	
 	// Perform sorting and frustum culling to fill in the Culled_n buffers.
-	auto sortAndCull(World const&, MeshBuffer const&) -> vuk::RenderGraph;
+	void sortAndCull(vuk::RenderGraph&, World const&, MeshBuffer const&);
 	
 private:
 	

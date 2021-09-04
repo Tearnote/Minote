@@ -22,12 +22,12 @@ struct Forward {
 	static void compile(vuk::PerThreadContext&);
 	
 	// Perform Z-prepass, filling in the depth texture
-	static auto zPrepass(Texture2D depth, Buffer<World>,
-		Indirect const&, MeshBuffer const&) -> vuk::RenderGraph;
+	static void zPrepass(vuk::RenderGraph&, Texture2D depth, Buffer<World>,
+		Indirect const&, MeshBuffer const&);
 	
 	// Perform shading on color image, making use of depth data
-	static auto draw(Texture2D color, Texture2D depth, Buffer<World>,
-		Indirect const&, MeshBuffer const&, Sky const&, Cubemap ibl) -> vuk::RenderGraph;
+	static void draw(vuk::RenderGraph&, Texture2D color, Texture2D depth, Buffer<World>,
+		Indirect const&, MeshBuffer const&, Sky const&, Cubemap ibl);
 	
 };
 

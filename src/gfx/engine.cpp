@@ -58,7 +58,8 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	m_objects = ObjectPool();
 	
 	// Perform precalculations
-	auto precalc = m_atmosphere.precalculate();
+	auto precalc = vuk::RenderGraph();
+	m_atmosphere.precalculate(precalc);
 	
 	// Finalize
 	
@@ -166,15 +167,15 @@ void Engine::render(bool _repaint) {
 	
 	// Set up the rendergraph
 	
-	rg.append(sky.calculate(worldBuf, m_camera));
-	rg.append(sky.drawCubemap(worldBuf, iblUnfiltered));
-	rg.append(CubeFilter::apply(iblUnfiltered, iblFiltered));
-	rg.append(indirect.sortAndCull(m_world, *m_meshes));
-	rg.append(Forward::zPrepass(depth, worldBuf, indirect, *m_meshes));
-	rg.append(Forward::draw(color, depth, worldBuf, indirect, *m_meshes, sky, iblFiltered));
-	rg.append(sky.draw(worldBuf, color.name, depth.name, viewport));
-	rg.append(Bloom::apply(framePool, color));
-	rg.append(Tonemap::apply(color.name, "swapchain", viewport));
+	sky.calculate(rg, worldBuf, m_camera);
+	sky.drawCubemap(rg, worldBuf, iblUnfiltered);
+	CubeFilter::apply(rg, iblUnfiltered, iblFiltered);
+	indirect.sortAndCull(rg, m_world, *m_meshes);
+	Forward::zPrepass(rg, depth, worldBuf, indirect, *m_meshes);
+	Forward::draw(rg, color, depth, worldBuf, indirect, *m_meshes, sky, iblFiltered);
+	sky.draw(rg, worldBuf, color.name, depth.name, viewport);
+	Bloom::apply(rg, framePool, color);
+	Tonemap::apply(rg, color.name, "swapchain", viewport);
 	
 	ImGui::Render();
 	ImGui_ImplVuk_Render(ptc, rg, "swapchain", "swapchain", m_imguiData, ImGui::GetDrawData());
