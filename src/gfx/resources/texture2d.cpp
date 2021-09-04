@@ -42,9 +42,10 @@ auto Texture2D::resource(vuk::Access _access) const -> vuk::Resource {
 	
 }
 
-void Texture2D::attach(vuk::RenderGraph& _rg, vuk::Access _initial, vuk::Access _final) const {
+void Texture2D::attach(vuk::RenderGraph& _rg, vuk::Access _initial, vuk::Access _final,
+	vuk::Clear _clear) const {
 	
-	_rg.attach_image(name, vuk::ImageAttachment::from_texture(*handle), _initial, _final);
+	_rg.attach_image(name, vuk::ImageAttachment::from_texture(*handle, _clear), _initial, _final);
 	
 }
 

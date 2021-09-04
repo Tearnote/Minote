@@ -154,7 +154,7 @@ void Engine::render(bool _repaint) {
 		vuk::ImageUsageFlagBits::eColorAttachment |
 		vuk::ImageUsageFlagBits::eSampled |
 		vuk::ImageUsageFlagBits::eStorage);
-	depth.attach(rg, vuk::eNone, vuk::eNone);
+	depth.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearDepthStencil(0.0f, 0));
 	color.attach(rg, vuk::eNone, vuk::eNone);
 	
 	auto worldBuf = m_world.upload(framePool, "world");

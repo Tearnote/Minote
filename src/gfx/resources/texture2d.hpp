@@ -37,7 +37,7 @@ struct Texture2D {
 	auto resource(vuk::Access) const -> vuk::Resource;
 	
 	// Attach texture to rendergraph
-	void attach(vuk::RenderGraph&, vuk::Access initial, vuk::Access final) const;
+	void attach(vuk::RenderGraph&, vuk::Access initial, vuk::Access final, vuk::Clear = {}) const;
 	
 	// Convertible to vuk::ImageView
 	operator vuk::ImageView() const { return *handle->view; }
