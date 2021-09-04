@@ -7,6 +7,7 @@
 #include "base/util.hpp"
 #include "base/math.hpp"
 #include "base/log.hpp"
+#include "gfx/resources/buffer.hpp"
 #include "gfx/samplers.hpp"
 
 namespace minote::gfx {
@@ -128,7 +129,7 @@ auto ImGui_ImplVuk_Init(vuk::PerThreadContext& _ptc) -> ImguiData {
 	
 }
 
-void ImGui_ImplVuk_Render(vuk::PerThreadContext& _ptc, vuk::RenderGraph& _rg,
+void ImGui_ImplVuk_Render(Pool& _pool, vuk::PerThreadContext& _ptc, vuk::RenderGraph& _rg,
 	vuk::Name _source, vuk::Name _target, ImguiData& _imdata, ImDrawData* _drawdata) {
 	
 	// This is a real mess, but it works. Mostly copypasted from vuk example code
@@ -161,35 +162,27 @@ void ImGui_ImplVuk_Render(vuk::PerThreadContext& _ptc, vuk::RenderGraph& _rg,
 		
 	};
 	
-	auto vertex_size = _drawdata->TotalVtxCount * sizeof(ImDrawVert);
-	auto index_size = _drawdata->TotalIdxCount * sizeof(ImDrawIdx);
-	auto imvert = _ptc.allocate_scratch_buffer(
-		vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eVertexBuffer | vuk::BufferUsageFlagBits::eTransferDst,
-		vertex_size, 1);
-	auto imind = _ptc.allocate_scratch_buffer(
-		vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eIndexBuffer | vuk::BufferUsageFlagBits::eTransferDst,
-		index_size, 1);
+	auto imvert = Buffer<ImDrawVert>::make(_pool, "imgui verts",
+		vuk::BufferUsageFlagBits::eVertexBuffer |
+		vuk::BufferUsageFlagBits::eTransferDst,
+		_drawdata->TotalVtxCount, vuk::MemoryUsage::eCPUtoGPU);
+	auto imind = Buffer<ImDrawIdx>::make(_pool, "imgui indices",
+		vuk::BufferUsageFlagBits::eIndexBuffer |
+		vuk::BufferUsageFlagBits::eTransferDst,
+		_drawdata->TotalIdxCount, vuk::MemoryUsage::eCPUtoGPU);
 	
 	auto vtx_dst = 0_zu;
 	auto idx_dst = 0_zu;
 	for (auto n: iota(0, _drawdata->CmdListsCount)) {
 		
 		auto* cmd_list = _drawdata->CmdLists[n];
-		auto imverto = imvert;
-		imverto.offset += vtx_dst * sizeof(ImDrawVert);
-		auto imindo = imind;
-		imindo.offset += idx_dst * sizeof(ImDrawIdx);
-	
-		_ptc.upload(imverto, std::span(cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size));
-		_ptc.upload(imindo, std::span(cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size));
+		std::memcpy(imvert.mappedPtr() + vtx_dst, cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(decltype(imvert)::value_type));
+		std::memcpy(imind.mappedPtr() + idx_dst, cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(decltype(imind)::value_type));
+		
 		vtx_dst += cmd_list->VtxBuffer.Size;
 		idx_dst += cmd_list->IdxBuffer.Size;
 		
 	}
-	
-	_ptc.wait_all_transfers();
 	
 	auto pass = vuk::Pass{
 		.name = "Imgui",

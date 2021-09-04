@@ -178,7 +178,7 @@ void Engine::render() {
 	Tonemap::apply(rg, color.name, "swapchain", viewport);
 	
 	ImGui::Render();
-	ImGui_ImplVuk_Render(ptc, rg, "swapchain", "swapchain", m_imguiData, ImGui::GetDrawData());
+	ImGui_ImplVuk_Render(framePool, ptc, rg, "swapchain", "swapchain", m_imguiData, ImGui::GetDrawData());
 	
 	rg.attach_swapchain("swapchain", m_vk.swapchain, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	

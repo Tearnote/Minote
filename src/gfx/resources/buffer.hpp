@@ -14,6 +14,8 @@ using namespace base;
 template<typename T>
 struct Buffer {
 	
+	using value_type = T;
+	
 	vuk::Name name;
 	vuk::Buffer* handle = nullptr;
 	
@@ -31,6 +33,8 @@ struct Buffer {
 	// Size of the buffer in bytes.
 	[[nodiscard]]
 	auto size() const -> usize { return handle->size; }
+	
+	auto mappedPtr() -> T* { return reinterpret_cast<T*>(handle->mapped_ptr); }
 	
 	// Declare as a vuk::Resource.
 	[[nodiscard]]
