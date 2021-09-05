@@ -21,18 +21,17 @@ void Tonemap::compile(vuk::PerThreadContext& _ptc) {
 	
 }
 
-void Tonemap::apply(vuk::RenderGraph& _rg, vuk::Name _source, vuk::Name _target, uvec2 _targetSize) {
+void Tonemap::apply(vuk::RenderGraph& _rg, Texture2D _source, Texture2D _target) {
 	
 	_rg.add_pass({
-		.name = "Tonemapping",
+		.name = nameAppend(_source.name, "tonemapping"),
 		.resources = {
-			vuk::Resource(_source, vuk::Resource::Type::eImage, vuk::eFragmentSampled),
-			vuk::Resource(_target, vuk::Resource::Type::eImage, vuk::eColorWrite) },
-		.execute = [_source, _targetSize](vuk::CommandBuffer& cmd) {
+			_source.resource(vuk::eFragmentSampled),
+			_target.resource(vuk::eColorWrite) },
+		.execute = [_source, _target](vuk::CommandBuffer& cmd) {
 			
-			cmd.set_viewport(0, vuk::Rect2D{ .extent = vukExtent(_targetSize) })
-			   .set_scissor(0, vuk::Rect2D{ .extent = vukExtent(_targetSize) })
-			   .bind_sampled_image(0, 0, _source, {})
+			cmdSetViewportScissor(cmd, _target.size());
+			cmd.bind_sampled_image(0, 0, _source, {})
 			   .bind_graphics_pipeline("tonemap");
 			cmd.draw(3, 1, 0, 0);
 			

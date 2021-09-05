@@ -158,7 +158,7 @@ void Engine::render() {
 	color.attach(rg, vuk::eNone, vuk::eNone);
 	
 	auto screen = Texture2D::make(framePool, "screen",
-		viewport, vuk::Format::eR8G8B8A8Unorm,
+		viewport, vuk::Format::eR8G8B8A8Srgb,
 		vuk::ImageUsageFlagBits::eTransferSrc |
 		vuk::ImageUsageFlagBits::eColorAttachment);
 	screen.attach(rg, vuk::eNone, vuk::eNone);
@@ -180,11 +180,12 @@ void Engine::render() {
 	Forward::draw(rg, color, depth, worldBuf, indirect, *m_meshes, sky, iblFiltered);
 	sky.draw(rg, worldBuf, color, depth);
 	Bloom::apply(rg, framePool, color);
-	Tonemap::apply(rg, color.name, screen.name, viewport);
+	Tonemap::apply(rg, color, screen);
 	
 	ImGui::Render();
 	ImGui_ImplVuk_Render(framePool, ptc, rg, screen.name, m_imguiData, ImGui::GetDrawData());
 	
+	rg.attach_swapchain("swapchain", m_vk.swapchain, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	rg.add_pass({
 		.name = "swapchain copy",
 		.resources = {
@@ -200,8 +201,6 @@ void Engine::render() {
 			}, vuk::Filter::eNearest);
 			
 		}});
-	
-	rg.attach_swapchain("swapchain", m_vk.swapchain, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	
 #ifdef TRACY_ENABLE
 	rg.add_tracy_collection();
