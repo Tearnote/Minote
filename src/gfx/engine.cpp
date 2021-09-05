@@ -110,8 +110,7 @@ void Engine::render() {
 	m_world.cameraPos = m_camera.position;
 	
 	// Sun properties
-//	static auto sunPitch = 7.2_deg;
-	static auto sunPitch = 14.6_deg;
+	static auto sunPitch = 7.2_deg;
 	static auto sunYaw = 30.0_deg;
 	ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 60.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
 	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
@@ -158,6 +157,12 @@ void Engine::render() {
 	depth.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearDepthStencil(0.0f, 0));
 	color.attach(rg, vuk::eNone, vuk::eNone);
 	
+	auto screen = Texture2D::make(framePool, "screen",
+		viewport, vuk::Format::eR8G8B8A8Unorm,
+		vuk::ImageUsageFlagBits::eTransferSrc |
+		vuk::ImageUsageFlagBits::eColorAttachment);
+	screen.attach(rg, vuk::eNone, vuk::eNone);
+	
 	auto worldBuf = m_world.upload(framePool, "world");
 	
 	// Initialize effects
@@ -175,10 +180,26 @@ void Engine::render() {
 	Forward::draw(rg, color, depth, worldBuf, indirect, *m_meshes, sky, iblFiltered);
 	sky.draw(rg, worldBuf, color, depth);
 	Bloom::apply(rg, framePool, color);
-	Tonemap::apply(rg, color.name, "swapchain", viewport);
+	Tonemap::apply(rg, color.name, screen.name, viewport);
 	
 	ImGui::Render();
-	ImGui_ImplVuk_Render(framePool, ptc, rg, "swapchain", "swapchain", m_imguiData, ImGui::GetDrawData());
+	ImGui_ImplVuk_Render(framePool, ptc, rg, screen.name, m_imguiData, ImGui::GetDrawData());
+	
+	rg.add_pass({
+		.name = "swapchain copy",
+		.resources = {
+			screen.resource(vuk::eTransferSrc),
+			"swapchain"_image(vuk::eTransferDst) },
+		.execute = [screen](vuk::CommandBuffer& cmd) {
+			
+			cmd.blit_image(screen.name, "swapchain", vuk::ImageBlit{
+				.srcSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
+				.srcOffsets = {vuk::Offset3D(), vuk::Offset3D{i32(screen.size().x()), i32(screen.size().y()), 1}},
+				.dstSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
+				.dstOffsets = {vuk::Offset3D(), vuk::Offset3D{i32(screen.size().x()), i32(screen.size().y()), 1}},
+			}, vuk::Filter::eNearest);
+			
+		}});
 	
 	rg.attach_swapchain("swapchain", m_vk.swapchain, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	

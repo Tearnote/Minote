@@ -189,7 +189,8 @@ auto Vulkan::createSwapchain(uvec2 _size, VkSwapchainKHR _old) -> vuk::Swapchain
 	auto vkbswapchainResult = vkb::SwapchainBuilder(device)
 		.set_desired_extent(_size.x(), _size.y())
 		.set_old_swapchain(_old)
-		.set_image_usage_flags(VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+		.set_image_usage_flags(VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+		                       VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
 		// .set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
 		.build();
 	if (!vkbswapchainResult)

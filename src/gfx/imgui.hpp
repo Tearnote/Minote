@@ -21,6 +21,6 @@ auto ImGui_ImplVuk_Init(vuk::PerThreadContext&) -> ImguiData;
 
 // Draw all GUI elements that were queued up for this frame.
 void ImGui_ImplVuk_Render(Pool&, vuk::PerThreadContext&, vuk::RenderGraph&,
-	vuk::Name source, vuk::Name target, ImguiData&, ImDrawData*);
+	vuk::Name target, ImguiData&, ImDrawData*);
 
 }

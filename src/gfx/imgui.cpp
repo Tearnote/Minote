@@ -130,7 +130,7 @@ auto ImGui_ImplVuk_Init(vuk::PerThreadContext& _ptc) -> ImguiData {
 }
 
 void ImGui_ImplVuk_Render(Pool& _pool, vuk::PerThreadContext& _ptc, vuk::RenderGraph& _rg,
-	vuk::Name _source, vuk::Name _target, ImguiData& _imdata, ImDrawData* _drawdata) {
+	vuk::Name _target, ImguiData& _imdata, ImDrawData* _drawdata) {
 	
 	// This is a real mess, but it works. Mostly copypasted from vuk example code
 	// and reformatted.
@@ -286,7 +286,6 @@ void ImGui_ImplVuk_Render(Pool& _pool, vuk::PerThreadContext& _ptc, vuk::RenderG
 	}
 	
 	_rg.add_pass(std::move(pass));
-	_rg.add_alias(_target, _source);
 	
 }
 
