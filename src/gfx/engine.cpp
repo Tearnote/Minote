@@ -3,9 +3,9 @@
 #include "config.hpp"
 
 #include <cassert>
+#include "volk.h"
 #include "Tracy.hpp"
 #include "TracyVulkan.hpp"
-#include "volk.h"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
 #include "base/error.hpp"
@@ -110,7 +110,8 @@ void Engine::render() {
 	m_world.cameraPos = m_camera.position;
 	
 	// Sun properties
-	static auto sunPitch = 7.2_deg;
+//	static auto sunPitch = 7.2_deg;
+	static auto sunPitch = 14.6_deg;
 	static auto sunYaw = 30.0_deg;
 	ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 60.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
 	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
@@ -128,11 +129,10 @@ void Engine::render() {
 	auto ifc = m_vk.context->begin();
 	auto ptc = ifc.begin();
 	m_permPool.setPtc(ptc);
+	auto framePool = Pool(ptc);
 	auto rg = vuk::RenderGraph();
 	
 	// Create per-frame resources
-	
-	auto framePool = Pool(ptc);
 	
 	auto iblUnfiltered = Cubemap::make(m_permPool, "ibl_unfiltered",
 		256, vuk::Format::eR16G16B16A16Sfloat,

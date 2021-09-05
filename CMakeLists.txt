@@ -120,6 +120,7 @@ FetchContent_Declare(volk
         GIT_REPOSITORY https://github.com/zeux/volk
         GIT_TAG 66169849935bd85f329c513dd01c28b0a02bfe33)
 FetchContent_MakeAvailable(volk)
+target_compile_definitions(volk PUBLIC VK_NO_PROTOTYPES)
 target_link_libraries(Minote PRIVATE volk)
 
 set(VUK_LINK_TO_LOADER OFF CACHE BOOL "")
@@ -130,10 +131,9 @@ if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 FetchContent_Declare(vuk
         GIT_REPOSITORY https://github.com/Tearnote/vuk
-        GIT_TAG fc78bd9f098bdb79f48b485ad2e6d9928d47978c)
+        GIT_TAG 17c21a38bdc544965ec25e6b297de6e89ca9aa6b)
 FetchContent_MakeAvailable(vuk)
-target_compile_definitions(vuk PRIVATE VK_NO_PROTOTYPES)
-target_compile_definitions(vuk PRIVATE VUK_CUSTOM_VULKAN_HEADER="volk.h")
+target_compile_definitions(vuk PUBLIC VUK_CUSTOM_VULKAN_HEADER="volk.h")
 target_link_libraries(vuk PRIVATE volk)
 target_link_libraries(Minote PRIVATE vuk)
 
@@ -234,10 +234,9 @@ else()
     set(TRACY_ENABLE OFF CACHE BOOL "")
 endif()
 FetchContent_Declare(tracy
-        GIT_REPOSITORY https://github.com/Tearnote/tracy
-        GIT_TAG 8cab5244fd074f80847e778d8fcefab36a3976be)
+        GIT_REPOSITORY https://github.com/wolfpld/tracy
+        GIT_TAG d011d65b3c4cd80465030e3cf816d258d4a0eea1)
 FetchContent_MakeAvailable(tracy)
-target_compile_definitions(TracyClient PUBLIC TRACY_CUSTOM_VULKAN_HEADER="volk.h")
 target_link_libraries(TracyClient PRIVATE volk)
 target_link_libraries(vuk PRIVATE TracyClient)
 target_link_libraries(Minote PRIVATE TracyClient)
