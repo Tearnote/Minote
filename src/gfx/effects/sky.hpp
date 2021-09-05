@@ -4,6 +4,7 @@
 #include "vuk/Context.hpp"
 #include "vuk/Image.hpp"
 #include "base/math.hpp"
+#include "gfx/resources/texture3d.hpp"
 #include "gfx/resources/texture2d.hpp"
 #include "gfx/resources/cubemap.hpp"
 #include "gfx/resources/buffer.hpp"
@@ -86,39 +87,31 @@ struct Atmosphere {
 // lookup tables.
 struct Sky {
 	
-	static constexpr auto CameraView_n = "sky_camera_view";
-	static constexpr auto CubemapView_n = "sky_cubemap_view";
-	static constexpr auto AerialPerspective_n = "sky_aerial_perspective";
-	static constexpr auto SunLuminance_n = "sky_sun_luminance";
-	
 	constexpr static auto ViewFormat = vuk::Format::eB10G11R11UfloatPack32;
-	constexpr static auto ViewWidth = 192u;
-	constexpr static auto ViewHeight = 108u;
+	constexpr static auto ViewSize = uvec2{192u, 108u};
 	
 	constexpr static auto AerialPerspectiveFormat = vuk::Format::eR16G16B16A16Sfloat;
-	constexpr static auto AerialPerspectiveWidth = 32u;
-	constexpr static auto AerialPerspectiveHeight = 32u;
-	constexpr static auto AerialPerspectiveDepth = 32u;
+	constexpr static auto AerialPerspectiveSize = uvec3{32u, 32u, 32u};
 	
 	// World-space center of the camera for drawCubemap()
 	constexpr static auto CubemapCamera = vec3{0_m, 0_m, 10_m};
 	
-	vuk::Texture cameraView;
-	vuk::Texture cubemapView;
-	vuk::Texture aerialPerspective;
-	vuk::Unique<vuk::Buffer> sunLuminance;
+	vuk::Name name;
+	Texture2D cameraView;
+	Texture2D cubemapView;
+	Texture3D aerialPerspective;
+	Buffer<vec3> sunLuminance;
 	
 	// Build the shader.
 	static void compile(vuk::PerThreadContext&);
 	
-	Sky(vuk::PerThreadContext&, Atmosphere const&);
+	Sky(Pool&, vuk::Name, Atmosphere const&);
 	
 	// Fill lookup tables required for the two functions below.
 	void calculate(vuk::RenderGraph&, Buffer<World>, Camera const& camera);
 	
 	// Draw the sky in the background of an image (where depth is 0.0).
-	void draw(vuk::RenderGraph&, Buffer<World>, vuk::Name targetColor,
-		vuk::Name targetDepth, uvec2 targetSize);
+	void draw(vuk::RenderGraph&, Buffer<World>, Texture2D targetColor, Texture2D targetDepth);
 	
 	// Draw the sky into an existing IBLMap. Target is the mip 0 of provided image.
 	void drawCubemap(vuk::RenderGraph&, Buffer<World>, Cubemap _target);

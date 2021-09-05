@@ -68,8 +68,8 @@ void Forward::draw(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _depth,
 			_indirect.transformsCulledBuf.resource(vuk::eVertexRead),
 			_indirect.materialsCulledBuf.resource(vuk::eVertexRead),
 			_ibl.resource(vuk::eFragmentSampled),
-			vuk::Resource(_sky.AerialPerspective_n, vuk::Resource::Type::eImage,  vuk::eFragmentSampled),
-			vuk::Resource(_sky.SunLuminance_n,      vuk::Resource::Type::eBuffer, vuk::eFragmentRead),
+			_sky.aerialPerspective.resource(vuk::eFragmentSampled),
+			_sky.sunLuminance.resource(vuk::eFragmentRead),
 			_color.resource(vuk::eColorWrite),
 			_depth.resource(vuk::eDepthStencilRW) },
 		.execute = [_color, _world, &_indirect, &_meshes, &_sky, _ibl](vuk::CommandBuffer& cmd) {
@@ -84,9 +84,9 @@ void Forward::draw(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _depth,
 			   .bind_uniform_buffer(0, 0, _world)
 			   .bind_storage_buffer(0, 1, _indirect.transformsCulledBuf)
 			   .bind_storage_buffer(0, 2, _indirect.materialsCulledBuf)
-			   .bind_storage_buffer(0, 3, *_sky.sunLuminance)
+			   .bind_storage_buffer(0, 3, _sky.sunLuminance)
 			   .bind_sampled_image(0, 4, _ibl, TrilinearClamp)
-			   .bind_sampled_image(0, 5, _sky.AerialPerspective_n, TrilinearClamp)
+			   .bind_sampled_image(0, 5, _sky.aerialPerspective, TrilinearClamp)
 			   .bind_graphics_pipeline("forward");
 			
 			cmd.draw_indexed_indirect(_indirect.commandsCount, _indirect.commandsBuf);

@@ -142,34 +142,26 @@ void Sky::compile(vuk::PerThreadContext& _ptc) {
 	
 }
 
-Sky::Sky(vuk::PerThreadContext& _ptc, Atmosphere const& _atmosphere):
-	atmosphere(_atmosphere) {
+Sky::Sky(Pool& _pool, vuk::Name _name, Atmosphere const& _atmosphere):
+	name(_name), atmosphere(_atmosphere) {
 	
-	cameraView = _ptc.allocate_texture(vuk::ImageCreateInfo{
-		.format = ViewFormat,
-		.extent = {ViewWidth, ViewHeight, 1},
-		.usage =
-			vuk::ImageUsageFlagBits::eStorage |
-			vuk::ImageUsageFlagBits::eSampled });
+	cameraView = Texture2D::make(_pool, nameAppend(_name, "cameraView"),
+		ViewSize, ViewFormat,
+		vuk::ImageUsageFlagBits::eStorage |
+		vuk::ImageUsageFlagBits::eSampled);
 	
-	cubemapView = _ptc.allocate_texture(vuk::ImageCreateInfo{
-		.format = ViewFormat,
-		.extent = {ViewWidth, ViewHeight, 1},
-		.usage =
-			vuk::ImageUsageFlagBits::eStorage |
-			vuk::ImageUsageFlagBits::eSampled });
+	cubemapView = Texture2D::make(_pool, nameAppend(_name, "cubemapView"),
+		ViewSize, ViewFormat,
+		vuk::ImageUsageFlagBits::eStorage |
+		vuk::ImageUsageFlagBits::eSampled);
 	
-	aerialPerspective = _ptc.allocate_texture(vuk::ImageCreateInfo{
-		.format = AerialPerspectiveFormat,
-		.extent = {AerialPerspectiveWidth, AerialPerspectiveHeight, AerialPerspectiveDepth},
-		.usage =
-			vuk::ImageUsageFlagBits::eStorage |
-			vuk::ImageUsageFlagBits::eSampled });
+	aerialPerspective = Texture3D::make(_pool, nameAppend(_name, "aerialPerspective"),
+		AerialPerspectiveSize, AerialPerspectiveFormat,
+		vuk::ImageUsageFlagBits::eStorage |
+		vuk::ImageUsageFlagBits::eSampled);
 	
-	sunLuminance = _ptc.allocate_buffer(
-		vuk::MemoryUsage::eGPUonly,
-		vuk::BufferUsageFlagBits::eStorageBuffer,
-		sizeof(vec3), alignof(vec3));
+	sunLuminance = Buffer<vec3>::make(_pool, nameAppend(_name, "sunLuminance"),
+		vuk::BufferUsageFlagBits::eStorageBuffer);
 	
 }
 
@@ -178,95 +170,84 @@ void Sky::calculate(vuk::RenderGraph& _rg, Buffer<World> _world, Camera const& _
 	atmosphere.transmittance.attach(_rg, vuk::eComputeSampled, vuk::eComputeSampled);
 	atmosphere.multiScattering.attach(_rg, vuk::eComputeSampled, vuk::eComputeSampled);
 	
+	cameraView.attach(_rg, vuk::eNone, vuk::eNone);
+	cubemapView.attach(_rg, vuk::eNone, vuk::eNone);
+	aerialPerspective.attach(_rg, vuk::eNone, vuk::eNone);
+	
 	_rg.add_pass({
-		.name = "Sky view LUT",
+		.name = nameAppend(name, "view LUT"),
 		.resources = {
 			atmosphere.transmittance.resource(vuk::eComputeSampled),
 			atmosphere.multiScattering.resource(vuk::eComputeSampled),
-			vuk::Resource(CameraView_n, vuk::Resource::Type::eImage, vuk::eComputeWrite) },
-		.execute = [this, _world, _camera](vuk::CommandBuffer& cmd) {
+			cameraView.resource(vuk::eComputeWrite) },
+		.execute = [this, _world, &_camera](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_uniform_buffer(0, 1, atmosphere.params)
 			   .bind_sampled_image(0, 2, atmosphere.transmittance, LinearClamp)
 			   .bind_sampled_image(0, 3, atmosphere.multiScattering, LinearClamp)
-			   .bind_storage_image(1, 0, CameraView_n)
+			   .bind_storage_image(1, 0, cameraView)
 			   .bind_compute_pipeline("sky_gen_sky_view");
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0_zu, _camera.position);
-			cmd.dispatch_invocations(ViewWidth, ViewHeight, 1);
+			cmd.dispatch_invocations(cameraView.size().x(), cameraView.size().y(), 1);
 			
 		}});
 	
 	_rg.add_pass({
-		.name = "Sky cubemap view LUT",
+		.name = nameAppend(name, "cubemap view LUT"),
 		.resources = {
 			atmosphere.transmittance.resource(vuk::eComputeSampled),
 			atmosphere.multiScattering.resource(vuk::eComputeSampled),
-			vuk::Resource(CubemapView_n, vuk::Resource::Type::eImage, vuk::eComputeWrite) },
+			cubemapView.resource(vuk::eComputeWrite) },
 		.execute = [this, _world](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_uniform_buffer(0, 1, atmosphere.params)
 			   .bind_sampled_image(0, 2, atmosphere.transmittance, LinearClamp)
 			   .bind_sampled_image(0, 3, atmosphere.multiScattering, LinearClamp)
-			   .bind_storage_image(1, 0, CubemapView_n)
+			   .bind_storage_image(1, 0, cubemapView)
 			   .bind_compute_pipeline("sky_gen_sky_view");
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0_zu, CubemapCamera);
-			cmd.dispatch_invocations(ViewWidth, ViewHeight, 1);
+			cmd.dispatch_invocations(cubemapView.size().x(), cubemapView.size().y(), 1);
 			
 		}});
 	
 	_rg.add_pass({
-		.name = "Sky aerial perspective LUT",
+		.name = nameAppend(name, "aerial perspective LUT"),
 		.resources = {
 			atmosphere.transmittance.resource(vuk::eComputeSampled),
 			atmosphere.multiScattering.resource(vuk::eComputeSampled),
-			vuk::Resource(AerialPerspective_n, vuk::Resource::Type::eImage, vuk::eComputeWrite) },
+			aerialPerspective.resource(vuk::eComputeWrite) },
 		.execute = [this, _world](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_uniform_buffer(0, 1, atmosphere.params)
 			   .bind_sampled_image(0, 2, atmosphere.transmittance, LinearClamp)
 			   .bind_sampled_image(0, 3, atmosphere.multiScattering, LinearClamp)
-			   .bind_storage_image(1, 0, AerialPerspective_n)
+			   .bind_storage_image(1, 0, aerialPerspective)
 			   .bind_compute_pipeline("sky_gen_aerial_perspective");
-			cmd.dispatch_invocations(AerialPerspectiveWidth, AerialPerspectiveHeight, AerialPerspectiveDepth);
+			cmd.dispatch_invocations(aerialPerspective.size().x(), aerialPerspective.size().y(), aerialPerspective.size().z());
 			
 		}});
-	
-	_rg.attach_image(CameraView_n,
-		vuk::ImageAttachment::from_texture(cameraView),
-		vuk::eNone,
-		vuk::eNone);
-	_rg.attach_image(CubemapView_n,
-		vuk::ImageAttachment::from_texture(cubemapView),
-		vuk::eNone,
-		vuk::eNone);
-	_rg.attach_image(AerialPerspective_n,
-		vuk::ImageAttachment::from_texture(aerialPerspective),
-		vuk::eNone,
-		vuk::eNone);
 	
 }
 
-void Sky::draw(vuk::RenderGraph& _rg, Buffer<World> _world, vuk::Name _targetColor,
-	vuk::Name _targetDepth, uvec2 _targetSize) {
+void Sky::draw(vuk::RenderGraph& _rg, Buffer<World> _world, Texture2D _targetColor, Texture2D _targetDepth) {
 	
 	_rg.add_pass({
-		.name = "Background sky",
+		.name = nameAppend(name, "background"),
 		.resources = {
 			atmosphere.transmittance.resource(vuk::eFragmentSampled),
-			vuk::Resource(CameraView_n, vuk::Resource::Type::eImage, vuk::eFragmentSampled),
-			vuk::Resource(_targetColor, vuk::Resource::Type::eImage, vuk::eColorWrite),
-			vuk::Resource(_targetDepth, vuk::Resource::Type::eImage, vuk::eDepthStencilRW) },
-		.execute = [this, _world, _targetSize](vuk::CommandBuffer& cmd) {
+			cameraView.resource(vuk::eFragmentSampled),
+			_targetColor.resource(vuk::eColorWrite),
+			_targetDepth.resource(vuk::eDepthStencilRW) },
+		.execute = [this, _world, _targetColor](vuk::CommandBuffer& cmd) {
 			
-			cmd.set_viewport(0, vuk::Rect2D{ .extent = vukExtent(_targetSize) })
-			   .set_scissor(0, vuk::Rect2D{ .extent = vukExtent(_targetSize) })
-			   .bind_uniform_buffer(0, 0, _world)
+			cmdSetViewportScissor(cmd, _targetColor.size());
+			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_uniform_buffer(0, 1, atmosphere.params)
 			   .bind_sampled_image(0, 2, atmosphere.transmittance, LinearClamp)
-			   .bind_sampled_image(1, 0, CameraView_n, LinearClamp)
+			   .bind_sampled_image(1, 0, cameraView, LinearClamp)
 			   .bind_graphics_pipeline("sky_draw");
 			cmd.draw(3, 1, 0, 0);
 			
@@ -276,21 +257,23 @@ void Sky::draw(vuk::RenderGraph& _rg, Buffer<World> _world, vuk::Name _targetCol
 
 void Sky::drawCubemap(vuk::RenderGraph& _rg, Buffer<World> _world, Cubemap _target) {
 	
+	sunLuminance.attach(_rg, vuk::eNone, vuk::eNone);
+	
 	_rg.add_pass({
-		.name = "Cubemap sky",
+		.name = nameAppend(name, "cubemap"),
 		.resources = {
 			atmosphere.transmittance.resource(vuk::eFragmentSampled),
-			vuk::Resource(CubemapView_n,  vuk::Resource::Type::eImage,  vuk::eComputeSampled),
-			vuk::Resource(_target.name,      vuk::Resource::Type::eImage,  vuk::eComputeWrite),
-			vuk::Resource(SunLuminance_n, vuk::Resource::Type::eBuffer, vuk::eComputeWrite) },
+			cubemapView.resource(vuk::eComputeSampled),
+			vuk::Resource(_target.name, vuk::Resource::Type::eImage,  vuk::eComputeWrite),
+			sunLuminance.resource(vuk::eComputeWrite) },
 		.execute = [this, _world, _target](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_uniform_buffer(0, 1, atmosphere.params)
 			   .bind_sampled_image(0, 2, atmosphere.transmittance, LinearClamp)
-			   .bind_sampled_image(1, 0, CubemapView_n, LinearClamp)
+			   .bind_sampled_image(1, 0, cubemapView, LinearClamp)
 			   .bind_storage_image(1, 1, _target.name)
-			   .bind_storage_buffer(1, 3, *sunLuminance)
+			   .bind_storage_buffer(1, 3, sunLuminance)
 			   .bind_compute_pipeline("sky_draw_cubemap");
 			
 			auto* sides = cmd.map_scratch_uniform_binding<array<mat4, 6>>(1, 2);
@@ -325,11 +308,6 @@ void Sky::drawCubemap(vuk::RenderGraph& _rg, Buffer<World> _world, Cubemap _targ
 			cmd.dispatch_invocations(_target.size().x(), _target.size().y(), 6);
 			
 		}});
-	
-	_rg.attach_buffer(SunLuminance_n,
-		*sunLuminance,
-		vuk::eNone,
-		vuk::eNone);
 	
 }
 

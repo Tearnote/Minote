@@ -163,7 +163,7 @@ void Engine::render() {
 	// Initialize effects
 	
 	auto indirect = Indirect(framePool, "Indirect", *m_objects, *m_meshes);
-	auto sky = Sky(ptc, m_atmosphere);
+	auto sky = Sky(m_permPool, "sky", m_atmosphere);
 	
 	// Set up the rendergraph
 	
@@ -173,7 +173,7 @@ void Engine::render() {
 	indirect.sortAndCull(rg, m_world, *m_meshes);
 	Forward::zPrepass(rg, depth, worldBuf, indirect, *m_meshes);
 	Forward::draw(rg, color, depth, worldBuf, indirect, *m_meshes, sky, iblFiltered);
-	sky.draw(rg, worldBuf, color.name, depth.name, viewport);
+	sky.draw(rg, worldBuf, color, depth);
 	Bloom::apply(rg, framePool, color);
 	Tonemap::apply(rg, color.name, "swapchain", viewport);
 	
