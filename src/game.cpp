@@ -72,7 +72,7 @@ void game(GameParams const& _params) try {
 		block1.transform.rotation = rotation;
 		block1.material.tint = {0.9f, 0.9f, 1.0f, 1.0f};
 		block1.material.roughness = 0.6f;
-		block1.material.metalness = 0.1f;
+		block1.material.metalness = 0.0f;
 
 		auto block2_id = engine.objects().create();
 		auto block2 = engine.objects().get(block2_id);
@@ -82,7 +82,7 @@ void game(GameParams const& _params) try {
 		block2.transform.rotation = rotation;
 		block2.material.tint = {0.9f, 0.1f, 0.1f, 1.0f};
 		block2.material.roughness = 0.6f;
-		block2.material.metalness = 0.1f;
+		block2.material.metalness = 0.0f;
 
 		auto block3_id = engine.objects().create();
 		auto block3 = engine.objects().get(block3_id);
@@ -92,7 +92,7 @@ void game(GameParams const& _params) try {
 		block3.transform.rotation = rotation;
 		block3.material.tint = {0.9f, 0.1f, 0.1f, 1.0f};
 		block3.material.roughness = 0.6f;
-		block3.material.metalness = 0.1f;
+		block3.material.metalness = 0.0f;
 
 		auto block4_id = engine.objects().create();
 		auto block4 = engine.objects().get(block4_id);
@@ -102,7 +102,7 @@ void game(GameParams const& _params) try {
 		block4.transform.rotation = rotation;
 		block4.material.tint = {0.9f, 0.1f, 0.1f, 1.0f};
 		block4.material.roughness = 0.6f;
-		block4.material.metalness = 0.1f;
+		block4.material.metalness = 0.0f;
 
 		auto block5_id = engine.objects().create();
 		auto block5 = engine.objects().get(block5_id);
@@ -112,7 +112,7 @@ void game(GameParams const& _params) try {
 		block5.transform.rotation = rotation;
 		block5.material.tint = {0.9f, 0.1f, 0.1f, 1.0f};
 		block5.material.roughness = 0.6f;
-		block5.material.metalness = 0.1f;
+		block5.material.metalness = 0.0f;
 
 		auto block6_id = engine.objects().create();
 		auto block6 = engine.objects().get(block6_id);
@@ -122,7 +122,7 @@ void game(GameParams const& _params) try {
 		block6.transform.rotation = rotation;
 		block6.material.tint = {0.1f, 0.1f, 0.9f, 1.0f};
 		block6.material.roughness = 0.6f;
-		block6.material.metalness = 0.1f;
+		block6.material.metalness = 0.0f;
 
 		auto block7_id = engine.objects().create();
 		auto block7 = engine.objects().get(block7_id);
@@ -132,7 +132,7 @@ void game(GameParams const& _params) try {
 		block7.transform.scale = vec3{1.5f, 1.5f, 1.5f} * prescale;
 		block7.material.tint = {0.2f, 0.9f, 0.5f, 1.0f};
 		block7.material.roughness = 0.2f;
-		block7.material.metalness = 0.9f;
+		block7.material.metalness = 1.0f;
 
 		for (auto i = 0.0f; i <= 1.0f; i += 0.125f) {
 
@@ -144,7 +144,7 @@ void game(GameParams const& _params) try {
 			sphere1.transform.position = vec3{0_m, 8_m, 2_m} + offset2;
 			sphere1.transform.scale = prescale;
 			sphere1.material.roughness = i;
-			sphere1.material.metalness = 0.9f;
+			sphere1.material.metalness = 1.0f;
 
 			auto sphere2_id = engine.objects().create();
 			auto sphere2 = engine.objects().get(sphere2_id);
@@ -152,7 +152,7 @@ void game(GameParams const& _params) try {
 			sphere2.transform.position = vec3{0_m, -8_m, 2_m} + offset2;
 			sphere2.transform.scale = prescale;
 			sphere2.material.roughness = i;
-			sphere2.material.metalness = 0.1f;
+			sphere2.material.metalness = 0.0f;
 
 		}
 

@@ -127,7 +127,7 @@ set(VUK_LINK_TO_LOADER OFF CACHE BOOL "")
 set(VUK_USE_VULKAN_SDK OFF CACHE BOOL "")
 set(VUK_USE_SHADERC OFF CACHE BOOL "")
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(VUK_USE_TRACY ON CACHE BOOL "")
+    set(VUK_USE_TRACY OFF CACHE BOOL "")
 endif()
 FetchContent_Declare(vuk
         GIT_REPOSITORY https://github.com/Tearnote/vuk
@@ -226,7 +226,7 @@ target_include_directories(cgltf INTERFACE ${cgltf_SOURCE_DIR})
 target_link_libraries(Minote PRIVATE cgltf)
 
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(TRACY_ENABLE ON CACHE BOOL "")
+    set(TRACY_ENABLE OFF CACHE BOOL "")
     set(TRACY_NO_FRAME_IMAGE ON CACHE BOOL "")
     set(TRACY_ONLY_LOCALHOST ON CACHE BOOL "")
     set(TRACY_NO_BROADCAST ON CACHE BOOL "")
