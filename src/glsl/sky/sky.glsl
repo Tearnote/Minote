@@ -217,7 +217,8 @@ vec3 getSunLuminance(vec3 _worldPos, vec3 _worldDir, vec3 _sunDirection, vec3 _s
 			vec2 uvSun;
 			lutTransmittanceParamsToUv(pHeight, sunZenithCosAngle, uvSun, u_atmo.bottomRadius, u_atmo.topRadius);
 			
-			float angle = acos(dot(_worldDir, _sunDirection));
+			float cosAngle = dot(_worldDir, _sunDirection);
+			float angle = acos(clamp(cosAngle, -1.0, 1.0));
 			float radiusRatio = angle / (SunRadius);
 			float limbDarkening = sqrt(clamp(1.0 - radiusRatio*radiusRatio, 0.0001, 1.0));
 			
