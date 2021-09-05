@@ -66,6 +66,7 @@ private:
 	Camera m_camera;
 	
 	Pool m_permPool;
+	Pool m_framePool;
 	World m_world;
 	Atmosphere m_atmosphere;
 	

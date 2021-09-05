@@ -128,7 +128,7 @@ void Engine::render() {
 	auto ifc = m_vk.context->begin();
 	auto ptc = ifc.begin();
 	m_permPool.setPtc(ptc);
-	auto framePool = Pool(ptc);
+	m_framePool.setPtc(ptc);
 	auto rg = vuk::RenderGraph();
 	
 	// Create per-frame resources
@@ -146,10 +146,10 @@ void Engine::render() {
 	iblUnfiltered.attach(rg, vuk::eNone, vuk::eNone);
 	iblFiltered.attach(rg, vuk::eNone, vuk::eNone);
 	
-	auto depth = Texture2D::make(framePool, "depth",
+	auto depth = Texture2D::make(m_framePool, "depth",
 		viewport, vuk::Format::eD32Sfloat,
 		vuk::ImageUsageFlagBits::eDepthStencilAttachment);
-	auto color = Texture2D::make(framePool, "color",
+	auto color = Texture2D::make(m_framePool, "color",
 		viewport, vuk::Format::eR16G16B16A16Sfloat,
 		vuk::ImageUsageFlagBits::eColorAttachment |
 		vuk::ImageUsageFlagBits::eSampled |
@@ -157,17 +157,17 @@ void Engine::render() {
 	depth.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearDepthStencil(0.0f, 0));
 	color.attach(rg, vuk::eNone, vuk::eNone);
 	
-	auto screen = Texture2D::make(framePool, "screen",
+	auto screen = Texture2D::make(m_framePool, "screen",
 		viewport, vuk::Format::eR8G8B8A8Srgb,
 		vuk::ImageUsageFlagBits::eTransferSrc |
 		vuk::ImageUsageFlagBits::eColorAttachment);
 	screen.attach(rg, vuk::eNone, vuk::eNone);
 	
-	auto worldBuf = m_world.upload(framePool, "world");
+	auto worldBuf = m_world.upload(m_framePool, "world");
 	
 	// Initialize effects
 	
-	auto indirect = Indirect(framePool, "Indirect", *m_objects, *m_meshes);
+	auto indirect = Indirect(m_framePool, "Indirect", *m_objects, *m_meshes);
 	auto sky = Sky(m_permPool, "sky", m_atmosphere);
 	
 	// Set up the rendergraph
@@ -179,11 +179,11 @@ void Engine::render() {
 	Forward::zPrepass(rg, depth, worldBuf, indirect, *m_meshes);
 	Forward::draw(rg, color, depth, worldBuf, indirect, *m_meshes, sky, iblFiltered);
 	sky.draw(rg, worldBuf, color, depth);
-	Bloom::apply(rg, framePool, color);
+	Bloom::apply(rg, m_framePool, color);
 	Tonemap::apply(rg, color, screen);
 	
 	ImGui::Render();
-	ImGui_ImplVuk_Render(framePool, ptc, rg, screen.name, m_imguiData, ImGui::GetDrawData());
+	ImGui_ImplVuk_Render(m_framePool, ptc, rg, screen.name, m_imguiData, ImGui::GetDrawData());
 	
 	rg.attach_swapchain("swapchain", m_vk.swapchain, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
 	rg.add_pass({
@@ -269,6 +269,7 @@ void Engine::render() {
 	// Clean up
 	
 	ImGui::NewFrame();
+	m_framePool.reset();
 	FrameMark;
 	
 }
