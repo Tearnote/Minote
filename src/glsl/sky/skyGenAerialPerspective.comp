@@ -11,7 +11,7 @@ layout(binding = 0) uniform WorldConstants {
 	World u_world;
 };
 
-layout(set = 1, binding = 0, rgba16f) restrict writeonly uniform image3D i_aerialPerspective;
+layout(set = 1, binding = 0) restrict writeonly uniform image3D i_aerialPerspective;
 
 void main() {
 	

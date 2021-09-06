@@ -90,7 +90,8 @@ Vulkan::Vulkan(Window& _window) {
 	// Select physical device
 	
 	auto physicalDeviceFeatures = VkPhysicalDeviceFeatures{
-		.multiDrawIndirect = VK_TRUE };
+		.multiDrawIndirect = VK_TRUE,
+		.shaderStorageImageWriteWithoutFormat = VK_TRUE };
 	auto physicalDeviceVulkan12Features = VkPhysicalDeviceVulkan12Features{
 		.descriptorBindingPartiallyBound = VK_TRUE,
 		.descriptorBindingVariableDescriptorCount = VK_TRUE,

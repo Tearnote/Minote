@@ -14,7 +14,7 @@ layout(push_constant) uniform PushConstants {
 	vec3 u_probePosition;
 };
 
-layout(set = 1, binding = 0, r11f_g11f_b10f) restrict writeonly uniform image2D i_skyView;
+layout(set = 1, binding = 0) restrict writeonly uniform image2D i_skyView;
 
 void main() {
 	
