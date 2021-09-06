@@ -86,7 +86,7 @@ void Bloom::apply(vuk::RenderGraph& _rg, Pool& _pool, Texture2D _target) {
 		.name = nameAppend(_target.name, "bloom up"),
 		.resources = {
 			bloomTemp.resource(vuk::eComputeRW),
-			_target.resource(vuk::eComputeWrite) },
+			_target.resource(vuk::eComputeRW) },
 		.execute = [_target, temp=bloomTemp](vuk::CommandBuffer& cmd) {
 			
 			for (auto i: iota(0u, BloomPasses) | reverse) {
@@ -95,13 +95,17 @@ void Bloom::apply(vuk::RenderGraph& _rg, Pool& _pool, Texture2D _target) {
 				cmd.bind_sampled_image(0, 0, *temp.mipView(i), LinearClamp);
 				if (i == 0) { // Final pass, draw to target
 					
-					cmd.bind_storage_image(0, 1, _target);
-					cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, BloomStrength);
+					cmd.bind_sampled_image(0, 1, _target, LinearClamp,
+						vuk::ImageLayout::eGeneral)
+					   .bind_storage_image(0, 2, _target)
+					   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, BloomStrength);
 					
 				} else { // Draw to intermediate mip
 					
-					cmd.bind_storage_image(0, 1, *temp.mipView(i - 1));
-					cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, 1.0f);
+					cmd.bind_sampled_image(0, 1, *temp.mipView(i - 1), LinearClamp,
+						vuk::ImageLayout::eGeneral)
+					   .bind_storage_image(0, 2, *temp.mipView(i - 1))
+					   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, 1.0f);
 					
 				}
 				

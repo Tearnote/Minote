@@ -4,7 +4,8 @@
 layout(local_size_x = 16, local_size_y = 16) in;
 
 layout(binding = 0) uniform sampler2D s_source;
-layout(binding = 1, rgba16f) restrict uniform image2D i_target;
+layout(binding = 1) uniform sampler2D s_targetRead;
+layout(binding = 2) writeonly uniform image2D i_target;
 
 layout(push_constant) uniform Constants {
 	float u_power;
@@ -23,7 +24,7 @@ void main() {
 	vec2 uv = (vec2(gid) + vec2(0.5)) / vec2(targetSize);
 	vec2 texel = vec2(1.0) / vec2(sourceSize);
 	
-	vec4 current = imageLoad(i_target, ivec2(gid));
+	vec4 current = texelFetch(s_targetRead, ivec2(gid), 0);
 	vec4 result  = textureLod(s_source, uv,                            0.0) * (4.0 / 16.0);
 	     result += textureLod(s_source, uv + vec2(-texel.x, 0.0     ), 0.0) * (2.0 / 16.0);
 	     result += textureLod(s_source, uv + vec2( texel.x, 0.0     ), 0.0) * (2.0 / 16.0);
