@@ -15,9 +15,7 @@ using namespace base;
 // images. Relative blur width is resolution-independent.
 struct Bloom {
 	
-	//TODO modify shaders to make the more compact format work
-	// static constexpr auto BloomFormat = vuk::Format::eB10G11R11UfloatPack32;
-	static constexpr auto BloomFormat = vuk::Format::eR16G16B16A16Sfloat;
+	static constexpr auto BloomFormat = vuk::Format::eB10G11R11UfloatPack32;
 	// More passes increases blur width at a small performance cost
 	static constexpr auto BloomPasses = 6u;
 	// Because the blending is additive, the strength multiplier needs to be very small
