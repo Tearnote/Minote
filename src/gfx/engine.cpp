@@ -158,9 +158,10 @@ void Engine::render() {
 	color.attach(rg, vuk::eNone, vuk::eNone);
 	
 	auto screen = Texture2D::make(m_framePool, "screen",
-		viewport, vuk::Format::eR8G8B8A8Srgb,
+		viewport, vuk::Format::eR8G8B8A8Unorm,
 		vuk::ImageUsageFlagBits::eTransferSrc |
-		vuk::ImageUsageFlagBits::eColorAttachment);
+		vuk::ImageUsageFlagBits::eColorAttachment |
+		vuk::ImageUsageFlagBits::eStorage);
 	screen.attach(rg, vuk::eNone, vuk::eNone);
 	
 	auto worldBuf = m_world.upload(m_framePool, "world");

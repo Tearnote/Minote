@@ -283,8 +283,8 @@ set(SHADER_SOURCES
         src/glsl/cubePrefilter.comp
         src/glsl/bloomDown.comp
         src/glsl/zprepass.vert src/glsl/zprepass.frag
-        src/glsl/tonemap.vert src/glsl/tonemap.frag
         src/glsl/forward.vert src/glsl/forward.frag
+        src/glsl/tonemap.comp
         src/glsl/bloomUp.comp
         src/glsl/imgui.vert src/glsl/imgui.frag
         src/glsl/cull.comp)
