@@ -90,18 +90,23 @@ Vulkan::Vulkan(Window& _window) {
 	// Select physical device
 	
 	auto physicalDeviceFeatures = VkPhysicalDeviceFeatures{
+		.geometryShader = VK_TRUE,
 		.multiDrawIndirect = VK_TRUE,
 		.shaderStorageImageWriteWithoutFormat = VK_TRUE };
+	auto physicalDeviceVulkan11Features = VkPhysicalDeviceVulkan11Features{
+		.shaderDrawParameters = VK_TRUE };
 	auto physicalDeviceVulkan12Features = VkPhysicalDeviceVulkan12Features{
 		.descriptorBindingPartiallyBound = VK_TRUE,
 		.descriptorBindingVariableDescriptorCount = VK_TRUE,
 		.runtimeDescriptorArray = VK_TRUE,
-		.hostQueryReset = VK_TRUE };
+		.hostQueryReset = VK_TRUE,
+		.vulkanMemoryModel = VK_TRUE };
 	
 	auto physicalDeviceSelectorResult = vkb::PhysicalDeviceSelector(instance)
 		.set_surface(surface)
 		.set_minimum_version(1, 2)
 		.set_required_features(physicalDeviceFeatures)
+		.set_required_features_11(physicalDeviceVulkan11Features)
 		.set_required_features_12(physicalDeviceVulkan12Features)
 #if VK_VALIDATION
 		.add_required_extension("VK_KHR_shader_non_semantic_info")

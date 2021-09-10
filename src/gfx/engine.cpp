@@ -12,6 +12,7 @@
 #include "base/math.hpp"
 #include "base/log.hpp"
 #include "gfx/effects/cubeFilter.hpp"
+#include "gfx/effects/visibility.hpp"
 #include "gfx/effects/indirect.hpp"
 #include "gfx/effects/tonemap.hpp"
 #include "gfx/effects/forward.hpp"
@@ -37,6 +38,7 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	
 	CubeFilter::compile(ptc);
 	Atmosphere::compile(ptc);
+	Visibility::compile(ptc);
 	Indirect::compile(ptc);
 	Forward::compile(ptc);
 	Tonemap::compile(ptc);
@@ -164,6 +166,11 @@ void Engine::render() {
 		vuk::ImageUsageFlagBits::eStorage);
 	screen.attach(rg, vuk::eNone, vuk::eNone);
 	
+	auto visbuf = Texture2D::make(m_framePool, "visbuf",
+		viewport, vuk::Format::eR32Uint,
+		vuk::ImageUsageFlagBits::eColorAttachment);
+	visbuf.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearColor(-1u, 0, 0, 0));
+	
 	auto worldBuf = m_world.upload(m_framePool, "world");
 	
 	// Initialize effects
@@ -177,7 +184,8 @@ void Engine::render() {
 	sky.drawCubemap(rg, worldBuf, iblUnfiltered);
 	CubeFilter::apply(rg, iblUnfiltered, iblFiltered);
 	indirect.sortAndCull(rg, m_world, *m_meshes);
-	Forward::zPrepass(rg, depth, worldBuf, indirect, *m_meshes);
+//	Forward::zPrepass(rg, depth, worldBuf, indirect, *m_meshes);
+	Visibility::apply(rg, visbuf, depth, worldBuf, indirect, *m_meshes);
 	Forward::draw(rg, color, depth, worldBuf, indirect, *m_meshes, sky, iblFiltered);
 	sky.draw(rg, worldBuf, color, depth);
 	Bloom::apply(rg, m_framePool, color);

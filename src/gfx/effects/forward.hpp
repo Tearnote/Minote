@@ -7,7 +7,6 @@
 #include "gfx/effects/indirect.hpp"
 #include "gfx/effects/sky.hpp"
 #include "gfx/world.hpp"
-#include "base/math.hpp"
 
 namespace minote::gfx {
 

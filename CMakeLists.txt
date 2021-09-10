@@ -69,6 +69,7 @@ add_executable(Minote
         src/gfx/resources/pool.hpp
         src/gfx/effects/cubeFilterCoeffs.hpp
         src/gfx/effects/cubeFilter.hpp src/gfx/effects/cubeFilter.cpp
+        src/gfx/effects/visibility.hpp src/gfx/effects/visibility.cpp
         src/gfx/effects/indirect.hpp src/gfx/effects/indirect.cpp
         src/gfx/effects/forward.hpp src/gfx/effects/forward.cpp
         src/gfx/effects/tonemap.hpp src/gfx/effects/tonemap.cpp
@@ -281,6 +282,7 @@ set(SHADER_SOURCES
         src/glsl/bloomDownKaris.comp
         src/glsl/cubePostfilter.comp
         src/glsl/cubePrefilter.comp
+        src/glsl/visibility.vert src/glsl/visibility.frag
         src/glsl/bloomDown.comp
         src/glsl/zprepass.vert src/glsl/zprepass.frag
         src/glsl/forward.vert src/glsl/forward.frag
