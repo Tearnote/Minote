@@ -25,6 +25,13 @@ namespace minote::gfx {
 using namespace base;
 using namespace std::string_literals;
 
+static constexpr auto compileOpts = vuk::RenderGraph::CompileOptions{
+	.reorder_passes = false,
+#if VK_VALIDATION
+	.check_pass_ordering = true,
+#endif //VK_VALIDATION
+};
+
 Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	m_vk(_vk) {
 	
@@ -67,7 +74,7 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	
 	ptc.wait_all_transfers();
 	
-	auto erg = std::move(precalc).link(ptc);
+	auto erg = std::move(precalc).link(ptc, compileOpts);
 	vuk::execute_submit_and_wait(ptc, std::move(erg));
 	
 	L_INFO("Graphics engine initialized");
@@ -238,7 +245,7 @@ void Engine::render() {
 	
 	// Build and submit the rendergraph
 	
-	auto erg = std::move(rg).link(ptc, false);
+	auto erg = std::move(rg).link(ptc, compileOpts);
 	auto commandBuffer = erg.execute(ptc, {{m_vk.swapchain, swapchainImageIndex}});
 	
 	auto renderSem = ptc.acquire_semaphore();

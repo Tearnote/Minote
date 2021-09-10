@@ -132,7 +132,7 @@ if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 FetchContent_Declare(vuk
         GIT_REPOSITORY https://github.com/Tearnote/vuk
-        GIT_TAG 17c21a38bdc544965ec25e6b297de6e89ca9aa6b)
+        GIT_TAG 99c5e19a798d6f93ed6e1780565fd19680e8684f)
 FetchContent_MakeAvailable(vuk)
 target_compile_definitions(vuk PUBLIC VUK_CUSTOM_VULKAN_HEADER="volk.h")
 target_link_libraries(vuk PRIVATE volk)
