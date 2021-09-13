@@ -239,7 +239,7 @@ void Sky::draw(vuk::RenderGraph& _rg, Buffer<World> _world, Texture2D _targetCol
 		.resources = {
 			atmosphere.transmittance.resource(vuk::eFragmentSampled),
 			cameraView.resource(vuk::eFragmentSampled),
-			_targetColor.resource(vuk::eColorWrite),
+			_targetColor.resource(vuk::eColorRW),
 			_targetDepth.resource(vuk::eDepthStencilRW) },
 		.execute = [this, _world, _targetColor](vuk::CommandBuffer& cmd) {
 			
