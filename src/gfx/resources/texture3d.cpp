@@ -1,5 +1,7 @@
 #include "gfx/resources/texture3d.hpp"
 
+#include "gfx/util.hpp"
+
 namespace minote::gfx {
 
 auto Texture3D::make(Pool& _pool, vuk::Name _name, uvec3 _size, vuk::Format _format,
@@ -22,6 +24,9 @@ auto Texture3D::make(Pool& _pool, vuk::Name _name, uvec3 _size, vuk::Format _for
 		}
 		
 	}();
+	
+	_pool.ptc().ctx.debug.set_name(*texture.image, _name);
+	_pool.ptc().ctx.debug.set_name(texture.view->payload, nameAppend(_name, "main"));
 	
 	return Texture3D{
 		.name = _name,

@@ -1,5 +1,7 @@
 #include "gfx/resources/texture2d.hpp"
 
+#include "gfx/util.hpp"
+
 namespace minote::gfx {
 
 auto Texture2D::make(Pool& _pool, vuk::Name _name, uvec2 _size, vuk::Format _format,
@@ -24,6 +26,9 @@ auto Texture2D::make(Pool& _pool, vuk::Name _name, uvec2 _size, vuk::Format _for
 		
 	}();
 	
+	_pool.ptc().ctx.debug.set_name(*texture.image, _name);
+	_pool.ptc().ctx.debug.set_name(texture.view->payload, nameAppend(_name, "main"));
+	
 	return Texture2D{
 		.name = _name,
 		.handle = &texture };
@@ -32,6 +37,7 @@ auto Texture2D::make(Pool& _pool, vuk::Name _name, uvec2 _size, vuk::Format _for
 
 auto Texture2D::mipView(u32 _mip) const -> vuk::Unique<vuk::ImageView> {
 	
+	//TODO add debug name
 	return handle->view.mip_subrange(_mip, 1).apply();
 	
 }
