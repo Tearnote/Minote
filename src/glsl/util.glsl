@@ -56,3 +56,17 @@ float luma(vec3 _color) {
 	return dot(_color, W);
 	
 }
+
+// Retrieve u16 halves of a u32
+
+uint u32Lower(uint _n) {
+	
+	return _n & ((1u << 16u) - 1u);
+	
+}
+
+uint u32Upper(uint _n) {
+	
+	return _n >> 16u;
+	
+}

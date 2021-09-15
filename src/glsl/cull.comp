@@ -8,7 +8,7 @@ layout(local_size_x = 64) in;
 layout (binding = 0, std430) restrict buffer Draws {
 	IndirectCommand b_draws[];
 };
-layout (binding = 1, std430) restrict buffer Descriptors {
+layout (binding = 1, std430) restrict readonly buffer Descriptors {
 	MeshDescriptor b_descriptors[];
 };
 layout (binding = 2, std430) restrict readonly buffer MeshIndices {

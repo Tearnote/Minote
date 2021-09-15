@@ -95,14 +95,14 @@ void Bloom::apply(vuk::RenderGraph& _rg, Pool& _pool, Texture2D _target) {
 				cmd.bind_sampled_image(0, 0, *temp.mipView(i), LinearClamp);
 				if (i == 0) { // Final pass, draw to target
 					
-					cmd.bind_sampled_image(0, 1, _target, LinearClamp,
+					cmd.bind_sampled_image(0, 1, _target, NearestClamp,
 						vuk::ImageLayout::eGeneral)
 					   .bind_storage_image(0, 2, _target)
 					   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, BloomStrength);
 					
 				} else { // Draw to intermediate mip
 					
-					cmd.bind_sampled_image(0, 1, *temp.mipView(i - 1), LinearClamp,
+					cmd.bind_sampled_image(0, 1, *temp.mipView(i - 1), NearestClamp,
 						vuk::ImageLayout::eGeneral)
 					   .bind_storage_image(0, 2, *temp.mipView(i - 1))
 					   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, 1.0f);

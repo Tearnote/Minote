@@ -1,0 +1,287 @@
+#version 460
+
+#pragma shader_stage(compute)
+
+layout(local_size_x = 8, local_size_y = 8) in;
+
+#include "sky/skyAccess.glsl"
+#include "visibility.glsl"
+#include "constants.glsl"
+#include "types.glsl"
+#include "util.glsl"
+
+layout(binding = 0) uniform WorldConstants {
+	World u_world;
+};
+
+layout (binding = 1, std430) restrict readonly buffer Descriptors {
+	MeshDescriptor b_descriptors[];
+};
+layout (binding = 2, std430) restrict readonly buffer MeshIndices {
+	uint b_meshIndices[];
+};
+layout(binding = 3, std430) restrict readonly buffer RowTransforms {
+	RowTransform b_transforms[];
+};
+layout(binding = 4, std430) restrict readonly buffer Materials {
+	Material b_materials[];
+};
+
+layout (binding = 5, std430) restrict readonly buffer Indices {
+	uint b_indices[];
+};
+layout (binding = 6, std430) restrict readonly buffer Vertices {
+	float b_vertices[];
+};
+layout (binding = 7, std430) restrict readonly buffer Normals {
+	float b_normals[];
+};
+layout (binding = 8, std430) restrict readonly buffer Colors {
+	uint b_colors[];
+};
+
+layout(binding = 9) restrict readonly buffer SunLuminance {
+	vec3 b_sunLuminance;
+};
+layout(binding = 10) uniform samplerCube s_cubemap;
+layout(binding = 11) uniform sampler3D s_aerialPerspective;
+
+layout(binding = 12) uniform usampler2D s_visbuf;
+layout(binding = 13) uniform sampler2D s_depth;
+layout(binding = 14) restrict writeonly uniform image2D i_target;
+
+uvec3 fetchIndices(uint _n) {
+	
+	uint offset = _n / 2u;
+	uvec2 fetches = {
+		b_indices[offset + 0],
+		b_indices[offset + 1]};
+	
+	if ((_n & 1u) == 0u)
+		return uvec3(
+			u32Lower(fetches.x),
+			u32Upper(fetches.x),
+			u32Lower(fetches.y));
+	else
+		return uvec3(
+			u32Upper(fetches.x),
+			u32Lower(fetches.y),
+			u32Upper(fetches.y));
+	
+}
+
+vec3 fetchPosition(uint _n) {
+	
+	uint base = _n * 3;
+	
+	return vec3(
+		b_vertices[base + 0],
+		b_vertices[base + 1],
+		b_vertices[base + 2]);
+	
+}
+
+vec3 fetchNormal(uint _n) {
+	
+	uint base = _n * 3;
+	
+	return vec3(
+		b_normals[base + 0],
+		b_normals[base + 1],
+		b_normals[base + 2]);
+	
+}
+
+vec4 fetchColor(uint _n) {
+	
+	uvec2 fetches = {
+		b_colors[_n * 2 + 0],
+		b_colors[_n * 2 + 1]};
+	uvec4 uresult = {
+		u32Lower(fetches.x),
+		u32Upper(fetches.x),
+		u32Lower(fetches.y),
+		u32Upper(fetches.y),
+	};
+	vec4 result = vec4(uresult);
+	result /= float((1u << 16u) - 1u);
+	
+	return result;
+	
+}
+
+const float IBLMipCount = 8.0;
+
+vec3 envBRDFApprox(vec3 _f0, float _NoV, float _roughness) {
+	
+	vec4 c0 = vec4(-1.0, -0.0275, -0.572, 0.022);
+	vec4 c1 = vec4(1.0, 0.0425, 1.04, -0.04);
+	vec4 r = _roughness * c0 + c1;
+	float a004 = min(r.x * r.x, exp2(-9.28 * _NoV)) * r.x + r.y;
+	vec2 ab = vec2(-1.04, 1.04) * a004 + r.zw;
+	return _f0 * ab.x + ab.y;
+	
+}
+
+float dApprox(float _roughness, float _RoL) {
+	
+	float a = _roughness * _roughness;
+	float a2 = a * a;
+	float rcp_a2 = 1.0 / a2;
+	// 0.5 / ln(2), 0.275 / ln(2)
+	float c = 0.72134752 * rcp_a2 + 0.39674113;
+	return rcp_a2 * exp2(c*_RoL - c);
+	
+}
+
+void main() {
+	
+	// Bounds check
+	
+	const uvec2 gid = gl_GlobalInvocationID.xy;
+	const ivec2 targetSize = imageSize(i_target);
+	if (any(greaterThanEqual(gid, targetSize)))
+		return;
+	
+	// Retrieve visibility sample
+	
+	uint visSample = texelFetch(s_visbuf, ivec2(gid), 0).x;
+	if (visSample == -1u) // Sky sample
+		return;
+	
+	uint instanceIndex = visSample >> TRIANGLE_ID_BITS;
+	uint triangleIndex = visSample & ((1u << TRIANGLE_ID_BITS) - 1u);
+	
+	// Retrieve instance params
+	
+	mat4 transform = getTransform(b_transforms[instanceIndex]);
+	Material material = b_materials[instanceIndex];
+	
+	// Retrieve vertex indices
+	
+	uint meshIndex = b_meshIndices[instanceIndex];
+	uint indexBase = b_descriptors[meshIndex].indexOffset;
+	indexBase += triangleIndex * 3;
+	uvec3 indices = fetchIndices(indexBase);
+	
+	// Retrieve vertex params
+	
+	uint vertexBase = b_descriptors[meshIndex].vertexOffset;
+	indices += uvec3(vertexBase);
+	
+	mat3 positions = {
+		fetchPosition(indices.x),
+		fetchPosition(indices.y),
+		fetchPosition(indices.z)};
+	
+	mat3 normals = {
+		fetchNormal(indices.x),
+		fetchNormal(indices.y),
+		fetchNormal(indices.z)};
+	
+	mat3x4 colors = {
+		fetchColor(indices.x),
+		fetchColor(indices.y),
+		fetchColor(indices.z)};
+	
+	// Transform params from model to world space
+	
+	mat3 normTransform = mat3(inverse(transpose(transform)));
+	
+	for (uint i = 0; i < 3; i += 1) {
+		
+		vec4 transformed = transform * vec4(positions[i], 1.0);
+		positions[i] = transformed.xyz / transformed.w;
+		
+		normals[i] = normTransform * normals[i];
+		
+	}
+	
+	// Reconstruct world space fragment position
+	
+	float depth = texelFetch(s_depth, ivec2(gid), 0).x;
+	vec2 clipUv = vec2(gid) / vec2(targetSize);
+	clipUv *= 2.0;
+	clipUv -= 1.0;
+	vec3 clipPos = vec3(clipUv, depth);
+	vec4 worldPosW = u_world.viewProjectionInverse * vec4(clipPos, 1.0);
+	vec3 worldPos = worldPosW.xyz / worldPosW.w;
+	
+	// Calculate barycentrics
+	
+	vec3 barycentrics = expandBarycentrics(reconstructBarycentrics(worldPos, positions));
+	
+	// Interpolate params
+	
+	vec3 position =
+		positions[0] * barycentrics.x +
+		positions[1] * barycentrics.y +
+		positions[2] * barycentrics.z;
+	
+	vec3 normal = normalize(
+		normals[0] * barycentrics.x +
+		normals[1] * barycentrics.y +
+		normals[2] * barycentrics.z);
+	
+	vec4 color =
+		colors[0] * barycentrics.x +
+		colors[1] * barycentrics.y +
+		colors[2] * barycentrics.z;
+	
+	// Standard vectors
+	
+	vec3 viewDirection = normalize(u_world.cameraPos - position);
+	float NoV = dot(normal, viewDirection);
+	
+	// Empirical sun visibility above the horizon
+	
+	float sunDot = dot(vec3(0.0, 0.0, 1.0), u_world.sunDirection);
+	vec3 sunColor = b_sunLuminance;
+	
+	const float sunAngularSize = radians(0.2);
+	const float sunsetStart = cos(radians(90.05) - sunAngularSize);
+	const float sunsetEnd = cos(radians(90.05) + sunAngularSize);
+	float sunset = (sunDot - sunsetEnd) / (sunsetStart - sunsetEnd);
+	sunset = clamp(sunset, 0.0, 1.0);
+	sunset = (1.0 - cos(sunset * 1.57079633)) / 2.0;
+	
+	sunColor *= sunset;
+	
+	// PBR calculation
+	
+	color *= material.tint;
+	vec3 f0 = max(color.rgb * material.metalness, vec3(0.04));
+	
+	vec3 iblDiffuse = textureLod(s_cubemap, normal, IBLMipCount - 2.0).rgb;
+	vec3 sunDiffuse = sunColor * max(dot(normal, u_world.sunDirection), 0.0);
+	vec3 diffuse = color.rgb * (iblDiffuse + sunDiffuse) * (1.0 - material.metalness);
+	
+	vec3 reflection = reflect(viewDirection, normal);
+	float iblMip = max(7.0 - 0.480898 * log(2.0 / pow(material.roughness, 4.0) - 1.0), 0.0);
+	vec3 iblSpecular = vec3(textureLod(s_cubemap, -reflection, iblMip));
+	const float SunMinRoughness = 1.0 / 16.0;
+	vec3 sunSpecular = sunColor * dApprox(max(material.roughness, SunMinRoughness), dot(-reflection, u_world.sunDirection));
+	vec3 specular = iblSpecular + sunSpecular;
+	
+	vec4 surface = vec4(mix(diffuse, specular, envBRDFApprox(f0, NoV, material.roughness)), color.a);
+	
+	// Aerial perspective
+	
+	float slice = aerialPerspectiveDepthToSlice(1.0 - depth);
+	float weight = 1.0;
+	if (slice < 0.5) {
+		
+		// We multiply by weight to fade to 0 at depth 0. That works for luminance and opacity.
+		weight = clamp(slice * 2.0, 0.0, 1.0);
+		slice = 0.5;
+		
+	}
+	float w = sqrt(slice / textureSize(s_aerialPerspective, 0).z);	// squared distribution
+	
+	vec4 ap = weight * textureLod(s_aerialPerspective, vec3((vec2(gid) + vec2(0.5)) / vec2(imageSize(i_target)), w), 0.0);
+	
+	// Image write
+	
+	imageStore(i_target, ivec2(gid), surface + ap);
+	
+}

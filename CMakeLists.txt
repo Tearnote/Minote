@@ -71,9 +71,9 @@ add_executable(Minote
         src/gfx/effects/cubeFilter.hpp src/gfx/effects/cubeFilter.cpp
         src/gfx/effects/visibility.hpp src/gfx/effects/visibility.cpp
         src/gfx/effects/indirect.hpp src/gfx/effects/indirect.cpp
-        src/gfx/effects/forward.hpp src/gfx/effects/forward.cpp
         src/gfx/effects/tonemap.hpp src/gfx/effects/tonemap.cpp
         src/gfx/effects/bloom.hpp src/gfx/effects/bloom.cpp
+        src/gfx/effects/pbr.hpp src/gfx/effects/pbr.cpp
         src/gfx/effects/sky.hpp src/gfx/effects/sky.cpp
         src/gfx/samplers.hpp
         src/gfx/objects.hpp src/gfx/objects.cpp
@@ -285,11 +285,11 @@ set(SHADER_SOURCES
         src/glsl/visibility.vert src/glsl/visibility.frag
         src/glsl/bloomDown.comp
         src/glsl/zprepass.vert src/glsl/zprepass.frag
-        src/glsl/forward.vert src/glsl/forward.frag
         src/glsl/tonemap.comp
         src/glsl/bloomUp.comp
         src/glsl/imgui.vert src/glsl/imgui.frag
-        src/glsl/cull.comp)
+        src/glsl/cull.comp
+        src/glsl/pbr.comp)
 
 foreach(SHADER_PATH ${SHADER_SOURCES})
     get_filename_component(SHADER_FILENAME ${SHADER_PATH} NAME)

@@ -15,8 +15,8 @@
 #include "gfx/effects/visibility.hpp"
 #include "gfx/effects/indirect.hpp"
 #include "gfx/effects/tonemap.hpp"
-#include "gfx/effects/forward.hpp"
 #include "gfx/effects/bloom.hpp"
+#include "gfx/effects/pbr.hpp"
 #include "gfx/util.hpp"
 #include "main.hpp"
 
@@ -47,9 +47,9 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	Atmosphere::compile(ptc);
 	Visibility::compile(ptc);
 	Indirect::compile(ptc);
-	Forward::compile(ptc);
 	Tonemap::compile(ptc);
 	Bloom::compile(ptc);
+	PBR::compile(ptc);
 	Sky::compile(ptc);
 	
 	// Initialize internal resources
@@ -119,7 +119,7 @@ void Engine::render() {
 	m_world.cameraPos = m_camera.position;
 	
 	// Sun properties
-	static auto sunPitch = 7.2_deg;
+	static auto sunPitch = 7.8_deg;
 	static auto sunYaw = 30.0_deg;
 	ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 60.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
 	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
@@ -157,7 +157,8 @@ void Engine::render() {
 	
 	auto depth = Texture2D::make(m_framePool, "depth",
 		viewport, vuk::Format::eD32Sfloat,
-		vuk::ImageUsageFlagBits::eDepthStencilAttachment);
+		vuk::ImageUsageFlagBits::eDepthStencilAttachment |
+		vuk::ImageUsageFlagBits::eSampled);
 	auto color = Texture2D::make(m_framePool, "color",
 		viewport, vuk::Format::eR16G16B16A16Sfloat,
 		vuk::ImageUsageFlagBits::eColorAttachment |
@@ -175,8 +176,9 @@ void Engine::render() {
 	
 	auto visbuf = Texture2D::make(m_framePool, "visbuf",
 		viewport, vuk::Format::eR32Uint,
-		vuk::ImageUsageFlagBits::eColorAttachment);
-	visbuf.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearColor(-1u, 0, 0, 0));
+		vuk::ImageUsageFlagBits::eColorAttachment |
+		vuk::ImageUsageFlagBits::eSampled);
+	visbuf.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearColor(-1u, -1u, -1u, -1u));
 	
 	auto worldBuf = m_world.upload(m_framePool, "world");
 	
@@ -191,9 +193,8 @@ void Engine::render() {
 	sky.drawCubemap(rg, worldBuf, iblUnfiltered);
 	CubeFilter::apply(rg, iblUnfiltered, iblFiltered);
 	indirect.sortAndCull(rg, m_world, *m_meshes);
-//	Forward::zPrepass(rg, depth, worldBuf, indirect, *m_meshes);
 	Visibility::apply(rg, visbuf, depth, worldBuf, indirect, *m_meshes);
-	Forward::draw(rg, color, depth, worldBuf, indirect, *m_meshes, sky, iblFiltered);
+	PBR::apply(rg, color, visbuf, depth, worldBuf, *m_meshes, indirect, sky, iblFiltered);
 	sky.draw(rg, worldBuf, color, depth);
 	Bloom::apply(rg, m_framePool, color);
 	Tonemap::apply(rg, color, screen);
@@ -201,7 +202,7 @@ void Engine::render() {
 	ImGui::Render();
 	ImGui_ImplVuk_Render(m_framePool, ptc, rg, screen.name, m_imguiData, ImGui::GetDrawData());
 	
-	rg.attach_swapchain("swapchain", m_vk.swapchain, vuk::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
+	rg.attach_swapchain("swapchain", m_vk.swapchain, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 	rg.add_pass({
 		.name = "swapchain copy",
 		.resources = {

@@ -29,7 +29,7 @@ void Tonemap::apply(vuk::RenderGraph& _rg, Texture2D _source, Texture2D _target)
 		.execute = [_source, _target](vuk::CommandBuffer& cmd) {
 			
 			cmdSetViewportScissor(cmd, _target.size());
-			cmd.bind_sampled_image(0, 0, _source, LinearClamp)
+			cmd.bind_sampled_image(0, 0, _source, NearestClamp)
 			   .bind_storage_image(0, 1, _target)
 			   .bind_compute_pipeline("tonemap");
 			cmd.dispatch_invocations(_target.size().x(), _target.size().y());

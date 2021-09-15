@@ -127,16 +127,20 @@ auto MeshList::upload(Pool& _pool, vuk::Name _name) && -> MeshBuffer {
 	
 	auto result = MeshBuffer{
 		.verticesBuf = Buffer<vec3>::make(_pool, nameAppend(_name, "vertices"),
-			vuk::BufferUsageFlagBits::eVertexBuffer | vuk::BufferUsageFlagBits::eStorageBuffer,
+			vuk::BufferUsageFlagBits::eVertexBuffer |
+			vuk::BufferUsageFlagBits::eStorageBuffer,
 			vertices, vuk::MemoryUsage::eGPUonly),
 		.normalsBuf = Buffer<vec3>::make(_pool, nameAppend(_name, "normals"),
-			vuk::BufferUsageFlagBits::eVertexBuffer,
+			vuk::BufferUsageFlagBits::eVertexBuffer |
+			vuk::BufferUsageFlagBits::eStorageBuffer,
 			normals, vuk::MemoryUsage::eGPUonly),
 		.colorsBuf = Buffer<u16vec4>::make(_pool, nameAppend(_name, "colors"),
-			vuk::BufferUsageFlagBits::eVertexBuffer,
+			vuk::BufferUsageFlagBits::eVertexBuffer |
+			vuk::BufferUsageFlagBits::eStorageBuffer,
 			colors, vuk::MemoryUsage::eGPUonly),
 		.indicesBuf = Buffer<u16>::make(_pool, nameAppend(_name, "indices"),
-			vuk::BufferUsageFlagBits::eIndexBuffer,
+			vuk::BufferUsageFlagBits::eIndexBuffer |
+			vuk::BufferUsageFlagBits::eStorageBuffer,
 			indices, vuk::MemoryUsage::eGPUonly),
 		.descriptorBuf = Buffer<MeshDescriptor>::make(_pool, nameAppend(_name, "descriptors"),
 			vuk::BufferUsageFlagBits::eStorageBuffer,

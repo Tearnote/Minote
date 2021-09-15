@@ -167,8 +167,8 @@ void Indirect::sortAndCull(vuk::RenderGraph& _rg, World const& _world, MeshBuffe
 				.instancesCount = u32(instancesCount) };
 			
 			cmd.dispatch_invocations(instancesCount);
-		},
-	});
+			
+		}});
 	
 	commandsBuf.attach(_rg, vuk::eTransferDst, vuk::eNone);
 	meshIndicesBuf.attach(_rg, vuk::eTransferDst, vuk::eNone);
