@@ -111,13 +111,14 @@ vec4 fetchColor(uint _n) {
 }
 
 const float IBLMipCount = 8.0;
-
-void orthonormalBasis(vec3 _u, out vec3 _v, out vec3 _w) {
+  
+void orthonormalBasis(vec3 _n, out vec3 _b1, out vec3 _b2) {
 	
-	float a = 1./(1. + _u.z);
-	float b = -_u.x*_u.y*a;
-	_v = vec3(1. - _u.x*_u.x*a, b, -_u.x);
-	_w = vec3(b, 1. - _u.y*_u.y*a , -_u.y);
+	float sign = _n.z >= 0.0? 1.0 : -1.0;
+	float a = -1.0 / (sign + _n.z);
+	float b = _n.x * _n.y * a;
+	_b1 = vec3(1.0 + sign * _n.x * _n.x * a, sign * b, -sign * _n.x);
+	_b2 = vec3(b, sign + _n.y * _n.y * a, -_n.y);
 	
 }
 
@@ -142,6 +143,52 @@ vec3 rotateUnitInDirection(vec3 _u, vec3 _dir) {
 	
 }
 
+vec3 normalInterpEstimate(vec3 _estimate, mat3 _normals, vec3 _weights) {
+	
+	vec3 basisX, basisY;
+	orthonormalBasis(_estimate, basisX, basisY);
+	
+	mat2 hessian = mat2(0.0);
+	vec2 gradient = vec2(0.0);
+	
+	for (uint i = 0; i < 3; i += 1) {
+		
+		vec3 perp = project(_normals[i], _estimate);
+		float sinTheta = length(perp);
+		
+		if (abs(sinTheta) < 0.00001) {
+			
+			hessian += mat2(_weights[i], 0.0, 0.0, _weights[i]);
+			continue;
+			
+		}
+		
+		float cosTheta = dot(_normals[i], _estimate);
+		float theta = atan(sinTheta, cosTheta);
+		float sinThetaInv = 1.0 / sinTheta;
+		vec3 perpNorm = perp * sinThetaInv; // Normalize
+		float cosPhi = dot(perpNorm, basisX);
+		float sinPhi = dot(perpNorm, basisY);
+		vec2 gradLocal = {cosPhi, sinPhi};
+		gradient += _weights[i] * theta * gradLocal; // Added on weighted discrepancy to gradient
+		float sinPhiSq = sinPhi * sinPhi;
+		float cosPhiSq = cosPhi * cosPhi;
+		float tt = _weights[i] * theta * sinThetaInv * cosTheta;
+		float offdiag = cosPhi * sinPhi * (_weights[i] - tt);
+		hessian += mat2(
+		_weights[i] * cosPhiSq + tt * sinPhiSq,
+		offdiag, offdiag,
+		_weights[i] * sinPhiSq + tt * cosPhiSq);
+		
+	}
+	
+	vec2 dispLocal = inverse(hessian) * gradient;
+	vec3 disp = dispLocal.x * basisX + dispLocal.y * basisY;
+	
+	return rotateUnitInDirection(_estimate, disp);
+	
+}
+
 vec3 normalInterp(mat3 _normals, vec3 _weights) {
 	
 	vec3 estimate = normalize(
@@ -149,47 +196,8 @@ vec3 normalInterp(mat3 _normals, vec3 _weights) {
 		_normals[1] * _weights.y +
 		_normals[2] * _weights.z);
 	
-	vec3 basisX, basisY;
-	orthonormalBasis(estimate, basisX, basisY);
-	
-	mat2 hessian = mat2(0.0);
-	vec2 gradient = vec2(0.0);
-	
-	for (uint i = 0; i < 3; i += 1) {
-		
-		vec3 perp = project(_normals[i], estimate);
-		float sinTheta = length(perp);
-		
-		if (sinTheta == 0.0) {
-			
-			hessian += mat2(_weights[i], 0.0, 0.0, _weights[i]);
-			continue;
-			
-		}
-		
-		float cosTheta = dot(_normals[i], estimate);
-		float theta = atan(sinTheta, cosTheta);
-		float sinThetaInv = 1.0 / sinTheta;
-		perp *= sinThetaInv; // Normalize
-		float cosPhi = dot(perp, basisX);
-		float sinPhi = dot(perp, basisY);
-		vec2 gradLocal = {cosPhi, sinPhi};
-		gradient += _weights[i] * theta * gradLocal;	// Added on weighted discrepancy to gradient
-		float sinPhiSq = sinPhi * sinPhi;
-		float cosPhiSq = cosPhi * cosPhi;
-		float tt = _weights[i] * theta * sinThetaInv * cosTheta;
-		float offdiag = cosPhi * sinPhi * (_weights[i] - tt);
-		hessian += mat2(
-			_weights[i] * cosPhiSq + tt * sinPhiSq,
-			offdiag, offdiag,
-			_weights[i] * sinPhiSq + tt * cosPhiSq);
-		
-	}
-	
-	vec2 dispLocal = inverse(hessian) * gradient;
-	vec3 disp = dispLocal.x * basisX + dispLocal.y * basisY;
-	
-	estimate = rotateUnitInDirection(estimate, disp);
+	for (uint i = 0; i < 1; i += 1) // Just one round seems to be a very strong approximation
+		estimate = normalInterpEstimate(estimate, _normals, _weights);
 	
 	return estimate;
 	
@@ -302,6 +310,10 @@ void main() {
 		positions[2] * barycentrics.z;
 	
 	vec3 normal = normalInterp(normals, barycentrics);
+//	vec3 normal = normalize(
+//		normals[0] * barycentrics.x +
+//		normals[1] * barycentrics.y +
+//		normals[2] * barycentrics.z);
 	
 	vec4 color =
 		colors[0] * barycentrics.x +
