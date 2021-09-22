@@ -108,7 +108,7 @@ void Atmosphere::precalculate(vuk::RenderGraph& _rg) {
 		}});
 	
 }
-  
+
 void Sky::compile(vuk::PerThreadContext& _ptc) {
 	
 	auto skyGenSkyViewPci = vuk::ComputePipelineCreateInfo();

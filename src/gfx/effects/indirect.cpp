@@ -71,6 +71,10 @@ Indirect::Indirect(Pool& _pool, vuk::Name _name,
 		
 	}
 	
+	meshIndices.resize(instancesCount);
+	transforms.resize(instancesCount);
+	materials.resize(instancesCount);
+	
 	// Calculate command list instance offsets (prefix sum)
 	
 	auto commandOffset = 0_zu;
