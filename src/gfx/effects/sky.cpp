@@ -108,7 +108,7 @@ void Atmosphere::precalculate(vuk::RenderGraph& _rg) {
 		}});
 	
 }
-
+  
 void Sky::compile(vuk::PerThreadContext& _ptc) {
 	
 	auto skyGenSkyViewPci = vuk::ComputePipelineCreateInfo();
@@ -117,15 +117,10 @@ void Sky::compile(vuk::PerThreadContext& _ptc) {
 	}, "skyGenSkyView.comp");
 	_ptc.ctx.create_named_pipeline("sky_gen_sky_view", skyGenSkyViewPci);
 	
-	auto skyDrawPci = vuk::PipelineBaseCreateInfo();
+	auto skyDrawPci = vuk::ComputePipelineCreateInfo();
 	skyDrawPci.add_spirv(std::vector<u32>{
-#include "spv/skyDraw.vert.spv"
-	}, "skyDraw.vert");
-	skyDrawPci.add_spirv(std::vector<u32>{
-#include "spv/skyDraw.frag.spv"
-	}, "skyDraw.frag");
-	skyDrawPci.depth_stencil_state.depthWriteEnable = false;
-	skyDrawPci.depth_stencil_state.depthCompareOp = vuk::CompareOp::eEqual;
+#include "spv/skyDraw.comp.spv"
+	}, "skyDraw.comp");
 	_ptc.ctx.create_named_pipeline("sky_draw", skyDrawPci);
 	
 	auto skyDrawCubemapPci = vuk::ComputePipelineCreateInfo();
@@ -232,24 +227,25 @@ void Sky::calculate(vuk::RenderGraph& _rg, Buffer<World> _world, Camera const& _
 	
 }
 
-void Sky::draw(vuk::RenderGraph& _rg, Buffer<World> _world, Texture2D _targetColor, Texture2D _targetDepth) {
+void Sky::draw(vuk::RenderGraph& _rg, Buffer<World> _world, Texture2D _target, Texture2D _visbuf) {
 	
 	_rg.add_pass({
 		.name = nameAppend(name, "background"),
 		.resources = {
-			atmosphere.transmittance.resource(vuk::eFragmentSampled),
-			cameraView.resource(vuk::eFragmentSampled),
-			_targetColor.resource(vuk::eColorRW),
-			_targetDepth.resource(vuk::eDepthStencilRW) },
-		.execute = [this, _world, _targetColor](vuk::CommandBuffer& cmd) {
+			atmosphere.transmittance.resource(vuk::eComputeSampled),
+			cameraView.resource(vuk::eComputeSampled),
+			_visbuf.resource(vuk::eComputeSampled),
+			_target.resource(vuk::eComputeWrite) },
+		.execute = [this, _world, _target, _visbuf](vuk::CommandBuffer& cmd) {
 			
-			cmdSetViewportScissor(cmd, _targetColor.size());
 			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_uniform_buffer(0, 1, atmosphere.params)
 			   .bind_sampled_image(0, 2, atmosphere.transmittance, LinearClamp)
 			   .bind_sampled_image(1, 0, cameraView, LinearClamp)
-			   .bind_graphics_pipeline("sky_draw");
-			cmd.draw(3, 1, 0, 0);
+			   .bind_sampled_image(1, 1, _visbuf, NearestClamp)
+			   .bind_storage_image(1, 2, _target)
+			   .bind_compute_pipeline("sky_draw");
+			cmd.dispatch_invocations(_target.size().x(), _target.size().y());
 			
 		}});
 	

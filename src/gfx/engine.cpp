@@ -195,7 +195,7 @@ void Engine::render() {
 	indirect.sortAndCull(rg, m_world, *m_meshes);
 	Visibility::apply(rg, visbuf, depth, worldBuf, indirect, *m_meshes);
 	PBR::apply(rg, color, visbuf, depth, worldBuf, *m_meshes, indirect, sky, iblFiltered);
-	sky.draw(rg, worldBuf, color, depth);
+	sky.draw(rg, worldBuf, color, visbuf);
 	Bloom::apply(rg, m_framePool, color);
 	Tonemap::apply(rg, color, screen);
 	

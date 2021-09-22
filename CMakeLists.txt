@@ -278,7 +278,7 @@ set(SHADER_SOURCES
         src/glsl/sky/skyGenTransmittance.comp
         src/glsl/sky/skyDrawCubemap.comp
         src/glsl/sky/skyGenSkyView.comp
-        src/glsl/sky/skyDraw.vert src/glsl/sky/skyDraw.frag
+        src/glsl/sky/skyDraw.comp
         src/glsl/bloomDownKaris.comp
         src/glsl/cubePostfilter.comp
         src/glsl/cubePrefilter.comp

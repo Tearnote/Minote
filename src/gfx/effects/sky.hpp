@@ -111,7 +111,7 @@ struct Sky {
 	void calculate(vuk::RenderGraph&, Buffer<World>, Camera const& camera);
 	
 	// Draw the sky in the background of an image (where depth is 0.0).
-	void draw(vuk::RenderGraph&, Buffer<World>, Texture2D targetColor, Texture2D targetDepth);
+	void draw(vuk::RenderGraph&, Buffer<World>, Texture2D target, Texture2D visbuf);
 	
 	// Draw the sky into an existing IBLMap. Target is the mip 0 of provided image.
 	void drawCubemap(vuk::RenderGraph&, Buffer<World>, Cubemap _target);
