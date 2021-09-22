@@ -19,13 +19,19 @@ using namespace base;
 // the instances and perform frustum culling.
 struct Indirect {
 	
+	using Command = VkDrawIndexedIndirectCommand;
+	using MeshIndex = u32;
+	using BasicTransform = ObjectPool::Transform;
+	using Transform = array<vec4, 3>;
+	using Material = ObjectPool::Material;
+	
 	usize commandsCount;
-	Buffer<VkDrawIndexedIndirectCommand> commandsBuf;
+	Buffer<Command> commandsBuf;
 	
 	usize instancesCount;
-	Buffer<u32> meshIndicesCulledBuf;
-	Buffer<vec4[3]> transformsCulledBuf;
-	Buffer<ObjectPool::Material> materialsCulledBuf;
+	Buffer<MeshIndex> meshIndicesCulledBuf;
+	Buffer<Transform> transformsCulledBuf;
+	Buffer<Material> materialsCulledBuf;
 	
 	// Build the shader.
 	static void compile(vuk::PerThreadContext&);
@@ -38,9 +44,9 @@ struct Indirect {
 	
 private:
 	
-	Buffer<u32> meshIndicesBuf;
-	Buffer<ObjectPool::Transform> transformsBuf;
-	Buffer<ObjectPool::Material> materialsBuf;
+	Buffer<MeshIndex> meshIndicesBuf;
+	Buffer<BasicTransform> transformsBuf;
+	Buffer<Material> materialsBuf;
 	
 };
 

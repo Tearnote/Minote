@@ -32,10 +32,10 @@ Indirect::Indirect(Pool& _pool, vuk::Name _name,
 	
 	// Create the command list
 	
-	auto commands = ivector<VkDrawIndexedIndirectCommand>();
+	auto commands = ivector<Command>();
 	for (auto& descriptor: _meshes.descriptors) {
 		
-		commands.emplace_back(VkDrawIndexedIndirectCommand{
+		commands.emplace_back(Command{
 			.indexCount = descriptor.indexCount,
 			.instanceCount = 0, // counted in the next loop
 			.firstIndex = descriptor.indexOffset,
@@ -48,9 +48,9 @@ Indirect::Indirect(Pool& _pool, vuk::Name _name,
 	
 	// Iterate through all valid instances
 	
-	auto meshIndices = pvector<u32>(_objects.size());
-	auto transforms = pvector<ObjectPool::Transform>(_objects.size());
-	auto materials = pvector<ObjectPool::Material>(_objects.size());
+	auto meshIndices = pvector<MeshIndex>(_objects.size());
+	auto transforms = pvector<BasicTransform>(_objects.size());
+	auto materials = pvector<Material>(_objects.size());
 	
 	instancesCount = 0;
 	for (auto id: iota(ObjectID(0), _objects.size())) {
@@ -95,27 +95,27 @@ Indirect::Indirect(Pool& _pool, vuk::Name _name,
 	
 	// Create and upload the buffers
 	
-	commandsBuf = Buffer<VkDrawIndexedIndirectCommand>::make(_pool, nameAppend(_name, "commands"),
+	commandsBuf = Buffer<Command>::make(_pool, nameAppend(_name, "commands"),
 		vuk::BufferUsageFlagBits::eIndirectBuffer | vuk::BufferUsageFlagBits::eStorageBuffer,
 		commands);
 	
-	meshIndicesBuf = Buffer<u32>::make(_pool, nameAppend(_name, "indices"),
+	meshIndicesBuf = Buffer<MeshIndex>::make(_pool, nameAppend(_name, "indices"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		meshIndices);
-	transformsBuf = Buffer<ObjectPool::Transform>::make(_pool, nameAppend(_name, "transforms"),
+	transformsBuf = Buffer<BasicTransform>::make(_pool, nameAppend(_name, "transforms"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		transforms);
-	materialsBuf = Buffer<ObjectPool::Material>::make(_pool, nameAppend(_name, "materials"),
+	materialsBuf = Buffer<Material>::make(_pool, nameAppend(_name, "materials"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		materials);
 	
-	meshIndicesCulledBuf = Buffer<u32>::make(_pool, nameAppend(_name, "indicesCulled"),
+	meshIndicesCulledBuf = Buffer<MeshIndex>::make(_pool, nameAppend(_name, "indicesCulled"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		instancesCount);
-	transformsCulledBuf = Buffer<vec4[3]>::make(_pool, nameAppend(_name, "transformsCulled"),
+	transformsCulledBuf = Buffer<Transform>::make(_pool, nameAppend(_name, "transformsCulled"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		instancesCount);
-	materialsCulledBuf = Buffer<ObjectPool::Material>::make(_pool, nameAppend(_name, "materialsCulled"),
+	materialsCulledBuf = Buffer<Material>::make(_pool, nameAppend(_name, "materialsCulled"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		instancesCount);
 	
