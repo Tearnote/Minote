@@ -1,3 +1,6 @@
+#ifndef TYPES_GLSL
+#define TYPES_GLSL
+
 // Types commonly used for data interchange between rendering modules
 
 // Global world-data, constant throughout an entire frame
@@ -19,7 +22,7 @@ struct World {
 };
 
 // GPU representation of VkDrawIndexedIndirectCommand
-struct IndirectCommand {
+struct Command {
 	
 	uint indexCount;
 	uint instanceCount;
@@ -40,7 +43,7 @@ struct MeshDescriptor {
 };
 
 // Components of an instance transform
-struct Transform {
+struct BasicTransform {
 	
 	vec3 position;
 	float pad0;
@@ -52,7 +55,7 @@ struct Transform {
 
 // Combined instance transform, stored in a transposed compact mat4x3 form
 // (dropping the useless (0,0,0,1) row)
-struct RowTransform {
+struct Transform {
 	
 	vec4 rows[3];
 	
@@ -68,8 +71,8 @@ struct Material {
 	
 };
 
-// Convert from Transform to RowTransform
-RowTransform encodeTransform(Transform _t) {
+// Convert from BasicTransform to Transform
+Transform encodeTransform(BasicTransform _t) {
 	
 	const float rw = _t.rotation.x;
 	const float rx = _t.rotation.y;
@@ -85,7 +88,7 @@ RowTransform encodeTransform(Transform _t) {
 	rotationMat[1] *= _t.scale.y;
 	rotationMat[2] *= _t.scale.z;
 	
-	RowTransform result;
+	Transform result;
 	result.rows[0] = vec4(rotationMat[0], _t.position.x);
 	result.rows[1] = vec4(rotationMat[1], _t.position.y);
 	result.rows[2] = vec4(rotationMat[2], _t.position.z);
@@ -93,8 +96,8 @@ RowTransform encodeTransform(Transform _t) {
 	
 }
 
-// Convert from RowTransform to mat4 (standard column-major)
-mat4 getTransform(RowTransform _t) {
+// Convert from Transform to mat4 (standard column-major)
+mat4 getTransform(Transform _t) {
 	
 	return mat4(
 		_t.rows[0].x, _t.rows[1].x, _t.rows[2].x, 0.0,
@@ -103,3 +106,5 @@ mat4 getTransform(RowTransform _t) {
 		_t.rows[0].w, _t.rows[1].w, _t.rows[2].w, 1.0);
 	
 }
+
+#endif //TYPES_GLSL

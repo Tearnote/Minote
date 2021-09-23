@@ -11,8 +11,8 @@ layout(binding = 0) uniform WorldConstants {
 layout(std430, binding = 1) readonly buffer Vertices {
 	float b_vertices[];
 };
-layout(std430, binding = 2) readonly buffer RowTransforms {
-	RowTransform b_transforms[];
+layout(std430, binding = 2) readonly buffer Transforms {
+	Transform b_transforms[];
 };
 
 void main() {

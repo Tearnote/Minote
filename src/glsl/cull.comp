@@ -5,8 +5,8 @@ layout(local_size_x = 64) in;
 
 #include "types.glsl"
 
-layout (binding = 0, std430) restrict buffer Draws {
-	IndirectCommand b_draws[];
+layout (binding = 0, std430) restrict buffer Commands {
+	Command b_commands[];
 };
 layout (binding = 1, std430) restrict readonly buffer Descriptors {
 	MeshDescriptor b_descriptors[];
@@ -15,7 +15,7 @@ layout (binding = 2, std430) restrict readonly buffer MeshIndices {
 	uint b_meshIndices[];
 };
 layout (binding = 3, std430) restrict readonly buffer Transforms {
-	Transform b_transforms[];
+	BasicTransform b_transforms[];
 };
 layout (binding = 4, std430) restrict readonly buffer Materials {
 	Material b_materials[];
@@ -24,7 +24,7 @@ layout (binding = 5, std430) restrict writeonly buffer MeshIndicesCulled {
 	uint b_meshIndicesCulled[];
 };
 layout (binding = 6, std430) restrict writeonly buffer TransformsCulled {
-	RowTransform b_transformsCulled[];
+	Transform b_transformsCulled[];
 };
 layout (binding = 7, std430) restrict writeonly buffer MaterialsCulled {
 	Material b_materialsCulled[];
@@ -59,8 +59,8 @@ void main() {
 	float radius = b_descriptors[index].radius;
 	if (!visible(gid, radius * scale)) return;
 	
-	uint offset = b_draws[index].firstInstance;
-	uint newid = offset + atomicAdd(b_draws[index].instanceCount, 1);
+	uint offset = b_commands[index].firstInstance;
+	uint newid = offset + atomicAdd(b_commands[index].instanceCount, 1);
 	
 	b_meshIndicesCulled[newid] = b_meshIndices[gid];
 	b_transformsCulled[newid] = encodeTransform(b_transforms[gid]);

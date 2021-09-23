@@ -10,6 +10,11 @@ layout(local_size_x = 8, local_size_y = 8) in;
 #include "types.glsl"
 #include "util.glsl"
 
+#define INDICES_BUF b_indices
+#define VERTICES_BUF b_vertices
+#define NORMALS_BUF b_normals
+#define COLORS_BUF b_colors
+
 layout(binding = 0) uniform WorldConstants {
 	World u_world;
 };
@@ -20,24 +25,24 @@ layout (binding = 1, std430) restrict readonly buffer Descriptors {
 layout (binding = 2, std430) restrict readonly buffer MeshIndices {
 	uint b_meshIndices[];
 };
-layout(binding = 3, std430) restrict readonly buffer RowTransforms {
-	RowTransform b_transforms[];
+layout(binding = 3, std430) restrict readonly buffer Transforms {
+	Transform b_transforms[];
 };
 layout(binding = 4, std430) restrict readonly buffer Materials {
 	Material b_materials[];
 };
 
 layout (binding = 5, std430) restrict readonly buffer Indices {
-	uint b_indices[];
+	uint INDICES_BUF[];
 };
 layout (binding = 6, std430) restrict readonly buffer Vertices {
-	float b_vertices[];
+	float VERTICES_BUF[];
 };
 layout (binding = 7, std430) restrict readonly buffer Normals {
-	float b_normals[];
+	float NORMALS_BUF[];
 };
 layout (binding = 8, std430) restrict readonly buffer Colors {
-	uint b_colors[];
+	uint COLORS_BUF[];
 };
 
 layout(binding = 9) restrict readonly buffer SunLuminance {
@@ -50,158 +55,9 @@ layout(binding = 12) uniform usampler2D s_visbuf;
 layout(binding = 13) uniform sampler2D s_depth;
 layout(binding = 14) restrict writeonly uniform image2D i_target;
 
-uvec3 fetchIndices(uint _n) {
-	
-	uint offset = _n / 2u;
-	uvec2 fetches = {
-		b_indices[offset + 0],
-		b_indices[offset + 1]};
-	
-	if ((_n & 1u) == 0u)
-		return uvec3(
-			u32Lower(fetches.x),
-			u32Upper(fetches.x),
-			u32Lower(fetches.y));
-	else
-		return uvec3(
-			u32Upper(fetches.x),
-			u32Lower(fetches.y),
-			u32Upper(fetches.y));
-	
-}
-
-vec3 fetchPosition(uint _n) {
-	
-	uint base = _n * 3;
-	
-	return vec3(
-		b_vertices[base + 0],
-		b_vertices[base + 1],
-		b_vertices[base + 2]);
-	
-}
-
-vec3 fetchNormal(uint _n) {
-	
-	uint base = _n * 3;
-	
-	return vec3(
-		b_normals[base + 0],
-		b_normals[base + 1],
-		b_normals[base + 2]);
-	
-}
-
-vec4 fetchColor(uint _n) {
-	
-	uvec2 fetches = {
-		b_colors[_n * 2 + 0],
-		b_colors[_n * 2 + 1]};
-	uvec4 uresult = {
-		u32Lower(fetches.x),
-		u32Upper(fetches.x),
-		u32Lower(fetches.y),
-		u32Upper(fetches.y),
-	};
-	vec4 result = vec4(uresult);
-	result /= float((1u << 16u) - 1u);
-	
-	return result;
-	
-}
+#include "typesAccess.glsl"
 
 const float IBLMipCount = 8.0;
-  
-void orthonormalBasis(vec3 _n, out vec3 _b1, out vec3 _b2) {
-	
-	float sign = _n.z >= 0.0? 1.0 : -1.0;
-	float a = -1.0 / (sign + _n.z);
-	float b = _n.x * _n.y * a;
-	_b1 = vec3(1.0 + sign * _n.x * _n.x * a, sign * b, -sign * _n.x);
-	_b2 = vec3(b, sign + _n.y * _n.y * a, -_n.y);
-	
-}
-
-vec3 project(vec3 _u, vec3 _v) {
-	
-	vec3 result = _u - _v;
-	return result - (dot(result, _v) * _v);
-	
-}
-
-vec3 rotateUnitInDirection(vec3 _u, vec3 _dir) {
-	
-	float theta = dot(_dir, _dir);
-	if (theta == 0.0)
-		return _u;
-	
-	theta = sqrt(theta);
-	float cosTheta = cos(theta);
-	float sinTheta = sin(theta);
-	vec3 dirUnit = _dir / theta;
-	return cosTheta * _u + sinTheta * dirUnit;
-	
-}
-
-vec3 normalInterpEstimate(vec3 _estimate, mat3 _normals, vec3 _weights) {
-	
-	vec3 basisX, basisY;
-	orthonormalBasis(_estimate, basisX, basisY);
-	
-	mat2 hessian = mat2(0.0);
-	vec2 gradient = vec2(0.0);
-	
-	for (uint i = 0; i < 3; i += 1) {
-		
-		vec3 perp = project(_normals[i], _estimate);
-		float sinTheta = length(perp);
-		
-		if (abs(sinTheta) < 0.00001) {
-			
-			hessian += mat2(_weights[i], 0.0, 0.0, _weights[i]);
-			continue;
-			
-		}
-		
-		float cosTheta = dot(_normals[i], _estimate);
-		float theta = atan(sinTheta, cosTheta);
-		float sinThetaInv = 1.0 / sinTheta;
-		vec3 perpNorm = perp * sinThetaInv; // Normalize
-		float cosPhi = dot(perpNorm, basisX);
-		float sinPhi = dot(perpNorm, basisY);
-		vec2 gradLocal = {cosPhi, sinPhi};
-		gradient += _weights[i] * theta * gradLocal; // Added on weighted discrepancy to gradient
-		float sinPhiSq = sinPhi * sinPhi;
-		float cosPhiSq = cosPhi * cosPhi;
-		float tt = _weights[i] * theta * sinThetaInv * cosTheta;
-		float offdiag = cosPhi * sinPhi * (_weights[i] - tt);
-		hessian += mat2(
-		_weights[i] * cosPhiSq + tt * sinPhiSq,
-		offdiag, offdiag,
-		_weights[i] * sinPhiSq + tt * cosPhiSq);
-		
-	}
-	
-	vec2 dispLocal = inverse(hessian) * gradient;
-	vec3 disp = dispLocal.x * basisX + dispLocal.y * basisY;
-	
-	return rotateUnitInDirection(_estimate, disp);
-	
-}
-
-vec3 normalInterp(mat3 _normals, vec3 _weights) {
-	
-	vec3 estimate = normalize(
-		_normals[0] * _weights.x +
-		_normals[1] * _weights.y +
-		_normals[2] * _weights.z);
-	
-	for (uint i = 0; i < 1; i += 1) // Just one round seems to be a very strong approximation
-		estimate = normalInterpEstimate(estimate, _normals, _weights);
-	
-	return estimate;
-	
-}
 
 vec3 envBRDFApprox(vec3 _f0, float _NoV, float _roughness) {
 	
@@ -260,10 +116,10 @@ void main() {
 	uint vertexBase = b_descriptors[meshIndex].vertexOffset;
 	indices += uvec3(vertexBase);
 	
-	mat3 positions = {
-		fetchPosition(indices.x),
-		fetchPosition(indices.y),
-		fetchPosition(indices.z)};
+	mat3 vertices = {
+		fetchVertex(indices.x),
+		fetchVertex(indices.y),
+		fetchVertex(indices.z)};
 	
 	mat3 normals = {
 		fetchNormal(indices.x),
@@ -281,8 +137,8 @@ void main() {
 	
 	for (uint i = 0; i < 3; i += 1) {
 		
-		vec4 transformed = transform * vec4(positions[i], 1.0);
-		positions[i] = transformed.xyz / transformed.w;
+		vec4 transformed = transform * vec4(vertices[i], 1.0);
+		vertices[i] = transformed.xyz / transformed.w;
 		
 		normals[i] = normalize(normTransform * normals[i]);
 		
@@ -300,20 +156,16 @@ void main() {
 	
 	// Calculate barycentrics
 	
-	vec3 barycentrics = expandBarycentrics(reconstructBarycentrics(worldPos, positions));
+	vec3 barycentrics = expandBarycentrics(reconstructBarycentrics(worldPos, vertices));
 	
 	// Interpolate params
 	
-	vec3 position =
-		positions[0] * barycentrics.x +
-		positions[1] * barycentrics.y +
-		positions[2] * barycentrics.z;
+	vec3 vertex =
+		vertices[0] * barycentrics.x +
+		vertices[1] * barycentrics.y +
+		vertices[2] * barycentrics.z;
 	
 	vec3 normal = normalInterp(normals, barycentrics);
-//	vec3 normal = normalize(
-//		normals[0] * barycentrics.x +
-//		normals[1] * barycentrics.y +
-//		normals[2] * barycentrics.z);
 	
 	vec4 color =
 		colors[0] * barycentrics.x +
@@ -322,7 +174,7 @@ void main() {
 	
 	// Standard vectors
 	
-	vec3 viewDirection = normalize(u_world.cameraPos - position);
+	vec3 viewDirection = normalize(u_world.cameraPos - vertex);
 	float NoV = dot(normal, viewDirection);
 	
 	// Empirical sun visibility above the horizon
@@ -375,7 +227,6 @@ void main() {
 	// Image write
 	
 	vec4 result = surface + ap;
-//	vec4 result = vec4(abs(normals[0]), 1.0);
 	imageStore(i_target, ivec2(gid), result);
 	
 }

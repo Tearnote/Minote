@@ -1,3 +1,6 @@
+#ifndef UTILS_GLSL
+#define UTILS_GLSL
+
 // Generic commonly used functions
 
 // Generate a bufferless screen-covering triangle from 3 vertices
@@ -70,3 +73,16 @@ uint u32Upper(uint _n) {
 	return _n >> 16u;
 	
 }
+
+// https://graphics.pixar.com/library/OrthonormalB/paper.pdf
+void orthonormalBasis(vec3 _n, out vec3 _b1, out vec3 _b2) {
+	
+	float sign = _n.z >= 0.0? 1.0 : -1.0;
+	float a = -1.0 / (sign + _n.z);
+	float b = _n.x * _n.y * a;
+	_b1 = vec3(1.0 + sign * _n.x * _n.x * a, sign * b, -sign * _n.x);
+	_b2 = vec3(b, sign + _n.y * _n.y * a, -_n.y);
+	
+}
+
+#endif //UTILS_GLSL
