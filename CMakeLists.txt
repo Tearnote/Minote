@@ -296,8 +296,9 @@ foreach(SHADER_PATH ${SHADER_SOURCES})
     add_custom_command(
             OUTPUT ${SHADER_OUTPUT}
             COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/generated/spv/"
-            COMMAND $<IF:$<BOOL:${MINOTE_USE_VULKAN_SDK}>,glslc,glslc_exe> --target-env=vulkan1.2 -mfmt=num $<$<NOT:$<CONFIG:Release>>:-g> -o ${SHADER_OUTPUT} ${PROJECT_SOURCE_DIR}/${SHADER_PATH}
+            COMMAND $<IF:$<BOOL:${MINOTE_USE_VULKAN_SDK}>,glslc,glslc_exe> --target-env=vulkan1.2 -mfmt=num $<$<NOT:$<CONFIG:Release>>:-g> -MD -MF ${SHADER_OUTPUT}.d -o ${SHADER_OUTPUT} ${PROJECT_SOURCE_DIR}/${SHADER_PATH}
             DEPENDS ${SHADER_PATH}
+            DEPFILE ${SHADER_OUTPUT}.d
             VERBATIM COMMAND_EXPAND_LISTS)
     list(APPEND SHADER_OUTPUTS ${SHADER_OUTPUT})
 endforeach()
