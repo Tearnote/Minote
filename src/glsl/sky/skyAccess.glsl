@@ -1,5 +1,8 @@
 // Helpers for addressing the LOD textures
 
+#ifndef SKYACCESS_GLSL
+#define SKYACCESS_GLSL
+
 #include "../constants.glsl"
 
 #define NONLINEARSKYVIEWLUT 1
@@ -139,3 +142,5 @@ float aerialPerspectiveSliceToDepth(float _slice) {
 	return _slice * AP_KM_PER_SLICE;
 	
 }
+
+#endif //SKYACCESS_GLSL

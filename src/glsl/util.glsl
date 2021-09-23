@@ -1,7 +1,7 @@
+// Generic commonly used functions
+
 #ifndef UTILS_GLSL
 #define UTILS_GLSL
-
-// Generic commonly used functions
 
 // Generate a bufferless screen-covering triangle from 3 vertices
 // https://rauwendaal.net/2014/06/14/rendering-a-screen-covering-triangle-in-opengl/

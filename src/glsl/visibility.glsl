@@ -1,9 +1,9 @@
+// Utilities for working with visibility buffer data
+
 #ifndef VISIBILITY_GLSL
 #define VISIBILITY_GLSL
 
 #include "util.glsl"
-
-// Utilities for working with visibility buffer data
 
 // Barycentrics interpolator. The below 3 functions are made available under
 // the following terms. The full Apache 2.0 license is included with the source.

@@ -1,5 +1,8 @@
 // Common functions for all atmospheric shaders
 
+#ifndef SKY_GLSL
+#define SKY_GLSL
+
 #include "../constants.glsl"
 #include "skyAccess.glsl"
 
@@ -442,3 +445,5 @@ SingleScatteringResult integrateScatteredLuminance(vec3 _worldPos, vec3 _worldDi
 	return result;
 	
 }
+
+#endif //SKY_GLSL

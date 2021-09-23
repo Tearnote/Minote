@@ -1,7 +1,7 @@
+// Types commonly used for data interchange between rendering modules
+
 #ifndef TYPES_GLSL
 #define TYPES_GLSL
-
-// Types commonly used for data interchange between rendering modules
 
 // Global world-data, constant throughout an entire frame
 struct World {
