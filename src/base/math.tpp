@@ -109,6 +109,30 @@ constexpr auto vec<Dim, T>::operator/=(T _other) -> vec<Dim, T>& {
 }
 
 template<usize Dim, arithmetic T>
+constexpr auto vec<Dim, T>::operator<<=(T _other) -> vec<Dim, T>& {
+	
+	static_assert(std::is_integral_v<T>);
+	
+	for (auto i: iota(0_zu, Dim))
+		m_arr[i] <<= _other;
+	
+	return *this;
+	
+}
+
+template<usize Dim, arithmetic T>
+constexpr auto vec<Dim, T>::operator>>=(T _other) -> vec<Dim, T>& {
+	
+	static_assert(std::is_integral_v<T>);
+	
+	for (auto i: iota(0_zu, Dim))
+		m_arr[i] >>= _other;
+	
+	return *this;
+	
+}
+
+template<usize Dim, arithmetic T>
 constexpr auto operator+(vec<Dim, T> const& _left, vec<Dim, T> const& _right) -> vec<Dim, T> {
 	
 	auto result = _left;
@@ -215,6 +239,24 @@ constexpr auto operator/(vec<Dim, T> const& _left, T _right) -> vec<Dim, T> {
 	
 	auto result = _left;
 	result /= _right;
+	return result;
+	
+}
+
+template<usize Dim, integral T>
+constexpr auto operator<<(vec<Dim, T> const& _left, T _right) -> vec<Dim, T> {
+	
+	auto result = _left;
+	result <<= _right;
+	return result;
+	
+}
+
+template<usize Dim, integral T>
+constexpr auto operator>>(vec<Dim, T> const& _left, T _right) -> vec<Dim, T> {
+	
+	auto result = _left;
+	result >>= _right;
 	return result;
 	
 }

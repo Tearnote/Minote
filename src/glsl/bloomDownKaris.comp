@@ -8,31 +8,23 @@ layout(local_size_x = 16, local_size_y = 16) in;
 layout(binding = 0) uniform sampler2D s_source;
 layout(binding = 1) restrict writeonly uniform image2D i_target;
 
+layout(push_constant) uniform Constants {
+	uvec2 u_sourceSize;
+	uvec2 u_targetSize;
+};
+
 shared vec4 sh_outer[gl_WorkGroupSize.x + 2][gl_WorkGroupSize.y + 2];
 shared vec4 sh_inner[gl_WorkGroupSize.x + 1][gl_WorkGroupSize.y + 1];
 
-// https://github.com/keijiro/KinoBloom/blob/master/Assets/Kino/Bloom/Shader/Bloom.cginc
-vec4 karisAverage(vec4 _s1, vec4 _s2, vec4 _s3, vec4 _s4) {
-	
-	float s1w = 1.0 / (luma(_s1.rgb) + 1.0);
-	float s2w = 1.0 / (luma(_s2.rgb) + 1.0);
-	float s3w = 1.0 / (luma(_s3.rgb) + 1.0);
-	float s4w = 1.0 / (luma(_s4.rgb) + 1.0);
-	float one_div_wsum = 1.0 / (s1w + s2w + s3w + s4w);
-	
-	return (_s1 * s1w + _s2 * s2w + _s3 * s3w + _s4 * s4w) * one_div_wsum;
-	
-}
-
 void main() {
 	
-	const uvec2 gid = gl_GlobalInvocationID.xy;
-	const uvec2 lid = gl_LocalInvocationID.xy;
-	const ivec2 sourceSize = textureSize(s_source, 0);
-	const ivec2 targetSize = imageSize(i_target);
+	uvec2 gid = gl_GlobalInvocationID.xy;
+	uvec2 lid = gl_LocalInvocationID.xy;
 	
-	vec2 uv = (vec2(gid) + vec2(0.5)) / vec2(targetSize);
-	vec2 texel = vec2(1.0) / vec2(sourceSize);
+	// Fill up the filter tap cache
+	
+	vec2 uv = (vec2(gid) + vec2(0.5)) / vec2(u_targetSize);
+	vec2 texel = vec2(1.0) / vec2(u_sourceSize);
 	vec2 texel2 = texel * 2.0;
 	
 	if (lid.x <= 1)
@@ -56,8 +48,10 @@ void main() {
 	memoryBarrierShared();
 	barrier();
 	
-	if (any(greaterThanEqual(gid, targetSize)))
-		return;
+	if (any(greaterThanEqual(gid, u_targetSize)))
+		return; // We can't return before all barriers are passed
+	
+	// Convolve source texture
 	
 	vec4 resultInner = karisAverage(
 		sh_inner[lid.x  ][lid.y  ],
@@ -92,6 +86,7 @@ void main() {
 		resultOuter2 * 0.125 +
 		resultOuter3 * 0.125 +
 		resultOuter4 * 0.125;
+	
 	imageStore(i_target, ivec2(gid), result);
 	
 }

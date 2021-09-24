@@ -8,6 +8,8 @@ layout(binding = 1) uniform sampler2D s_targetRead;
 layout(binding = 2) writeonly uniform image2D i_target;
 
 layout(push_constant) uniform Constants {
+	uvec2 u_sourceSize;
+	uvec2 u_targetSize;
 	float u_power;
 };
 
@@ -15,21 +17,19 @@ void main() {
 	
 	const uvec2 gid = gl_GlobalInvocationID.xy;
 	const uvec2 lid = gl_LocalInvocationID.xy;
-	const ivec2 sourceSize = textureSize(s_source, 0);
-	const ivec2 targetSize = imageSize(i_target);
 	
-	if (any(greaterThanEqual(gid, targetSize)))
+	if (any(greaterThanEqual(gid, u_targetSize)))
 		return;
 	
-	vec2 uv = (vec2(gid) + vec2(0.5)) / vec2(targetSize);
-	vec2 texel = vec2(1.0) / vec2(sourceSize);
+	vec2 uv = (vec2(gid) + vec2(0.5)) / vec2(u_targetSize);
+	vec2 texel = vec2(1.0) / vec2(u_sourceSize);
 	
 	vec4 current = texelFetch(s_targetRead, ivec2(gid), 0);
 	vec4 result  = textureLod(s_source, uv,                            0.0) * (4.0 / 16.0);
-	     result += textureLod(s_source, uv + vec2(-texel.x, 0.0     ), 0.0) * (2.0 / 16.0);
-	     result += textureLod(s_source, uv + vec2( texel.x, 0.0     ), 0.0) * (2.0 / 16.0);
-	     result += textureLod(s_source, uv + vec2(0.0,      -texel.y), 0.0) * (2.0 / 16.0);
-	     result += textureLod(s_source, uv + vec2(0.0,       texel.y), 0.0) * (2.0 / 16.0);
+	     result += textureLod(s_source, uv + vec2(-texel.x,      0.0), 0.0) * (2.0 / 16.0);
+	     result += textureLod(s_source, uv + vec2( texel.x,      0.0), 0.0) * (2.0 / 16.0);
+	     result += textureLod(s_source, uv + vec2(     0.0, -texel.y), 0.0) * (2.0 / 16.0);
+	     result += textureLod(s_source, uv + vec2(     0.0,  texel.y), 0.0) * (2.0 / 16.0);
 	     result += textureLod(s_source, uv + vec2(-texel.x, -texel.y), 0.0) * (1.0 / 16.0);
 	     result += textureLod(s_source, uv + vec2( texel.x, -texel.y), 0.0) * (1.0 / 16.0);
 	     result += textureLod(s_source, uv + vec2(-texel.x,  texel.y), 0.0) * (1.0 / 16.0);

@@ -99,40 +99,68 @@ struct vec {
 	
 	//=== Member access
 	
+	[[nodiscard]]
 	constexpr auto at(usize n) -> T& { return m_arr[n]; }
+	[[nodiscard]]
 	constexpr auto at(usize n) const -> T { return m_arr[n]; }
 	
+	[[nodiscard]]
 	constexpr auto operator[](usize n) -> T& { return at(n); }
+	[[nodiscard]]
 	constexpr auto operator[](usize n) const -> T { return at(n); }
 	
+	[[nodiscard]]
 	constexpr auto x() -> T& { static_assert(Dim >= 1); return m_arr[0]; }
+	[[nodiscard]]
 	constexpr auto x() const -> T { static_assert(Dim >= 1); return m_arr[0]; }
+	[[nodiscard]]
 	constexpr auto y() -> T& { static_assert(Dim >= 2); return m_arr[1]; }
+	[[nodiscard]]
 	constexpr auto y() const -> T { static_assert(Dim >= 2); return m_arr[1]; }
+	[[nodiscard]]
 	constexpr auto z() -> T& { static_assert(Dim >= 3); return m_arr[2]; }
+	[[nodiscard]]
 	constexpr auto z() const -> T { static_assert(Dim >= 3); return m_arr[2]; }
+	[[nodiscard]]
 	constexpr auto w() -> T& { static_assert(Dim >= 4); return m_arr[3]; }
+	[[nodiscard]]
 	constexpr auto w() const -> T { static_assert(Dim >= 4); return m_arr[3]; }
 	
+	[[nodiscard]]
 	constexpr auto r() -> T& { return x(); }
+	[[nodiscard]]
 	constexpr auto r() const -> T { return x(); }
+	[[nodiscard]]
 	constexpr auto g() -> T& { return y(); }
+	[[nodiscard]]
 	constexpr auto g() const -> T { return y(); }
+	[[nodiscard]]
 	constexpr auto b() -> T& { return z(); }
+	[[nodiscard]]
 	constexpr auto b() const -> T { return z(); }
+	[[nodiscard]]
 	constexpr auto a() -> T& { return w(); }
+	[[nodiscard]]
 	constexpr auto a() const -> T { return w(); }
 	
+	[[nodiscard]]
 	constexpr auto u() -> T& { return x(); }
+	[[nodiscard]]
 	constexpr auto u() const -> T { return x(); }
+	[[nodiscard]]
 	constexpr auto v() -> T& { return y(); }
+	[[nodiscard]]
 	constexpr auto v() const -> T { return y(); }
+	[[nodiscard]]
 	constexpr auto s() -> T& { return z(); }
+	[[nodiscard]]
 	constexpr auto s() const -> T { return z(); }
+	[[nodiscard]]
 	constexpr auto t() -> T& { return w(); }
+	[[nodiscard]]
 	constexpr auto t() const -> T { return w(); }
 	
-	constexpr auto fill(T val) { m_arr.fill(val); }
+	constexpr void fill(T val) { m_arr.fill(val); }
 	
 	//=== Vector operations
 	
@@ -147,6 +175,8 @@ struct vec {
 	
 	constexpr auto operator*=(T) -> vec<Dim, T>&;
 	constexpr auto operator/=(T) -> vec<Dim, T>&;
+	constexpr auto operator<<=(T) -> vec<Dim, T>&;
+	constexpr auto operator>>=(T) -> vec<Dim, T>&;
 	
 private:
 	
@@ -192,8 +222,12 @@ constexpr auto operator*(T left, vec<Dim, T> const& right) -> vec<Dim, T> { retu
 
 template<usize Dim, arithmetic T>
 constexpr auto operator/(vec<Dim, T> const&, T) -> vec<Dim, T>;
-template<usize Dim, arithmetic T>
-constexpr auto operator/(T left, vec<Dim, T> const& right) -> vec<Dim, T> { return right / left; }
+
+template<usize Dim, integral T>
+constexpr auto operator<<(vec<Dim, T> const&, T) -> vec<Dim, T>;
+
+template<usize Dim, integral T>
+constexpr auto operator>>(vec<Dim, T> const&, T) -> vec<Dim, T>;
 
 // Unary vector operations
 

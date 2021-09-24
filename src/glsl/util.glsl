@@ -85,4 +85,17 @@ void orthonormalBasis(vec3 _n, out vec3 _b1, out vec3 _b2) {
 	
 }
 
+// https://github.com/keijiro/KinoBloom/blob/master/Assets/Kino/Bloom/Shader/Bloom.cginc
+vec4 karisAverage(vec4 _s1, vec4 _s2, vec4 _s3, vec4 _s4) {
+	
+	float s1w = 1.0 / (luma(_s1.rgb) + 1.0);
+	float s2w = 1.0 / (luma(_s2.rgb) + 1.0);
+	float s3w = 1.0 / (luma(_s3.rgb) + 1.0);
+	float s4w = 1.0 / (luma(_s4.rgb) + 1.0);
+	float one_div_wsum = 1.0 / (s1w + s2w + s3w + s4w);
+	
+	return (_s1 * s1w + _s2 * s2w + _s3 * s3w + _s4 * s4w) * one_div_wsum;
+	
+}
+
 #endif //UTILS_GLSL
