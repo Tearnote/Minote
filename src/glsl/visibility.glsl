@@ -57,7 +57,7 @@ vec3 normalInterpRotateUnitInDirection(vec3 _u, vec3 _dir) {
 	
 	float theta = dot(_dir, _dir);
 	if (theta == 0.0)
-	return _u;
+		return _u;
 	
 	theta = sqrt(theta);
 	float cosTheta = cos(theta);

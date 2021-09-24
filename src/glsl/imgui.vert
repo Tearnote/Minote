@@ -8,7 +8,7 @@ layout(location = 2) in vec4 v_color;
 layout(location = 0) out vec4 f_color;
 layout(location = 1) out vec2 f_uv;
 
-layout(push_constant) uniform PushConstants {
+layout(push_constant) uniform Constants {
 	vec2 u_scale;
 	vec2 u_translate;
 };

@@ -23,8 +23,12 @@
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
-layout(binding = 0) uniform samplerCube s_src;
-layout(binding = 1) restrict writeonly uniform image2DArray i_dst;
+layout(binding = 0) uniform samplerCube s_source;
+layout(binding = 1) restrict writeonly uniform image2DArray i_target;
+
+layout(push_constant) uniform Constants {
+	uint u_targetSize;
+};
 
 void get_dir_0(out vec3 _dir, float _u, float _v) {
 	
@@ -83,118 +87,118 @@ float calcWeight(float _u, float _v) {
 
 void main() {
 	
-	const uvec3 id = gl_GlobalInvocationID;
-	const uint res_lo = imageSize(i_dst).x;
-	const float inv_res_lo = 1.0 / float(res_lo);
+	uvec3 gid = gl_GlobalInvocationID;
+	float inv_res_lo = 1.0 / float(u_targetSize);
 	
-	if (any(greaterThan(id.xy, uvec2(res_lo))))
+	if (any(greaterThan(gid.xy, uvec2(u_targetSize))))
 		return;
 	
-	float u0 = (float(id.x) * 2.0 + 1.0 - 0.75) * inv_res_lo - 1.0;
-	float u1 = (float(id.x) * 2.0 + 1.0 + 0.75) * inv_res_lo - 1.0;
+	float u0 = (float(gid.x) * 2.0 + 1.0 - 0.75) * inv_res_lo - 1.0;
+	float u1 = (float(gid.x) * 2.0 + 1.0 + 0.75) * inv_res_lo - 1.0;
 	
-	float v0 = (float(id.y) * 2.0 + 1.0 - 0.75) * -inv_res_lo + 1.0;
-	float v1 = (float(id.y) * 2.0 + 1.0 + 0.75) * -inv_res_lo + 1.0;
+	float v0 = (float(gid.y) * 2.0 + 1.0 - 0.75) * -inv_res_lo + 1.0;
+	float v1 = (float(gid.y) * 2.0 + 1.0 + 0.75) * -inv_res_lo + 1.0;
 	
-	float weights[4];
-	weights[0] = calcWeight(u0, v0);
-	weights[1] = calcWeight(u1, v0);
-	weights[2] = calcWeight(u0, v1);
-	weights[3] = calcWeight(u1, v1);
+	float weights[4] = {
+		calcWeight(u0, v0),
+		calcWeight(u1, v0),
+		calcWeight(u0, v1),
+		calcWeight(u1, v1)};
 	
-	const float wsum = 0.5 / (weights[0] + weights[1] + weights[2] + weights[3]);
-	for (int i = 0; i < 4; i++)
+	float wsum = 0.5 / (weights[0] + weights[1] + weights[2] + weights[3]);
+	for (uint i = 0; i < 4; i += 1)
 		weights[i] = weights[i] * wsum + 0.125;
 	
 	vec3 dir;
 	vec4 color;
-	switch (id.z) {
+	switch (gid.z) {
+		
 	case 0:
 		get_dir_0(dir, u0, v0);
-		color = textureLod(s_src, dir, 0) * weights[0];
+		color = textureLod(s_source, dir, 0) * weights[0];
 		
 		get_dir_0(dir, u1, v0);
-		color += textureLod(s_src, dir, 0) * weights[1];
+		color += textureLod(s_source, dir, 0) * weights[1];
 		
 		get_dir_0(dir, u0, v1);
-		color += textureLod(s_src, dir, 0) * weights[2];
+		color += textureLod(s_source, dir, 0) * weights[2];
 		
 		get_dir_0(dir, u1, v1);
-		color += textureLod(s_src, dir, 0) * weights[3];
+		color += textureLod(s_source, dir, 0) * weights[3];
 		break;
 		
 	case 1:
 		get_dir_1(dir, u0, v0);
-		color = textureLod(s_src, dir, 0) * weights[0];
+		color = textureLod(s_source, dir, 0) * weights[0];
 		
 		get_dir_1(dir, u1, v0);
-		color += textureLod(s_src, dir, 0) * weights[1];
+		color += textureLod(s_source, dir, 0) * weights[1];
 		
 		get_dir_1(dir, u0, v1);
-		color += textureLod(s_src, dir, 0) * weights[2];
+		color += textureLod(s_source, dir, 0) * weights[2];
 		
 		get_dir_1(dir, u1, v1);
-		color += textureLod(s_src, dir, 0) * weights[3];
+		color += textureLod(s_source, dir, 0) * weights[3];
 		break;
 		
 	case 2:
 		get_dir_2(dir, u0, v0);
-		color = textureLod(s_src, dir, 0) * weights[0];
+		color = textureLod(s_source, dir, 0) * weights[0];
 		
 		get_dir_2(dir, u1, v0);
-		color += textureLod(s_src, dir, 0) * weights[1];
+		color += textureLod(s_source, dir, 0) * weights[1];
 		
 		get_dir_2(dir, u0, v1);
-		color += textureLod(s_src, dir, 0) * weights[2];
+		color += textureLod(s_source, dir, 0) * weights[2];
 		
 		get_dir_2(dir, u1, v1);
-		color += textureLod(s_src, dir, 0) * weights[3];
+		color += textureLod(s_source, dir, 0) * weights[3];
 		break;
 		
 	case 3:
 		get_dir_3(dir, u0, v0);
-		color = textureLod(s_src, dir, 0) * weights[0];
+		color = textureLod(s_source, dir, 0) * weights[0];
 		
 		get_dir_3(dir, u1, v0);
-		color += textureLod(s_src, dir, 0) * weights[1];
+		color += textureLod(s_source, dir, 0) * weights[1];
 		
 		get_dir_3(dir, u0, v1);
-		color += textureLod(s_src, dir, 0) * weights[2];
+		color += textureLod(s_source, dir, 0) * weights[2];
 		
 		get_dir_3(dir, u1, v1);
-		color += textureLod(s_src, dir, 0) * weights[3];
+		color += textureLod(s_source, dir, 0) * weights[3];
 		break;
 		
 	case 4:
 		get_dir_4(dir, u0, v0);
-		color = textureLod(s_src, dir, 0) * weights[0];
+		color = textureLod(s_source, dir, 0) * weights[0];
 		
 		get_dir_4(dir, u1, v0);
-		color += textureLod(s_src, dir, 0) * weights[1];
+		color += textureLod(s_source, dir, 0) * weights[1];
 		
 		get_dir_4(dir, u0, v1);
-		color += textureLod(s_src, dir, 0) * weights[2];
+		color += textureLod(s_source, dir, 0) * weights[2];
 		
 		get_dir_4(dir, u1, v1);
-		color += textureLod(s_src, dir, 0) * weights[3];
+		color += textureLod(s_source, dir, 0) * weights[3];
 		break;
 		
 	default:
 		get_dir_5(dir, u0, v0);
-		color = textureLod(s_src, dir, 0) * weights[0];
+		color = textureLod(s_source, dir, 0) * weights[0];
 		
 		get_dir_5(dir, u1, v0);
-		color += textureLod(s_src, dir, 0) * weights[1];
+		color += textureLod(s_source, dir, 0) * weights[1];
 		
 		get_dir_5(dir, u0, v1);
-		color += textureLod(s_src, dir, 0) * weights[2];
+		color += textureLod(s_source, dir, 0) * weights[2];
 		
 		get_dir_5(dir, u1, v1);
-		color += textureLod(s_src, dir, 0) * weights[3];
+		color += textureLod(s_source, dir, 0) * weights[3];
 		break;
 		
 	}
 	
-	imageStore(i_dst, ivec3(id), color);
+	imageStore(i_target, ivec3(gid), color);
 	
 }

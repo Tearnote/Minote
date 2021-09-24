@@ -48,6 +48,8 @@ void CubeFilter::apply(vuk::RenderGraph& _rg, Cubemap _src, Cubemap _dst) {
 				   .bind_storage_image(0, 1, *_src.mipArrayView(i))
 				   .bind_compute_pipeline("cube_prefilter");
 				
+				cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, _src.size().x() >> i);
+				
 				cmd.dispatch_invocations(BaseSize >> i, BaseSize >> i, 6);
 				
 			}

@@ -28,10 +28,11 @@ void Tonemap::apply(vuk::RenderGraph& _rg, Texture2D _source, Texture2D _target)
 			_target.resource(vuk::eComputeWrite) },
 		.execute = [_source, _target](vuk::CommandBuffer& cmd) {
 			
-			cmdSetViewportScissor(cmd, _target.size());
 			cmd.bind_sampled_image(0, 0, _source, NearestClamp)
 			   .bind_storage_image(0, 1, _target)
+			   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, _target.size())
 			   .bind_compute_pipeline("tonemap");
+			
 			cmd.dispatch_invocations(_target.size().x(), _target.size().y());
 			
 		}});

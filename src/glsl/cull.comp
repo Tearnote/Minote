@@ -29,7 +29,8 @@ layout (binding = 6, std430) restrict writeonly buffer TransformsCulled {
 layout (binding = 7, std430) restrict writeonly buffer MaterialsCulled {
 	Material b_materialsCulled[];
 };
-layout(binding = 8) uniform CullData {
+
+layout(push_constant) uniform Constants {
 	mat4 u_view;
 	vec4 u_frustum;
 	uint u_instancesCount;
@@ -49,15 +50,17 @@ bool visible(uint _gid, float _radius) {
 
 void main() {
 	
-	const uint gid = gl_GlobalInvocationID.x;
-	if (gid >= u_instancesCount) return;
+	uint gid = gl_GlobalInvocationID.x;
+	if (gid >= u_instancesCount)
+		return;
 	
 	uint index = b_meshIndices[gid];
 	float scale = max(b_transforms[gid].scale.x,
 	              max(b_transforms[gid].scale.y,
 	                  b_transforms[gid].scale.z));
 	float radius = b_descriptors[index].radius;
-	if (!visible(gid, radius * scale)) return;
+	if (!visible(gid, radius * scale))
+		return;
 	
 	uint offset = b_commands[index].firstInstance;
 	uint newid = offset + atomicAdd(b_commands[index].instanceCount, 1);

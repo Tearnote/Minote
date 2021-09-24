@@ -53,6 +53,15 @@ void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf, Text
 			   .bind_storage_image(0, 14, _color)
 			   .bind_compute_pipeline("pbr");
 			
+			struct PushConstants {
+				uvec3 aerialPerspectiveSize;
+				float pad0;
+				uvec2 targetSize;
+			};
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
+				.aerialPerspectiveSize = _sky.aerialPerspective.size(),
+				.targetSize = _color.size() });
+			
 			cmd.dispatch_invocations(_color.size().x(), _color.size().y());
 			
 		}});

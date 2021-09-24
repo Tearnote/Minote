@@ -3,28 +3,29 @@
 
 #include "types.glsl"
 
+#define VERTICES_BUF b_vertices
+
 layout(location = 0) out flat uint InstanceIndex;
 
 layout(binding = 0) uniform WorldConstants {
 	World u_world;
 };
 layout(std430, binding = 1) readonly buffer Vertices {
-	float b_vertices[];
+	float VERTICES_BUF[];
 };
 layout(std430, binding = 2) readonly buffer Transforms {
 	Transform b_transforms[];
 };
 
+#include "typesAccess.glsl"
+
 void main() {
 	
 	InstanceIndex = gl_InstanceIndex;
 	
-	vec3 v_position = vec3(
-		b_vertices[gl_VertexIndex*3 + 0],
-		b_vertices[gl_VertexIndex*3 + 1],
-		b_vertices[gl_VertexIndex*3 + 2]);
+	vec3 vertex = fetchVertex(gl_VertexIndex);
 	
-	const mat4 transform = getTransform(b_transforms[gl_InstanceIndex]);
-	gl_Position = u_world.viewProjection * transform * vec4(v_position, 1.0);
+	mat4 transform = getTransform(b_transforms[gl_InstanceIndex]);
+	gl_Position = u_world.viewProjection * transform * vec4(vertex, 1.0);
 	
 }

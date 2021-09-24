@@ -150,13 +150,12 @@ void Indirect::sortAndCull(vuk::RenderGraph& _rg, World const& _world, MeshBuffe
 			   .bind_storage_buffer(0, 7, materialsCulledBuf)
 			   .bind_compute_pipeline("cull");
 			
-			struct CullData {
+			struct PushConstants {
 				mat4 view;
 				vec4 frustum;
 				u32 instancesCount;
 			};
-			auto* cullData = cmd.map_scratch_uniform_binding<CullData>(0, 8);
-			*cullData = CullData{
+			auto pushConstants = PushConstants{
 				.view = view,
 				.frustum = [projection] {
 					
@@ -169,6 +168,7 @@ void Indirect::sortAndCull(vuk::RenderGraph& _rg, World const& _world, MeshBuffe
 				
 				}(),
 				.instancesCount = u32(instancesCount) };
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, pushConstants);
 			
 			cmd.dispatch_invocations(instancesCount);
 			

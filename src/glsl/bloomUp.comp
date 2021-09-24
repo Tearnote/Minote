@@ -24,6 +24,7 @@ void main() {
 	vec2 uv = (vec2(gid) + vec2(0.5)) / vec2(u_targetSize);
 	vec2 texel = vec2(1.0) / vec2(u_sourceSize);
 	
+	// Upscale fetches can't be cached in the same way as downscale
 	vec4 current = texelFetch(s_targetRead, ivec2(gid), 0);
 	vec4 result  = textureLod(s_source, uv,                            0.0) * (4.0 / 16.0);
 	     result += textureLod(s_source, uv + vec2(-texel.x,      0.0), 0.0) * (2.0 / 16.0);
