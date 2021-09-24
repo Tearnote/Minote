@@ -85,8 +85,8 @@ void Atmosphere::precalculate(vuk::RenderGraph& _rg) {
 			transmittance.resource(vuk::eComputeWrite) },
 		.execute = [this](vuk::CommandBuffer& cmd) {
 			
-			cmd.bind_uniform_buffer(0, 1, params)
-			   .bind_storage_image(1, 0, transmittance)
+			cmd.bind_uniform_buffer(0, 0, params)
+			   .bind_storage_image(0, 1, transmittance)
 			   .bind_compute_pipeline("sky_gen_transmittance");
 			cmd.dispatch_invocations(transmittance.size().x(), transmittance.size().y());
 			
@@ -99,9 +99,9 @@ void Atmosphere::precalculate(vuk::RenderGraph& _rg) {
 			multiScattering.resource(vuk::eComputeWrite) },
 		.execute = [this](vuk::CommandBuffer& cmd) {
 			
-			cmd.bind_uniform_buffer(0, 1, params)
-			   .bind_sampled_image(0, 2, transmittance, LinearClamp)
-			   .bind_storage_image(1, 0, multiScattering)
+			cmd.bind_uniform_buffer(0, 0, params)
+			   .bind_sampled_image(0, 1, transmittance, LinearClamp)
+			   .bind_storage_image(0, 2, multiScattering)
 			   .bind_compute_pipeline("sky_gen_multi_scattering");
 			cmd.dispatch_invocations(multiScattering.size().x(), multiScattering.size().y(), 1);
 			
@@ -181,9 +181,9 @@ void Sky::calculate(vuk::RenderGraph& _rg, Buffer<World> _world, Camera const& _
 			   .bind_uniform_buffer(0, 1, atmosphere.params)
 			   .bind_sampled_image(0, 2, atmosphere.transmittance, LinearClamp)
 			   .bind_sampled_image(0, 3, atmosphere.multiScattering, LinearClamp)
-			   .bind_storage_image(1, 0, cameraView)
+			   .bind_storage_image(0, 4, cameraView)
 			   .bind_compute_pipeline("sky_gen_sky_view");
-			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0_zu, _camera.position);
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, _camera.position);
 			cmd.dispatch_invocations(cameraView.size().x(), cameraView.size().y(), 1);
 			
 		}});
@@ -200,9 +200,9 @@ void Sky::calculate(vuk::RenderGraph& _rg, Buffer<World> _world, Camera const& _
 			   .bind_uniform_buffer(0, 1, atmosphere.params)
 			   .bind_sampled_image(0, 2, atmosphere.transmittance, LinearClamp)
 			   .bind_sampled_image(0, 3, atmosphere.multiScattering, LinearClamp)
-			   .bind_storage_image(1, 0, cubemapView)
+			   .bind_storage_image(0, 4, cubemapView)
 			   .bind_compute_pipeline("sky_gen_sky_view");
-			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0_zu, CubemapCamera);
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, CubemapCamera);
 			cmd.dispatch_invocations(cubemapView.size().x(), cubemapView.size().y(), 1);
 			
 		}});
@@ -219,7 +219,7 @@ void Sky::calculate(vuk::RenderGraph& _rg, Buffer<World> _world, Camera const& _
 			   .bind_uniform_buffer(0, 1, atmosphere.params)
 			   .bind_sampled_image(0, 2, atmosphere.transmittance, LinearClamp)
 			   .bind_sampled_image(0, 3, atmosphere.multiScattering, LinearClamp)
-			   .bind_storage_image(1, 0, aerialPerspective)
+			   .bind_storage_image(0, 4, aerialPerspective)
 			   .bind_compute_pipeline("sky_gen_aerial_perspective");
 			cmd.dispatch_invocations(aerialPerspective.size().x(), aerialPerspective.size().y(), aerialPerspective.size().z());
 			
@@ -241,9 +241,9 @@ void Sky::draw(vuk::RenderGraph& _rg, Buffer<World> _world, Texture2D _target, T
 			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_uniform_buffer(0, 1, atmosphere.params)
 			   .bind_sampled_image(0, 2, atmosphere.transmittance, LinearClamp)
-			   .bind_sampled_image(1, 0, cameraView, LinearClamp)
-			   .bind_sampled_image(1, 1, _visbuf, NearestClamp)
-			   .bind_storage_image(1, 2, _target)
+			   .bind_sampled_image(0, 3, cameraView, LinearClamp)
+			   .bind_sampled_image(0, 4, _visbuf, NearestClamp)
+			   .bind_storage_image(0, 5, _target)
 			   .bind_compute_pipeline("sky_draw");
 			cmd.dispatch_invocations(_target.size().x(), _target.size().y());
 			
@@ -267,12 +267,12 @@ void Sky::drawCubemap(vuk::RenderGraph& _rg, Buffer<World> _world, Cubemap _targ
 			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_uniform_buffer(0, 1, atmosphere.params)
 			   .bind_sampled_image(0, 2, atmosphere.transmittance, LinearClamp)
-			   .bind_sampled_image(1, 0, cubemapView, LinearClamp)
-			   .bind_storage_image(1, 1, _target.name)
-			   .bind_storage_buffer(1, 3, sunLuminance)
+			   .bind_sampled_image(0, 3, cubemapView, LinearClamp)
+			   .bind_storage_image(0, 4, _target.name)
+			   .bind_storage_buffer(0, 5, sunLuminance)
 			   .bind_compute_pipeline("sky_draw_cubemap");
 			
-			auto* sides = cmd.map_scratch_uniform_binding<array<mat4, 6>>(1, 2);
+			auto* sides = cmd.map_scratch_uniform_binding<array<mat4, 6>>(0, 6);
 			*sides = to_array<mat4>({
 				mat4(mat3{
 					0.0f, 0.0f, -1.0f,

@@ -12,19 +12,19 @@ layout(local_size_x = 8, local_size_y = 8) in;
 layout(binding = 0) uniform WorldConstants {
 	World u_world;
 };
-layout(set = 0, binding = 1) uniform Atmosphere {
+layout(binding = 1) uniform Atmosphere {
 	AtmosphereParams U_ATMO;
 };
-layout(set = 0, binding = 2) uniform sampler2D S_TRANSMITTANCE;
-
-layout(set = 1, binding = 0) uniform sampler2D s_skyView;
-layout(set = 1, binding = 1) restrict writeonly uniform imageCube i_cubemap;
-layout(set = 1, binding = 2) uniform Sides {
-	mat4 u_sides[6];
-};
-layout(set = 1, binding = 3) restrict writeonly buffer SunLuminance {
+layout(binding = 2) uniform sampler2D S_TRANSMITTANCE;
+layout(binding = 3) uniform sampler2D s_skyView;
+layout(binding = 4) restrict writeonly uniform imageCube i_cubemap;
+layout(binding = 5) restrict writeonly buffer SunLuminance {
 	vec3 b_sunLuminance;
 };
+layout(binding = 6) uniform Sides {
+	mat4 u_sides[6];
+};
+
 layout(push_constant) uniform PushConstants {
 	vec3 u_probePosition;
 };

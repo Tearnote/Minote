@@ -7,10 +7,10 @@ layout(local_size_x = 8, local_size_y = 8) in;
 
 #define U_ATMO u_atmo
 
-layout(set = 0, binding = 1) uniform Atmosphere {
+layout(binding = 0) uniform Atmosphere {
 	AtmosphereParams U_ATMO;
 };
-layout(set = 1, binding = 0) restrict writeonly uniform image2D i_transmittance;
+layout(binding = 1) restrict writeonly uniform image2D i_transmittance;
 
 #include "sky.glsl"
 
