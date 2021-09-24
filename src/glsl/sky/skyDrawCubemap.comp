@@ -3,12 +3,19 @@
 
 layout(local_size_x = 8, local_size_y = 8) in;
 
+#include "skyTypes.glsl"
 #include "../types.glsl"
-#include "sky.glsl"
+
+#define U_ATMO u_atmo
+#define S_TRANSMITTANCE s_transmittance
 
 layout(binding = 0) uniform WorldConstants {
 	World u_world;
 };
+layout(set = 0, binding = 1) uniform Atmosphere {
+	AtmosphereParams U_ATMO;
+};
+layout(set = 0, binding = 2) uniform sampler2D S_TRANSMITTANCE;
 
 layout(set = 1, binding = 0) uniform sampler2D s_skyView;
 layout(set = 1, binding = 1) restrict writeonly uniform imageCube i_cubemap;
@@ -21,6 +28,8 @@ layout(set = 1, binding = 3) restrict writeonly buffer SunLuminance {
 layout(push_constant) uniform PushConstants {
 	vec3 u_probePosition;
 };
+
+#include "sky.glsl"
 
 void main() {
 	

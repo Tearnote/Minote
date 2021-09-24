@@ -4,15 +4,15 @@
 #include "types.glsl"
 #include "util.glsl"
 
-#ifdef INDICES_BUF
+#ifdef B_INDICES
 
 // Unpack and return indices of a given triangle.
 uvec3 fetchIndices(uint _n) {
 	
 	uint offset = _n / 2u;
 	uvec2 fetches = {
-	INDICES_BUF[offset + 0],
-	INDICES_BUF[offset + 1]};
+	B_INDICES[offset + 0],
+	B_INDICES[offset + 1]};
 	
 	if ((_n & 1u) == 0u)
 		return uvec3(
@@ -27,45 +27,45 @@ uvec3 fetchIndices(uint _n) {
 	
 }
 
-#endif //INDICES_BUF
+#endif //B_INDICES
 
-#ifdef VERTICES_BUF
+#ifdef B_VERTICES
 
 vec3 fetchVertex(uint _n) {
 	
 	uint base = _n * 3;
 	
 	return vec3(
-		VERTICES_BUF[base + 0],
-		VERTICES_BUF[base + 1],
-		VERTICES_BUF[base + 2]);
+		B_VERTICES[base + 0],
+		B_VERTICES[base + 1],
+		B_VERTICES[base + 2]);
 	
 }
 
-#endif //VERTICES_BUF
+#endif //B_VERTICES
 
-#ifdef NORMALS_BUF
+#ifdef B_NORMALS
 
 vec3 fetchNormal(uint _n) {
 	
 	uint base = _n * 3;
 	
 	return vec3(
-		NORMALS_BUF[base + 0],
-		NORMALS_BUF[base + 1],
-		NORMALS_BUF[base + 2]);
+		B_NORMALS[base + 0],
+		B_NORMALS[base + 1],
+		B_NORMALS[base + 2]);
 	
 }
 
-#endif //NORMALS_BUF
+#endif //B_NORMALS
 
-#ifdef COLORS_BUF
+#ifdef B_COLORS
 
 vec4 fetchColor(uint _n) {
 	
 	uvec2 fetches = {
-		COLORS_BUF[_n * 2 + 0],
-		COLORS_BUF[_n * 2 + 1]};
+		B_COLORS[_n * 2 + 0],
+		B_COLORS[_n * 2 + 1]};
 	uvec4 uresult = {
 		u32Lower(fetches.x),
 		u32Upper(fetches.x),
@@ -79,6 +79,6 @@ vec4 fetchColor(uint _n) {
 	
 }
 
-#endif //COLORS_BUF
+#endif //B_COLORS
 
 #endif //TYPESACCESS_GLSL

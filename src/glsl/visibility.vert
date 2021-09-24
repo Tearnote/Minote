@@ -3,7 +3,7 @@
 
 #include "types.glsl"
 
-#define VERTICES_BUF b_vertices
+#define B_VERTICES b_vertices
 
 layout(location = 0) out flat uint InstanceIndex;
 
@@ -11,7 +11,7 @@ layout(binding = 0) uniform WorldConstants {
 	World u_world;
 };
 layout(std430, binding = 1) readonly buffer Vertices {
-	float VERTICES_BUF[];
+	float B_VERTICES[];
 };
 layout(std430, binding = 2) readonly buffer Transforms {
 	Transform b_transforms[];

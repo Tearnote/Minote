@@ -5,10 +5,11 @@
 
 #include "../constants.glsl"
 #include "skyAccess.glsl"
+#include "skyTypes.glsl"
 
-#ifndef MULTIPLE_SCATTERING_ENABLED
-#define MULTIPLE_SCATTERING_ENABLED 0
-#endif
+#ifndef U_ATMO
+#error "Atmosphere params uniform name needs to be defined"
+#endif //U_ATMO
 
 #define PLANET_RADIUS_OFFSET 0.01
 
@@ -36,62 +37,6 @@ struct MediumSampleRGB {
 	vec3 albedo;
 	
 };
-
-struct SingleScatteringResult {
-	
-	vec3 L; // Scattered light (luminance)
-	vec3 opticalDepth; // Optical depth (1/m)
-	vec3 transmittance; // Transmittance in [0,1] (unitless)
-	vec3 multiScatAs1;
-	
-	vec3 newMultiScatStep0Out;
-	vec3 newMultiScatStep1Out;
-	
-};
-
-struct AtmosphereParams {
-	
-	float bottomRadius; // Radius of the planet (center to ground)
-	float topRadius; // Maximum considered atmosphere height (center to atmosphere top)
-	
-	float rayleighDensityExpScale; // Rayleigh scattering exponential distribution scale in the atmosphere
-	float pad0;
-	vec3 rayleighScattering; // Rayleigh scattering coefficients
-	
-	float mieDensityExpScale; // Mie scattering exponential distribution scale in the atmosphere
-	vec3 mieScattering; // Mie scattering coefficients
-	float pad1;
-	vec3 mieExtinction; // Mie extinction coefficients
-	float pad2;
-	vec3 mieAbsorption; // Mie absorption coefficients
-	float miePhaseG; // Mie phase function excentricity
-	
-	// Another medium type in the atmosphere
-	float absorptionDensity0LayerWidth;
-	float absorptionDensity0ConstantTerm;
-	float absorptionDensity0LinearTerm;
-	float absorptionDensity1ConstantTerm;
-	float absorptionDensity1LinearTerm;
-	float pad3;
-	float pad4;
-	float pad5;
-	vec3 absorptionExtinction; // This other medium only absorb light, e.g. useful to represent ozone in the earth atmosphere
-	float pad6;
-	
-	vec3 groundAlbedo; // The albedo of the ground.
-	
-};
-
-layout(set = 0, binding = 1) uniform Atmosphere {
-	AtmosphereParams u_atmo;
-};
-
-#ifndef TRANSMITTANCE_DISABLED
-layout(set = 0, binding = 2) uniform sampler2D s_transmittanceLut;
-#endif //TRANSMITTANCE_DISABLED
-#if MULTIPLE_SCATTERING_ENABLED
-layout(set = 0, binding = 3) uniform sampler2D s_multiScatteringLut;
-#endif //MULTIPLE_SCATTERING_ENABLED
 
 vec3 getAlbedo(vec3 _scattering, vec3 _extinction) {
 	
@@ -169,26 +114,26 @@ bool moveToTopAtmosphere(inout vec3 _worldPos, vec3 _worldDir, float _atmosphere
 
 MediumSampleRGB sampleMediumRGB(vec3 _worldPos) {
 	
-	const float viewHeight = length(_worldPos) - u_atmo.bottomRadius;
+	const float viewHeight = length(_worldPos) - U_ATMO.bottomRadius;
 	
-	const float densityMie = exp(u_atmo.mieDensityExpScale * viewHeight);
-	const float densityRay = exp(u_atmo.rayleighDensityExpScale * viewHeight);
-	const float densityOzo = clamp(viewHeight < u_atmo.absorptionDensity0LayerWidth ?
-		u_atmo.absorptionDensity0LinearTerm * viewHeight + u_atmo.absorptionDensity0ConstantTerm :
-		u_atmo.absorptionDensity1LinearTerm * viewHeight + u_atmo.absorptionDensity1ConstantTerm, 0.0, 1.0);
+	const float densityMie = exp(U_ATMO.mieDensityExpScale * viewHeight);
+	const float densityRay = exp(U_ATMO.rayleighDensityExpScale * viewHeight);
+	const float densityOzo = clamp(viewHeight < U_ATMO.absorptionDensity0LayerWidth ?
+		U_ATMO.absorptionDensity0LinearTerm * viewHeight + U_ATMO.absorptionDensity0ConstantTerm :
+		U_ATMO.absorptionDensity1LinearTerm * viewHeight + U_ATMO.absorptionDensity1ConstantTerm, 0.0, 1.0);
 	
 	MediumSampleRGB s;
 	
-	s.scatteringMie = densityMie * u_atmo.mieScattering;
-	s.absorptionMie = densityMie * u_atmo.mieAbsorption;
-	s.extinctionMie = densityMie * u_atmo.mieExtinction;
+	s.scatteringMie = densityMie * U_ATMO.mieScattering;
+	s.absorptionMie = densityMie * U_ATMO.mieAbsorption;
+	s.extinctionMie = densityMie * U_ATMO.mieExtinction;
 	
-	s.scatteringRay = densityRay * u_atmo.rayleighScattering;
+	s.scatteringRay = densityRay * U_ATMO.rayleighScattering;
 	s.absorptionRay = vec3(0.0);
 	s.extinctionRay = s.scatteringRay + s.absorptionRay;
 	
 	s.scatteringOzo = vec3(0.0);
-	s.absorptionOzo = densityOzo * u_atmo.absorptionExtinction;
+	s.absorptionOzo = densityOzo * U_ATMO.absorptionExtinction;
 	s.extinctionOzo = s.scatteringOzo + s.absorptionOzo;
 	
 	s.scattering = s.scatteringMie + s.scatteringRay + s.scatteringOzo;
@@ -200,7 +145,7 @@ MediumSampleRGB sampleMediumRGB(vec3 _worldPos) {
 	
 }
 
-#ifndef TRANSMITTANCE_DISABLED
+#ifdef S_TRANSMITTANCE
 
 vec3 getSunLuminance(vec3 _worldPos, vec3 _worldDir, vec3 _sunDirection, vec3 _sunIlluminance) {
 	
@@ -208,25 +153,25 @@ vec3 getSunLuminance(vec3 _worldPos, vec3 _worldDir, vec3 _sunDirection, vec3 _s
 	
 	if (dot(_worldDir, _sunDirection) > cos(SunRadius)) {
 		
-		float t = raySphereIntersectNearest(_worldPos, _worldDir, vec3(0.0), u_atmo.bottomRadius);
+		float t = raySphereIntersectNearest(_worldPos, _worldDir, vec3(0.0), U_ATMO.bottomRadius);
 		if (t < 0.0) { // no intersection
 			
 			vec2 uvUp;
-			lutTransmittanceParamsToUv(u_atmo.bottomRadius, 1.0, uvUp, u_atmo.bottomRadius, u_atmo.topRadius);
+			lutTransmittanceParamsToUv(U_ATMO.bottomRadius, 1.0, uvUp, U_ATMO.bottomRadius, U_ATMO.topRadius);
 			
 			float pHeight = length(_worldPos);
 			const vec3 upVector = _worldPos / pHeight;
 			float sunZenithCosAngle = dot(_sunDirection, upVector);
 			vec2 uvSun;
-			lutTransmittanceParamsToUv(pHeight, sunZenithCosAngle, uvSun, u_atmo.bottomRadius, u_atmo.topRadius);
+			lutTransmittanceParamsToUv(pHeight, sunZenithCosAngle, uvSun, U_ATMO.bottomRadius, U_ATMO.topRadius);
 			
 			float cosAngle = dot(_worldDir, _sunDirection);
 			float angle = acos(clamp(cosAngle, -1.0, 1.0));
 			float radiusRatio = angle / (SunRadius);
 			float limbDarkening = sqrt(clamp(1.0 - radiusRatio*radiusRatio, 0.0001, 1.0));
 			
-			vec3 sunLuminanceInSpace = _sunIlluminance / textureLod(s_transmittanceLut, uvUp, 0.0).rgb;
-			return sunLuminanceInSpace * textureLod(s_transmittanceLut, uvSun, 0.0).rgb * limbDarkening;
+			vec3 sunLuminanceInSpace = _sunIlluminance / textureLod(S_TRANSMITTANCE, uvUp, 0.0).rgb;
+			return sunLuminanceInSpace * textureLod(S_TRANSMITTANCE, uvSun, 0.0).rgb * limbDarkening;
 			
 		}
 		
@@ -236,25 +181,25 @@ vec3 getSunLuminance(vec3 _worldPos, vec3 _worldDir, vec3 _sunDirection, vec3 _s
 	
 }
 
-#endif //TRANSMITTANCE_DISABLED
+#endif //S_TRANSMITTANCE
 
-#if MULTIPLE_SCATTERING_ENABLED
+#ifdef S_MULTISCATTERING
 
 vec3 getMultipleScattering(vec3 _worldPos, float _viewZenithCosAngle) {
 	
-	uvec2 size = textureSize(s_multiScatteringLut, 0).xy;
+	uvec2 size = textureSize(S_MULTISCATTERING, 0).xy;
 	vec2 uv = clamp(vec2(
 			_viewZenithCosAngle * 0.5 + 0.5,
-			(length(_worldPos) - u_atmo.bottomRadius) / (u_atmo.topRadius - u_atmo.bottomRadius)),
+			(length(_worldPos) - U_ATMO.bottomRadius) / (U_ATMO.topRadius - U_ATMO.bottomRadius)),
 		0.0, 1.0);
 	uv = vec2(fromUnitToSubUvs(uv.x, size.x), fromUnitToSubUvs(uv.y, size.y));
 	
-	vec3 multiScatteredLuminance = textureLod(s_multiScatteringLut, uv, 0.0).rgb;
+	vec3 multiScatteredLuminance = textureLod(S_MULTISCATTERING, uv, 0.0).rgb;
 	return multiScatteredLuminance;
 	
 }
 
-#endif //MULTIPLE_SCATTERING_ENABLED
+#endif //S_MULTISCATTERING
 
 SingleScatteringResult integrateScatteredLuminance(vec3 _worldPos, vec3 _worldDir, vec3 _sunDir,
 	bool _ground, float _sampleCountIni, bool _variableSampleCount, bool _mieRayPhase, float _tMaxMax,
@@ -264,8 +209,8 @@ SingleScatteringResult integrateScatteredLuminance(vec3 _worldPos, vec3 _worldDi
 	
 	// Compute next intersection with atmosphere or ground
 	vec3 earthO = vec3(0.0);
-	float tBottom = raySphereIntersectNearest(_worldPos, _worldDir, earthO, u_atmo.bottomRadius);
-	float tTop = raySphereIntersectNearest(_worldPos, _worldDir, earthO, u_atmo.topRadius);
+	float tBottom = raySphereIntersectNearest(_worldPos, _worldDir, earthO, U_ATMO.bottomRadius);
+	float tTop = raySphereIntersectNearest(_worldPos, _worldDir, earthO, U_ATMO.topRadius);
 	float tMax = 0.0;
 	if (tBottom < 0.0) {
 		
@@ -305,7 +250,7 @@ SingleScatteringResult integrateScatteredLuminance(vec3 _worldPos, vec3 _worldDi
 	const vec3 wi = _sunDir;
 	const vec3 wo = _worldDir;
 	float cosTheta = dot(wi, wo);
-	float miePhaseValue = cornetteShanksMiePhaseFunction(u_atmo.miePhaseG, -cosTheta); // negate cosTheta due to WorldDir being a "in" direction.
+	float miePhaseValue = cornetteShanksMiePhaseFunction(U_ATMO.miePhaseG, -cosTheta); // negate cosTheta due to WorldDir being a "in" direction.
 	float rayleighPhaseValue = rayleighPhase(cosTheta);
 	
 	// When building the scattering factor, we assume light illuminance is 1 to compute a transfer function relative to identity illuminance of 1.
@@ -362,12 +307,12 @@ SingleScatteringResult integrateScatteredLuminance(vec3 _worldPos, vec3 _worldDi
 		const vec3 upVector = P / pHeight;
 		float sunZenithCosAngle = dot(_sunDir, upVector);
 		vec2 uv;
-		lutTransmittanceParamsToUv(pHeight, sunZenithCosAngle, uv, u_atmo.bottomRadius, u_atmo.topRadius);
-#ifndef TRANSMITTANCE_DISABLED
-		vec3 transmittanceToSun = textureLod(s_transmittanceLut, uv, 0.0).rgb;
-#else //TRANSMITTANCE_DISABLED
+		lutTransmittanceParamsToUv(pHeight, sunZenithCosAngle, uv, U_ATMO.bottomRadius, U_ATMO.topRadius);
+#ifdef S_TRANSMITTANCE
+		vec3 transmittanceToSun = textureLod(S_TRANSMITTANCE, uv, 0.0).rgb;
+#else //S_TRANSMITTANCE
 		vec3 transmittanceToSun = vec3(0.0);
-#endif //TRANSMITTANCE_DISABLED
+#endif //S_TRANSMITTANCE
 		
 		vec3 phaseTimesScattering;
 		if (_mieRayPhase)
@@ -378,15 +323,15 @@ SingleScatteringResult integrateScatteredLuminance(vec3 _worldPos, vec3 _worldDi
 		
 		// Earth shadow
 		float tEarth = raySphereIntersectNearest(P, _sunDir,
-			earthO + PLANET_RADIUS_OFFSET * upVector, u_atmo.bottomRadius);
+			earthO + PLANET_RADIUS_OFFSET * upVector, U_ATMO.bottomRadius);
 		float earthShadow = tEarth >= 0.0 ? 0.0 : 1.0;
 		
 		// Dual scattering for multi scattering
 		
 		vec3 multiScatteredLuminance = vec3(0.0);
-#if MULTIPLE_SCATTERING_ENABLED
+#ifdef S_MULTISCATTERING
 		multiScatteredLuminance = getMultipleScattering(P, sunZenithCosAngle);
-#endif
+#endif //S_MULTISCATTERING
 		
 		vec3 S = globalL * (earthShadow * transmittanceToSun * phaseTimesScattering +
 			multiScatteredLuminance * medium.scattering);
@@ -427,15 +372,15 @@ SingleScatteringResult integrateScatteredLuminance(vec3 _worldPos, vec3 _worldDi
 		const vec3 upVector = P / pHeight;
 		float sunZenithCosAngle = dot(_sunDir, upVector);
 		vec2 uv;
-		lutTransmittanceParamsToUv(pHeight, sunZenithCosAngle, uv, u_atmo.bottomRadius, u_atmo.topRadius);
-#ifndef TRANSMITTANCE_DISABLED
-		vec3 transmittanceToSun = textureLod(s_transmittanceLut, uv, 0.0).rgb;
-#else //TRANSMITTANCE_DISABLED
+		lutTransmittanceParamsToUv(pHeight, sunZenithCosAngle, uv, U_ATMO.bottomRadius, U_ATMO.topRadius);
+#ifdef S_TRANSMITTANCE
+		vec3 transmittanceToSun = textureLod(S_TRANSMITTANCE, uv, 0.0).rgb;
+#else //S_TRANSMITTANCE
 		vec3 transmittanceToSun = vec3(0.0);
-#endif //TRANSMITTANCE_DISABLED
+#endif //S_TRANSMITTANCE
 		
 		const float NdotL = clamp(dot(normalize(upVector), normalize(_sunDir)), 0.0, 1.0);
-		L += globalL * transmittanceToSun * throughput * NdotL * u_atmo.groundAlbedo / PI;
+		L += globalL * transmittanceToSun * throughput * NdotL * U_ATMO.groundAlbedo / PI;
 		
 	}
 	

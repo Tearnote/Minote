@@ -10,10 +10,10 @@ layout(local_size_x = 8, local_size_y = 8) in;
 #include "types.glsl"
 #include "util.glsl"
 
-#define INDICES_BUF b_indices
-#define VERTICES_BUF b_vertices
-#define NORMALS_BUF b_normals
-#define COLORS_BUF b_colors
+#define B_INDICES b_indices
+#define B_VERTICES b_vertices
+#define B_NORMALS b_normals
+#define B_COLORS b_colors
 
 layout(binding = 0) uniform WorldConstants {
 	World u_world;
@@ -33,16 +33,16 @@ layout(binding = 4, std430) restrict readonly buffer Materials {
 };
 
 layout (binding = 5, std430) restrict readonly buffer Indices {
-	uint INDICES_BUF[];
+	uint B_INDICES[];
 };
 layout (binding = 6, std430) restrict readonly buffer Vertices {
-	float VERTICES_BUF[];
+	float B_VERTICES[];
 };
 layout (binding = 7, std430) restrict readonly buffer Normals {
-	float NORMALS_BUF[];
+	float B_NORMALS[];
 };
 layout (binding = 8, std430) restrict readonly buffer Colors {
-	uint COLORS_BUF[];
+	uint B_COLORS[];
 };
 
 layout(binding = 9) restrict readonly buffer SunLuminance {
