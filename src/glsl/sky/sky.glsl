@@ -114,11 +114,11 @@ bool moveToTopAtmosphere(inout vec3 _worldPos, vec3 _worldDir, float _atmosphere
 
 MediumSampleRGB sampleMediumRGB(vec3 _worldPos) {
 	
-	const float viewHeight = length(_worldPos) - U_ATMO.bottomRadius;
+	float viewHeight = length(_worldPos) - U_ATMO.bottomRadius;
 	
-	const float densityMie = exp(U_ATMO.mieDensityExpScale * viewHeight);
-	const float densityRay = exp(U_ATMO.rayleighDensityExpScale * viewHeight);
-	const float densityOzo = clamp(viewHeight < U_ATMO.absorptionDensity0LayerWidth ?
+	float densityMie = exp(U_ATMO.mieDensityExpScale * viewHeight);
+	float densityRay = exp(U_ATMO.rayleighDensityExpScale * viewHeight);
+	float densityOzo = clamp(viewHeight < U_ATMO.absorptionDensity0LayerWidth ?
 		U_ATMO.absorptionDensity0LinearTerm * viewHeight + U_ATMO.absorptionDensity0ConstantTerm :
 		U_ATMO.absorptionDensity1LinearTerm * viewHeight + U_ATMO.absorptionDensity1ConstantTerm, 0.0, 1.0);
 	
@@ -149,7 +149,7 @@ MediumSampleRGB sampleMediumRGB(vec3 _worldPos) {
 
 vec3 getSunLuminance(vec3 _worldPos, vec3 _worldDir, vec3 _sunDirection, vec3 _sunIlluminance) {
 	
-	const float SunRadius = 0.5 * 0.505 * 3.14159 / 180.0;
+	float SunRadius = 0.5 * 0.505 * 3.14159 / 180.0;
 	
 	if (dot(_worldDir, _sunDirection) > cos(SunRadius)) {
 		
@@ -160,7 +160,7 @@ vec3 getSunLuminance(vec3 _worldPos, vec3 _worldDir, vec3 _sunDirection, vec3 _s
 			lutTransmittanceParamsToUv(U_ATMO.bottomRadius, 1.0, uvUp, U_ATMO.bottomRadius, U_ATMO.topRadius);
 			
 			float pHeight = length(_worldPos);
-			const vec3 upVector = _worldPos / pHeight;
+			vec3 upVector = _worldPos / pHeight;
 			float sunZenithCosAngle = dot(_sunDirection, upVector);
 			vec2 uvSun;
 			lutTransmittanceParamsToUv(pHeight, sunZenithCosAngle, uvSun, U_ATMO.bottomRadius, U_ATMO.topRadius);
@@ -246,9 +246,9 @@ SingleScatteringResult integrateScatteredLuminance(vec3 _worldPos, vec3 _worldDi
 	float dt = tMax / sampleCount;
 	
 	// Phase functions
-	const float uniformPhase = 1.0 / (4.0 * PI);
-	const vec3 wi = _sunDir;
-	const vec3 wo = _worldDir;
+	float uniformPhase = 1.0 / (4.0 * PI);
+	vec3 wi = _sunDir;
+	vec3 wo = _worldDir;
 	float cosTheta = dot(wi, wo);
 	float miePhaseValue = cornetteShanksMiePhaseFunction(U_ATMO.miePhaseG, -cosTheta); // negate cosTheta due to WorldDir being a "in" direction.
 	float rayleighPhaseValue = rayleighPhase(cosTheta);
@@ -263,7 +263,7 @@ SingleScatteringResult integrateScatteredLuminance(vec3 _worldPos, vec3 _worldDi
 	vec3 opticalDepth = vec3(0.0);
 	float t = 0.0;
 	float tPrev = 0.0;
-	const float sampleSegmentT = 0.3;
+	float sampleSegmentT = 0.3;
 	for (float s = 0.0; s < sampleCount; s += 1.0) {
 		
 		if (_variableSampleCount) {
@@ -299,12 +299,12 @@ SingleScatteringResult integrateScatteredLuminance(vec3 _worldPos, vec3 _worldDi
 		vec3 P = _worldPos + t * _worldDir;
 		
 		MediumSampleRGB medium = sampleMediumRGB(P);
-		const vec3 sampleOpticalDepth = medium.extinction * dt;
-		const vec3 sampleTransmittance = exp(-sampleOpticalDepth);
+		vec3 sampleOpticalDepth = medium.extinction * dt;
+		vec3 sampleTransmittance = exp(-sampleOpticalDepth);
 		opticalDepth += sampleOpticalDepth;
 		
 		float pHeight = length(P);
-		const vec3 upVector = P / pHeight;
+		vec3 upVector = P / pHeight;
 		float sunZenithCosAngle = dot(_sunDir, upVector);
 		vec2 uv;
 		lutTransmittanceParamsToUv(pHeight, sunZenithCosAngle, uv, U_ATMO.bottomRadius, U_ATMO.topRadius);
@@ -369,7 +369,7 @@ SingleScatteringResult integrateScatteredLuminance(vec3 _worldPos, vec3 _worldDi
 		vec3 P = _worldPos + tBottom * _worldDir;
 		float pHeight = length(P);
 		
-		const vec3 upVector = P / pHeight;
+		vec3 upVector = P / pHeight;
 		float sunZenithCosAngle = dot(_sunDir, upVector);
 		vec2 uv;
 		lutTransmittanceParamsToUv(pHeight, sunZenithCosAngle, uv, U_ATMO.bottomRadius, U_ATMO.topRadius);
@@ -379,7 +379,7 @@ SingleScatteringResult integrateScatteredLuminance(vec3 _worldPos, vec3 _worldDi
 		vec3 transmittanceToSun = vec3(0.0);
 #endif //S_TRANSMITTANCE
 		
-		const float NdotL = clamp(dot(normalize(upVector), normalize(_sunDir)), 0.0, 1.0);
+		float NdotL = clamp(dot(normalize(upVector), normalize(_sunDir)), 0.0, 1.0);
 		L += globalL * transmittanceToSun * throughput * NdotL * U_ATMO.groundAlbedo / PI;
 		
 	}
