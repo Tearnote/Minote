@@ -15,6 +15,10 @@ layout(binding = 0) uniform Atmosphere {
 layout(binding = 1) uniform sampler2D S_TRANSMITTANCE;
 layout(binding = 2) restrict writeonly uniform image2D i_multiScattering;
 
+layout(push_constant) uniform Constants {
+	uvec2 u_multiScatteringSize;
+};
+
 #include "sky.glsl"
 
 shared vec3 sh_multiScatAs1[64];
@@ -22,12 +26,11 @@ shared vec3 sh_L[64];
 
 void main() {
 	
-	const uvec3 gid = gl_GlobalInvocationID;
-	const ivec2 size = imageSize(i_multiScattering);
+	uvec3 gid = gl_GlobalInvocationID;
 	
 	// Compute camera position from LUT coords
-	vec2 uv = (vec2(gid.xy) + vec2(0.5)) / vec2(size);
-	uv = vec2(fromSubUvsToUnit(uv.x, size.x), fromSubUvsToUnit(uv.y, size.y));
+	vec2 uv = (vec2(gid.xy) + vec2(0.5)) / vec2(u_multiScatteringSize);
+	uv = vec2(fromSubUvsToUnit(uv.x, u_multiScatteringSize.x), fromSubUvsToUnit(uv.y, u_multiScatteringSize.y));
 	
 	float cosSunZenithAngle = uv.x * 2.0 - 1.0;
 	vec3 sunDir = vec3(0.0, sqrt(clamp(1.0 - cosSunZenithAngle * cosSunZenithAngle, 0.0, 1.0)), cosSunZenithAngle);
@@ -39,18 +42,18 @@ void main() {
 	vec3 worldPos = vec3(0.0, 0.0, viewHeight);
 	vec3 worldDir = vec3(0.0, 0.0, 1.0);
 	
-	const bool ground = true;
-	const float sampleCountIni = 20; // a minimum set of step is required for accuracy unfortunately
-	const bool variableSampleCount = false;
-	const bool mieRayPhase = false;
+	bool ground = true;
+	float sampleCountIni = 20; // a minimum set of step is required for accuracy unfortunately
+	bool variableSampleCount = false;
+	bool mieRayPhase = false;
 	
-	const float sphereSolidAngle = 4.0 * PI;
-	const float isotropicPhase = 1.0 / sphereSolidAngle;
+	float sphereSolidAngle = 4.0 * PI;
+	float isotropicPhase = 1.0 / sphereSolidAngle;
 	
 	// Reference. Since there are many samples, it requires MULTI_SCATTERING_POWER_SERIE
 	// to be true for accuracy and to avoid divergences (see declaration for explanations)
 #define SQRTSAMPLECOUNT 8
-	const float sqrtSample = float(SQRTSAMPLECOUNT);
+	float sqrtSample = float(SQRTSAMPLECOUNT);
 	float i = 0.5 + float(gid.z / SQRTSAMPLECOUNT);
 	float j = 0.5 + float(gid.z - float((gid.z / SQRTSAMPLECOUNT) * SQRTSAMPLECOUNT));
 	{
@@ -158,8 +161,8 @@ void main() {
 #else //MULTI_SCATTERING_POWER_SERIE == 0
 	// For a serie, sum_{n=0}^{n=+inf} = 1 + r + r^2 + r^3 + ... + r^n = 1 / (1.0 - r),
 	// see https://en.wikipedia.org/wiki/Geometric_series
-	const vec3 r = multiScatAs1;
-	const vec3 sumOfAllMultiScatteringEventsContribution = 1.0 / (1.0 - r);
+	vec3 r = multiScatAs1;
+	vec3 sumOfAllMultiScatteringEventsContribution = 1.0 / (1.0 - r);
 	vec3 L = inScatteredLuminance * sumOfAllMultiScatteringEventsContribution; // Equation 10 Psi_ms
 #endif //MULTI_SCATTERING_POWER_SERIE == 0
 	

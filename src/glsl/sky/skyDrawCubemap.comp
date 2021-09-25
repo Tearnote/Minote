@@ -25,19 +25,19 @@ layout(binding = 6) uniform Sides {
 	mat4 u_sides[6];
 };
 
-layout(push_constant) uniform PushConstants {
+layout(push_constant) uniform Constants {
 	vec3 u_probePosition;
+	uint u_cubemapSize;
+	uvec2 u_skyViewSize;
 };
 
 #include "sky.glsl"
 
 void main() {
 	
-	const uvec3 gid = gl_GlobalInvocationID;
-	const ivec2 cubeSize = imageSize(i_cubemap);
-	const ivec2 viewSize = textureSize(s_skyView, 0);
+	uvec3 gid = gl_GlobalInvocationID;
 	
-	vec2 cubeUv = (vec2(gid.xy) + vec2(0.5)) / vec2(cubeSize);
+	vec2 cubeUv = (vec2(gid.xy) + vec2(0.5)) / vec2(float(u_cubemapSize));
 	cubeUv = cubeUv * 2.0 - 1.0;
 	vec3 dir = mat3(u_sides[gid.z]) * vec3(cubeUv, 1.0);
 	
@@ -58,7 +58,7 @@ void main() {
 	
 	bool intersectGround = (raySphereIntersectNearest(worldPos, worldDir, vec3(0.0), u_atmo.bottomRadius) >= 0.0);
 	
-	skyViewLutParamsToUv(intersectGround, viewZenithCosAngle, lightViewCosAngle, viewSize, viewHeight, uv, u_atmo.bottomRadius);
+	skyViewLutParamsToUv(intersectGround, viewZenithCosAngle, lightViewCosAngle, u_skyViewSize, viewHeight, uv, u_atmo.bottomRadius);
 	vec4 result = vec4(textureLod(s_skyView, uv, 0.0).rgb, 1.0);
 	imageStore(i_cubemap, ivec3(gid), result);
 	

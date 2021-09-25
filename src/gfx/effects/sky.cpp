@@ -87,6 +87,7 @@ void Atmosphere::precalculate(vuk::RenderGraph& _rg) {
 			
 			cmd.bind_uniform_buffer(0, 0, params)
 			   .bind_storage_image(0, 1, transmittance)
+			   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, transmittance.size())
 			   .bind_compute_pipeline("sky_gen_transmittance");
 			cmd.dispatch_invocations(transmittance.size().x(), transmittance.size().y());
 			
@@ -102,6 +103,7 @@ void Atmosphere::precalculate(vuk::RenderGraph& _rg) {
 			cmd.bind_uniform_buffer(0, 0, params)
 			   .bind_sampled_image(0, 1, transmittance, LinearClamp)
 			   .bind_storage_image(0, 2, multiScattering)
+			   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, multiScattering.size())
 			   .bind_compute_pipeline("sky_gen_multi_scattering");
 			cmd.dispatch_invocations(multiScattering.size().x(), multiScattering.size().y(), 1);
 			
@@ -177,13 +179,23 @@ void Sky::calculate(vuk::RenderGraph& _rg, Buffer<World> _world, Camera const& _
 			cameraView.resource(vuk::eComputeWrite) },
 		.execute = [this, _world, &_camera](vuk::CommandBuffer& cmd) {
 			
+			struct PushConstants {
+				vec3 probePosition;
+				f32 pad0;
+				uvec2 skyViewSize;
+			};
+			
 			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_uniform_buffer(0, 1, atmosphere.params)
 			   .bind_sampled_image(0, 2, atmosphere.transmittance, LinearClamp)
 			   .bind_sampled_image(0, 3, atmosphere.multiScattering, LinearClamp)
 			   .bind_storage_image(0, 4, cameraView)
 			   .bind_compute_pipeline("sky_gen_sky_view");
-			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, _camera.position);
+			
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
+				.probePosition = _camera.position,
+				.skyViewSize = cameraView.size() });
+			
 			cmd.dispatch_invocations(cameraView.size().x(), cameraView.size().y(), 1);
 			
 		}});
@@ -196,13 +208,23 @@ void Sky::calculate(vuk::RenderGraph& _rg, Buffer<World> _world, Camera const& _
 			cubemapView.resource(vuk::eComputeWrite) },
 		.execute = [this, _world](vuk::CommandBuffer& cmd) {
 			
+			struct PushConstants {
+				vec3 probePosition;
+				f32 pad0;
+				uvec2 skyViewSize;
+			};
+			
 			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_uniform_buffer(0, 1, atmosphere.params)
 			   .bind_sampled_image(0, 2, atmosphere.transmittance, LinearClamp)
 			   .bind_sampled_image(0, 3, atmosphere.multiScattering, LinearClamp)
 			   .bind_storage_image(0, 4, cubemapView)
 			   .bind_compute_pipeline("sky_gen_sky_view");
-			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, CubemapCamera);
+			
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
+				.probePosition = CubemapCamera,
+				.skyViewSize = cubemapView.size() });
+			
 			cmd.dispatch_invocations(cubemapView.size().x(), cubemapView.size().y(), 1);
 			
 		}});
@@ -220,6 +242,7 @@ void Sky::calculate(vuk::RenderGraph& _rg, Buffer<World> _world, Camera const& _
 			   .bind_sampled_image(0, 2, atmosphere.transmittance, LinearClamp)
 			   .bind_sampled_image(0, 3, atmosphere.multiScattering, LinearClamp)
 			   .bind_storage_image(0, 4, aerialPerspective)
+			   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, aerialPerspective.size())
 			   .bind_compute_pipeline("sky_gen_aerial_perspective");
 			cmd.dispatch_invocations(aerialPerspective.size().x(), aerialPerspective.size().y(), aerialPerspective.size().z());
 			
@@ -238,6 +261,11 @@ void Sky::draw(vuk::RenderGraph& _rg, Buffer<World> _world, Texture2D _target, T
 			_target.resource(vuk::eComputeWrite) },
 		.execute = [this, _world, _target, _visbuf](vuk::CommandBuffer& cmd) {
 			
+			struct PushConstants {
+				uvec2 skyViewSize;
+				uvec2 targetSize;
+			};
+			
 			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_uniform_buffer(0, 1, atmosphere.params)
 			   .bind_sampled_image(0, 2, atmosphere.transmittance, LinearClamp)
@@ -245,6 +273,11 @@ void Sky::draw(vuk::RenderGraph& _rg, Buffer<World> _world, Texture2D _target, T
 			   .bind_sampled_image(0, 4, _visbuf, NearestClamp)
 			   .bind_storage_image(0, 5, _target)
 			   .bind_compute_pipeline("sky_draw");
+			
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
+				.skyViewSize = cameraView.size(),
+				.targetSize = _target.size() });
+			
 			cmd.dispatch_invocations(_target.size().x(), _target.size().y());
 			
 		}});
@@ -263,6 +296,12 @@ void Sky::drawCubemap(vuk::RenderGraph& _rg, Buffer<World> _world, Cubemap _targ
 			vuk::Resource(_target.name, vuk::Resource::Type::eImage,  vuk::eComputeWrite),
 			sunLuminance.resource(vuk::eComputeWrite) },
 		.execute = [this, _world, _target](vuk::CommandBuffer& cmd) {
+			
+			struct PushConstants {
+				vec3 probePosition;
+				u32 cubemapSize;
+				uvec2 skyViewSize;
+			};
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_uniform_buffer(0, 1, atmosphere.params)
@@ -299,7 +338,10 @@ void Sky::drawCubemap(vuk::RenderGraph& _rg, Buffer<World> _world, Cubemap _targ
 					0.0f, -1.0f, 0.0f,
 					0.0f, 0.0f, -1.0f})});
 			
-			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0_zu, CubemapCamera);
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
+				.probePosition = CubemapCamera,
+				.cubemapSize = _target.size().x(),
+				.skyViewSize = cubemapView.size() });
 			
 			cmd.dispatch_invocations(_target.size().x(), _target.size().y(), 6);
 			

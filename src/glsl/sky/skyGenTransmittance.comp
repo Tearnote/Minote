@@ -12,15 +12,18 @@ layout(binding = 0) uniform Atmosphere {
 };
 layout(binding = 1) restrict writeonly uniform image2D i_transmittance;
 
+layout(push_constant) uniform Constants {
+	uvec2 u_transmittanceSize;
+};
+
 #include "sky.glsl"
 
 void main() {
 	
-	const uvec2 gid = gl_GlobalInvocationID.xy;
-	const ivec2 size = imageSize(i_transmittance);
+	uvec2 gid = gl_GlobalInvocationID.xy;
 	
 	// Compute camera position from LUT coords
-	vec2 uv = (vec2(gid) + vec2(0.5)) / vec2(size);
+	vec2 uv = (vec2(gid) + vec2(0.5)) / vec2(u_transmittanceSize);
 	float viewHeight;
 	float viewZenithCosAngle;
 	uvToLutTransmittanceParams(viewHeight, viewZenithCosAngle, uv, u_atmo.bottomRadius, u_atmo.topRadius);
@@ -29,10 +32,10 @@ void main() {
 	vec3 worldPos = vec3(0.0, 0.0, viewHeight);
 	vec3 worldDir = vec3(0.0, sqrt(1.0 - viewZenithCosAngle * viewZenithCosAngle), viewZenithCosAngle);
 	
-	const bool ground = false;
-	const float sampleCountIni = 40.0;	// Can go as low as 10 sample but energy lost starts to be visible.
-	const bool variableSampleCount = false;
-	const bool mieRayPhase = false;
+	bool ground = false;
+	float sampleCountIni = 40.0;	// Can go as low as 10 sample but energy lost starts to be visible.
+	bool variableSampleCount = false;
+	bool mieRayPhase = false;
 	vec3 result = exp(-integrateScatteredLuminance(worldPos, worldDir, vec3(1.0)/*unused*/,
 		ground, sampleCountIni, variableSampleCount, mieRayPhase, 9000000.0, vec3(1.0)).opticalDepth);
 	

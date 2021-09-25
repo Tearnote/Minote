@@ -20,18 +20,21 @@ layout(binding = 2) uniform sampler2D S_TRANSMITTANCE;
 layout(binding = 3) uniform sampler2D S_MULTISCATTERING;
 layout(binding = 4) restrict writeonly uniform image3D i_aerialPerspective;
 
+layout(push_constant) uniform Constants {
+	uvec3 u_aerialPerspectiveSize;
+};
+
 #include "sky.glsl"
 
 void main() {
 	
-	const uvec3 gid = gl_GlobalInvocationID;
-	const ivec3 size = imageSize(i_aerialPerspective);
+	uvec3 gid = gl_GlobalInvocationID;
 
-	if (any(greaterThanEqual(gid, size)))
+	if (any(greaterThanEqual(gid, u_aerialPerspectiveSize)))
 		return;
 
 	vec2 pixPos = vec2(gid) + vec2(0.5);
-	vec3 clipSpace = vec3((pixPos / vec2(size.xy)) * vec2(2.0) - vec2(1.0), 0.0);
+	vec3 clipSpace = vec3((pixPos / vec2(u_aerialPerspectiveSize.xy)) * vec2(2.0) - vec2(1.0), 0.0);
 	vec4 hPos = u_world.viewProjectionInverse * vec4(clipSpace, 1.0);
 	vec3 worldDir = normalize(hPos.xyz);
 	float earthR = u_atmo.bottomRadius;
@@ -40,9 +43,9 @@ void main() {
 	vec3 sunDir = u_world.sunDirection;
 	vec3 sunLuminance = vec3(0.0);
 
-	float slice = ((float(gid.z) + 0.5) / size.z);
+	float slice = ((float(gid.z) + 0.5) / u_aerialPerspectiveSize.z);
 	slice *= slice;	// squared distribution
-	slice *= size.z;
+	slice *= u_aerialPerspectiveSize.z;
 
 	vec3 worldPos = camPos;
 	float viewHeight;
@@ -87,14 +90,14 @@ void main() {
 		tMaxMax = max(0.0, tMaxMax - lengthToAtmosphere);
 	}
 	
-	const bool ground = false;
-	const float sampleCountIni = max(1.0, float(gid.z + 1.0) * 2.0);
-	const bool variableSampleCount = false;
-	const bool mieRayPhase = true;
+	bool ground = false;
+	float sampleCountIni = max(1.0, float(gid.z + 1.0) * 2.0);
+	bool variableSampleCount = false;
+	bool mieRayPhase = true;
 	SingleScatteringResult ss = integrateScatteredLuminance(worldPos, worldDir, sunDir,
 		ground, sampleCountIni, variableSampleCount, mieRayPhase, tMaxMax, u_world.sunIlluminance);
 	
-	const float transmittance = dot(ss.transmittance, vec3(1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0));
+	float transmittance = dot(ss.transmittance, vec3(1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0));
 	imageStore(i_aerialPerspective, ivec3(gid), vec4(ss.L, 1.0 - transmittance));
 	
 }

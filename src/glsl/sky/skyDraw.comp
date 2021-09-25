@@ -20,17 +20,19 @@ layout(binding = 3) uniform sampler2D s_skyView;
 layout(binding = 4) uniform usampler2D s_visbuf;
 layout(binding = 5) restrict writeonly uniform image2D i_target;
 
+layout(push_constant) uniform Constants {
+	uvec2 u_skyViewSize;
+	uvec2 u_targetSize;
+}; 
+
 #include "sky.glsl"
 
 void main() {
 	
-	const ivec2 viewSize = textureSize(s_skyView, 0);
-	
 	// Bounds check
 	
-	const uvec2 gid = gl_GlobalInvocationID.xy;
-	const ivec2 targetSize = imageSize(i_target);
-	if (any(greaterThanEqual(gid, targetSize)))
+	uvec2 gid = gl_GlobalInvocationID.xy;
+	if (any(greaterThanEqual(gid, u_targetSize)))
 		return;
 	
 	// Retrieve visibility sample
@@ -39,7 +41,7 @@ void main() {
 	if (visSample != -1u) // Sky sample
 		return;
 	
-	vec2 gUv = vec2(gid) / vec2(targetSize);
+	vec2 gUv = vec2(gid) / vec2(u_targetSize);
 	vec3 clipSpace = vec3(gUv * vec2(2.0) - vec2(1.0), 0.0);
 	vec4 hPos = u_world.viewProjectionInverse * vec4(clipSpace, 1.0);
 
@@ -60,7 +62,7 @@ void main() {
 
 	bool intersectGround = (raySphereIntersectNearest(worldPos, worldDir, vec3(0.0), u_atmo.bottomRadius) >= 0.0);
 
-	skyViewLutParamsToUv(intersectGround, viewZenithCosAngle, lightViewCosAngle, viewSize, viewHeight, uv, u_atmo.bottomRadius);
+	skyViewLutParamsToUv(intersectGround, viewZenithCosAngle, lightViewCosAngle, u_skyViewSize, viewHeight, uv, u_atmo.bottomRadius);
 	vec3 skyView = textureLod(s_skyView, uv, 0.0).rgb;
 	vec3 sun = getSunLuminance(worldPos, worldDir, u_world.sunDirection, u_world.sunIlluminance)
 		* (120000.0 / u_world.sunIlluminance);
