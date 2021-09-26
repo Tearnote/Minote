@@ -11,6 +11,7 @@
 #include "base/error.hpp"
 #include "base/math.hpp"
 #include "base/log.hpp"
+#include "gfx/effects/instanceList.hpp"
 #include "gfx/effects/cubeFilter.hpp"
 #include "gfx/effects/visibility.hpp"
 #include "gfx/effects/indirect.hpp"
@@ -43,6 +44,8 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	
 	// Compile pipelines
 	
+	DrawableInstanceList::compile(ptc);
+	InstanceList::compile(ptc);
 	CubeFilter::compile(ptc);
 	Atmosphere::compile(ptc);
 	Visibility::compile(ptc);
@@ -188,6 +191,12 @@ void Engine::render() {
 	auto sky = Sky(m_permPool, "sky", m_atmosphere);
 	
 	// Set up the rendergraph
+	
+	auto basicInstances = BasicInstanceList::upload(m_permPool, rg, "basicInstances", *m_objects, *m_meshes);
+	auto instances = InstanceList::fromBasic(m_permPool, rg, "instances", std::move(basicInstances));
+	auto drawables = DrawableInstanceList::fromUnsorted(m_permPool, rg, "drawables", instances, *m_meshes);
+	auto culledDrawables = DrawableInstanceList::frustumCull(m_permPool, rg, "culledDrawables", drawables,
+		*m_meshes, m_world.view, m_world.projection);
 	
 	sky.calculate(rg, worldBuf, m_camera);
 	sky.drawCubemap(rg, worldBuf, iblUnfiltered);

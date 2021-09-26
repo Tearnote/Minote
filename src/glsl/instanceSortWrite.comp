@@ -1,0 +1,53 @@
+#version 460
+#pragma shader_stage(compute)
+
+layout(local_size_x = 64) in;
+
+#include "types.glsl"
+
+layout(binding = 0) uniform InstanceCount {
+	uint u_instanceCount;
+};
+layout (binding = 1, std430) restrict readonly buffer MeshIndices {
+	uint b_meshIndices[];
+};
+layout (binding = 2, std430) restrict readonly buffer Transforms {
+	Transform b_transforms[];
+};
+layout (binding = 3, std430) restrict readonly buffer Materials {
+	Material b_materials[];
+};
+layout (binding = 4, std430) restrict buffer Commands {
+	Command b_commands[];
+};
+layout(binding = 5, std430) restrict writeonly buffer InstanceCount {
+	uint b_instanceCount;
+};
+layout (binding = 6, std430) restrict writeonly buffer MeshIndicesSorted {
+	uint b_meshIndicesSorted[];
+};
+layout (binding = 7, std430) restrict writeonly buffer TransformsSorted {
+	Transform b_transformsSorted[];
+};
+layout (binding = 8, std430) restrict writeonly buffer MaterialsSorted {
+	Material b_materialsSorted[];
+};
+
+void main() {
+	
+	uint gid = gl_GlobalInvocationID.x;
+	if (gid >= u_instanceCount)
+		return;
+	
+	if (gid == 0)
+		b_instanceCount = u_instanceCount;
+	
+	uint index = b_meshIndices[gid];
+	uint offset = b_commands[index].firstInstance;
+	uint newid = offset + atomicAdd(b_commands[index].instanceCount, 1);
+	
+	b_meshIndicesSorted[newid] = b_meshIndices[gid];
+	b_transformsSorted[newid] = b_transforms[gid];
+	b_materialsSorted[newid] = b_materials[gid];
+	
+}

@@ -68,6 +68,7 @@ add_executable(Minote
         src/gfx/resources/buffer.hpp src/gfx/resources/buffer.tpp
         src/gfx/resources/pool.hpp
         src/gfx/effects/cubeFilterCoeffs.hpp
+        src/gfx/effects/instanceList.hpp src/gfx/effects/instanceList.cpp
         src/gfx/effects/cubeFilter.hpp src/gfx/effects/cubeFilter.cpp
         src/gfx/effects/visibility.hpp src/gfx/effects/visibility.cpp
         src/gfx/effects/indirect.hpp src/gfx/effects/indirect.cpp
@@ -279,9 +280,14 @@ set(SHADER_SOURCES
         src/glsl/sky/skyDrawCubemap.comp
         src/glsl/sky/skyGenSkyView.comp
         src/glsl/sky/skyDraw.comp
+        src/glsl/instanceSortCount.comp
+        src/glsl/instanceSortWrite.comp
+        src/glsl/instanceSortScan.comp
         src/glsl/bloomDownKaris.comp
         src/glsl/cubePostfilter.comp
         src/glsl/cubePrefilter.comp
+        src/glsl/transformConv.comp
+        src/glsl/frustumCull.comp
         src/glsl/visibility.vert src/glsl/visibility.frag
         src/glsl/bloomDown.comp
         src/glsl/tonemap.comp

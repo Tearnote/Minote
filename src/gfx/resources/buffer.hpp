@@ -10,6 +10,7 @@
 namespace minote::gfx {
 
 using namespace base;
+using namespace base::literals;
 
 template<typename T>
 struct Buffer {
@@ -27,13 +28,18 @@ struct Buffer {
 	// Construct a buffer inside a pool and transfer data into it. If the pool already contained
 	// a buffer under the same name, the existing one is retrieved instead, but the transfer
 	// still proceeds. For GPU-only buffers, the transfer is not waited for.
+	// Setting elementCapacity allows for a buffer larger than provided data.
 	static auto make(Pool&, vuk::Name, vuk::BufferUsageFlags, std::span<T const> data,
-		vuk::MemoryUsage = vuk::MemoryUsage::eCPUtoGPU) -> Buffer<T>;
+		vuk::MemoryUsage = vuk::MemoryUsage::eCPUtoGPU, usize elementCapacity = 0_zu) -> Buffer<T>;
 	
 	// Size of the buffer in bytes.
 	[[nodiscard]]
 	auto size() const -> usize { return handle->size; }
 	
+	// Number of elements in the buffer.
+	auto length() const -> usize { return size() / sizeof(value_type); }
+	
+	[[nodiscard]]
 	auto mappedPtr() -> T* { return reinterpret_cast<T*>(handle->mapped_ptr); }
 	
 	// Declare as a vuk::Resource.

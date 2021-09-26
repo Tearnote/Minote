@@ -1,0 +1,107 @@
+#version 460
+#pragma shader_stage(compute)
+
+layout(local_size_x = 64) in;
+
+#include "types.glsl"
+
+layout (binding = 0, std430) restrict readonly buffer Commands {
+	Command b_commands[];
+};
+layout(binding = 1) uniform InstanceCount {
+	uint u_instanceCount;
+};
+layout (binding = 2, std430) restrict readonly buffer MeshIndices {
+	uint b_meshIndices[];
+};
+layout (binding = 3, std430) restrict readonly buffer Transforms {
+	Transform b_transforms[];
+};
+layout (binding = 4, std430) restrict readonly buffer Materials {
+	Material b_materials[];
+};
+layout (binding = 5, std430) restrict readonly buffer Descriptors {
+	MeshDescriptor b_descriptors[];
+};
+layout (binding = 6, std430) restrict buffer CommandsCulled {
+	Command b_commandsCulled[];
+};
+layout(binding = 7, std430) restrict writeonly buffer InstanceCountCulled {
+	uint b_instanceCountCulled;
+};
+layout (binding = 8, std430) restrict writeonly buffer MeshIndicesCulled {
+	uint b_meshIndicesCulled[];
+};
+layout (binding = 9, std430) restrict writeonly buffer TransformsCulled {
+	Transform b_transformsCulled[];
+};
+layout (binding = 10, std430) restrict writeonly buffer MaterialsCulled {
+	Material b_materialsCulled[];
+};
+
+layout(push_constant) uniform Constants {
+	mat4 u_view;
+	vec4 u_frustum;
+	uint u_commandsCount;
+};
+
+bool visible(uint _gid, float _radius) {
+	
+	vec3 position = {
+		b_transforms[_gid].rows[0].w,
+		b_transforms[_gid].rows[1].w,
+		b_transforms[_gid].rows[2].w };
+	
+	vec3 center = (u_view * vec4(position, 1.0)).xyz;
+	
+	bool result = true;
+	result = result && center.z * u_frustum[1] - abs(center.x) * u_frustum[0] > -_radius;
+	result = result && center.z * u_frustum[3] - abs(center.y) * u_frustum[2] > -_radius;
+	
+	return result;
+	
+}
+
+void main() {
+	
+	uint gid = gl_GlobalInvocationID.x;
+	if (gid >= u_instanceCount)
+		return;
+	
+	// Initialize commands buffer
+	
+	if (gid == 0) {
+		
+		for (uint i = 0; i < u_commandsCount; i += 1) {
+			
+			b_commandsCulled[i].indexCount = b_commands[i].indexCount;
+			// instanceCount is filled up during culling
+			b_commandsCulled[i].firstIndex = b_commands[i].firstIndex;
+			b_commandsCulled[i].vertexOffset = b_commands[i].vertexOffset;
+			b_commandsCulled[i].firstInstance = b_commands[i].firstInstance; // We're keeping offset the same for simplicity
+			
+		}
+		
+	}
+	
+	// Determine if instance is culled
+	
+	uint index = b_meshIndices[gid];
+	float scale = max(length(b_transforms[gid].rows[0].xyz),
+	              max(length(b_transforms[gid].rows[1].xyz),
+	              length(b_transforms[gid].rows[2].xyz)));
+	float radius = b_descriptors[index].radius;
+	if (!visible(gid, radius * scale))
+		return;
+	
+	// Write instance to culled buffers
+	
+	atomicAdd(b_instanceCountCulled, 1);
+	uint offset = b_commands[index].firstInstance;
+	uint newid = offset + atomicAdd(b_commandsCulled[index].instanceCount, 1);
+	
+	b_meshIndicesCulled[newid] = b_meshIndices[gid];
+	b_transformsCulled[newid] = b_transforms[gid];
+	b_materialsCulled[newid] = b_materials[gid];
+	
+}

@@ -1,0 +1,26 @@
+#version 460
+#pragma shader_stage(compute)
+
+layout(local_size_x = 64) in;
+
+#include "types.glsl"
+
+layout(binding = 0) uniform InstanceCount {
+	uint u_instanceCount;
+};
+layout (binding = 1, std430) restrict readonly buffer BasicTransforms {
+	BasicTransform b_basicTransforms[];
+};
+layout (binding = 2, std430) restrict writeonly buffer Transforms {
+	Transform b_transforms[];
+};
+
+void main() {
+	
+	uint gid = gl_GlobalInvocationID.x;
+	if (gid >= u_instanceCount)
+		return;
+	
+	b_transforms[gid] = encodeTransform(b_basicTransforms[gid]);
+	
+}
