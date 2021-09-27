@@ -14,7 +14,6 @@
 #include "gfx/effects/instanceList.hpp"
 #include "gfx/effects/cubeFilter.hpp"
 #include "gfx/effects/visibility.hpp"
-#include "gfx/effects/indirect.hpp"
 #include "gfx/effects/tonemap.hpp"
 #include "gfx/effects/bloom.hpp"
 #include "gfx/effects/pbr.hpp"
@@ -49,7 +48,6 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	CubeFilter::compile(ptc);
 	Atmosphere::compile(ptc);
 	Visibility::compile(ptc);
-	Indirect::compile(ptc);
 	Tonemap::compile(ptc);
 	Bloom::compile(ptc);
 	PBR::compile(ptc);
@@ -187,7 +185,6 @@ void Engine::render() {
 	
 	// Initialize effects
 	
-	auto indirect = Indirect(m_framePool, "Indirect", *m_objects, *m_meshes);
 	auto sky = Sky(m_permPool, "sky", m_atmosphere);
 	
 	// Set up the rendergraph
@@ -201,9 +198,8 @@ void Engine::render() {
 	sky.calculate(rg, worldBuf, m_camera);
 	sky.drawCubemap(rg, worldBuf, iblUnfiltered);
 	CubeFilter::apply(rg, iblUnfiltered, iblFiltered);
-	indirect.sortAndCull(rg, m_world, *m_meshes);
-	Visibility::apply(rg, visbuf, depth, worldBuf, indirect, *m_meshes);
-	PBR::apply(rg, color, visbuf, depth, worldBuf, *m_meshes, indirect, sky, iblFiltered);
+	Visibility::apply(rg, visbuf, depth, worldBuf, culledDrawables, *m_meshes);
+	PBR::apply(rg, color, visbuf, depth, worldBuf, *m_meshes, culledDrawables, sky, iblFiltered);
 	sky.draw(rg, worldBuf, color, visbuf);
 	Bloom::apply(rg, m_framePool, color);
 	Tonemap::apply(rg, color, screen);

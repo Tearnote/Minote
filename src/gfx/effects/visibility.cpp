@@ -21,26 +21,26 @@ void Visibility::compile(vuk::PerThreadContext& _ptc) {
 }
 
 void Visibility::apply(vuk::RenderGraph& _rg, Texture2D _visbuf, Texture2D _depth,
-	Buffer<World> _world, Indirect const& _indirect, MeshBuffer const& _meshes) {
+	Buffer<World> _world, DrawableInstanceList const& _instances, MeshBuffer const& _meshes) {
 	
 	_rg.add_pass({
 		.name = nameAppend(_visbuf.name, "visibility"),
 		.resources = {
-			_indirect.commandsBuf.resource(vuk::eIndirectRead),
-			_indirect.meshIndicesCulledBuf.resource(vuk::eIndexRead),
-			_indirect.transformsCulledBuf.resource(vuk::eVertexRead),
+			_instances.commands.resource(vuk::eIndirectRead),
+			_instances.meshIndices.resource(vuk::eIndexRead),
+			_instances.transforms.resource(vuk::eVertexRead),
 			_visbuf.resource(vuk::eColorWrite),
 			_depth.resource(vuk::eDepthStencilRW) },
-		.execute = [_visbuf, _world, &_indirect, &_meshes](vuk::CommandBuffer& cmd) {
+		.execute = [_visbuf, _world, &_instances, &_meshes](vuk::CommandBuffer& cmd) {
 			
 			cmdSetViewportScissor(cmd, _visbuf.size());
 			cmd.bind_index_buffer(_meshes.indicesBuf, vuk::IndexType::eUint16)
 			   .bind_uniform_buffer(0, 0, _world)
 			   .bind_storage_buffer(0, 1, _meshes.verticesBuf)
-			   .bind_storage_buffer(0, 2, _indirect.transformsCulledBuf)
+			   .bind_storage_buffer(0, 2, _instances.transforms)
 			   .bind_graphics_pipeline("visibility");
 			
-			cmd.draw_indexed_indirect(_indirect.commandsCount, _indirect.commandsBuf);
+			cmd.draw_indexed_indirect(_instances.commands.length(), _instances.commands);
 			
 		}});
 	

@@ -71,7 +71,6 @@ add_executable(Minote
         src/gfx/effects/instanceList.hpp src/gfx/effects/instanceList.cpp
         src/gfx/effects/cubeFilter.hpp src/gfx/effects/cubeFilter.cpp
         src/gfx/effects/visibility.hpp src/gfx/effects/visibility.cpp
-        src/gfx/effects/indirect.hpp src/gfx/effects/indirect.cpp
         src/gfx/effects/tonemap.hpp src/gfx/effects/tonemap.cpp
         src/gfx/effects/bloom.hpp src/gfx/effects/bloom.cpp
         src/gfx/effects/pbr.hpp src/gfx/effects/pbr.cpp
@@ -293,7 +292,6 @@ set(SHADER_SOURCES
         src/glsl/tonemap.comp
         src/glsl/bloomUp.comp
         src/glsl/imgui.vert src/glsl/imgui.frag
-        src/glsl/cull.comp
         src/glsl/pbr.comp)
 
 foreach(SHADER_PATH ${SHADER_SOURCES})
