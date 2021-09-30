@@ -16,8 +16,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Build settings
 
-option(MINOTE_USE_VULKAN_SDK "Use the Vulkan SDK for libraries instead of manual fetching" OFF)
-
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif()
@@ -108,6 +106,8 @@ target_link_libraries(Minote PRIVATE winmm)
 
 # Libraries
 
+find_package(Vulkan REQUIRED)
+
 include(FetchContent)
 
 target_compile_definitions(Minote PRIVATE VK_NO_PROTOTYPES)
@@ -117,15 +117,16 @@ else()
     target_compile_definitions(Minote PRIVATE VK_USE_PLATFORM_XCB_KHR)
 endif()
 
+set(VOLK_PULL_IN_VULKAN OFF CACHE BOOL "")
 FetchContent_Declare(volk
         GIT_REPOSITORY https://github.com/zeux/volk
         GIT_TAG 66169849935bd85f329c513dd01c28b0a02bfe33)
 FetchContent_MakeAvailable(volk)
 target_compile_definitions(volk PUBLIC VK_NO_PROTOTYPES)
+target_include_directories(volk PUBLIC ${Vulkan_INCLUDE_DIRS})
 target_link_libraries(Minote PRIVATE volk)
 
 set(VUK_LINK_TO_LOADER OFF CACHE BOOL "")
-set(VUK_USE_VULKAN_SDK OFF CACHE BOOL "")
 set(VUK_USE_SHADERC OFF CACHE BOOL "")
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
     set(VUK_USE_TRACY OFF CACHE BOOL "")
@@ -173,38 +174,6 @@ target_compile_definitions(imgui PRIVATE IMGUI_DISABLE_WIN32_FUNCTIONS)
 target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR})
 target_link_libraries(imgui PRIVATE SDL2-static)
 target_link_libraries(Minote PRIVATE imgui)
-
-if(NOT MINOTE_USE_VULKAN_SDK)
-    set(SPIRV_HEADERS_SKIP_EXAMPLES ON CACHE BOOL "")
-    set(SPIRV_HEADERS_SKIP_INSTALL ON CACHE BOOL "")
-    FetchContent_Declare(spirv-headers
-        GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Headers
-        GIT_TAG f88a1f98fa7a44ccfcf33d810c72b200e7d9a78a)
-    FetchContent_MakeAvailable(spirv-headers)
-    set(SPIRV_SKIP_EXECUTABLES ON CACHE BOOL "")
-    set(SPIRV_CHECK_CONTEXT OFF CACHE BOOL "")
-    set(SPIRV_SKIP_TESTS ON CACHE BOOL "")
-    set(SPIRV_WERROR OFF CACHE BOOL "")
-    FetchContent_Declare(spirv-tools
-        GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Tools
-        GIT_TAG 212895d4c2cd9f4900adba4514aa5ea2c8256f9f)
-    FetchContent_MakeAvailable(spirv-tools)
-    set(ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "")
-    set(ENABLE_SPVREMAPPER OFF CACHE BOOL "")
-    set(ENABLE_CTEST OFF CACHE BOOL "")
-    FetchContent_Declare(glslang
-        GIT_REPOSITORY https://github.com/KhronosGroup/glslang
-        GIT_TAG 5878bcb17e43bf22cecaf6095900a33ff7f53445)
-    FetchContent_MakeAvailable(glslang)
-    set(SHADERC_ENABLE_WERROR_COMPILE OFF CACHE BOOL "")
-    set(SHADERC_SKIP_EXAMPLES ON CACHE BOOL "")
-    set(SHADERC_SKIP_INSTALL ON CACHE BOOL "")
-    set(SHADERC_SKIP_TESTS ON CACHE BOOL "")
-    FetchContent_Declare(shaderc
-        GIT_REPOSITORY https://github.com/google/shaderc
-        GIT_TAG 3fe94c6a76d2b617e7fb20fdf3cde98001a274e3)
-    FetchContent_MakeAvailable(shaderc)
-endif()
 
 FetchContent_Declare(sqlite
         URL https://www.sqlite.org/2021/sqlite-amalgamation-3350400.zip)
@@ -300,7 +269,7 @@ foreach(SHADER_PATH ${SHADER_SOURCES})
     add_custom_command(
             OUTPUT ${SHADER_OUTPUT}
             COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/generated/spv/"
-            COMMAND $<IF:$<BOOL:${MINOTE_USE_VULKAN_SDK}>,glslc,glslc_exe> --target-env=vulkan1.2 -mfmt=num $<$<NOT:$<CONFIG:Release>>:-g> -MD -MF ${SHADER_OUTPUT}.d -o ${SHADER_OUTPUT} ${PROJECT_SOURCE_DIR}/${SHADER_PATH}
+            COMMAND $ENV{VULKAN_SDK}/Bin/glslc.exe --target-env=vulkan1.2 -mfmt=num $<$<NOT:$<CONFIG:Release>>:-g> -MD -MF ${SHADER_OUTPUT}.d -o ${SHADER_OUTPUT} ${PROJECT_SOURCE_DIR}/${SHADER_PATH}
             DEPENDS ${SHADER_PATH}
             DEPFILE ${SHADER_OUTPUT}.d
             VERBATIM COMMAND_EXPAND_LISTS)
@@ -308,9 +277,6 @@ foreach(SHADER_PATH ${SHADER_SOURCES})
 endforeach()
 
 add_custom_target(Compile_shaders DEPENDS ${SHADER_OUTPUTS})
-if(NOT MINOTE_USE_VULKAN_SDK)
-        add_dependencies(Compile_shaders shaderc)
-endif()
 target_include_directories(Minote PRIVATE ${PROJECT_BINARY_DIR}/generated)
 add_dependencies(Minote Compile_shaders)
 
