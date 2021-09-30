@@ -3,6 +3,31 @@
 #ifndef UTILS_GLSL
 #define UTILS_GLSL
 
+// https://github.com/CesiumGS/cesium/blob/main/Source/Shaders/Builtin/Functions/fastApproximateAtan.glsl
+// Used under MIT license
+float fastAtan(float _x) {
+	
+	return _x * (-0.1784 * _x - 0.0663 * _x * _x + 1.0301);
+	
+}
+
+float fastAtan(float _y, float _x) {
+    // atan approximations are usually only reliable over [-1, 1], or, in our case, [0, 1] due to modifications.
+    // So range-reduce using abs and by flipping whether x or y is on top.
+    float t = abs(_x); // t used as swap and atan result.
+    float opposite = abs(_y);
+    float adjacent = max(t, opposite);
+    opposite = min(t, opposite);
+
+    t = fastAtan(opposite / adjacent);
+
+    // Undo range reduction
+    t = abs(_y) > abs(_x)? 1.5707963267948966 - t : t;
+    t = _x < 0.0? 3.141592653589793 - t : t;
+    t = _y < 0.0? -t : t;
+    return t;
+}
+
 // Generate a bufferless screen-covering triangle from 3 vertices
 // https://rauwendaal.net/2014/06/14/rendering-a-screen-covering-triangle-in-opengl/
 vec2 triangleVertex(int _vertexID, out vec2 _texCoords) {

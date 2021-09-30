@@ -88,7 +88,7 @@ vec3 normalInterpEstimate(vec3 _estimate, mat3 _normals, vec3 _weights) {
 		}
 		
 		float cosTheta = dot(_normals[i], _estimate);
-		float theta = atan(sinTheta, cosTheta);
+		float theta = fastAtan(sinTheta, cosTheta);
 		float sinThetaInv = 1.0 / sinTheta;
 		vec3 perpNorm = perp * sinThetaInv; // Normalize
 		float cosPhi = dot(perpNorm, basisX);

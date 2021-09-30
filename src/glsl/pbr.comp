@@ -171,6 +171,10 @@ void main() {
 		vertices[2] * barycentrics.z;
 	
 	vec3 normal = normalInterp(normals, barycentrics);
+	// vec3 normal = normalize(
+	// 	normals[0] * barycentrics.x +
+	// 	normals[1] * barycentrics.y +
+	// 	normals[2] * barycentrics.z);
 	
 	vec4 color =
 		colors[0] * barycentrics.x +
