@@ -1,0 +1,38 @@
+#version 460
+#pragma shader_stage(compute)
+
+layout(local_size_x = 1) in;
+
+#include "skyTypes.glsl"
+#include "../types.glsl"
+
+#define U_ATMO u_atmo
+#define S_TRANSMITTANCE s_transmittance
+
+layout(binding = 0) uniform WorldConstants {
+	World u_world;
+};
+layout(binding = 1) uniform Atmosphere {
+	AtmosphereParams U_ATMO;
+};
+layout(binding = 2) uniform sampler2D S_TRANSMITTANCE;
+layout(binding = 3) restrict writeonly buffer SunLuminance {
+	vec3 b_sunLuminance;
+};
+
+layout(push_constant) uniform Constants {
+	vec3 u_probePosition;
+};
+
+#include "sky.glsl"
+
+void main() {
+	
+	uint gid = gl_GlobalInvocationID.x;
+	if (gid > 0)
+		return;
+	
+	vec3 worldPos = u_probePosition + vec3(0.0, 0.0, u_atmo.bottomRadius);
+	b_sunLuminance = getSunLuminance(worldPos, u_world.sunDirection, u_world.sunDirection, u_world.sunIlluminance);
+	
+}

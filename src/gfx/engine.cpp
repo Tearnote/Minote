@@ -64,12 +64,11 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	ImGui::NewFrame();
 	
 	m_meshes.emplace(std::move(_meshList).upload(m_permPool, "Meshes"));
-	m_atmosphere.upload(m_permPool, "Earth", Atmosphere::Params::earth());
 	m_objects = ObjectPool();
 	
 	// Perform precalculations
 	auto precalc = vuk::RenderGraph();
-	m_atmosphere.precalculate(precalc);
+	m_atmosphere = Atmosphere::create(m_permPool, precalc, "Earth", Atmosphere::Params::earth());
 	
 	// Finalize
 	
@@ -155,6 +154,7 @@ void Engine::render() {
 		vuk::ImageUsageFlagBits::eTransferDst);
 	iblUnfiltered.attach(rg, vuk::eNone, vuk::eNone);
 	iblFiltered.attach(rg, vuk::eNone, vuk::eNone);
+	constexpr auto IblProbePosition = vec3{0_m, 0_m, 10_m};
 	
 	auto depth = Texture2D::make(m_framePool, "depth",
 		viewport, vuk::Format::eD32Sfloat,
@@ -183,24 +183,32 @@ void Engine::render() {
 	
 	auto worldBuf = m_world.upload(m_framePool, "world");
 	
-	// Initialize effects
-	
-	auto sky = Sky(m_permPool, "sky", m_atmosphere);
-	
 	// Set up the rendergraph
 	
+	// Instance list processing
 	auto basicInstances = BasicInstanceList::upload(m_permPool, rg, "basicInstances", *m_objects, *m_meshes);
 	auto instances = InstanceList::fromBasic(m_permPool, rg, "instances", std::move(basicInstances));
 	auto drawables = DrawableInstanceList::fromUnsorted(m_permPool, rg, "drawables", instances, *m_meshes);
 	auto culledDrawables = DrawableInstanceList::frustumCull(m_permPool, rg, "culledDrawables", drawables,
 		*m_meshes, m_world.view, m_world.projection);
 	
-	sky.calculate(rg, worldBuf, m_camera);
-	sky.drawCubemap(rg, worldBuf, iblUnfiltered);
+	// Sky generation
+	auto cameraSky = Sky::createView(m_permPool, rg, "cameraSky", m_camera.position, m_atmosphere, worldBuf);
+	auto cubeSky = Sky::createView(m_permPool, rg, "cubeSky", IblProbePosition, m_atmosphere, worldBuf);
+	auto aerialPerspective = Sky::createAerialPerspective(m_permPool, rg, "aerialPerspective",
+		m_camera.position, m_world.viewProjectionInverse, m_atmosphere, worldBuf);
+	auto sunLuminance = Sky::createSunLuminance(m_permPool, rg, "sunLuminance", m_world.cameraPos, m_atmosphere, worldBuf);
+	
+	// IBL generation
+	Sky::draw(rg, iblUnfiltered, IblProbePosition, cubeSky, m_atmosphere, worldBuf);
 	CubeFilter::apply(rg, iblUnfiltered, iblFiltered);
+	
+	// Scene drawing
 	Visibility::apply(rg, visbuf, depth, worldBuf, culledDrawables, *m_meshes);
-	PBR::apply(rg, color, visbuf, depth, worldBuf, *m_meshes, culledDrawables, sky, iblFiltered);
-	sky.draw(rg, worldBuf, color, visbuf);
+	PBR::apply(rg, color, visbuf, depth, worldBuf, *m_meshes, culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
+	Sky::draw(rg, color, visbuf, cameraSky, m_atmosphere, worldBuf);
+	
+	// Postprocessing
 	Bloom::apply(rg, m_framePool, color);
 	Tonemap::apply(rg, color, screen);
 	

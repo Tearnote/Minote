@@ -18,10 +18,7 @@ layout(binding = 1) uniform Atmosphere {
 layout(binding = 2) uniform sampler2D S_TRANSMITTANCE;
 layout(binding = 3) uniform sampler2D s_skyView;
 layout(binding = 4) restrict writeonly uniform imageCube i_cubemap;
-layout(binding = 5) restrict writeonly buffer SunLuminance {
-	vec3 b_sunLuminance;
-};
-layout(binding = 6) uniform Sides {
+layout(binding = 5) uniform Sides {
 	mat4 u_sides[6];
 };
 
@@ -61,8 +58,5 @@ void main() {
 	skyViewLutParamsToUv(intersectGround, viewZenithCosAngle, lightViewCosAngle, u_skyViewSize, viewHeight, uv, u_atmo.bottomRadius);
 	vec4 result = vec4(textureLod(s_skyView, uv, 0.0).rgb, 1.0);
 	imageStore(i_cubemap, ivec3(gid), result);
-	
-	if (all(equal(gid, uvec3(0))))
-		b_sunLuminance = getSunLuminance(worldPos, u_world.sunDirection, u_world.sunDirection, u_world.sunIlluminance);
 	
 }

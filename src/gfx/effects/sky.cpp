@@ -55,59 +55,59 @@ void Atmosphere::compile(vuk::PerThreadContext& _ptc) {
 	
 }
 
-void Atmosphere::upload(Pool& _pool, vuk::Name _name, Params const& _params) {
+auto Atmosphere::create(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
+	Params const& _params) -> Atmosphere {
 	
-	transmittance = Texture2D::make(_pool, nameAppend(_name, "transmittance"),
+	auto result = Atmosphere();
+	
+	result.transmittance = Texture2D::make(_pool, nameAppend(_name, "transmittance"),
 		TransmittanceSize, TransmittanceFormat,
 		vuk::ImageUsageFlagBits::eStorage |
 		vuk::ImageUsageFlagBits::eSampled);
 	
-	multiScattering = Texture2D::make(_pool, nameAppend(_name, "multiScattering"),
+	result.multiScattering = Texture2D::make(_pool, nameAppend(_name, "multiScattering"),
 		MultiScatteringSize, MultiScatteringFormat,
 		vuk::ImageUsageFlagBits::eStorage |
 		vuk::ImageUsageFlagBits::eSampled);
 	
-	params = Buffer<Params>::make(_pool, nameAppend(_name, "params"),
+	result.params = Buffer<Params>::make(_pool, nameAppend(_name, "params"),
 		vuk::BufferUsageFlagBits::eUniformBuffer,
-		std::span(&_params, 1),
-		vuk::MemoryUsage::eGPUonly);
+		std::span(&_params, 1));
 	
-}
-
-void Atmosphere::precalculate(vuk::RenderGraph& _rg) {
-	
-	transmittance.attach(_rg, vuk::eNone, vuk::Access::eComputeSampled);
-	multiScattering.attach(_rg, vuk::eNone, vuk::Access::eComputeSampled);
+	result.transmittance.attach(_rg, vuk::eNone, vuk::eComputeSampled);
+	result.multiScattering.attach(_rg, vuk::eNone, vuk::eComputeSampled);
 	
 	_rg.add_pass({
-		.name = "Sky transmittance LUT",
+		.name = nameAppend(result.transmittance.name, "gen"),
 		.resources = {
-			transmittance.resource(vuk::eComputeWrite) },
-		.execute = [this](vuk::CommandBuffer& cmd) {
+			result.transmittance.resource(vuk::eComputeWrite) },
+		.execute = [result](vuk::CommandBuffer& cmd) {
 			
-			cmd.bind_uniform_buffer(0, 0, params)
-			   .bind_storage_image(0, 1, transmittance)
-			   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, transmittance.size())
+			cmd.bind_uniform_buffer(0, 0, result.params)
+			   .bind_storage_image(0, 1, result.transmittance)
+			   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, result.transmittance.size())
 			   .bind_compute_pipeline("sky_gen_transmittance");
-			cmd.dispatch_invocations(transmittance.size().x(), transmittance.size().y());
+			cmd.dispatch_invocations(result.transmittance.size().x(), result.transmittance.size().y());
 			
 		}});
 	
 	_rg.add_pass({
-		.name = "Sky multiple scattering LUT",
+		.name = nameAppend(result.multiScattering.name, "gen"),
 		.resources = {
-			transmittance.resource(vuk::eComputeSampled),
-			multiScattering.resource(vuk::eComputeWrite) },
-		.execute = [this](vuk::CommandBuffer& cmd) {
+			result.transmittance.resource(vuk::eComputeSampled),
+			result.multiScattering.resource(vuk::eComputeWrite) },
+		.execute = [result](vuk::CommandBuffer& cmd) {
 			
-			cmd.bind_uniform_buffer(0, 0, params)
-			   .bind_sampled_image(0, 1, transmittance, LinearClamp)
-			   .bind_storage_image(0, 2, multiScattering)
-			   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, multiScattering.size())
+			cmd.bind_uniform_buffer(0, 0, result.params)
+			   .bind_sampled_image(0, 1, result.transmittance, LinearClamp)
+			   .bind_storage_image(0, 2, result.multiScattering)
+			   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, result.multiScattering.size())
 			   .bind_compute_pipeline("sky_gen_multi_scattering");
-			cmd.dispatch_invocations(multiScattering.size().x(), multiScattering.size().y(), 1);
+			cmd.dispatch_invocations(result.multiScattering.size().x(), result.multiScattering.size().y(), 1);
 			
 		}});
+	
+	return result;
 	
 }
 
@@ -118,6 +118,12 @@ void Sky::compile(vuk::PerThreadContext& _ptc) {
 #include "spv/skyGenSkyView.comp.spv"
 	}, "skyGenSkyView.comp");
 	_ptc.ctx.create_named_pipeline("sky_gen_sky_view", skyGenSkyViewPci);
+	
+	auto skyGenSunLuminancePci = vuk::ComputePipelineCreateInfo();
+	skyGenSunLuminancePci.add_spirv(std::vector<u32>{
+#include "spv/skyGenSunLuminance.comp.spv"
+	}, "skyGenSunLuminance.comp");
+	_ptc.ctx.create_named_pipeline("sky_gen_sun_luminance", skyGenSunLuminancePci);
 	
 	auto skyDrawPci = vuk::ComputePipelineCreateInfo();
 	skyDrawPci.add_spirv(std::vector<u32>{
@@ -139,127 +145,128 @@ void Sky::compile(vuk::PerThreadContext& _ptc) {
 	
 }
 
-Sky::Sky(Pool& _pool, vuk::Name _name, Atmosphere const& _atmosphere):
-	name(_name), atmosphere(_atmosphere) {
+auto Sky::createView(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
+	vec3 _probePos, Atmosphere const& _atmo, Buffer<World> _world) -> Texture2D {
 	
-	cameraView = Texture2D::make(_pool, nameAppend(_name, "cameraView"),
+	auto view = Texture2D::make(_pool, _name,
 		ViewSize, ViewFormat,
 		vuk::ImageUsageFlagBits::eStorage |
 		vuk::ImageUsageFlagBits::eSampled);
 	
-	cubemapView = Texture2D::make(_pool, nameAppend(_name, "cubemapView"),
-		ViewSize, ViewFormat,
-		vuk::ImageUsageFlagBits::eStorage |
-		vuk::ImageUsageFlagBits::eSampled);
+	view.attach(_rg, vuk::eNone, vuk::eNone);
 	
-	aerialPerspective = Texture3D::make(_pool, nameAppend(_name, "aerialPerspective"),
+	_rg.add_pass({
+		.name = nameAppend(_name, "gen"),
+		.resources = {
+			view.resource(vuk::eComputeWrite) },
+		.execute = [view, _world, _probePos, &_atmo](vuk::CommandBuffer& cmd) {
+			
+			struct PushConstants {
+				vec3 probePosition;
+				f32 pad0;
+				uvec2 skyViewSize;
+			};
+			
+			cmd.bind_uniform_buffer(0, 0, _world)
+			   .bind_uniform_buffer(0, 1, _atmo.params)
+			   .bind_sampled_image(0, 2, _atmo.transmittance, LinearClamp)
+			   .bind_sampled_image(0, 3, _atmo.multiScattering, LinearClamp)
+			   .bind_storage_image(0, 4, view)
+			   .bind_compute_pipeline("sky_gen_sky_view");
+			
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
+				.probePosition = _probePos,
+				.skyViewSize = view.size() });
+			
+			cmd.dispatch_invocations(view.size().x(), view.size().y(), 1);
+			
+		}});
+	
+	return view;
+	
+}
+
+auto Sky::createAerialPerspective(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
+	vec3 _probePos, mat4 _invViewProj, Atmosphere const& _atmo, Buffer<World> _world) -> Texture3D {
+	
+	auto aerialPerspective = Texture3D::make(_pool, _name,
 		AerialPerspectiveSize, AerialPerspectiveFormat,
 		vuk::ImageUsageFlagBits::eStorage |
 		vuk::ImageUsageFlagBits::eSampled);
 	
-	sunLuminance = Buffer<vec3>::make(_pool, nameAppend(_name, "sunLuminance"),
-		vuk::BufferUsageFlagBits::eStorageBuffer);
-	
-}
-
-void Sky::calculate(vuk::RenderGraph& _rg, Buffer<World> _world, Camera const& _camera) {
-	
-	atmosphere.transmittance.attach(_rg, vuk::eComputeSampled, vuk::eComputeSampled);
-	atmosphere.multiScattering.attach(_rg, vuk::eComputeSampled, vuk::eComputeSampled);
-	
-	cameraView.attach(_rg, vuk::eNone, vuk::eNone);
-	cubemapView.attach(_rg, vuk::eNone, vuk::eNone);
 	aerialPerspective.attach(_rg, vuk::eNone, vuk::eNone);
 	
 	_rg.add_pass({
-		.name = nameAppend(name, "view LUT"),
+		.name = nameAppend(_name, "gen"),
 		.resources = {
-			atmosphere.transmittance.resource(vuk::eComputeSampled),
-			atmosphere.multiScattering.resource(vuk::eComputeSampled),
-			cameraView.resource(vuk::eComputeWrite) },
-		.execute = [this, _world, &_camera](vuk::CommandBuffer& cmd) {
-			
-			struct PushConstants {
-				vec3 probePosition;
-				f32 pad0;
-				uvec2 skyViewSize;
-			};
-			
-			cmd.bind_uniform_buffer(0, 0, _world)
-			   .bind_uniform_buffer(0, 1, atmosphere.params)
-			   .bind_sampled_image(0, 2, atmosphere.transmittance, LinearClamp)
-			   .bind_sampled_image(0, 3, atmosphere.multiScattering, LinearClamp)
-			   .bind_storage_image(0, 4, cameraView)
-			   .bind_compute_pipeline("sky_gen_sky_view");
-			
-			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
-				.probePosition = _camera.position,
-				.skyViewSize = cameraView.size() });
-			
-			cmd.dispatch_invocations(cameraView.size().x(), cameraView.size().y(), 1);
-			
-		}});
-	
-	_rg.add_pass({
-		.name = nameAppend(name, "cubemap view LUT"),
-		.resources = {
-			atmosphere.transmittance.resource(vuk::eComputeSampled),
-			atmosphere.multiScattering.resource(vuk::eComputeSampled),
-			cubemapView.resource(vuk::eComputeWrite) },
-		.execute = [this, _world](vuk::CommandBuffer& cmd) {
-			
-			struct PushConstants {
-				vec3 probePosition;
-				f32 pad0;
-				uvec2 skyViewSize;
-			};
-			
-			cmd.bind_uniform_buffer(0, 0, _world)
-			   .bind_uniform_buffer(0, 1, atmosphere.params)
-			   .bind_sampled_image(0, 2, atmosphere.transmittance, LinearClamp)
-			   .bind_sampled_image(0, 3, atmosphere.multiScattering, LinearClamp)
-			   .bind_storage_image(0, 4, cubemapView)
-			   .bind_compute_pipeline("sky_gen_sky_view");
-			
-			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
-				.probePosition = CubemapCamera,
-				.skyViewSize = cubemapView.size() });
-			
-			cmd.dispatch_invocations(cubemapView.size().x(), cubemapView.size().y(), 1);
-			
-		}});
-	
-	_rg.add_pass({
-		.name = nameAppend(name, "aerial perspective LUT"),
-		.resources = {
-			atmosphere.transmittance.resource(vuk::eComputeSampled),
-			atmosphere.multiScattering.resource(vuk::eComputeSampled),
 			aerialPerspective.resource(vuk::eComputeWrite) },
-		.execute = [this, _world](vuk::CommandBuffer& cmd) {
+		.execute = [aerialPerspective, _world, &_atmo, _invViewProj, _probePos](vuk::CommandBuffer& cmd) {
+			
+			struct PushConstants {
+				mat4 invViewProj;
+				vec3 probePosition;
+				f32 pad0;
+				uvec3 aerialPerspectiveSize;
+			};
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
-			   .bind_uniform_buffer(0, 1, atmosphere.params)
-			   .bind_sampled_image(0, 2, atmosphere.transmittance, LinearClamp)
-			   .bind_sampled_image(0, 3, atmosphere.multiScattering, LinearClamp)
+			   .bind_uniform_buffer(0, 1, _atmo.params)
+			   .bind_sampled_image(0, 2, _atmo.transmittance, LinearClamp)
+			   .bind_sampled_image(0, 3, _atmo.multiScattering, LinearClamp)
 			   .bind_storage_image(0, 4, aerialPerspective)
-			   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, aerialPerspective.size())
+			   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
+				   .invViewProj = _invViewProj,
+				   .probePosition = _probePos,
+				   .aerialPerspectiveSize = aerialPerspective.size() })
 			   .bind_compute_pipeline("sky_gen_aerial_perspective");
 			cmd.dispatch_invocations(aerialPerspective.size().x(), aerialPerspective.size().y(), aerialPerspective.size().z());
 			
 		}});
 	
+	return aerialPerspective;
+	
 }
 
-void Sky::draw(vuk::RenderGraph& _rg, Buffer<World> _world, Texture2D _target, Texture2D _visbuf) {
+auto Sky::createSunLuminance(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
+	vec3 _probePos, Atmosphere const& _atmo, Buffer<World> _world) -> Buffer<vec3> {
+	
+	auto sunLuminance = Buffer<vec3>::make(_pool, _name,
+		vuk::BufferUsageFlagBits::eStorageBuffer | vuk::BufferUsageFlagBits::eUniformBuffer);
+	
+	sunLuminance.attach(_rg, vuk::eNone, vuk::eNone);
 	
 	_rg.add_pass({
-		.name = nameAppend(name, "background"),
+		.name = nameAppend(_name, "gen"),
 		.resources = {
-			atmosphere.transmittance.resource(vuk::eComputeSampled),
-			cameraView.resource(vuk::eComputeSampled),
+			sunLuminance.resource(vuk::eComputeWrite) },
+		.execute = [sunLuminance, _world, &_atmo, _probePos](vuk::CommandBuffer& cmd) {
+			
+			cmd.bind_uniform_buffer(0, 0, _world)
+			   .bind_uniform_buffer(0, 1, _atmo.params)
+			   .bind_sampled_image(0, 2, _atmo.transmittance, LinearClamp)
+			   .bind_storage_buffer(0, 3, sunLuminance)
+			   .bind_compute_pipeline("sky_gen_sun_luminance");
+			
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, _probePos);
+			
+			cmd.dispatch_invocations(1);
+			
+		}});
+	
+	return sunLuminance;
+	
+}
+
+void Sky::draw(vuk::RenderGraph& _rg, Texture2D _target, Texture2D _visbuf,
+	Texture2D _skyView, Atmosphere const& _atmo, Buffer<World> _world) {
+	
+	_rg.add_pass({
+		.name = nameAppend(_target.name, "sky"),
+		.resources = {
+			_skyView.resource(vuk::eComputeSampled),
 			_visbuf.resource(vuk::eComputeSampled),
 			_target.resource(vuk::eComputeWrite) },
-		.execute = [this, _world, _target, _visbuf](vuk::CommandBuffer& cmd) {
+		.execute = [_target, _visbuf, _skyView, &_atmo, _world](vuk::CommandBuffer& cmd) {
 			
 			struct PushConstants {
 				uvec2 skyViewSize;
@@ -267,15 +274,15 @@ void Sky::draw(vuk::RenderGraph& _rg, Buffer<World> _world, Texture2D _target, T
 			};
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
-			   .bind_uniform_buffer(0, 1, atmosphere.params)
-			   .bind_sampled_image(0, 2, atmosphere.transmittance, LinearClamp)
-			   .bind_sampled_image(0, 3, cameraView, LinearClamp)
+			   .bind_uniform_buffer(0, 1, _atmo.params)
+			   .bind_sampled_image(0, 2, _atmo.transmittance, LinearClamp)
+			   .bind_sampled_image(0, 3, _skyView, LinearClamp)
 			   .bind_sampled_image(0, 4, _visbuf, NearestClamp)
 			   .bind_storage_image(0, 5, _target)
 			   .bind_compute_pipeline("sky_draw");
 			
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
-				.skyViewSize = cameraView.size(),
+				.skyViewSize = _skyView.size(),
 				.targetSize = _target.size() });
 			
 			cmd.dispatch_invocations(_target.size().x(), _target.size().y());
@@ -284,18 +291,15 @@ void Sky::draw(vuk::RenderGraph& _rg, Buffer<World> _world, Texture2D _target, T
 	
 }
 
-void Sky::drawCubemap(vuk::RenderGraph& _rg, Buffer<World> _world, Cubemap _target) {
-	
-	sunLuminance.attach(_rg, vuk::eNone, vuk::eNone);
+void Sky::draw(vuk::RenderGraph& _rg, Cubemap _target, vec3 _probePos,
+	Texture2D _skyView, Atmosphere const& _atmo, Buffer<World> _world) {
 	
 	_rg.add_pass({
-		.name = nameAppend(name, "cubemap"),
+		.name = nameAppend(_target.name, "sky"),
 		.resources = {
-			atmosphere.transmittance.resource(vuk::eFragmentSampled),
-			cubemapView.resource(vuk::eComputeSampled),
-			vuk::Resource(_target.name, vuk::Resource::Type::eImage,  vuk::eComputeWrite),
-			sunLuminance.resource(vuk::eComputeWrite) },
-		.execute = [this, _world, _target](vuk::CommandBuffer& cmd) {
+			_skyView.resource(vuk::eComputeSampled),
+			_target.resource(vuk::eComputeWrite) },
+		.execute = [_target, _skyView, &_atmo, _world, _probePos](vuk::CommandBuffer& cmd) {
 			
 			struct PushConstants {
 				vec3 probePosition;
@@ -304,14 +308,13 @@ void Sky::drawCubemap(vuk::RenderGraph& _rg, Buffer<World> _world, Cubemap _targ
 			};
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
-			   .bind_uniform_buffer(0, 1, atmosphere.params)
-			   .bind_sampled_image(0, 2, atmosphere.transmittance, LinearClamp)
-			   .bind_sampled_image(0, 3, cubemapView, LinearClamp)
-			   .bind_storage_image(0, 4, _target.name)
-			   .bind_storage_buffer(0, 5, sunLuminance)
+			   .bind_uniform_buffer(0, 1, _atmo.params)
+			   .bind_sampled_image(0, 2, _atmo.transmittance, LinearClamp)
+			   .bind_sampled_image(0, 3, _skyView, LinearClamp)
+			   .bind_storage_image(0, 4, _target)
 			   .bind_compute_pipeline("sky_draw_cubemap");
 			
-			auto* sides = cmd.map_scratch_uniform_binding<array<mat4, 6>>(0, 6);
+			auto* sides = cmd.map_scratch_uniform_binding<array<mat4, 6>>(0, 5);
 			*sides = to_array<mat4>({
 				mat4(mat3{
 					0.0f, 0.0f, -1.0f,
@@ -339,9 +342,9 @@ void Sky::drawCubemap(vuk::RenderGraph& _rg, Buffer<World> _world, Cubemap _targ
 					0.0f, 0.0f, -1.0f})});
 			
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
-				.probePosition = CubemapCamera,
+				.probePosition = _probePos,
 				.cubemapSize = _target.size().x(),
-				.skyViewSize = cubemapView.size() });
+				.skyViewSize = _skyView.size() });
 			
 			cmd.dispatch_invocations(_target.size().x(), _target.size().y(), 6);
 			

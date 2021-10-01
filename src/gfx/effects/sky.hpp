@@ -70,16 +70,7 @@ struct Atmosphere {
 	// Build required shaders.
 	static void compile(vuk::PerThreadContext&);
 	
-	// Construct the object. You may call upload() when ready.
-	Atmosphere() = default;
-	
-	// Upload the atmospheric buffers to GPU as per provided parameters. Object
-	// is not usable until all GPU transfers are finished.
-	void upload(Pool&, vuk::Name, Params const&);
-	
-	// Fill the lookup tables. Requires upload() to be called and completed first. Only needs
-	// to be executed once.
-	void precalculate(vuk::RenderGraph&);
+	static auto create(Pool&, vuk::RenderGraph&, vuk::Name, Params const&) -> Atmosphere;
 	
 };
 
@@ -93,32 +84,26 @@ struct Sky {
 	constexpr static auto AerialPerspectiveFormat = vuk::Format::eR16G16B16A16Sfloat;
 	constexpr static auto AerialPerspectiveSize = uvec3{32u, 32u, 32u};
 	
-	// World-space center of the camera for drawCubemap()
-	constexpr static auto CubemapCamera = vec3{0_m, 0_m, 10_m};
-	
-	vuk::Name name;
-	Texture2D cameraView;
-	Texture2D cubemapView;
-	Texture3D aerialPerspective;
-	Buffer<vec3> sunLuminance;
-	
 	// Build the shader.
 	static void compile(vuk::PerThreadContext&);
 	
-	Sky(Pool&, vuk::Name, Atmosphere const&);
+	static auto createView(Pool&, vuk::RenderGraph&, vuk::Name, vec3 probePos,
+		Atmosphere const&, Buffer<World>) -> Texture2D;
 	
-	// Fill lookup tables required for the two functions below.
-	void calculate(vuk::RenderGraph&, Buffer<World>, Camera const& camera);
+	static auto createAerialPerspective(Pool&, vuk::RenderGraph&, vuk::Name,
+		vec3 probePos, mat4 invViewProj, Atmosphere const&, Buffer<World>) -> Texture3D;
 	
-	// Draw the sky in the background of an image (where depth is 0.0).
-	void draw(vuk::RenderGraph&, Buffer<World>, Texture2D target, Texture2D visbuf);
+	static auto createSunLuminance(Pool&, vuk::RenderGraph&, vuk::Name,
+		vec3 probePos, Atmosphere const&, Buffer<World>) -> Buffer<vec3>;
 	
-	// Draw the sky into an existing IBLMap. Target is the mip 0 of provided image.
-	void drawCubemap(vuk::RenderGraph&, Buffer<World>, Cubemap _target);
+	// Draw the sky in the background of an image (where visibility buffer is
+	// empty).
+	static void draw(vuk::RenderGraph&, Texture2D target, Texture2D visbuf,
+		Texture2D skyView, Atmosphere const&, Buffer<World>);
 	
-private:
-	
-	Atmosphere const& atmosphere;
+	// Draw the sky into an existing cubemap. Target is the mip 0 of provided image.
+	static void draw(vuk::RenderGraph&, Cubemap target,
+		vec3 probePos, Texture2D skyView, Atmosphere const&, Buffer<World>);
 	
 };
 

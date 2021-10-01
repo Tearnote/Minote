@@ -245,6 +245,7 @@ set(SHADER_SOURCES
         src/glsl/sky/skyGenAerialPerspective.comp
         src/glsl/sky/skyGenMultiScattering.comp
         src/glsl/sky/skyGenTransmittance.comp
+        src/glsl/sky/skyGenSunLuminance.comp
         src/glsl/sky/skyDrawCubemap.comp
         src/glsl/sky/skyGenSkyView.comp
         src/glsl/sky/skyDraw.comp

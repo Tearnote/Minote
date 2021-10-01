@@ -45,8 +45,8 @@ layout (binding = 8, std430) restrict readonly buffer Colors {
 	uint B_COLORS[];
 };
 
-layout(binding = 9) restrict readonly buffer SunLuminance {
-	vec3 b_sunLuminance;
+layout(binding = 9) uniform SunLuminance {
+	vec3 u_sunLuminance;
 };
 layout(binding = 10) uniform samplerCube s_cubemap;
 layout(binding = 11) uniform sampler3D s_aerialPerspective;
@@ -189,8 +189,6 @@ void main() {
 	// Empirical sun visibility above the horizon
 	
 	float sunDot = dot(vec3(0.0, 0.0, 1.0), u_world.sunDirection);
-	vec3 sunColor = b_sunLuminance;
-	
 	float sunAngularSize = radians(0.2);
 	float sunsetStart = cos(radians(90.05) - sunAngularSize);
 	float sunsetEnd = cos(radians(90.05) + sunAngularSize);
@@ -198,7 +196,7 @@ void main() {
 	sunset = clamp(sunset, 0.0, 1.0);
 	sunset = (1.0 - cos(sunset * 1.57079633)) / 2.0;
 	
-	sunColor *= sunset;
+	vec3 sunColor = u_sunLuminance * sunset;
 	
 	// PBR calculation
 	

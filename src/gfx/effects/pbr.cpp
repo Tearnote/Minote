@@ -18,7 +18,7 @@ void PBR::compile(vuk::PerThreadContext& _ptc) {
 
 void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf, Texture2D _depth,
 	Buffer<World> _world, MeshBuffer const& _meshes, DrawableInstanceList const& _instances,
-	Sky const& _sky, Cubemap _ibl) {
+	Cubemap _ibl, Buffer<vec3> _sunLuminance, Texture3D _aerialPerspective) {
 	
 	assert(_color.size() == _visbuf.size());
 	
@@ -30,11 +30,11 @@ void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf, Text
 			_instances.meshIndices.resource(vuk::eComputeRead),
 			_instances.transforms.resource(vuk::eComputeRead),
 			_instances.materials.resource(vuk::eComputeRead),
-			_sky.sunLuminance.resource(vuk::eComputeRead),
-			_sky.aerialPerspective.resource(vuk::eComputeSampled),
+			_sunLuminance.resource(vuk::eComputeRead),
+			_aerialPerspective.resource(vuk::eComputeSampled),
 			_ibl.resource(vuk::eComputeSampled),
 			_color.resource(vuk::eComputeWrite) },
-		.execute = [_color, _visbuf, _depth, _world, &_meshes, &_instances, &_sky, _ibl](vuk::CommandBuffer& cmd) {
+		.execute = [_color, _visbuf, _depth, _world, &_meshes, &_instances, _ibl, _sunLuminance, _aerialPerspective](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_storage_buffer(0, 1, _meshes.descriptorBuf)
@@ -45,9 +45,9 @@ void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf, Text
 			   .bind_storage_buffer(0, 6, _meshes.verticesBuf)
 			   .bind_storage_buffer(0, 7, _meshes.normalsBuf)
 			   .bind_storage_buffer(0, 8, _meshes.colorsBuf)
-			   .bind_storage_buffer(0, 9, _sky.sunLuminance)
+			   .bind_uniform_buffer(0, 9, _sunLuminance)
 			   .bind_sampled_image(0, 10, _ibl, TrilinearClamp)
-			   .bind_sampled_image(0, 11, _sky.aerialPerspective, TrilinearClamp)
+			   .bind_sampled_image(0, 11, _aerialPerspective, TrilinearClamp)
 			   .bind_sampled_image(0, 12, _visbuf, NearestClamp)
 			   .bind_sampled_image(0, 13, _depth, NearestClamp)
 			   .bind_storage_image(0, 14, _color)
@@ -59,7 +59,7 @@ void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf, Text
 				uvec2 targetSize;
 			};
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
-				.aerialPerspectiveSize = _sky.aerialPerspective.size(),
+				.aerialPerspectiveSize = _aerialPerspective.size(),
 				.targetSize = _color.size() });
 			
 			cmd.dispatch_invocations(_color.size().x(), _color.size().y());
