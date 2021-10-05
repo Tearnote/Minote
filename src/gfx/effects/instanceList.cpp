@@ -172,8 +172,9 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 	
 	result.commands = Buffer<Command>::make(_pool, nameAppend(_name, "commands"),
 		vuk::BufferUsageFlagBits::eStorageBuffer | vuk::BufferUsageFlagBits::eIndirectBuffer,
-		commandsData);
-	result.commands.attach(_rg, vuk::eHostWrite, vuk::eNone);
+		commandsData, vuk::MemoryUsage::eGPUonly);
+	_pool.ptc().dma_task();
+	result.commands.attach(_rg, vuk::eTransferDst, vuk::eNone);
 	
 	// Step 1: Count how many instances there are of each mesh
 	
@@ -274,7 +275,8 @@ auto DrawableInstanceList::frustumCull(Pool& _pool, vuk::RenderGraph& _rg, vuk::
 	auto commandsData = ivector<Command>(_source.commands.length());
 	result.commands = Buffer<Command>::make(_pool, nameAppend(_name, "commands"),
 		vuk::BufferUsageFlagBits::eStorageBuffer | vuk::BufferUsageFlagBits::eIndirectBuffer,
-		commandsData);
+		commandsData, vuk::MemoryUsage::eGPUonly);
+	_pool.ptc().dma_task();
 	result.commands.attach(_rg, vuk::eHostWrite, vuk::eNone);
 	
 	// Create destination buffers
