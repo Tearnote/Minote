@@ -5,7 +5,7 @@ layout(location = 0) in flat uint InstanceIndex;
 
 layout(location = 0) out uint out_visibility;
 
-#include "constants.glsl"
+#include "visibility.glsl"
 
 void main() {
 	

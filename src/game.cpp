@@ -70,7 +70,8 @@ void game(GameParams const& _params) try {
 		block1.transform.position = offset;
 		block1.transform.scale = vec3{12.0f, 12.0f, 1.0f} * prescale;
 		block1.transform.rotation = rotation;
-		block1.material.tint = {0.9f, 0.9f, 1.0f, 1.0f};
+		block1.material.tint = {0.9f, 0.9f, 1.0f};
+		block1.material.id = gfx::MaterialType::PBR;
 		block1.material.roughness = 0.6f;
 		block1.material.metalness = 0.0f;
 		
@@ -80,7 +81,8 @@ void game(GameParams const& _params) try {
 		block2.transform.position = vec3{-4_m, -4_m, 2_m} + offset;
 		block2.transform.scale = prescale;
 		block2.transform.rotation = rotation;
-		block2.material.tint = {0.9f, 0.1f, 0.1f, 1.0f};
+		block2.material.tint = {0.9f, 0.1f, 0.1f};
+		block2.material.id = gfx::MaterialType::PBR;
 		block2.material.roughness = 0.6f;
 		block2.material.metalness = 0.0f;
 		
@@ -90,7 +92,8 @@ void game(GameParams const& _params) try {
 		block3.transform.position = vec3{4_m, -4_m, 2_m} + offset;
 		block3.transform.scale = prescale;
 		block3.transform.rotation = rotation;
-		block3.material.tint = {0.9f, 0.1f, 0.1f, 1.0f};
+		block3.material.tint = {0.9f, 0.1f, 0.1f};
+		block3.material.id = gfx::MaterialType::PBR;
 		block3.material.roughness = 0.6f;
 		block3.material.metalness = 0.0f;
 		
@@ -100,7 +103,8 @@ void game(GameParams const& _params) try {
 		block4.transform.position = vec3{-4_m, 4_m, 2_m} + offset;
 		block4.transform.scale = prescale;
 		block4.transform.rotation = rotation;
-		block4.material.tint = {0.9f, 0.1f, 0.1f, 1.0f};
+		block4.material.tint = {0.9f, 0.1f, 0.1f};
+		block4.material.id = gfx::MaterialType::PBR;
 		block4.material.roughness = 0.6f;
 		block4.material.metalness = 0.0f;
 		
@@ -110,7 +114,8 @@ void game(GameParams const& _params) try {
 		block5.transform.position = vec3{4_m, 4_m, 2_m} + offset;
 		block5.transform.scale = prescale;
 		block5.transform.rotation = rotation;
-		block5.material.tint = {0.9f, 0.1f, 0.1f, 1.0f};
+		block5.material.tint = {0.9f, 0.1f, 0.1f};
+		block5.material.id = gfx::MaterialType::PBR;
 		block5.material.roughness = 0.6f;
 		block5.material.metalness = 0.0f;
 		
@@ -120,7 +125,8 @@ void game(GameParams const& _params) try {
 		block6.transform.position = vec3{7_m, 0_m, 2_m} + offset;
 		block6.transform.scale = prescale;
 		block6.transform.rotation = rotation;
-		block6.material.tint = {0.1f, 0.1f, 0.9f, 1.0f};
+		block6.material.tint = {0.1f, 0.1f, 0.9f};
+		block6.material.id = gfx::MaterialType::PBR;
 		block6.material.roughness = 0.6f;
 		block6.material.metalness = 0.0f;
 		
@@ -130,7 +136,8 @@ void game(GameParams const& _params) try {
 		block7.meshID = "block"_id;
 		block7.transform.position = vec3{0_m, 0_m, 2.5_m} + offset;
 		block7.transform.scale = vec3{1.5f, 1.5f, 1.5f} * prescale;
-		block7.material.tint = {0.2f, 0.9f, 0.5f, 1.0f};
+		block7.material.tint = {0.2f, 0.9f, 0.5f};
+		block7.material.id = gfx::MaterialType::PBR;
 		block7.material.roughness = 0.2f;
 		block7.material.metalness = 1.0f;
 		
@@ -143,6 +150,7 @@ void game(GameParams const& _params) try {
 			sphere1.meshID = "sphere"_id;
 			sphere1.transform.position = vec3{0_m, 8_m, 2_m} + offset2;
 			sphere1.transform.scale = prescale;
+			sphere1.material.id = gfx::MaterialType::PBR;
 			sphere1.material.roughness = i;
 			sphere1.material.metalness = 1.0f;
 			
@@ -151,6 +159,7 @@ void game(GameParams const& _params) try {
 			sphere2.meshID = "sphere"_id;
 			sphere2.transform.position = vec3{0_m, -8_m, 2_m} + offset2;
 			sphere2.transform.scale = prescale;
+			sphere2.material.id = gfx::MaterialType::PBR;
 			sphere2.material.roughness = i;
 			sphere2.material.metalness = 0.0f;
 			

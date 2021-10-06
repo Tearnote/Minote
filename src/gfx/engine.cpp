@@ -48,6 +48,7 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	CubeFilter::compile(ptc);
 	Atmosphere::compile(ptc);
 	Visibility::compile(ptc);
+	Worklist::compile(ptc);
 	Tonemap::compile(ptc);
 	Bloom::compile(ptc);
 	PBR::compile(ptc);
@@ -205,6 +206,7 @@ void Engine::render() {
 	
 	// Scene drawing
 	Visibility::apply(rg, visbuf, depth, worldBuf, culledDrawables, *m_meshes);
+	auto worklist = Worklist::create(m_permPool, rg, "worklist", visbuf, culledDrawables);
 	PBR::apply(rg, color, visbuf, depth, worldBuf, *m_meshes, culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
 	Sky::draw(rg, color, visbuf, cameraSky, m_atmosphere, worldBuf);
 	

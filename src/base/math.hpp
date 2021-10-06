@@ -27,6 +27,7 @@ using gcem::min;
 using gcem::max;
 using gcem::abs;
 using gcem::floor;
+using gcem::ceil;
 
 using gcem::pow;
 using gcem::sqrt;

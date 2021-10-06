@@ -1,9 +1,15 @@
 #include "gfx/effects/visibility.hpp"
 
 #include "vuk/CommandBuffer.hpp"
+#include "base/containers/string.hpp"
+#include "base/util.hpp"
+#include "gfx/samplers.hpp"
 #include "gfx/util.hpp"
 
 namespace minote::gfx {
+
+using namespace base;
+using namespace base::literals;
 
 void Visibility::compile(vuk::PerThreadContext& _ptc) {
 	
@@ -43,6 +49,77 @@ void Visibility::apply(vuk::RenderGraph& _rg, Texture2D _visbuf, Texture2D _dept
 			cmd.draw_indexed_indirect(_instances.commands.length(), _instances.commands);
 			
 		}});
+	
+}
+
+void Worklist::compile(vuk::PerThreadContext& _ptc) {
+	
+	auto worklistPci = vuk::ComputePipelineCreateInfo();
+	worklistPci.add_spirv(std::vector<u32>{
+#include "spv/worklist.comp.spv"
+	}, "worklist.comp");
+	_ptc.ctx.create_named_pipeline("worklist", worklistPci);
+	
+}
+
+auto Worklist::create(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
+	Texture2D _visbuf, DrawableInstanceList const& _instances) -> Worklist {
+	
+	auto tileCount = uvec2{
+		u32(ceil(f32(_visbuf.size().x()) / f32(TileSize.x()))),
+		u32(ceil(f32(_visbuf.size().y()) / f32(TileSize.y()))) };
+	
+	auto result = Worklist();
+	
+	// Create buffers
+	
+	constexpr auto InitialCount = uvec4{0, 1, 1, 0};
+	auto initialCounts = array<uvec4, ListCount>();
+	initialCounts.fill(InitialCount);
+	
+	result.counts = Buffer<uvec4>::make(_pool, nameAppend(_name, "counts"),
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		initialCounts, vuk::MemoryUsage::eGPUonly);
+	
+	result.lists = Buffer<u32>::make(_pool, nameAppend(_name, "tiles"),
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		usize(tileCount.x() * tileCount.y()) * ListCount);
+	
+	result.counts.attach(_rg, vuk::eTransferDst, vuk::eNone);
+	result.lists.attach(_rg, vuk::eNone, vuk::eNone);
+	
+	_pool.ptc().dma_task();
+	
+	// Generate worklists
+	
+	_rg.add_pass({
+		.name = nameAppend(_name, "gen"),
+		.resources = {
+			_visbuf.resource(vuk::eComputeSampled),
+			_instances.materials.resource(vuk::eComputeRead),
+			result.counts.resource(vuk::eComputeRW),
+			result.lists.resource(vuk::eComputeWrite) },
+		.execute = [result, _visbuf, &_instances, tileCount](vuk::CommandBuffer& cmd) {
+			
+			struct PushConstants {
+				uvec2 visbufSize;
+				u32 listCount;
+			};
+			
+			cmd.bind_sampled_image(0, 0, _visbuf, NearestClamp)
+			   .bind_storage_buffer(0, 1, _instances.materials)
+			   .bind_storage_buffer(0, 2, result.counts)
+			   .bind_storage_buffer(0, 3, result.lists)
+			   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
+				   .visbufSize = _visbuf.size(),
+				   .listCount = ListCount })
+			   .bind_compute_pipeline("worklist");
+			
+			cmd.dispatch_invocations(_visbuf.size().x(), _visbuf.size().y());
+			
+		}});
+	
+	return result;
 	
 }
 

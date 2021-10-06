@@ -12,6 +12,8 @@ using std::string;
 // used as function argument.
 using std::string_view;
 
+using std::to_string;
+
 namespace literals {
 
 // Import sv literal

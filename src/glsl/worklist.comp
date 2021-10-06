@@ -1,0 +1,104 @@
+#version 460
+#pragma shader_stage(compute)
+#extension GL_KHR_shader_subgroup_basic: enable
+#extension GL_KHR_shader_subgroup_arithmetic: enable
+
+layout(local_size_x = 8, local_size_y = 8) in;
+
+#include "visibilityTypes.glsl"
+#include "visibility.glsl"
+#include "types.glsl"
+
+struct Count {
+	uvec3 groups;
+	uint tiles;
+};
+
+layout(binding = 0) uniform usampler2D s_visbuf;
+layout(binding = 1, std430) restrict readonly buffer Materials {
+	Material b_materials[];
+};
+layout(binding = 2, std430) restrict buffer TileCounts {
+	Count b_counts[];
+};
+layout(binding = 3, std430) restrict writeonly buffer TileLists {
+	uint b_lists[];
+};
+
+layout(push_constant) uniform PushConstants {
+	uvec2 u_visbufSize;
+	uint u_listCount;
+};
+
+shared uint sh_result;
+
+void main() {
+	
+	uvec2 gid = gl_GlobalInvocationID.xy;
+	uvec2 lid = gl_LocalInvocationID.xy;
+	
+	// Initialize shared mem
+	
+	if (all(equal(lid, uvec2(0))))
+		sh_result = 0;
+	
+	memoryBarrierShared();
+	barrier();
+	
+	// Fetch material id
+	
+	uint materialId = -1u;
+	if (all(lessThan(gid, u_visbufSize))) {
+		
+		uint visPacked = texelFetch(s_visbuf, ivec2(gid), 0).x;
+		if (visPacked == -1u) { // Sky
+			
+			materialId = 0;
+			
+		} else {
+			
+			VisSample vis = unpackVisibility(visPacked);
+			Material material = b_materials[vis.instance];
+			materialId = material.id;
+			
+		}
+		
+	}
+	
+	// Mark found material
+	
+	if (materialId != -1u) {
+		
+		uint combined = subgroupOr(1u << materialId);
+		if (subgroupElect())
+			atomicOr(sh_result, combined);
+		
+	}
+	
+	memoryBarrierShared();
+	barrier();
+	
+	// Write tiles
+	
+	if (any(notEqual(lid, uvec2(0))))
+		return;
+	
+	uint flatGroupSize = gl_WorkGroupSize.x * gl_WorkGroupSize.y;
+	uint tileCount = gl_NumWorkGroups.x * gl_NumWorkGroups.y;
+	
+	for (uint i = 0; i < u_listCount; i += 1) {
+		
+		if ((sh_result & (1u << i)) == 0u)
+			continue;
+		
+		uint tileOffset = tileCount * i;
+		uint tileIndex = atomicAdd(b_counts[i].tiles, 1);
+		if (tileIndex % flatGroupSize == 0)
+			atomicAdd(b_counts[i].groups.x, 1);
+		
+		uint tile = gl_WorkGroupID.x + (gl_WorkGroupID.y << 16u);
+		b_lists[tileOffset + tileIndex] = tile;
+		
+	}
+	
+}

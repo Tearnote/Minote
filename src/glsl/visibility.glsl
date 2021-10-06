@@ -3,7 +3,19 @@
 #ifndef VISIBILITY_GLSL
 #define VISIBILITY_GLSL
 
+#include "visibilityTypes.glsl"
 #include "util.glsl"
+
+#define TRIANGLE_ID_BITS 12u
+
+VisSample unpackVisibility(uint _packed) {
+	
+	VisSample result = VisSample(
+		_packed >> TRIANGLE_ID_BITS,
+		_packed & bitmask(TRIANGLE_ID_BITS));
+	return result;
+	
+}
 
 // Barycentrics interpolator. The below 3 functions are made available under
 // the following terms. The full Apache 2.0 license is included with the source.

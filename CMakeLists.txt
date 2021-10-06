@@ -259,6 +259,7 @@ set(SHADER_SOURCES
         src/glsl/frustumCull.comp
         src/glsl/visibility.vert src/glsl/visibility.frag
         src/glsl/bloomDown.comp
+        src/glsl/worklist.comp
         src/glsl/tonemap.comp
         src/glsl/bloomUp.comp
         src/glsl/imgui.vert src/glsl/imgui.frag

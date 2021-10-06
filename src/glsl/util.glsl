@@ -28,27 +28,6 @@ float fastAtan(float _y, float _x) {
     return t;
 }
 
-// Generate a bufferless screen-covering triangle from 3 vertices
-// https://rauwendaal.net/2014/06/14/rendering-a-screen-covering-triangle-in-opengl/
-vec2 triangleVertex(int _vertexID, out vec2 _texCoords) {
-	
-	float x = -1.0 + float((_vertexID & 1) << 2);
-	float y = -1.0 + float((_vertexID & 2) << 1);
-	_texCoords.x = (x+1.0)*0.5;
-	_texCoords.y = (y+1.0)*0.5;
-	return vec2(x, y);
-	
-}
-
-// Generate a bufferless cube from 14 vertices. Draw with triangle strip
-// https://twitter.com/donzanoid/status/616370134278606848
-vec3 cubeVertex(int _vertexID) {
-	
-	int b = 1 << _vertexID;
-	return vec3((0x287a & b) != 0, (0x02af & b) != 0, (0x31e3 & b) != 0);
-	
-}
-
 // Conversion from linear RGB to sRGB
 // http://www.java-gaming.org/topics/fast-srgb-conversion-glsl-snippet/37583/view.html
 vec3 srgbEncode(vec3 _color) {
@@ -85,11 +64,21 @@ float luma(vec3 _color) {
 	
 }
 
+// Create a bitmask with n lowest bits set
+uint bitmask(uint _n) {
+	
+	if (_n == 32u)
+		return -1u;
+	else
+		return (1u << _n) - 1u;
+	
+}
+
 // Retrieve u16 halves of a u32
 
 uint u32Lower(uint _n) {
 	
-	return _n & ((1u << 16u) - 1u);
+	return _n & bitmask(16);
 	
 }
 

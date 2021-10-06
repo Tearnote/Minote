@@ -14,7 +14,7 @@ void Tonemap::compile(vuk::PerThreadContext& _ptc) {
 	auto tonemapPci = vuk::ComputePipelineCreateInfo();
 	tonemapPci.add_spirv(std::vector<u32>{
 #include "spv/tonemap.comp.spv"
-	}, "blit.comp");
+	}, "tonemap.comp");
 	_ptc.ctx.create_named_pipeline("tonemap", tonemapPci);
 	
 }

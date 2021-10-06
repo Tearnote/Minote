@@ -64,7 +64,8 @@ struct Transform {
 // Per-instance material
 struct Material {
 	
-	vec4 tint;
+	vec3 tint;
+	uint id;
 	float roughness;
 	float metalness;
 	vec2 pad0;

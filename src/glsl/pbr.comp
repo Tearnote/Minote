@@ -5,6 +5,7 @@
 layout(local_size_x = 8, local_size_y = 8) in;
 
 #include "sky/skyAccess.glsl"
+#include "visibilityTypes.glsl"
 #include "visibility.glsl"
 #include "constants.glsl"
 #include "types.glsl"
@@ -97,23 +98,21 @@ void main() {
 	
 	// Retrieve visibility sample
 	
-	uint visSample = texelFetch(s_visbuf, ivec2(gid), 0).x;
-	if (visSample == -1u) // Sky sample
+	uint visPacked = texelFetch(s_visbuf, ivec2(gid), 0).x;
+	if (visPacked == -1u) // Sky sample
 		return;
-	
-	uint instanceIndex = visSample >> TRIANGLE_ID_BITS;
-	uint triangleIndex = visSample & ((1u << TRIANGLE_ID_BITS) - 1u);
+	VisSample vis = unpackVisibility(visPacked);
 	
 	// Retrieve instance params
 	
-	mat4 transform = getTransform(b_transforms[instanceIndex]);
-	Material material = b_materials[instanceIndex];
+	mat4 transform = getTransform(b_transforms[vis.instance]);
+	Material material = b_materials[vis.instance];
 	
 	// Retrieve vertex indices
 	
-	uint meshIndex = b_meshIndices[instanceIndex];
+	uint meshIndex = b_meshIndices[vis.instance];
 	uint indexBase = b_descriptors[meshIndex].indexOffset;
-	indexBase += triangleIndex * 3;
+	indexBase += vis.triangle * 3;
 	uvec3 indices = fetchIndices(indexBase);
 	
 	// Retrieve vertex params
@@ -200,7 +199,7 @@ void main() {
 	
 	// PBR calculation
 	
-	color *= material.tint;
+	color.xyz *= material.tint;
 	vec3 f0 = max(color.rgb * material.metalness, vec3(0.04));
 	
 	vec3 iblDiffuse = textureLod(s_cubemap, normal, IBLMipCount - 2.0).rgb;
