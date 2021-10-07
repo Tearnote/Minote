@@ -9,17 +9,12 @@ layout(local_size_x = 8, local_size_y = 8) in;
 #include "visibility.glsl"
 #include "types.glsl"
 
-struct Count {
-	uvec3 groups;
-	uint tiles;
-};
-
 layout(binding = 0) uniform usampler2D s_visbuf;
 layout(binding = 1, std430) restrict readonly buffer Materials {
 	Material b_materials[];
 };
 layout(binding = 2, std430) restrict buffer TileCounts {
-	Count b_counts[];
+	uvec4 b_counts[];
 };
 layout(binding = 3, std430) restrict writeonly buffer TileLists {
 	uint b_lists[];
@@ -92,9 +87,7 @@ void main() {
 			continue;
 		
 		uint tileOffset = tileCount * i;
-		uint tileIndex = atomicAdd(b_counts[i].tiles, 1);
-		if (tileIndex % flatGroupSize == 0)
-			atomicAdd(b_counts[i].groups.x, 1);
+		uint tileIndex = atomicAdd(b_counts[i].x, 1);
 		
 		uint tile = gl_WorkGroupID.x + (gl_WorkGroupID.y << 16u);
 		b_lists[tileOffset + tileIndex] = tile;

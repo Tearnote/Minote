@@ -30,8 +30,9 @@ struct Worklist {
 	static constexpr auto TileSize = vec2{8, 8};
 	static constexpr auto ListCount = MaterialCount;
 	
-	Buffer<uvec4> counts; // xyz holds group count for dispatch indirect, w is the item count
+	Buffer<uvec4> counts; // x holds tile count, yz are 1 (for dispatch indirect)
 	Buffer<u32> lists;
+	uvec2 tileDimensions; // How many tiles fit in each dimension
 	
 	// Build the shader.
 	static void compile(vuk::PerThreadContext&);

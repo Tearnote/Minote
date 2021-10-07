@@ -6,6 +6,8 @@
 
 namespace minote::gfx {
 
+using namespace base::literals;
+
 void PBR::compile(vuk::PerThreadContext& _ptc) {
 	
 	auto pbrPci = vuk::ComputePipelineCreateInfo();
@@ -17,8 +19,9 @@ void PBR::compile(vuk::PerThreadContext& _ptc) {
 }
 
 void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf, Texture2D _depth,
-	Buffer<World> _world, MeshBuffer const& _meshes, DrawableInstanceList const& _instances,
-	Cubemap _ibl, Buffer<vec3> _sunLuminance, Texture3D _aerialPerspective) {
+	Worklist const& _worklist, Buffer<World> _world, MeshBuffer const& _meshes,
+	DrawableInstanceList const& _instances, Cubemap _ibl,
+	Buffer<vec3> _sunLuminance, Texture3D _aerialPerspective) {
 	
 	assert(_color.size() == _visbuf.size());
 	
@@ -27,6 +30,8 @@ void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf, Text
 		.resources = {
 			_visbuf.resource(vuk::eComputeSampled),
 			_depth.resource(vuk::eComputeSampled),
+			_worklist.counts.resource(vuk::eIndirectRead),
+			_worklist.lists.resource(vuk::eComputeRead),
 			_instances.meshIndices.resource(vuk::eComputeRead),
 			_instances.transforms.resource(vuk::eComputeRead),
 			_instances.materials.resource(vuk::eComputeRead),
@@ -34,7 +39,8 @@ void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf, Text
 			_aerialPerspective.resource(vuk::eComputeSampled),
 			_ibl.resource(vuk::eComputeSampled),
 			_color.resource(vuk::eComputeWrite) },
-		.execute = [_color, _visbuf, _depth, _world, &_meshes, &_instances, _ibl, _sunLuminance, _aerialPerspective](vuk::CommandBuffer& cmd) {
+		.execute = [_color, _visbuf, _depth, &_worklist, _world, &_meshes, &_instances,
+			_ibl, _sunLuminance, _aerialPerspective](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_storage_buffer(0, 1, _meshes.descriptorBuf)
@@ -51,18 +57,20 @@ void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf, Text
 			   .bind_sampled_image(0, 12, _visbuf, NearestClamp)
 			   .bind_sampled_image(0, 13, _depth, NearestClamp)
 			   .bind_storage_image(0, 14, _color)
+			   .bind_storage_buffer(0, 15, _worklist.lists)
 			   .bind_compute_pipeline("pbr");
 			
 			struct PushConstants {
 				uvec3 aerialPerspectiveSize;
-				float pad0;
+				u32 tileOffset;
 				uvec2 targetSize;
 			};
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
 				.aerialPerspectiveSize = _aerialPerspective.size(),
+				.tileOffset = _worklist.tileDimensions.x() * _worklist.tileDimensions.y() * +MaterialType::PBR,
 				.targetSize = _color.size() });
 			
-			cmd.dispatch_invocations(_color.size().x(), _color.size().y());
+			cmd.dispatch_indirect(_worklist.counts, sizeof(uvec4) * +MaterialType::PBR);
 			
 		}});
 	

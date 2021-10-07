@@ -206,8 +206,8 @@ void Engine::render() {
 	
 	// Scene drawing
 	Visibility::apply(rg, visbuf, depth, worldBuf, culledDrawables, *m_meshes);
-	auto worklist = Worklist::create(m_permPool, rg, "worklist", visbuf, culledDrawables);
-	PBR::apply(rg, color, visbuf, depth, worldBuf, *m_meshes, culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
+	auto worklist = Worklist::create(m_framePool, rg, "worklist", visbuf, culledDrawables);
+	PBR::apply(rg, color, visbuf, depth, worklist, worldBuf, *m_meshes, culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
 	Sky::draw(rg, color, visbuf, cameraSky, m_atmosphere, worldBuf);
 	
 	// Postprocessing

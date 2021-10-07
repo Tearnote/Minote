@@ -5,6 +5,7 @@
 #include "gfx/resources/texture2d.hpp"
 #include "gfx/resources/cubemap.hpp"
 #include "gfx/effects/instanceList.hpp"
+#include "gfx/effects/visibility.hpp"
 #include "gfx/effects/sky.hpp"
 #include "gfx/meshes.hpp"
 #include "gfx/world.hpp"
@@ -17,7 +18,7 @@ struct PBR {
 	static void compile(vuk::PerThreadContext&);
 	
 	static void apply(vuk::RenderGraph&, Texture2D color, Texture2D visbuf, Texture2D depth,
-		Buffer<World>, MeshBuffer const&, DrawableInstanceList const&,
+		Worklist const&, Buffer<World>, MeshBuffer const&, DrawableInstanceList const&,
 		Cubemap ibl, Buffer<vec3> sunLuminance, Texture3D aerialPerspective);
 	
 };

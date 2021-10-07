@@ -65,11 +65,11 @@ void Worklist::compile(vuk::PerThreadContext& _ptc) {
 auto Worklist::create(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
 	Texture2D _visbuf, DrawableInstanceList const& _instances) -> Worklist {
 	
-	auto tileCount = uvec2{
+	auto result = Worklist();
+	
+	result.tileDimensions = uvec2{
 		u32(ceil(f32(_visbuf.size().x()) / f32(TileSize.x()))),
 		u32(ceil(f32(_visbuf.size().y()) / f32(TileSize.y()))) };
-	
-	auto result = Worklist();
 	
 	// Create buffers
 	
@@ -78,17 +78,16 @@ auto Worklist::create(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
 	initialCounts.fill(InitialCount);
 	
 	result.counts = Buffer<uvec4>::make(_pool, nameAppend(_name, "counts"),
-		vuk::BufferUsageFlagBits::eStorageBuffer,
-		initialCounts, vuk::MemoryUsage::eGPUonly);
+		vuk::BufferUsageFlagBits::eStorageBuffer |
+		vuk::BufferUsageFlagBits::eIndirectBuffer,
+		initialCounts);
 	
 	result.lists = Buffer<u32>::make(_pool, nameAppend(_name, "tiles"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
-		usize(tileCount.x() * tileCount.y()) * ListCount);
+		usize(result.tileDimensions.x() * result.tileDimensions.y()) * ListCount);
 	
-	result.counts.attach(_rg, vuk::eTransferDst, vuk::eNone);
+	result.counts.attach(_rg, vuk::eHostWrite, vuk::eNone);
 	result.lists.attach(_rg, vuk::eNone, vuk::eNone);
-	
-	_pool.ptc().dma_task();
 	
 	// Generate worklists
 	
@@ -99,7 +98,7 @@ auto Worklist::create(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
 			_instances.materials.resource(vuk::eComputeRead),
 			result.counts.resource(vuk::eComputeRW),
 			result.lists.resource(vuk::eComputeWrite) },
-		.execute = [result, _visbuf, &_instances, tileCount](vuk::CommandBuffer& cmd) {
+		.execute = [result, _visbuf, &_instances](vuk::CommandBuffer& cmd) {
 			
 			struct PushConstants {
 				uvec2 visbufSize;

@@ -1,8 +1,7 @@
 #version 460
-
 #pragma shader_stage(compute)
 
-layout(local_size_x = 8, local_size_y = 8) in;
+layout(local_size_x = 1, local_size_y = 8, local_size_z = 8) in;
 
 #include "sky/skyAccess.glsl"
 #include "visibilityTypes.glsl"
@@ -55,10 +54,13 @@ layout(binding = 11) uniform sampler3D s_aerialPerspective;
 layout(binding = 12) uniform usampler2D s_visbuf;
 layout(binding = 13) uniform sampler2D s_depth;
 layout(binding = 14) restrict writeonly uniform image2D i_target;
+layout(binding = 15, std430) restrict readonly buffer TileLists {
+	uint b_lists[];
+};
 
 layout(push_constant) uniform Constants {
 	uvec3 u_aerialPerspectiveSize;
-	float pad0;
+	uint u_tileOffset;
 	uvec2 u_targetSize;
 };
 
@@ -90,9 +92,16 @@ float dApprox(float _roughness, float _RoL) {
 
 void main() {
 	
+	// Retrieve tile
+	
+	uint tilePacked = b_lists[u_tileOffset + gl_GlobalInvocationID.x];
+	uvec2 tile = {
+		tilePacked & bitmask(16u),
+		tilePacked >> 16u };
+	
 	// Bounds check
 	
-	uvec2 gid = gl_GlobalInvocationID.xy;
+	uvec2 gid = tile * gl_WorkGroupSize.yz + gl_LocalInvocationID.yz;
 	if (any(greaterThanEqual(gid, u_targetSize)))
 		return;
 	
