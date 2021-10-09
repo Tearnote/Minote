@@ -63,7 +63,7 @@ void Worklist::compile(vuk::PerThreadContext& _ptc) {
 }
 
 auto Worklist::create(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
-	Texture2D _visbuf, DrawableInstanceList const& _instances) -> Worklist {
+	Texture2D _visbuf, DrawableInstanceList const& _instances, MaterialBuffer const& _materials) -> Worklist {
 	
 	auto result = Worklist();
 	
@@ -98,7 +98,7 @@ auto Worklist::create(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
 			_instances.materials.resource(vuk::eComputeRead),
 			result.counts.resource(vuk::eComputeRW),
 			result.lists.resource(vuk::eComputeWrite) },
-		.execute = [result, _visbuf, &_instances](vuk::CommandBuffer& cmd) {
+		.execute = [result, _visbuf, &_instances, &_materials](vuk::CommandBuffer& cmd) {
 			
 			struct PushConstants {
 				uvec2 visbufSize;
@@ -107,8 +107,9 @@ auto Worklist::create(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
 			
 			cmd.bind_sampled_image(0, 0, _visbuf, NearestClamp)
 			   .bind_storage_buffer(0, 1, _instances.materials)
-			   .bind_storage_buffer(0, 2, result.counts)
-			   .bind_storage_buffer(0, 3, result.lists)
+			   .bind_storage_buffer(0, 2, _materials.materials)
+			   .bind_storage_buffer(0, 3, result.counts)
+			   .bind_storage_buffer(0, 4, result.lists)
 			   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
 				   .visbufSize = _visbuf.size(),
 				   .listCount = ListCount })

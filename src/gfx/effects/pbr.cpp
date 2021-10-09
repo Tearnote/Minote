@@ -19,9 +19,8 @@ void PBR::compile(vuk::PerThreadContext& _ptc) {
 }
 
 void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf, Texture2D _depth,
-	Worklist const& _worklist, Buffer<World> _world, MeshBuffer const& _meshes,
-	DrawableInstanceList const& _instances, Cubemap _ibl,
-	Buffer<vec3> _sunLuminance, Texture3D _aerialPerspective) {
+	Worklist const& _worklist, Buffer<World> _world, MeshBuffer const& _meshes, MaterialBuffer const& _materials,
+	DrawableInstanceList const& _instances, Cubemap _ibl, Buffer<vec3> _sunLuminance, Texture3D _aerialPerspective) {
 	
 	assert(_color.size() == _visbuf.size());
 	
@@ -39,7 +38,7 @@ void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf, Text
 			_aerialPerspective.resource(vuk::eComputeSampled),
 			_ibl.resource(vuk::eComputeSampled),
 			_color.resource(vuk::eComputeWrite) },
-		.execute = [_color, _visbuf, _depth, &_worklist, _world, &_meshes, &_instances,
+		.execute = [_color, _visbuf, _depth, &_worklist, _world, &_meshes, &_materials, &_instances,
 			_ibl, _sunLuminance, _aerialPerspective](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
@@ -51,13 +50,14 @@ void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf, Text
 			   .bind_storage_buffer(0, 6, _meshes.verticesBuf)
 			   .bind_storage_buffer(0, 7, _meshes.normalsBuf)
 			   .bind_storage_buffer(0, 8, _meshes.colorsBuf)
-			   .bind_uniform_buffer(0, 9, _sunLuminance)
-			   .bind_sampled_image(0, 10, _ibl, TrilinearClamp)
-			   .bind_sampled_image(0, 11, _aerialPerspective, TrilinearClamp)
-			   .bind_sampled_image(0, 12, _visbuf, NearestClamp)
-			   .bind_sampled_image(0, 13, _depth, NearestClamp)
-			   .bind_storage_image(0, 14, _color)
-			   .bind_storage_buffer(0, 15, _worklist.lists)
+			   .bind_storage_buffer(0, 9, _materials.materials)
+			   .bind_uniform_buffer(0, 10, _sunLuminance)
+			   .bind_sampled_image(0, 11, _ibl, TrilinearClamp)
+			   .bind_sampled_image(0, 12, _aerialPerspective, TrilinearClamp)
+			   .bind_sampled_image(0, 13, _visbuf, NearestClamp)
+			   .bind_sampled_image(0, 14, _depth, NearestClamp)
+			   .bind_storage_image(0, 15, _color)
+			   .bind_storage_buffer(1, 0, _worklist.lists)
 			   .bind_compute_pipeline("pbr");
 			
 			struct PushConstants {

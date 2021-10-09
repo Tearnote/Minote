@@ -10,8 +10,9 @@ namespace minote::gfx {
 
 using namespace base;
 
-auto BasicInstanceList::upload(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
-	ObjectPool const& _objects, MeshBuffer const& _meshes) -> BasicInstanceList {
+auto BasicInstanceList::upload(Pool& _pool, vuk::RenderGraph& _rg,
+	vuk::Name _name, ObjectPool const& _objects,
+	MeshBuffer const& _meshes, MaterialBuffer const& _materials) -> BasicInstanceList {
 	
 	ZoneScoped;
 	
@@ -31,10 +32,14 @@ auto BasicInstanceList::upload(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _na
 		
 		auto meshID = _objects.meshIDs[id];
 		auto meshIndex = _meshes.descriptorIDs.at(meshID);
+		auto materialID = _objects.materials[id].id;
+		auto materialIndex = _materials.materialIDs.at(materialID);
 		
 		meshIndices[instancesCount] = meshIndex;
 		basicTransforms[instancesCount] = _objects.transforms[id];
-		materials[instancesCount] = _objects.materials[id];
+		materials[instancesCount] = Material{
+			.tint = _objects.materials[id].tint,
+			.id = u32(materialIndex) };
 		
 		instancesCount += 1;
 		

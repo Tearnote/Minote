@@ -13,10 +13,13 @@ layout(binding = 0) uniform usampler2D s_visbuf;
 layout(binding = 1, std430) restrict readonly buffer Materials {
 	Material b_materials[];
 };
-layout(binding = 2, std430) restrict buffer TileCounts {
+layout(binding = 2, std430) restrict readonly buffer MaterialDefs {
+	MaterialDef b_materialDefs[];
+};
+layout(binding = 3, std430) restrict buffer TileCounts {
 	uvec4 b_counts[];
 };
-layout(binding = 3, std430) restrict writeonly buffer TileLists {
+layout(binding = 4, std430) restrict writeonly buffer TileLists {
 	uint b_lists[];
 };
 
@@ -53,8 +56,8 @@ void main() {
 		} else {
 			
 			VisSample vis = unpackVisibility(visPacked);
-			Material material = b_materials[vis.instance];
-			materialId = material.id;
+			uint materialIdx = b_materials[vis.instance].id;
+			materialId = b_materialDefs[materialIdx].id;
 			
 		}
 		

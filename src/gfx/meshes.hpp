@@ -66,13 +66,13 @@ struct MeshList {
 	
 private:
 	
-	ivector<MeshDescriptor> descriptors;
-	hashmap<ID, usize> descriptorIDs;
+	ivector<MeshDescriptor> m_descriptors;
+	hashmap<ID, usize> m_descriptorIDs;
 	
-	ivector<vec3> vertices;
-	ivector<vec3> normals;
-	ivector<u16vec4> colors;
-	ivector<u16> indices;
+	ivector<vec3> m_vertices;
+	ivector<vec3> m_normals;
+	ivector<u16vec4> m_colors;
+	ivector<u16> m_indices;
 	
 };
 

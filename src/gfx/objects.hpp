@@ -51,17 +51,8 @@ struct ObjectPool {
 	// Shading properties
 	struct Material {
 		
-		enum struct Type: u32 {
-			None = 0, // Background - typically used for sky
-			PBR = 1,
-			Count
-		};
-		
 		vec3 tint; // Per-vertex albedo is multiplied by this
-		Type id; // Type of material to shade with
-		f32 roughness; // 0.0f - glossy, 1.0f - rough
-		f32 metalness; // 0.0f - dielectric, 1.0f - conductive
-		vec2 pad0;
+		ID id; // Name of material to shade with
 		
 		// Construct with default values
 		static constexpr auto make_default() -> Material {
@@ -121,8 +112,5 @@ private:
 };
 
 using ObjectID = ObjectPool::ObjectID;
-using MaterialType = ObjectPool::Material::Type;
-
-constexpr auto MaterialCount = usize(MaterialType::Count);
 
 }

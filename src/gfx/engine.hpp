@@ -8,6 +8,7 @@
 #include "gfx/resources/cubemap.hpp"
 #include "gfx/resources/pool.hpp"
 #include "gfx/effects/sky.hpp"
+#include "gfx/materials.hpp"
 #include "gfx/objects.hpp"
 #include "gfx/meshes.hpp"
 #include "gfx/camera.hpp"
@@ -25,10 +26,11 @@ struct Engine {
 	static constexpr auto VerticalFov = 45_deg;
 	static constexpr auto NearPlane = 0.1_m;
 	
-	// Initialize the engine on a Vulkan-initialized window. Mesh list will
-	// be consumed and uploaded to GPU.
-	Engine(sys::Vulkan&, MeshList&&);
+	// Create the engine in uninitialized state.
+	Engine(sys::Vulkan& vk): m_vk(vk) {}
 	~Engine();
+	
+	void init(MeshList&&, MaterialList&&);
 	
 	// Render all objects to the screen. If repaint is false, the function will
 	// only render it no other thread is currently rendering. Otherwise it will
@@ -62,6 +64,7 @@ private:
 	
 	ImguiData m_imguiData;
 	std::optional<MeshBuffer> m_meshes;
+	std::optional<MaterialBuffer> m_materials;
 	std::optional<ObjectPool> m_objects;
 	Camera m_camera;
 	

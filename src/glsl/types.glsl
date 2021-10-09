@@ -66,10 +66,14 @@ struct Material {
 	
 	vec3 tint;
 	uint id;
+	
+};
+
+struct MaterialDef {
+	uint id;
 	float roughness;
 	float metalness;
-	vec2 pad0;
-	
+	uint pad0;
 };
 
 // Convert from BasicTransform to Transform

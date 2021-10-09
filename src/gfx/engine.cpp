@@ -32,8 +32,23 @@ static constexpr auto compileOpts = vuk::RenderGraph::CompileOptions{
 #endif //VK_VALIDATION
 };
 
-Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
-	m_vk(_vk) {
+Engine::~Engine() {
+	
+	ZoneScoped;
+	
+	m_vk.context->wait_idle();
+	
+	m_materials.reset();
+	m_meshes.reset();
+	m_objects.reset();
+	m_imguiData.fontTex.view.reset();
+	m_imguiData.fontTex.image.reset();
+	
+	L_INFO("Graphics engine cleaned up");
+	
+}
+
+void Engine::init(MeshList&& _meshList, MaterialList&& _materialList) {
 	
 	ZoneScoped;
 	
@@ -64,12 +79,13 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	// Begin imgui frame so that first-frame calls succeed
 	ImGui::NewFrame();
 	
-	m_meshes.emplace(std::move(_meshList).upload(m_permPool, "Meshes"));
+	m_meshes.emplace(std::move(_meshList).upload(m_permPool, "meshes"));
+	m_materials.emplace(std::move(_materialList).upload(m_permPool, "materials"));
 	m_objects = ObjectPool();
 	
 	// Perform precalculations
 	auto precalc = vuk::RenderGraph();
-	m_atmosphere = Atmosphere::create(m_permPool, precalc, "Earth", Atmosphere::Params::earth());
+	m_atmosphere = Atmosphere::create(m_permPool, precalc, "earth", Atmosphere::Params::earth());
 	
 	// Finalize
 	
@@ -80,20 +96,6 @@ Engine::Engine(sys::Vulkan& _vk, MeshList&& _meshList):
 	
 	L_INFO("Graphics engine initialized");
 	
-}
-
-Engine::~Engine() {
-	
-	ZoneScoped;
-	
-	m_vk.context->wait_idle();
-	
-	m_meshes.reset();
-	m_objects.reset();
-	m_imguiData.fontTex.view.reset();
-	m_imguiData.fontTex.image.reset();
-	
-	L_INFO("Graphics engine cleaned up");
 	
 }
 
@@ -143,12 +145,12 @@ void Engine::render() {
 	
 	// Create per-frame resources
 	
-	auto iblUnfiltered = Cubemap::make(m_permPool, "ibl_unfiltered",
+	auto iblUnfiltered = Cubemap::make(m_permPool, "iblUnfiltered",
 		256, vuk::Format::eR16G16B16A16Sfloat,
 		vuk::ImageUsageFlagBits::eStorage |
 		vuk::ImageUsageFlagBits::eSampled |
 		vuk::ImageUsageFlagBits::eTransferSrc);
-	auto iblFiltered = Cubemap::make(m_permPool, "ibl_filtered",
+	auto iblFiltered = Cubemap::make(m_permPool, "iblFiltered",
 		256, vuk::Format::eR16G16B16A16Sfloat,
 		vuk::ImageUsageFlagBits::eStorage |
 		vuk::ImageUsageFlagBits::eSampled |
@@ -187,7 +189,7 @@ void Engine::render() {
 	// Set up the rendergraph
 	
 	// Instance list processing
-	auto basicInstances = BasicInstanceList::upload(m_permPool, rg, "basicInstances", *m_objects, *m_meshes);
+	auto basicInstances = BasicInstanceList::upload(m_permPool, rg, "basicInstances", *m_objects, *m_meshes, *m_materials);
 	auto instances = InstanceList::fromBasic(m_permPool, rg, "instances", std::move(basicInstances));
 	auto drawables = DrawableInstanceList::fromUnsorted(m_permPool, rg, "drawables", instances, *m_meshes);
 	auto culledDrawables = DrawableInstanceList::frustumCull(m_permPool, rg, "culledDrawables", drawables,
@@ -206,8 +208,9 @@ void Engine::render() {
 	
 	// Scene drawing
 	Visibility::apply(rg, visbuf, depth, worldBuf, culledDrawables, *m_meshes);
-	auto worklist = Worklist::create(m_framePool, rg, "worklist", visbuf, culledDrawables);
-	PBR::apply(rg, color, visbuf, depth, worklist, worldBuf, *m_meshes, culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
+	auto worklist = Worklist::create(m_framePool, rg, "worklist", visbuf, culledDrawables, *m_materials);
+	PBR::apply(rg, color, visbuf, depth, worklist, worldBuf, *m_meshes, *m_materials,
+		culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
 	Sky::draw(rg, color, visbuf, cameraSky, m_atmosphere, worldBuf);
 	
 	// Postprocessing

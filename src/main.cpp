@@ -20,10 +20,8 @@
 #include "base/log.hpp"
 #include "sys/window.hpp"
 #include "sys/vulkan.hpp"
-#include "gfx/meshes.hpp"
 #include "gfx/engine.hpp"
 #include "mapper.hpp"
-#include "assets.hpp"
 #include "game.hpp"
 
 using namespace minote; // Because we can't namespace main()
@@ -67,17 +65,8 @@ auto main(int, char*[]) -> int try {
 	auto window = sys::Window(system, AppTitle, false, {960, 504});
 	auto vulkan = sys::Vulkan(window);
 	
-	// Load assets
-	auto meshList = gfx::MeshList();
-	auto assets = Assets(Assets_p);
-	assets.loadModels([&meshList](auto name, auto data) {
-		
-		meshList.addGltf(name, data);
-		
-	});
-	
-	// Start up graphics engine
-	auto engine = gfx::Engine(vulkan, std::move(meshList));
+	// Create graphics engine
+	auto engine = gfx::Engine(vulkan);
 	
 	// Initialize helpers
 	auto mapper = Mapper();

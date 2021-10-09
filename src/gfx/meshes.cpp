@@ -46,18 +46,18 @@ void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
 	
 	// Write mesh descriptor
 	
-	descriptorIDs.emplace(_name, descriptors.size());
-	auto& desc = descriptors.emplace_back(MeshDescriptor{
-		.indexOffset = u32(indices.size()),
+	m_descriptorIDs.emplace(_name, m_descriptors.size());
+	auto& desc = m_descriptors.emplace_back(MeshDescriptor{
+		.indexOffset = u32(m_indices.size()),
 		.indexCount = u32(indexAccessor.count),
-		.vertexOffset = u32(vertices.size()) });
+		.vertexOffset = u32(m_vertices.size()) });
 	
 	// Write index data
 	
 	assert(indexAccessor.component_type == cgltf_component_type_r_16u);
 	assert(indexAccessor.type == cgltf_type_scalar);
 	auto* indexTypedBuffer = reinterpret_cast<u16 const*>(indexBuffer);
-	indices.insert(indices.end(), indexTypedBuffer, indexTypedBuffer + indexAccessor.count);
+	m_indices.insert(m_indices.end(), indexTypedBuffer, indexTypedBuffer + indexAccessor.count);
 	
 	// Fetch all vertex attributes
 	
@@ -82,7 +82,7 @@ void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
 			desc.radius = length(pfar);
 			
 			auto* typedBuffer = reinterpret_cast<vec3 const*>(buffer);
-			vertices.insert(vertices.end(), typedBuffer, typedBuffer + accessor.count);
+			m_vertices.insert(m_vertices.end(), typedBuffer, typedBuffer + accessor.count);
 			continue;
 			
 		}
@@ -95,7 +95,7 @@ void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
 			assert(accessor.type == cgltf_type_vec3);
 			
 			auto* typedBuffer = reinterpret_cast<vec3 const*>(buffer);
-			normals.insert(normals.end(), typedBuffer, typedBuffer + accessor.count);
+			m_normals.insert(m_normals.end(), typedBuffer, typedBuffer + accessor.count);
 			continue;
 			
 		}
@@ -108,7 +108,7 @@ void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
 			assert(accessor.type == cgltf_type_vec4);
 			
 			auto* typedBuffer = reinterpret_cast<u16vec4 const*>(buffer);
-			colors.insert(colors.end(), typedBuffer, typedBuffer + accessor.count);
+			m_colors.insert(m_colors.end(), typedBuffer, typedBuffer + accessor.count);
 			continue;
 			
 		}
@@ -129,35 +129,35 @@ auto MeshList::upload(Pool& _pool, vuk::Name _name) && -> MeshBuffer {
 		.verticesBuf = Buffer<vec3>::make(_pool, nameAppend(_name, "vertices"),
 			vuk::BufferUsageFlagBits::eVertexBuffer |
 			vuk::BufferUsageFlagBits::eStorageBuffer,
-			vertices, vuk::MemoryUsage::eGPUonly),
+			m_vertices, vuk::MemoryUsage::eGPUonly),
 		.normalsBuf = Buffer<vec3>::make(_pool, nameAppend(_name, "normals"),
 			vuk::BufferUsageFlagBits::eVertexBuffer |
 			vuk::BufferUsageFlagBits::eStorageBuffer,
-			normals, vuk::MemoryUsage::eGPUonly),
+			m_normals, vuk::MemoryUsage::eGPUonly),
 		.colorsBuf = Buffer<u16vec4>::make(_pool, nameAppend(_name, "colors"),
 			vuk::BufferUsageFlagBits::eVertexBuffer |
 			vuk::BufferUsageFlagBits::eStorageBuffer,
-			colors, vuk::MemoryUsage::eGPUonly),
+			m_colors, vuk::MemoryUsage::eGPUonly),
 		.indicesBuf = Buffer<u16>::make(_pool, nameAppend(_name, "indices"),
 			vuk::BufferUsageFlagBits::eIndexBuffer |
 			vuk::BufferUsageFlagBits::eStorageBuffer,
-			indices, vuk::MemoryUsage::eGPUonly),
+			m_indices, vuk::MemoryUsage::eGPUonly),
 		.descriptorBuf = Buffer<MeshDescriptor>::make(_pool, nameAppend(_name, "descriptors"),
 			vuk::BufferUsageFlagBits::eStorageBuffer,
-			descriptors, vuk::MemoryUsage::eGPUonly),
-		.descriptorIDs = std::move(descriptorIDs) };
-	result.descriptors = std::move(descriptors); // Must still exist for descriptorBuf creation
+			m_descriptors, vuk::MemoryUsage::eGPUonly),
+		.descriptorIDs = std::move(m_descriptorIDs) };
+	result.descriptors = std::move(m_descriptors); // Must still exist for descriptorBuf creation
 	
 	// Clean up in case this isn't a temporary
 	
-	vertices.clear();
-	vertices.shrink_to_fit();
-	normals.clear();
-	normals.shrink_to_fit();
-	colors.clear();
-	colors.shrink_to_fit();
-	indices.clear();
-	indices.shrink_to_fit();
+	m_vertices.clear();
+	m_vertices.shrink_to_fit();
+	m_normals.clear();
+	m_normals.shrink_to_fit();
+	m_colors.clear();
+	m_colors.shrink_to_fit();
+	m_indices.clear();
+	m_indices.shrink_to_fit();
 	
 	return result;
 	

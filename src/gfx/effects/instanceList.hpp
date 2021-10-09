@@ -4,6 +4,7 @@
 #include "base/types.hpp"
 #include "base/math.hpp"
 #include "gfx/resources/buffer.hpp"
+#include "gfx/materials.hpp"
 #include "gfx/objects.hpp"
 #include "gfx/meshes.hpp"
 
@@ -16,7 +17,11 @@ struct BasicInstanceList {
 	
 	using MeshIndex = u32;
 	using BasicTransform = ObjectPool::Transform;
-	using Material = ObjectPool::Material;
+	
+	struct Material {
+		vec3 tint;
+		u32 id;
+	};
 	
 	static constexpr auto MaxInstances = 262144_zu;
 	
@@ -25,7 +30,8 @@ struct BasicInstanceList {
 	Buffer<BasicTransform> basicTransforms;
 	Buffer<Material> materials;
 	
-	static auto upload(Pool&, vuk::RenderGraph&, vuk::Name, ObjectPool const&, MeshBuffer const&) -> BasicInstanceList;
+	static auto upload(Pool&, vuk::RenderGraph&, vuk::Name, ObjectPool const&,
+		MeshBuffer const&, MaterialBuffer const&) -> BasicInstanceList;
 	
 	[[nodiscard]]
 	auto capacity() const -> usize { return MaxInstances; }
@@ -36,7 +42,7 @@ struct InstanceList {
 	
 	using MeshIndex = u32;
 	using Transform = array<vec4, 3>;
-	using Material = ObjectPool::Material;
+	using Material = BasicInstanceList::Material;
 	
 	Buffer<u32> instancesCount;
 	Buffer<MeshIndex> meshIndices;
@@ -57,7 +63,7 @@ struct DrawableInstanceList {
 	using Command = VkDrawIndexedIndirectCommand;
 	using MeshIndex = u32;
 	using Transform = array<vec4, 3>;
-	using Material = ObjectPool::Material;
+	using Material = BasicInstanceList::Material;
 	
 	Buffer<Command> commands;
 	Buffer<u32> instancesCount;
