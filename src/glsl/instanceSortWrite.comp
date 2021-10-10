@@ -8,14 +8,14 @@ layout(local_size_x = 64) in;
 layout(binding = 0) uniform InstanceCount {
 	uint u_instanceCount;
 };
-layout (binding = 1, std430) restrict readonly buffer MeshIndices {
-	uint b_meshIndices[];
+layout (binding = 1, std430) restrict readonly buffer Instances {
+	Instance b_instances[];
 };
-layout (binding = 2, std430) restrict readonly buffer Transforms {
+layout (binding = 2, std430) restrict readonly buffer Colors {
+	vec4 b_colors[];
+};
+layout (binding = 3, std430) restrict readonly buffer Transforms {
 	Transform b_transforms[];
-};
-layout (binding = 3, std430) restrict readonly buffer Materials {
-	Material b_materials[];
 };
 layout (binding = 4, std430) restrict buffer Commands {
 	Command b_commands[];
@@ -23,14 +23,14 @@ layout (binding = 4, std430) restrict buffer Commands {
 layout(binding = 5, std430) restrict writeonly buffer InstanceCount {
 	uint b_instanceCount;
 };
-layout (binding = 6, std430) restrict writeonly buffer MeshIndicesSorted {
-	uint b_meshIndicesSorted[];
+layout (binding = 6, std430) restrict writeonly buffer InstancesSorted {
+	Instance b_instancesSorted[];
 };
-layout (binding = 7, std430) restrict writeonly buffer TransformsSorted {
+layout (binding = 7, std430) restrict writeonly buffer ColorsSorted {
+	vec4 b_colorsSorted[];
+};
+layout (binding = 8, std430) restrict writeonly buffer TransformsSorted {
 	Transform b_transformsSorted[];
-};
-layout (binding = 8, std430) restrict writeonly buffer MaterialsSorted {
-	Material b_materialsSorted[];
 };
 
 void main() {
@@ -42,12 +42,12 @@ void main() {
 	if (gid == 0)
 		b_instanceCount = u_instanceCount;
 	
-	uint index = b_meshIndices[gid];
-	uint offset = b_commands[index].firstInstance;
-	uint newid = offset + atomicAdd(b_commands[index].instanceCount, 1);
+	uint meshIdx = b_instances[gid].meshIdx;
+	uint offset = b_commands[meshIdx].firstInstance;
+	uint newid = offset + atomicAdd(b_commands[meshIdx].instanceCount, 1);
 	
-	b_meshIndicesSorted[newid] = b_meshIndices[gid];
+	b_instancesSorted[newid] = b_instances[gid];
+	b_colorsSorted[newid] = b_colors[gid];
 	b_transformsSorted[newid] = b_transforms[gid];
-	b_materialsSorted[newid] = b_materials[gid];
 	
 }

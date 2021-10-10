@@ -15,20 +15,19 @@ using namespace base::literals;
 
 struct BasicInstanceList {
 	
-	using MeshIndex = u32;
 	using BasicTransform = ObjectPool::Transform;
 	
-	struct Material {
-		vec3 tint;
-		u32 id;
+	struct Instance {
+		u32 meshIdx;
+		u32 materialIdx;
 	};
 	
 	static constexpr auto MaxInstances = 262144_zu;
 	
 	Buffer<u32> instancesCount;
-	Buffer<MeshIndex> meshIndices;
+	Buffer<Instance> instances;
+	Buffer<vec4> colors;
 	Buffer<BasicTransform> basicTransforms;
-	Buffer<Material> materials;
 	
 	static auto upload(Pool&, vuk::RenderGraph&, vuk::Name, ObjectPool const&,
 		MeshBuffer const&, MaterialBuffer const&) -> BasicInstanceList;
@@ -40,14 +39,13 @@ struct BasicInstanceList {
 
 struct InstanceList {
 	
-	using MeshIndex = u32;
+	using Instance = BasicInstanceList::Instance;
 	using Transform = array<vec4, 3>;
-	using Material = BasicInstanceList::Material;
 	
 	Buffer<u32> instancesCount;
-	Buffer<MeshIndex> meshIndices;
+	Buffer<Instance> instances;
+	Buffer<vec4> colors;
 	Buffer<Transform> transforms;
-	Buffer<Material> materials;
 	
 	static void compile(vuk::PerThreadContext&);
 	
@@ -61,15 +59,14 @@ struct InstanceList {
 struct DrawableInstanceList {
 	
 	using Command = VkDrawIndexedIndirectCommand;
-	using MeshIndex = u32;
+	using Instance = BasicInstanceList::Instance;
 	using Transform = array<vec4, 3>;
-	using Material = BasicInstanceList::Material;
 	
 	Buffer<Command> commands;
 	Buffer<u32> instancesCount;
-	Buffer<MeshIndex> meshIndices;
+	Buffer<Instance> instances;
+	Buffer<vec4> colors;
 	Buffer<Transform> transforms;
-	Buffer<Material> materials;
 	
 	static void compile(vuk::PerThreadContext&);
 	

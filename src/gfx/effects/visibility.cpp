@@ -33,7 +33,6 @@ void Visibility::apply(vuk::RenderGraph& _rg, Texture2D _visbuf, Texture2D _dept
 		.name = nameAppend(_visbuf.name, "visibility"),
 		.resources = {
 			_instances.commands.resource(vuk::eIndirectRead),
-			_instances.meshIndices.resource(vuk::eIndexRead),
 			_instances.transforms.resource(vuk::eVertexRead),
 			_visbuf.resource(vuk::eColorWrite),
 			_depth.resource(vuk::eDepthStencilRW) },
@@ -95,7 +94,7 @@ auto Worklist::create(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
 		.name = nameAppend(_name, "gen"),
 		.resources = {
 			_visbuf.resource(vuk::eComputeSampled),
-			_instances.materials.resource(vuk::eComputeRead),
+			_instances.instances.resource(vuk::eComputeRead),
 			result.counts.resource(vuk::eComputeRW),
 			result.lists.resource(vuk::eComputeWrite) },
 		.execute = [result, _visbuf, &_instances, &_materials](vuk::CommandBuffer& cmd) {
@@ -106,7 +105,7 @@ auto Worklist::create(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
 			};
 			
 			cmd.bind_sampled_image(0, 0, _visbuf, NearestClamp)
-			   .bind_storage_buffer(0, 1, _instances.materials)
+			   .bind_storage_buffer(0, 1, _instances.instances)
 			   .bind_storage_buffer(0, 2, _materials.materials)
 			   .bind_storage_buffer(0, 3, result.counts)
 			   .bind_storage_buffer(0, 4, result.lists)

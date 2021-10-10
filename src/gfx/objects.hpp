@@ -48,36 +48,20 @@ struct ObjectPool {
 		
 	};
 	
-	// Shading properties
-	struct Material {
-		
-		vec3 tint; // Per-vertex albedo is multiplied by this
-		ID id; // Name of material to shade with
-		
-		// Construct with default values
-		static constexpr auto make_default() -> Material {
-			
-			return Material{
-				.tint = vec3(1.0f)};
-			
-		}
-		
-	};
-	
 	// Convenient access to all properties of a single object
 	struct Proxy {
 		
 		Metadata& metadata;
 		ID& meshID;
+		vec4& color;
 		Transform& transform;
-		Material& material;
+		ID& materialID;
 		
 	};
 	
 	// Ensure fast operation in large containers
 	static_assert(std::is_trivially_constructible_v<Metadata>);
 	static_assert(std::is_trivially_constructible_v<Transform>);
-	static_assert(std::is_trivially_constructible_v<Material>);
 	
 	// Return a handle to a new, uninitialized object. See above which fields
 	// do not have a default initializer. Remember to destroy() the object.
@@ -102,8 +86,9 @@ struct ObjectPool {
 	// container transfer.
 	ivector<Metadata> metadata;
 	ivector<ID> meshIDs;
+	ivector<vec4> colors;
 	ivector<Transform> transforms;
-	ivector<Material> materials;
+	ivector<ID> materialIDs;
 	
 private:
 	

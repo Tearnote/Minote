@@ -5,7 +5,6 @@
 
 // Global world-data, constant throughout an entire frame
 struct World {
-	
 	mat4 view;
 	mat4 projection;
 	mat4 viewProjection;
@@ -18,58 +17,46 @@ struct World {
 	vec3 sunDirection;
 	float pad2;
 	vec3 sunIlluminance;
-	
 };
 
 // GPU representation of VkDrawIndexedIndirectCommand
 struct Command {
-	
 	uint indexCount;
 	uint instanceCount;
 	uint firstIndex;
 	uint vertexOffset;
 	uint firstInstance;
-	
 };
 
 // Index and vertex locations for drawing a specific mesh
 struct MeshDescriptor {
-	
 	uint indexOffset;
 	uint indexCount;
 	uint vertexOffset;
 	float radius; // Distance from origin to furthest vertex
-	
+};
+
+struct Instance {
+	uint meshIdx;
+	uint materialIdx;
 };
 
 // Components of an instance transform
 struct BasicTransform {
-	
 	vec3 position;
 	float pad0;
 	vec3 scale;
 	float pad1;
 	vec4 rotation; // wxyz quat
-	
 };
 
 // Combined instance transform, stored in a transposed compact mat4x3 form
 // (dropping the useless (0,0,0,1) row)
 struct Transform {
-	
 	vec4 rows[3];
-	
 };
 
-// Per-instance material
 struct Material {
-	
-	vec3 tint;
-	uint id;
-	
-};
-
-struct MaterialDef {
 	uint id;
 	float roughness;
 	float metalness;

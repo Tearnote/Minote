@@ -11,14 +11,14 @@ layout (binding = 0, std430) restrict readonly buffer Commands {
 layout(binding = 1) uniform InstanceCount {
 	uint u_instanceCount;
 };
-layout (binding = 2, std430) restrict readonly buffer MeshIndices {
-	uint b_meshIndices[];
+layout (binding = 2, std430) restrict readonly buffer Instances {
+	Instance b_instances[];
 };
-layout (binding = 3, std430) restrict readonly buffer Transforms {
+layout (binding = 3, std430) restrict readonly buffer Colors {
+	vec4 b_colors[];
+};
+layout (binding = 4, std430) restrict readonly buffer Transforms {
 	Transform b_transforms[];
-};
-layout (binding = 4, std430) restrict readonly buffer Materials {
-	Material b_materials[];
 };
 layout (binding = 5, std430) restrict readonly buffer Descriptors {
 	MeshDescriptor b_descriptors[];
@@ -29,14 +29,14 @@ layout (binding = 6, std430) restrict buffer CommandsCulled {
 layout(binding = 7, std430) restrict writeonly buffer InstanceCountCulled {
 	uint b_instanceCountCulled;
 };
-layout (binding = 8, std430) restrict writeonly buffer MeshIndicesCulled {
-	uint b_meshIndicesCulled[];
+layout (binding = 8, std430) restrict writeonly buffer InstancesCulled {
+	Instance b_instancesCulled[];
 };
-layout (binding = 9, std430) restrict writeonly buffer TransformsCulled {
+layout (binding = 9, std430) restrict writeonly buffer ColorsCulled {
+	vec4 b_colorsCulled[];
+};
+layout (binding = 10, std430) restrict writeonly buffer TransformsCulled {
 	Transform b_transformsCulled[];
-};
-layout (binding = 10, std430) restrict writeonly buffer MaterialsCulled {
-	Material b_materialsCulled[];
 };
 
 layout(push_constant) uniform Constants {
@@ -86,22 +86,22 @@ void main() {
 	
 	// Determine if instance is culled
 	
-	uint index = b_meshIndices[gid];
+	uint meshIdx = b_instances[gid].meshIdx;
 	float scale = max(length(b_transforms[gid].rows[0].xyz),
 	              max(length(b_transforms[gid].rows[1].xyz),
 	              length(b_transforms[gid].rows[2].xyz)));
-	float radius = b_descriptors[index].radius;
+	float radius = b_descriptors[meshIdx].radius;
 	if (!visible(gid, radius * scale))
 		return;
 	
 	// Write instance to culled buffers
 	
 	atomicAdd(b_instanceCountCulled, 1);
-	uint offset = b_commands[index].firstInstance;
-	uint newid = offset + atomicAdd(b_commandsCulled[index].instanceCount, 1);
+	uint offset = b_commands[meshIdx].firstInstance;
+	uint newid = offset + atomicAdd(b_commandsCulled[meshIdx].instanceCount, 1);
 	
-	b_meshIndicesCulled[newid] = b_meshIndices[gid];
+	b_instancesCulled[newid] = b_instances[gid];
+	b_colorsCulled[newid] = b_colors[gid];
 	b_transformsCulled[newid] = b_transforms[gid];
-	b_materialsCulled[newid] = b_materials[gid];
 	
 }

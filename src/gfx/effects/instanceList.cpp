@@ -16,9 +16,9 @@ auto BasicInstanceList::upload(Pool& _pool, vuk::RenderGraph& _rg,
 	
 	ZoneScoped;
 	
-	auto meshIndices = pvector<MeshIndex>(_objects.size());
+	auto instances = pvector<Instance>(_objects.size());
+	auto colors = pvector<vec4>(_objects.size());
 	auto basicTransforms = pvector<BasicTransform>(_objects.size());
-	auto materials = pvector<Material>(_objects.size());
 	
 	auto instancesCount = 0u;
 	
@@ -31,23 +31,23 @@ auto BasicInstanceList::upload(Pool& _pool, vuk::RenderGraph& _rg,
 			continue;
 		
 		auto meshID = _objects.meshIDs[id];
-		auto meshIndex = _meshes.descriptorIDs.at(meshID);
-		auto materialID = _objects.materials[id].id;
-		auto materialIndex = _materials.materialIDs.at(materialID);
+		auto meshIdx = _meshes.descriptorIDs.at(meshID);
+		auto materialID = _objects.materialIDs[id];
+		auto materialIdx = _materials.materialIDs.at(materialID);
 		
-		meshIndices[instancesCount] = meshIndex;
+		instances[instancesCount] = Instance{
+			.meshIdx = u32(meshIdx),
+			.materialIdx = u32(materialIdx) };
+		colors[instancesCount] = _objects.colors[id];
 		basicTransforms[instancesCount] = _objects.transforms[id];
-		materials[instancesCount] = Material{
-			.tint = _objects.materials[id].tint,
-			.id = u32(materialIndex) };
 		
 		instancesCount += 1;
 		
 	}
 	
-	meshIndices.resize(instancesCount);
+	instances.resize(instancesCount);
+	colors.resize(instancesCount);
 	basicTransforms.resize(instancesCount);
-	materials.resize(instancesCount);
 	
 	// Upload data to GPU
 	
@@ -56,21 +56,21 @@ auto BasicInstanceList::upload(Pool& _pool, vuk::RenderGraph& _rg,
 	result.instancesCount = Buffer<u32>::make(_pool, nameAppend(_name, "instanceCount"),
 		vuk::BufferUsageFlagBits::eStorageBuffer | vuk::BufferUsageFlagBits::eUniformBuffer,
 		std::span(&instancesCount, 1));
-	result.meshIndices = Buffer<MeshIndex>::make(_pool, nameAppend(_name, "indices"),
+	result.instances = Buffer<Instance>::make(_pool, nameAppend(_name, "instances"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
-		meshIndices, vuk::MemoryUsage::eGPUonly, MaxInstances);
+		instances, vuk::MemoryUsage::eGPUonly, MaxInstances);
+	result.colors = Buffer<vec4>::make(_pool, nameAppend(_name, "colors"),
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		colors, vuk::MemoryUsage::eGPUonly, MaxInstances);
 	result.basicTransforms = Buffer<BasicTransform>::make(_pool, nameAppend(_name, "basicTransforms"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		basicTransforms, vuk::MemoryUsage::eGPUonly, MaxInstances);
-	result.materials = Buffer<Material>::make(_pool, nameAppend(_name, "materials"),
-		vuk::BufferUsageFlagBits::eStorageBuffer,
-		materials, vuk::MemoryUsage::eGPUonly, MaxInstances);
 	_pool.ptc().dma_task();
 	
 	result.instancesCount.attach(_rg, vuk::eHostWrite, vuk::eNone);
-	result.meshIndices.attach(_rg, vuk::eTransferDst, vuk::eNone);
+	result.instances.attach(_rg, vuk::eTransferDst, vuk::eNone);
+	result.colors.attach(_rg, vuk::eTransferDst, vuk::eNone);
 	result.basicTransforms.attach(_rg, vuk::eTransferDst, vuk::eNone);
-	result.materials.attach(_rg, vuk::eTransferDst, vuk::eNone);
 	
 	return result;
 	
@@ -120,9 +120,9 @@ auto InstanceList::fromBasic(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name
 	
 	return InstanceList{
 		.instancesCount = _basic.instancesCount,
-		.meshIndices = _basic.meshIndices,
-		.transforms = transforms,
-		.materials = _basic.materials };
+		.instances = _basic.instances,
+		.colors = _basic.colors,
+		.transforms = transforms };
 	
 }
 
@@ -187,12 +187,12 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 		.name = nameAppend(_name, "sort count"),
 		.resources = {
 			_unsorted.instancesCount.resource(vuk::eComputeRead),
-			_unsorted.meshIndices.resource(vuk::eComputeRead),
+			_unsorted.instances.resource(vuk::eComputeRead),
 			result.commands.resource(vuk::eComputeWrite) },
 		.execute = [&_unsorted, result](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _unsorted.instancesCount)
-			   .bind_storage_buffer(0, 1, _unsorted.meshIndices)
+			   .bind_storage_buffer(0, 1, _unsorted.instances)
 			   .bind_storage_buffer(0, 2, result.commands)
 			   .bind_compute_pipeline("instance_sort_count");
 			
@@ -222,44 +222,44 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 	
 	result.instancesCount = Buffer<u32>::make(_pool, nameAppend(_name, "instanceCount"),
 		vuk::BufferUsageFlagBits::eStorageBuffer | vuk::BufferUsageFlagBits::eUniformBuffer);
-	result.meshIndices = Buffer<MeshIndex>::make(_pool, nameAppend(_name, "indices"),
+	result.instances = Buffer<Instance>::make(_pool, nameAppend(_name, "instances"),
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		_unsorted.capacity());
+	result.colors = Buffer<vec4>::make(_pool, nameAppend(_name, "colors"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		_unsorted.capacity());
 	result.transforms = Buffer<Transform>::make(_pool, nameAppend(_name, "transforms"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		_unsorted.capacity());
-	result.materials = Buffer<Material>::make(_pool, nameAppend(_name, "materials"),
-		vuk::BufferUsageFlagBits::eStorageBuffer,
-		_unsorted.capacity());
 	
 	result.instancesCount.attach(_rg, vuk::eNone, vuk::eNone);
-	result.meshIndices.attach(_rg, vuk::eNone, vuk::eNone);
+	result.instances.attach(_rg, vuk::eNone, vuk::eNone);
+	result.colors.attach(_rg, vuk::eNone, vuk::eNone);
 	result.transforms.attach(_rg, vuk::eNone, vuk::eNone);
-	result.materials.attach(_rg, vuk::eNone, vuk::eNone);
 	
 	_rg.add_pass({
 		.name = nameAppend(_name, "sort write"),
 		.resources = {
 			_unsorted.instancesCount.resource(vuk::eComputeRead),
-			_unsorted.meshIndices.resource(vuk::eComputeRead),
+			_unsorted.instances.resource(vuk::eComputeRead),
+			_unsorted.colors.resource(vuk::eComputeRead),
 			_unsorted.transforms.resource(vuk::eComputeRead),
-			_unsorted.materials.resource(vuk::eComputeRead),
 			result.commands.resource(vuk::eComputeRW),
 			result.instancesCount.resource(vuk::eComputeWrite),
-			result.meshIndices.resource(vuk::eComputeWrite),
-			result.transforms.resource(vuk::eComputeWrite),
-			result.materials.resource(vuk::eComputeWrite) },
+			result.instances.resource(vuk::eComputeWrite),
+			result.colors.resource(vuk::eComputeWrite),
+			result.transforms.resource(vuk::eComputeWrite) },
 		.execute = [&_unsorted, result](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _unsorted.instancesCount)
-			   .bind_storage_buffer(0, 1, _unsorted.meshIndices)
-			   .bind_storage_buffer(0, 2, _unsorted.transforms)
-			   .bind_storage_buffer(0, 3, _unsorted.materials)
+			   .bind_storage_buffer(0, 1, _unsorted.instances)
+			   .bind_storage_buffer(0, 2, _unsorted.colors)
+			   .bind_storage_buffer(0, 3, _unsorted.transforms)
 			   .bind_storage_buffer(0, 4, result.commands)
 			   .bind_storage_buffer(0, 5, result.instancesCount)
-			   .bind_storage_buffer(0, 6, result.meshIndices)
-			   .bind_storage_buffer(0, 7, result.transforms)
-			   .bind_storage_buffer(0, 8, result.materials)
+			   .bind_storage_buffer(0, 6, result.instances)
+			   .bind_storage_buffer(0, 7, result.colors)
+			   .bind_storage_buffer(0, 8, result.transforms)
 			   .bind_compute_pipeline("instance_sort_write");
 			
 			cmd.dispatch_invocations(_unsorted.capacity());
@@ -290,47 +290,47 @@ auto DrawableInstanceList::frustumCull(Pool& _pool, vuk::RenderGraph& _rg, vuk::
 	result.instancesCount = Buffer<u32>::make(_pool, nameAppend(_name, "instanceCount"),
 		vuk::BufferUsageFlagBits::eStorageBuffer | vuk::BufferUsageFlagBits::eUniformBuffer,
 		std::span(&instancesCountData, 1));
-	result.meshIndices = Buffer<MeshIndex>::make(_pool, nameAppend(_name, "indices"),
+	result.instances = Buffer<Instance>::make(_pool, nameAppend(_name, "instance"),
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		_source.capacity());
+	result.colors = Buffer<vec4>::make(_pool, nameAppend(_name, "colors"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		_source.capacity());
 	result.transforms = Buffer<Transform>::make(_pool, nameAppend(_name, "transforms"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		_source.capacity());
-	result.materials = Buffer<Material>::make(_pool, nameAppend(_name, "materials"),
-		vuk::BufferUsageFlagBits::eStorageBuffer,
-		_source.capacity());
 	
 	result.instancesCount.attach(_rg, vuk::eNone, vuk::eNone);
-	result.meshIndices.attach(_rg, vuk::eNone, vuk::eNone);
+	result.instances.attach(_rg, vuk::eNone, vuk::eNone);
+	result.colors.attach(_rg, vuk::eNone, vuk::eNone);
 	result.transforms.attach(_rg, vuk::eNone, vuk::eNone);
-	result.materials.attach(_rg, vuk::eNone, vuk::eNone);
 	
 	_rg.add_pass({
 		.name = nameAppend(_name, "frustum cull"),
 		.resources = {
 			_source.commands.resource(vuk::eComputeRead),
 			_source.instancesCount.resource(vuk::eComputeRead),
-			_source.meshIndices.resource(vuk::eComputeRead),
+			_source.instances.resource(vuk::eComputeRead),
+			_source.colors.resource(vuk::eComputeRead),
 			_source.transforms.resource(vuk::eComputeRead),
-			_source.materials.resource(vuk::eComputeRead),
 			result.commands.resource(vuk::eComputeRW),
 			result.instancesCount.resource(vuk::eComputeWrite),
-			result.meshIndices.resource(vuk::eComputeWrite),
-			result.transforms.resource(vuk::eComputeWrite),
-			result.materials.resource(vuk::eComputeWrite) },
+			result.instances.resource(vuk::eComputeWrite),
+			result.colors.resource(vuk::eComputeWrite),
+			result.transforms.resource(vuk::eComputeWrite) },
 		.execute = [&_source, result, &_meshes, _view, _projection](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_storage_buffer(0, 0, _source.commands)
 			   .bind_uniform_buffer(0, 1, _source.instancesCount)
-			   .bind_storage_buffer(0, 2, _source.meshIndices)
-			   .bind_storage_buffer(0, 3, _source.transforms)
-			   .bind_storage_buffer(0, 4, _source.materials)
+			   .bind_storage_buffer(0, 2, _source.instances)
+			   .bind_storage_buffer(0, 3, _source.colors)
+			   .bind_storage_buffer(0, 4, _source.transforms)
 			   .bind_storage_buffer(0, 5, _meshes.descriptorBuf)
 			   .bind_storage_buffer(0, 6, result.commands)
 			   .bind_storage_buffer(0, 7, result.instancesCount)
-			   .bind_storage_buffer(0, 8, result.meshIndices)
-			   .bind_storage_buffer(0, 9, result.transforms)
-			   .bind_storage_buffer(0, 10, result.materials)
+			   .bind_storage_buffer(0, 8, result.instances)
+			   .bind_storage_buffer(0, 9, result.colors)
+			   .bind_storage_buffer(0, 10, result.transforms)
 			   .bind_compute_pipeline("frustum_cull");
 			
 			struct PushConstants {

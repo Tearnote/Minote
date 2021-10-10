@@ -10,11 +10,11 @@ layout(local_size_x = 8, local_size_y = 8) in;
 #include "types.glsl"
 
 layout(binding = 0) uniform usampler2D s_visbuf;
-layout(binding = 1, std430) restrict readonly buffer Materials {
-	Material b_materials[];
+layout(binding = 1, std430) restrict readonly buffer Instances {
+	Instance b_instances[];
 };
-layout(binding = 2, std430) restrict readonly buffer MaterialDefs {
-	MaterialDef b_materialDefs[];
+layout(binding = 2, std430) restrict readonly buffer Materials {
+	Material b_materials[];
 };
 layout(binding = 3, std430) restrict buffer TileCounts {
 	uvec4 b_counts[];
@@ -45,19 +45,19 @@ void main() {
 	
 	// Fetch material id
 	
-	uint materialId = -1u;
+	uint materialID = -1u;
 	if (all(lessThan(gid, u_visbufSize))) {
 		
 		uint visPacked = texelFetch(s_visbuf, ivec2(gid), 0).x;
 		if (visPacked == -1u) { // Sky
 			
-			materialId = 0;
+			materialID = 0;
 			
 		} else {
 			
 			VisSample vis = unpackVisibility(visPacked);
-			uint materialIdx = b_materials[vis.instance].id;
-			materialId = b_materialDefs[materialIdx].id;
+			uint materialIdx = b_instances[vis.instance].materialIdx;
+			materialID = b_materials[materialIdx].id;
 			
 		}
 		
@@ -65,9 +65,9 @@ void main() {
 	
 	// Mark found material
 	
-	if (materialId != -1u) {
+	if (materialID != -1u) {
 		
-		uint combined = subgroupOr(1u << materialId);
+		uint combined = subgroupOr(1u << materialID);
 		if (subgroupElect())
 			atomicOr(sh_result, combined);
 		
@@ -90,10 +90,10 @@ void main() {
 			continue;
 		
 		uint tileOffset = tileCount * i;
-		uint tileIndex = atomicAdd(b_counts[i].x, 1);
+		uint tileIdx = atomicAdd(b_counts[i].x, 1);
 		
 		uint tile = gl_WorkGroupID.x + (gl_WorkGroupID.y << 16u);
-		b_lists[tileOffset + tileIndex] = tile;
+		b_lists[tileOffset + tileIdx] = tile;
 		
 	}
 	

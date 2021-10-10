@@ -13,7 +13,7 @@ layout(local_size_x = 1, local_size_y = 8, local_size_z = 8) in;
 #define B_INDICES b_indices
 #define B_VERTICES b_vertices
 #define B_NORMALS b_normals
-#define B_COLORS b_colors
+#define B_COLORS b_vtxColors
 
 layout(binding = 0) uniform WorldConstants {
 	World u_world;
@@ -22,14 +22,14 @@ layout(binding = 0) uniform WorldConstants {
 layout (binding = 1, std430) restrict readonly buffer Descriptors {
 	MeshDescriptor b_descriptors[];
 };
-layout (binding = 2, std430) restrict readonly buffer MeshIndices {
-	uint b_meshIndices[];
+layout (binding = 2, std430) restrict readonly buffer Instances {
+	Instance b_instances[];
 };
-layout(binding = 3, std430) restrict readonly buffer Transforms {
+layout (binding = 3, std430) restrict readonly buffer Colors {
+	vec4 b_colors[];
+};
+layout(binding = 4, std430) restrict readonly buffer Transforms {
 	Transform b_transforms[];
-};
-layout(binding = 4, std430) restrict readonly buffer Materials {
-	Material b_materials[];
 };
 
 layout (binding = 5, std430) restrict readonly buffer Indices {
@@ -41,11 +41,11 @@ layout (binding = 6, std430) restrict readonly buffer Vertices {
 layout (binding = 7, std430) restrict readonly buffer Normals {
 	float B_NORMALS[];
 };
-layout (binding = 8, std430) restrict readonly buffer Colors {
+layout (binding = 8, std430) restrict readonly buffer VtxColors {
 	uint B_COLORS[];
 };
-layout (binding = 9, std430) restrict readonly buffer MaterialDefs {
-	MaterialDef b_materialDefs[];
+layout (binding = 9, std430) restrict readonly buffer Materials {
+	Material b_materials[];
 };
 
 layout(binding = 10) uniform SunLuminance {
@@ -118,19 +118,19 @@ void main() {
 	// Retrieve instance params
 	
 	mat4 transform = getTransform(b_transforms[vis.instance]);
-	Material material = b_materials[vis.instance];
-	MaterialDef materialDef = b_materialDefs[material.id];
+	uint materialIdx = b_instances[vis.instance].materialIdx;
+	Material material = b_materials[materialIdx];
 	
 	// Retrieve vertex indices
 	
-	uint meshIndex = b_meshIndices[vis.instance];
-	uint indexBase = b_descriptors[meshIndex].indexOffset;
+	uint meshIdx = b_instances[vis.instance].meshIdx;
+	uint indexBase = b_descriptors[meshIdx].indexOffset;
 	indexBase += vis.triangle * 3;
 	uvec3 indices = fetchIndices(indexBase);
 	
 	// Retrieve vertex params
 	
-	uint vertexBase = b_descriptors[meshIndex].vertexOffset;
+	uint vertexBase = b_descriptors[meshIdx].vertexOffset;
 	indices += uvec3(vertexBase);
 	
 	mat3 vertices = {
@@ -212,21 +212,21 @@ void main() {
 	
 	// PBR calculation
 	
-	color.xyz *= material.tint;
-	vec3 f0 = max(color.rgb * materialDef.metalness, vec3(0.04));
+	color *= b_colors[vis.instance];
+	vec3 f0 = max(color.rgb * material.metalness, vec3(0.04));
 	
 	vec3 iblDiffuse = textureLod(s_cubemap, normal, IBLMipCount - 2.0).rgb;
 	vec3 sunDiffuse = sunColor * max(dot(normal, u_world.sunDirection), 0.0);
-	vec3 diffuse = color.rgb * (iblDiffuse + sunDiffuse) * (1.0 - materialDef.metalness);
+	vec3 diffuse = color.rgb * (iblDiffuse + sunDiffuse) * (1.0 - material.metalness);
 	
 	vec3 reflection = reflect(viewDirection, normal);
-	float iblMip = max(7.0 - 0.480898 * log(2.0 / pow(materialDef.roughness, 4.0) - 1.0), 0.0);
+	float iblMip = max(7.0 - 0.480898 * log(2.0 / pow(material.roughness, 4.0) - 1.0), 0.0);
 	vec3 iblSpecular = vec3(textureLod(s_cubemap, -reflection, iblMip));
 	float SunMinRoughness = 1.0 / 16.0;
-	vec3 sunSpecular = sunColor * dApprox(max(materialDef.roughness, SunMinRoughness), dot(-reflection, u_world.sunDirection));
+	vec3 sunSpecular = sunColor * dApprox(max(material.roughness, SunMinRoughness), dot(-reflection, u_world.sunDirection));
 	vec3 specular = iblSpecular + sunSpecular;
 	
-	vec4 surface = vec4(mix(diffuse, specular, envBRDFApprox(f0, NoV, materialDef.roughness)), color.a);
+	vec4 surface = vec4(mix(diffuse, specular, envBRDFApprox(f0, NoV, material.roughness)), color.a);
 	
 	// Aerial perspective
 	

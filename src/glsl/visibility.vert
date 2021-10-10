@@ -5,7 +5,7 @@
 
 #define B_VERTICES b_vertices
 
-layout(location = 0) out flat uint InstanceIndex;
+layout(location = 0) out flat uint InstanceIdx;
 
 layout(binding = 0) uniform WorldConstants {
 	World u_world;
@@ -21,7 +21,7 @@ layout(std430, binding = 2) readonly buffer Transforms {
 
 void main() {
 	
-	InstanceIndex = gl_InstanceIndex;
+	InstanceIdx = gl_InstanceIndex;
 	
 	vec3 vertex = fetchVertex(gl_VertexIndex);
 	

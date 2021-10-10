@@ -31,9 +31,9 @@ void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf, Text
 			_depth.resource(vuk::eComputeSampled),
 			_worklist.counts.resource(vuk::eIndirectRead),
 			_worklist.lists.resource(vuk::eComputeRead),
-			_instances.meshIndices.resource(vuk::eComputeRead),
+			_instances.instances.resource(vuk::eComputeRead),
+			_instances.colors.resource(vuk::eComputeRead),
 			_instances.transforms.resource(vuk::eComputeRead),
-			_instances.materials.resource(vuk::eComputeRead),
 			_sunLuminance.resource(vuk::eComputeRead),
 			_aerialPerspective.resource(vuk::eComputeSampled),
 			_ibl.resource(vuk::eComputeSampled),
@@ -43,9 +43,9 @@ void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf, Text
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_storage_buffer(0, 1, _meshes.descriptorBuf)
-			   .bind_storage_buffer(0, 2, _instances.meshIndices)
-			   .bind_storage_buffer(0, 3, _instances.transforms)
-			   .bind_storage_buffer(0, 4, _instances.materials)
+			   .bind_storage_buffer(0, 2, _instances.instances)
+			   .bind_storage_buffer(0, 3, _instances.colors)
+			   .bind_storage_buffer(0, 4, _instances.transforms)
 			   .bind_storage_buffer(0, 5, _meshes.indicesBuf)
 			   .bind_storage_buffer(0, 6, _meshes.verticesBuf)
 			   .bind_storage_buffer(0, 7, _meshes.normalsBuf)
