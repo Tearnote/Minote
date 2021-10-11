@@ -33,6 +33,7 @@ void Visibility::apply(vuk::RenderGraph& _rg, Texture2D _visbuf, Texture2D _dept
 		.name = nameAppend(_visbuf.name, "visibility"),
 		.resources = {
 			_instances.commands.resource(vuk::eIndirectRead),
+			_instances.instances.resource(vuk::eVertexRead),
 			_instances.transforms.resource(vuk::eVertexRead),
 			_visbuf.resource(vuk::eColorWrite),
 			_depth.resource(vuk::eDepthStencilRW) },
@@ -42,7 +43,8 @@ void Visibility::apply(vuk::RenderGraph& _rg, Texture2D _visbuf, Texture2D _dept
 			cmd.bind_index_buffer(_meshes.indicesBuf, vuk::IndexType::eUint16)
 			   .bind_uniform_buffer(0, 0, _world)
 			   .bind_storage_buffer(0, 1, _meshes.verticesBuf)
-			   .bind_storage_buffer(0, 2, _instances.transforms)
+			   .bind_storage_buffer(0, 2, _instances.instances)
+			   .bind_storage_buffer(0, 3, _instances.transforms)
 			   .bind_graphics_pipeline("visibility");
 			
 			cmd.draw_indexed_indirect(_instances.commands.length(), _instances.commands);

@@ -39,6 +39,8 @@ struct MeshDescriptor {
 struct Instance {
 	uint meshIdx;
 	uint materialIdx;
+	uint colorIdx;
+	uint transformIdx;
 };
 
 // Components of an instance transform

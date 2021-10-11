@@ -117,13 +117,15 @@ void main() {
 	
 	// Retrieve instance params
 	
-	mat4 transform = getTransform(b_transforms[vis.instance]);
-	uint materialIdx = b_instances[vis.instance].materialIdx;
+	Instance instance = b_instances[vis.instance];
+	uint transformIdx = instance.transformIdx;
+	mat4 transform = getTransform(b_transforms[transformIdx]);
+	uint materialIdx = instance.materialIdx;
 	Material material = b_materials[materialIdx];
 	
 	// Retrieve vertex indices
 	
-	uint meshIdx = b_instances[vis.instance].meshIdx;
+	uint meshIdx = instance.meshIdx;
 	uint indexBase = b_descriptors[meshIdx].indexOffset;
 	indexBase += vis.triangle * 3;
 	uvec3 indices = fetchIndices(indexBase);
@@ -212,7 +214,8 @@ void main() {
 	
 	// PBR calculation
 	
-	color *= b_colors[vis.instance];
+	uint colorIdx = instance.colorIdx;
+	color *= b_colors[colorIdx];
 	vec3 f0 = max(color.rgb * material.metalness, vec3(0.04));
 	
 	vec3 iblDiffuse = textureLod(s_cubemap, normal, IBLMipCount - 2.0).rgb;

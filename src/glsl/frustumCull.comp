@@ -14,29 +14,20 @@ layout(binding = 1) uniform InstanceCount {
 layout (binding = 2, std430) restrict readonly buffer Instances {
 	Instance b_instances[];
 };
-layout (binding = 3, std430) restrict readonly buffer Colors {
-	vec4 b_colors[];
-};
-layout (binding = 4, std430) restrict readonly buffer Transforms {
-	Transform b_transforms[];
-};
-layout (binding = 5, std430) restrict readonly buffer Descriptors {
+layout (binding = 3, std430) restrict readonly buffer Descriptors {
 	MeshDescriptor b_descriptors[];
 };
-layout (binding = 6, std430) restrict buffer CommandsCulled {
+layout (binding = 4, std430) restrict buffer CommandsCulled {
 	Command b_commandsCulled[];
 };
-layout(binding = 7, std430) restrict writeonly buffer InstanceCountCulled {
+layout(binding = 5, std430) restrict writeonly buffer InstanceCountCulled {
 	uint b_instanceCountCulled;
 };
-layout (binding = 8, std430) restrict writeonly buffer InstancesCulled {
+layout (binding = 6, std430) restrict writeonly buffer InstancesCulled {
 	Instance b_instancesCulled[];
 };
-layout (binding = 9, std430) restrict writeonly buffer ColorsCulled {
-	vec4 b_colorsCulled[];
-};
-layout (binding = 10, std430) restrict writeonly buffer TransformsCulled {
-	Transform b_transformsCulled[];
+layout (binding = 7, std430) restrict writeonly buffer Transforms {
+	Transform b_transforms[];
 };
 
 layout(push_constant) uniform Constants {
@@ -45,12 +36,12 @@ layout(push_constant) uniform Constants {
 	uint u_commandsCount;
 };
 
-bool visible(uint _gid, float _radius) {
+bool visible(uint _transformIdx, float _radius) {
 	
 	vec3 position = {
-		b_transforms[_gid].rows[0].w,
-		b_transforms[_gid].rows[1].w,
-		b_transforms[_gid].rows[2].w };
+		b_transforms[_transformIdx].rows[0].w,
+		b_transforms[_transformIdx].rows[1].w,
+		b_transforms[_transformIdx].rows[2].w };
 	
 	vec3 center = (u_view * vec4(position, 1.0)).xyz;
 	
@@ -87,11 +78,12 @@ void main() {
 	// Determine if instance is culled
 	
 	uint meshIdx = b_instances[gid].meshIdx;
-	float scale = max(length(b_transforms[gid].rows[0].xyz),
-	              max(length(b_transforms[gid].rows[1].xyz),
-	              length(b_transforms[gid].rows[2].xyz)));
+	uint transformIdx = b_instances[gid].transformIdx;
+	float scale = max(length(b_transforms[transformIdx].rows[0].xyz),
+	              max(length(b_transforms[transformIdx].rows[1].xyz),
+	              length(b_transforms[transformIdx].rows[2].xyz)));
 	float radius = b_descriptors[meshIdx].radius;
-	if (!visible(gid, radius * scale))
+	if (!visible(transformIdx, radius * scale))
 		return;
 	
 	// Write instance to culled buffers
@@ -101,7 +93,5 @@ void main() {
 	uint newid = offset + atomicAdd(b_commandsCulled[meshIdx].instanceCount, 1);
 	
 	b_instancesCulled[newid] = b_instances[gid];
-	b_colorsCulled[newid] = b_colors[gid];
-	b_transformsCulled[newid] = b_transforms[gid];
 	
 }

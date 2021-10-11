@@ -20,6 +20,8 @@ struct BasicInstanceList {
 	struct Instance {
 		u32 meshIdx;
 		u32 materialIdx;
+		u32 colorIdx;
+		u32 transformIdx;
 	};
 	
 	static constexpr auto MaxInstances = 262144_zu;
