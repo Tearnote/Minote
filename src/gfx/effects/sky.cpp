@@ -4,6 +4,7 @@
 #include "base/containers/array.hpp"
 #include "base/types.hpp"
 #include "base/util.hpp"
+#include "gfx/materials.hpp"
 #include "gfx/samplers.hpp"
 #include "gfx/util.hpp"
 
@@ -258,19 +259,22 @@ auto Sky::createSunLuminance(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name
 }
 
 void Sky::draw(vuk::RenderGraph& _rg, Texture2D _target, Texture2D _visbuf,
-	Texture2D _skyView, Atmosphere const& _atmo, Buffer<World> _world) {
+	Worklist const& _worklist, Texture2D _skyView, Atmosphere const& _atmo, Buffer<World> _world) {
 	
 	_rg.add_pass({
 		.name = nameAppend(_target.name, "sky"),
 		.resources = {
 			_skyView.resource(vuk::eComputeSampled),
 			_visbuf.resource(vuk::eComputeSampled),
+			_worklist.counts.resource(vuk::eIndirectRead),
+			_worklist.lists.resource(vuk::eComputeRead),
 			_target.resource(vuk::eComputeWrite) },
-		.execute = [_target, _visbuf, _skyView, &_atmo, _world](vuk::CommandBuffer& cmd) {
+		.execute = [_target, _visbuf, &_worklist, _skyView, &_atmo, _world](vuk::CommandBuffer& cmd) {
 			
 			struct PushConstants {
 				uvec2 skyViewSize;
 				uvec2 targetSize;
+				u32 tileOffset;
 			};
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
@@ -278,14 +282,16 @@ void Sky::draw(vuk::RenderGraph& _rg, Texture2D _target, Texture2D _visbuf,
 			   .bind_sampled_image(0, 2, _atmo.transmittance, LinearClamp)
 			   .bind_sampled_image(0, 3, _skyView, LinearClamp)
 			   .bind_sampled_image(0, 4, _visbuf, NearestClamp)
-			   .bind_storage_image(0, 5, _target)
+			   .bind_storage_buffer(0, 5, _worklist.lists)
+			   .bind_storage_image(0, 6, _target)
 			   .bind_compute_pipeline("sky_draw");
 			
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
 				.skyViewSize = _skyView.size(),
-				.targetSize = _target.size() });
+				.targetSize = _target.size(),
+				.tileOffset = _worklist.tileDimensions.x() * _worklist.tileDimensions.y() * +MaterialType::None });
 			
-			cmd.dispatch_invocations(_target.size().x(), _target.size().y());
+			cmd.dispatch_indirect(_worklist.counts, sizeof(uvec4) * +MaterialType::None);
 			
 		}});
 	

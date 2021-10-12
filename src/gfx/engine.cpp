@@ -211,7 +211,7 @@ void Engine::render() {
 	auto worklist = Worklist::create(m_framePool, rg, "worklist", visbuf, culledDrawables, *m_materials);
 	PBR::apply(rg, color, visbuf, depth, worklist, worldBuf, *m_meshes, *m_materials,
 		culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
-	Sky::draw(rg, color, visbuf, cameraSky, m_atmosphere, worldBuf);
+	Sky::draw(rg, color, visbuf, worklist, cameraSky, m_atmosphere, worldBuf);
 	
 	// Postprocessing
 	Bloom::apply(rg, m_framePool, color);
