@@ -52,12 +52,6 @@ struct BasicTransform {
 	vec4 rotation; // wxyz quat
 };
 
-// Combined instance transform, stored in a transposed compact mat4x3 form
-// (dropping the useless (0,0,0,1) row)
-struct Transform {
-	vec4 rows[3];
-};
-
 struct Material {
 	uint id;
 	float roughness;
@@ -66,7 +60,7 @@ struct Material {
 };
 
 // Convert from BasicTransform to Transform
-Transform encodeTransform(BasicTransform _t) {
+mat3x4 encodeTransform(BasicTransform _t) {
 	
 	const float rw = _t.rotation.x;
 	const float rx = _t.rotation.y;
@@ -82,22 +76,22 @@ Transform encodeTransform(BasicTransform _t) {
 	rotationMat[1] *= _t.scale.y;
 	rotationMat[2] *= _t.scale.z;
 	
-	Transform result;
-	result.rows[0] = vec4(rotationMat[0], _t.position.x);
-	result.rows[1] = vec4(rotationMat[1], _t.position.y);
-	result.rows[2] = vec4(rotationMat[2], _t.position.z);
+	mat3x4 result;
+	result[0] = vec4(rotationMat[0], _t.position.x);
+	result[1] = vec4(rotationMat[1], _t.position.y);
+	result[2] = vec4(rotationMat[2], _t.position.z);
 	return result;
 	
 }
 
 // Convert from Transform to mat4 (standard column-major)
-mat4 getTransform(Transform _t) {
+mat4 getTransform(mat3x4 _t) {
 	
 	return mat4(
-		_t.rows[0].x, _t.rows[1].x, _t.rows[2].x, 0.0,
-		_t.rows[0].y, _t.rows[1].y, _t.rows[2].y, 0.0,
-		_t.rows[0].z, _t.rows[1].z, _t.rows[2].z, 0.0,
-		_t.rows[0].w, _t.rows[1].w, _t.rows[2].w, 1.0);
+		_t[0].x, _t[1].x, _t[2].x, 0.0,
+		_t[0].y, _t[1].y, _t[2].y, 0.0,
+		_t[0].z, _t[1].z, _t[2].z, 0.0,
+		_t[0].w, _t[1].w, _t[2].w, 1.0);
 	
 }
 

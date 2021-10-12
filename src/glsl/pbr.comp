@@ -29,7 +29,7 @@ layout (binding = 3, std430) restrict readonly buffer Colors {
 	vec4 b_colors[];
 };
 layout(binding = 4, std430) restrict readonly buffer Transforms {
-	Transform b_transforms[];
+	mat3x4 b_transforms[];
 };
 
 layout (binding = 5, std430) restrict readonly buffer Indices {

@@ -12,7 +12,7 @@ layout (binding = 1, std430) restrict readonly buffer BasicTransforms {
 	BasicTransform b_basicTransforms[];
 };
 layout (binding = 2, std430) restrict writeonly buffer Transforms {
-	Transform b_transforms[];
+	mat3x4 b_transforms[];
 };
 
 void main() {

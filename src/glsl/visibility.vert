@@ -17,7 +17,7 @@ layout(std430, binding = 2) restrict readonly buffer Instances {
 	Instance b_instances[];
 };
 layout(std430, binding = 3) restrict readonly buffer Transforms {
-	Transform b_transforms[];
+	mat3x4 b_transforms[];
 };
 
 #include "typesAccess.glsl"
