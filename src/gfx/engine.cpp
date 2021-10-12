@@ -11,6 +11,8 @@
 #include "base/error.hpp"
 #include "base/math.hpp"
 #include "base/log.hpp"
+#include "gfx/resources/texture2dms.hpp"
+#include "gfx/resources/texture2d.hpp"
 #include "gfx/effects/instanceList.hpp"
 #include "gfx/effects/cubeFilter.hpp"
 #include "gfx/effects/visibility.hpp"
@@ -183,6 +185,22 @@ void Engine::render() {
 		vuk::ImageUsageFlagBits::eColorAttachment |
 		vuk::ImageUsageFlagBits::eSampled);
 	visbuf.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearColor(-1u, -1u, -1u, -1u));
+	screen.attach(rg, vuk::eNone, vuk::eNone);
+	
+	auto depthMS = Texture2DMS::make(m_framePool, "depth_ms",
+		viewport, vuk::Format::eD32Sfloat,
+		vuk::ImageUsageFlagBits::eDepthStencilAttachment |
+		vuk::ImageUsageFlagBits::eSampled,
+		vuk::Samples::e4);
+	
+	auto visbufMS = Texture2DMS::make(m_framePool, "visbuf_ms",
+		viewport, vuk::Format::eR32Uint,
+		vuk::ImageUsageFlagBits::eColorAttachment |
+		vuk::ImageUsageFlagBits::eSampled,
+		vuk::Samples::e4);
+	
+	depthMS.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearDepthStencil(0.0f, 0));
+	visbufMS.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearColor(-1u, -1u, -1u, -1u));
 	
 	auto worldBuf = m_world.upload(m_framePool, "world");
 	
@@ -208,6 +226,7 @@ void Engine::render() {
 	
 	// Scene drawing
 	Visibility::apply(rg, visbuf, depth, worldBuf, culledDrawables, *m_meshes);
+	Visibility::applyMS(rg, visbufMS, depthMS, worldBuf, culledDrawables, *m_meshes);
 	auto worklist = Worklist::create(m_framePool, rg, "worklist", visbuf, culledDrawables, *m_materials);
 	PBR::apply(rg, color, visbuf, depth, worklist, worldBuf, *m_meshes, *m_materials,
 		culledDrawables, iblFiltered, sunLuminance, aerialPerspective);

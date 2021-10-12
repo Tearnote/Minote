@@ -4,6 +4,7 @@
 #include "vuk/Context.hpp"
 #include "base/types.hpp"
 #include "base/math.hpp"
+#include "gfx/resources/texture2dms.hpp"
 #include "gfx/resources/texture2d.hpp"
 #include "gfx/resources/buffer.hpp"
 #include "gfx/resources/pool.hpp"
@@ -24,6 +25,9 @@ struct Visibility {
 	static void compile(vuk::PerThreadContext&);
 	
 	static void apply(vuk::RenderGraph&, Texture2D visbuf, Texture2D depth, Buffer<World>,
+		DrawableInstanceList const&, MeshBuffer const&);
+	
+	static void applyMS(vuk::RenderGraph&, Texture2DMS visbuf, Texture2DMS depth, Buffer<World>,
 		DrawableInstanceList const&, MeshBuffer const&);
 	
 };
