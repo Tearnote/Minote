@@ -9,7 +9,7 @@ layout (binding = 0, std430) restrict readonly buffer Commands {
 	Command b_commands[];
 };
 layout(binding = 1) uniform InstanceCount {
-	uint u_instanceCount;
+	uvec4 u_instanceCount;
 };
 layout (binding = 2, std430) restrict readonly buffer Instances {
 	Instance b_instances[];
@@ -21,7 +21,7 @@ layout (binding = 4, std430) restrict buffer CommandsCulled {
 	Command b_commandsCulled[];
 };
 layout(binding = 5, std430) restrict writeonly buffer InstanceCountCulled {
-	uint b_instanceCountCulled;
+	uvec4 b_instanceCountCulled;
 };
 layout (binding = 6, std430) restrict writeonly buffer InstancesCulled {
 	Instance b_instancesCulled[];
@@ -56,7 +56,7 @@ bool visible(uint _transformIdx, float _radius) {
 void main() {
 	
 	uint gid = gl_GlobalInvocationID.x;
-	if (gid >= u_instanceCount)
+	if (gid >= u_instanceCount.w)
 		return;
 	
 	// Initialize commands buffer
@@ -88,7 +88,9 @@ void main() {
 	
 	// Write instance to culled buffers
 	
-	atomicAdd(b_instanceCountCulled, 1);
+	uint oldInstanceCount = atomicAdd(b_instanceCountCulled.w, 1);
+	if (oldInstanceCount % 64u == 0u)
+		atomicAdd(b_instanceCountCulled.x, 1);
 	uint offset = b_commands[meshIdx].firstInstance;
 	uint newid = offset + atomicAdd(b_commandsCulled[meshIdx].instanceCount, 1);
 	

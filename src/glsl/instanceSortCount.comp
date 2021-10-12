@@ -6,7 +6,7 @@ layout(local_size_x = 64) in;
 #include "types.glsl"
 
 layout(binding = 0) uniform InstanceCount {
-	uint u_instanceCount;
+	uvec4 u_instanceCount;
 };
 layout (binding = 1, std430) restrict readonly buffer Instances {
 	Instance b_instances[];
@@ -18,7 +18,7 @@ layout (binding = 2, std430) restrict writeonly buffer Commands {
 void main() {
 	
 	uint gid = gl_GlobalInvocationID.x;
-	if (gid >= u_instanceCount)
+	if (gid >= u_instanceCount.w)
 		return;
 	
 	uint meshIdx = b_instances[gid].meshIdx;

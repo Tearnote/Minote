@@ -55,9 +55,13 @@ auto BasicInstanceList::upload(Pool& _pool, vuk::RenderGraph& _rg,
 	
 	auto result = BasicInstanceList();
 	
-	result.instancesCount = Buffer<u32>::make(_pool, nameAppend(_name, "instanceCount"),
-		vuk::BufferUsageFlagBits::eStorageBuffer | vuk::BufferUsageFlagBits::eUniformBuffer,
-		std::span(&instancesCount, 1));
+	auto instancesCountGroups = instancesCount / 64u + (instancesCount % 64u != 0u);
+	auto instancesCountData = uvec4{instancesCountGroups, 1, 1, instancesCount};
+	result.instancesCount = Buffer<uvec4>::make(_pool, nameAppend(_name, "instanceCount"),
+		vuk::BufferUsageFlagBits::eStorageBuffer |
+		vuk::BufferUsageFlagBits::eUniformBuffer |
+		vuk::BufferUsageFlagBits::eIndirectBuffer,
+		std::span(&instancesCountData, 1));
 	result.instances = Buffer<Instance>::make(_pool, nameAppend(_name, "instances"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		instances, vuk::MemoryUsage::eGPUonly, MaxInstances);
@@ -100,7 +104,7 @@ auto InstanceList::fromBasic(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name
 	_rg.add_pass({
 		.name = nameAppend(_basic.basicTransforms.name, "conversion"),
 		.resources = {
-			_basic.instancesCount.resource(vuk::eComputeRead),
+			_basic.instancesCount.resource(vuk::eIndirectRead),
 			_basic.basicTransforms.resource(vuk::eComputeRead),
 			transforms.resource(vuk::eComputeWrite) },
 		.execute = [_basic, transforms](vuk::CommandBuffer& cmd) {
@@ -116,7 +120,7 @@ auto InstanceList::fromBasic(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name
 				u32 instancesCount;
 			};
 			
-			cmd.dispatch_invocations(_basic.capacity());
+			cmd.dispatch_indirect(_basic.instancesCount);
 			
 		}});
 	
@@ -188,7 +192,7 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 	_rg.add_pass({
 		.name = nameAppend(_name, "sort count"),
 		.resources = {
-			_unsorted.instancesCount.resource(vuk::eComputeRead),
+			_unsorted.instancesCount.resource(vuk::eIndirectRead),
 			_unsorted.instances.resource(vuk::eComputeRead),
 			result.commands.resource(vuk::eComputeWrite) },
 		.execute = [&_unsorted, result](vuk::CommandBuffer& cmd) {
@@ -198,7 +202,7 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 			   .bind_storage_buffer(0, 2, result.commands)
 			   .bind_compute_pipeline("instance_sort_count");
 			
-			cmd.dispatch_invocations(_unsorted.capacity());
+			cmd.dispatch_indirect(_unsorted.instancesCount);
 			
 		}});
 	
@@ -222,8 +226,10 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 	
 	// Step 3: Write out at sorted position
 	
-	result.instancesCount = Buffer<u32>::make(_pool, nameAppend(_name, "instanceCount"),
-		vuk::BufferUsageFlagBits::eStorageBuffer | vuk::BufferUsageFlagBits::eUniformBuffer);
+	result.instancesCount = Buffer<uvec4>::make(_pool, nameAppend(_name, "instanceCount"),
+		vuk::BufferUsageFlagBits::eStorageBuffer |
+		vuk::BufferUsageFlagBits::eUniformBuffer |
+		vuk::BufferUsageFlagBits::eIndirectBuffer);
 	result.instances = Buffer<Instance>::make(_pool, nameAppend(_name, "instances"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		_unsorted.capacity());
@@ -236,7 +242,7 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 	_rg.add_pass({
 		.name = nameAppend(_name, "sort write"),
 		.resources = {
-			_unsorted.instancesCount.resource(vuk::eComputeRead),
+			_unsorted.instancesCount.resource(vuk::eIndirectRead),
 			_unsorted.instances.resource(vuk::eComputeRead),
 			result.commands.resource(vuk::eComputeRW),
 			result.instancesCount.resource(vuk::eComputeWrite),
@@ -250,7 +256,7 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 			   .bind_storage_buffer(0, 4, result.instances)
 			   .bind_compute_pipeline("instance_sort_write");
 			
-			cmd.dispatch_invocations(_unsorted.capacity());
+			cmd.dispatch_indirect(_unsorted.instancesCount);
 			
 		}});
 	
@@ -274,9 +280,11 @@ auto DrawableInstanceList::frustumCull(Pool& _pool, vuk::RenderGraph& _rg, vuk::
 	
 	// Create destination buffers
 	
-	auto instancesCountData = 0u; // Zero-initializing instancesCount
-	result.instancesCount = Buffer<u32>::make(_pool, nameAppend(_name, "instanceCount"),
-		vuk::BufferUsageFlagBits::eStorageBuffer | vuk::BufferUsageFlagBits::eUniformBuffer,
+	auto instancesCountData = uvec4{0, 1, 1, 0}; // Zero-initializing instancesCount
+	result.instancesCount = Buffer<uvec4>::make(_pool, nameAppend(_name, "instanceCount"),
+		vuk::BufferUsageFlagBits::eStorageBuffer |
+		vuk::BufferUsageFlagBits::eUniformBuffer |
+		vuk::BufferUsageFlagBits::eIndirectBuffer,
 		std::span(&instancesCountData, 1));
 	result.instances = Buffer<Instance>::make(_pool, nameAppend(_name, "instance"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
@@ -291,7 +299,7 @@ auto DrawableInstanceList::frustumCull(Pool& _pool, vuk::RenderGraph& _rg, vuk::
 		.name = nameAppend(_name, "frustum cull"),
 		.resources = {
 			_source.commands.resource(vuk::eComputeRead),
-			_source.instancesCount.resource(vuk::eComputeRead),
+			_source.instancesCount.resource(vuk::eIndirectRead),
 			_source.instances.resource(vuk::eComputeRead),
 			result.commands.resource(vuk::eComputeRW),
 			result.instancesCount.resource(vuk::eComputeWrite),
@@ -329,7 +337,7 @@ auto DrawableInstanceList::frustumCull(Pool& _pool, vuk::RenderGraph& _rg, vuk::
 				.commandsCount = u32(_meshes.descriptors.size()) };
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, pushConstants);
 			
-			cmd.dispatch_invocations(_source.capacity());
+			cmd.dispatch_indirect(_source.instancesCount);
 			
 		}});
 	

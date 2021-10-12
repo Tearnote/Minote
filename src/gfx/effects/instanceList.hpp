@@ -26,7 +26,7 @@ struct BasicInstanceList {
 	
 	static constexpr auto MaxInstances = 262144_zu;
 	
-	Buffer<u32> instancesCount;
+	Buffer<uvec4> instancesCount;
 	Buffer<Instance> instances;
 	Buffer<vec4> colors;
 	Buffer<BasicTransform> basicTransforms;
@@ -44,7 +44,7 @@ struct InstanceList {
 	using Instance = BasicInstanceList::Instance;
 	using Transform = array<vec4, 3>;
 	
-	Buffer<u32> instancesCount;
+	Buffer<uvec4> instancesCount;
 	Buffer<Instance> instances;
 	Buffer<vec4> colors;
 	Buffer<Transform> transforms;
@@ -65,7 +65,7 @@ struct DrawableInstanceList {
 	using Transform = array<vec4, 3>;
 	
 	Buffer<Command> commands;
-	Buffer<u32> instancesCount;
+	Buffer<uvec4> instancesCount;
 	Buffer<Instance> instances;
 	Buffer<vec4> colors;
 	Buffer<Transform> transforms;
