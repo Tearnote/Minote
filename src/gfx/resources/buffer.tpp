@@ -78,6 +78,15 @@ auto Buffer<T>::make(Pool& _pool, vuk::Name _name, vuk::BufferUsageFlags _usage,
 }
 
 template<typename T>
+auto Buffer<T>::offsetView(usize _elements) const -> vuk::Buffer {
+	
+	auto result = *handle;
+	result.offset += _elements * sizeof(T);
+	return result;
+	
+}
+
+template<typename T>
 auto Buffer<T>::resource(vuk::Access _access) const -> vuk::Resource {
 	
 	return vuk::Resource(name, vuk::Resource::Type::eBuffer, _access);

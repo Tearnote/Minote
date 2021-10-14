@@ -32,6 +32,9 @@ struct Buffer {
 	static auto make(Pool&, vuk::Name, vuk::BufferUsageFlags, std::span<T const> data,
 		vuk::MemoryUsage = vuk::MemoryUsage::eCPUtoGPU, usize elementCapacity = 0_zu) -> Buffer<T>;
 	
+	// Create a buffer reference that starts at the specified element count.
+	auto offsetView(usize elements) const -> vuk::Buffer;
+	
 	// Size of the buffer in bytes.
 	[[nodiscard]]
 	auto size() const -> usize { return handle->size; }

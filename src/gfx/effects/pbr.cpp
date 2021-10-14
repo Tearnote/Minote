@@ -38,8 +38,9 @@ void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf, Text
 			_aerialPerspective.resource(vuk::eComputeSampled),
 			_ibl.resource(vuk::eComputeSampled),
 			_color.resource(vuk::eComputeWrite) },
-		.execute = [_color, _visbuf, _depth, &_worklist, _world, &_meshes, &_materials, &_instances,
-			_ibl, _sunLuminance, _aerialPerspective](vuk::CommandBuffer& cmd) {
+		.execute = [_color, _visbuf, _depth, &_worklist, _world, &_meshes,
+			&_materials, &_instances, _ibl, _sunLuminance, _aerialPerspective,
+			tileCount=_worklist.counts.offsetView(+MaterialType::PBR)](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_storage_buffer(0, 1, _meshes.descriptorBuf)
@@ -70,7 +71,7 @@ void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf, Text
 				.tileOffset = _worklist.tileDimensions.x() * _worklist.tileDimensions.y() * +MaterialType::PBR,
 				.targetSize = _color.size() });
 			
-			cmd.dispatch_indirect(_worklist.counts, sizeof(uvec4) * +MaterialType::PBR);
+			cmd.dispatch_indirect(tileCount);
 			
 		}});
 	

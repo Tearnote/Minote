@@ -269,7 +269,8 @@ void Sky::draw(vuk::RenderGraph& _rg, Texture2D _target, Texture2D _visbuf,
 			_worklist.counts.resource(vuk::eIndirectRead),
 			_worklist.lists.resource(vuk::eComputeRead),
 			_target.resource(vuk::eComputeWrite) },
-		.execute = [_target, _visbuf, &_worklist, _skyView, &_atmo, _world](vuk::CommandBuffer& cmd) {
+		.execute = [_target, _visbuf, &_worklist, _skyView, &_atmo, _world,
+			tileCount=_worklist.counts.offsetView(+MaterialType::None)](vuk::CommandBuffer& cmd) {
 			
 			struct PushConstants {
 				uvec2 skyViewSize;
@@ -291,7 +292,7 @@ void Sky::draw(vuk::RenderGraph& _rg, Texture2D _target, Texture2D _visbuf,
 				.targetSize = _target.size(),
 				.tileOffset = _worklist.tileDimensions.x() * _worklist.tileDimensions.y() * +MaterialType::None });
 			
-			cmd.dispatch_indirect(_worklist.counts, sizeof(uvec4) * +MaterialType::None);
+			cmd.dispatch_indirect(tileCount);
 			
 		}});
 	
