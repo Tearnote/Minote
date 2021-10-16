@@ -260,6 +260,7 @@ set(SHADER_SOURCES
         src/glsl/transformConv.comp
         src/glsl/frustumCull.comp
         src/glsl/visibility.vert src/glsl/visibility.frag
+        src/glsl/worklistMS.comp
         src/glsl/bloomDown.comp
         src/glsl/worklist.comp
         src/glsl/tonemap.comp

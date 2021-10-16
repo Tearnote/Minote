@@ -99,6 +99,12 @@ void Worklist::compile(vuk::PerThreadContext& _ptc) {
 	}, "worklist.comp");
 	_ptc.ctx.create_named_pipeline("worklist", worklistPci);
 	
+	auto worklistMSPci = vuk::ComputePipelineCreateInfo();
+	worklistMSPci.add_spirv(std::vector<u32>{
+#include "spv/worklistMS.comp.spv"
+	}, "worklistMS.comp");
+	_ptc.ctx.create_named_pipeline("worklist_ms", worklistMSPci);
+	
 }
 
 auto Worklist::create(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
@@ -153,6 +159,69 @@ auto Worklist::create(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
 				   .visbufSize = _visbuf.size(),
 				   .listCount = ListCount })
 			   .bind_compute_pipeline("worklist");
+			
+			cmd.dispatch_invocations(_visbuf.size().x(), _visbuf.size().y());
+			
+		}});
+	
+	return result;
+	
+}
+
+auto Worklist::createMS(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
+	Texture2DMS _visbuf, DrawableInstanceList const& _instances, MaterialBuffer const& _materials) -> Worklist {
+	
+	auto result = Worklist();
+	
+	result.tileDimensions = uvec2{
+		u32(ceil(f32(_visbuf.size().x()) / f32(TileSize.x()))),
+		u32(ceil(f32(_visbuf.size().y()) / f32(TileSize.y()))) };
+	
+	// Create buffers
+	
+	constexpr auto InitialCount = uvec4{0, 1, 1, 0};
+	auto initialCounts = array<uvec4, ListCount>();
+	initialCounts.fill(InitialCount);
+	
+	result.counts = Buffer<uvec4>::make(_pool, nameAppend(_name, "counts"),
+		vuk::BufferUsageFlagBits::eStorageBuffer |
+		vuk::BufferUsageFlagBits::eIndirectBuffer,
+		initialCounts);
+	
+	result.lists = Buffer<u32>::make(_pool, nameAppend(_name, "tiles"),
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		usize(result.tileDimensions.x() * result.tileDimensions.y()) * ListCount);
+	
+	result.counts.attach(_rg, vuk::eHostWrite, vuk::eNone);
+	result.lists.attach(_rg, vuk::eNone, vuk::eNone);
+	
+	// Generate worklists
+	
+	_rg.add_pass({
+		.name = nameAppend(_name, "gen"),
+		.resources = {
+			_visbuf.resource(vuk::eComputeSampled),
+			_instances.instances.resource(vuk::eComputeRead),
+			result.counts.resource(vuk::eComputeRW),
+			result.lists.resource(vuk::eComputeWrite) },
+		.execute = [result, _visbuf, &_instances, &_materials](vuk::CommandBuffer& cmd) {
+			
+			struct PushConstants {
+				uvec2 visbufSize;
+				u32 listCount;
+				u32 sampleCount;
+			};
+			
+			cmd.bind_sampled_image(0, 0, _visbuf, NearestClamp)
+			   .bind_storage_buffer(0, 1, _instances.instances)
+			   .bind_storage_buffer(0, 2, _materials.materials)
+			   .bind_storage_buffer(0, 3, result.counts)
+			   .bind_storage_buffer(0, 4, result.lists)
+			   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
+				   .visbufSize = _visbuf.size(),
+				   .listCount = ListCount,
+				   .sampleCount = _visbuf.samples() })
+			   .bind_compute_pipeline("worklist_ms");
 			
 			cmd.dispatch_invocations(_visbuf.size().x(), _visbuf.size().y());
 			

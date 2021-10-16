@@ -47,6 +47,9 @@ struct Worklist {
 	static auto create(Pool&, vuk::RenderGraph&, vuk::Name, Texture2D visbuf,
 		DrawableInstanceList const&, MaterialBuffer const&) -> Worklist;
 	
+	static auto createMS(Pool&, vuk::RenderGraph&, vuk::Name, Texture2DMS visbuf,
+		DrawableInstanceList const&, MaterialBuffer const&) -> Worklist;
+	
 };
 
 }

@@ -228,6 +228,7 @@ void Engine::render() {
 	Visibility::apply(rg, visbuf, depth, worldBuf, culledDrawables, *m_meshes);
 	Visibility::applyMS(rg, visbufMS, depthMS, worldBuf, culledDrawables, *m_meshes);
 	auto worklist = Worklist::create(m_framePool, rg, "worklist", visbuf, culledDrawables, *m_materials);
+	auto worklistMS = Worklist::createMS(m_framePool, rg, "worklist_ms", visbufMS, culledDrawables, *m_materials);
 	PBR::apply(rg, color, visbuf, depth, worklist, worldBuf, *m_meshes, *m_materials,
 		culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
 	Sky::draw(rg, color, visbuf, worklist, cameraSky, m_atmosphere, worldBuf);
