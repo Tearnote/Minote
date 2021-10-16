@@ -16,9 +16,15 @@ void PBR::compile(vuk::PerThreadContext& _ptc) {
 	}, "pbr.comp");
 	_ptc.ctx.create_named_pipeline("pbr", pbrPci);
 	
+	auto pbrMSPci = vuk::ComputePipelineCreateInfo();
+	pbrMSPci.add_spirv(std::vector<u32>{
+#include "spv/pbrMS.comp.spv"
+	}, "pbrMS.comp");
+	_ptc.ctx.create_named_pipeline("pbr_ms", pbrMSPci);
+	
 }
 
-void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf, Texture2D _depth,
+void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf,
 	Worklist const& _worklist, Buffer<World> _world, MeshBuffer const& _meshes, MaterialBuffer const& _materials,
 	DrawableInstanceList const& _instances, Cubemap _ibl, Buffer<vec3> _sunLuminance, Texture3D _aerialPerspective) {
 	
@@ -28,7 +34,6 @@ void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf, Text
 		.name = nameAppend(_color.name, "PBR"),
 		.resources = {
 			_visbuf.resource(vuk::eComputeSampled),
-			_depth.resource(vuk::eComputeSampled),
 			_worklist.counts.resource(vuk::eIndirectRead),
 			_worklist.lists.resource(vuk::eComputeRead),
 			_instances.instances.resource(vuk::eComputeRead),
@@ -38,7 +43,7 @@ void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf, Text
 			_aerialPerspective.resource(vuk::eComputeSampled),
 			_ibl.resource(vuk::eComputeSampled),
 			_color.resource(vuk::eComputeWrite) },
-		.execute = [_color, _visbuf, _depth, &_worklist, _world, &_meshes,
+		.execute = [_color, _visbuf, &_worklist, _world, &_meshes,
 			&_materials, &_instances, _ibl, _sunLuminance, _aerialPerspective,
 			tileCount=_worklist.counts.offsetView(+MaterialType::PBR)](vuk::CommandBuffer& cmd) {
 			
@@ -56,9 +61,8 @@ void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf, Text
 			   .bind_sampled_image(0, 11, _ibl, TrilinearClamp)
 			   .bind_sampled_image(0, 12, _aerialPerspective, TrilinearClamp)
 			   .bind_sampled_image(0, 13, _visbuf, NearestClamp)
-			   .bind_sampled_image(0, 14, _depth, NearestClamp)
-			   .bind_storage_image(0, 15, _color)
-			   .bind_storage_buffer(1, 0, _worklist.lists)
+			   .bind_storage_image(0, 14, _color)
+			   .bind_storage_buffer(0, 15, _worklist.lists)
 			   .bind_compute_pipeline("pbr");
 			
 			struct PushConstants {

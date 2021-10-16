@@ -17,41 +17,26 @@ VisSample unpackVisibility(uint _packed) {
 	
 }
 
-// Barycentrics interpolator. The below 3 functions are made available under
-// the following terms. The full Apache 2.0 license is included with the source.
-// The source has been modified to comply with project code style.
-/*
-Copyright (C) 2019 - DevSH Graphics Programming Sp. z O.O.
-This software is provided 'as-is', under the Apache 2.0 license,
-without any express or implied warranty.  In no event will the authors
-be held liable for any damages arising from the use of this software.
-*/
-vec2 reconstructBarycentrics(vec3 _positionRelativeToV0, mat2x3 _edges) {
+// https://github.com/GraphicsProgramming/RVPT/blob/master/assets/shaders/intersection.glsl
+// Used under Apache 2.0 license - see licenses directory
+void lineTriIntersection(out vec3 _position, out vec3 _barycentrics,
+	vec3 _lineOrigin, vec3 _lineDir, mat3 _triangle) {
 	
-	float e0_2 = dot(_edges[0], _edges[0]);
-	float e0e1 = dot(_edges[0], _edges[1]);
-	float e1_2 = dot(_edges[1], _edges[1]);
+	vec3 e0 = _triangle[1] - _triangle[0];
+	vec3 e1 = _triangle[2] - _triangle[0];
+	vec3 n = cross(e0,e1);
 	
-	float qe0 = dot(_positionRelativeToV0, _edges[0]);
-	float qe1 = dot(_positionRelativeToV0, _edges[1]);
-	vec2 protoBary = vec2(qe0*e1_2 - qe1*e0e1, qe1*e0_2 - qe0*e0e1);
+	float t = dot(_triangle[0] - _lineOrigin, n) / dot(_lineDir, n);
+	vec3 p = _lineOrigin + t * _lineDir;
 	
-	float rcp_dep = 1.0 / (e0_2*e1_2 - e0e1*e0e1);
-	return protoBary * rcp_dep;
+	vec3 p0 = p - _triangle[0];
+	vec2 b = vec2(dot(p0, e0), dot(p0, e1));
+	mat2 A_adj = mat2(dot(e1, e1), -dot(e0, e1), -dot(e0, e1), dot(e0, e0));
+	float inv_det = 1.0 / (A_adj[0][0] * A_adj[1][1] - A_adj[0][1] * A_adj[1][0]);
+	vec2 uv = inv_det * (A_adj * b);
 	
-}
-
-vec2 reconstructBarycentrics(vec3 _pointPosition, mat3 _vertexPositions) {
-	
-	return reconstructBarycentrics(
-		_pointPosition - _vertexPositions[2],
-		mat2x3(_vertexPositions[0] - _vertexPositions[2], _vertexPositions[1] - _vertexPositions[2]));
-	
-}
-
-vec3 expandBarycentrics(vec2 _compactBarycentrics) {
-	
-	return vec3(_compactBarycentrics.xy, 1.0 - _compactBarycentrics.x - _compactBarycentrics.y);
+	_barycentrics = vec3(1.0 - uv.x - uv.y, uv.x, uv.y);
+	_position = p;
 	
 }
 

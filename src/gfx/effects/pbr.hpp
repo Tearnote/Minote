@@ -18,7 +18,7 @@ struct PBR {
 	// Build the shader.
 	static void compile(vuk::PerThreadContext&);
 	
-	static void apply(vuk::RenderGraph&, Texture2D color, Texture2D visbuf, Texture2D depth,
+	static void apply(vuk::RenderGraph&, Texture2D color, Texture2D visbuf,
 		Worklist const&, Buffer<World>, MeshBuffer const&, MaterialBuffer const&,
 		DrawableInstanceList const&, Cubemap ibl, Buffer<vec3> sunLuminance, Texture3D aerialPerspective);
 	
