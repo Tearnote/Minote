@@ -40,6 +40,15 @@ void lineTriIntersection(out vec3 _position, out vec3 _barycentrics,
 	
 }
 
+// Clamp barycentrics between 0.0 and 1.0 so that they're inside of a triangle,
+// and renormalize.
+vec3 clampBarycentrics(vec3 _barycentrics) {
+	
+	_barycentrics = clamp(_barycentrics, vec3(0.0), vec3(1.0));
+	return _barycentrics / dot(_barycentrics, vec3(1.0));
+	
+}
+
 // 3-way slerp, for normal interpolation.
 // http://math.ucsd.edu/~sbuss/ResearchWeb/spheremean/
 

@@ -266,6 +266,7 @@ void main() {
 		vec3 vertex;
 		vec3 barycentrics;
 		lineTriIntersection(vertex, barycentrics, u_world.cameraPos, worldDir, vertices);
+		barycentrics = clampBarycentrics(barycentrics);
 		
 		vec4 clipVertexW = u_world.viewProjection * vec4(vertex, 1.0);
 		vec3 clipVertex = clipVertexW.xyz / clipVertexW.w;
