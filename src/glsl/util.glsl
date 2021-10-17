@@ -88,6 +88,20 @@ uint u32Upper(uint _n) {
 	
 }
 
+// Create a u32 out of two u16s
+uint u32Fromu16(uint _upper, uint _lower) {
+	
+	return (_upper << 16u) | _lower;
+	
+}
+
+// Create two u16s out of a u32
+uvec2 u16Fromu32(uint _val) {
+	
+	return uvec2(u32Upper(_val), u32Lower(_val));
+	
+}
+
 // https://graphics.pixar.com/library/OrthonormalB/paper.pdf
 void orthonormalBasis(vec3 _n, out vec3 _b1, out vec3 _b2) {
 	

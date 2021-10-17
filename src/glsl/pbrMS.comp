@@ -100,7 +100,7 @@ const uvec2 tileSize = gl_WorkGroupSize.yz;
 const uint pixInTile = tileSize.x * tileSize.y;
 
 shared uint sh_shadingListCount;
-shared uvec2 sh_shadingListPositions[MULTISAMPLE_COUNT * pixInTile];
+shared uint sh_shadingListPositions[MULTISAMPLE_COUNT * pixInTile]; // x in lower bits, y in upper bits
 shared uint sh_shadingListValues[MULTISAMPLE_COUNT * pixInTile];
 shared uint sh_shadingListWeights[MULTISAMPLE_COUNT * pixInTile];
 shared vec3 sh_shadingListResults[MULTISAMPLE_COUNT * pixInTile];
@@ -178,7 +178,7 @@ void main() {
 		uint shadingListIndex = atomicAdd(sh_shadingListCount, visSamples);
 		for (uint i = 0; i < visSamples; i += 1) {
 			
-			sh_shadingListPositions[shadingListIndex + i] = gid;
+			sh_shadingListPositions[shadingListIndex + i] = u32Fromu16(gid.x, gid.y);
 			sh_shadingListValues[shadingListIndex + i] = visValues[i];
 			sh_shadingListWeights[shadingListIndex + i] = visWeights[i];
 			
@@ -201,7 +201,7 @@ void main() {
 		// Retrieve visibility sample
 		
 		uint visPacked = sh_shadingListValues[shadingListIndex];
-		uvec2 gid = sh_shadingListPositions[shadingListIndex];
+		uvec2 gid = u16Fromu32(sh_shadingListPositions[shadingListIndex]);
 		uvec2 lid = gid - tileOffset;
 		
 		if (visPacked == -1u) // Sky sample
@@ -349,7 +349,7 @@ void main() {
 	vec4 result = vec4(0.0);
 	for (uint i = 0; i < sh_shadingListCount; i += 1) {
 		
-		if (sh_shadingListPositions[i] != gid)
+		if (u16Fromu32(sh_shadingListPositions[i]) != gid)
 			continue;
 		
 		float coverage = float(sh_shadingListWeights[i]) * visWeightStep;
