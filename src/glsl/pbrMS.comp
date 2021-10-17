@@ -354,13 +354,13 @@ void main() {
 			continue;
 		
 		float coverage = float(sh_shadingListWeights[i]) * visWeightStep;
-		result += vec4(sh_shadingListResults[i] * coverage, coverage);
+		result += vec4(tonemapWithWeight(sh_shadingListResults[i], coverage), coverage);
 		
 	}
 	
 	// Write to output
 	
 	if (result.a > 0.0)
-		imageStore(i_target, ivec2(gid), result);
+		imageStore(i_target, ivec2(gid), vec4(tonemapInvert(result.rgb), result.a));
 	
 }

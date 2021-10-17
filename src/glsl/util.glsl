@@ -3,6 +3,14 @@
 #ifndef UTILS_GLSL
 #define UTILS_GLSL
 
+// Useful primitives
+
+float rcp(float _v) {
+	
+	return 1.0 / _v;
+	
+}
+
 // https://github.com/CesiumGS/cesium/blob/main/Source/Shaders/Builtin/Functions/fastApproximateAtan.glsl
 // Used under MIT license
 float fastAtan(float _x) {
@@ -123,6 +131,21 @@ vec4 karisAverage(vec4 _s1, vec4 _s2, vec4 _s3, vec4 _s4) {
 	float one_div_wsum = 1.0 / (s1w + s2w + s3w + s4w);
 	
 	return (_s1 * s1w + _s2 * s2w + _s3 * s3w + _s4 * s4w) * one_div_wsum;
+	
+}
+
+// Fast invertible tonemapper, useful for MSAA resolve
+// https://gpuopen.com/learn/optimized-reversible-tonemapper-for-resolve/
+
+vec3 tonemapWithWeight(vec3 _c, float _w) {
+	
+	return _c * (_w * rcp(max(_c.r, max(_c.g, _c.b)) + 1.0));
+	
+}
+
+vec3 tonemapInvert(vec3 _c) {
+	
+	return _c * rcp(1.0 - max(_c.r, max(_c.g, _c.b)));
 	
 }
 
