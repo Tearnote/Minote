@@ -266,6 +266,7 @@ set(SHADER_SOURCES
         src/glsl/tonemap.comp
         src/glsl/bloomUp.comp
         src/glsl/imgui.vert src/glsl/imgui.frag
+        src/glsl/pbrMS.comp
         src/glsl/pbr.comp)
 
 foreach(SHADER_PATH ${SHADER_SOURCES})

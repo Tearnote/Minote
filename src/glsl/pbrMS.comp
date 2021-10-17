@@ -1,0 +1,365 @@
+#version 460
+#pragma shader_stage(compute)
+#extension GL_EXT_debug_printf: enable
+
+layout(local_size_x = 1, local_size_y = 8, local_size_z = 8) in;
+
+#include "sky/skyAccess.glsl"
+#include "visibilityTypes.glsl"
+#include "visibility.glsl"
+#include "constants.glsl"
+#include "types.glsl"
+#include "util.glsl"
+
+#define B_INDICES b_indices
+#define B_VERTICES b_vertices
+#define B_NORMALS b_normals
+#define B_COLORS b_vtxColors
+
+layout(binding = 0) uniform WorldConstants {
+	World u_world;
+};
+
+layout (binding = 1, std430) restrict readonly buffer Descriptors {
+	MeshDescriptor b_descriptors[];
+};
+layout (binding = 2, std430) restrict readonly buffer Instances {
+	Instance b_instances[];
+};
+layout (binding = 3, std430) restrict readonly buffer Colors {
+	vec4 b_colors[];
+};
+layout(binding = 4, std430) restrict readonly buffer Transforms {
+	mat3x4 b_transforms[];
+};
+
+layout (binding = 5, std430) restrict readonly buffer Indices {
+	uint B_INDICES[];
+};
+layout (binding = 6, std430) restrict readonly buffer Vertices {
+	float B_VERTICES[];
+};
+layout (binding = 7, std430) restrict readonly buffer Normals {
+	float B_NORMALS[];
+};
+layout (binding = 8, std430) restrict readonly buffer VtxColors {
+	uint B_COLORS[];
+};
+layout (binding = 9, std430) restrict readonly buffer Materials {
+	Material b_materials[];
+};
+
+layout(binding = 10) uniform SunLuminance {
+	vec3 u_sunLuminance;
+};
+layout(binding = 11) uniform samplerCube s_cubemap;
+layout(binding = 12) uniform sampler3D s_aerialPerspective;
+
+layout(binding = 13) uniform usampler2DMS s_visbuf;
+layout(binding = 14) restrict writeonly uniform image2D i_target;
+layout(binding = 15, std430) restrict readonly buffer TileLists {
+	uint b_lists[];
+};
+
+layout(push_constant) uniform Constants {
+	uvec3 u_aerialPerspectiveSize;
+	uint u_tileOffset;
+	uvec2 u_targetSize;
+	uint u_sampleCount;
+};
+
+#include "typesAccess.glsl"
+
+const float IBLMipCount = 8.0;
+
+vec3 envBRDFApprox(vec3 _f0, float _NoV, float _roughness) {
+	
+	vec4 c0 = vec4(-1.0, -0.0275, -0.572, 0.022);
+	vec4 c1 = vec4(1.0, 0.0425, 1.04, -0.04);
+	vec4 r = _roughness * c0 + c1;
+	float a004 = min(r.x * r.x, exp2(-9.28 * _NoV)) * r.x + r.y;
+	vec2 ab = vec2(-1.04, 1.04) * a004 + r.zw;
+	return _f0 * ab.x + ab.y;
+	
+}
+
+float dApprox(float _roughness, float _RoL) {
+	
+	float a = _roughness * _roughness;
+	float a2 = a * a;
+	float rcp_a2 = 1.0 / a2;
+	// 0.5 / ln(2), 0.275 / ln(2)
+	float c = 0.72134752 * rcp_a2 + 0.39674113;
+	return rcp_a2 * exp2(c*_RoL - c);
+	
+}
+
+#define MULTISAMPLE_COUNT 4
+
+const uvec2 tileSize = gl_WorkGroupSize.yz;
+const uint pixInTile = tileSize.x * tileSize.y;
+
+shared uint sh_shadingListCount;
+shared uvec2 sh_shadingListPositions[MULTISAMPLE_COUNT * pixInTile];
+shared uint sh_shadingListValues[MULTISAMPLE_COUNT * pixInTile];
+shared uint sh_shadingListWeights[MULTISAMPLE_COUNT * pixInTile];
+shared vec3 sh_shadingListResults[MULTISAMPLE_COUNT * pixInTile];
+
+void main() {
+	
+	uvec2 lid = gl_LocalInvocationID.yz;
+	uint tileIdx = gl_GlobalInvocationID.x;
+	
+	// Initialize shared mem
+	
+	if (all(equal(lid, uvec2(0))))
+		sh_shadingListCount = 0;
+	
+	memoryBarrierShared();
+	barrier();
+	
+	// Retrieve tile
+	
+	uint tilePacked = b_lists[u_tileOffset + tileIdx];
+	uvec2 tile = {
+		tilePacked & bitmask(16u),
+		tilePacked >> 16u };
+	uvec2 tileOffset = tile * tileSize;
+	uvec2 gid = tileOffset + lid;
+	
+	// Retrieve visibility samples with deduplication
+	
+	uint visSamples = 0;
+	uint visValues[MULTISAMPLE_COUNT];
+	uint visWeights[MULTISAMPLE_COUNT];
+	float visWeightStep = 1.0 / float(u_sampleCount);
+	
+	if (all(lessThan(gid, u_targetSize))) { // Don't participate if OOB
+		
+		for (uint i = 0; i < u_sampleCount; i += 1) {
+			
+			// Retrieve sample
+			
+			uint visPacked = texelFetch(s_visbuf, ivec2(gid), int(i)).x;
+			if (visPacked == -1u) // Sky sample
+				continue;
+			
+			// Check for duplicate
+			
+			bool duplicate = false;
+			for (uint j = 0; j < visSamples; j += 1) {
+				
+				if (visPacked == visValues[j]) {
+					
+					duplicate = true;
+					visWeights[j] += 1;
+					break;
+					
+				}
+				
+			}
+			
+			if (duplicate)
+				continue;
+			
+			// Add new sample to the list
+			
+			visValues[visSamples] = visPacked;
+			visWeights[visSamples] = 1;
+			visSamples += 1;
+			
+		}
+		
+	}
+	
+	// Add samples to master list
+	if (visSamples > 0) {
+		
+		uint shadingListIndex = atomicAdd(sh_shadingListCount, visSamples);
+		for (uint i = 0; i < visSamples; i += 1) {
+			
+			sh_shadingListPositions[shadingListIndex + i] = gid;
+			sh_shadingListValues[shadingListIndex + i] = visValues[i];
+			sh_shadingListWeights[shadingListIndex + i] = visWeights[i];
+			
+		}
+		
+	}
+	
+	memoryBarrierShared();
+	barrier();
+	
+	// Process all samples
+	
+	uint shadingLoops = sh_shadingListCount / pixInTile + uint(sh_shadingListCount % pixInTile > 0);
+	for (uint i = 0; i < shadingLoops; i += 1) {
+		
+		uint shadingListIndex = pixInTile * i + lid.x + lid.y * tileSize.x;
+		if (shadingListIndex >= sh_shadingListCount)
+			continue;
+		
+		// Retrieve visibility sample
+		
+		uint visPacked = sh_shadingListValues[shadingListIndex];
+		uvec2 gid = sh_shadingListPositions[shadingListIndex];
+		uvec2 lid = gid - tileOffset;
+		
+		if (visPacked == -1u) // Sky sample
+			continue;
+		
+		VisSample vis = unpackVisibility(visPacked);
+		
+		// Retrieve instance params
+		
+		Instance instance = b_instances[vis.instance];
+		uint transformIdx = instance.transformIdx;
+		mat4 transform = getTransform(b_transforms[transformIdx]);
+		uint materialIdx = instance.materialIdx;
+		Material material = b_materials[materialIdx];
+		
+		// Retrieve vertex indices
+		
+		uint meshIdx = instance.meshIdx;
+		uint indexBase = b_descriptors[meshIdx].indexOffset;
+		indexBase += vis.triangle * 3;
+		uvec3 indices = fetchIndices(indexBase);
+		
+		// Retrieve vertex params
+		
+		uint vertexBase = b_descriptors[meshIdx].vertexOffset;
+		indices += uvec3(vertexBase);
+		
+		mat3 vertices = {
+			fetchVertex(indices.x),
+			fetchVertex(indices.y),
+			fetchVertex(indices.z)};
+		
+		mat3 normals = {
+			fetchNormal(indices.x),
+			fetchNormal(indices.y),
+			fetchNormal(indices.z)};
+		
+		mat3x4 colors = {
+			fetchColor(indices.x),
+			fetchColor(indices.y),
+			fetchColor(indices.z)};
+		
+		// Transform params from model to world space
+		
+		mat3 normTransform = mat3(inverse(transpose(transform)));
+		
+		for (uint i = 0; i < 3; i += 1) {
+			
+			vec4 transformed = transform * vec4(vertices[i], 1.0);
+			vertices[i] = transformed.xyz / transformed.w;
+			
+			normals[i] = normalize(normTransform * normals[i]);
+			
+		}
+		
+		// Calculate world position and barycentrics
+		
+		vec2 screenUv = (vec2(gid) + vec2(0.5)) / vec2(u_targetSize);
+		vec3 clipSpace = vec3(screenUv * vec2(2.0) - vec2(1.0), 0.0);
+		vec3 worldDir = normalize(vec3(u_world.viewProjectionInverse * vec4(clipSpace, 1.0)));
+		
+		vec3 vertex;
+		vec3 barycentrics;
+		lineTriIntersection(vertex, barycentrics, u_world.cameraPos, worldDir, vertices);
+		
+		vec4 clipVertexW = u_world.viewProjection * vec4(vertex, 1.0);
+		vec3 clipVertex = clipVertexW.xyz / clipVertexW.w;
+		
+		// Interpolate params
+		
+		vec3 normal = normalInterp(normals, barycentrics);
+		// vec3 normal = normalize(
+		// 	normals[0] * barycentrics.x +
+		// 	normals[1] * barycentrics.y +
+		// 	normals[2] * barycentrics.z);
+		
+		vec4 color =
+			colors[0] * barycentrics.x +
+			colors[1] * barycentrics.y +
+			colors[2] * barycentrics.z;
+		
+		// Standard vectors
+		
+		vec3 viewDirection = normalize(u_world.cameraPos - vertex);
+		float NoV = dot(normal, viewDirection);
+		
+		// Empirical sun visibility above the horizon
+		
+		float sunDot = dot(vec3(0.0, 0.0, 1.0), u_world.sunDirection);
+		float sunAngularSize = radians(0.2);
+		float sunsetStart = cos(radians(90.05) - sunAngularSize);
+		float sunsetEnd = cos(radians(90.05) + sunAngularSize);
+		float sunset = (sunDot - sunsetEnd) / (sunsetStart - sunsetEnd);
+		sunset = clamp(sunset, 0.0, 1.0);
+		sunset = (1.0 - cos(sunset * 1.57079633)) / 2.0;
+		
+		vec3 sunColor = u_sunLuminance * sunset;
+		
+		// PBR calculation
+		
+		uint colorIdx = instance.colorIdx;
+		color *= b_colors[colorIdx];
+		vec3 f0 = max(color.rgb * material.metalness, vec3(0.04));
+		
+		vec3 iblDiffuse = textureLod(s_cubemap, normal, IBLMipCount - 2.0).rgb;
+		vec3 sunDiffuse = sunColor * max(dot(normal, u_world.sunDirection), 0.0);
+		vec3 diffuse = color.rgb * (iblDiffuse + sunDiffuse) * (1.0 - material.metalness);
+		
+		vec3 reflection = reflect(viewDirection, normal);
+		float iblMip = max(7.0 - 0.480898 * log(2.0 / pow(material.roughness, 4.0) - 1.0), 0.0);
+		vec3 iblSpecular = vec3(textureLod(s_cubemap, -reflection, iblMip));
+		float SunMinRoughness = 1.0 / 16.0;
+		vec3 sunSpecular = sunColor * dApprox(max(material.roughness, SunMinRoughness), dot(-reflection, u_world.sunDirection));
+		vec3 specular = iblSpecular + sunSpecular;
+		
+		vec4 surface = vec4(mix(diffuse, specular, envBRDFApprox(f0, NoV, material.roughness)), color.a);
+		
+		// Aerial perspective
+		
+		float slice = aerialPerspectiveDepthToSlice(1.0 - clipVertex.z);
+		float weight = 1.0;
+		if (slice < 0.5) {
+			
+			// We multiply by weight to fade to 0 at depth 0. That works for luminance and opacity.
+			weight = clamp(slice * 2.0, 0.0, 1.0);
+			slice = 0.5;
+			
+		}
+		float w = sqrt(slice / u_aerialPerspectiveSize.z);	// squared distribution
+		
+		vec4 ap = weight * textureLod(s_aerialPerspective, vec3((vec2(gid) + vec2(0.5)) / vec2(u_targetSize), w), 0.0);
+		
+		// Result write
+		
+		vec4 result = surface + ap;
+		sh_shadingListResults[shadingListIndex] = result.xyz;
+		
+	}
+	
+	memoryBarrierShared();
+	barrier();
+	
+	// Accumulate sample results
+	
+	vec4 result = vec4(0.0);
+	for (uint i = 0; i < sh_shadingListCount; i += 1) {
+		
+		if (sh_shadingListPositions[i] != gid)
+			continue;
+		
+		float coverage = float(sh_shadingListWeights[i]) * visWeightStep;
+		result += vec4(sh_shadingListResults[i] * coverage, coverage);
+		
+	}
+	
+	// Write to output
+	
+	if (result.a > 0.0)
+		imageStore(i_target, ivec2(gid), result);
+	
+}
