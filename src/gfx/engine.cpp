@@ -18,6 +18,7 @@
 #include "gfx/effects/visibility.hpp"
 #include "gfx/effects/tonemap.hpp"
 #include "gfx/effects/bloom.hpp"
+#include "gfx/effects/clear.hpp"
 #include "gfx/effects/pbr.hpp"
 #include "gfx/util.hpp"
 #include "main.hpp"
@@ -170,7 +171,7 @@ void Engine::render() {
 		vuk::ImageUsageFlagBits::eSampled |
 		vuk::ImageUsageFlagBits::eStorage);
 	// depth.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearDepthStencil(0.0f, 0));
-	color.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
+	color.attach(rg, vuk::eNone, vuk::eNone);
 	
 	auto screen = Texture2D::make(m_framePool, "screen",
 		viewport, vuk::Format::eR8G8B8A8Unorm,
@@ -224,6 +225,7 @@ void Engine::render() {
 	CubeFilter::apply(rg, iblUnfiltered, iblFiltered);
 	
 	// Scene drawing
+	Clear::apply(rg, color, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 	// Visibility::apply(rg, visbuf, depth, worldBuf, culledDrawables, *m_meshes);
 	Visibility::applyMS(rg, visbufMS, depthMS, worldBuf, culledDrawables, *m_meshes);
 	// auto worklist = Worklist::create(m_framePool, rg, "worklist", visbuf, culledDrawables, *m_materials);
