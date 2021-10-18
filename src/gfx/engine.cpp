@@ -169,7 +169,8 @@ void Engine::render() {
 	auto color = Texture2D::make(m_framePool, "color",
 		viewport, vuk::Format::eR16G16B16A16Sfloat,
 		vuk::ImageUsageFlagBits::eSampled |
-		vuk::ImageUsageFlagBits::eStorage);
+		vuk::ImageUsageFlagBits::eStorage |
+		vuk::ImageUsageFlagBits::eTransferDst);
 	// depth.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearDepthStencil(0.0f, 0));
 	color.attach(rg, vuk::eNone, vuk::eNone);
 	
