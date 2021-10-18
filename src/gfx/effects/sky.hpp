@@ -99,7 +99,7 @@ struct Sky {
 	
 	// Draw the sky in the background of an image (where visibility buffer is
 	// empty).
-	static void draw(vuk::RenderGraph&, Texture2D target, Texture2D visbuf,
+	static void draw(vuk::RenderGraph&, Texture2D target,
 		Worklist const&, Texture2D skyView, Atmosphere const&, Buffer<World>);
 	
 	// Draw the sky into an existing cubemap. Target is the mip 0 of provided image.

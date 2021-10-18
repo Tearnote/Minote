@@ -161,17 +161,16 @@ void Engine::render() {
 	iblFiltered.attach(rg, vuk::eNone, vuk::eNone);
 	constexpr auto IblProbePosition = vec3{0_m, 0_m, 10_m};
 	
-	auto depth = Texture2D::make(m_framePool, "depth",
-		viewport, vuk::Format::eD32Sfloat,
-		vuk::ImageUsageFlagBits::eDepthStencilAttachment |
-		vuk::ImageUsageFlagBits::eSampled);
+	// auto depth = Texture2D::make(m_framePool, "depth",
+	// 	viewport, vuk::Format::eD32Sfloat,
+	// 	vuk::ImageUsageFlagBits::eDepthStencilAttachment |
+	// 	vuk::ImageUsageFlagBits::eSampled);
 	auto color = Texture2D::make(m_framePool, "color",
 		viewport, vuk::Format::eR16G16B16A16Sfloat,
-		vuk::ImageUsageFlagBits::eColorAttachment |
 		vuk::ImageUsageFlagBits::eSampled |
 		vuk::ImageUsageFlagBits::eStorage);
-	depth.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearDepthStencil(0.0f, 0));
-	color.attach(rg, vuk::eNone, vuk::eNone);
+	// depth.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearDepthStencil(0.0f, 0));
+	color.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 	
 	auto screen = Texture2D::make(m_framePool, "screen",
 		viewport, vuk::Format::eR8G8B8A8Unorm,
@@ -180,11 +179,11 @@ void Engine::render() {
 		vuk::ImageUsageFlagBits::eStorage);
 	screen.attach(rg, vuk::eNone, vuk::eNone);
 	
-	auto visbuf = Texture2D::make(m_framePool, "visbuf",
-		viewport, vuk::Format::eR32Uint,
-		vuk::ImageUsageFlagBits::eColorAttachment |
-		vuk::ImageUsageFlagBits::eSampled);
-	visbuf.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearColor(-1u, -1u, -1u, -1u));
+	// auto visbuf = Texture2D::make(m_framePool, "visbuf",
+	// 	viewport, vuk::Format::eR32Uint,
+	// 	vuk::ImageUsageFlagBits::eColorAttachment |
+	// 	vuk::ImageUsageFlagBits::eSampled);
+	// visbuf.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearColor(-1u, -1u, -1u, -1u));
 	screen.attach(rg, vuk::eNone, vuk::eNone);
 	
 	auto depthMS = Texture2DMS::make(m_framePool, "depth_ms",
@@ -225,15 +224,16 @@ void Engine::render() {
 	CubeFilter::apply(rg, iblUnfiltered, iblFiltered);
 	
 	// Scene drawing
-	Visibility::apply(rg, visbuf, depth, worldBuf, culledDrawables, *m_meshes);
+	// Visibility::apply(rg, visbuf, depth, worldBuf, culledDrawables, *m_meshes);
 	Visibility::applyMS(rg, visbufMS, depthMS, worldBuf, culledDrawables, *m_meshes);
-	auto worklist = Worklist::create(m_framePool, rg, "worklist", visbuf, culledDrawables, *m_materials);
+	// auto worklist = Worklist::create(m_framePool, rg, "worklist", visbuf, culledDrawables, *m_materials);
 	auto worklistMS = Worklist::createMS(m_framePool, rg, "worklist_ms", visbufMS, culledDrawables, *m_materials);
 	// PBR::apply(rg, color, visbuf, worklist, worldBuf, *m_meshes, *m_materials,
 	// 	culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
 	PBR::applyMS(rg, color, visbufMS, worklistMS, worldBuf, *m_meshes, *m_materials,
 		culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
-	Sky::draw(rg, color, visbuf, worklist, cameraSky, m_atmosphere, worldBuf);
+	// Sky::draw(rg, color, worklist, cameraSky, m_atmosphere, worldBuf);
+	Sky::draw(rg, color, worklistMS, cameraSky, m_atmosphere, worldBuf);
 	
 	// Postprocessing
 	Bloom::apply(rg, m_framePool, color);

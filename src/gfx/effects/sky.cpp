@@ -258,18 +258,17 @@ auto Sky::createSunLuminance(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name
 	
 }
 
-void Sky::draw(vuk::RenderGraph& _rg, Texture2D _target, Texture2D _visbuf,
-	Worklist const& _worklist, Texture2D _skyView, Atmosphere const& _atmo, Buffer<World> _world) {
+void Sky::draw(vuk::RenderGraph& _rg, Texture2D _target, Worklist const& _worklist,
+	Texture2D _skyView, Atmosphere const& _atmo, Buffer<World> _world) {
 	
 	_rg.add_pass({
 		.name = nameAppend(_target.name, "sky"),
 		.resources = {
 			_skyView.resource(vuk::eComputeSampled),
-			_visbuf.resource(vuk::eComputeSampled),
 			_worklist.counts.resource(vuk::eIndirectRead),
 			_worklist.lists.resource(vuk::eComputeRead),
-			_target.resource(vuk::eComputeWrite) },
-		.execute = [_target, _visbuf, &_worklist, _skyView, &_atmo, _world,
+			_target.resource(vuk::eComputeRW) },
+		.execute = [_target, &_worklist, _skyView, &_atmo, _world,
 			tileCount=_worklist.counts.offsetView(+MaterialType::None)](vuk::CommandBuffer& cmd) {
 			
 			struct PushConstants {
@@ -282,8 +281,8 @@ void Sky::draw(vuk::RenderGraph& _rg, Texture2D _target, Texture2D _visbuf,
 			   .bind_uniform_buffer(0, 1, _atmo.params)
 			   .bind_sampled_image(0, 2, _atmo.transmittance, LinearClamp)
 			   .bind_sampled_image(0, 3, _skyView, LinearClamp)
-			   .bind_sampled_image(0, 4, _visbuf, NearestClamp)
-			   .bind_storage_buffer(0, 5, _worklist.lists)
+			   .bind_storage_buffer(0, 4, _worklist.lists)
+			   .bind_sampled_image(0, 5, _target, NearestClamp, vuk::ImageLayout::eGeneral)
 			   .bind_storage_image(0, 6, _target)
 			   .bind_compute_pipeline("sky_draw");
 			
