@@ -23,7 +23,7 @@ using namespace base::literals;
 // Graphics engine. Feed with meshes and objects, enjoy pretty pictures.
 struct Engine {
 	
-	static constexpr auto VerticalFov = 45_deg;
+	static constexpr auto VerticalFov = 50_deg;
 	static constexpr auto NearPlane = 0.1_m;
 	
 	// Create the engine in uninitialized state.

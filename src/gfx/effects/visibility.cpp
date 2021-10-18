@@ -78,7 +78,7 @@ void Visibility::applyMS(vuk::RenderGraph& _rg, Texture2DMS _visbuf, Texture2DMS
 		.execute = [_visbuf, _world, &_instances, &_meshes](vuk::CommandBuffer& cmd) {
 			
 			cmdSetViewportScissor(cmd, _visbuf.size());
-			cmd.bind_index_buffer(_meshes.indicesBuf, vuk::IndexType::eUint16)
+			cmd.bind_index_buffer(_meshes.indicesBuf, vuk::IndexType::eUint32)
 			   .bind_uniform_buffer(0, 0, _world)
 			   .bind_storage_buffer(0, 1, _meshes.verticesBuf)
 			   .bind_storage_buffer(0, 2, _instances.instances)

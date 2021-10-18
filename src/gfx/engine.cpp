@@ -124,8 +124,8 @@ void Engine::render() {
 	m_world.cameraPos = m_camera.position;
 	
 	// Sun properties
-	static auto sunPitch = 7.8_deg;
-	static auto sunYaw = 30.0_deg;
+	static auto sunPitch = 12_deg;
+	static auto sunYaw = 3_deg;
 	ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 60.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
 	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
 	m_world.sunDirection =

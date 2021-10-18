@@ -54,10 +54,20 @@ void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
 	
 	// Write index data
 	
-	assert(indexAccessor.component_type == cgltf_component_type_r_16u);
+	assert(indexAccessor.component_type == cgltf_component_type_r_16u ||
+	       indexAccessor.component_type == cgltf_component_type_r_32u);
 	assert(indexAccessor.type == cgltf_type_scalar);
-	auto* indexTypedBuffer = reinterpret_cast<u16 const*>(indexBuffer);
-	m_indices.insert(m_indices.end(), indexTypedBuffer, indexTypedBuffer + indexAccessor.count);
+	if (indexAccessor.component_type == cgltf_component_type_r_16u) {
+		
+		auto* indexTypedBuffer = reinterpret_cast<u16 const*>(indexBuffer);
+		m_indices.insert(m_indices.end(), indexTypedBuffer, indexTypedBuffer + indexAccessor.count);
+		
+	} else {
+		
+		auto* indexTypedBuffer = reinterpret_cast<u32 const*>(indexBuffer);
+		m_indices.insert(m_indices.end(), indexTypedBuffer, indexTypedBuffer + indexAccessor.count);
+		
+	}
 	
 	// Fetch all vertex attributes
 	
@@ -127,18 +137,15 @@ auto MeshList::upload(Pool& _pool, vuk::Name _name) && -> MeshBuffer {
 	
 	auto result = MeshBuffer{
 		.verticesBuf = Buffer<vec3>::make(_pool, nameAppend(_name, "vertices"),
-			vuk::BufferUsageFlagBits::eVertexBuffer |
 			vuk::BufferUsageFlagBits::eStorageBuffer,
 			m_vertices, vuk::MemoryUsage::eGPUonly),
 		.normalsBuf = Buffer<vec3>::make(_pool, nameAppend(_name, "normals"),
-			vuk::BufferUsageFlagBits::eVertexBuffer |
 			vuk::BufferUsageFlagBits::eStorageBuffer,
 			m_normals, vuk::MemoryUsage::eGPUonly),
 		.colorsBuf = Buffer<u16vec4>::make(_pool, nameAppend(_name, "colors"),
-			vuk::BufferUsageFlagBits::eVertexBuffer |
 			vuk::BufferUsageFlagBits::eStorageBuffer,
 			m_colors, vuk::MemoryUsage::eGPUonly),
-		.indicesBuf = Buffer<u16>::make(_pool, nameAppend(_name, "indices"),
+		.indicesBuf = Buffer<u32>::make(_pool, nameAppend(_name, "indices"),
 			vuk::BufferUsageFlagBits::eIndexBuffer |
 			vuk::BufferUsageFlagBits::eStorageBuffer,
 			m_indices, vuk::MemoryUsage::eGPUonly),

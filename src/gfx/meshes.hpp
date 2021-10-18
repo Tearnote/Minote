@@ -38,7 +38,7 @@ struct MeshBuffer {
 	Buffer<vec3> normalsBuf;
 	Buffer<u16vec4> colorsBuf;
 	
-	Buffer<u16> indicesBuf;
+	Buffer<u32> indicesBuf;
 	
 	ivector<MeshDescriptor> descriptors; // CPU-side mesh metadata
 	Buffer<MeshDescriptor> descriptorBuf; // GPU-accessible mesh metadata
@@ -72,7 +72,7 @@ private:
 	ivector<vec3> m_vertices;
 	ivector<vec3> m_normals;
 	ivector<u16vec4> m_colors;
-	ivector<u16> m_indices;
+	ivector<u32> m_indices;
 	
 };
 

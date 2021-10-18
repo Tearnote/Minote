@@ -9,21 +9,10 @@
 // Unpack and return indices of a given triangle.
 uvec3 fetchIndices(uint _n) {
 	
-	uint offset = _n / 2u;
-	uvec2 fetches = {
-	B_INDICES[offset + 0],
-	B_INDICES[offset + 1]};
-	
-	if ((_n & 1u) == 0u)
-		return uvec3(
-			u32Lower(fetches.x),
-			u32Upper(fetches.x),
-			u32Lower(fetches.y));
-	else
-		return uvec3(
-			u32Upper(fetches.x),
-			u32Lower(fetches.y),
-			u32Upper(fetches.y));
+	return uvec3(
+		B_INDICES[_n + 0],
+		B_INDICES[_n + 1],
+		B_INDICES[_n + 2]);
 	
 }
 
@@ -63,9 +52,11 @@ vec3 fetchNormal(uint _n) {
 
 vec4 fetchColor(uint _n) {
 	
+	uint base = _n * 2;
+	
 	uvec2 fetches = {
-		B_COLORS[_n * 2 + 0],
-		B_COLORS[_n * 2 + 1]};
+		B_COLORS[base + 0],
+		B_COLORS[base + 1]};
 	uvec4 uresult = {
 		u32Lower(fetches.x),
 		u32Upper(fetches.x),
@@ -73,7 +64,7 @@ vec4 fetchColor(uint _n) {
 		u32Upper(fetches.y),
 	};
 	vec4 result = vec4(uresult);
-	result /= float((1u << 16u) - 1u);
+	result /= float(bitmask(16));
 	
 	return result;
 	

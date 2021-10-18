@@ -110,9 +110,9 @@ void game(GameParams const& _params) try {
 	engine.init(std::move(meshList), std::move(materialList));
 	
 	engine.camera() = gfx::Camera{
-		.position = {-10_m, -26_m, 64_m + 10_m},
-		.yaw = 58_deg,
-		.pitch = -12_deg,
+		.position = {8.2_m, -11.2_m, 64.3_m},
+		.yaw = 127.8_deg,
+		.pitch = 6.3_deg,
 		.lookSpeed = 1.0f / 256.0f,
 		.moveSpeed = 1_m / 16.0f};
 	
@@ -136,12 +136,20 @@ void game(GameParams const& _params) try {
 	
 	constexpr auto prescale = vec3{1_m, 1_m, 1_m};
 	constexpr auto rotation = quat::angleAxis(180_deg, {1.0f, 0.0f, 0.0f});
-	constexpr auto Expand = 10u;
+	constexpr auto Expand = 0u;
 	constexpr auto Spacing = 25_m;
+	
+	auto testscene_id = engine.objects().create();
+	auto testscene = engine.objects().get(testscene_id);
+	testscene.meshID = "testscene"_id;
+	testscene.transform.position = vec3{0_m, 0_m, 64_m};
+	testscene.transform.scale = prescale;
+	testscene.materialID = "matte"_id;
+	
 	for (auto x = -Spacing * Expand; x <= Spacing * Expand; x += Spacing)
 	for (auto y = -Spacing * Expand; y <= Spacing * Expand; y += Spacing) {
 		
-		auto offset = vec3{x, y, 64_m};
+		auto offset = vec3{x, y, 32_m};
 		
 		auto block1_id = engine.objects().create();
 		auto block1 = engine.objects().get(block1_id);
