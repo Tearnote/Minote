@@ -94,28 +94,15 @@ float dApprox(float _roughness, float _RoL) {
 }
 
 #define MULTISAMPLE_COUNT 8
+#define RECORD_COUNT 2
 
 const uvec2 tileSize = gl_WorkGroupSize.yz;
 const uint pixInTile = tileSize.x * tileSize.y;
-
-shared uint sh_shadingListCount;
-shared uint sh_shadingListPositions[MULTISAMPLE_COUNT * pixInTile]; // x in lower bits, y in upper bits
-shared uint sh_shadingListValues[MULTISAMPLE_COUNT * pixInTile];
-shared uint sh_shadingListWeights[MULTISAMPLE_COUNT * pixInTile];
-shared vec3 sh_shadingListResults[MULTISAMPLE_COUNT * pixInTile];
 
 void main() {
 	
 	uvec2 lid = gl_LocalInvocationID.yz;
 	uint tileIdx = gl_GlobalInvocationID.x;
-	
-	// Initialize shared mem
-	
-	if (all(equal(lid, uvec2(0))))
-		sh_shadingListCount = 0;
-	
-	memoryBarrierShared();
-	barrier();
 	
 	// Retrieve tile
 	
@@ -126,83 +113,72 @@ void main() {
 	uvec2 tileOffset = tile * tileSize;
 	uvec2 gid = tileOffset + lid;
 	
+	if (any(greaterThan(gid, u_targetSize)))
+		return;
+	
 	// Retrieve visibility samples with deduplication
 	
 	uint visSamples = 0;
-	uint visValues[MULTISAMPLE_COUNT];
-	uint visWeights[MULTISAMPLE_COUNT];
+	uint visValues[RECORD_COUNT];
+	float visWeights[RECORD_COUNT];
 	float visWeightStep = 1.0 / float(u_sampleCount);
+	float visWeightStepComp = visWeightStep / float(RECORD_COUNT);
 	
-	if (all(lessThan(gid, u_targetSize))) { // Don't participate if OOB
+	for (uint i = 0; i < u_sampleCount; i += 1) {
 		
-		for (uint i = 0; i < u_sampleCount; i += 1) {
+		// Retrieve sample
+		
+		uint visPacked = texelFetch(s_visbuf, ivec2(gid), int(i)).x;
+		if (visPacked == -1u) // Sky sample
+			continue;
+		
+		// Check for duplicate
+		
+		bool duplicate = false;
+		for (uint j = 0; j < visSamples; j += 1) {
 			
-			// Retrieve sample
-			
-			uint visPacked = texelFetch(s_visbuf, ivec2(gid), int(i)).x;
-			if (visPacked == -1u) // Sky sample
-				continue;
-			
-			// Check for duplicate
-			
-			bool duplicate = false;
-			for (uint j = 0; j < visSamples; j += 1) {
+			if (visPacked == visValues[j]) {
 				
-				if (visPacked == visValues[j]) {
-					
-					duplicate = true;
-					visWeights[j] += 1;
-					break;
-					
-				}
+				duplicate = true;
+				visWeights[j] += visWeightStep;
+				break;
 				
 			}
 			
-			if (duplicate)
-				continue;
+		}
+		
+		if (duplicate)
+			continue;
+		
+		// Add new sample to the list
+		
+		if (visSamples < RECORD_COUNT) {
 			
-			// Add new sample to the list
+			// There is space for a new sample
 			
 			visValues[visSamples] = visPacked;
-			visWeights[visSamples] = 1;
+			visWeights[visSamples] = visWeightStep;
 			visSamples += 1;
 			
-		}
-		
-	}
-	
-	// Add samples to master list
-	if (visSamples > 0) {
-		
-		uint shadingListIndex = atomicAdd(sh_shadingListCount, visSamples);
-		for (uint i = 0; i < visSamples; i += 1) {
+		} else {
 			
-			sh_shadingListPositions[shadingListIndex + i] = u32Fromu16(gid.x, gid.y);
-			sh_shadingListValues[shadingListIndex + i] = visValues[i];
-			sh_shadingListWeights[shadingListIndex + i] = visWeights[i];
+			// Discard sample and boost weight of all others
+			
+			for (uint j = 0; j < RECORD_COUNT; j += 1)
+				visWeights[j] += visWeightStepComp;
 			
 		}
 		
 	}
-	
-	memoryBarrierShared();
-	barrier();
 	
 	// Process all samples
 	
-	uint shadingLoops = sh_shadingListCount / pixInTile + uint(sh_shadingListCount % pixInTile > 0);
-	for (uint i = 0; i < shadingLoops; i += 1) {
-		
-		uint shadingListIndex = pixInTile * i + lid.x + lid.y * tileSize.x;
-		if (shadingListIndex >= sh_shadingListCount)
-			continue;
+	vec4 result = vec4(0.0);
+	for (uint i = 0; i < visSamples; i += 1) {
 		
 		// Retrieve visibility sample
 		
-		uint visPacked = sh_shadingListValues[shadingListIndex];
-		uvec2 gid = u16Fromu32(sh_shadingListPositions[shadingListIndex]);
-		uvec2 lid = gid - tileOffset;
-		
+		uint visPacked = visValues[i];
 		if (visPacked == -1u) // Sky sample
 			continue;
 		
@@ -272,11 +248,11 @@ void main() {
 		
 		// Interpolate params
 		
-		vec3 normal = normalInterp(normals, barycentrics);
-		// vec3 normal = normalize(
-		// 	normals[0] * barycentrics.x +
-		// 	normals[1] * barycentrics.y +
-		// 	normals[2] * barycentrics.z);
+		// vec3 normal = normalInterp(normals, barycentrics);
+		vec3 normal = normalize(
+			normals[0] * barycentrics.x +
+			normals[1] * barycentrics.y +
+			normals[2] * barycentrics.z);
 		
 		vec4 color =
 			colors[0] * barycentrics.x +
@@ -336,24 +312,9 @@ void main() {
 		
 		// Result write
 		
-		vec4 result = surface + ap;
-		sh_shadingListResults[shadingListIndex] = result.xyz;
-		
-	}
-	
-	memoryBarrierShared();
-	barrier();
-	
-	// Accumulate sample results
-	
-	vec4 result = vec4(0.0);
-	for (uint i = 0; i < sh_shadingListCount; i += 1) {
-		
-		if (u16Fromu32(sh_shadingListPositions[i]) != gid)
-			continue;
-		
-		float coverage = float(sh_shadingListWeights[i]) * visWeightStep;
-		result += vec4(tonemapWithWeight(sh_shadingListResults[i], coverage), coverage);
+		vec4 sampleResult = surface + ap;
+		float sampleWeight = visWeights[i];
+		result += vec4(tonemapWithWeight(sampleResult.xyz, sampleWeight), sampleWeight);
 		
 	}
 	
