@@ -192,13 +192,13 @@ void Engine::render() {
 		viewport, vuk::Format::eD32Sfloat,
 		vuk::ImageUsageFlagBits::eDepthStencilAttachment |
 		vuk::ImageUsageFlagBits::eSampled,
-		vuk::Samples::e4);
+		vuk::Samples::e8);
 	
 	auto visbufMS = Texture2DMS::make(m_framePool, "visbuf_ms",
 		viewport, vuk::Format::eR32Uint,
 		vuk::ImageUsageFlagBits::eColorAttachment |
 		vuk::ImageUsageFlagBits::eSampled,
-		vuk::Samples::e4);
+		vuk::Samples::e8);
 	
 	depthMS.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearDepthStencil(0.0f, 0));
 	visbufMS.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearColor(-1u, -1u, -1u, -1u));
