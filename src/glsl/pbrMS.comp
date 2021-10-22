@@ -94,7 +94,7 @@ float dApprox(float _roughness, float _RoL) {
 }
 
 #define MULTISAMPLE_COUNT 8
-#define RECORD_COUNT 2
+#define RECORD_COUNT 3
 
 const uvec2 tileSize = gl_WorkGroupSize.yz;
 const uint pixInTile = tileSize.x * tileSize.y;
