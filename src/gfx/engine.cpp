@@ -139,8 +139,22 @@ void Engine::render() {
 	m_world.sunIlluminance = vec3(sunIlluminance);
 	
 	// Runtime settings
-	static auto antialiasing = true;
-	ImGui::Checkbox("Antialiasing", &antialiasing);
+	enum struct AntialiasingType {
+		None = 0,
+		MSAA = 1,
+		RTAA = 2,
+	};
+	static auto antialiasing = AntialiasingType::RTAA;
+	static auto antialiasingInt = +antialiasing;
+	auto AntialiasingStrings = to_array({
+		"None",
+		"MSAA (3 best of 8)",
+		"RTAA",
+	});
+	ImGui::RadioButton(AntialiasingStrings[0], &antialiasingInt, 0);
+	ImGui::RadioButton(AntialiasingStrings[1], &antialiasingInt, 1);
+	ImGui::RadioButton(AntialiasingStrings[2], &antialiasingInt, 2);
+	antialiasing = AntialiasingType(antialiasingInt);
 	
 	// Begin frame
 	
@@ -184,7 +198,7 @@ void Engine::render() {
 	auto visbufMS = Texture2DMS();
 	auto depth = Texture2D();
 	auto depthMS = Texture2DMS();
-	if (!antialiasing) {
+	if (antialiasing != AntialiasingType::MSAA) {
 		
 		visbuf = Texture2D::make(m_framePool, "visbuf",
 			viewport, vuk::Format::eR32Uint,
@@ -241,12 +255,16 @@ void Engine::render() {
 	
 	// Scene drawing
 	Clear::apply(rg, color, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
-	if (!antialiasing) {
+	if (antialiasing != AntialiasingType::MSAA) {
 		
 		Visibility::apply(rg, visbuf, depth, worldBuf, culledDrawables, *m_meshes);
 		auto worklist = Worklist::create(m_framePool, rg, "worklist", visbuf, culledDrawables, *m_materials);
-		PBR::apply(rg, color, visbuf, worklist, worldBuf, *m_meshes, *m_materials,
-			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
+		if (antialiasing == AntialiasingType::None)
+			PBR::apply(rg, color, visbuf, worklist, worldBuf, *m_meshes, *m_materials,
+				culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
+		else
+			PBR::applyRT(rg, color, visbuf, worklist, worldBuf, *m_meshes, *m_materials,
+				culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
 		Sky::draw(rg, color, worklist, cameraSky, m_atmosphere, worldBuf);
 		
 	} else {
