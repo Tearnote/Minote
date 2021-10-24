@@ -12,7 +12,7 @@ struct World {
 	uvec2 viewportSize;
 	vec2 pad0;
 	vec3 cameraPos;
-	float pad1;
+	uint frameCounter;
 	
 	vec3 sunDirection;
 	float pad2;

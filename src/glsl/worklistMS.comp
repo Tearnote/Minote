@@ -99,7 +99,7 @@ void main() {
 		uint tileOffset = tileCount * i;
 		uint tileIdx = atomicAdd(b_counts[i].x, 1);
 		
-		uint tile = gl_WorkGroupID.x + (gl_WorkGroupID.y << 16u);
+		uint tile = u32Fromu16(gl_WorkGroupID.xy);
 		b_lists[tileOffset + tileIdx] = tile;
 		
 	}

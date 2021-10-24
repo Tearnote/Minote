@@ -36,6 +36,13 @@ float fastAtan(float _y, float _x) {
     return t;
 }
 
+float distanceSq(vec2 _a, vec2 _b) {
+	
+	vec2 d = _a - _b;
+	return dot(d, d);
+	
+}
+
 // Conversion from linear RGB to sRGB
 // http://www.java-gaming.org/topics/fast-srgb-conversion-glsl-snippet/37583/view.html
 vec3 srgbEncode(vec3 _color) {
@@ -97,9 +104,9 @@ uint u32Upper(uint _n) {
 }
 
 // Create a u32 out of two u16s
-uint u32Fromu16(uint _upper, uint _lower) {
+uint u32Fromu16(uvec2 _val) {
 	
-	return (_upper << 16u) | _lower;
+	return (_val[0] << 16u) | _val[1];
 	
 }
 
@@ -135,7 +142,12 @@ vec4 karisAverage(vec4 _s1, vec4 _s2, vec4 _s3, vec4 _s4) {
 }
 
 // Fast invertible tonemapper, useful for MSAA resolve
-// https://gpuopen.com/learn/optimized-reversible-tonemapper-for-resolve/
+
+vec3 tonemap(vec3 _c) {
+	
+	return _c * rcp(max(_c.r, max(_c.g, _c.b)) + 1.0);
+	
+}
 
 vec3 tonemapWithWeight(vec3 _c, float _w) {
 	

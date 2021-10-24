@@ -97,9 +97,7 @@ void main() {
 	// Retrieve tile
 	
 	uint tilePacked = b_lists[u_tileOffset + gl_GlobalInvocationID.x];
-	uvec2 tile = {
-		tilePacked & bitmask(16u),
-		tilePacked >> 16u };
+	uvec2 tile = u16Fromu32(tilePacked);
 	
 	// Bounds check
 	

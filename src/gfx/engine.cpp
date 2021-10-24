@@ -123,6 +123,7 @@ void Engine::render() {
 	m_world.viewProjectionInverse = inverse(m_world.viewProjection);
 	m_world.viewportSize = viewport;
 	m_world.cameraPos = m_camera.position;
+	m_world.frameCounter = m_vk.context->frame_counter.load();
 	
 	// Sun properties
 	static auto sunPitch = 12_deg;
@@ -141,19 +142,16 @@ void Engine::render() {
 	// Runtime settings
 	enum struct AntialiasingType {
 		None = 0,
-		MSAA = 1,
-		RTAA = 2,
+		Quad = 1,
 	};
-	static auto antialiasing = AntialiasingType::RTAA;
+	static auto antialiasing = AntialiasingType::Quad;
 	static auto antialiasingInt = +antialiasing;
 	auto AntialiasingStrings = to_array({
 		"None",
-		"MSAA (3 best of 8)",
-		"RTAA",
+		"Quad",
 	});
 	ImGui::RadioButton(AntialiasingStrings[0], &antialiasingInt, 0);
 	ImGui::RadioButton(AntialiasingStrings[1], &antialiasingInt, 1);
-	ImGui::RadioButton(AntialiasingStrings[2], &antialiasingInt, 2);
 	antialiasing = AntialiasingType(antialiasingInt);
 	
 	// Begin frame
@@ -198,7 +196,7 @@ void Engine::render() {
 	auto visbufMS = Texture2DMS();
 	auto depth = Texture2D();
 	auto depthMS = Texture2DMS();
-	if (antialiasing != AntialiasingType::MSAA) {
+	if (antialiasing == AntialiasingType::None) {
 		
 		visbuf = Texture2D::make(m_framePool, "visbuf",
 			viewport, vuk::Format::eR32Uint,
@@ -230,7 +228,6 @@ void Engine::render() {
 		
 	}
 	
-	
 	auto worldBuf = m_world.upload(m_framePool, "world");
 	
 	// Set up the rendergraph
@@ -255,23 +252,19 @@ void Engine::render() {
 	
 	// Scene drawing
 	Clear::apply(rg, color, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
-	if (antialiasing != AntialiasingType::MSAA) {
+	if (antialiasing == AntialiasingType::None) {
 		
 		Visibility::apply(rg, visbuf, depth, worldBuf, culledDrawables, *m_meshes);
 		auto worklist = Worklist::create(m_framePool, rg, "worklist", visbuf, culledDrawables, *m_materials);
-		if (antialiasing == AntialiasingType::None)
-			PBR::apply(rg, color, visbuf, worklist, worldBuf, *m_meshes, *m_materials,
-				culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
-		else
-			PBR::applyRT(rg, color, visbuf, worklist, worldBuf, *m_meshes, *m_materials,
-				culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
+		PBR::apply(rg, color, visbuf, worklist, worldBuf, *m_meshes, *m_materials,
+			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
 		Sky::draw(rg, color, worklist, cameraSky, m_atmosphere, worldBuf);
 		
 	} else {
 		
 		Visibility::applyMS(rg, visbufMS, depthMS, worldBuf, culledDrawables, *m_meshes);
 		auto worklistMS = Worklist::createMS(m_framePool, rg, "worklist_ms", visbufMS, culledDrawables, *m_materials);
-		PBR::applyMS(rg, color, visbufMS, worklistMS, worldBuf, *m_meshes, *m_materials,
+		PBR::applyQuad(rg, color, visbufMS, worklistMS, worldBuf, *m_meshes, *m_materials,
 			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
 		Sky::draw(rg, color, worklistMS, cameraSky, m_atmosphere, worldBuf);
 		

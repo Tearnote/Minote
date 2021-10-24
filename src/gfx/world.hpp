@@ -21,7 +21,7 @@ struct World {
 	uvec2 viewportSize;
 	vec2 pad0;
 	vec3 cameraPos;
-	f32 pad1;
+	u32 frameCounter;
 	
 	vec3 sunDirection;
 	f32 pad2;

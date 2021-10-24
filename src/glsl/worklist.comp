@@ -8,6 +8,7 @@ layout(local_size_x = 8, local_size_y = 8) in;
 #include "visibilityTypes.glsl"
 #include "visibility.glsl"
 #include "types.glsl"
+#include "util.glsl"
 
 layout(binding = 0) uniform usampler2D s_visbuf;
 layout(binding = 1, std430) restrict readonly buffer Instances {
@@ -92,7 +93,7 @@ void main() {
 		uint tileOffset = tileCount * i;
 		uint tileIdx = atomicAdd(b_counts[i].x, 1);
 		
-		uint tile = gl_WorkGroupID.x + (gl_WorkGroupID.y << 16u);
+		uint tile = u32Fromu16(gl_WorkGroupID.xy);
 		b_lists[tileOffset + tileIdx] = tile;
 		
 	}
