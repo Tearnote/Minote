@@ -76,6 +76,7 @@ private:
 	
 	Pool m_permPool;
 	Pool m_framePool;
+	Pool m_swapchainPool;
 	World m_world;
 	Atmosphere m_atmosphere;
 	

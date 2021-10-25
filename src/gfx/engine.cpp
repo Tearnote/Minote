@@ -177,6 +177,7 @@ void Engine::render() {
 	auto ptc = ifc.begin();
 	m_permPool.setPtc(ptc);
 	m_framePool.setPtc(ptc);
+	m_swapchainPool.setPtc(ptc);
 	auto rg = vuk::RenderGraph();
 	
 	// Create per-frame resources
@@ -195,14 +196,14 @@ void Engine::render() {
 	iblFiltered.attach(rg, vuk::eNone, vuk::eNone);
 	constexpr auto IblProbePosition = vec3{0_m, 0_m, 10_m};
 	
-	auto color = Texture2D::make(m_framePool, "color",
+	auto color = Texture2D::make(m_swapchainPool, "color",
 		viewport, vuk::Format::eR16G16B16A16Sfloat,
 		vuk::ImageUsageFlagBits::eSampled |
 		vuk::ImageUsageFlagBits::eStorage |
 		vuk::ImageUsageFlagBits::eTransferDst);
 	color.attach(rg, vuk::eNone, vuk::eNone);
 	
-	auto screen = Texture2D::make(m_framePool, "screen",
+	auto screen = Texture2D::make(m_swapchainPool, "screen",
 		viewport, vuk::Format::eR8G8B8A8Unorm,
 		vuk::ImageUsageFlagBits::eTransferSrc |
 		vuk::ImageUsageFlagBits::eColorAttachment |
@@ -215,13 +216,13 @@ void Engine::render() {
 	auto depthMS = Texture2DMS();
 	if (antialiasing == AntialiasingType::None) {
 		
-		visbuf = Texture2D::make(m_framePool, "visbuf",
+		visbuf = Texture2D::make(m_swapchainPool, "visbuf",
 			viewport, vuk::Format::eR32Uint,
 			vuk::ImageUsageFlagBits::eColorAttachment |
 			vuk::ImageUsageFlagBits::eSampled);
 		visbuf.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearColor(-1u, -1u, -1u, -1u));
 		
-		depth = Texture2D::make(m_framePool, "depth",
+		depth = Texture2D::make(m_swapchainPool, "depth",
 			viewport, vuk::Format::eD32Sfloat,
 			vuk::ImageUsageFlagBits::eDepthStencilAttachment |
 			vuk::ImageUsageFlagBits::eSampled);
@@ -229,14 +230,14 @@ void Engine::render() {
 		
 	} else {
 		
-		visbufMS = Texture2DMS::make(m_framePool, "visbuf_ms",
+		visbufMS = Texture2DMS::make(m_swapchainPool, "visbuf_ms",
 			viewport, vuk::Format::eR32Uint,
 			vuk::ImageUsageFlagBits::eColorAttachment |
 			vuk::ImageUsageFlagBits::eSampled,
 			vuk::Samples::e8);
 		visbufMS.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearColor(-1u, -1u, -1u, -1u));
 		
-		depthMS = Texture2DMS::make(m_framePool, "depth_ms",
+		depthMS = Texture2DMS::make(m_swapchainPool, "depth_ms",
 			viewport, vuk::Format::eD32Sfloat,
 			vuk::ImageUsageFlagBits::eDepthStencilAttachment |
 			vuk::ImageUsageFlagBits::eSampled,
@@ -272,7 +273,7 @@ void Engine::render() {
 	if (antialiasing == AntialiasingType::None) {
 		
 		Visibility::apply(rg, visbuf, depth, worldBuf, culledDrawables, *m_meshes);
-		auto worklist = Worklist::create(m_framePool, rg, "worklist", visbuf, culledDrawables, *m_materials);
+		auto worklist = Worklist::create(m_swapchainPool, rg, "worklist", visbuf, culledDrawables, *m_materials);
 		PBR::apply(rg, color, visbuf, worklist, worldBuf, *m_meshes, *m_materials,
 			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
 		Sky::draw(rg, color, worklist, cameraSky, m_atmosphere, worldBuf);
@@ -280,7 +281,7 @@ void Engine::render() {
 	} else {
 		
 		Visibility::applyMS(rg, visbufMS, depthMS, worldBuf, culledDrawables, *m_meshes);
-		auto worklistMS = Worklist::createMS(m_framePool, rg, "worklist_ms", visbufMS, culledDrawables, *m_materials);
+		auto worklistMS = Worklist::createMS(m_swapchainPool, rg, "worklist_ms", visbufMS, culledDrawables, *m_materials);
 		PBR::applyQuad(rg, color, visbufMS, worklistMS, worldBuf, *m_meshes, *m_materials,
 			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
 		Sky::draw(rg, color, worklistMS, cameraSky, m_atmosphere, worldBuf);
@@ -288,7 +289,7 @@ void Engine::render() {
 	}
 	
 	// Postprocessing
-	Bloom::apply(rg, m_framePool, color);
+	Bloom::apply(rg, m_swapchainPool, color);
 	Tonemap::apply(rg, color, screen);
 	
 	ImGui::Render();
@@ -395,6 +396,8 @@ void Engine::refreshSwapchain(uvec2 _newSize) {
 	m_vk.context->remove_swapchain(m_vk.swapchain);
 	m_vk.swapchain = newSwapchain;
 	m_swapchainDirty = false;
+	
+	m_swapchainPool.reset();
 	
 	ImGui::GetIO().DisplaySize = ImVec2(
 		f32(m_vk.swapchain->extent.width),
