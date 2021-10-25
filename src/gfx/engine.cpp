@@ -11,6 +11,7 @@
 #include "base/error.hpp"
 #include "base/math.hpp"
 #include "base/log.hpp"
+#include "sys/system.hpp"
 #include "gfx/resources/texture2dms.hpp"
 #include "gfx/resources/texture2d.hpp"
 #include "gfx/effects/instanceList.hpp"
@@ -99,7 +100,6 @@ void Engine::init(MeshList&& _meshList, MaterialList&& _materialList) {
 	
 	L_INFO("Graphics engine initialized");
 	
-	
 }
 
 void Engine::render() {
@@ -112,6 +112,23 @@ void Engine::render() {
 	// Lock the renderer
 	m_renderLock.lock();
 	defer { m_renderLock.unlock(); };
+	
+	// Framerate calculation
+	
+	m_framesSinceLastCheck += 1;
+	auto currentTime = sys::System::getTime();
+	auto timeElapsed = currentTime - m_lastFramerateCheck;
+	if (timeElapsed >= 1_s) {
+		
+		auto secondsElapsed = ratio(timeElapsed, 1_s);
+		m_framerate = f32(m_framesSinceLastCheck) / secondsElapsed;
+		
+		m_lastFramerateCheck = currentTime;
+		m_framesSinceLastCheck = 0;
+		
+	}
+	
+	ImGui::Text("FPS: %.1f", m_framerate);
 	
 	// Prepare per-frame data
 	

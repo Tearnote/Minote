@@ -4,6 +4,7 @@
 #include <mutex>
 #include "Tracy.hpp"
 #include "base/math.hpp"
+#include "base/time.hpp"
 #include "sys/vulkan.hpp"
 #include "gfx/resources/cubemap.hpp"
 #include "gfx/resources/pool.hpp"
@@ -27,7 +28,8 @@ struct Engine {
 	static constexpr auto NearPlane = 0.1_m;
 	
 	// Create the engine in uninitialized state.
-	Engine(sys::Vulkan& vk): m_vk(vk) {}
+	Engine(sys::Vulkan& vk): m_vk(vk),
+		m_framerate(0.0f), m_lastFramerateCheck(0), m_framesSinceLastCheck(0) {}
 	~Engine();
 	
 	void init(MeshList&&, MaterialList&&);
@@ -61,6 +63,10 @@ private:
 	
 	TracyLockable(std::mutex, m_renderLock);
 	bool m_swapchainDirty;
+	
+	f32 m_framerate;
+	nsec m_lastFramerateCheck;
+	u32 m_framesSinceLastCheck;
 	
 	ImguiData m_imguiData;
 	std::optional<MeshBuffer> m_meshes;
