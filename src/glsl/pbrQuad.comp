@@ -223,7 +223,7 @@ void main() {
 			uint subsampleValue = texelFetch(s_visbuf, ivec2(quadGid + quadPxOffset), int(subsample)).x;
 			
 			float dist2 = distanceSq(subsamplePosition, clusterCentroid);
-			float primitiveBias = log2((clusterValue ^ subsampleValue) + 1);
+			float primitiveBias = log2(max(clusterValue, subsampleValue) - min(clusterValue, subsampleValue) + 1) * 4.0;
 			float dist = dist2 + primitiveBias;
 			
 			if (dist == subgroupClusteredMin(dist, 4)) {
