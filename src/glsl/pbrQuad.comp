@@ -73,7 +73,140 @@ layout(push_constant) uniform Constants {
 
 #include "typesAccess.glsl"
 
-const float IBLMipCount = 8.0;
+#define SUBSAMPLE_COUNT 8
+#define K_MEANS_ITERATIONS 2
+#define IBL_MIP_COUNT 8.0
+
+const uvec2 TileSize = uvec2(8);
+const uvec2 QuadsInTile = TileSize / 2;
+
+const vec2 SubsampleLocations[SUBSAMPLE_COUNT] = {
+	{0.5625, 0.3125},
+	{0.4375, 0.6875},
+	{0.8125, 0.5625},
+	{0.3125, 0.1875},
+	{0.1875, 0.8125},
+	{0.0625, 0.4375},
+	{0.6875, 0.9375},
+	{0.9375, 0.0625}};
+
+uvec2 getTileGid(uint _tileIdx) {
+	
+	uint tilePacked = b_lists[u_tileOffset + _tileIdx];
+	uvec2 tile = u16Fromu32(tilePacked);
+	return tile * TileSize;
+	
+}
+
+uint assignInitialClusterValue(uvec2 _quadGid, uvec2 _gid) {
+	
+	const uint InterQuadId = gl_SubgroupInvocationID % 4;
+	
+	uint result = -2u;
+	uint clusterValueFreq = 0;
+	bool randomize = false;
+	for (uint i = 0; i < 4 * SUBSAMPLE_COUNT; i += 1) {
+		
+		uint subsampleIdx = i % SUBSAMPLE_COUNT;
+		uint quadPx = i / SUBSAMPLE_COUNT;
+		uvec2 quadPxOffset = {quadPx % 2, quadPx / 2};
+		
+		uint subsample;
+		
+		// Read sample
+		
+		if (InterQuadId == 0)
+			subsample = texelFetch(s_visbuf, ivec2(_quadGid + quadPxOffset), int(subsampleIdx)).x;
+		subsample = subgroupQuadBroadcast(subsample, 0);
+		
+		// If repeat, increment frequency
+		
+		if (result == subsample)
+			clusterValueFreq += 1;
+		
+		// Check if value is unique
+		
+		bool valueFreeOrSame = result == -2u || result == subsample;
+		uint vote = (valueFreeOrSame? 1u : 0u) << InterQuadId;
+		uint ballot = subgroupClusteredOr(vote, 4);
+		
+		if (result == -2u && (ballot & bitmask(InterQuadId)) == 0) {
+			
+			result = subsample;
+			clusterValueFreq = 1;
+			
+		}
+		
+		// Check if value is the 5th unique
+		
+		if (ballot == 0) {
+			
+			randomize = true;
+			break;
+			
+		}
+		
+	}
+	
+	// Assign initial cluster values
+	
+	if (randomize) {
+		
+		uint initialSubsample = u_world.frameCounter % SUBSAMPLE_COUNT;
+		result = texelFetch(s_visbuf, ivec2(_gid), int(initialSubsample)).x;
+		
+	} else {
+		
+		uint highestFreq = subgroupClusteredMax(clusterValueFreq, 4);
+		uint vote = (clusterValueFreq == highestFreq? 1u : 0u) << InterQuadId;
+		uint ballot = subgroupClusteredOr(vote, 4);
+		uint interQuadIdWithHighestFreq = findLSB(ballot);
+		uint highestFreqValue = subgroupQuadBroadcast(result, interQuadIdWithHighestFreq);
+		
+		if (result == -2u)
+			result = highestFreqValue;
+		
+	}
+	
+	return result;
+	
+}
+
+void kMeansClustering(uint _clusterValue, inout vec2 _clusterCentroid, out uint _clusterSubsamples,
+	uvec2 _quadGid, uint _iterations) {
+	
+	for (uint i = 0; i < _iterations; i += 1) {
+		
+		vec2 newCentroid = vec2(0.0);
+		_clusterSubsamples = 0;
+		
+		for (uint subIdx = 0; subIdx < 4 * SUBSAMPLE_COUNT; subIdx += 1) {
+			
+			uint subsample = subIdx % SUBSAMPLE_COUNT;
+			uint quadPx = subIdx / SUBSAMPLE_COUNT;
+			uvec2 quadPxOffset = {quadPx % 2, quadPx / 2};
+			
+			vec2 subsamplePosition = vec2(quadPxOffset) + SubsampleLocations[subsample];
+			uint subsampleValue = texelFetch(s_visbuf, ivec2(_quadGid + quadPxOffset), int(subsample)).x;
+			
+			float dist2 = distanceSq(subsamplePosition, _clusterCentroid);
+			float primitiveBias = log2(max(_clusterValue, subsampleValue) - min(_clusterValue, subsampleValue) + 1) * 4.0;
+			float dist = dist2 + primitiveBias;
+			
+			if (dist == subgroupClusteredMin(dist, 4)) {
+				
+				newCentroid += subsamplePosition;
+				_clusterSubsamples |= 1 << subIdx;
+				
+			}
+			
+		}
+		
+		_clusterCentroid = newCentroid / float(bitCount(_clusterSubsamples));
+		
+	}
+	
+}
 
 vec3 envBRDFApprox(vec3 _f0, float _NoV, float _roughness) {
 	
@@ -97,311 +230,192 @@ float dApprox(float _roughness, float _RoL) {
 	
 }
 
-#define SUBSAMPLE_COUNT 8
-#define K_MEANS_ITERATIONS 4
+vec4 shadeVisSamplePBR(uint _visValue, vec2 _screenPos) {
+	
+	if (_visValue == -1u)
+		return vec4(0.0);
+	
+	vec2 sampleUv = _screenPos / vec2(u_targetSize);
+	VisSample vis = unpackVisibility(_visValue);
+	
+	// Retrieve instance params
+	
+	Instance instance = b_instances[vis.instance];
+	uint transformIdx = instance.transformIdx;
+	mat4 transform = getTransform(b_transforms[transformIdx]);
+	uint materialIdx = instance.materialIdx;
+	Material material = b_materials[materialIdx];
+	
+	// Retrieve vertex indices
+	
+	uint meshIdx = instance.meshIdx;
+	uint indexBase = b_descriptors[meshIdx].indexOffset;
+	indexBase += vis.triangle * 3;
+	uvec3 indices = fetchIndices(indexBase);
+	
+	// Retrieve vertex params
+	
+	uint vertexBase = b_descriptors[meshIdx].vertexOffset;
+	indices += uvec3(vertexBase);
+	
+	mat3 vertices = {
+		fetchVertex(indices.x),
+		fetchVertex(indices.y),
+		fetchVertex(indices.z)};
+	
+	mat3 normals = {
+		fetchNormal(indices.x),
+		fetchNormal(indices.y),
+		fetchNormal(indices.z)};
+	
+	mat3x4 colors = {
+		fetchColor(indices.x),
+		fetchColor(indices.y),
+		fetchColor(indices.z)};
+	
+	// Transform params from model to world space
+	
+	mat3 normTransform = mat3(inverse(transpose(transform)));
+	
+	for (uint i = 0; i < 3; i += 1) {
+		
+		vec4 transformed = transform * vec4(vertices[i], 1.0);
+		vertices[i] = transformed.xyz / transformed.w;
+		
+		normals[i] = normalize(normTransform * normals[i]);
+		
+	}
+	
+	// Calculate world position and barycentrics
+	
+	vec3 clipSpace = vec3(sampleUv * vec2(2.0) - vec2(1.0), 0.0);
+	vec3 worldDir = normalize(vec3(u_world.viewProjectionInverse * vec4(clipSpace, 1.0)));
+	
+	vec3 vertex;
+	vec3 barycentrics;
+	lineTriIntersection(vertex, barycentrics, u_world.cameraPos, worldDir, vertices);
+	barycentrics = clampBarycentrics(barycentrics);
+	
+	vec4 clipVertexW = u_world.viewProjection * vec4(vertex, 1.0);
+	vec3 clipVertex = clipVertexW.xyz / clipVertexW.w;
+	
+	// Interpolate params
+	
+	// vec3 normal = normalInterp(normals, barycentrics);
+	vec3 normal = normalize(
+		normals[0] * barycentrics.x +
+		normals[1] * barycentrics.y +
+		normals[2] * barycentrics.z);
+	
+	vec4 color =
+		colors[0] * barycentrics.x +
+		colors[1] * barycentrics.y +
+		colors[2] * barycentrics.z;
+	
+	// Standard vectors
+	
+	vec3 viewDirection = normalize(u_world.cameraPos - vertex);
+	float NoV = dot(normal, viewDirection);
+	
+	// Empirical sun visibility above the horizon
+	
+	float sunDot = dot(vec3(0.0, 0.0, 1.0), u_world.sunDirection);
+	float sunAngularSize = radians(0.2);
+	float sunsetStart = cos(radians(90.05) - sunAngularSize);
+	float sunsetEnd = cos(radians(90.05) + sunAngularSize);
+	float sunset = (sunDot - sunsetEnd) / (sunsetStart - sunsetEnd);
+	sunset = clamp(sunset, 0.0, 1.0);
+	sunset = (1.0 - cos(sunset * 1.57079633)) / 2.0;
+	
+	vec3 sunColor = u_sunLuminance * sunset;
+	
+	// PBR calculation
+	
+	uint colorIdx = instance.colorIdx;
+	color *= b_colors[colorIdx];
+	vec3 f0 = max(color.rgb * material.metalness, vec3(0.04));
+	
+	vec3 iblDiffuse = textureLod(s_cubemap, normal, IBL_MIP_COUNT - 2.0).rgb;
+	vec3 sunDiffuse = sunColor * max(dot(normal, u_world.sunDirection), 0.0);
+	vec3 diffuse = color.rgb * (iblDiffuse + sunDiffuse) * (1.0 - material.metalness);
+	
+	vec3 reflection = reflect(viewDirection, normal);
+	float iblMip = max(7.0 - 0.480898 * log(2.0 / pow(material.roughness, 4.0) - 1.0), 0.0);
+	vec3 iblSpecular = vec3(textureLod(s_cubemap, -reflection, iblMip));
+	float SunMinRoughness = 1.0 / 16.0;
+	vec3 sunSpecular = sunColor * dApprox(max(material.roughness, SunMinRoughness), dot(-reflection, u_world.sunDirection));
+	vec3 specular = iblSpecular + sunSpecular;
+	
+	vec3 surface = mix(diffuse, specular, envBRDFApprox(f0, NoV, material.roughness));
+	
+	// Aerial perspective
+	
+	float slice = aerialPerspectiveDepthToSlice(1.0 - clipVertex.z);
+	float weight = 1.0;
+	if (slice < 0.5) {
+		
+		// We multiply by weight to fade to 0 at depth 0. That works for luminance and opacity.
+		weight = clamp(slice * 2.0, 0.0, 1.0);
+		slice = 0.5;
+		
+	}
+	float w = sqrt(slice / u_aerialPerspectiveSize.z);	// squared distribution
+	
+	vec3 ap = weight * textureLod(s_aerialPerspective, vec3(sampleUv, w), 0.0).xyz;
+	
+	// Result write
+	
+	return vec4(surface + ap, 1.0);
+	
+}
 
-const uvec2 TileSize = uvec2(8);
-const uvec2 QuadsInTile = TileSize / 2;
-
-const vec2 SubsampleLocations[SUBSAMPLE_COUNT] = {
-	{0.5625, 0.3125},
-	{0.4375, 0.6875},
-	{0.8125, 0.5625},
-	{0.3125, 0.1875},
-	{0.1875, 0.8125},
-	{0.0625, 0.4375},
-	{0.6875, 0.9375},
-	{0.9375, 0.0625}};
+vec4 blendClusters(vec4 _clusterColor, uint _clusterSubsamples) {
+	
+	const float CoverageStep = 1.0 / float(SUBSAMPLE_COUNT);
+	
+	uint bitOffset = (gl_SubgroupInvocationID % 4) * SUBSAMPLE_COUNT;
+	
+	vec4 result = vec4(0.0);
+	for (uint i = 0; i < SUBSAMPLE_COUNT * 4; i += 1) {
+		
+		uint subsampleMask = 1u << i;
+		uint clusterOwnsSubsample = ((subsampleMask & _clusterSubsamples) != 0u)? 1u : 0u;
+		uint vote = clusterOwnsSubsample << (gl_SubgroupInvocationID % 4);
+		uint ballot = subgroupClusteredOr(vote, 4);
+		uint clusterWithSubsample = findLSB(ballot) + (gl_SubgroupInvocationID & ~3u);
+		vec4 value = subgroupShuffle(_clusterColor, clusterWithSubsample);
+		
+		if (i / SUBSAMPLE_COUNT == (gl_SubgroupInvocationID % 4))
+			result += vec4(tonemap(value.xyz) * CoverageStep, value.a * CoverageStep);
+		
+	}
+	
+	return result;
+	
+}
 
 void main() {
 	
 	uint subSize = subgroupBallotBitCount(subgroupBallot(true));
-	uint subId = gl_SubgroupInvocationID + gl_SubgroupID * subSize;
-	uint quadId = subId / 4;
-	uvec2 quadOffset = uvec2(quadId % QuadsInTile.x, quadId / QuadsInTile.x) * 2;
+	uint subIdx = gl_SubgroupInvocationID + gl_SubgroupID * subSize;
 	
-	uint interQuadId = subId % 4;
-	uvec2 interQuadOffset = {interQuadId % 2, interQuadId / 2};
+	uint quadIdx = subIdx / 4;
+	uvec2 quadOffset = uvec2(quadIdx % QuadsInTile.x, quadIdx / QuadsInTile.x) * 2;
+	uvec2 interQuadOffset = {gl_SubgroupInvocationID % 2, gl_SubgroupInvocationID % 4 / 2};
 	
-	uvec2 lid = quadOffset + interQuadOffset;
+	uvec2 tileGid = getTileGid(gl_GlobalInvocationID.x);
+	uvec2 quadGid = tileGid + quadOffset;
+	uvec2 gid = quadGid + interQuadOffset;
 	
-	// Retrieve tile
-	
-	uint tileIdx = gl_GlobalInvocationID.x;
-	uint tilePacked = b_lists[u_tileOffset + tileIdx];
-	uvec2 tile = u16Fromu32(tilePacked);
-	uvec2 tileOffset = tile * TileSize;
-	
-	uvec2 quadGid = tileOffset + quadOffset;
-	uvec2 gid = tileOffset + lid;
-	
-	// Count unique samples in the quad
-	
-	uint clusterValue = -2u;
-	uint clusterValueFreq = 0;
-	bool randomize = false;
-	for (uint i = 0; i < 4 * SUBSAMPLE_COUNT; i += 1) {
-		
-		uint subsampleIdx = i % SUBSAMPLE_COUNT;
-		uint quadPx = i / SUBSAMPLE_COUNT;
-		uvec2 quadPxOffset = {quadPx % 2, quadPx / 2};
-		
-		uint subsample;
-		
-		// Read sample
-		
-		if (interQuadId == 0)
-			subsample = texelFetch(s_visbuf, ivec2(quadGid + quadPxOffset), int(subsampleIdx)).x;
-		subsample = subgroupQuadBroadcast(subsample, 0);
-		
-		// If repeat, increment frequency
-		
-		if (clusterValue == subsample)
-			clusterValueFreq += 1;
-		
-		// Check if value is unique
-		
-		bool valueFreeOrSame = clusterValue == -2u || clusterValue == subsample;
-		uint vote = (valueFreeOrSame? 1u : 0u) << interQuadId;
-		uint ballot = subgroupClusteredOr(vote, 4);
-		
-		if (clusterValue == -2u && (ballot & bitmask(interQuadId)) == 0) {
-			
-			clusterValue = subsample;
-			clusterValueFreq = 1;
-			
-		}
-		
-		// Check if value is the 5th unique
-		
-		if (ballot == 0) {
-			
-			randomize = true;
-			break;
-			
-		}
-		
-	}
-	
-	// Assign initial cluster values
-	
-	if (randomize) {
-		
-		uint initialSubsample = u_world.frameCounter % SUBSAMPLE_COUNT;
-		clusterValue = texelFetch(s_visbuf, ivec2(quadGid + interQuadOffset), int(initialSubsample)).x;
-		
-	} else {
-		
-		uint highestFreq = subgroupClusteredMax(clusterValueFreq, 4);
-		uint vote = (clusterValueFreq == highestFreq? 1u : 0u) << interQuadId;
-		uint ballot = subgroupClusteredOr(vote, 4);
-		uint interQuadIdWithHighestFreq = findLSB(ballot);
-		uint highestFreqValue = subgroupQuadBroadcast(clusterValue, interQuadIdWithHighestFreq);
-		
-		if (clusterValue == -2u)
-			clusterValue = highestFreqValue;
-		
-	}
-	
-	// Perform k-means clustering on quad subsamples
+	uint clusterValue = assignInitialClusterValue(quadGid, gid);
 	
 	vec2 clusterCentroid = vec2(interQuadOffset) + vec2(0.5);
-	uint clusterSubsampleMask;
+	uint clusterSubsamples;
 	
-	for (uint i = 0; i < K_MEANS_ITERATIONS; i += 1) {
-		
-		vec2 newCentroid = vec2(0.0);
-		clusterSubsampleMask = 0;
-		
-		for (uint subIdx = 0; subIdx < 4 * SUBSAMPLE_COUNT; subIdx += 1) {
-			
-			uint subsample = subIdx % SUBSAMPLE_COUNT;
-			uint quadPx = subIdx / SUBSAMPLE_COUNT;
-			uvec2 quadPxOffset = {quadPx % 2, quadPx / 2};
-			
-			vec2 subsamplePosition = vec2(quadPxOffset) + SubsampleLocations[subsample];
-			uint subsampleValue = texelFetch(s_visbuf, ivec2(quadGid + quadPxOffset), int(subsample)).x;
-			
-			float dist2 = distanceSq(subsamplePosition, clusterCentroid);
-			float primitiveBias = log2(max(clusterValue, subsampleValue) - min(clusterValue, subsampleValue) + 1) * 4.0;
-			float dist = dist2 + primitiveBias;
-			
-			if (dist == subgroupClusteredMin(dist, 4)) {
-				
-				newCentroid += subsamplePosition;
-				clusterSubsampleMask |= 1 << subIdx;
-				
-			}
-			
-		}
-		
-		clusterCentroid = newCentroid / float(bitCount(clusterSubsampleMask));
-		
-	}
+	kMeansClustering(clusterValue, clusterCentroid, clusterSubsamples, quadGid, K_MEANS_ITERATIONS);
 	
-	// Shade the cluster
-	
-	vec4 clusterResult = vec4(0.0);
-	
-	// Retrieve visibility sample
-	
-	if (clusterValue != -1u) { // Sky sample
-		
-		vec2 clusterUv = (vec2(quadGid) + clusterCentroid) / vec2(u_targetSize);
-		VisSample vis = unpackVisibility(clusterValue);
-		
-		// Retrieve instance params
-		
-		Instance instance = b_instances[vis.instance];
-		uint transformIdx = instance.transformIdx;
-		mat4 transform = getTransform(b_transforms[transformIdx]);
-		uint materialIdx = instance.materialIdx;
-		Material material = b_materials[materialIdx];
-		
-		// Retrieve vertex indices
-		
-		uint meshIdx = instance.meshIdx;
-		uint indexBase = b_descriptors[meshIdx].indexOffset;
-		indexBase += vis.triangle * 3;
-		uvec3 indices = fetchIndices(indexBase);
-		
-		// Retrieve vertex params
-		
-		uint vertexBase = b_descriptors[meshIdx].vertexOffset;
-		indices += uvec3(vertexBase);
-		
-		mat3 vertices = {
-			fetchVertex(indices.x),
-			fetchVertex(indices.y),
-			fetchVertex(indices.z)};
-		
-		mat3 normals = {
-			fetchNormal(indices.x),
-			fetchNormal(indices.y),
-			fetchNormal(indices.z)};
-		
-		mat3x4 colors = {
-			fetchColor(indices.x),
-			fetchColor(indices.y),
-			fetchColor(indices.z)};
-		
-		// Transform params from model to world space
-		
-		mat3 normTransform = mat3(inverse(transpose(transform)));
-		
-		for (uint i = 0; i < 3; i += 1) {
-			
-			vec4 transformed = transform * vec4(vertices[i], 1.0);
-			vertices[i] = transformed.xyz / transformed.w;
-			
-			normals[i] = normalize(normTransform * normals[i]);
-			
-		}
-		
-		// Calculate world position and barycentrics
-		
-		vec3 clipSpace = vec3(clusterUv * vec2(2.0) - vec2(1.0), 0.0);
-		vec3 worldDir = normalize(vec3(u_world.viewProjectionInverse * vec4(clipSpace, 1.0)));
-		
-		vec3 vertex;
-		vec3 barycentrics;
-		lineTriIntersection(vertex, barycentrics, u_world.cameraPos, worldDir, vertices);
-		barycentrics = clampBarycentrics(barycentrics);
-		
-		vec4 clipVertexW = u_world.viewProjection * vec4(vertex, 1.0);
-		vec3 clipVertex = clipVertexW.xyz / clipVertexW.w;
-		
-		// Interpolate params
-		
-		// vec3 normal = normalInterp(normals, barycentrics);
-		vec3 normal = normalize(
-			normals[0] * barycentrics.x +
-			normals[1] * barycentrics.y +
-			normals[2] * barycentrics.z);
-		
-		vec4 color =
-			colors[0] * barycentrics.x +
-			colors[1] * barycentrics.y +
-			colors[2] * barycentrics.z;
-		
-		// Standard vectors
-		
-		vec3 viewDirection = normalize(u_world.cameraPos - vertex);
-		float NoV = dot(normal, viewDirection);
-		
-		// Empirical sun visibility above the horizon
-		
-		float sunDot = dot(vec3(0.0, 0.0, 1.0), u_world.sunDirection);
-		float sunAngularSize = radians(0.2);
-		float sunsetStart = cos(radians(90.05) - sunAngularSize);
-		float sunsetEnd = cos(radians(90.05) + sunAngularSize);
-		float sunset = (sunDot - sunsetEnd) / (sunsetStart - sunsetEnd);
-		sunset = clamp(sunset, 0.0, 1.0);
-		sunset = (1.0 - cos(sunset * 1.57079633)) / 2.0;
-		
-		vec3 sunColor = u_sunLuminance * sunset;
-		
-		// PBR calculation
-		
-		uint colorIdx = instance.colorIdx;
-		color *= b_colors[colorIdx];
-		vec3 f0 = max(color.rgb * material.metalness, vec3(0.04));
-		
-		vec3 iblDiffuse = textureLod(s_cubemap, normal, IBLMipCount - 2.0).rgb;
-		vec3 sunDiffuse = sunColor * max(dot(normal, u_world.sunDirection), 0.0);
-		vec3 diffuse = color.rgb * (iblDiffuse + sunDiffuse) * (1.0 - material.metalness);
-		
-		vec3 reflection = reflect(viewDirection, normal);
-		float iblMip = max(7.0 - 0.480898 * log(2.0 / pow(material.roughness, 4.0) - 1.0), 0.0);
-		vec3 iblSpecular = vec3(textureLod(s_cubemap, -reflection, iblMip));
-		float SunMinRoughness = 1.0 / 16.0;
-		vec3 sunSpecular = sunColor * dApprox(max(material.roughness, SunMinRoughness), dot(-reflection, u_world.sunDirection));
-		vec3 specular = iblSpecular + sunSpecular;
-		
-		vec3 surface = mix(diffuse, specular, envBRDFApprox(f0, NoV, material.roughness));
-		
-		// Aerial perspective
-		
-		float slice = aerialPerspectiveDepthToSlice(1.0 - clipVertex.z);
-		float weight = 1.0;
-		if (slice < 0.5) {
-			
-			// We multiply by weight to fade to 0 at depth 0. That works for luminance and opacity.
-			weight = clamp(slice * 2.0, 0.0, 1.0);
-			slice = 0.5;
-			
-		}
-		float w = sqrt(slice / u_aerialPerspectiveSize.z);	// squared distribution
-		
-		vec3 ap = weight * textureLod(s_aerialPerspective, vec3(clusterUv, w), 0.0).xyz;
-		
-		// Result write
-		
-		clusterResult = vec4(surface + ap, 1.0);
-		
-	}
-	
-	// Blend cluster results for assigned pixel
-	
-	uint bitOffset = interQuadId * SUBSAMPLE_COUNT;
-	float coverageStep = 1.0 / float(SUBSAMPLE_COUNT);
-	
-	vec4 pixelResult = vec4(0.0);
-	for (uint i = 0; i < SUBSAMPLE_COUNT * 4; i += 1) {
-		
-		uint subsampleMask = 1u << i;
-		uint clusterOwnsSubsample = ((subsampleMask & clusterSubsampleMask) != 0u)? 1u : 0u;
-		uint vote = clusterOwnsSubsample << interQuadId;
-		uint ballot = subgroupClusteredOr(vote, 4);
-		uint clusterWithSubsample = findLSB(ballot) + (gl_SubgroupInvocationID & ~3u);
-		vec4 value = subgroupShuffle(clusterResult, clusterWithSubsample);
-		
-		if (i / SUBSAMPLE_COUNT == interQuadId)
-			pixelResult += vec4(tonemap(value.xyz) * coverageStep, value.a * coverageStep);
-		
-	}
-	
-	// Write to output
+	vec4 clusterResult = shadeVisSamplePBR(clusterValue, vec2(quadGid) + clusterCentroid);
+	vec4 pixelResult = blendClusters(clusterResult, clusterSubsamples);
 	
 	if (pixelResult.a > 0.0)
 		imageStore(i_target, ivec2(gid), vec4(tonemapInvert(pixelResult.rgb), pixelResult.a));
