@@ -171,11 +171,13 @@ struct vec {
 	constexpr auto operator-=(vec<Dim, T> const&) -> vec<Dim, T>&;
 	constexpr auto operator*=(vec<Dim, T> const&) -> vec<Dim, T>&; // Component-wise
 	constexpr auto operator/=(vec<Dim, T> const&) -> vec<Dim, T>&;
+	constexpr auto operator%=(vec<Dim, T> const&) -> vec<Dim, T>&;
 	
 	// Scalar arithmetic
 	
 	constexpr auto operator*=(T) -> vec<Dim, T>&;
 	constexpr auto operator/=(T) -> vec<Dim, T>&;
+	constexpr auto operator%=(T) -> vec<Dim, T>&;
 	constexpr auto operator<<=(T) -> vec<Dim, T>&;
 	constexpr auto operator>>=(T) -> vec<Dim, T>&;
 	
@@ -198,6 +200,9 @@ constexpr auto operator*(vec<Dim, T> const&, vec<Dim, T> const&) -> vec<Dim, T>;
 
 template<usize Dim, arithmetic T>
 constexpr auto operator/(vec<Dim, T> const&, vec<Dim, T> const&) -> vec<Dim, T>;
+
+template<usize Dim, integral T>
+constexpr auto operator%(vec<Dim, T> const&, vec<Dim, T> const&) -> vec<Dim, T>;
 
 template<usize Dim, arithmetic T>
 constexpr auto operator==(vec<Dim, T> const&, vec<Dim, T> const&) -> bool;
@@ -223,6 +228,9 @@ constexpr auto operator*(T left, vec<Dim, T> const& right) -> vec<Dim, T> { retu
 
 template<usize Dim, arithmetic T>
 constexpr auto operator/(vec<Dim, T> const&, T) -> vec<Dim, T>;
+
+template<usize Dim, integral T>
+constexpr auto operator%(vec<Dim, T> const&, T) -> vec<Dim, T>;
 
 template<usize Dim, integral T>
 constexpr auto operator<<(vec<Dim, T> const&, T) -> vec<Dim, T>;
