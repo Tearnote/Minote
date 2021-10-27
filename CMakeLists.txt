@@ -67,6 +67,7 @@ add_executable(Minote
         src/gfx/resources/buffer.hpp src/gfx/resources/buffer.tpp
         src/gfx/resources/pool.hpp
         src/gfx/effects/cubeFilterCoeffs.hpp
+        src/gfx/effects/antialiasing.hpp src/gfx/effects/antialiasing.cpp
         src/gfx/effects/instanceList.hpp src/gfx/effects/instanceList.cpp
         src/gfx/effects/cubeFilter.hpp src/gfx/effects/cubeFilter.cpp
         src/gfx/effects/visibility.hpp src/gfx/effects/visibility.cpp
@@ -259,6 +260,7 @@ set(SHADER_SOURCES
         src/glsl/cubePostfilter.comp
         src/glsl/cubePrefilter.comp
         src/glsl/transformConv.comp
+        src/glsl/quadResolve.comp
         src/glsl/frustumCull.comp
         src/glsl/visibility.vert src/glsl/visibility.frag
         src/glsl/worklistMS.comp

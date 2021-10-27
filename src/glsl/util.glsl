@@ -117,6 +117,24 @@ uvec2 u16Fromu32(uint _val) {
 	
 }
 
+// https://fgiesen.wordpress.com/2009/12/13/decoding-morton-codes/
+uint mortonCompact1By1(uint _x) {
+	
+	_x &= 0x55555555u;                    // x = -f-e -d-c -b-a -9-8 -7-6 -5-4 -3-2 -1-0
+	_x = (_x ^ (_x >>  1)) & 0x33333333u; // x = --fe --dc --ba --98 --76 --54 --32 --10
+	_x = (_x ^ (_x >>  2)) & 0x0f0f0f0fu; // x = ---- fedc ---- ba98 ---- 7654 ---- 3210
+	_x = (_x ^ (_x >>  4)) & 0x00ff00ffu; // x = ---- ---- fedc ba98 ---- ---- 7654 3210
+	_x = (_x ^ (_x >>  8)) & 0x0000ffffu; // x = ---- ---- ---- ---- fedc ba98 7654 3210
+	return _x;
+	
+}
+
+uvec2 mortonOrder(uint _id) {
+	
+	return uvec2(mortonCompact1By1(_id), mortonCompact1By1(_id >> 1));
+	
+}
+
 // https://graphics.pixar.com/library/OrthonormalB/paper.pdf
 void orthonormalBasis(vec3 _n, out vec3 _b1, out vec3 _b2) {
 	

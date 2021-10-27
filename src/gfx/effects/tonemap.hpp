@@ -2,14 +2,12 @@
 
 #include "vuk/RenderGraph.hpp"
 #include "vuk/Context.hpp"
-#include "base/math.hpp"
 #include "gfx/resources/texture2d.hpp"
 
 namespace minote::gfx {
 
 using namespace base;
 
-// Simple post-processing effects. Currently contains tonemapping.
 struct Tonemap {
 	
 	// Build the shader.

@@ -14,6 +14,7 @@
 #include "sys/system.hpp"
 #include "gfx/resources/texture2dms.hpp"
 #include "gfx/resources/texture2d.hpp"
+#include "gfx/effects/antialiasing.hpp"
 #include "gfx/effects/instanceList.hpp"
 #include "gfx/effects/cubeFilter.hpp"
 #include "gfx/effects/visibility.hpp"
@@ -63,6 +64,7 @@ void Engine::init(MeshList&& _meshList, MaterialList&& _materialList) {
 	// Compile pipelines
 	
 	DrawableInstanceList::compile(ptc);
+	Antialiasing::compile(ptc);
 	InstanceList::compile(ptc);
 	CubeFilter::compile(ptc);
 	Atmosphere::compile(ptc);
@@ -214,6 +216,7 @@ void Engine::render() {
 	auto visbufMS = Texture2DMS();
 	auto depth = Texture2D();
 	auto depthMS = Texture2DMS();
+	auto quadResolve = Texture2D();
 	if (antialiasing == AntialiasingType::None) {
 		
 		visbuf = Texture2D::make(m_swapchainPool, "visbuf",
@@ -243,6 +246,12 @@ void Engine::render() {
 			vuk::ImageUsageFlagBits::eSampled,
 			vuk::Samples::e8);
 		depthMS.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearDepthStencil(0.0f, 0));
+		
+		quadResolve = Texture2D::make(m_swapchainPool, "quad_resolve",
+			viewport, vuk::Format::eR32G32Uint,
+			vuk::ImageUsageFlagBits::eStorage |
+			vuk::ImageUsageFlagBits::eSampled);
+		quadResolve.attach(rg, vuk::eNone, vuk::eNone);
 		
 	}
 	
@@ -282,6 +291,7 @@ void Engine::render() {
 		
 		Visibility::applyMS(rg, visbufMS, depthMS, worldBuf, culledDrawables, *m_meshes);
 		auto worklistMS = Worklist::createMS(m_swapchainPool, rg, "worklist_ms", visbufMS, culledDrawables, *m_materials);
+		Antialiasing::resolveQuad(rg, visbufMS, quadResolve, worldBuf);
 		PBR::applyQuad(rg, color, visbufMS, worklistMS, worldBuf, *m_meshes, *m_materials,
 			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
 		Sky::draw(rg, color, worklistMS, cameraSky, m_atmosphere, worldBuf);

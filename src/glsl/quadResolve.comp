@@ -1,0 +1,186 @@
+#version 460
+#pragma shader_stage(compute)
+#extension GL_GOOGLE_include_directive: enable
+#extension GL_KHR_shader_subgroup_ballot: enable
+#extension GL_KHR_shader_subgroup_clustered: enable
+#extension GL_KHR_shader_subgroup_quad: enable
+
+layout(local_size_x = 8, local_size_y = 8) in;
+
+#include "types.glsl"
+#include "util.glsl"
+
+layout(binding = 0) uniform WorldConstants {
+	World u_world;
+};
+layout(binding = 1) uniform usampler2DMS s_visbuf;
+layout(binding = 2) restrict writeonly uniform uimage2D i_quadResolve;
+
+layout(push_constant) uniform Constants {
+	uvec2 u_sourceSize;
+};
+
+#define SUBSAMPLE_COUNT 8
+#define K_MEANS_ITERATIONS 2
+
+const vec2 SubsampleLocations[SUBSAMPLE_COUNT] = {
+	{0.5625, 0.3125},
+	{0.4375, 0.6875},
+	{0.8125, 0.5625},
+	{0.3125, 0.1875},
+	{0.1875, 0.8125},
+	{0.0625, 0.4375},
+	{0.6875, 0.9375},
+	{0.9375, 0.0625}};
+
+const uvec2 QuadsInGroup = gl_WorkGroupSize.xy / 2;
+
+shared uint sh_visSamples[gl_WorkGroupSize.x * gl_WorkGroupSize.y * SUBSAMPLE_COUNT];
+
+uvec2 interQuadOffset() {
+	
+	return uvec2(gl_SubgroupInvocationID % 2, gl_SubgroupInvocationID % 4 / 2);
+	
+}
+
+void readVisSamples() {
+	
+	uint pixelIdx = (gl_LocalInvocationID.x + gl_LocalInvocationID.y * gl_WorkGroupSize.x) * SUBSAMPLE_COUNT;
+	for (uint i = 0; i < SUBSAMPLE_COUNT; i += 1)
+		sh_visSamples[pixelIdx + i] = texelFetch(s_visbuf, ivec2(gl_GlobalInvocationID.xy), int(i)).x;
+	
+}
+
+uint getVisSample(uvec2 _lid, uint _subsample) {
+	
+	return sh_visSamples[(_lid.x + _lid.y * gl_WorkGroupSize.x) * SUBSAMPLE_COUNT + _subsample];
+	
+}
+
+uint assignInitialClusterValue(uvec2 _lid) {
+	
+	const uint InterQuadId = gl_SubgroupInvocationID % 4;
+	uvec2 quadOffset = _lid & ~1u;
+	
+	uint result = -2u;
+	uint clusterValueFreq = 0;
+	bool randomize = false;
+	for (uint i = 0; i < 4 * SUBSAMPLE_COUNT; i += 1) {
+		
+		uint subsampleIdx = i % SUBSAMPLE_COUNT;
+		uint quadPx = i / SUBSAMPLE_COUNT;
+		uvec2 quadPxOffset = {quadPx % 2, quadPx / 2};
+		
+		uint subsample = getVisSample(quadOffset + quadPxOffset, subsampleIdx);
+		
+		// If repeat, increment frequency
+		
+		if (result == subsample)
+			clusterValueFreq += 1;
+		
+		// Check if value is unique
+		
+		bool valueFreeOrSame = result == -2u || result == subsample;
+		uint vote = (valueFreeOrSame? 1u : 0u) << InterQuadId;
+		uint ballot = subgroupClusteredOr(vote, 4);
+		
+		if (result == -2u && (ballot & bitmask(InterQuadId)) == 0) {
+			
+			result = subsample;
+			clusterValueFreq = 1;
+			
+		}
+		
+		// Check if value is the 5th unique
+		
+		if (ballot == 0) {
+			
+			randomize = true;
+			break;
+			
+		}
+		
+	}
+	
+	// Assign initial cluster values
+	
+	if (randomize) {
+		
+		uint initialSubsample = u_world.frameCounter % SUBSAMPLE_COUNT;
+		result = getVisSample(quadOffset + interQuadOffset(), initialSubsample);
+		
+	} else {
+		
+		uint highestFreq = subgroupClusteredMax(clusterValueFreq, 4);
+		uint vote = (clusterValueFreq == highestFreq? 1u : 0u) << InterQuadId;
+		uint ballot = subgroupClusteredOr(vote, 4);
+		uint interQuadIdWithHighestFreq = findLSB(ballot);
+		uint highestFreqValue = subgroupQuadBroadcast(result, interQuadIdWithHighestFreq);
+		
+		if (result == -2u)
+			result = highestFreqValue;
+		
+	}
+	
+	return result;
+	
+}
+
+void kMeansClustering(uint _clusterValue, out uint _clusterSubsamples,
+	uvec2 _lid, uint _iterations) {
+		
+	uvec2 quadOffset = _lid & ~1u;
+	vec2 clusterCentroid = vec2(interQuadOffset()) + vec2(0.5);
+	
+	for (uint i = 0; i < _iterations; i += 1) {
+		
+		vec2 newCentroid = vec2(0.0);
+		_clusterSubsamples = 0;
+		
+		for (uint subIdx = 0; subIdx < 4 * SUBSAMPLE_COUNT; subIdx += 1) {
+			
+			uint subsample = subIdx % SUBSAMPLE_COUNT;
+			uint quadPx = subIdx / SUBSAMPLE_COUNT;
+			uvec2 quadPxOffset = {quadPx % 2, quadPx / 2};
+			
+			vec2 subsamplePosition = vec2(quadPxOffset) + SubsampleLocations[subsample];
+			uint subsampleValue = getVisSample(quadOffset + quadPxOffset, subsample);
+			
+			float dist2 = distanceSq(subsamplePosition, clusterCentroid);
+			float primitiveBias = log2(max(_clusterValue, subsampleValue) - min(_clusterValue, subsampleValue) + 1) * 4.0;
+			float dist = dist2 + primitiveBias;
+			
+			if (dist == subgroupClusteredMin(dist, 4)) {
+				
+				newCentroid += subsamplePosition;
+				_clusterSubsamples |= 1 << subIdx;
+				
+			}
+			
+		}
+		
+		clusterCentroid = newCentroid / float(bitCount(_clusterSubsamples));
+		
+	}
+	
+}
+
+void main() {
+	
+	uint subSize = subgroupBallotBitCount(subgroupBallot(true));
+	uint subIdx = gl_SubgroupInvocationID + gl_SubgroupID * subSize;
+	uvec2 lid = mortonOrder(subIdx);
+	uvec2 gid = gl_WorkGroupID.xy * gl_WorkGroupSize.xy + lid;
+	
+	readVisSamples();
+	
+	memoryBarrierShared();
+	barrier();
+	
+	uint clusterValue = assignInitialClusterValue(lid);
+	uint clusterSubsamples;
+	kMeansClustering(clusterValue, clusterSubsamples, lid, K_MEANS_ITERATIONS);
+	
+	imageStore(i_quadResolve, ivec2(gid), uvec4(clusterValue, clusterSubsamples, 0, 0));
+	
+}
