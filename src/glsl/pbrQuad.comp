@@ -81,6 +81,8 @@ layout(push_constant) uniform Constants {
 const uvec2 TileSize = uvec2(8);
 const uvec2 QuadsInTile = TileSize / 2;
 
+shared uint sh_visSamples[TileSize.x * TileSize.y * SUBSAMPLE_COUNT];
+
 const vec2 SubsampleLocations[SUBSAMPLE_COUNT] = {
 	{0.5625, 0.3125},
 	{0.4375, 0.6875},
@@ -99,7 +101,22 @@ uvec2 getTileGid(uint _tileIdx) {
 	
 }
 
-uint assignInitialClusterValue(uvec2 _quadGid, uvec2 _gid) {
+void readVisSamples(uvec2 _gid) {
+	
+	uvec2 lid = _gid % TileSize;
+	uint pixelIdx = (lid.x + lid.y * TileSize.x) * SUBSAMPLE_COUNT;
+	for (uint i = 0; i < SUBSAMPLE_COUNT; i += 1)
+		sh_visSamples[pixelIdx + i] = texelFetch(s_visbuf, ivec2(_gid), int(i)).x;
+	
+}
+
+uint getVisSample(uvec2 _lid, uint _subsample) {
+	
+	return sh_visSamples[(_lid.x + _lid.y * TileSize.x) * SUBSAMPLE_COUNT + _subsample];
+	
+}
+
+uint assignInitialClusterValue(uvec2 _quadOffset) {
 	
 	const uint InterQuadId = gl_SubgroupInvocationID % 4;
 	
@@ -117,7 +134,7 @@ uint assignInitialClusterValue(uvec2 _quadGid, uvec2 _gid) {
 		// Read sample
 		
 		if (InterQuadId == 0)
-			subsample = texelFetch(s_visbuf, ivec2(_quadGid + quadPxOffset), int(subsampleIdx)).x;
+			subsample = getVisSample(_quadOffset + quadPxOffset, subsampleIdx);
 		subsample = subgroupQuadBroadcast(subsample, 0);
 		
 		// If repeat, increment frequency
@@ -154,7 +171,7 @@ uint assignInitialClusterValue(uvec2 _quadGid, uvec2 _gid) {
 	if (randomize) {
 		
 		uint initialSubsample = u_world.frameCounter % SUBSAMPLE_COUNT;
-		result = texelFetch(s_visbuf, ivec2(_gid), int(initialSubsample)).x;
+		result = getVisSample(_quadOffset + uvec2(gl_SubgroupInvocationID % 2, gl_SubgroupInvocationID % 4 / 2), initialSubsample);
 		
 	} else {
 		
@@ -174,7 +191,7 @@ uint assignInitialClusterValue(uvec2 _quadGid, uvec2 _gid) {
 }
 
 void kMeansClustering(uint _clusterValue, inout vec2 _clusterCentroid, out uint _clusterSubsamples,
-	uvec2 _quadGid, uint _iterations) {
+	uvec2 _quadOffset, uint _iterations) {
 	
 	for (uint i = 0; i < _iterations; i += 1) {
 		
@@ -188,7 +205,7 @@ void kMeansClustering(uint _clusterValue, inout vec2 _clusterCentroid, out uint 
 			uvec2 quadPxOffset = {quadPx % 2, quadPx / 2};
 			
 			vec2 subsamplePosition = vec2(quadPxOffset) + SubsampleLocations[subsample];
-			uint subsampleValue = texelFetch(s_visbuf, ivec2(_quadGid + quadPxOffset), int(subsample)).x;
+			uint subsampleValue = getVisSample(_quadOffset + quadPxOffset, subsample);
 			
 			float dist2 = distanceSq(subsamplePosition, _clusterCentroid);
 			float primitiveBias = log2(max(_clusterValue, subsampleValue) - min(_clusterValue, subsampleValue) + 1) * 4.0;
@@ -423,12 +440,17 @@ void main() {
 	uvec2 quadGid = tileGid + quadOffset;
 	uvec2 gid = quadGid + interQuadOffset;
 	
-	uint clusterValue = assignInitialClusterValue(quadGid, gid);
+	readVisSamples(gid);
+	
+	memoryBarrierShared();
+	barrier();
+	
+	uint clusterValue = assignInitialClusterValue(quadOffset);
 	
 	vec2 clusterCentroid = vec2(interQuadOffset) + vec2(0.5);
 	uint clusterSubsamples;
 	
-	kMeansClustering(clusterValue, clusterCentroid, clusterSubsamples, quadGid, K_MEANS_ITERATIONS);
+	kMeansClustering(clusterValue, clusterCentroid, clusterSubsamples, quadOffset, K_MEANS_ITERATIONS);
 	
 	vec4 clusterResult = shadeVisSamplePBR(clusterValue, vec2(quadGid) + clusterCentroid);
 	vec4 pixelResult = blendClusters(clusterResult, clusterSubsamples);
