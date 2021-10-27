@@ -101,6 +101,12 @@ uvec2 getTileGid(uint _tileIdx) {
 	
 }
 
+uvec2 interQuadOffset() {
+	
+	return uvec2(gl_SubgroupInvocationID % 2, gl_SubgroupInvocationID % 4 / 2);
+	
+}
+
 void readVisSamples(uvec2 _gid) {
 	
 	uvec2 lid = _gid % TileSize;
@@ -171,7 +177,7 @@ uint assignInitialClusterValue(uvec2 _quadOffset) {
 	if (randomize) {
 		
 		uint initialSubsample = u_world.frameCounter % SUBSAMPLE_COUNT;
-		result = getVisSample(_quadOffset + uvec2(gl_SubgroupInvocationID % 2, gl_SubgroupInvocationID % 4 / 2), initialSubsample);
+		result = getVisSample(_quadOffset + interQuadOffset(), initialSubsample);
 		
 	} else {
 		
@@ -434,11 +440,10 @@ void main() {
 	
 	uint quadIdx = subIdx / 4;
 	uvec2 quadOffset = uvec2(quadIdx % QuadsInTile.x, quadIdx / QuadsInTile.x) * 2;
-	uvec2 interQuadOffset = {gl_SubgroupInvocationID % 2, gl_SubgroupInvocationID % 4 / 2};
 	
-	uvec2 tileGid = getTileGid(gl_GlobalInvocationID.x);
+	uvec2 tileGid = getTileGid(gl_WorkGroupID.x);
 	uvec2 quadGid = tileGid + quadOffset;
-	uvec2 gid = quadGid + interQuadOffset;
+	uvec2 gid = quadGid + interQuadOffset();
 	
 	readVisSamples(gid);
 	
@@ -447,7 +452,7 @@ void main() {
 	
 	uint clusterValue = assignInitialClusterValue(quadOffset);
 	
-	vec2 clusterCentroid = vec2(interQuadOffset) + vec2(0.5);
+	vec2 clusterCentroid = vec2(interQuadOffset()) + vec2(0.5);
 	uint clusterSubsamples;
 	
 	kMeansClustering(clusterValue, clusterCentroid, clusterSubsamples, quadOffset, K_MEANS_ITERATIONS);
