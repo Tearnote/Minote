@@ -37,22 +37,24 @@ const uvec2 QuadPixelOffsets[4] = {
 	{0, 1},
 	{1, 1}};
 
-void readVisSamples(out uint _visSamples[VIS_SAMPLE_COUNT]) {
+void main() {
 	
 	uvec2 gid = gl_GlobalInvocationID.xy * 2;
 	
+	// Read vis samples
+	
+	uint visSamples[VIS_SAMPLE_COUNT];
 	for (uint i = 0; i < VIS_SAMPLE_COUNT; i += 1)
-		_visSamples[i] = texelFetch(s_visbuf, ivec2(gid + QuadPixelOffsets[i / SUBSAMPLE_COUNT]), int(i % SUBSAMPLE_COUNT)).x;
+		visSamples[i] = texelFetch(s_visbuf, ivec2(gid + QuadPixelOffsets[i / SUBSAMPLE_COUNT]), int(i % SUBSAMPLE_COUNT)).x;
 	
-}
-
-void assignInitialClusterValues(uint _visSamples[VIS_SAMPLE_COUNT], out uint _clusterValues[4]) {
+	// Count unique samples and their frequency
 	
+	uint clusterValues[4];
 	uint clusterValueFreqs[4];
 	
 	for (uint i = 0; i < 4; i += 1) {
 		
-		_clusterValues[i] = -2u;
+		clusterValues[i] = -2u;
 		clusterValueFreqs[i] = 0;
 		
 	}
@@ -67,7 +69,7 @@ void assignInitialClusterValues(uint _visSamples[VIS_SAMPLE_COUNT], out uint _cl
 		bool unique = true;
 		for (uint j = 0; j < 4; j += 1) {
 			
-			if (_visSamples[i] == _clusterValues[j]) {
+			if (visSamples[i] == clusterValues[j]) {
 				
 				clusterValueFreqs[j] += 1;
 				unique = false;
@@ -84,7 +86,7 @@ void assignInitialClusterValues(uint _visSamples[VIS_SAMPLE_COUNT], out uint _cl
 			
 			if (uniqueValues < 4) {
 				
-				_clusterValues[uniqueValues] = _visSamples[i];
+				clusterValues[uniqueValues] = visSamples[i];
 				clusterValueFreqs[uniqueValues] = 1;
 				
 			}
@@ -102,7 +104,7 @@ void assignInitialClusterValues(uint _visSamples[VIS_SAMPLE_COUNT], out uint _cl
 		
 		uint initialSubsample = u_world.frameCounter % SUBSAMPLE_COUNT;
 		for (uint i = 0; i < 4; i += 1)
-			_clusterValues[i] = _visSamples[i * SUBSAMPLE_COUNT + initialSubsample];
+			clusterValues[i] = visSamples[i * SUBSAMPLE_COUNT + initialSubsample];
 		
 	} else {
 		
@@ -125,29 +127,27 @@ void assignInitialClusterValues(uint _visSamples[VIS_SAMPLE_COUNT], out uint _cl
 		
 		for (uint i = 0; i < 4; i += 1) {
 			
-			if (_clusterValues[i] == -2u)
-				_clusterValues[i] = _clusterValues[highestFreqIdx];
+			if (clusterValues[i] == -2u)
+				clusterValues[i] = clusterValues[highestFreqIdx];
 			
 		}
 		
 	}
 	
-}
-
-void kMeansClustering(uint _visValues[VIS_SAMPLE_COUNT], uint _clusterValues[4],
-	out uint _clusterSubsamples[4], uint _iterations) {
+	// Compute cluster centroids with K-means clustering
 	
+	uint clusterSubsamples[4];
 	vec2 clusterCentroids[4];
 	for (uint i = 0; i < 4; i += 1)
 		clusterCentroids[i] = vec2(QuadPixelOffsets[i]) + vec2(0.5);
 	
-	for (uint it = 0; it < _iterations; it += 1) {
+	for (uint it = 0; it < K_MEANS_ITERATIONS; it += 1) {
 		
 		vec2 newCentroids[4];
 		for (uint i = 0; i < 4; i += 1) {
 			
 			newCentroids[i] = vec2(0.0);
-			_clusterSubsamples[i] = 0;
+			clusterSubsamples[i] = 0;
 			
 		}
 		
@@ -155,7 +155,7 @@ void kMeansClustering(uint _visValues[VIS_SAMPLE_COUNT], uint _clusterValues[4],
 			
 			uint quadPx = subIdx / SUBSAMPLE_COUNT;
 			vec2 subsamplePosition = vec2(QuadPixelOffsets[quadPx]) + SubsampleLocations[subIdx % SUBSAMPLE_COUNT];
-			uint subsampleValue = _visValues[subIdx];
+			uint subsampleValue = visSamples[subIdx];
 			
 			// Compute distance from each cluster
 			
@@ -163,7 +163,7 @@ void kMeansClustering(uint _visValues[VIS_SAMPLE_COUNT], uint _clusterValues[4],
 			for (uint i = 0; i < 4; i += 1) {
 				
 				float dist2 = distanceSq(subsamplePosition, clusterCentroids[i]);
-				float primitiveBias = log2(max(_clusterValues[i], subsampleValue) - min(_clusterValues[i], subsampleValue) + 1) * 4.0;
+				float primitiveBias = log2(max(clusterValues[i], subsampleValue) - min(clusterValues[i], subsampleValue) + 1) * 4.0;
 				distances[i] = dist2 + primitiveBias;
 				
 			}
@@ -186,27 +186,16 @@ void kMeansClustering(uint _visValues[VIS_SAMPLE_COUNT], uint _clusterValues[4],
 			// Add subsample to closest cluster
 			
 			newCentroids[closestClusterIdx] += subsamplePosition;
-			_clusterSubsamples[closestClusterIdx] |= 1 << subIdx;
+			clusterSubsamples[closestClusterIdx] |= 1 << subIdx;
 			
 		}
 		
 		for (uint i = 0; i < 4; i += 1)
-			clusterCentroids[i] = newCentroids[i] / float(bitCount(_clusterSubsamples[i]));
+			clusterCentroids[i] = newCentroids[i] / float(bitCount(clusterSubsamples[i]));
 		
 	}
 	
-}
-
-void main() {
-	
-	uint visSamples[VIS_SAMPLE_COUNT];
-	readVisSamples(visSamples);
-	
-	uint clusterValues[4];
-	assignInitialClusterValues(visSamples, clusterValues);
-	
-	uint clusterSubsamples[4];
-	kMeansClustering(visSamples, clusterValues, clusterSubsamples, K_MEANS_ITERATIONS);
+	// Write out the result
 	
 	for (uint i = 0; i < 4; i += 1)
 		imageStore(i_quadResolve, ivec2(gl_GlobalInvocationID.xy * 2 + QuadPixelOffsets[i]), uvec4(clusterValues[i], clusterSubsamples[i], 0, 0));
