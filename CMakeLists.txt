@@ -260,6 +260,7 @@ set(SHADER_SOURCES
         src/glsl/cubePostfilter.comp
         src/glsl/cubePrefilter.comp
         src/glsl/transformConv.comp
+        src/glsl/quadScatter.comp
         src/glsl/quadResolve.comp
         src/glsl/frustumCull.comp
         src/glsl/visibility.vert src/glsl/visibility.frag

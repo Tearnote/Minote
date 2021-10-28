@@ -1,17 +1,13 @@
 #version 460
 #pragma shader_stage(compute)
-#extension GL_GOOGLE_include_directive: enable
 
 layout(local_size_x = 8, local_size_y = 8) in;
 
-#include "types.glsl"
 #include "util.glsl"
 
-layout(binding = 0) uniform WorldConstants {
-	World u_world;
-};
-layout(binding = 1) uniform usampler2DMS s_visbuf;
-layout(binding = 2) restrict writeonly uniform uimage2D i_quadResolve;
+layout(binding = 0) uniform usampler2D s_quadbuf;
+layout(binding = 1) uniform sampler2D s_clusterOut;
+layout(binding = 2) restrict writeonly uniform image2D i_target;
 
 layout(push_constant) uniform Constants {
 	uvec2 u_sourceSize;
@@ -21,175 +17,49 @@ layout(push_constant) uniform Constants {
 #define K_MEANS_ITERATIONS 1
 #define VIS_SAMPLE_COUNT (4 * SUBSAMPLE_COUNT)
 
-const vec2 SubsampleLocations[SUBSAMPLE_COUNT] = {
-	{0.5625, 0.3125},
-	{0.4375, 0.6875},
-	{0.8125, 0.5625},
-	{0.3125, 0.1875},
-	{0.1875, 0.8125},
-	{0.0625, 0.4375},
-	{0.6875, 0.9375},
-	{0.9375, 0.0625}};
-
 const uvec2 QuadPixelOffsets[4] = {
 	{0, 0},
 	{1, 0},
 	{0, 1},
 	{1, 1}};
 
-const vec2 InitialCentroids[4] = {
-	{0.5, 0.5},
-	{1.5, 0.5},
-	{0.5, 1.5},
-	{1.5, 1.5}};
-
 void main() {
 	
 	uvec2 gid = gl_GlobalInvocationID.xy * 2;
 	
-	// Read vis samples
+	// Read quad and cluster output samples
 	
-	uint visSamples[VIS_SAMPLE_COUNT];
-	for (uint i = 0; i < VIS_SAMPLE_COUNT; i += 1)
-		visSamples[i] = texelFetch(s_visbuf, ivec2(gid + QuadPixelOffsets[i / SUBSAMPLE_COUNT]), int(i % SUBSAMPLE_COUNT)).x;
-	
-	// Count unique samples and their frequency
-	
-	uint clusterValues[4];
-	uint clusterValueFreqs[4];
-	
+	uint clusterSubsamples[4];
+	vec4 clusterOuts[4];
 	for (uint i = 0; i < 4; i += 1) {
 		
-		clusterValues[i] = -2u;
-		clusterValueFreqs[i] = 0;
+		clusterSubsamples[i] = texelFetch(s_quadbuf, ivec2(gid + QuadPixelOffsets[i]), 0).y;
+		clusterOuts[i] = texelFetch(s_clusterOut, ivec2(gid + QuadPixelOffsets[i]), 0);
 		
 	}
 	
-	uint uniqueValues = 0;
-	for (uint i = 0; i < VIS_SAMPLE_COUNT; i += 1) {
+	// Calculate each cluster's contribution to each pixel
+	
+	const float WeightStep = 1.0 / float(SUBSAMPLE_COUNT);
+	mat4 clusterWeights;
+	for (uint i = 0; i < 4; i += 1) {
 		
-		// If repeat, increment frequency
-		// Check if value is unique
-		
-		
-		bool unique = true;
-		for (uint j = 0; j < 4; j += 1) {
-			
-			if (visSamples[i] == clusterValues[j]) {
-				
-				clusterValueFreqs[j] += 1;
-				unique = false;
-				
-			}
-			
-		}
-		
-		// If unique, add to list
-		
-		if (unique) {
-			
-			// Check if too many unique values
-			
-			if (uniqueValues < 4) {
-				
-				clusterValues[uniqueValues] = visSamples[i];
-				clusterValueFreqs[uniqueValues] = 1;
-				
-			}
-			
-			uniqueValues += 1;
-			
-			
-		}
+		uint mask = bitmask(SUBSAMPLE_COUNT) << (i * SUBSAMPLE_COUNT);
+		for (uint j = 0; j < 4; j += 1)
+			clusterWeights[i][j] = float(bitCount(clusterSubsamples[j] & mask)) * WeightStep;
 		
 	}
 	
-	// Assign initial cluster values
+	// Blend together the cluster contributions
 	
-	if (uniqueValues >= 4) {
-		
-		uint initialSubsample = u_world.frameCounter % SUBSAMPLE_COUNT;
-		for (uint i = 0; i < 4; i += 1)
-			clusterValues[i] = visSamples[i * SUBSAMPLE_COUNT + initialSubsample];
-		
-	} else {
-		
-		// Find highest frequency cluster
-		
-		uint highestFreq = 0;
-		uint highestFreqIdx = 0;
-		for (uint i = 0; i < 4; i += 1) {
-			
-			if (clusterValueFreqs[i] > highestFreq) {
-				
-				highestFreq = clusterValueFreqs[i];
-				highestFreqIdx = i;
-				
-			}
-			
-		}
-		
-		// Duplicate samples to any unassigned clusters
-		
-		for (uint i = 0; i < 4; i += 1) {
-			
-			if (clusterValues[i] == -2u)
-				clusterValues[i] = clusterValues[highestFreqIdx];
-			
-		}
-		
-	}
-	
-	// Compute cluster centroids with one pass of K-means clustering
-	
-	uint clusterSubsamples[4] = {0, 0, 0, 0};
-	// vec2 clusterCentroids[4] = {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}};
-	
-	for (uint subIdx = 0; subIdx < VIS_SAMPLE_COUNT; subIdx += 1) {
-		
-		uint quadPx = subIdx / SUBSAMPLE_COUNT;
-		vec2 subsamplePosition = vec2(QuadPixelOffsets[quadPx]) + SubsampleLocations[subIdx % SUBSAMPLE_COUNT];
-		uint subsampleValue = visSamples[subIdx];
-		
-		// Compute distance from each cluster
-		
-		float distances[4];
-		for (uint i = 0; i < 4; i += 1) {
-			
-			float distSq = distanceSq(subsamplePosition, InitialCentroids[i]);
-			float primitiveBias = log2(max(clusterValues[i], subsampleValue) - min(clusterValues[i], subsampleValue) + 1) * 4.0;
-			distances[i] = distSq + primitiveBias;
-			
-		}
-		
-		// Find closest cluster
-		
-		uint closestClusterIdx = 0;
-		float closestClusterDist = distances[0];
-		for (uint i = 1; i < 4; i += 1) {
-			
-			if (distances[i] < closestClusterDist) {
-				
-				closestClusterIdx = i;
-				closestClusterDist = distances[i];
-				
-			}
-			
-		}
-		
-		// Add subsample to closest cluster
-		
-		// clusterCentroids[closestClusterIdx] += subsamplePosition;
-		clusterSubsamples[closestClusterIdx] |= 1 << subIdx;
-		
-	}
-	
-	// for (uint i = 0; i < 4; i += 1)
-	// 	clusterCentroids[i] /= float(bitCount(clusterSubsamples[i]));
+	mat4 result = mat4(0.0);
+	for (uint i = 0; i < 4; i += 1)
+	for (uint j = 0; j < 4; j += 1)
+		result[i] += clusterWeights[i][j] * clusterOuts[j];
 	
 	// Write out the result
 	
 	for (uint i = 0; i < 4; i += 1)
-		imageStore(i_quadResolve, ivec2(gl_GlobalInvocationID.xy * 2 + QuadPixelOffsets[i]), uvec4(clusterValues[i], clusterSubsamples[i], 0, 0));
+		imageStore(i_target, ivec2(gid + QuadPixelOffsets[i]), result[i]);
 	
 }

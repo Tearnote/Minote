@@ -1,10 +1,5 @@
 #version 460
 #pragma shader_stage(compute)
-#extension GL_KHR_shader_subgroup_basic: enable
-#extension GL_KHR_shader_subgroup_ballot: enable
-#extension GL_KHR_shader_subgroup_shuffle: enable
-#extension GL_KHR_shader_subgroup_clustered: enable
-#extension GL_KHR_shader_subgroup_quad: enable
 
 layout(local_size_x = 1, local_size_y = 64) in;
 
@@ -59,7 +54,7 @@ layout(binding = 10) uniform SunLuminance {
 layout(binding = 11) uniform samplerCube s_cubemap;
 layout(binding = 12) uniform sampler3D s_aerialPerspective;
 
-layout(binding = 13) uniform usampler2DMS s_visbuf;
+layout(binding = 13) uniform usampler2D s_quadbuf;
 layout(binding = 14) restrict writeonly uniform image2D i_target;
 layout(binding = 15, std430) restrict readonly buffer TileLists {
 	uint b_lists[];
@@ -75,13 +70,7 @@ layout(push_constant) uniform Constants {
 
 #define USE_ACCURATE_NORMAL_INTERPOLATION 0
 #define SUBSAMPLE_COUNT 8
-#define K_MEANS_ITERATIONS 2
 #define IBL_MIP_COUNT 8.0
-
-const uvec2 TileSize = uvec2(8);
-const uvec2 QuadsInTile = TileSize / 2;
-
-shared uint sh_visSamples[TileSize.x * TileSize.y * SUBSAMPLE_COUNT];
 
 const vec2 SubsampleLocations[SUBSAMPLE_COUNT] = {
 	{0.5625, 0.3125},
@@ -93,6 +82,15 @@ const vec2 SubsampleLocations[SUBSAMPLE_COUNT] = {
 	{0.6875, 0.9375},
 	{0.9375, 0.0625}};
 
+const vec2 QuadPixelOffsets[4] = {
+	{0.0, 0.0},
+	{1.0, 0.0},
+	{0.0, 1.0},
+	{1.0, 1.0}};
+
+const uvec2 TileSize = uvec2(8);
+const uvec2 QuadsInTile = TileSize / 2;
+
 uvec2 getTileGid(uint _tileIdx) {
 	
 	uint tilePacked = b_lists[u_tileOffset + _tileIdx];
@@ -101,134 +99,16 @@ uvec2 getTileGid(uint _tileIdx) {
 	
 }
 
-uvec2 interQuadOffset() {
+vec2 subsamplePosAverage(uint _subsamples) {
 	
-	return uvec2(gl_SubgroupInvocationID % 2, gl_SubgroupInvocationID % 4 / 2);
-	
-}
-
-void readVisSamples(uvec2 _gid) {
-	
-	uvec2 lid = _gid % TileSize;
-	uint pixelIdx = (lid.x + lid.y * TileSize.x) * SUBSAMPLE_COUNT;
-	for (uint i = 0; i < SUBSAMPLE_COUNT; i += 1)
-		sh_visSamples[pixelIdx + i] = texelFetch(s_visbuf, ivec2(_gid), int(i)).x;
-	
-}
-
-uint getVisSample(uvec2 _lid, uint _subsample) {
-	
-	return sh_visSamples[(_lid.x + _lid.y * TileSize.x) * SUBSAMPLE_COUNT + _subsample];
-	
-}
-
-uint assignInitialClusterValue(uvec2 _quadOffset) {
-	
-	const uint InterQuadId = gl_SubgroupInvocationID % 4;
-	
-	uint result = -2u;
-	uint clusterValueFreq = 0;
-	bool randomize = false;
-	for (uint i = 0; i < 4 * SUBSAMPLE_COUNT; i += 1) {
+	vec2 sum = vec2(0.0);
+	for (uint i = 0; i < 32; i += 1) {
 		
-		uint subsampleIdx = i % SUBSAMPLE_COUNT;
-		uint quadPx = i / SUBSAMPLE_COUNT;
-		uvec2 quadPxOffset = {quadPx % 2, quadPx / 2};
-		
-		uint subsample;
-		
-		// Read sample
-		
-		if (InterQuadId == 0)
-			subsample = getVisSample(_quadOffset + quadPxOffset, subsampleIdx);
-		subsample = subgroupQuadBroadcast(subsample, 0);
-		
-		// If repeat, increment frequency
-		
-		if (result == subsample)
-			clusterValueFreq += 1;
-		
-		// Check if value is unique
-		
-		bool valueFreeOrSame = result == -2u || result == subsample;
-		uint vote = (valueFreeOrSame? 1u : 0u) << InterQuadId;
-		uint ballot = subgroupClusteredOr(vote, 4);
-		
-		if (result == -2u && (ballot & bitmask(InterQuadId)) == 0) {
-			
-			result = subsample;
-			clusterValueFreq = 1;
-			
-		}
-		
-		// Check if value is the 5th unique
-		
-		if (ballot == 0) {
-			
-			randomize = true;
-			break;
-			
-		}
-		
+		if ((_subsamples & (1u << i)) != 0)
+			sum += QuadPixelOffsets[i / 8] + SubsampleLocations[i % 8];
 	}
 	
-	// Assign initial cluster values
-	
-	if (randomize) {
-		
-		uint initialSubsample = u_world.frameCounter % SUBSAMPLE_COUNT;
-		result = getVisSample(_quadOffset + interQuadOffset(), initialSubsample);
-		
-	} else {
-		
-		uint highestFreq = subgroupClusteredMax(clusterValueFreq, 4);
-		uint vote = (clusterValueFreq == highestFreq? 1u : 0u) << InterQuadId;
-		uint ballot = subgroupClusteredOr(vote, 4);
-		uint interQuadIdWithHighestFreq = findLSB(ballot);
-		uint highestFreqValue = subgroupQuadBroadcast(result, interQuadIdWithHighestFreq);
-		
-		if (result == -2u)
-			result = highestFreqValue;
-		
-	}
-	
-	return result;
-	
-}
-
-void kMeansClustering(uint _clusterValue, inout vec2 _clusterCentroid, out uint _clusterSubsamples,
-	uvec2 _quadOffset, uint _iterations) {
-	
-	for (uint i = 0; i < _iterations; i += 1) {
-		
-		vec2 newCentroid = vec2(0.0);
-		_clusterSubsamples = 0;
-		
-		for (uint subIdx = 0; subIdx < 4 * SUBSAMPLE_COUNT; subIdx += 1) {
-			
-			uint subsample = subIdx % SUBSAMPLE_COUNT;
-			uint quadPx = subIdx / SUBSAMPLE_COUNT;
-			uvec2 quadPxOffset = {quadPx % 2, quadPx / 2};
-			
-			vec2 subsamplePosition = vec2(quadPxOffset) + SubsampleLocations[subsample];
-			uint subsampleValue = getVisSample(_quadOffset + quadPxOffset, subsample);
-			
-			float dist2 = distanceSq(subsamplePosition, _clusterCentroid);
-			float primitiveBias = log2(max(_clusterValue, subsampleValue) - min(_clusterValue, subsampleValue) + 1) * 4.0;
-			float dist = dist2 + primitiveBias;
-			
-			if (dist == subgroupClusteredMin(dist, 4)) {
-				
-				newCentroid += subsamplePosition;
-				_clusterSubsamples |= 1 << subIdx;
-				
-			}
-			
-		}
-		
-		_clusterCentroid = newCentroid / float(bitCount(_clusterSubsamples));
-		
-	}
+	return sum / float(bitCount(_subsamples));
 	
 }
 
@@ -333,9 +213,6 @@ float dApprox(float _roughness, float _RoL) {
 
 vec4 shadeVisSamplePBR(uint _visValue, vec2 _screenPos) {
 	
-	if (_visValue == -1u)
-		return vec4(0.0);
-	
 	vec2 sampleUv = _screenPos / vec2(u_targetSize);
 	VisSample vis = unpackVisibility(_visValue);
 	
@@ -407,7 +284,7 @@ vec4 shadeVisSamplePBR(uint _visValue, vec2 _screenPos) {
 	return vec4(surface + ap, 1.0);
 	
 }
-
+/*
 vec4 blendClusters(vec4 _clusterColor, uint _clusterSubsamples) {
 	
 	const float CoverageStep = 1.0 / float(SUBSAMPLE_COUNT);
@@ -429,38 +306,34 @@ vec4 blendClusters(vec4 _clusterColor, uint _clusterSubsamples) {
 		
 	}
 	
-	return result;
+	return vec4(tonemapInvert(result.rgb), result.a);
 	
 }
-
+*/
 void main() {
 	
-	uint subSize = subgroupBallotBitCount(subgroupBallot(true));
-	uint subIdx = gl_SubgroupInvocationID + gl_SubgroupID * subSize;
+	uvec2 lid = mortonOrder(gl_LocalInvocationID.y);
+	uvec2 gid = getTileGid(gl_WorkGroupID.x) + lid;
 	
-	uint quadIdx = subIdx / 4;
-	uvec2 quadOffset = uvec2(quadIdx % QuadsInTile.x, quadIdx / QuadsInTile.x) * 2;
+	// Retrieve cluster data
 	
-	uvec2 tileGid = getTileGid(gl_WorkGroupID.x);
-	uvec2 quadGid = tileGid + quadOffset;
-	uvec2 gid = quadGid + interQuadOffset();
+	uvec2 quadbufSample;
+	if (all(lessThan(gid, u_targetSize)))
+		quadbufSample = texelFetch(s_quadbuf, ivec2(gid), 0).xy;
+	else
+		quadbufSample = uvec2(-1u, 0u);
 	
-	readVisSamples(gid);
+	// Shade the cluster
 	
-	memoryBarrierShared();
-	barrier();
-	
-	uint clusterValue = assignInitialClusterValue(quadOffset);
-	
-	vec2 clusterCentroid = vec2(interQuadOffset()) + vec2(0.5);
-	uint clusterSubsamples;
-	
-	kMeansClustering(clusterValue, clusterCentroid, clusterSubsamples, quadOffset, K_MEANS_ITERATIONS);
-	
-	vec4 clusterResult = shadeVisSamplePBR(clusterValue, vec2(quadGid) + clusterCentroid);
-	vec4 pixelResult = blendClusters(clusterResult, clusterSubsamples);
-	
-	if (pixelResult.a > 0.0)
-		imageStore(i_target, ivec2(gid), vec4(tonemapInvert(pixelResult.rgb), pixelResult.a));
+	uint clusterValue = quadbufSample.x;
+	uint clusterSubsamples = quadbufSample.y;
+	vec4 clusterResult;
+	if (clusterValue != -1u && clusterSubsamples != 0) {
+		
+		vec2 clusterCentroid = subsamplePosAverage(clusterSubsamples);
+		clusterResult = shadeVisSamplePBR(clusterValue, vec2(gid & ~1u) + clusterCentroid);
+		imageStore(i_target, ivec2(gid), clusterResult);
+		
+	}
 	
 }

@@ -22,7 +22,7 @@ struct PBR {
 		Worklist const&, Buffer<World>, MeshBuffer const&, MaterialBuffer const&,
 		DrawableInstanceList const&, Cubemap ibl, Buffer<vec3> sunLuminance, Texture3D aerialPerspective);
 	
-	static void applyQuad(vuk::RenderGraph&, Texture2D color, Texture2DMS visbuf,
+	static void applyQuad(vuk::RenderGraph&, Texture2D color, Texture2D quadbuf,
 		Worklist const&, Buffer<World>, MeshBuffer const&, MaterialBuffer const&,
 		DrawableInstanceList const&, Cubemap ibl, Buffer<vec3> sunLuminance, Texture3D aerialPerspective);
 	

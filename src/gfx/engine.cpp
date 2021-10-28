@@ -216,7 +216,8 @@ void Engine::render() {
 	auto visbufMS = Texture2DMS();
 	auto depth = Texture2D();
 	auto depthMS = Texture2DMS();
-	auto quadResolve = Texture2D();
+	auto quadbuf = Texture2D();
+	auto clusterOut = Texture2D();
 	if (antialiasing == AntialiasingType::None) {
 		
 		visbuf = Texture2D::make(m_swapchainPool, "visbuf",
@@ -247,11 +248,17 @@ void Engine::render() {
 			vuk::Samples::e8);
 		depthMS.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearDepthStencil(0.0f, 0));
 		
-		quadResolve = Texture2D::make(m_swapchainPool, "quad_resolve",
+		quadbuf = Texture2D::make(m_swapchainPool, "quadbuf",
 			viewport, vuk::Format::eR32G32Uint,
 			vuk::ImageUsageFlagBits::eStorage |
 			vuk::ImageUsageFlagBits::eSampled);
-		quadResolve.attach(rg, vuk::eNone, vuk::eNone);
+		quadbuf.attach(rg, vuk::eNone, vuk::eNone);
+		
+		clusterOut = Texture2D::make(m_swapchainPool, "cluster_out",
+			viewport, vuk::Format::eR16G16B16A16Sfloat,
+			vuk::ImageUsageFlagBits::eStorage |
+			vuk::ImageUsageFlagBits::eSampled);
+		clusterOut.attach(rg, vuk::eNone, vuk::eNone);
 		
 	}
 	
@@ -289,11 +296,13 @@ void Engine::render() {
 		
 	} else {
 		
+		Clear::apply(rg, clusterOut, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 		Visibility::applyMS(rg, visbufMS, depthMS, worldBuf, culledDrawables, *m_meshes);
 		auto worklistMS = Worklist::createMS(m_swapchainPool, rg, "worklist_ms", visbufMS, culledDrawables, *m_materials);
-		Antialiasing::resolveQuad(rg, visbufMS, quadResolve, worldBuf);
-		PBR::applyQuad(rg, color, visbufMS, worklistMS, worldBuf, *m_meshes, *m_materials,
+		Antialiasing::quadScatter(rg, visbufMS, quadbuf, worldBuf);
+		PBR::applyQuad(rg, clusterOut, quadbuf, worklistMS, worldBuf, *m_meshes, *m_materials,
 			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
+		Antialiasing::quadResolve(rg, quadbuf, clusterOut, color);
 		Sky::draw(rg, color, worklistMS, cameraSky, m_atmosphere, worldBuf);
 		
 	}
