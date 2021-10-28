@@ -30,7 +30,8 @@ void Antialiasing::resolveQuad(vuk::RenderGraph& _rg, Texture2DMS _visbuf, Textu
 			   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, _visbuf.size())
 			   .bind_compute_pipeline("quad_resolve");
 			
-			cmd.dispatch_invocations(_visbuf.size().x(), _visbuf.size().y());
+			auto invocationCount = _visbuf.size() / 2u + _visbuf.size() % 2u;
+			cmd.dispatch_invocations(invocationCount.x(), invocationCount.y());
 			
 	}});
 	

@@ -12,3 +12,7 @@ doc/*
 
 # Internal notes
 reference/*
+
+# Debug output
+*.il
+*.isa
