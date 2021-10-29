@@ -30,7 +30,7 @@ void main() {
 	// Read quad and cluster output samples
 	
 	uint clusterSubsamples[4];
-	vec4 clusterOuts[4];
+	mat4 clusterOuts;
 	for (uint i = 0; i < 4; i += 1) {
 		
 		clusterSubsamples[i] = texelFetch(s_quadbuf, ivec2(gid + QuadPixelOffsets[i]), 0).y;
@@ -52,10 +52,7 @@ void main() {
 	
 	// Blend together the cluster contributions
 	
-	mat4 result = mat4(0.0);
-	for (uint i = 0; i < 4; i += 1)
-	for (uint j = 0; j < 4; j += 1)
-		result[i] += clusterWeights[i][j] * clusterOuts[j];
+	mat4 result = clusterOuts * clusterWeights;
 	
 	// Write out the result
 	
