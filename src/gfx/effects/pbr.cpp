@@ -85,8 +85,6 @@ void PBR::applyQuad(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _quadbuf,
 	Worklist const& _worklist, Buffer<World> _world, MeshBuffer const& _meshes, MaterialBuffer const& _materials,
 	DrawableInstanceList const& _instances, Cubemap _ibl, Buffer<vec3> _sunLuminance, Texture3D _aerialPerspective) {
 	
-	assert(_color.size() == _visbuf.size());
-	
 	_rg.add_pass({
 		.name = nameAppend(_color.name, "pbr_quad"),
 		.resources = {

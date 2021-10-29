@@ -257,7 +257,8 @@ void Engine::render() {
 		clusterOut = Texture2D::make(m_swapchainPool, "cluster_out",
 			viewport, vuk::Format::eR16G16B16A16Sfloat,
 			vuk::ImageUsageFlagBits::eStorage |
-			vuk::ImageUsageFlagBits::eSampled);
+			vuk::ImageUsageFlagBits::eSampled |
+			vuk::ImageUsageFlagBits::eTransferDst);
 		clusterOut.attach(rg, vuk::eNone, vuk::eNone);
 		
 	}
