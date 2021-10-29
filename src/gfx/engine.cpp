@@ -167,8 +167,7 @@ void Engine::render() {
 	static auto antialiasingInt = +antialiasing;
 	auto AntialiasingStrings = to_array({
 		"None",
-		"Quad",
-	});
+		"Quad" });
 	ImGui::RadioButton(AntialiasingStrings[0], &antialiasingInt, 0);
 	ImGui::RadioButton(AntialiasingStrings[1], &antialiasingInt, 1);
 	antialiasing = AntialiasingType(antialiasingInt);
@@ -218,6 +217,8 @@ void Engine::render() {
 	auto depthMS = Texture2DMS();
 	auto quadbuf = Texture2D();
 	auto clusterOut = Texture2D();
+	auto colorCurrent = Texture2D();
+	auto colorPrev = Texture2D();
 	if (antialiasing == AntialiasingType::None) {
 		
 		visbuf = Texture2D::make(m_swapchainPool, "visbuf",
@@ -261,6 +262,29 @@ void Engine::render() {
 			vuk::ImageUsageFlagBits::eTransferDst);
 		clusterOut.attach(rg, vuk::eNone, vuk::eNone);
 		
+		auto colors = to_array({
+			Texture2D::make(m_swapchainPool, "color0",
+				viewport, vuk::Format::eR16G16B16A16Sfloat,
+				vuk::ImageUsageFlagBits::eSampled |
+				vuk::ImageUsageFlagBits::eStorage |
+				vuk::ImageUsageFlagBits::eTransferSrc |
+				vuk::ImageUsageFlagBits::eTransferDst),
+			Texture2D::make(m_swapchainPool, "color1",
+				viewport, vuk::Format::eR16G16B16A16Sfloat,
+				vuk::ImageUsageFlagBits::eSampled |
+				vuk::ImageUsageFlagBits::eStorage |
+				vuk::ImageUsageFlagBits::eTransferSrc |
+				vuk::ImageUsageFlagBits::eTransferDst) });
+		auto frame = m_vk.context->frame_counter.load() % 2;
+		colorCurrent = colors[frame];
+		colorPrev = colors[!frame];
+		
+		colorCurrent.attach(rg, vuk::eNone, vuk::eTransferSrc);
+		if (m_vk.context->frame_counter == 2)
+			colorPrev.attach(rg, vuk::eNone, vuk::eNone);
+		else
+			colorPrev.attach(rg, vuk::eTransferSrc, vuk::eNone);
+		
 	}
 	
 	auto worldBuf = m_world.upload(m_framePool, "world");
@@ -286,9 +310,9 @@ void Engine::render() {
 	CubeFilter::apply(rg, iblUnfiltered, iblFiltered);
 	
 	// Scene drawing
-	Clear::apply(rg, color, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 	if (antialiasing == AntialiasingType::None) {
 		
+		Clear::apply(rg, color, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 		Visibility::apply(rg, visbuf, depth, worldBuf, culledDrawables, *m_meshes);
 		auto worklist = Worklist::create(m_swapchainPool, rg, "worklist", visbuf, culledDrawables, *m_materials);
 		PBR::apply(rg, color, visbuf, worklist, worldBuf, *m_meshes, *m_materials,
@@ -298,13 +322,29 @@ void Engine::render() {
 	} else {
 		
 		Clear::apply(rg, clusterOut, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
+		Clear::apply(rg, colorCurrent, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 		Visibility::applyMS(rg, visbufMS, depthMS, worldBuf, culledDrawables, *m_meshes);
 		auto worklistMS = Worklist::createMS(m_swapchainPool, rg, "worklist_ms", visbufMS, culledDrawables, *m_materials);
 		Antialiasing::quadScatter(rg, visbufMS, quadbuf, worldBuf);
 		PBR::applyQuad(rg, clusterOut, quadbuf, worklistMS, worldBuf, *m_meshes, *m_materials,
 			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
-		Antialiasing::quadResolve(rg, quadbuf, clusterOut, color);
-		Sky::draw(rg, color, worklistMS, cameraSky, m_atmosphere, worldBuf);
+		Antialiasing::quadResolve(rg, colorCurrent, quadbuf, clusterOut, colorPrev, worldBuf);
+		Sky::draw(rg, colorCurrent, worklistMS, cameraSky, m_atmosphere, worldBuf);
+		rg.add_pass({
+			.name = nameAppend(colorCurrent.name, "copy"),
+			.resources = {
+				colorCurrent.resource(vuk::eTransferSrc),
+				color.resource(vuk::eTransferDst) },
+			.execute = [colorCurrent, color](vuk::CommandBuffer& cmd) {
+				
+				cmd.blit_image(colorCurrent.name, color.name, vuk::ImageBlit{
+					.srcSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
+					.srcOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(colorCurrent.size().x()), i32(colorCurrent.size().y()), 1}},
+					.dstSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
+					.dstOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(colorCurrent.size().x()), i32(colorCurrent.size().y()), 1}} },
+					vuk::Filter::eNearest);
+				
+		}});
 		
 	}
 	
@@ -325,10 +365,10 @@ void Engine::render() {
 			
 			cmd.blit_image(screen.name, "swapchain", vuk::ImageBlit{
 				.srcSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
-				.srcOffsets = {vuk::Offset3D(), vuk::Offset3D{i32(screen.size().x()), i32(screen.size().y()), 1}},
+				.srcOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(screen.size().x()), i32(screen.size().y()), 1}},
 				.dstSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
-				.dstOffsets = {vuk::Offset3D(), vuk::Offset3D{i32(screen.size().x()), i32(screen.size().y()), 1}},
-			}, vuk::Filter::eNearest);
+				.dstOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(screen.size().x()), i32(screen.size().y()), 1}} },
+				vuk::Filter::eNearest);
 			
 		}});
 	
