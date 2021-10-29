@@ -62,13 +62,18 @@ void main() {
 	
 	// Blend together the cluster contributions
 	
-	mat4 result = clusterOuts * clusterWeights;
+	mat4 currentSamples = clusterOuts * clusterWeights;
 	
 	// Write out the result
 	
 	float blendRatio = (1.0 / float(SUBSAMPLE_COUNT)) * (SUBSAMPLE_COUNT - min(u_world.frameCounter - 1, SUBSAMPLE_COUNT - 1));
-	for (uint i = 0; i < 4; i += 1)
-		imageStore(i_target, ivec2(gid + QuadPixelOffsets[i]),
-			result[i] * blendRatio + historySamples[i] * (1.0 - blendRatio));
+	for (uint i = 0; i < 4; i += 1) {
+		
+		// vec4 result = currentSamples[i] * blendRatio + historySamples[i] * (1.0 - blendRatio);
+		vec4 result = mix(currentSamples[i], historySamples[i], blendRatio);
+		result = max(result, 0.0);
+		imageStore(i_target, ivec2(gid + QuadPixelOffsets[i]), result);
+		
+	}
 	
 }

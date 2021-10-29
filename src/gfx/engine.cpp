@@ -155,7 +155,7 @@ void Engine::render() {
 		vec3{1.0f, 0.0f, 0.0f};
 	
 	static auto sunIlluminance = 4.0f;
-	ImGui::SliderFloat("Sun illuminance", &sunIlluminance, 0.01f, 100.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
+	ImGui::SliderFloat("Sun illuminance", &sunIlluminance, 0.01f, 10000.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
 	m_world.sunIlluminance = vec3(sunIlluminance);
 	
 	// Runtime settings
