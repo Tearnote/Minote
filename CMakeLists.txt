@@ -299,9 +299,23 @@ add_custom_command(
         VERBATIM)
 
 set(MODELS
-        models/block.glb
-        models/sphere.glb
-        models/testscene.glb)
+        models/t1.glb
+        models/t2.glb
+        models/t3.glb
+        models/t5.glb
+        models/t6.glb
+        models/t7.glb
+        models/t8.glb
+        models/t9.glb
+        models/t10.glb
+        models/t11.glb
+        models/t14.glb
+        models/t15.glb
+        models/t17.glb
+        models/t20.glb
+        models/flower_back.glb
+        models/flower_front.glb
+        )
 add_custom_command(
         OUTPUT ${ASSET_OUTPUT} APPEND
         COMMAND sqlite-shell ${ASSET_OUTPUT} "CREATE TABLE IF NOT EXISTS models(name TEXT UNIQUE, data BLOB)"

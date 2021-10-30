@@ -14,6 +14,7 @@ template<typename T>
 concept arithmetic = std::is_arithmetic_v<T>;
 
 using std::integral;
+using std::floating_point;
 
 // Objects that can be safely copied with memcpy.
 template<typename T>

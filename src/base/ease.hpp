@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/concepts.hpp"
 #include "base/math.hpp"
 
 namespace minote::base {

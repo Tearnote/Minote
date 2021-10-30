@@ -62,7 +62,7 @@ auto main(int, char*[]) -> int try {
 	
 	// Initialize systems
 	auto system = sys::System();
-	auto window = sys::Window(system, AppTitle, false, {960, 504});
+	auto window = sys::Window(system, AppTitle, true, {960, 504});
 	auto vulkan = sys::Vulkan(window);
 	
 	// Create graphics engine

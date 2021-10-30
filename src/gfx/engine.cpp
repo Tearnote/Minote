@@ -130,7 +130,7 @@ void Engine::render() {
 		
 	}
 	
-	ImGui::Text("FPS: %.1f", m_framerate);
+	// ImGui::Text("FPS: %.1f", m_framerate);
 	
 	// Prepare per-frame data
 	
@@ -145,17 +145,17 @@ void Engine::render() {
 	m_world.frameCounter = m_vk.context->frame_counter.load();
 	
 	// Sun properties
-	static auto sunPitch = 12_deg;
-	static auto sunYaw = 3_deg;
-	ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 60.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
-	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
+	static auto sunPitch = 60_deg;
+	static auto sunYaw = -150_deg;
+	// ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 60.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
+	// ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
 	m_world.sunDirection =
 		mat3::rotate({0.0f, 0.0f, 1.0f}, sunYaw) *
 		mat3::rotate({0.0f, -1.0f, 0.0f}, sunPitch) *
 		vec3{1.0f, 0.0f, 0.0f};
 	
-	static auto sunIlluminance = 4.0f;
-	ImGui::SliderFloat("Sun illuminance", &sunIlluminance, 0.01f, 100.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
+	static auto sunIlluminance = 6.0f;
+	// ImGui::SliderFloat("Sun illuminance", &sunIlluminance, 0.01f, 100.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
 	m_world.sunIlluminance = vec3(sunIlluminance);
 	
 	// Runtime settings
@@ -169,8 +169,8 @@ void Engine::render() {
 		"None",
 		"Quad",
 	});
-	ImGui::RadioButton(AntialiasingStrings[0], &antialiasingInt, 0);
-	ImGui::RadioButton(AntialiasingStrings[1], &antialiasingInt, 1);
+	// ImGui::RadioButton(AntialiasingStrings[0], &antialiasingInt, 0);
+	// ImGui::RadioButton(AntialiasingStrings[1], &antialiasingInt, 1);
 	antialiasing = AntialiasingType(antialiasingInt);
 	
 	// Begin frame
