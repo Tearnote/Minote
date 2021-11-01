@@ -74,6 +74,7 @@ void Engine::init(MeshList&& _meshList, MaterialList&& _materialList) {
 	
 	// Initialize internal resources
 	m_swapchainDirty = false;
+	m_flushTemporalResources = true;
 	
 	m_imguiData = ImGui_ImplVuk_Init(ptc);
 	ImGui::GetIO().DisplaySize = ImVec2(
@@ -276,7 +277,7 @@ void Engine::render() {
 		colorPrev = colors[!frame];
 		
 		colorCurrent.attach(rg, vuk::eNone, vuk::eTransferSrc);
-		if (m_vk.context->frame_counter == 2)
+		if (m_flushTemporalResources)
 			colorPrev.attach(rg, vuk::eNone, vuk::eNone);
 		else
 			colorPrev.attach(rg, vuk::eTransferSrc, vuk::eNone);
@@ -319,6 +320,8 @@ void Engine::render() {
 		
 		Clear::apply(rg, clusterOut, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 		Clear::apply(rg, colorCurrent, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
+		if (m_flushTemporalResources)
+			Clear::apply(rg, colorPrev, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 		Visibility::applyMS(rg, visbufMS, depthMS, world, culledDrawables, m_meshes);
 		auto worklistMS = Worklist::createMS(m_swapchainPool, rg, "worklist_ms", visbufMS, culledDrawables, m_materials);
 		Antialiasing::quadScatter(rg, visbufMS, quadbuf, world);
@@ -434,6 +437,7 @@ void Engine::render() {
 	
 	// Clean up
 	
+	m_flushTemporalResources = false;
 	ImGui::NewFrame();
 	m_framePool.reset();
 	FrameMark;
@@ -454,6 +458,7 @@ void Engine::refreshSwapchain(uvec2 _newSize) {
 	m_swapchainDirty = false;
 	
 	m_swapchainPool.reset();
+	m_flushTemporalResources = true;
 	
 	ImGui::GetIO().DisplaySize = ImVec2(
 		f32(m_vk.swapchain->extent.width),

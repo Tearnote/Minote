@@ -63,6 +63,7 @@ private:
 	
 	TracyLockable(std::mutex, m_renderLock);
 	bool m_swapchainDirty;
+	bool m_flushTemporalResources;
 	
 	f32 m_framerate;
 	nsec m_lastFramerateCheck;
