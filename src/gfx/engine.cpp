@@ -43,7 +43,6 @@ Engine::~Engine() {
 	
 	m_vk.context->wait_idle();
 	
-	m_objects.reset();
 	m_imguiData.fontTex.view.reset();
 	m_imguiData.fontTex.image.reset();
 	
@@ -85,7 +84,6 @@ void Engine::init(MeshList&& _meshList, MaterialList&& _materialList) {
 	
 	m_meshes = std::move(_meshList).upload(m_permPool, "meshes");
 	m_materials = std::move(_materialList).upload(m_permPool, "materials");
-	m_objects = ObjectPool();
 	
 	// Perform precalculations
 	auto precalc = vuk::RenderGraph();
@@ -290,7 +288,7 @@ void Engine::render() {
 	// Set up the rendergraph
 	
 	// Instance list processing
-	auto basicInstances = BasicInstanceList::upload(m_permPool, rg, "basicInstances", *m_objects, m_meshes, m_materials);
+	auto basicInstances = BasicInstanceList::upload(m_permPool, rg, "basicInstances", m_objects, m_meshes, m_materials);
 	auto instances = InstanceList::fromBasic(m_permPool, rg, "instances", std::move(basicInstances));
 	auto drawables = DrawableInstanceList::fromUnsorted(m_permPool, rg, "drawables", instances, m_meshes);
 	auto culledDrawables = DrawableInstanceList::frustumCull(m_permPool, rg, "culledDrawables", drawables,
