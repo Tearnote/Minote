@@ -101,6 +101,9 @@ struct Sky {
 	// empty).
 	static void draw(vuk::RenderGraph&, Texture2D target,
 		Worklist const&, Texture2D skyView, Atmosphere const&, Buffer<World>);
+		
+	static void drawQuad(vuk::RenderGraph&, Texture2D target, Texture2D quadbuf,
+		Worklist const&, Texture2D skyView, Atmosphere const&, Buffer<World>);
 	
 	// Draw the sky into an existing cubemap. Target is the mip 0 of provided image.
 	static void draw(vuk::RenderGraph&, Cubemap target,

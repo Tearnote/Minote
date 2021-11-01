@@ -252,6 +252,7 @@ set(SHADER_SOURCES
         src/glsl/sky/skyGenSunLuminance.comp
         src/glsl/sky/skyDrawCubemap.comp
         src/glsl/sky/skyGenSkyView.comp
+        src/glsl/sky/skyDrawQuad.comp
         src/glsl/sky/skyDraw.comp
         src/glsl/instanceSortCount.comp
         src/glsl/instanceSortWrite.comp

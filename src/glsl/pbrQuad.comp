@@ -8,12 +8,14 @@ layout(local_size_x = 1, local_size_y = 64) in;
 #include "visibility.glsl"
 #include "constants.glsl"
 #include "types.glsl"
+#include "quad.glsl"
 #include "util.glsl"
 
 #define B_INDICES b_indices
 #define B_VERTICES b_vertices
 #define B_NORMALS b_normals
 #define B_COLORS b_vtxColors
+#define B_LISTS b_lists
 
 layout(binding = 0) uniform WorldConstants {
 	World u_world;
@@ -57,7 +59,7 @@ layout(binding = 12) uniform sampler3D s_aerialPerspective;
 layout(binding = 13) uniform usampler2D s_quadbuf;
 layout(binding = 14) restrict writeonly uniform image2D i_target;
 layout(binding = 15, std430) restrict readonly buffer TileLists {
-	uint b_lists[];
+	uint B_LISTS[];
 };
 
 layout(push_constant) uniform Constants {
@@ -67,50 +69,10 @@ layout(push_constant) uniform Constants {
 };
 
 #include "typesAccess.glsl"
+#include "worklist.glsl"
 
 #define USE_ACCURATE_NORMAL_INTERPOLATION 0
-#define SUBSAMPLE_COUNT 8
 #define IBL_MIP_COUNT 8.0
-
-const vec2 SubsampleLocations[SUBSAMPLE_COUNT] = {
-	{0.5625, 0.3125},
-	{0.4375, 0.6875},
-	{0.8125, 0.5625},
-	{0.3125, 0.1875},
-	{0.1875, 0.8125},
-	{0.0625, 0.4375},
-	{0.6875, 0.9375},
-	{0.9375, 0.0625}};
-
-const vec2 QuadPixelOffsets[4] = {
-	{0.0, 0.0},
-	{1.0, 0.0},
-	{0.0, 1.0},
-	{1.0, 1.0}};
-
-const uvec2 TileSize = uvec2(8);
-const uvec2 QuadsInTile = TileSize / 2;
-
-uvec2 getTileGid(uint _tileIdx) {
-	
-	uint tilePacked = b_lists[u_tileOffset + _tileIdx];
-	uvec2 tile = u16Fromu32(tilePacked);
-	return tile * TileSize;
-	
-}
-
-vec2 subsamplePosAverage(uint _subsamples) {
-	
-	vec2 sum = vec2(0.0);
-	for (uint i = 0; i < 32; i += 1) {
-		
-		if ((_subsamples & (1u << i)) != 0)
-			sum += QuadPixelOffsets[i / 8] + SubsampleLocations[i % 8];
-	}
-	
-	return sum / float(bitCount(_subsamples));
-	
-}
 
 void getInstanceVertexParams(out vec3 _vertex, out vec3 _normal, out vec3 _color,
 	Instance _instance, uint _triangleIdx, vec2 _uv) {
@@ -211,7 +173,7 @@ float dApprox(float _roughness, float _RoL) {
 	
 }
 
-vec4 shadeVisSamplePBR(uint _visValue, vec2 _screenPos) {
+vec3 shadeVisSamplePBR(uint _visValue, vec2 _screenPos) {
 	
 	vec2 sampleUv = _screenPos / vec2(u_targetSize);
 	VisSample vis = unpackVisibility(_visValue);
@@ -281,35 +243,10 @@ vec4 shadeVisSamplePBR(uint _visValue, vec2 _screenPos) {
 	
 	// Result write
 	
-	return vec4(surface + ap, 1.0);
+	return surface + ap;
 	
 }
-/*
-vec4 blendClusters(vec4 _clusterColor, uint _clusterSubsamples) {
-	
-	const float CoverageStep = 1.0 / float(SUBSAMPLE_COUNT);
-	
-	uint bitOffset = (gl_SubgroupInvocationID % 4) * SUBSAMPLE_COUNT;
-	
-	vec4 result = vec4(0.0);
-	for (uint i = 0; i < SUBSAMPLE_COUNT * 4; i += 1) {
-		
-		uint subsampleMask = 1u << i;
-		uint clusterOwnsSubsample = ((subsampleMask & _clusterSubsamples) != 0u)? 1u : 0u;
-		uint vote = clusterOwnsSubsample << (gl_SubgroupInvocationID % 4);
-		uint ballot = subgroupClusteredOr(vote, 4);
-		uint clusterWithSubsample = findLSB(ballot) + (gl_SubgroupInvocationID & ~3u);
-		vec4 value = subgroupShuffle(_clusterColor, clusterWithSubsample);
-		
-		if (i / SUBSAMPLE_COUNT == (gl_SubgroupInvocationID % 4))
-			result += vec4(tonemap(value.xyz) * CoverageStep, value.a * CoverageStep);
-		
-	}
-	
-	return vec4(tonemapInvert(result.rgb), result.a);
-	
-}
-*/
+
 void main() {
 	
 	uvec2 lid = mortonOrder(gl_LocalInvocationID.y);
@@ -327,12 +264,12 @@ void main() {
 	
 	uint clusterValue = quadbufSample.x;
 	uint clusterSubsamples = quadbufSample.y;
-	vec4 clusterResult;
+	vec3 clusterResult;
 	if (clusterValue != -1u && clusterSubsamples != 0) {
 		
 		vec2 clusterCentroid = subsamplePosAverage(clusterSubsamples);
 		clusterResult = shadeVisSamplePBR(clusterValue, vec2(gid & ~1u) + clusterCentroid);
-		imageStore(i_target, ivec2(gid), clusterResult);
+		imageStore(i_target, ivec2(gid), vec4(clusterResult, 1.0));
 		
 	}
 	

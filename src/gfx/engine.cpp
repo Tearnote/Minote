@@ -327,6 +327,7 @@ void Engine::render() {
 		Antialiasing::quadScatter(rg, visbufMS, quadbuf, world);
 		PBR::applyQuad(rg, clusterOut, quadbuf, worklistMS, world, m_meshes, m_materials,
 			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
+		Sky::drawQuad(rg, clusterOut, quadbuf, worklistMS, cameraSky, m_atmosphere, world);
 		Antialiasing::quadResolve(rg, colorCurrent, quadbuf, clusterOut, colorPrev, world);
 		rg.add_pass({
 			.name = nameAppend(colorCurrent.name, "copy"),
@@ -343,7 +344,6 @@ void Engine::render() {
 					vuk::Filter::eNearest);
 				
 		}});
-		Sky::draw(rg, color, worklistMS, cameraSky, m_atmosphere, world);
 		
 	}
 	
