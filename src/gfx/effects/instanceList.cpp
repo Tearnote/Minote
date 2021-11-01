@@ -301,20 +301,20 @@ auto DrawableInstanceList::frustumCull(Pool& _pool, vuk::RenderGraph& _rg, vuk::
 			_source.commands.resource(vuk::eComputeRead),
 			_source.instancesCount.resource(vuk::eIndirectRead),
 			_source.instances.resource(vuk::eComputeRead),
+			_source.transforms.resource(vuk::eComputeRead),
 			result.commands.resource(vuk::eComputeRW),
 			result.instancesCount.resource(vuk::eComputeWrite),
-			result.instances.resource(vuk::eComputeWrite),
-			result.transforms.resource(vuk::eComputeWrite) },
+			result.instances.resource(vuk::eComputeWrite) },
 		.execute = [&_source, result, &_meshes, _view, _projection](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_storage_buffer(0, 0, _source.commands)
 			   .bind_uniform_buffer(0, 1, _source.instancesCount)
 			   .bind_storage_buffer(0, 2, _source.instances)
-			   .bind_storage_buffer(0, 3, _meshes.descriptors)
-			   .bind_storage_buffer(0, 4, result.commands)
-			   .bind_storage_buffer(0, 5, result.instancesCount)
-			   .bind_storage_buffer(0, 6, result.instances)
-			   .bind_storage_buffer(0, 7, result.transforms)
+			   .bind_storage_buffer(0, 3, result.transforms)
+			   .bind_storage_buffer(0, 4, _meshes.descriptors)
+			   .bind_storage_buffer(0, 5, result.commands)
+			   .bind_storage_buffer(0, 6, result.instancesCount)
+			   .bind_storage_buffer(0, 7, result.instances)
 			   .bind_compute_pipeline("frustum_cull");
 			
 			struct PushConstants {
