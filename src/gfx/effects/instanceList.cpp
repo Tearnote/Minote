@@ -226,17 +226,13 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 	
 	// Step 3: Write out at sorted position
 	
-	result.instancesCount = Buffer<uvec4>::make(_pool, nameAppend(_name, "instanceCount"),
-		vuk::BufferUsageFlagBits::eStorageBuffer |
-		vuk::BufferUsageFlagBits::eUniformBuffer |
-		vuk::BufferUsageFlagBits::eIndirectBuffer);
-	result.instances = Buffer<Instance>::make(_pool, nameAppend(_name, "instances"),
-		vuk::BufferUsageFlagBits::eStorageBuffer,
-		_unsorted.capacity());
+	result.instancesCount = _unsorted.instancesCount;
 	result.colors = _unsorted.colors;
 	result.transforms = _unsorted.transforms;
 	
-	result.instancesCount.attach(_rg, vuk::eNone, vuk::eNone);
+	result.instances = Buffer<Instance>::make(_pool, nameAppend(_name, "instances"),
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		_unsorted.capacity());
 	result.instances.attach(_rg, vuk::eNone, vuk::eNone);
 	
 	_rg.add_pass({
@@ -245,15 +241,13 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 			_unsorted.instancesCount.resource(vuk::eIndirectRead),
 			_unsorted.instances.resource(vuk::eComputeRead),
 			result.commands.resource(vuk::eComputeRW),
-			result.instancesCount.resource(vuk::eComputeWrite),
 			result.instances.resource(vuk::eComputeWrite) },
 		.execute = [&_unsorted, result](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _unsorted.instancesCount)
 			   .bind_storage_buffer(0, 1, _unsorted.instances)
 			   .bind_storage_buffer(0, 2, result.commands)
-			   .bind_storage_buffer(0, 3, result.instancesCount)
-			   .bind_storage_buffer(0, 4, result.instances)
+			   .bind_storage_buffer(0, 3, result.instances)
 			   .bind_compute_pipeline("instance_sort_write");
 			
 			cmd.dispatch_indirect(_unsorted.instancesCount);

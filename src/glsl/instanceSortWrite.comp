@@ -14,10 +14,7 @@ layout (binding = 1, std430) restrict readonly buffer Instances {
 layout (binding = 2, std430) restrict buffer Commands {
 	Command b_commands[];
 };
-layout(binding = 3, std430) restrict writeonly buffer InstanceCount {
-	uvec4 b_instanceCount;
-};
-layout (binding = 4, std430) restrict writeonly buffer InstancesSorted {
+layout (binding = 3, std430) restrict writeonly buffer InstancesSorted {
 	Instance b_instancesSorted[];
 };
 
@@ -26,9 +23,6 @@ void main() {
 	uint gid = gl_GlobalInvocationID.x;
 	if (gid >= u_instanceCount.w)
 		return;
-	
-	if (gid == 0)
-		b_instanceCount = u_instanceCount;
 	
 	uint meshIdx = b_instances[gid].meshIdx;
 	uint offset = b_commands[meshIdx].firstInstance;
