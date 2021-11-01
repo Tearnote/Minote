@@ -7,13 +7,13 @@ namespace minote::gfx {
 
 void Antialiasing::compile(vuk::PerThreadContext& _ptc) {
 	
-	auto quadScatterPci = vuk::ComputePipelineCreateInfo();
+	auto quadScatterPci = vuk::ComputePipelineBaseCreateInfo();
 	quadScatterPci.add_spirv(std::vector<u32>{
 #include "spv/quadScatter.comp.spv"
 	}, "quadScatter.comp");
 	_ptc.ctx.create_named_pipeline("quad_scatter", quadScatterPci);
 	
-	auto quadResolvePci = vuk::ComputePipelineCreateInfo();
+	auto quadResolvePci = vuk::ComputePipelineBaseCreateInfo();
 	quadResolvePci.add_spirv(std::vector<u32>{
 #include "spv/quadResolve.comp.spv"
 	}, "quadResolve.comp");

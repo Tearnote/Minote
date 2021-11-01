@@ -44,7 +44,6 @@ Engine::~Engine() {
 	m_vk.context->wait_idle();
 	
 	m_materials.reset();
-	m_meshes.reset();
 	m_objects.reset();
 	m_imguiData.fontTex.view.reset();
 	m_imguiData.fontTex.image.reset();
@@ -85,7 +84,7 @@ void Engine::init(MeshList&& _meshList, MaterialList&& _materialList) {
 	// Begin imgui frame so that first-frame calls succeed
 	ImGui::NewFrame();
 	
-	m_meshes.emplace(std::move(_meshList).upload(m_permPool, "meshes"));
+	m_meshes = std::move(_meshList).upload(m_permPool, "meshes");
 	m_materials.emplace(std::move(_materialList).upload(m_permPool, "materials"));
 	m_objects = ObjectPool();
 	
@@ -292,11 +291,11 @@ void Engine::render() {
 	// Set up the rendergraph
 	
 	// Instance list processing
-	auto basicInstances = BasicInstanceList::upload(m_permPool, rg, "basicInstances", *m_objects, *m_meshes, *m_materials);
+	auto basicInstances = BasicInstanceList::upload(m_permPool, rg, "basicInstances", *m_objects, m_meshes, *m_materials);
 	auto instances = InstanceList::fromBasic(m_permPool, rg, "instances", std::move(basicInstances));
-	auto drawables = DrawableInstanceList::fromUnsorted(m_permPool, rg, "drawables", instances, *m_meshes);
+	auto drawables = DrawableInstanceList::fromUnsorted(m_permPool, rg, "drawables", instances, m_meshes);
 	auto culledDrawables = DrawableInstanceList::frustumCull(m_permPool, rg, "culledDrawables", drawables,
-		*m_meshes, m_world.view, m_world.projection);
+		m_meshes, m_world.view, m_world.projection);
 	
 	// Sky generation
 	auto cameraSky = Sky::createView(m_permPool, rg, "cameraSky", m_camera.position, m_atmosphere, worldBuf);
@@ -313,9 +312,9 @@ void Engine::render() {
 	if (antialiasing == AntialiasingType::None) {
 		
 		Clear::apply(rg, color, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
-		Visibility::apply(rg, visbuf, depth, worldBuf, culledDrawables, *m_meshes);
+		Visibility::apply(rg, visbuf, depth, worldBuf, culledDrawables, m_meshes);
 		auto worklist = Worklist::create(m_swapchainPool, rg, "worklist", visbuf, culledDrawables, *m_materials);
-		PBR::apply(rg, color, visbuf, worklist, worldBuf, *m_meshes, *m_materials,
+		PBR::apply(rg, color, visbuf, worklist, worldBuf, m_meshes, *m_materials,
 			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
 		Sky::draw(rg, color, worklist, cameraSky, m_atmosphere, worldBuf);
 		
@@ -323,10 +322,10 @@ void Engine::render() {
 		
 		Clear::apply(rg, clusterOut, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 		Clear::apply(rg, colorCurrent, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
-		Visibility::applyMS(rg, visbufMS, depthMS, worldBuf, culledDrawables, *m_meshes);
+		Visibility::applyMS(rg, visbufMS, depthMS, worldBuf, culledDrawables, m_meshes);
 		auto worklistMS = Worklist::createMS(m_swapchainPool, rg, "worklist_ms", visbufMS, culledDrawables, *m_materials);
 		Antialiasing::quadScatter(rg, visbufMS, quadbuf, worldBuf);
-		PBR::applyQuad(rg, clusterOut, quadbuf, worklistMS, worldBuf, *m_meshes, *m_materials,
+		PBR::applyQuad(rg, clusterOut, quadbuf, worklistMS, worldBuf, m_meshes, *m_materials,
 			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
 		Antialiasing::quadResolve(rg, colorCurrent, quadbuf, clusterOut, colorPrev, worldBuf);
 		rg.add_pass({

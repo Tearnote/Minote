@@ -10,13 +10,13 @@ using namespace base::literals;
 
 void PBR::compile(vuk::PerThreadContext& _ptc) {
 	
-	auto pbrPci = vuk::ComputePipelineCreateInfo();
+	auto pbrPci = vuk::ComputePipelineBaseCreateInfo();
 	pbrPci.add_spirv(std::vector<u32>{
 #include "spv/pbr.comp.spv"
 	}, "pbr.comp");
 	_ptc.ctx.create_named_pipeline("pbr", pbrPci);
 	
-	auto pbrQuadPci = vuk::ComputePipelineCreateInfo();
+	auto pbrQuadPci = vuk::ComputePipelineBaseCreateInfo();
 	pbrQuadPci.add_spirv(std::vector<u32>{
 #include "spv/pbrQuad.comp.spv"
 	}, "pbrQuad.comp");
@@ -48,14 +48,14 @@ void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf,
 			tileCount=_worklist.counts.offsetView(+MaterialType::PBR)](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
-			   .bind_storage_buffer(0, 1, _meshes.descriptorBuf)
+			   .bind_storage_buffer(0, 1, _meshes.descriptors)
 			   .bind_storage_buffer(0, 2, _instances.instances)
 			   .bind_storage_buffer(0, 3, _instances.colors)
 			   .bind_storage_buffer(0, 4, _instances.transforms)
-			   .bind_storage_buffer(0, 5, _meshes.indicesBuf)
-			   .bind_storage_buffer(0, 6, _meshes.verticesBuf)
-			   .bind_storage_buffer(0, 7, _meshes.normalsBuf)
-			   .bind_storage_buffer(0, 8, _meshes.colorsBuf)
+			   .bind_storage_buffer(0, 5, _meshes.indices)
+			   .bind_storage_buffer(0, 6, _meshes.vertices)
+			   .bind_storage_buffer(0, 7, _meshes.normals)
+			   .bind_storage_buffer(0, 8, _meshes.colors)
 			   .bind_storage_buffer(0, 9, _materials.materials)
 			   .bind_uniform_buffer(0, 10, _sunLuminance)
 			   .bind_sampled_image(0, 11, _ibl, TrilinearClamp)
@@ -103,14 +103,14 @@ void PBR::applyQuad(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _quadbuf,
 			tileCount=_worklist.counts.offsetView(+MaterialType::PBR)](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
-			   .bind_storage_buffer(0, 1, _meshes.descriptorBuf)
+			   .bind_storage_buffer(0, 1, _meshes.descriptors)
 			   .bind_storage_buffer(0, 2, _instances.instances)
 			   .bind_storage_buffer(0, 3, _instances.colors)
 			   .bind_storage_buffer(0, 4, _instances.transforms)
-			   .bind_storage_buffer(0, 5, _meshes.indicesBuf)
-			   .bind_storage_buffer(0, 6, _meshes.verticesBuf)
-			   .bind_storage_buffer(0, 7, _meshes.normalsBuf)
-			   .bind_storage_buffer(0, 8, _meshes.colorsBuf)
+			   .bind_storage_buffer(0, 5, _meshes.indices)
+			   .bind_storage_buffer(0, 6, _meshes.vertices)
+			   .bind_storage_buffer(0, 7, _meshes.normals)
+			   .bind_storage_buffer(0, 8, _meshes.colors)
 			   .bind_storage_buffer(0, 9, _materials.materials)
 			   .bind_uniform_buffer(0, 10, _sunLuminance)
 			   .bind_sampled_image(0, 11, _ibl, TrilinearClamp)

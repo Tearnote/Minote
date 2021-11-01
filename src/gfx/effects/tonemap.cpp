@@ -11,7 +11,7 @@ using namespace base;
 
 void Tonemap::compile(vuk::PerThreadContext& _ptc) {
 	
-	auto tonemapPci = vuk::ComputePipelineCreateInfo();
+	auto tonemapPci = vuk::ComputePipelineBaseCreateInfo();
 	tonemapPci.add_spirv(std::vector<u32>{
 #include "spv/tonemap.comp.spv"
 	}, "tonemap.comp");

@@ -34,15 +34,16 @@ static_assert(std::is_trivially_constructible_v<MeshDescriptor>);
 struct MeshBuffer {
 	
 	// These three are indexed together
-	Buffer<vec3> verticesBuf;
-	Buffer<vec3> normalsBuf;
-	Buffer<u16vec4> colorsBuf;
+	Buffer<vec3> vertices;
+	Buffer<vec3> normals;
+	Buffer<u16vec4> colors;
 	
-	Buffer<u32> indicesBuf;
+	Buffer<u32> indices;
 	
-	ivector<MeshDescriptor> descriptors; // CPU-side mesh metadata
-	Buffer<MeshDescriptor> descriptorBuf; // GPU-accessible mesh metadata
-	hashmap<ID, usize> descriptorIDs; // Mapping from IDs to descriptor buffer indices
+	Buffer<MeshDescriptor> descriptors; // GPU-accessible mesh metadata
+	
+	ivector<MeshDescriptor> cpu_descriptors; // CPU-side mesh metadata
+	hashmap<ID, usize> cpu_descriptorIDs; // Mapping from IDs to descriptor buffer indices
 	
 };
 

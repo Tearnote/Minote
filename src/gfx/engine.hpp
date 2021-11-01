@@ -69,7 +69,7 @@ private:
 	u32 m_framesSinceLastCheck;
 	
 	ImguiData m_imguiData;
-	std::optional<MeshBuffer> m_meshes;
+	MeshBuffer m_meshes;
 	std::optional<MaterialBuffer> m_materials;
 	std::optional<ObjectPool> m_objects;
 	Camera m_camera;

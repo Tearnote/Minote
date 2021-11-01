@@ -51,9 +51,9 @@ void Visibility::apply(vuk::RenderGraph& _rg, Texture2D _visbuf, Texture2D _dept
 		.execute = [_visbuf, _world, &_instances, &_meshes](vuk::CommandBuffer& cmd) {
 			
 			cmdSetViewportScissor(cmd, _visbuf.size());
-			cmd.bind_index_buffer(_meshes.indicesBuf, vuk::IndexType::eUint32)
+			cmd.bind_index_buffer(_meshes.indices, vuk::IndexType::eUint32)
 			   .bind_uniform_buffer(0, 0, _world)
-			   .bind_storage_buffer(0, 1, _meshes.verticesBuf)
+			   .bind_storage_buffer(0, 1, _meshes.vertices)
 			   .bind_storage_buffer(0, 2, _instances.instances)
 			   .bind_storage_buffer(0, 3, _instances.transforms)
 			   .bind_graphics_pipeline("visibility");
@@ -78,9 +78,9 @@ void Visibility::applyMS(vuk::RenderGraph& _rg, Texture2DMS _visbuf, Texture2DMS
 		.execute = [_visbuf, _world, &_instances, &_meshes](vuk::CommandBuffer& cmd) {
 			
 			cmdSetViewportScissor(cmd, _visbuf.size());
-			cmd.bind_index_buffer(_meshes.indicesBuf, vuk::IndexType::eUint32)
+			cmd.bind_index_buffer(_meshes.indices, vuk::IndexType::eUint32)
 			   .bind_uniform_buffer(0, 0, _world)
-			   .bind_storage_buffer(0, 1, _meshes.verticesBuf)
+			   .bind_storage_buffer(0, 1, _meshes.vertices)
 			   .bind_storage_buffer(0, 2, _instances.instances)
 			   .bind_storage_buffer(0, 3, _instances.transforms)
 			   .bind_graphics_pipeline("visibility_ms");
@@ -93,13 +93,13 @@ void Visibility::applyMS(vuk::RenderGraph& _rg, Texture2DMS _visbuf, Texture2DMS
 
 void Worklist::compile(vuk::PerThreadContext& _ptc) {
 	
-	auto worklistPci = vuk::ComputePipelineCreateInfo();
+	auto worklistPci = vuk::ComputePipelineBaseCreateInfo();
 	worklistPci.add_spirv(std::vector<u32>{
 #include "spv/worklist.comp.spv"
 	}, "worklist.comp");
 	_ptc.ctx.create_named_pipeline("worklist", worklistPci);
 	
-	auto worklistMSPci = vuk::ComputePipelineCreateInfo();
+	auto worklistMSPci = vuk::ComputePipelineBaseCreateInfo();
 	worklistMSPci.add_spirv(std::vector<u32>{
 #include "spv/worklistMS.comp.spv"
 	}, "worklistMS.comp");

@@ -42,13 +42,13 @@ auto Atmosphere::Params::earth() -> Params {
 
 void Atmosphere::compile(vuk::PerThreadContext& _ptc) {
 	
-	auto skyGenTransmittancePci = vuk::ComputePipelineCreateInfo();
+	auto skyGenTransmittancePci = vuk::ComputePipelineBaseCreateInfo();
 	skyGenTransmittancePci.add_spirv(std::vector<u32>{
 #include "spv/skyGenTransmittance.comp.spv"
 	}, "skyGenTransmittance.comp");
 	_ptc.ctx.create_named_pipeline("sky_gen_transmittance", skyGenTransmittancePci);
 
-	auto skyGenMultiScatteringPci = vuk::ComputePipelineCreateInfo();
+	auto skyGenMultiScatteringPci = vuk::ComputePipelineBaseCreateInfo();
 	skyGenMultiScatteringPci.add_spirv(std::vector<u32>{
 #include "spv/skyGenMultiScattering.comp.spv"
 	}, "skyGenMultiScattering.comp");
@@ -114,31 +114,31 @@ auto Atmosphere::create(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
 
 void Sky::compile(vuk::PerThreadContext& _ptc) {
 	
-	auto skyGenSkyViewPci = vuk::ComputePipelineCreateInfo();
+	auto skyGenSkyViewPci = vuk::ComputePipelineBaseCreateInfo();
 	skyGenSkyViewPci.add_spirv(std::vector<u32>{
 #include "spv/skyGenSkyView.comp.spv"
 	}, "skyGenSkyView.comp");
 	_ptc.ctx.create_named_pipeline("sky_gen_sky_view", skyGenSkyViewPci);
 	
-	auto skyGenSunLuminancePci = vuk::ComputePipelineCreateInfo();
+	auto skyGenSunLuminancePci = vuk::ComputePipelineBaseCreateInfo();
 	skyGenSunLuminancePci.add_spirv(std::vector<u32>{
 #include "spv/skyGenSunLuminance.comp.spv"
 	}, "skyGenSunLuminance.comp");
 	_ptc.ctx.create_named_pipeline("sky_gen_sun_luminance", skyGenSunLuminancePci);
 	
-	auto skyDrawPci = vuk::ComputePipelineCreateInfo();
+	auto skyDrawPci = vuk::ComputePipelineBaseCreateInfo();
 	skyDrawPci.add_spirv(std::vector<u32>{
 #include "spv/skyDraw.comp.spv"
 	}, "skyDraw.comp");
 	_ptc.ctx.create_named_pipeline("sky_draw", skyDrawPci);
 	
-	auto skyDrawCubemapPci = vuk::ComputePipelineCreateInfo();
+	auto skyDrawCubemapPci = vuk::ComputePipelineBaseCreateInfo();
 	skyDrawCubemapPci.add_spirv(std::vector<u32>{
 #include "spv/skyDrawCubemap.comp.spv"
 	}, "skyDrawCubemap.comp");
 	_ptc.ctx.create_named_pipeline("sky_draw_cubemap", skyDrawCubemapPci);
 	
-	auto skyAerialPerspectivePci = vuk::ComputePipelineCreateInfo();
+	auto skyAerialPerspectivePci = vuk::ComputePipelineBaseCreateInfo();
 	skyAerialPerspectivePci.add_spirv(std::vector<u32>{
 #include "spv/skyGenAerialPerspective.comp.spv"
 	}, "skyGenAerialPerspectivePci.comp");

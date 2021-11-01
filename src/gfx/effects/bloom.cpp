@@ -14,19 +14,19 @@ using namespace base;
 
 void Bloom::compile(vuk::PerThreadContext& _ptc) {
 	
-	auto bloomDownPci = vuk::ComputePipelineCreateInfo();
+	auto bloomDownPci = vuk::ComputePipelineBaseCreateInfo();
 	bloomDownPci.add_spirv(std::vector<u32>{
 #include "spv/bloomDown.comp.spv"
 	}, "bloomDown.comp");
 	_ptc.ctx.create_named_pipeline("bloom_down", bloomDownPci);
 	
-	auto bloomDownKarisPci = vuk::ComputePipelineCreateInfo();
+	auto bloomDownKarisPci = vuk::ComputePipelineBaseCreateInfo();
 	bloomDownKarisPci.add_spirv(std::vector<u32>{
 #include "spv/bloomDownKaris.comp.spv"
 	}, "bloomDownKaris.comp");
 	_ptc.ctx.create_named_pipeline("bloom_down_karis", bloomDownKarisPci);
 	
-	auto bloomUpPci = vuk::ComputePipelineCreateInfo();
+	auto bloomUpPci = vuk::ComputePipelineBaseCreateInfo();
 	bloomUpPci.add_spirv(std::vector<u32>{
 #include "spv/bloomUp.comp.spv"
 	}, "bloomUp.comp");

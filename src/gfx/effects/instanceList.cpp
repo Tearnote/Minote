@@ -31,7 +31,7 @@ auto BasicInstanceList::upload(Pool& _pool, vuk::RenderGraph& _rg,
 			continue;
 		
 		auto meshID = _objects.meshIDs[id];
-		auto meshIdx = _meshes.descriptorIDs.at(meshID);
+		auto meshIdx = _meshes.cpu_descriptorIDs.at(meshID);
 		auto materialID = _objects.materialIDs[id];
 		auto materialIdx = _materials.materialIDs.at(materialID);
 		
@@ -84,7 +84,7 @@ auto BasicInstanceList::upload(Pool& _pool, vuk::RenderGraph& _rg,
 
 void InstanceList::compile(vuk::PerThreadContext& _ptc) {
 	
-	auto transformConvPci = vuk::ComputePipelineCreateInfo();
+	auto transformConvPci = vuk::ComputePipelineBaseCreateInfo();
 	transformConvPci.add_spirv(std::vector<u32>{
 #include "spv/transformConv.comp.spv"
 	}, "transformConv.comp");
@@ -134,25 +134,25 @@ auto InstanceList::fromBasic(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name
 
 void DrawableInstanceList::compile(vuk::PerThreadContext& _ptc) {
 	
-	auto instanceSortCountPci = vuk::ComputePipelineCreateInfo();
+	auto instanceSortCountPci = vuk::ComputePipelineBaseCreateInfo();
 	instanceSortCountPci.add_spirv(std::vector<u32>{
 #include "spv/instanceSortCount.comp.spv"
 	}, "instanceSortCount.comp");
 	_ptc.ctx.create_named_pipeline("instance_sort_count", instanceSortCountPci);
 	
-	auto instanceSortScanPci = vuk::ComputePipelineCreateInfo();
+	auto instanceSortScanPci = vuk::ComputePipelineBaseCreateInfo();
 	instanceSortScanPci.add_spirv(std::vector<u32>{
 #include "spv/instanceSortScan.comp.spv"
 	}, "instanceSortScan.comp");
 	_ptc.ctx.create_named_pipeline("instance_sort_scan", instanceSortScanPci);
 	
-	auto instanceSortWritePci = vuk::ComputePipelineCreateInfo();
+	auto instanceSortWritePci = vuk::ComputePipelineBaseCreateInfo();
 	instanceSortWritePci.add_spirv(std::vector<u32>{
 #include "spv/instanceSortWrite.comp.spv"
 	}, "instanceSortWrite.comp");
 	_ptc.ctx.create_named_pipeline("instance_sort_write", instanceSortWritePci);
 	
-	auto frustumCullPci = vuk::ComputePipelineCreateInfo();
+	auto frustumCullPci = vuk::ComputePipelineBaseCreateInfo();
 	frustumCullPci.add_spirv(std::vector<u32>{
 #include "spv/frustumCull.comp.spv"
 	}, "frustumCull.comp");
@@ -170,7 +170,7 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 	auto commandsData = pvector<Command>();
 	commandsData.reserve(_meshes.descriptors.size());
 	
-	for (auto& descriptor: _meshes.descriptors) {
+	for (auto& descriptor: _meshes.cpu_descriptors) {
 		
 		commandsData.emplace_back(Command{
 			.indexCount = descriptor.indexCount,
@@ -310,7 +310,7 @@ auto DrawableInstanceList::frustumCull(Pool& _pool, vuk::RenderGraph& _rg, vuk::
 			cmd.bind_storage_buffer(0, 0, _source.commands)
 			   .bind_uniform_buffer(0, 1, _source.instancesCount)
 			   .bind_storage_buffer(0, 2, _source.instances)
-			   .bind_storage_buffer(0, 3, _meshes.descriptorBuf)
+			   .bind_storage_buffer(0, 3, _meshes.descriptors)
 			   .bind_storage_buffer(0, 4, result.commands)
 			   .bind_storage_buffer(0, 5, result.instancesCount)
 			   .bind_storage_buffer(0, 6, result.instances)

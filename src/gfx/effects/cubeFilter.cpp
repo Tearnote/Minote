@@ -15,13 +15,13 @@ using namespace base;
 
 void CubeFilter::compile(vuk::PerThreadContext& _ptc) {
 	
-	auto cubePrefilterPci = vuk::ComputePipelineCreateInfo();
+	auto cubePrefilterPci = vuk::ComputePipelineBaseCreateInfo();
 	cubePrefilterPci.add_spirv(std::vector<u32>{
 #include "spv/cubePrefilter.comp.spv"
 	}, "cubePrefilter.comp");
 	_ptc.ctx.create_named_pipeline("cube_prefilter", cubePrefilterPci);
 	
-	auto cubePostfilterPci = vuk::ComputePipelineCreateInfo();
+	auto cubePostfilterPci = vuk::ComputePipelineBaseCreateInfo();
 	cubePostfilterPci.add_spirv(std::vector<u32>{
 #include "spv/cubePostfilter.comp.spv"
 	}, "cubePostfilter.comp");
