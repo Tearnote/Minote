@@ -7,11 +7,11 @@ namespace minote::gfx {
 
 void Antialiasing::compile(vuk::PerThreadContext& _ptc) {
 	
-	auto quadScatterPci = vuk::ComputePipelineBaseCreateInfo();
-	quadScatterPci.add_spirv(std::vector<u32>{
-#include "spv/quadScatter.comp.spv"
-	}, "quadScatter.comp");
-	_ptc.ctx.create_named_pipeline("quad_scatter", quadScatterPci);
+	auto quadAssignPci = vuk::ComputePipelineBaseCreateInfo();
+	quadAssignPci.add_spirv(std::vector<u32>{
+#include "spv/quadAssign.comp.spv"
+	}, "quadAssign.comp");
+	_ptc.ctx.create_named_pipeline("quad_scatter", quadAssignPci);
 	
 	auto quadResolvePci = vuk::ComputePipelineBaseCreateInfo();
 	quadResolvePci.add_spirv(std::vector<u32>{
@@ -21,10 +21,10 @@ void Antialiasing::compile(vuk::PerThreadContext& _ptc) {
 	
 }
 
-void Antialiasing::quadScatter(vuk::RenderGraph& _rg, Texture2DMS _visbuf, Texture2D _quadbuf, Buffer<World> _world) {
+void Antialiasing::quadAssign(vuk::RenderGraph& _rg, Texture2DMS _visbuf, Texture2D _quadbuf, Buffer<World> _world) {
 	
 	_rg.add_pass({
-		.name = nameAppend(_visbuf.name, "Quad scatter"),
+		.name = nameAppend(_visbuf.name, "Quad assign"),
 		.resources = {
 			_visbuf.resource(vuk::eComputeSampled),
 			_quadbuf.resource(vuk::eComputeWrite) },
@@ -34,7 +34,7 @@ void Antialiasing::quadScatter(vuk::RenderGraph& _rg, Texture2DMS _visbuf, Textu
 			   .bind_sampled_image(0, 1, _visbuf, NearestClamp)
 			   .bind_storage_image(0, 2, _quadbuf)
 			   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, _visbuf.size())
-			   .bind_compute_pipeline("quad_scatter");
+			   .bind_compute_pipeline("quad_assign");
 			
 			auto invocationCount = _visbuf.size() / 2u + _visbuf.size() % 2u;
 			cmd.dispatch_invocations(invocationCount.x(), invocationCount.y());

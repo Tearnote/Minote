@@ -5,6 +5,7 @@ layout(local_size_x = 8, local_size_y = 8) in;
 
 #include "types.glsl"
 #include "util.glsl"
+#include "quad.glsl"
 
 layout(binding = 0) uniform WorldConstants {
 	World u_world;
@@ -16,25 +17,7 @@ layout(push_constant) uniform Constants {
 	uvec2 u_sourceSize;
 };
 
-#define SUBSAMPLE_COUNT 8
 #define K_MEANS_ITERATIONS 1
-#define VIS_SAMPLE_COUNT (4 * SUBSAMPLE_COUNT)
-
-const vec2 SubsampleLocations[SUBSAMPLE_COUNT] = {
-	{0.5625, 0.3125},
-	{0.4375, 0.6875},
-	{0.8125, 0.5625},
-	{0.3125, 0.1875},
-	{0.1875, 0.8125},
-	{0.0625, 0.4375},
-	{0.6875, 0.9375},
-	{0.9375, 0.0625}};
-
-const uvec2 QuadPixelOffsets[4] = {
-	{0, 0},
-	{1, 0},
-	{0, 1},
-	{1, 1}};
 
 const vec2 InitialCentroids[4] = {
 	{0.5, 0.5},
@@ -148,7 +131,7 @@ void main() {
 	for (uint subIdx = 0; subIdx < VIS_SAMPLE_COUNT; subIdx += 1) {
 		
 		uint quadPx = subIdx / SUBSAMPLE_COUNT;
-		vec2 subsamplePosition = vec2(QuadPixelOffsets[quadPx]) + SubsampleLocations[subIdx % SUBSAMPLE_COUNT];
+		vec2 subsamplePosition = vec2(QuadPixelOffsets[quadPx]) + QuadSubsampleLocations[subIdx % SUBSAMPLE_COUNT];
 		uint subsampleValue = visSamples[subIdx];
 		
 		// Compute distance from each cluster

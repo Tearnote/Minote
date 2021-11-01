@@ -324,7 +324,7 @@ void Engine::render() {
 			Clear::apply(rg, colorPrev, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 		Visibility::applyMS(rg, visbufMS, depthMS, world, culledDrawables, m_meshes);
 		auto worklistMS = Worklist::createMS(m_swapchainPool, rg, "worklist_ms", visbufMS, culledDrawables, m_materials);
-		Antialiasing::quadScatter(rg, visbufMS, quadbuf, world);
+		Antialiasing::quadAssign(rg, visbufMS, quadbuf, world);
 		PBR::applyQuad(rg, clusterOut, quadbuf, worklistMS, world, m_meshes, m_materials,
 			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
 		Sky::drawQuad(rg, clusterOut, quadbuf, worklistMS, cameraSky, m_atmosphere, world);
