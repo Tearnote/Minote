@@ -70,7 +70,7 @@ private:
 	
 	ImguiData m_imguiData;
 	MeshBuffer m_meshes;
-	std::optional<MaterialBuffer> m_materials;
+	MaterialBuffer m_materials;
 	std::optional<ObjectPool> m_objects;
 	Camera m_camera;
 	
