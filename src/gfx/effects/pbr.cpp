@@ -81,9 +81,10 @@ void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf,
 	
 }
 
-void PBR::applyQuad(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _quadbuf,
-	Worklist const& _worklist, Buffer<World> _world, MeshBuffer const& _meshes, MaterialBuffer const& _materials,
-	DrawableInstanceList const& _instances, Cubemap _ibl, Buffer<vec3> _sunLuminance, Texture3D _aerialPerspective) {
+void PBR::applyQuad(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _velocity,
+	Texture2D _quadbuf, Worklist const& _worklist, Buffer<World> _world,
+	MeshBuffer const& _meshes, MaterialBuffer const& _materials, DrawableInstanceList const& _instances,
+	Cubemap _ibl, Buffer<vec3> _sunLuminance, Texture3D _aerialPerspective) {
 	
 	_rg.add_pass({
 		.name = nameAppend(_color.name, "pbr_quad"),
@@ -97,8 +98,9 @@ void PBR::applyQuad(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _quadbuf,
 			_sunLuminance.resource(vuk::eComputeRead),
 			_aerialPerspective.resource(vuk::eComputeSampled),
 			_ibl.resource(vuk::eComputeSampled),
+			_velocity.resource(vuk::eComputeWrite),
 			_color.resource(vuk::eComputeWrite) },
-		.execute = [_color, _quadbuf, &_worklist, _world, &_meshes,
+		.execute = [_color, _quadbuf, &_worklist, _world, &_meshes, _velocity,
 			&_materials, &_instances, _ibl, _sunLuminance, _aerialPerspective,
 			tileCount=_worklist.counts.offsetView(+MaterialType::PBR)](vuk::CommandBuffer& cmd) {
 			
@@ -117,7 +119,8 @@ void PBR::applyQuad(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _quadbuf,
 			   .bind_sampled_image(0, 12, _aerialPerspective, TrilinearClamp)
 			   .bind_sampled_image(0, 13, _quadbuf, NearestClamp)
 			   .bind_storage_image(0, 14, _color)
-			   .bind_storage_buffer(0, 15, _worklist.lists)
+			   .bind_storage_image(0, 15, _velocity)
+			   .bind_storage_buffer(1, 0, _worklist.lists)
 			   .bind_compute_pipeline("pbr_quad");
 			
 			struct PushConstants {

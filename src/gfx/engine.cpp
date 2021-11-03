@@ -132,6 +132,9 @@ void Engine::render() {
 	// Prepare per-frame data
 	
 	// Basic scene properties
+	if (!m_flushTemporalResources)
+		m_world.prevViewProjection = m_world.viewProjection;
+	
 	auto viewport = uvec2{m_vk.swapchain->extent.width, m_vk.swapchain->extent.height};
 	m_world.projection = perspective(VerticalFov, f32(viewport.x()) / f32(viewport.y()), NearPlane);
 	m_world.view = m_camera.transform();
@@ -140,6 +143,9 @@ void Engine::render() {
 	m_world.viewportSize = viewport;
 	m_world.cameraPos = m_camera.position;
 	m_world.frameCounter = m_vk.context->frame_counter.load();
+	
+	if (m_flushTemporalResources)
+		m_world.prevViewProjection = m_world.viewProjection;
 	
 	// Sun properties
 	static auto sunPitch = 12_deg;
@@ -213,6 +219,7 @@ void Engine::render() {
 	auto depth = Texture2D();
 	auto depthMS = Texture2DMS();
 	auto quadbuf = Texture2D();
+	auto velocity = Texture2D();
 	auto clusterOut = Texture2D();
 	auto colorCurrent = Texture2D();
 	auto colorPrev = Texture2D();
@@ -251,6 +258,13 @@ void Engine::render() {
 			vuk::ImageUsageFlagBits::eStorage |
 			vuk::ImageUsageFlagBits::eSampled);
 		quadbuf.attach(rg, vuk::eNone, vuk::eNone);
+		
+		velocity = Texture2D::make(m_swapchainPool, "velocity",
+			viewport, vuk::Format::eR16G16Sfloat,
+			vuk::ImageUsageFlagBits::eStorage |
+			vuk::ImageUsageFlagBits::eSampled |
+			vuk::ImageUsageFlagBits::eTransferDst);
+		velocity.attach(rg, vuk::eNone, vuk::eNone);
 		
 		clusterOut = Texture2D::make(m_swapchainPool, "cluster_out",
 			viewport, vuk::Format::eR16G16B16A16Sfloat,
@@ -320,15 +334,16 @@ void Engine::render() {
 		
 		Clear::apply(rg, clusterOut, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 		Clear::apply(rg, colorCurrent, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
+		Clear::apply(rg, velocity, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 		if (m_flushTemporalResources)
 			Clear::apply(rg, colorPrev, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 		Visibility::applyMS(rg, visbufMS, depthMS, world, culledDrawables, m_meshes);
 		auto worklistMS = Worklist::createMS(m_swapchainPool, rg, "worklist_ms", visbufMS, culledDrawables, m_materials);
 		Antialiasing::quadAssign(rg, visbufMS, quadbuf, world);
-		PBR::applyQuad(rg, clusterOut, quadbuf, worklistMS, world, m_meshes, m_materials,
+		PBR::applyQuad(rg, clusterOut, velocity, quadbuf, worklistMS, world, m_meshes, m_materials,
 			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
-		Sky::drawQuad(rg, clusterOut, quadbuf, worklistMS, cameraSky, m_atmosphere, world);
-		Antialiasing::quadResolve(rg, colorCurrent, quadbuf, clusterOut, colorPrev, world);
+		Sky::drawQuad(rg, clusterOut, velocity, quadbuf, worklistMS, cameraSky, m_atmosphere, world);
+		Antialiasing::quadResolve(rg, colorCurrent, velocity, quadbuf, clusterOut, colorPrev, world);
 		rg.add_pass({
 			.name = nameAppend(colorCurrent.name, "copy"),
 			.resources = {

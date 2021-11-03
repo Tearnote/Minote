@@ -13,7 +13,8 @@ layout(binding = 0) uniform WorldConstants {
 layout(binding = 1) uniform usampler2D s_quadbuf;
 layout(binding = 2) uniform sampler2D s_clusterOut;
 layout(binding = 3) uniform sampler2D s_history;
-layout(binding = 4) restrict writeonly uniform image2D i_target;
+layout(binding = 4) uniform sampler2D s_velocity;
+layout(binding = 5) restrict writeonly uniform image2D i_target;
 
 layout(push_constant) uniform Constants {
 	uvec2 u_sourceSize;
@@ -22,23 +23,34 @@ layout(push_constant) uniform Constants {
 void main() {
 	
 	uvec2 gid = gl_GlobalInvocationID.xy * 2;
+	vec2 targetPixelPitch = vec2(1.0) / vec2(u_sourceSize);
 	
 	// Read quad and cluster output samples
 	
-	uint clusterSubsamples[4];
+	uvec4 clusterSubsamples;
 	mat4 clusterOuts;
+	mat4x2 clusterVelocities;
 	for (uint i = 0; i < 4; i += 1) {
 		
 		clusterSubsamples[i] = texelFetch(s_quadbuf, ivec2(gid + QuadPixelOffsets[i]), 0).y;
 		clusterOuts[i] = texelFetch(s_clusterOut, ivec2(gid + QuadPixelOffsets[i]), 0);
+		clusterVelocities[i] = texelFetch(s_velocity, ivec2(gid + QuadPixelOffsets[i]), 0).xy;
 		
 	}
 	
 	// Read history samples
 	
 	mat4 historySamples;
-	for (uint i = 0; i < 4; i += 1)
-		historySamples[i] = texelFetch(s_history, ivec2(gid + QuadPixelOffsets[i]), 0);
+	for (uint i = 0; i < 4; i += 1) {
+		
+		vec2 currentLocation = vec2(gid + QuadPixelOffsets[i]) + vec2(0.5);
+		vec2 historyLocation = currentLocation - clusterVelocities[i];
+		if (any(lessThan(historyLocation, vec2(0.0))) || any(greaterThan(historyLocation, vec2(u_sourceSize))))
+			historySamples[i] = vec4(0.0);
+		else
+			historySamples[i] = textureLod(s_history, historyLocation * targetPixelPitch, 0.0);
+		
+	}
 	
 	// Calculate each cluster's contribution to each pixel
 	

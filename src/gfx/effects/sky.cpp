@@ -303,7 +303,7 @@ void Sky::draw(vuk::RenderGraph& _rg, Texture2D _target, Worklist const& _workli
 	
 }
 
-void Sky::drawQuad(vuk::RenderGraph& _rg, Texture2D _target, Texture2D _quadbuf,
+void Sky::drawQuad(vuk::RenderGraph& _rg, Texture2D _target, Texture2D _velocity, Texture2D _quadbuf,
 	Worklist const& _worklist, Texture2D _skyView, Atmosphere const& _atmo, Buffer<World> _world) {
 	
 	_rg.add_pass({
@@ -313,8 +313,9 @@ void Sky::drawQuad(vuk::RenderGraph& _rg, Texture2D _target, Texture2D _quadbuf,
 			_skyView.resource(vuk::eComputeSampled),
 			_worklist.counts.resource(vuk::eIndirectRead),
 			_worklist.lists.resource(vuk::eComputeRead),
+			_velocity.resource(vuk::eComputeWrite),
 			_target.resource(vuk::eComputeWrite) },
-		.execute = [_target, &_worklist, _skyView, &_atmo, _world, _quadbuf,
+		.execute = [_target, &_worklist, _skyView, &_atmo, _world, _quadbuf, _velocity,
 			tileCount=_worklist.counts.offsetView(+MaterialType::None)](vuk::CommandBuffer& cmd) {
 			
 			struct PushConstants {
@@ -329,7 +330,8 @@ void Sky::drawQuad(vuk::RenderGraph& _rg, Texture2D _target, Texture2D _quadbuf,
 			   .bind_sampled_image(0, 3, _skyView, LinearClamp)
 			   .bind_storage_buffer(0, 4, _worklist.lists)
 			   .bind_sampled_image(0, 5, _quadbuf, NearestClamp)
-			   .bind_storage_image(0, 6, _target)
+			   .bind_storage_image(0, 6, _velocity)
+			   .bind_storage_image(0, 7, _target)
 			   .bind_compute_pipeline("sky_draw_quad");
 			
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
