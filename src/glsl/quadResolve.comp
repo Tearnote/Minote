@@ -13,11 +13,62 @@ layout(binding = 0) uniform WorldConstants {
 layout(binding = 1) uniform usampler2D s_quadbuf;
 layout(binding = 2) uniform sampler2D s_clusterOut;
 layout(binding = 3) uniform sampler2D s_history;
-layout(binding = 4) uniform sampler2D s_velocity;
-layout(binding = 5) restrict writeonly uniform image2D i_target;
+layout(binding = 4) uniform usampler2D s_quadbufPrev;
+layout(binding = 5) uniform sampler2D s_clusterOutPrev;
+layout(binding = 6) uniform sampler2D s_velocity;
+layout(binding = 7) restrict writeonly uniform image2D i_target;
 
 layout(push_constant) uniform Constants {
 	uvec2 u_sourceSize;
+};
+
+bool shouldReject(float _depth, vec2 _historyUv) {
+	
+	uvec2 quadGid = uvec2(_historyUv) & ~1u;
+	vec2 quadUv = _historyUv - vec2(quadGid);
+	
+	// Read quad data and find centroids
+	
+	vec4 prevClusterDepths;
+	mat4x2 prevClusterCentroids;
+	
+	for (uint i = 0; i < 4; i += 1) {
+		
+		prevClusterDepths[i] = texelFetch(s_clusterOutPrev, ivec2(quadGid + QuadPixelOffsets[i]), 0).a;
+		uint prevClusterSubsample = texelFetch(s_quadbufPrev, ivec2(quadGid + QuadPixelOffsets[i]), 0).y;
+		prevClusterCentroids[i] = subsamplePosAverage(prevClusterSubsample);
+		
+	}
+	
+	// Find the closest cluster
+	
+	uint closestCluster = 0;
+	float smallestDistanceSq = distanceSq(quadUv, prevClusterCentroids[0]);
+	for (uint i = 1; i < 4; i += 1) {
+		
+		float distanceSq = distanceSq(quadUv, prevClusterCentroids[i]);
+		if (distanceSq < smallestDistanceSq) {
+			
+			smallestDistanceSq = distanceSq;
+			closestCluster = i;
+			
+		}
+		
+	}
+	
+	// Reject if the depth is too far from the closest cluster
+	
+	float closestDepth = prevClusterDepths[closestCluster];
+	
+	if (closestDepth == 0.0)
+		return true;
+	
+	float depthDelta = abs(_depth - closestDepth);
+	if (depthDelta > 0.001)
+		return true;
+	
+	return false;
+	
 };
 
 // https://research.activision.com/publications/archives/filmic-smaasharp-morphological-and-temporal-antialiasing
@@ -50,10 +101,6 @@ vec4 sampleHistory(vec2 _uv, vec4 _metrics) {
 	
 }
 
-float random(in vec3 pos) {
-  return fract(sin(dot(pos.xyz, vec3(70.9898, 78.233, 32.4355))) * 43758.5453123);
-}
-
 void main() {
 	
 	uvec2 gid = gl_GlobalInvocationID.xy * 2;
@@ -72,14 +119,15 @@ void main() {
 		
 	}
 	
-	// Sample the history buffer
+	// Reproject from the history buffer
 	
-	mat4 historySamples;
+	mat4 historySamples; // .a is sample age
 	for (uint i = 0; i < 4; i += 1) {
 		
 		vec2 currentLocation = vec2(gid + QuadPixelOffsets[i]) + vec2(0.5);
 		vec2 historyLocation = currentLocation - clusterVelocities[i];
-		if (any(lessThan(historyLocation, vec2(0.0))) || any(greaterThan(historyLocation, vec2(u_sourceSize))))
+		if (any(lessThan(historyLocation, vec2(0.0))) || any(greaterThan(historyLocation, vec2(u_sourceSize))) ||
+			shouldReject(clusterOuts[i].a, historyLocation))
 			historySamples[i] = vec4(0.0);
 		else
 			historySamples[i] = sampleHistory(historyLocation, targetMetrics);
@@ -102,7 +150,7 @@ void main() {
 	
 	mat4 currentSamples = clusterOuts * clusterWeights;
 	
-	// Write out the result
+	// Reproject from previous frame, do temporal blending, and write out the result
 	
 	for (uint i = 0; i < 4; i += 1) {
 		

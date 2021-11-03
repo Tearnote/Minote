@@ -219,8 +219,10 @@ void Engine::render() {
 	auto depth = Texture2D();
 	auto depthMS = Texture2DMS();
 	auto quadbuf = Texture2D();
+	auto quadbufPrev = Texture2D();
 	auto velocity = Texture2D();
 	auto clusterOut = Texture2D();
+	auto clusterOutPrev = Texture2D();
 	auto colorCurrent = Texture2D();
 	auto colorPrev = Texture2D();
 	if (antialiasing == AntialiasingType::None) {
@@ -239,6 +241,8 @@ void Engine::render() {
 		
 	} else {
 		
+		auto oddFrame = m_vk.context->frame_counter.load() % 2;
+		
 		visbufMS = Texture2DMS::make(m_swapchainPool, "visbuf_ms",
 			viewport, vuk::Format::eR32Uint,
 			vuk::ImageUsageFlagBits::eColorAttachment |
@@ -253,11 +257,23 @@ void Engine::render() {
 			vuk::Samples::e8);
 		depthMS.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearDepthStencil(0.0f, 0));
 		
-		quadbuf = Texture2D::make(m_swapchainPool, "quadbuf",
-			viewport, vuk::Format::eR32G32Uint,
-			vuk::ImageUsageFlagBits::eStorage |
-			vuk::ImageUsageFlagBits::eSampled);
+		auto quadbufs = to_array({
+			Texture2D::make(m_swapchainPool, "quadbuf0",
+				viewport, vuk::Format::eR32G32Uint,
+				vuk::ImageUsageFlagBits::eStorage |
+				vuk::ImageUsageFlagBits::eSampled),
+			Texture2D::make(m_swapchainPool, "quadbuf1",
+				viewport, vuk::Format::eR32G32Uint,
+				vuk::ImageUsageFlagBits::eStorage |
+				vuk::ImageUsageFlagBits::eSampled) });
+		quadbuf = quadbufs[oddFrame];
+		quadbufPrev = quadbufs[!oddFrame];
+		
 		quadbuf.attach(rg, vuk::eNone, vuk::eNone);
+		if (m_flushTemporalResources)
+			quadbufPrev.attach(rg, vuk::eNone, vuk::eNone);
+		else
+			quadbufPrev.attach(rg, vuk::eTransferSrc, vuk::eNone);
 		
 		velocity = Texture2D::make(m_swapchainPool, "velocity",
 			viewport, vuk::Format::eR16G16Sfloat,
@@ -266,12 +282,25 @@ void Engine::render() {
 			vuk::ImageUsageFlagBits::eTransferDst);
 		velocity.attach(rg, vuk::eNone, vuk::eNone);
 		
-		clusterOut = Texture2D::make(m_swapchainPool, "cluster_out",
-			viewport, vuk::Format::eR16G16B16A16Sfloat,
-			vuk::ImageUsageFlagBits::eStorage |
-			vuk::ImageUsageFlagBits::eSampled |
-			vuk::ImageUsageFlagBits::eTransferDst);
+		auto clusterOuts = to_array({
+			Texture2D::make(m_swapchainPool, "cluster_out0",
+				viewport, vuk::Format::eR16G16B16A16Sfloat,
+				vuk::ImageUsageFlagBits::eStorage |
+				vuk::ImageUsageFlagBits::eSampled |
+				vuk::ImageUsageFlagBits::eTransferDst),
+			Texture2D::make(m_swapchainPool, "cluster_out1",
+				viewport, vuk::Format::eR16G16B16A16Sfloat,
+				vuk::ImageUsageFlagBits::eStorage |
+				vuk::ImageUsageFlagBits::eSampled |
+				vuk::ImageUsageFlagBits::eTransferDst) });
+		clusterOut = clusterOuts[oddFrame];
+		clusterOutPrev = clusterOuts[!oddFrame];
+		
 		clusterOut.attach(rg, vuk::eNone, vuk::eNone);
+		if (m_flushTemporalResources)
+			clusterOutPrev.attach(rg, vuk::eNone, vuk::eNone);
+		else
+			clusterOutPrev.attach(rg, vuk::eTransferSrc, vuk::eNone);
 		
 		auto colors = to_array({
 			Texture2D::make(m_swapchainPool, "color0",
@@ -286,9 +315,8 @@ void Engine::render() {
 				vuk::ImageUsageFlagBits::eStorage |
 				vuk::ImageUsageFlagBits::eTransferSrc |
 				vuk::ImageUsageFlagBits::eTransferDst) });
-		auto frame = m_vk.context->frame_counter.load() % 2;
-		colorCurrent = colors[frame];
-		colorPrev = colors[!frame];
+		colorCurrent = colors[oddFrame];
+		colorPrev = colors[!oddFrame];
 		
 		colorCurrent.attach(rg, vuk::eNone, vuk::eTransferSrc);
 		if (m_flushTemporalResources)
@@ -343,7 +371,7 @@ void Engine::render() {
 		PBR::applyQuad(rg, clusterOut, velocity, quadbuf, worklistMS, world, m_meshes, m_materials,
 			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
 		Sky::drawQuad(rg, clusterOut, velocity, quadbuf, worklistMS, cameraSky, m_atmosphere, world);
-		Antialiasing::quadResolve(rg, colorCurrent, velocity, quadbuf, clusterOut, colorPrev, world);
+		Antialiasing::quadResolve(rg, colorCurrent, velocity, quadbuf, clusterOut, colorPrev, quadbufPrev, clusterOutPrev, world);
 		rg.add_pass({
 			.name = nameAppend(colorCurrent.name, "copy"),
 			.resources = {

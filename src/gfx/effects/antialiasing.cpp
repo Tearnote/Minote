@@ -44,24 +44,29 @@ void Antialiasing::quadAssign(vuk::RenderGraph& _rg, Texture2DMS _visbuf, Textur
 }
 
 void Antialiasing::quadResolve(vuk::RenderGraph& _rg, Texture2D _target, Texture2D _velocity,
-	Texture2D _quadbuf, Texture2D _outputs, Texture2D _history, Buffer<World> _world) {
+	Texture2D _quadbuf, Texture2D _outputs, Texture2D _targetPrev, Texture2D _quadbufPrev,
+	Texture2D _outputsPrev, Buffer<World> _world) {
 	
 	_rg.add_pass({
 		.name = nameAppend(_quadbuf.name, "Quad resolve"),
 		.resources = {
 			_quadbuf.resource(vuk::eComputeSampled),
 			_outputs.resource(vuk::eComputeSampled),
-			_history.resource(vuk::eComputeSampled),
+			_targetPrev.resource(vuk::eComputeSampled),
+			_quadbufPrev.resource(vuk::eComputeSampled),
+			_outputsPrev.resource(vuk::eComputeSampled),
 			_velocity.resource(vuk::eComputeSampled),
 			_target.resource(vuk::eComputeWrite) },
-		.execute = [_quadbuf, _outputs, _history, _target, _velocity, _world](vuk::CommandBuffer& cmd) {
+		.execute = [_quadbuf, _outputs, _targetPrev, _quadbufPrev, _outputsPrev, _target, _velocity, _world](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_sampled_image(0, 1, _quadbuf, NearestClamp)
 			   .bind_sampled_image(0, 2, _outputs, NearestClamp)
-			   .bind_sampled_image(0, 3, _history, LinearClamp)
-			   .bind_sampled_image(0, 4, _velocity, LinearClamp)
-			   .bind_storage_image(0, 5, _target)
+			   .bind_sampled_image(0, 3, _targetPrev, LinearClamp)
+			   .bind_sampled_image(0, 4, _quadbufPrev, LinearClamp)
+			   .bind_sampled_image(0, 5, _outputsPrev, LinearClamp)
+			   .bind_sampled_image(0, 6, _velocity, LinearClamp)
+			   .bind_storage_image(0, 7, _target)
 			   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, _quadbuf.size())
 			   .bind_compute_pipeline("quad_resolve");
 			
