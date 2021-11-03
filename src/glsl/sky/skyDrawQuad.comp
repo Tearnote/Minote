@@ -97,7 +97,7 @@ void main() {
 		vec2 clusterCentroid = subsamplePosAverage(clusterSubsamples);
 		vec2 velocity;
 		clusterResult = shadeSkySample(vec2(gid & ~1u) + clusterCentroid, velocity);
-		imageStore(i_target, ivec2(gid), vec4(clusterResult, 1.0));
+		imageStore(i_target, ivec2(gid), vec4(clusterResult, 0.0));
 		imageStore(i_velocity, ivec2(gid), vec4(velocity, 0.0, 0.0));
 		
 	}
