@@ -20,10 +20,44 @@ layout(push_constant) uniform Constants {
 	uvec2 u_sourceSize;
 };
 
+// https://research.activision.com/publications/archives/filmic-smaasharp-morphological-and-temporal-antialiasing
+#define REPROJECTION_SHARPNESS 25.0
+vec4 sampleHistory(vec2 _uv, vec4 _metrics) {
+	
+	vec2 centerPosition = floor(_uv - 0.5) + 0.5;
+	vec2 f = _uv - centerPosition;
+	vec2 f2 = f * f;
+	vec2 f3 = f * f2;
+	
+	float c = REPROJECTION_SHARPNESS / 100.0;
+	vec2 w0 =        -c  * f3 +  2.0 * c         * f2 - c * f;
+	vec2 w1 =  (2.0 - c) * f3 - (3.0 - c)        * f2         + 1.0;
+	vec2 w2 = -(2.0 - c) * f3 + (3.0 -  2.0 * c) * f2 + c * f;
+	vec2 w3 =         c  * f3 -                c * f2;
+	
+	vec2 w12 = w1 + w2;
+	vec2 tc12 = _metrics.xy * (centerPosition + w2 / w12);
+	vec4 centerColor = textureLod(s_history, vec2(tc12.x, tc12.y), 0.0);
+	
+	vec2 tc0 = _metrics.xy * (centerPosition - 1.0);
+	vec2 tc3 = _metrics.xy * (centerPosition + 2.0);
+	vec4 color = vec4(textureLod(s_history, vec2(tc12.x, tc0.y ), 0.0).rgb, 1.0) * (w12.x * w0.y ) +
+	             vec4(textureLod(s_history, vec2(tc0.x,  tc12.y), 0.0).rgb, 1.0) * (w0.x  * w12.y) +
+	             vec4(centerColor.rgb,                                      1.0) * (w12.x * w12.y) +
+	             vec4(textureLod(s_history, vec2(tc3.x,  tc12.y), 0.0).rgb, 1.0) * (w3.x  * w12.y) +
+	             vec4(textureLod(s_history, vec2(tc12.x, tc3.y ), 0.0).rgb, 1.0) * (w12.x * w3.y );
+	return vec4(color.rgb, centerColor.a);
+	
+}
+
+float random(in vec3 pos) {
+  return fract(sin(dot(pos.xyz, vec3(70.9898, 78.233, 32.4355))) * 43758.5453123);
+}
+
 void main() {
 	
 	uvec2 gid = gl_GlobalInvocationID.xy * 2;
-	vec2 targetPixelPitch = vec2(1.0) / vec2(u_sourceSize);
+	vec4 targetMetrics = vec4(vec2(1.0) / vec2(u_sourceSize), vec2(u_sourceSize));
 	
 	// Read quad and cluster output samples
 	
@@ -38,7 +72,7 @@ void main() {
 		
 	}
 	
-	// Read history samples
+	// Sample the history buffer
 	
 	mat4 historySamples;
 	for (uint i = 0; i < 4; i += 1) {
@@ -48,7 +82,7 @@ void main() {
 		if (any(lessThan(historyLocation, vec2(0.0))) || any(greaterThan(historyLocation, vec2(u_sourceSize))))
 			historySamples[i] = vec4(0.0);
 		else
-			historySamples[i] = textureLod(s_history, historyLocation * targetPixelPitch, 0.0);
+			historySamples[i] = sampleHistory(historyLocation, targetMetrics);
 		
 	}
 	
@@ -76,6 +110,11 @@ void main() {
 		float blendRatio = (1.0 / float(SUBSAMPLE_COUNT)) * (SUBSAMPLE_COUNT - min(historySampleAge, SUBSAMPLE_COUNT - 1));
 		uint newAge = min(historySampleAge + 1, SUBSAMPLE_COUNT - 1);
 		vec3 result = mix(historySamples[i].rgb, currentSamples[i].rgb, blendRatio);
+		
+		uvec2 pos = gid + uvec2(QuadPixelOffsets[i]);
+		uint seed = u_sourceSize.x * u_sourceSize.y * u_world.frameCounter + pos.x * u_sourceSize.y + pos.y;
+		result += (randFloat(seed) * 2.0 - 1.0) * 0.0005;
+		
 		imageStore(i_target, ivec2(gid + QuadPixelOffsets[i]), vec4(result, float(newAge)));
 		
 	}

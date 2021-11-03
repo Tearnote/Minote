@@ -135,6 +135,19 @@ uvec2 mortonOrder(uint _id) {
 	
 }
 
+// https://www.pcg-random.org/
+uint randInt(uint _v) {
+	uint state = _v * 747796405u + 2891336453u;
+	uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+	return (word >> 22u) ^ word;
+}
+
+float randFloat(uint _v) {
+	
+	return ldexp(randInt(_v), -32);
+	
+}
+
 // https://graphics.pixar.com/library/OrthonormalB/paper.pdf
 void orthonormalBasis(vec3 _n, out vec3 _b1, out vec3 _b2) {
 	
