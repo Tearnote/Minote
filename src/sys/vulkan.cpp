@@ -96,9 +96,6 @@ Vulkan::Vulkan(Window& _window) {
 	auto physicalDeviceVulkan11Features = VkPhysicalDeviceVulkan11Features{
 		.shaderDrawParameters = VK_TRUE };
 	auto physicalDeviceVulkan12Features = VkPhysicalDeviceVulkan12Features{
-		.descriptorBindingPartiallyBound = VK_TRUE,
-		.descriptorBindingVariableDescriptorCount = VK_TRUE,
-		.runtimeDescriptorArray = VK_TRUE,
 		.hostQueryReset = VK_TRUE,
 		.vulkanMemoryModel = VK_TRUE };
 	

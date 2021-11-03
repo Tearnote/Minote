@@ -11,7 +11,7 @@ void Antialiasing::compile(vuk::PerThreadContext& _ptc) {
 	quadAssignPci.add_spirv(std::vector<u32>{
 #include "spv/quadAssign.comp.spv"
 	}, "quadAssign.comp");
-	_ptc.ctx.create_named_pipeline("quad_scatter", quadAssignPci);
+	_ptc.ctx.create_named_pipeline("quad_assign", quadAssignPci);
 	
 	auto quadResolvePci = vuk::ComputePipelineBaseCreateInfo();
 	quadResolvePci.add_spirv(std::vector<u32>{
