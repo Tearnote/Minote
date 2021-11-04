@@ -175,7 +175,7 @@ float dApprox(float _roughness, float _RoL) {
 }
 
 // Alpha channel contains depth
-vec4 shadeVisSamplePBR(uint _visValue, vec2 _screenPos, out vec2 _velocity) {
+vec3 shadeVisSamplePBR(uint _visValue, vec2 _screenPos, out vec2 _velocity) {
 	
 	vec2 sampleUv = _screenPos / vec2(u_targetSize);
 	VisSample vis = unpackVisibility(_visValue);
@@ -251,7 +251,7 @@ vec4 shadeVisSamplePBR(uint _visValue, vec2 _screenPos, out vec2 _velocity) {
 	
 	// Result write
 	
-	return vec4(surface + ap, clipVertex.z);
+	return surface + ap;
 	
 }
 
@@ -272,15 +272,15 @@ void main() {
 	
 	uint clusterValue = quadbufSample.x;
 	uint clusterSubsamples = quadbufSample.y;
-	vec4 clusterResult;
+	vec3 clusterResult;
 	if (clusterValue != -1u && clusterSubsamples != 0) {
 		
 		vec2 clusterCentroid = subsamplePosAverage(clusterSubsamples);
 		vec2 velocity;
 		clusterResult = shadeVisSamplePBR(clusterValue, vec2(gid & ~1u) + clusterCentroid, velocity);
 		if (any(isnan(clusterResult))) //TODO fix this
-			clusterResult = vec4(16.0, 0.0, 16.0, 0.01);
-		imageStore(i_target, ivec2(gid), clusterResult);
+			clusterResult = vec3(16.0, 0.0, 16.0);
+		imageStore(i_target, ivec2(gid), vec4(clusterResult, 1.0));
 		imageStore(i_velocity, ivec2(gid), vec4(velocity, 0.0, 0.0));
 		
 	}

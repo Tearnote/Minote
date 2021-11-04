@@ -14,29 +14,28 @@ layout(binding = 1) uniform usampler2D s_quadbuf;
 layout(binding = 2) uniform sampler2D s_clusterOut;
 layout(binding = 3) uniform sampler2D s_history;
 layout(binding = 4) uniform usampler2D s_quadbufPrev;
-layout(binding = 5) uniform sampler2D s_clusterOutPrev;
-layout(binding = 6) uniform sampler2D s_velocity;
-layout(binding = 7) restrict writeonly uniform image2D i_target;
+layout(binding = 5) uniform sampler2D s_velocity;
+layout(binding = 6) restrict writeonly uniform image2D i_target;
 
 layout(push_constant) uniform Constants {
 	uvec2 u_sourceSize;
 };
 
-bool shouldReject(float _depth, vec2 _historyUv) {
+bool shouldReject(uint _value, vec2 _historyUv) {
 	
 	uvec2 quadGid = uvec2(_historyUv) & ~1u;
 	vec2 quadUv = _historyUv - vec2(quadGid);
 	
 	// Read quad data and find centroids
 	
-	vec4 prevClusterDepths;
 	mat4x2 prevClusterCentroids;
+	uvec4 prevClusterValues;
 	
 	for (uint i = 0; i < 4; i += 1) {
 		
-		prevClusterDepths[i] = texelFetch(s_clusterOutPrev, ivec2(quadGid + QuadPixelOffsets[i]), 0).a;
-		uint prevClusterSubsample = texelFetch(s_quadbufPrev, ivec2(quadGid + QuadPixelOffsets[i]), 0).y;
-		prevClusterCentroids[i] = subsamplePosAverage(prevClusterSubsample);
+		uvec2 prevCluster = texelFetch(s_quadbufPrev, ivec2(quadGid + QuadPixelOffsets[i]), 0).xy;
+		prevClusterValues[i] = prevCluster.x;
+		prevClusterCentroids[i] = subsamplePosAverage(prevCluster.y);
 		
 	}
 	
@@ -56,15 +55,11 @@ bool shouldReject(float _depth, vec2 _historyUv) {
 		
 	}
 	
-	// Reject if the depth is too far from the closest cluster
+	// Reject if the visbuf value is different
 	
-	float closestDepth = prevClusterDepths[closestCluster];
+	float closestValue = prevClusterValues[closestCluster];
 	
-	if (closestDepth == 0.0)
-		return true;
-	
-	float depthDelta = abs(_depth - closestDepth);
-	if (depthDelta > 0.001)
+	if (_value != closestValue)
 		return true;
 	
 	return false;
@@ -108,12 +103,15 @@ void main() {
 	
 	// Read quad and cluster output samples
 	
+	uvec4 clusterValues;
 	uvec4 clusterSubsamples;
 	mat4 clusterOuts;
 	mat4x2 clusterVelocities;
 	for (uint i = 0; i < 4; i += 1) {
 		
-		clusterSubsamples[i] = texelFetch(s_quadbuf, ivec2(gid + QuadPixelOffsets[i]), 0).y;
+		uvec2 cluster = texelFetch(s_quadbuf, ivec2(gid + QuadPixelOffsets[i]), 0).xy;
+		clusterValues[i] = cluster.x;
+		clusterSubsamples[i] = cluster.y;
 		clusterOuts[i] = texelFetch(s_clusterOut, ivec2(gid + QuadPixelOffsets[i]), 0);
 		clusterVelocities[i] = texelFetch(s_velocity, ivec2(gid + QuadPixelOffsets[i]), 0).xy;
 		
@@ -127,7 +125,7 @@ void main() {
 		vec2 currentLocation = vec2(gid + QuadPixelOffsets[i]) + vec2(0.5);
 		vec2 historyLocation = currentLocation - clusterVelocities[i];
 		if (any(lessThan(historyLocation, vec2(0.0))) || any(greaterThan(historyLocation, vec2(u_sourceSize))) ||
-			shouldReject(clusterOuts[i].a, historyLocation))
+			shouldReject(clusterValues[i], historyLocation))
 			historySamples[i] = vec4(0.0);
 		else
 			historySamples[i] = sampleHistory(historyLocation, targetMetrics);
@@ -150,7 +148,7 @@ void main() {
 	
 	mat4 currentSamples = clusterOuts * clusterWeights;
 	
-	// Reproject from previous frame, do temporal blending, and write out the result
+	// Blend with previous frames and write out the result
 	
 	for (uint i = 0; i < 4; i += 1) {
 		

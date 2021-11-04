@@ -222,7 +222,6 @@ void Engine::render() {
 	auto quadbufPrev = Texture2D();
 	auto velocity = Texture2D();
 	auto clusterOut = Texture2D();
-	auto clusterOutPrev = Texture2D();
 	auto colorCurrent = Texture2D();
 	auto colorPrev = Texture2D();
 	if (antialiasing == AntialiasingType::None) {
@@ -282,25 +281,12 @@ void Engine::render() {
 			vuk::ImageUsageFlagBits::eTransferDst);
 		velocity.attach(rg, vuk::eNone, vuk::eNone);
 		
-		auto clusterOuts = to_array({
-			Texture2D::make(m_swapchainPool, "cluster_out0",
-				viewport, vuk::Format::eR16G16B16A16Sfloat,
-				vuk::ImageUsageFlagBits::eStorage |
-				vuk::ImageUsageFlagBits::eSampled |
-				vuk::ImageUsageFlagBits::eTransferDst),
-			Texture2D::make(m_swapchainPool, "cluster_out1",
-				viewport, vuk::Format::eR16G16B16A16Sfloat,
-				vuk::ImageUsageFlagBits::eStorage |
-				vuk::ImageUsageFlagBits::eSampled |
-				vuk::ImageUsageFlagBits::eTransferDst) });
-		clusterOut = clusterOuts[oddFrame];
-		clusterOutPrev = clusterOuts[!oddFrame];
-		
+		clusterOut = Texture2D::make(m_swapchainPool, "cluster_out",
+			viewport, vuk::Format::eR16G16B16A16Sfloat,
+			vuk::ImageUsageFlagBits::eStorage |
+			vuk::ImageUsageFlagBits::eSampled |
+			vuk::ImageUsageFlagBits::eTransferDst);
 		clusterOut.attach(rg, vuk::eNone, vuk::eNone);
-		if (m_flushTemporalResources)
-			clusterOutPrev.attach(rg, vuk::eNone, vuk::eNone);
-		else
-			clusterOutPrev.attach(rg, vuk::eTransferSrc, vuk::eNone);
 		
 		auto colors = to_array({
 			Texture2D::make(m_swapchainPool, "color0",
@@ -371,7 +357,7 @@ void Engine::render() {
 		PBR::applyQuad(rg, clusterOut, velocity, quadbuf, worklistMS, world, m_meshes, m_materials,
 			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
 		Sky::drawQuad(rg, clusterOut, velocity, quadbuf, worklistMS, cameraSky, m_atmosphere, world);
-		Antialiasing::quadResolve(rg, colorCurrent, velocity, quadbuf, clusterOut, colorPrev, quadbufPrev, clusterOutPrev, world);
+		Antialiasing::quadResolve(rg, colorCurrent, velocity, quadbuf, clusterOut, colorPrev, quadbufPrev, world);
 		rg.add_pass({
 			.name = nameAppend(colorCurrent.name, "copy"),
 			.resources = {
