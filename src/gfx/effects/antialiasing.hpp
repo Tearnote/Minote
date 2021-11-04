@@ -15,11 +15,12 @@ struct Antialiasing {
 	
 	static void compile(vuk::PerThreadContext&);
 	
-	static void quadAssign(vuk::RenderGraph&, Texture2DMS visbuf, Texture2D quadbuf, Buffer<World>);
+	static void quadAssign(vuk::RenderGraph&, Texture2DMS visbuf, Texture2D quadbuf,
+		Texture2D jitterMap, Buffer<World>);
 	
 	static void quadResolve(vuk::RenderGraph&, Texture2D target, Texture2D velocity,
-		Texture2D quadbuf, Texture2D outputs, Texture2D targetPrev, Texture2D quadbufPrev,
-		Buffer<World>);
+		Texture2D quadbuf, Texture2D jitterMap, Texture2D outputs,
+		Texture2D targetPrev, Texture2D quadbufPrev, Buffer<World>);
 	
 };
 

@@ -221,6 +221,7 @@ void Engine::render() {
 	auto quadbuf = Texture2D();
 	auto quadbufPrev = Texture2D();
 	auto velocity = Texture2D();
+	auto jitterMap = Texture2D();
 	auto clusterOut = Texture2D();
 	auto colorCurrent = Texture2D();
 	auto colorPrev = Texture2D();
@@ -280,6 +281,13 @@ void Engine::render() {
 			vuk::ImageUsageFlagBits::eSampled |
 			vuk::ImageUsageFlagBits::eTransferDst);
 		velocity.attach(rg, vuk::eNone, vuk::eNone);
+		
+		jitterMap = Texture2D::make(m_swapchainPool, "jitterMap",
+			divRoundUp(viewport, 8u), vuk::Format::eR16Uint,
+			vuk::ImageUsageFlagBits::eStorage |
+			vuk::ImageUsageFlagBits::eSampled |
+			vuk::ImageUsageFlagBits::eTransferDst);
+		jitterMap.attach(rg, vuk::eNone, vuk::eNone);
 		
 		clusterOut = Texture2D::make(m_swapchainPool, "cluster_out",
 			viewport, vuk::Format::eR16G16B16A16Sfloat,
@@ -349,15 +357,16 @@ void Engine::render() {
 		Clear::apply(rg, clusterOut, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 		Clear::apply(rg, colorCurrent, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 		Clear::apply(rg, velocity, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
+		Clear::apply(rg, jitterMap, vuk::ClearColor(0u, 0u, 0u, 0u));
 		if (m_flushTemporalResources)
 			Clear::apply(rg, colorPrev, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 		Visibility::applyMS(rg, visbufMS, depthMS, world, culledDrawables, m_meshes);
 		auto worklistMS = Worklist::createMS(m_swapchainPool, rg, "worklist_ms", visbufMS, culledDrawables, m_materials);
-		Antialiasing::quadAssign(rg, visbufMS, quadbuf, world);
+		Antialiasing::quadAssign(rg, visbufMS, quadbuf, jitterMap, world);
 		PBR::applyQuad(rg, clusterOut, velocity, quadbuf, worklistMS, world, m_meshes, m_materials,
 			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
 		Sky::drawQuad(rg, clusterOut, velocity, quadbuf, worklistMS, cameraSky, m_atmosphere, world);
-		Antialiasing::quadResolve(rg, colorCurrent, velocity, quadbuf, clusterOut, colorPrev, quadbufPrev, world);
+		Antialiasing::quadResolve(rg, colorCurrent, velocity, quadbuf, jitterMap, clusterOut, colorPrev, quadbufPrev, world);
 		rg.add_pass({
 			.name = nameAppend(colorCurrent.name, "copy"),
 			.resources = {
