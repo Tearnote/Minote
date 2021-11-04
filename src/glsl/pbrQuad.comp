@@ -278,6 +278,8 @@ void main() {
 		vec2 clusterCentroid = subsamplePosAverage(clusterSubsamples);
 		vec2 velocity;
 		clusterResult = shadeVisSamplePBR(clusterValue, vec2(gid & ~1u) + clusterCentroid, velocity);
+		if (any(isnan(clusterResult))) //TODO fix this
+			clusterResult = vec4(16.0, 0.0, 16.0, 0.01);
 		imageStore(i_target, ivec2(gid), clusterResult);
 		imageStore(i_velocity, ivec2(gid), vec4(velocity, 0.0, 0.0));
 		
