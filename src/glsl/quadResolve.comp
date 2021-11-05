@@ -22,6 +22,8 @@ layout(push_constant) uniform Constants {
 	uvec2 u_sourceSize;
 };
 
+#define CONVERGE_FRAMES 10
+
 bool shouldReject(uint _value, vec2 _historyUv) {
 	
 	uvec2 quadGid = uvec2(_historyUv) & ~1u;
@@ -133,8 +135,9 @@ void main() {
 		
 		vec2 currentLocation = vec2(gid + QuadPixelOffsets[i]) + vec2(0.5);
 		vec2 historyLocation = currentLocation - clusterVelocities[i];
-		if (any(lessThan(historyLocation, vec2(0.0))) || any(greaterThan(historyLocation, vec2(u_sourceSize))) ||
-			shouldReject(clusterValues[i], historyLocation))
+		if (any(lessThan(historyLocation, vec2(0.0))) || any(greaterThan(historyLocation, vec2(u_sourceSize)))
+			|| shouldReject(clusterValues[i], historyLocation)
+			)
 			historySamples[i] = vec4(0.0);
 		else
 			historySamples[i] = sampleHistory(historyLocation, targetMetrics);
@@ -162,8 +165,8 @@ void main() {
 	for (uint i = 0; i < 4; i += 1) {
 		
 		uint historySampleAge = uint(historySamples[i].a);
-		float blendRatio = (1.0 / float(SUBSAMPLE_COUNT)) * (SUBSAMPLE_COUNT - min(historySampleAge, SUBSAMPLE_COUNT - 1));
-		uint newAge = min(historySampleAge + 1, SUBSAMPLE_COUNT - 1);
+		float blendRatio = (1.0 / float(CONVERGE_FRAMES)) * (CONVERGE_FRAMES - min(historySampleAge, CONVERGE_FRAMES - 1));
+		uint newAge = min(historySampleAge + 1, CONVERGE_FRAMES - 1);
 		vec3 result = mix(historySamples[i].rgb, currentSamples[i].rgb, blendRatio);
 		
 		uvec2 pos = gid + uvec2(QuadPixelOffsets[i]);
