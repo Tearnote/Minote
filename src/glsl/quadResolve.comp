@@ -17,9 +17,8 @@ layout(binding = 4) uniform sampler2D s_history;
 layout(binding = 5) uniform sampler2D s_velocity;
 layout(binding = 6) restrict writeonly uniform image2D i_target;
 
-layout(push_constant) uniform Constants {
-	uvec2 u_sourceSize;
-};
+layout(constant_id = 0) const uint u_sourceSizePacked = 0;
+const uvec2 u_sourceSize = U16FROMU32(u_sourceSizePacked);
 
 #define CONVERGE_FRAMES 10
 

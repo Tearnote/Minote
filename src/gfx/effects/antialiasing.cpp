@@ -36,7 +36,6 @@ void Antialiasing::quadAssign(vuk::RenderGraph& _rg, Texture2DMS _visbuf,
 			   .bind_sampled_image(0, 1, _visbuf, NearestClamp)
 			   .bind_storage_image(0, 2, _quadbuf)
 			   .bind_storage_image(0, 3, _jitterMap)
-			   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, _visbuf.size())
 			   .bind_compute_pipeline("quad_assign");
 			
 			auto invocationCount = _visbuf.size() / 2u + _visbuf.size() % 2u;
@@ -69,7 +68,7 @@ void Antialiasing::quadResolve(vuk::RenderGraph& _rg, Texture2D _target, Texture
 			   .bind_sampled_image(0, 4, _targetPrev, LinearClamp)
 			   .bind_sampled_image(0, 5, _velocity, LinearClamp)
 			   .bind_storage_image(0, 6, _target)
-			   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, _quadbuf.size())
+			   .specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_quadbuf.size()))
 			   .bind_compute_pipeline("quad_resolve");
 			
 			auto invocationCount = _quadbuf.size() / 2u + _quadbuf.size() % 2u;

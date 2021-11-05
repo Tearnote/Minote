@@ -106,16 +106,19 @@ uint u32Upper(uint _n) {
 // Create a u32 out of two u16s
 uint u32Fromu16(uvec2 _val) {
 	
-	return (_val[0] << 16u) | _val[1];
+	return (_val[1] << 16u) | _val[0];
 	
 }
 
 // Create two u16s out of a u32
 uvec2 u16Fromu32(uint _val) {
 	
-	return uvec2(u32Upper(_val), u32Lower(_val));
+	return uvec2(u32Lower(_val), u32Upper(_val));
 	
 }
+
+#define U16FROMU32(_v) \
+	uvec2((_v) & 0xffffu, (_v) >> 16u)
 
 // https://fgiesen.wordpress.com/2009/12/13/decoding-morton-codes/
 uint mortonCompact1By1(uint _x) {

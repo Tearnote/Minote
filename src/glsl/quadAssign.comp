@@ -14,10 +14,6 @@ layout(binding = 1) uniform usampler2DMS s_visbuf;
 layout(binding = 2) restrict writeonly uniform uimage2D i_quadResolve;
 layout(binding = 3) restrict writeonly uniform uimage2D i_jitterMap;
 
-layout(push_constant) uniform Constants {
-	uvec2 u_sourceSize;
-};
-
 shared uvec4 sh_jitter;
 
 const vec2 InitialCentroids[4] = {
@@ -61,7 +57,6 @@ void main() {
 		
 		// If repeat, increment frequency
 		// Check if value is unique
-		
 		
 		bool unique = true;
 		for (uint j = 0; j < 4; j += 1) {
@@ -194,7 +189,7 @@ void main() {
 	// Write out the results
 	
 	for (uint i = 0; i < 4; i += 1)
-		imageStore(i_quadResolve, ivec2(gid + QuadPixelOffsets[i]), uvec4(clusterValues[i], clusterSubsamples[i], 0, 0));\
+		imageStore(i_quadResolve, ivec2(gid + QuadPixelOffsets[i]), uvec4(clusterValues[i], clusterSubsamples[i], 0, 0));
 	
 	if (gl_LocalInvocationIndex < 4)
 		imageStore(i_jitterMap, ivec2(gid / 8 + QuadPixelOffsets[gl_LocalInvocationIndex]), uvec4(sh_jitter[gl_LocalInvocationIndex], 0, 0, 0));

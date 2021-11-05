@@ -8,10 +8,10 @@ layout(local_size_x = 16, local_size_y = 16) in;
 layout(binding = 0) uniform sampler2D s_source;
 layout(binding = 1) restrict writeonly uniform image2D i_target;
 
-layout(push_constant) uniform Constants {
-	uvec2 u_sourceSize;
-	uvec2 u_targetSize;
-};
+layout(constant_id = 0) const uint u_sourceSizePacked = 0;
+layout(constant_id = 1) const uint u_targetSizePacked = 0;
+const uvec2 u_sourceSize = U16FROMU32(u_sourceSizePacked);
+const uvec2 u_targetSize = U16FROMU32(u_targetSizePacked);
 
 shared vec4 sh_outer[gl_WorkGroupSize.x + 2][gl_WorkGroupSize.y + 2];
 shared vec4 sh_inner[gl_WorkGroupSize.x + 1][gl_WorkGroupSize.y + 1];

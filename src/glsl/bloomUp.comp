@@ -3,13 +3,18 @@
 
 layout(local_size_x = 8, local_size_y = 8) in;
 
+#include "util.glsl"
+
 layout(binding = 0) uniform sampler2D s_source;
 layout(binding = 1) uniform sampler2D s_targetRead;
 layout(binding = 2) writeonly uniform image2D i_target;
 
+layout(constant_id = 0) const uint u_sourceSizePacked = 0;
+layout(constant_id = 1) const uint u_targetSizePacked = 0;
+const uvec2 u_sourceSize = U16FROMU32(u_sourceSizePacked);
+const uvec2 u_targetSize = U16FROMU32(u_targetSizePacked);
+
 layout(push_constant) uniform Constants {
-	uvec2 u_sourceSize;
-	uvec2 u_targetSize;
 	float u_power;
 };
 

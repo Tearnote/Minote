@@ -54,6 +54,14 @@ constexpr auto vukExtent(vec<2, T> v) -> vuk::Extent2D { return {v[0], v[1]}; }
 template<arithmetic T>
 constexpr auto vukExtent(vec<3, T> v) -> vuk::Extent3D { return {v[0], v[1], v[2]}; }
 
+// Pack two values in a u32. x is in lower bits, y in upper
+
+constexpr auto u32Fromu16(uvec2 _v) -> u32 {
+	
+	return (_v.y() << 16) | _v.x();
+	
+}
+
 // Shorthand for setting rendering area
 inline void cmdSetViewportScissor(vuk::CommandBuffer cmd, uvec2 area) {
 	

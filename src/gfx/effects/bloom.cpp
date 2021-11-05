@@ -58,16 +58,13 @@ void Bloom::apply(vuk::RenderGraph& _rg, Pool& _pool, Texture2D _target) {
 			
 			for (auto i: iota(0u, BloomPasses)) {
 				
-				struct PushConstants {
-					uvec2 sourceSize;
-					uvec2 targetSize;
-				};
-				auto pushConstants = PushConstants();
+				auto sourceSize = uvec2();
+				auto targetSize = _target.size() >> (i + 1);
 				
 				if (i == 0) { // First pass, read from target with lowpass filter
 					
 					cmd.bind_sampled_image(0, 0, _target, LinearClamp);
-					pushConstants.sourceSize = _target.size();
+					sourceSize = _target.size();
 					
 					cmd.bind_compute_pipeline("bloom_down_karis");
 					
@@ -75,15 +72,15 @@ void Bloom::apply(vuk::RenderGraph& _rg, Pool& _pool, Texture2D _target) {
 					
 					cmd.image_barrier(temp.name, vuk::eComputeRW, vuk::eComputeSampled, i-1, 1);
 					cmd.bind_sampled_image(0, 0, *temp.mipView(i - 1), LinearClamp);
-					pushConstants.sourceSize = _target.size() >> i;
+					sourceSize = _target.size() >> i;
 					
 					cmd.bind_compute_pipeline("bloom_down");
 					
 				}
 				cmd.bind_storage_image(0, 1, *temp.mipView(i));
-				pushConstants.targetSize = _target.size() >> (i + 1);
 				
-				cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, pushConstants);
+				cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(sourceSize));
+				cmd.specialization_constants(1, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(targetSize));
 				
 				cmd.dispatch_invocations(_target.size().x() >> (i + 1), _target.size().y() >> (i + 1), 1);
 				
@@ -104,34 +101,32 @@ void Bloom::apply(vuk::RenderGraph& _rg, Pool& _pool, Texture2D _target) {
 			
 			for (auto i: iota(0u, BloomPasses) | reverse) {
 				
-				struct PushConstants {
-					uvec2 sourceSize;
-					uvec2 targetSize;
-					f32 power;
-				};
-				auto pushConstants = PushConstants();
+				auto sourceSize = _target.size() >> (i + 1);
+				auto targetSize = uvec2();
+				auto power = 1.0f;
 				
 				cmd.image_barrier(temp.name, vuk::eComputeRW, vuk::eComputeSampled, i, 1);
 				cmd.bind_sampled_image(0, 0, *temp.mipView(i), LinearClamp);
-				pushConstants.sourceSize = _target.size() >> (i + 1);
 				if (i == 0) { // Final pass, draw to target
 					
 					cmd.bind_sampled_image(0, 1, _target, NearestClamp, vuk::ImageLayout::eGeneral)
 					   .bind_storage_image(0, 2, _target);
-					pushConstants.targetSize = _target.size();
-					pushConstants.power = BloomStrength;
+					targetSize = _target.size();
+					power = BloomStrength;
 					
 				} else { // Draw to intermediate mip
 					
 					cmd.bind_sampled_image(0, 1, *temp.mipView(i - 1), NearestClamp, vuk::ImageLayout::eGeneral)
 					   .bind_storage_image(0, 2, *temp.mipView(i - 1));
-					pushConstants.targetSize = _target.size() >> i;
-					pushConstants.power = 1.0f;
+					targetSize = _target.size() >> i;
 					
 				}
 				
 				cmd.bind_compute_pipeline("bloom_up");
-				cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, pushConstants);
+				
+				cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(sourceSize));
+				cmd.specialization_constants(1, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(targetSize));
+				cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, power);
 				
 				cmd.dispatch_invocations(_target.size().x() >> i, _target.size().y() >> i, 1);
 				
