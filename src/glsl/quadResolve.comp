@@ -24,56 +24,21 @@ layout(push_constant) uniform Constants {
 
 #define CONVERGE_FRAMES 10
 
-bool shouldReject(uint _value, vec2 _historyUv) {
+bool isQuadJittered(uvec2 _gid) {
 	
-	uvec2 quadGid = uvec2(_historyUv) & ~1u;
-	vec2 quadUv = _historyUv - vec2(quadGid);
-	
-	// Read jitter map
-	
-	uint jitterSample = texelFetch(s_jitterMap, ivec2(quadGid / 8), 0).r;
-	uvec2 quadOffset = (quadGid / 2) % 4;
+	uint jitterSample = texelFetch(s_jitterMap, ivec2(_gid / 8), 0).r;
+	uvec2 quadOffset = (_gid / 2) % 4;
 	uint quadMask = 1u << (quadOffset.x + quadOffset.y * 4);
-	if ((jitterSample & quadMask) != 0)
+	return (jitterSample & quadMask) != 0;
+	
+}
+
+bool shouldReject(uint _value, vec2 _currentPos) {
+	
+	if (isQuadJittered(uvec2(_currentPos)))
 		return false;
 	
-	// Read quad data and find centroids
-	
-	mat4x2 prevClusterCentroids;
-	uvec4 prevClusterValues;
-	
-	for (uint i = 0; i < 4; i += 1) {
-		
-		uvec2 prevCluster = texelFetch(s_quadbufPrev, ivec2(quadGid + QuadPixelOffsets[i]), 0).xy;
-		prevClusterValues[i] = prevCluster.x;
-		prevClusterCentroids[i] = subsamplePosAverage(prevCluster.y);
-		
-	}
-	
-	// Find the closest cluster
-	
-	uint closestCluster = 0;
-	float smallestDistanceSq = distanceSq(quadUv, prevClusterCentroids[0]);
-	for (uint i = 1; i < 4; i += 1) {
-		
-		float distanceSq = distanceSq(quadUv, prevClusterCentroids[i]);
-		if (distanceSq < smallestDistanceSq) {
-			
-			smallestDistanceSq = distanceSq;
-			closestCluster = i;
-			
-		}
-		
-	}
-	
-	// Reject if the visbuf value is different
-	
-	float closestValue = prevClusterValues[closestCluster];
-	
-	if (_value != closestValue)
-		return true;
-	
-	return false;
+	return true;
 	
 };
 
@@ -136,7 +101,7 @@ void main() {
 		vec2 currentLocation = vec2(gid + QuadPixelOffsets[i]) + vec2(0.5);
 		vec2 historyLocation = currentLocation - clusterVelocities[i];
 		if (any(lessThan(historyLocation, vec2(0.0))) || any(greaterThan(historyLocation, vec2(u_sourceSize)))
-			|| shouldReject(clusterValues[i], historyLocation)
+			|| shouldReject(clusterValues[i], currentLocation)
 			)
 			historySamples[i] = vec4(0.0);
 		else
