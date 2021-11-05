@@ -219,7 +219,6 @@ void Engine::render() {
 	auto depth = Texture2D();
 	auto depthMS = Texture2DMS();
 	auto quadbuf = Texture2D();
-	auto quadbufPrev = Texture2D();
 	auto velocity = Texture2D();
 	auto jitterMap = Texture2D();
 	auto clusterOut = Texture2D();
@@ -257,23 +256,11 @@ void Engine::render() {
 			vuk::Samples::e8);
 		depthMS.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearDepthStencil(0.0f, 0));
 		
-		auto quadbufs = to_array({
-			Texture2D::make(m_swapchainPool, "quadbuf0",
-				viewport, vuk::Format::eR32G32Uint,
-				vuk::ImageUsageFlagBits::eStorage |
-				vuk::ImageUsageFlagBits::eSampled),
-			Texture2D::make(m_swapchainPool, "quadbuf1",
-				viewport, vuk::Format::eR32G32Uint,
-				vuk::ImageUsageFlagBits::eStorage |
-				vuk::ImageUsageFlagBits::eSampled) });
-		quadbuf = quadbufs[oddFrame];
-		quadbufPrev = quadbufs[!oddFrame];
-		
+		quadbuf = Texture2D::make(m_swapchainPool, "quadbuf",
+			viewport, vuk::Format::eR32G32Uint,
+			vuk::ImageUsageFlagBits::eStorage |
+			vuk::ImageUsageFlagBits::eSampled);
 		quadbuf.attach(rg, vuk::eNone, vuk::eNone);
-		if (m_flushTemporalResources)
-			quadbufPrev.attach(rg, vuk::eNone, vuk::eNone);
-		else
-			quadbufPrev.attach(rg, vuk::eTransferSrc, vuk::eNone);
 		
 		velocity = Texture2D::make(m_swapchainPool, "velocity",
 			viewport, vuk::Format::eR16G16Sfloat,
@@ -361,12 +348,14 @@ void Engine::render() {
 		if (m_flushTemporalResources)
 			Clear::apply(rg, colorPrev, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 		Visibility::applyMS(rg, visbufMS, depthMS, world, culledDrawables, m_meshes);
-		auto worklistMS = Worklist::createMS(m_swapchainPool, rg, "worklist_ms", visbufMS, culledDrawables, m_materials);
+		auto worklistMS = Worklist::createMS(m_swapchainPool, rg, "worklist_ms",
+			visbufMS, culledDrawables, m_materials);
 		Antialiasing::quadAssign(rg, visbufMS, quadbuf, jitterMap, world);
-		PBR::applyQuad(rg, clusterOut, velocity, quadbuf, worklistMS, world, m_meshes, m_materials,
-			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
+		PBR::applyQuad(rg, clusterOut, velocity, quadbuf, worklistMS, world, m_meshes,
+			m_materials, culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
 		Sky::drawQuad(rg, clusterOut, velocity, quadbuf, worklistMS, cameraSky, m_atmosphere, world);
-		Antialiasing::quadResolve(rg, colorCurrent, velocity, quadbuf, jitterMap, clusterOut, colorPrev, quadbufPrev, world);
+		Antialiasing::quadResolve(rg, colorCurrent, velocity, quadbuf, jitterMap,
+			clusterOut, colorPrev, world);
 		rg.add_pass({
 			.name = nameAppend(colorCurrent.name, "copy"),
 			.resources = {
