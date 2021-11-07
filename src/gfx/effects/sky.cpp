@@ -86,8 +86,10 @@ auto Atmosphere::create(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
 			
 			cmd.bind_uniform_buffer(0, 0, result.params)
 			   .bind_storage_image(0, 1, result.transmittance)
-			   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, result.transmittance.size())
 			   .bind_compute_pipeline("sky_gen_transmittance");
+			
+			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(result.transmittance.size()));
+			
 			cmd.dispatch_invocations(result.transmittance.size().x(), result.transmittance.size().y());
 			
 		}});
@@ -102,8 +104,10 @@ auto Atmosphere::create(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
 			cmd.bind_uniform_buffer(0, 0, result.params)
 			   .bind_sampled_image(0, 1, result.transmittance, LinearClamp)
 			   .bind_storage_image(0, 2, result.multiScattering)
-			   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, result.multiScattering.size())
 			   .bind_compute_pipeline("sky_gen_multi_scattering");
+			
+			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(result.multiScattering.size()));
+			
 			cmd.dispatch_invocations(result.multiScattering.size().x(), result.multiScattering.size().y(), 1);
 			
 		}});
@@ -181,9 +185,8 @@ auto Sky::createView(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
 			   .bind_storage_image(0, 4, view)
 			   .bind_compute_pipeline("sky_gen_sky_view");
 			
-			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
-				.probePosition = _probePos,
-				.skyViewSize = view.size() });
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, _probePos);
+			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(view.size()));
 			
 			cmd.dispatch_invocations(view.size().x(), view.size().y(), 1);
 			
@@ -212,8 +215,6 @@ auto Sky::createAerialPerspective(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name 
 			struct PushConstants {
 				mat4 invViewProj;
 				vec3 probePosition;
-				f32 pad0;
-				uvec3 aerialPerspectiveSize;
 			};
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
@@ -221,11 +222,14 @@ auto Sky::createAerialPerspective(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name 
 			   .bind_sampled_image(0, 2, _atmo.transmittance, LinearClamp)
 			   .bind_sampled_image(0, 3, _atmo.multiScattering, LinearClamp)
 			   .bind_storage_image(0, 4, aerialPerspective)
-			   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
-				   .invViewProj = _invViewProj,
-				   .probePosition = _probePos,
-				   .aerialPerspectiveSize = aerialPerspective.size() })
 			   .bind_compute_pipeline("sky_gen_aerial_perspective");
+			
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
+				   .invViewProj = _invViewProj,
+				   .probePosition = _probePos });
+			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16({aerialPerspective.size().x(), aerialPerspective.size().y()}));
+			cmd.specialization_constants(1, vuk::ShaderStageFlagBits::eCompute, aerialPerspective.size().z());
+			
 			cmd.dispatch_invocations(aerialPerspective.size().x(), aerialPerspective.size().y(), aerialPerspective.size().z());
 			
 		}});
@@ -277,12 +281,6 @@ void Sky::draw(vuk::RenderGraph& _rg, Texture2D _target, Worklist const& _workli
 		.execute = [_target, &_worklist, _skyView, &_atmo, _world,
 			tileCount=_worklist.counts.offsetView(+MaterialType::None)](vuk::CommandBuffer& cmd) {
 			
-			struct PushConstants {
-				uvec2 skyViewSize;
-				uvec2 targetSize;
-				u32 tileOffset;
-			};
-			
 			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_uniform_buffer(0, 1, _atmo.params)
 			   .bind_sampled_image(0, 2, _atmo.transmittance, LinearClamp)
@@ -292,10 +290,9 @@ void Sky::draw(vuk::RenderGraph& _rg, Texture2D _target, Worklist const& _workli
 			   .bind_storage_image(0, 6, _target)
 			   .bind_compute_pipeline("sky_draw");
 			
-			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
-				.skyViewSize = _skyView.size(),
-				.targetSize = _target.size(),
-				.tileOffset = _worklist.tileDimensions.x() * _worklist.tileDimensions.y() * +MaterialType::None });
+			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_skyView.size()));
+			cmd.specialization_constants(1, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_target.size()));
+			cmd.specialization_constants(2, vuk::ShaderStageFlagBits::eCompute, _worklist.tileDimensions.x() * _worklist.tileDimensions.y() * +MaterialType::None);
 			
 			cmd.dispatch_indirect(tileCount);
 			
@@ -318,12 +315,6 @@ void Sky::drawQuad(vuk::RenderGraph& _rg, Texture2D _target, Texture2D _velocity
 		.execute = [_target, &_worklist, _skyView, &_atmo, _world, _quadbuf, _velocity,
 			tileCount=_worklist.counts.offsetView(+MaterialType::None)](vuk::CommandBuffer& cmd) {
 			
-			struct PushConstants {
-				uvec2 skyViewSize;
-				uvec2 targetSize;
-				u32 tileOffset;
-			};
-			
 			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_uniform_buffer(0, 1, _atmo.params)
 			   .bind_sampled_image(0, 2, _atmo.transmittance, LinearClamp)
@@ -334,10 +325,9 @@ void Sky::drawQuad(vuk::RenderGraph& _rg, Texture2D _target, Texture2D _velocity
 			   .bind_storage_image(0, 7, _target)
 			   .bind_compute_pipeline("sky_draw_quad");
 			
-			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
-				.skyViewSize = _skyView.size(),
-				.targetSize = _target.size(),
-				.tileOffset = _worklist.tileDimensions.x() * _worklist.tileDimensions.y() * +MaterialType::None });
+			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_skyView.size()));
+			cmd.specialization_constants(1, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_target.size()));
+			cmd.specialization_constants(2, vuk::ShaderStageFlagBits::eCompute, _worklist.tileDimensions.x() * _worklist.tileDimensions.y() * +MaterialType::None);
 			
 			cmd.dispatch_indirect(tileCount);
 			
@@ -395,10 +385,10 @@ void Sky::draw(vuk::RenderGraph& _rg, Cubemap _target, vec3 _probePos,
 					0.0f, -1.0f, 0.0f,
 					0.0f, 0.0f, -1.0f})});
 			
-			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
-				.probePosition = _probePos,
-				.cubemapSize = _target.size().x(),
-				.skyViewSize = _skyView.size() });
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, _probePos);
+			
+			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, _target.size().x());
+			cmd.specialization_constants(1, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_skyView.size()));
 			
 			cmd.dispatch_invocations(_target.size().x(), _target.size().y(), 6);
 			

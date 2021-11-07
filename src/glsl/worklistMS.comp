@@ -8,6 +8,7 @@ layout(local_size_x = 8, local_size_y = 8) in;
 #include "visibilityTypes.glsl"
 #include "visibility.glsl"
 #include "types.glsl"
+#include "quad.glsl"
 
 layout(binding = 0) uniform usampler2DMS s_visbuf;
 layout(binding = 1, std430) restrict readonly buffer Instances {
@@ -23,11 +24,10 @@ layout(binding = 4, std430) restrict writeonly buffer TileLists {
 	uint b_lists[];
 };
 
-layout(push_constant) uniform PushConstants {
-	uvec2 u_visbufSize;
-	uint u_listCount;
-	uint u_sampleCount;
-};
+layout(constant_id = 0) const uint VisbufSizePacked = 0;
+layout(constant_id = 1) const uint ListCount = 0;
+
+const uvec2 VisbufSize = U16FROMU32(VisbufSizePacked);
 
 shared uint sh_result;
 
@@ -41,16 +41,15 @@ void main() {
 	if (all(equal(lid, uvec2(0))))
 		sh_result = 0;
 	
-	memoryBarrierShared();
 	barrier();
 	
 	uint materials = 0;
-	for (uint i = 0; i < u_sampleCount; i += 1) {
+	for (uint i = 0; i < SUBSAMPLE_COUNT; i += 1) {
 		
 		// Fetch material id
 		
 		uint materialID = -1u;
-		if (all(lessThan(gid, u_visbufSize))) {
+		if (all(lessThan(gid, VisbufSize))) {
 			
 			uint visPacked = texelFetch(s_visbuf, ivec2(gid), int(i)).x;
 			if (visPacked == -1u) { // Sky
@@ -80,7 +79,6 @@ void main() {
 	if (subgroupElect())
 		atomicOr(sh_result, combined);
 	
-	memoryBarrierShared();
 	barrier();
 	
 	// Write tiles
@@ -91,7 +89,7 @@ void main() {
 	uint flatGroupSize = gl_WorkGroupSize.x * gl_WorkGroupSize.y;
 	uint tileCount = gl_NumWorkGroups.x * gl_NumWorkGroups.y;
 	
-	for (uint i = 0; i < u_listCount; i += 1) {
+	for (uint i = 0; i < ListCount; i += 1) {
 		
 		if ((sh_result & (1u << i)) == 0u)
 			continue;

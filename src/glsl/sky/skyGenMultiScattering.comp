@@ -5,6 +5,7 @@ layout(local_size_x = 1, local_size_y = 1, local_size_z = 64) in;
 
 #include "skyTypes.glsl"
 #include "../constants.glsl"
+#include "../util.glsl"
 
 #define U_ATMO u_atmo
 #define S_TRANSMITTANCE s_transmittance
@@ -15,9 +16,8 @@ layout(binding = 0) uniform Atmosphere {
 layout(binding = 1) uniform sampler2D S_TRANSMITTANCE;
 layout(binding = 2) restrict writeonly uniform image2D i_multiScattering;
 
-layout(push_constant) uniform Constants {
-	uvec2 u_multiScatteringSize;
-};
+layout(constant_id = 0) const uint MultiScatteringSizePacked = 0;
+const uvec2 MultiScatteringSize = U16FROMU32(MultiScatteringSizePacked);
 
 #include "sky.glsl"
 
@@ -29,8 +29,8 @@ void main() {
 	uvec3 gid = gl_GlobalInvocationID;
 	
 	// Compute camera position from LUT coords
-	vec2 uv = (vec2(gid.xy) + vec2(0.5)) / vec2(u_multiScatteringSize);
-	uv = vec2(fromSubUvsToUnit(uv.x, u_multiScatteringSize.x), fromSubUvsToUnit(uv.y, u_multiScatteringSize.y));
+	vec2 uv = (vec2(gid.xy) + vec2(0.5)) / vec2(MultiScatteringSize);
+	uv = vec2(fromSubUvsToUnit(uv.x, MultiScatteringSize.x), fromSubUvsToUnit(uv.y, MultiScatteringSize.y));
 	
 	float cosSunZenithAngle = uv.x * 2.0 - 1.0;
 	vec3 sunDir = vec3(0.0, sqrt(clamp(1.0 - cosSunZenithAngle * cosSunZenithAngle, 0.0, 1.0)), cosSunZenithAngle);
@@ -78,7 +78,6 @@ void main() {
 	}
 #undef SQRTSAMPLECOUNT
 	
-	memoryBarrierShared();
 	barrier();
 	
 	// 64 to 32
@@ -88,7 +87,6 @@ void main() {
 		sh_L[gid.z] += sh_L[gid.z + 32];
 		
 	}
-	memoryBarrierShared();
 	barrier();
 	
 	// 32 to 16
@@ -98,7 +96,6 @@ void main() {
 		sh_L[gid.z] += sh_L[gid.z + 16];
 		
 	}
-	memoryBarrierShared();
 	barrier();
 	
 	// 16 to 8 (16 is thread group min hardware size with intel, no sync required from there)
@@ -108,7 +105,6 @@ void main() {
 		sh_L[gid.z] += sh_L[gid.z + 8];
 		
 	}
-	memoryBarrierShared();
 	barrier();
 	
 	if (gid.z < 4) {
@@ -117,7 +113,6 @@ void main() {
 		sh_L[gid.z] += sh_L[gid.z + 4];
 		
 	}
-	memoryBarrierShared();
 	barrier();
 	
 	if (gid.z < 2) {
@@ -126,7 +121,6 @@ void main() {
 		sh_L[gid.z] += sh_L[gid.z + 2];
 		
 	}
-	memoryBarrierShared();
 	barrier();
 	
 	if (gid.z < 1) {
@@ -135,7 +129,6 @@ void main() {
 		sh_L[gid.z] += sh_L[gid.z + 1];
 		
 	}
-	memoryBarrierShared();
 	barrier();
 	
 	if (gid.z > 0)

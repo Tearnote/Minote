@@ -30,8 +30,9 @@ void Tonemap::apply(vuk::RenderGraph& _rg, Texture2D _source, Texture2D _target)
 			
 			cmd.bind_sampled_image(0, 0, _source, NearestClamp)
 			   .bind_storage_image(0, 1, _target)
-			   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, _target.size())
 			   .bind_compute_pipeline("tonemap");
+			
+			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_target.size()));
 			
 			cmd.dispatch_invocations(_target.size().x(), _target.size().y());
 			

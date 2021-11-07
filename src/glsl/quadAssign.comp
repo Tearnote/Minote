@@ -31,7 +31,6 @@ void main() {
 	if (gl_LocalInvocationIndex == 0)
 		sh_jitter = uvec4(0);
 	
-	memoryBarrierShared();
 	barrier();
 	
 	// Read vis samples
@@ -183,7 +182,6 @@ void main() {
 	// for (uint i = 0; i < 4; i += 1)
 	// 	clusterCentroids[i] /= float(bitCount(clusterSubsamples[i]));
 	
-	memoryBarrierShared();
 	barrier();
 	
 	// Write out the results

@@ -63,11 +63,13 @@ layout(set = 1, binding = 0, std430) restrict readonly buffer TileLists {
 	uint B_LISTS[];
 };
 
-layout(push_constant) uniform Constants {
-	uvec3 u_aerialPerspectiveSize;
-	uint u_tileOffset;
-	uvec2 u_targetSize;
-};
+layout(constant_id = 0) const uint AerialPerspectiveSizeXYPacked = 0;
+layout(constant_id = 1) const uint AerialPerspectiveSizeZ = 0;
+layout(constant_id = 2) const uint TargetSizePacked = 0;
+layout(constant_id = 3) const uint TileOffset = 0;
+
+const uvec3 AerialPerspectiveSize = uvec3(U16FROMU32(AerialPerspectiveSizeXYPacked), AerialPerspectiveSizeZ);
+const uvec2 TargetSize = uvec2(U16FROMU32(TargetSizePacked));
 
 #include "typesAccess.glsl"
 #include "worklist.glsl"
@@ -177,7 +179,7 @@ float dApprox(float _roughness, float _RoL) {
 // Alpha channel contains depth
 vec3 shadeVisSamplePBR(uint _visValue, vec2 _screenPos, out vec2 _velocity) {
 	
-	vec2 sampleUv = _screenPos / vec2(u_targetSize);
+	vec2 sampleUv = _screenPos / vec2(TargetSize);
 	VisSample vis = unpackVisibility(_visValue);
 	
 	Instance instance = b_instances[vis.instance];
@@ -195,7 +197,7 @@ vec3 shadeVisSamplePBR(uint _visValue, vec2 _screenPos, out vec2 _velocity) {
 	vec4 prevClipVertexW = u_world.prevViewProjection * vec4(vertex, 1.0);
 	vec3 prevClipVertex = prevClipVertexW.xyz / prevClipVertexW.w;
 	
-	_velocity = clipVertex.xy * vec2(u_targetSize) - prevClipVertex.xy * vec2(u_targetSize);
+	_velocity = clipVertex.xy * vec2(TargetSize) - prevClipVertex.xy * vec2(TargetSize);
 	_velocity /= 2.0;
 	
 	// Standard vectors
@@ -245,7 +247,7 @@ vec3 shadeVisSamplePBR(uint _visValue, vec2 _screenPos, out vec2 _velocity) {
 		slice = 0.5;
 		
 	}
-	float w = sqrt(slice / u_aerialPerspectiveSize.z);	// squared distribution
+	float w = sqrt(slice / AerialPerspectiveSize.z);	// squared distribution
 	
 	vec3 ap = weight * textureLod(s_aerialPerspective, vec3(sampleUv, w), 0.0).xyz;
 	
@@ -258,12 +260,12 @@ vec3 shadeVisSamplePBR(uint _visValue, vec2 _screenPos, out vec2 _velocity) {
 void main() {
 	
 	uvec2 lid = mortonOrder(gl_LocalInvocationID.y);
-	uvec2 gid = getTileGid(gl_WorkGroupID.x) + lid;
+	uvec2 gid = getTileGid(gl_WorkGroupID.x, TileOffset) + lid;
 	
 	// Retrieve cluster data
 	
 	uvec2 quadbufSample;
-	if (all(lessThan(gid, u_targetSize)))
+	if (all(lessThan(gid, TargetSize)))
 		quadbufSample = texelFetch(s_quadbuf, ivec2(gid), 0).xy;
 	else
 		quadbufSample = uvec2(-1u, 0u);

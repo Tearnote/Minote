@@ -65,15 +65,10 @@ void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf,
 			   .bind_storage_buffer(0, 15, _worklist.lists)
 			   .bind_compute_pipeline("pbr");
 			
-			struct PushConstants {
-				uvec3 aerialPerspectiveSize;
-				u32 tileOffset;
-				uvec2 targetSize;
-			};
-			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
-				.aerialPerspectiveSize = _aerialPerspective.size(),
-				.tileOffset = _worklist.tileDimensions.x() * _worklist.tileDimensions.y() * +MaterialType::PBR,
-				.targetSize = _color.size() });
+			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16({_aerialPerspective.size().x(), _aerialPerspective.size().y()}));
+			cmd.specialization_constants(1, vuk::ShaderStageFlagBits::eCompute, _aerialPerspective.size().z());
+			cmd.specialization_constants(2, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_color.size()));
+			cmd.specialization_constants(3, vuk::ShaderStageFlagBits::eCompute, _worklist.tileDimensions.x() * _worklist.tileDimensions.y() * +MaterialType::PBR);
 			
 			cmd.dispatch_indirect(tileCount);
 			
@@ -123,15 +118,10 @@ void PBR::applyQuad(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _velocity
 			   .bind_storage_buffer(1, 0, _worklist.lists)
 			   .bind_compute_pipeline("pbr_quad");
 			
-			struct PushConstants {
-				uvec3 aerialPerspectiveSize;
-				u32 tileOffset;
-				uvec2 targetSize;
-			};
-			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
-				.aerialPerspectiveSize = _aerialPerspective.size(),
-				.tileOffset = _worklist.tileDimensions.x() * _worklist.tileDimensions.y() * +MaterialType::PBR,
-				.targetSize = _color.size() });
+			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16({_aerialPerspective.size().x(), _aerialPerspective.size().y()}));
+			cmd.specialization_constants(1, vuk::ShaderStageFlagBits::eCompute, _aerialPerspective.size().z());
+			cmd.specialization_constants(2, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_color.size()));
+			cmd.specialization_constants(3, vuk::ShaderStageFlagBits::eCompute, _worklist.tileDimensions.x() * _worklist.tileDimensions.y() * +MaterialType::PBR);
 			
 			cmd.dispatch_indirect(tileCount);
 			

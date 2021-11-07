@@ -114,12 +114,6 @@ auto InstanceList::fromBasic(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name
 			   .bind_storage_buffer(0, 2, transforms)
 			   .bind_compute_pipeline("transform_conv");
 			
-			struct PushConstants {
-				mat4 view;
-				vec4 frustum;
-				u32 instancesCount;
-			};
-			
 			cmd.dispatch_indirect(_basic.instancesCount);
 			
 		}});
@@ -217,8 +211,9 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 		.execute = [&_meshes, result](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_storage_buffer(0, 0, result.commands)
-			   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, u32(_meshes.descriptors.size()))
 			   .bind_compute_pipeline("instance_sort_scan");
+			
+			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32(_meshes.descriptors.size()));
 			
 			cmd.dispatch(1);
 			
@@ -314,7 +309,6 @@ auto DrawableInstanceList::frustumCull(Pool& _pool, vuk::RenderGraph& _rg, vuk::
 			struct PushConstants {
 				mat4 view;
 				vec4 frustum;
-				u32 commandsCount;
 			};
 			auto pushConstants = PushConstants{
 				.view = _view,
@@ -327,9 +321,9 @@ auto DrawableInstanceList::frustumCull(Pool& _pool, vuk::RenderGraph& _rg, vuk::
 					frustumY /= length(vec3(frustumY));
 					return vec4{frustumX.x(), frustumX.z(), frustumY.y(), frustumY.z()};
 					
-				}(),
-				.commandsCount = u32(_meshes.descriptors.size()) };
+				}() };
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, pushConstants);
+			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32(_meshes.descriptors.size()));
 			
 			cmd.dispatch_indirect(_source.instancesCount);
 			

@@ -23,12 +23,12 @@
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
+#include "util.glsl"
+
 layout(binding = 0) uniform samplerCube s_source;
 layout(binding = 1) restrict writeonly uniform image2DArray i_target;
 
-layout(push_constant) uniform Constants {
-	uint u_targetSize;
-};
+layout(constant_id = 0) const uint TargetSize = 0;
 
 void get_dir_0(out vec3 _dir, float _u, float _v) {
 	
@@ -88,10 +88,7 @@ float calcWeight(float _u, float _v) {
 void main() {
 	
 	uvec3 gid = gl_GlobalInvocationID;
-	float inv_res_lo = 1.0 / float(u_targetSize);
-	
-	if (any(greaterThan(gid.xy, uvec2(u_targetSize))))
-		return;
+	float inv_res_lo = 1.0 / float(TargetSize);
 	
 	float u0 = (float(gid.x) * 2.0 + 1.0 - 0.75) * inv_res_lo - 1.0;
 	float u1 = (float(gid.x) * 2.0 + 1.0 + 0.75) * inv_res_lo - 1.0;

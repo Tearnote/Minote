@@ -33,8 +33,9 @@ layout(binding = 7, std430) restrict writeonly buffer InstancesCulled {
 layout(push_constant) uniform Constants {
 	mat4 u_view;
 	vec4 u_frustum;
-	uint u_commandsCount;
 };
+
+layout(constant_id = 0) const uint CommandCount = 0;
 
 bool visible(uint _transformIdx, float _radius) {
 	
@@ -63,7 +64,7 @@ void main() {
 	
 	if (gid == 0) {
 		
-		for (uint i = 0; i < u_commandsCount; i += 1) {
+		for (uint i = 0; i < CommandCount; i += 1) {
 			
 			b_commandsCulled[i].indexCount = b_commands[i].indexCount;
 			// instanceCount is filled up during culling

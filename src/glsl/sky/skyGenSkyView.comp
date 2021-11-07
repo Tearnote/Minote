@@ -5,6 +5,7 @@ layout(local_size_x = 8, local_size_y = 8) in;
 
 #include "skyTypes.glsl"
 #include "../types.glsl"
+#include "../util.glsl"
 
 #define U_ATMO u_atmo
 #define S_TRANSMITTANCE s_transmittance
@@ -22,9 +23,11 @@ layout(binding = 4) restrict writeonly uniform image2D i_skyView;
 
 layout(push_constant) uniform PushConstants {
 	vec3 u_probePosition;
-	float pad0;
-	uvec2 u_skyViewSize;
 };
+
+layout(constant_id = 0) const int SkyViewSizePacked = 0;
+
+const uvec2 SkyViewSize = U16FROMU32(SkyViewSizePacked);
 
 #include "sky.glsl"
 
@@ -32,20 +35,20 @@ void main() {
 	
 	uvec2 gid = gl_GlobalInvocationID.xy;
 	
-	if (any(greaterThanEqual(gid, u_skyViewSize)))
+	if (any(greaterThanEqual(gid, SkyViewSize)))
 		return;
 	
 	//TODO which?
 	// vec2 pixPos = vec2(gid) + vec2(0.5);
 	vec2 pixPos = vec2(gid);
 	vec3 worldPos = u_probePosition + vec3(0, 0, u_atmo.bottomRadius);
-	vec2 uv = pixPos / vec2(u_skyViewSize);
+	vec2 uv = pixPos / vec2(SkyViewSize);
 	
 	float viewHeight = length(worldPos);
 	
 	float viewZenithCosAngle;
 	float lightViewCosAngle;
-	uvToSkyViewLutParams(viewZenithCosAngle, lightViewCosAngle, u_skyViewSize, viewHeight, uv, u_atmo.bottomRadius);
+	uvToSkyViewLutParams(viewZenithCosAngle, lightViewCosAngle, SkyViewSize, viewHeight, uv, u_atmo.bottomRadius);
 	
 	vec3 upVector = worldPos / viewHeight;
 	float sunZenithCosAngle = dot(upVector, u_world.sunDirection);

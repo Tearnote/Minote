@@ -9,10 +9,10 @@ layout(binding = 0) uniform sampler2D s_source;
 layout(binding = 1) uniform sampler2D s_targetRead;
 layout(binding = 2) writeonly uniform image2D i_target;
 
-layout(constant_id = 0) const uint u_sourceSizePacked = 0;
-layout(constant_id = 1) const uint u_targetSizePacked = 0;
-const uvec2 u_sourceSize = U16FROMU32(u_sourceSizePacked);
-const uvec2 u_targetSize = U16FROMU32(u_targetSizePacked);
+layout(constant_id = 0) const uint SourceSizePacked = 0;
+layout(constant_id = 1) const uint TargetSizePacked = 0;
+const uvec2 SourceSize = U16FROMU32(SourceSizePacked);
+const uvec2 TargetSize = U16FROMU32(TargetSizePacked);
 
 layout(push_constant) uniform Constants {
 	float u_power;
@@ -23,11 +23,11 @@ void main() {
 	const uvec2 gid = gl_GlobalInvocationID.xy;
 	const uvec2 lid = gl_LocalInvocationID.xy;
 	
-	if (any(greaterThanEqual(gid, u_targetSize)))
+	if (any(greaterThanEqual(gid, TargetSize)))
 		return;
 	
-	vec2 uv = (vec2(gid) + vec2(0.5)) / vec2(u_targetSize);
-	vec2 texel = vec2(1.0) / vec2(u_sourceSize);
+	vec2 uv = (vec2(gid) + vec2(0.5)) / vec2(TargetSize);
+	vec2 texel = vec2(1.0) / vec2(SourceSize);
 	
 	// Upscale fetches can't be cached in the same way as downscale
 	vec4 current = texelFetch(s_targetRead, ivec2(gid), 0);

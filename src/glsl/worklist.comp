@@ -24,10 +24,10 @@ layout(binding = 4, std430) restrict writeonly buffer TileLists {
 	uint b_lists[];
 };
 
-layout(push_constant) uniform PushConstants {
-	uvec2 u_visbufSize;
-	uint u_listCount;
-};
+layout(constant_id = 0) const uint VisbufSizePacked = 0;
+layout(constant_id = 1) const uint ListCount = 0;
+
+const uvec2 VisbufSize = U16FROMU32(VisbufSizePacked);
 
 shared uint sh_result;
 
@@ -41,13 +41,12 @@ void main() {
 	if (all(equal(lid, uvec2(0))))
 		sh_result = 0;
 	
-	memoryBarrierShared();
 	barrier();
 	
 	// Fetch material id
 	
 	uint materialID = -1u;
-	if (all(lessThan(gid, u_visbufSize))) {
+	if (all(lessThan(gid, VisbufSize))) {
 		
 		uint visPacked = texelFetch(s_visbuf, ivec2(gid), 0).x;
 		if (visPacked == -1u) { // Sky
@@ -74,7 +73,6 @@ void main() {
 		
 	}
 	
-	memoryBarrierShared();
 	barrier();
 	
 	// Write tiles
@@ -85,7 +83,7 @@ void main() {
 	uint flatGroupSize = gl_WorkGroupSize.x * gl_WorkGroupSize.y;
 	uint tileCount = gl_NumWorkGroups.x * gl_NumWorkGroups.y;
 	
-	for (uint i = 0; i < u_listCount; i += 1) {
+	for (uint i = 0; i < ListCount; i += 1) {
 		
 		if ((sh_result & (1u << i)) == 0u)
 			continue;

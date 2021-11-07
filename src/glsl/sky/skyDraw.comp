@@ -24,11 +24,12 @@ layout(binding = 4, std430) restrict readonly buffer TileLists {
 layout(binding = 5) uniform sampler2D s_targetRead;
 layout(binding = 6) writeonly uniform image2D i_target;
 
-layout(push_constant) uniform Constants {
-	uvec2 u_skyViewSize;
-	uvec2 u_targetSize;
-	uint u_tileOffset;
-}; 
+layout(constant_id = 0) const uint SkyViewSizePacked = 0;
+layout(constant_id = 1) const uint TargetSizePacked = 0;
+layout(constant_id = 2) const uint TileOffset = 0;
+
+const uvec2 SkyViewSize = U16FROMU32(SkyViewSizePacked);
+const uvec2 TargetSize = U16FROMU32(TargetSizePacked);
 
 #include "sky.glsl"
 
@@ -36,13 +37,13 @@ void main() {
 	
 	// Retrieve tile
 	
-	uint tilePacked = b_lists[u_tileOffset + gl_GlobalInvocationID.x];
+	uint tilePacked = b_lists[TileOffset + gl_GlobalInvocationID.x];
 	uvec2 tile = u16Fromu32(tilePacked);
 	
 	// Bounds check
 	
 	uvec2 gid = tile * gl_WorkGroupSize.yz + gl_LocalInvocationID.yz;
-	if (any(greaterThanEqual(gid, u_targetSize)))
+	if (any(greaterThanEqual(gid, TargetSize)))
 		return;
 	
 	// Retrieve pixel alpha
@@ -51,7 +52,7 @@ void main() {
 	if (pixel.a >= 1.0) // Not a sky sample
 		return;
 	
-	vec2 gUv = vec2(gid) / vec2(u_targetSize);
+	vec2 gUv = vec2(gid) / vec2(TargetSize);
 	vec3 clipSpace = vec3(gUv * vec2(2.0) - vec2(1.0), 0.0);
 	vec4 hPos = u_world.viewProjectionInverse * vec4(clipSpace, 1.0);
 	
@@ -72,7 +73,7 @@ void main() {
 	
 	bool intersectGround = (raySphereIntersectNearest(worldPos, worldDir, vec3(0.0), u_atmo.bottomRadius) >= 0.0);
 	
-	skyViewLutParamsToUv(intersectGround, viewZenithCosAngle, lightViewCosAngle, u_skyViewSize, viewHeight, uv, u_atmo.bottomRadius);
+	skyViewLutParamsToUv(intersectGround, viewZenithCosAngle, lightViewCosAngle, SkyViewSize, viewHeight, uv, u_atmo.bottomRadius);
 	vec3 skyView = textureLod(s_skyView, uv, 0.0).rgb;
 	vec3 sun = getSunLuminance(worldPos, worldDir, u_world.sunDirection, u_world.sunIlluminance)
 		* (120000.0 / u_world.sunIlluminance);

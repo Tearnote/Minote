@@ -12,9 +12,7 @@ layout (binding = 0, std430) restrict buffer Commands {
 	Command b_commands[];
 };
 
-layout(push_constant) uniform Constants {
-	uint u_commandCount;
-};
+layout(constant_id = 0) const uint u_commandCount = 0;
 
 void main() {
 	
@@ -44,7 +42,6 @@ void main() {
 	if (subgroupElect())
 		sh_subgroupScans[gl_SubgroupID] = valueSum;
 	
-	memoryBarrierShared();
 	barrier();
 	
 	// Prefix sum on shared mem
@@ -75,7 +72,6 @@ void main() {
 		
 	}
 	
-	memoryBarrierShared();
 	barrier();
 	
 	// Write out results

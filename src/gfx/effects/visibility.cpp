@@ -145,20 +145,15 @@ auto Worklist::create(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
 			result.lists.resource(vuk::eComputeWrite) },
 		.execute = [result, _visbuf, &_instances, &_materials](vuk::CommandBuffer& cmd) {
 			
-			struct PushConstants {
-				uvec2 visbufSize;
-				u32 listCount;
-			};
-			
 			cmd.bind_sampled_image(0, 0, _visbuf, NearestClamp)
 			   .bind_storage_buffer(0, 1, _instances.instances)
 			   .bind_storage_buffer(0, 2, _materials.materials)
 			   .bind_storage_buffer(0, 3, result.counts)
 			   .bind_storage_buffer(0, 4, result.lists)
-			   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
-				   .visbufSize = _visbuf.size(),
-				   .listCount = ListCount })
 			   .bind_compute_pipeline("worklist");
+			
+			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_visbuf.size()));
+			cmd.specialization_constants(1, vuk::ShaderStageFlagBits::eCompute, ListCount);
 			
 			cmd.dispatch_invocations(_visbuf.size().x(), _visbuf.size().y());
 			
@@ -206,22 +201,15 @@ auto Worklist::createMS(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
 			result.lists.resource(vuk::eComputeWrite) },
 		.execute = [result, _visbuf, &_instances, &_materials](vuk::CommandBuffer& cmd) {
 			
-			struct PushConstants {
-				uvec2 visbufSize;
-				u32 listCount;
-				u32 sampleCount;
-			};
-			
 			cmd.bind_sampled_image(0, 0, _visbuf, NearestClamp)
 			   .bind_storage_buffer(0, 1, _instances.instances)
 			   .bind_storage_buffer(0, 2, _materials.materials)
 			   .bind_storage_buffer(0, 3, result.counts)
 			   .bind_storage_buffer(0, 4, result.lists)
-			   .push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
-				   .visbufSize = _visbuf.size(),
-				   .listCount = ListCount,
-				   .sampleCount = _visbuf.samples() })
 			   .bind_compute_pipeline("worklist_ms");
+			
+			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_visbuf.size()));
+			cmd.specialization_constants(1, vuk::ShaderStageFlagBits::eCompute, ListCount);
 			
 			cmd.dispatch_invocations(_visbuf.size().x(), _visbuf.size().y());
 			

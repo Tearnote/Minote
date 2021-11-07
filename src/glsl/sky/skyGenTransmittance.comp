@@ -4,6 +4,7 @@
 layout(local_size_x = 8, local_size_y = 8) in;
 
 #include "skyTypes.glsl"
+#include "../util.glsl"
 
 #define U_ATMO u_atmo
 
@@ -12,18 +13,19 @@ layout(binding = 0) uniform Atmosphere {
 };
 layout(binding = 1) restrict writeonly uniform image2D i_transmittance;
 
-layout(push_constant) uniform Constants {
-	uvec2 u_transmittanceSize;
-};
+layout(constant_id = 0) const uint TransmittanceSizePacked = 0;
+const uvec2 TransmittanceSize = U16FROMU32(TransmittanceSizePacked);
 
 #include "sky.glsl"
 
 void main() {
 	
 	uvec2 gid = gl_GlobalInvocationID.xy;
+	if (any(greaterThan(gid, TransmittanceSize)))
+		return;
 	
 	// Compute camera position from LUT coords
-	vec2 uv = (vec2(gid) + vec2(0.5)) / vec2(u_transmittanceSize);
+	vec2 uv = (vec2(gid) + vec2(0.5)) / vec2(TransmittanceSize);
 	float viewHeight;
 	float viewZenithCosAngle;
 	uvToLutTransmittanceParams(viewHeight, viewZenithCosAngle, uv, u_atmo.bottomRadius, u_atmo.topRadius);
