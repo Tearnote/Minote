@@ -139,12 +139,21 @@ void game(GameParams const& _params) try {
 	constexpr auto Expand = 0u;
 	constexpr auto Spacing = 25_m;
 	
-	auto testscene_id = engine.objects().create();
-	auto testscene = engine.objects().get(testscene_id);
-	testscene.meshID = "testscene"_id;
-	testscene.transform.position = vec3{0_m, 0_m, 64_m};
-	testscene.transform.scale = prescale;
-	testscene.materialID = "matte"_id;
+	constexpr auto TestScenes = 1;
+	for (auto x: iota(0, TestScenes))
+	for (auto y: iota(0, TestScenes)) {
+		
+		constexpr auto TestSpacing = 80_m;
+		auto offset = vec3{x * 80_m, y * 80_m, 0.0f};
+		
+		auto testscene_id = engine.objects().create();
+		auto testscene = engine.objects().get(testscene_id);
+		testscene.meshID = "testscene"_id;
+		testscene.transform.position = vec3{0_m, 0_m, 64_m} + offset;
+		testscene.transform.scale = prescale;
+		testscene.materialID = "matte"_id;
+		
+	}
 	
 	for (auto x = -Spacing * Expand; x <= Spacing * Expand; x += Spacing)
 	for (auto y = -Spacing * Expand; y <= Spacing * Expand; y += Spacing) {
