@@ -107,6 +107,11 @@ Vulkan::Vulkan(Window& _window) {
 		.set_required_features_12(physicalDeviceVulkan12Features)
 #if VK_VALIDATION
 		.add_required_extension("VK_KHR_shader_non_semantic_info")
+		.add_required_extension("VK_EXT_robustness2")
+		.add_required_extension_features(VkPhysicalDeviceRobustness2FeaturesEXT{
+			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT,
+			.robustBufferAccess2 = VK_TRUE,
+			.robustImageAccess2 = VK_TRUE })
 #endif //VK_VALIDATION
 #ifdef TRACY_ENABLE
 		.add_required_extension("VK_EXT_calibrated_timestamps")
