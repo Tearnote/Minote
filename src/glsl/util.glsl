@@ -11,6 +11,12 @@ float rcp(float _v) {
 	
 }
 
+vec3 rcp(vec3 _v) {
+	
+	return vec3(1.0) / _v;
+	
+}
+
 // https://github.com/CesiumGS/cesium/blob/main/Source/Shaders/Builtin/Functions/fastApproximateAtan.glsl
 // Used under MIT license
 float fastAtan(float _x) {

@@ -17,60 +17,26 @@ VisSample unpackVisibility(uint _packed) {
 	
 }
 
-// https://github.com/GraphicsProgramming/RVPT/blob/master/assets/shaders/intersection.glsl
-// Used under Apache 2.0 license - see licenses directory
-void lineTriIntersection(out vec3 _position, out vec3 _barycentrics,
-	vec3 _lineOrigin, vec3 _lineDir, mat3 _triangle) {
+vec3 calculateBarycentrics(mat3x4 _verts, vec2 _pxNdc) {
 	
-	vec3 e0 = _triangle[1] - _triangle[0];
-	vec3 e1 = _triangle[2] - _triangle[0];
-	vec3 n = cross(e0,e1);
+	vec3 invW = rcp(vec3(_verts[0].w, _verts[1].w, _verts[2].w));
 	
-	float t = dot(_triangle[0] - _lineOrigin, n) / dot(_lineDir, n);
-	vec3 p = _lineOrigin + t * _lineDir;
+	vec2 ndc0 = _verts[0].xy * invW.x;
+	vec2 ndc1 = _verts[1].xy * invW.y;
+	vec2 ndc2 = _verts[2].xy * invW.z;
 	
-	vec3 p0 = p - _triangle[0];
-	vec2 b = vec2(dot(p0, e0), dot(p0, e1));
-	mat2 A_adj = mat2(dot(e1, e1), -dot(e0, e1), -dot(e0, e1), dot(e0, e0));
-	float inv_det = 1.0 / (A_adj[0][0] * A_adj[1][1] - A_adj[0][1] * A_adj[1][0]);
-	vec2 uv = inv_det * (A_adj * b);
+	float invDet = rcp(determinant(mat2(ndc2 - ndc1, ndc0 - ndc1)));
+	vec3 m_ddx = vec3(ndc1.y - ndc2.y, ndc2.y - ndc0.y, ndc0.y - ndc1.y) * invDet;
+	vec3 m_ddy = vec3(ndc2.x - ndc1.x, ndc0.x - ndc2.x, ndc1.x - ndc0.x) * invDet;
 	
-	_barycentrics = vec3(1.0 - uv.x - uv.y, uv.x, uv.y);
-	_position = p;
+	vec2 deltaVec = _pxNdc - ndc0;
+	float interpInvW = (invW.x + deltaVec.x * dot(invW, m_ddx) + deltaVec.y * dot(invW, m_ddy));
+	float interpW = rcp(interpInvW);
 	
-}
-
-// https://github.com/GraphicsProgramming/RVPT/blob/master/assets/shaders/intersection.glsl
-// Used under Apache 2.0 license - see licenses directory
-bool lineTriIntersectionDist(/*out vec3 _position, out vec3 _barycentrics,*/ out float _distance,
-	vec3 _lineOrigin, vec3 _lineDir, mat3 _triangle) {
-	
-	vec3 e0 = _triangle[1] - _triangle[0];
-	vec3 e1 = _triangle[2] - _triangle[0];
-	vec3 n = cross(e0,e1);
-	
-	float t = dot(_triangle[0] - _lineOrigin, n) / dot(_lineDir, n);
-	vec3 p = _lineOrigin + t * _lineDir;
-	
-	vec3 p0 = p - _triangle[0];
-	vec2 b = vec2(dot(p0, e0), dot(p0, e1));
-	mat2 A_adj = mat2(dot(e1, e1), -dot(e0, e1), -dot(e0, e1), dot(e0, e0));
-	float inv_det = 1.0 / (A_adj[0][0] * A_adj[1][1] - A_adj[0][1] * A_adj[1][0]);
-	vec2 uv = inv_det * (A_adj * b);
-	
-	// _barycentrics = vec3(1.0 - uv.x - uv.y, uv.x, uv.y);
-	// _position = p;
-	_distance = t;
-	return uv.x >= 0.0 && uv.y >= 0.0 && uv.x + uv.y <= 1.0;
-	
-}
-
-// Clamp barycentrics between 0.0 and 1.0 so that they're inside of a triangle,
-// and renormalize.
-vec3 clampBarycentrics(vec3 _barycentrics) {
-	
-	_barycentrics = clamp(_barycentrics, vec3(0.0), vec3(1.0));
-	return _barycentrics / dot(_barycentrics, vec3(1.0));
+	return vec3(
+		interpW * (invW[0] + deltaVec.x * m_ddx.x * invW[0] + deltaVec.y * m_ddy.x * invW[0]),
+		interpW * (          deltaVec.x * m_ddx.y * invW[1] + deltaVec.y * m_ddy.y * invW[1]),
+		interpW * (          deltaVec.x * m_ddx.z * invW[2] + deltaVec.y * m_ddy.z * invW[2]) );
 	
 }
 

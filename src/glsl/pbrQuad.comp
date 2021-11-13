@@ -98,41 +98,37 @@ void getInstanceVertexParams(out vec3 _vertex, out vec3 _normal, out vec3 _color
 	mat3 vertices = {
 		fetchVertex(indices.x),
 		fetchVertex(indices.y),
-		fetchVertex(indices.z)};
+		fetchVertex(indices.z) };
 	
 	mat3 normals = {
 		fetchNormal(indices.x),
 		fetchNormal(indices.y),
-		fetchNormal(indices.z)};
+		fetchNormal(indices.z) };
 	
 	mat3 colors = {
 		fetchColor(indices.x).xyz,
 		fetchColor(indices.y).xyz,
-		fetchColor(indices.z).xyz};
+		fetchColor(indices.z).xyz };
 	
-	// Transform params from model to world space
+	// Calculate barycentrics
 	
-	mat3 normTransform = mat3(inverse(transpose(transform)));
+	mat4 ndcTransform = u_world.viewProjection * transform;
+	mat3x4 verticesNDC = {
+		ndcTransform * vec4(vertices[0], 1.0),
+		ndcTransform * vec4(vertices[1], 1.0),
+		ndcTransform * vec4(vertices[2], 1.0) };
 	
-	for (uint i = 0; i < 3; i += 1) {
-		
-		vec4 transformed = transform * vec4(vertices[i], 1.0);
-		vertices[i] = transformed.xyz / transformed.w;
-		
-		normals[i] = normalize(normTransform * normals[i]);
-		
-	}
-	
-	// Calculate world position and barycentrics
-	
-	vec3 clipSpace = vec3(_uv * vec2(2.0) - vec2(1.0), 0.0);
-	vec3 worldDir = normalize(vec3(u_world.viewProjectionInverse * vec4(clipSpace, 1.0)));
-	
-	vec3 barycentrics;
-	lineTriIntersection(_vertex, barycentrics, u_world.cameraPos, worldDir, vertices);
-	barycentrics = clampBarycentrics(barycentrics);
+	vec3 barycentrics = calculateBarycentrics(verticesNDC, _uv * 2.0 - 1.0);
+	// barycentrics = clampBarycentrics(barycentrics);
 	
 	// Interpolate params
+	
+	_vertex =
+		vertices[0] * barycentrics.x +
+		vertices[1] * barycentrics.y +
+		vertices[2] * barycentrics.z;
+	vec4 vertexW = transform * vec4(_vertex, 1.0);
+	_vertex = vertexW.xyz / vertexW.w;
 	
 #if USE_ACCURATE_NORMAL_INTERPOLATION
 	
@@ -140,10 +136,13 @@ void getInstanceVertexParams(out vec3 _vertex, out vec3 _normal, out vec3 _color
 	
 #else //USE_ACCURATE_NORMAL_INTERPOLATION
 	
-	_normal = normalize(
+	mat3 normTransform = mat3(inverse(transpose(transform)));
+	
+	_normal =
 		normals[0] * barycentrics.x +
 		normals[1] * barycentrics.y +
-		normals[2] * barycentrics.z);
+		normals[2] * barycentrics.z;
+	_normal = normalize(normTransform * _normal);
 	
 #endif //USE_ACCURATE_NORMAL_INTERPOLATION
 	
@@ -280,8 +279,6 @@ void main() {
 		vec2 clusterCentroid = subsamplePosAverage(clusterSubsamples);
 		vec2 velocity;
 		clusterResult = shadeVisSamplePBR(clusterValue, vec2(gid & ~1u) + clusterCentroid, velocity);
-		if (any(isnan(clusterResult))) //TODO fix this
-			clusterResult = vec3(16.0, 0.0, 16.0);
 		imageStore(i_target, ivec2(gid), vec4(clusterResult, 1.0));
 		imageStore(i_velocity, ivec2(gid), vec4(velocity, 0.0, 0.0));
 		
