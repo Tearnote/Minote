@@ -387,8 +387,8 @@ void Sky::draw(vuk::RenderGraph& _rg, Cubemap _target, vec3 _probePos,
 			
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, _probePos);
 			
-			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, _target.size().x());
-			cmd.specialization_constants(1, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_skyView.size()));
+			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_skyView.size()));
+			cmd.specialization_constants(1, vuk::ShaderStageFlagBits::eCompute, _target.size().x());
 			
 			cmd.dispatch_invocations(_target.size().x(), _target.size().y(), 6);
 			
