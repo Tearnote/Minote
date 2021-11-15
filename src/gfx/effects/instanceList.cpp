@@ -12,7 +12,7 @@ using namespace base;
 
 auto BasicInstanceList::upload(Pool& _pool, vuk::RenderGraph& _rg,
 	vuk::Name _name, ObjectPool const& _objects,
-	MeshBuffer const& _meshes, MaterialBuffer const& _materials) -> BasicInstanceList {
+	ModelBuffer const& _models, MaterialBuffer const& _materials) -> BasicInstanceList {
 	
 	ZoneScoped;
 	
@@ -30,13 +30,13 @@ auto BasicInstanceList::upload(Pool& _pool, vuk::RenderGraph& _rg,
 		if (!metadata.exists || !metadata.visible)
 			continue;
 		
-		auto meshID = _objects.meshIDs[id];
-		auto meshIdx = _meshes.cpu_descriptorIDs.at(meshID);
+		auto modelID = _objects.modelIDs[id];
+		auto modelIdx = _models.cpu_descriptorIDs.at(modelID);
 		auto materialID = _objects.materialIDs[id];
 		auto materialIdx = _materials.materialIDs.at(materialID);
 		
 		instances[instancesCount] = Instance{
-			.meshIdx = u32(meshIdx),
+			.modelIdx = u32(modelIdx),
 			.materialIdx = u32(materialIdx),
 			.colorIdx = instancesCount,
 			.transformIdx = instancesCount };
@@ -155,16 +155,16 @@ void DrawableInstanceList::compile(vuk::PerThreadContext& _ptc) {
 }
 
 auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
-	InstanceList const& _unsorted, MeshBuffer const& _meshes) -> DrawableInstanceList {
+	InstanceList const& _unsorted, ModelBuffer const& _models) -> DrawableInstanceList {
 	
 	auto result = DrawableInstanceList();
 	
 	// Create a mostly prefilled command buffer
 	
 	auto commandsData = pvector<Command>();
-	commandsData.reserve(_meshes.descriptors.size());
+	commandsData.reserve(_models.descriptors.size());
 	
-	for (auto& descriptor: _meshes.cpu_descriptors) {
+	for (auto& descriptor: _models.cpu_descriptors) {
 		
 		commandsData.emplace_back(Command{
 			.indexCount = descriptor.indexCount,
@@ -208,12 +208,12 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 		.name = nameAppend(_name, "sort scan"),
 		.resources = {
 			result.commands.resource(vuk::eComputeRW) },
-		.execute = [&_meshes, result](vuk::CommandBuffer& cmd) {
+		.execute = [&_models, result](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_storage_buffer(0, 0, result.commands)
 			   .bind_compute_pipeline("instance_sort_scan");
 			
-			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32(_meshes.descriptors.size()));
+			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32(_models.descriptors.size()));
 			
 			cmd.dispatch(1);
 			
@@ -254,7 +254,7 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 }
 
 auto DrawableInstanceList::frustumCull(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
-	DrawableInstanceList const& _source, MeshBuffer const& _meshes, mat4 _view, mat4 _projection) -> DrawableInstanceList {
+	DrawableInstanceList const& _source, ModelBuffer const& _models, mat4 _view, mat4 _projection) -> DrawableInstanceList {
 	
 	auto result = DrawableInstanceList();
 	
@@ -294,13 +294,13 @@ auto DrawableInstanceList::frustumCull(Pool& _pool, vuk::RenderGraph& _rg, vuk::
 			result.commands.resource(vuk::eComputeRW),
 			result.instancesCount.resource(vuk::eComputeWrite),
 			result.instances.resource(vuk::eComputeWrite) },
-		.execute = [&_source, result, &_meshes, _view, _projection](vuk::CommandBuffer& cmd) {
+		.execute = [&_source, result, &_models, _view, _projection](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_storage_buffer(0, 0, _source.commands)
 			   .bind_uniform_buffer(0, 1, _source.instancesCount)
 			   .bind_storage_buffer(0, 2, _source.instances)
 			   .bind_storage_buffer(0, 3, result.transforms)
-			   .bind_storage_buffer(0, 4, _meshes.descriptors)
+			   .bind_storage_buffer(0, 4, _models.descriptors)
 			   .bind_storage_buffer(0, 5, result.commands)
 			   .bind_storage_buffer(0, 6, result.instancesCount)
 			   .bind_storage_buffer(0, 7, result.instances)
@@ -323,7 +323,7 @@ auto DrawableInstanceList::frustumCull(Pool& _pool, vuk::RenderGraph& _rg, vuk::
 					
 				}() };
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, pushConstants);
-			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32(_meshes.descriptors.size()));
+			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32(_models.descriptors.size()));
 			
 			cmd.dispatch_indirect(_source.instancesCount);
 			

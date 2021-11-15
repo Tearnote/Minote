@@ -11,7 +11,7 @@
 #include "base/util.hpp"
 #include "base/log.hpp"
 #include "gfx/materials.hpp"
-#include "gfx/meshes.hpp"
+#include "gfx/models.hpp"
 #include "assets.hpp"
 #include "main.hpp"
 
@@ -35,11 +35,11 @@ void game(GameParams const& _params) try {
 	
 	// Load assets
 	
-	auto meshList = gfx::MeshList();
+	auto modelList = gfx::ModelList();
 	auto assets = Assets(Assets_p);
-	assets.loadModels([&meshList](auto name, auto data) {
+	assets.loadModels([&modelList](auto name, auto data) {
 		
-		meshList.addGltf(name, data);
+		modelList.addModel(name, data);
 		
 	});
 	
@@ -107,7 +107,7 @@ void game(GameParams const& _params) try {
 	
 	// Initialize the engine
 	
-	engine.init(std::move(meshList), std::move(materialList));
+	engine.init(std::move(modelList), std::move(materialList));
 	
 	engine.camera() = gfx::Camera{
 		.position = {8.2_m, -11.2_m, 64.3_m},
@@ -148,7 +148,7 @@ void game(GameParams const& _params) try {
 		
 		auto testscene_id = engine.objects().create();
 		auto testscene = engine.objects().get(testscene_id);
-		testscene.meshID = "testscene"_id;
+		testscene.modelID = "testscene"_id;
 		testscene.transform.position = vec3{0_m, 0_m, 64_m} + offset;
 		testscene.transform.scale = prescale;
 		testscene.materialID = "matte"_id;
@@ -162,7 +162,7 @@ void game(GameParams const& _params) try {
 		
 		auto block1_id = engine.objects().create();
 		auto block1 = engine.objects().get(block1_id);
-		block1.meshID = "block"_id;
+		block1.modelID = "block"_id;
 		block1.color = {0.9f, 0.9f, 1.0f, 1.0f};
 		block1.transform.position = offset;
 		block1.transform.scale = vec3{12.0f, 12.0f, 1.0f} * prescale;
@@ -171,7 +171,7 @@ void game(GameParams const& _params) try {
 		
 		auto block2_id = engine.objects().create();
 		auto block2 = engine.objects().get(block2_id);
-		block2.meshID = "block"_id;
+		block2.modelID = "block"_id;
 		block2.color = {0.9f, 0.1f, 0.1f, 1.0f};
 		block2.transform.position = vec3{-4_m, -4_m, 2_m} + offset;
 		block2.transform.scale = prescale;
@@ -180,7 +180,7 @@ void game(GameParams const& _params) try {
 		
 		auto block3_id = engine.objects().create();
 		auto block3 = engine.objects().get(block3_id);
-		block3.meshID = "block"_id;
+		block3.modelID = "block"_id;
 		block3.color = {0.9f, 0.1f, 0.1f, 1.0f};
 		block3.transform.position = vec3{4_m, -4_m, 2_m} + offset;
 		block3.transform.scale = prescale;
@@ -189,7 +189,7 @@ void game(GameParams const& _params) try {
 		
 		auto block4_id = engine.objects().create();
 		auto block4 = engine.objects().get(block4_id);
-		block4.meshID = "block"_id;
+		block4.modelID = "block"_id;
 		block4.color = {0.9f, 0.1f, 0.1f, 1.0f};
 		block4.transform.position = vec3{-4_m, 4_m, 2_m} + offset;
 		block4.transform.scale = prescale;
@@ -198,7 +198,7 @@ void game(GameParams const& _params) try {
 		
 		auto block5_id = engine.objects().create();
 		auto block5 = engine.objects().get(block5_id);
-		block5.meshID = "block"_id;
+		block5.modelID = "block"_id;
 		block5.color = {0.9f, 0.1f, 0.1f, 1.0f};
 		block5.transform.position = vec3{4_m, 4_m, 2_m} + offset;
 		block5.transform.scale = prescale;
@@ -207,7 +207,7 @@ void game(GameParams const& _params) try {
 		
 		auto block6_id = engine.objects().create();
 		auto block6 = engine.objects().get(block6_id);
-		block6.meshID = "block"_id;
+		block6.modelID = "block"_id;
 		block6.color = {0.1f, 0.1f, 0.9f, 1.0f};
 		block6.transform.position = vec3{7_m, 0_m, 2_m} + offset;
 		block6.transform.scale = prescale;
@@ -217,7 +217,7 @@ void game(GameParams const& _params) try {
 		auto block7_id = engine.objects().create();
 		auto block7 = engine.objects().get(block7_id);
 		dynamicObjects.emplace_back(block7_id);
-		block7.meshID = "block"_id;
+		block7.modelID = "block"_id;
 		block7.color = {0.2f, 0.9f, 0.5f, 1.0f};
 		block7.transform.position = vec3{0_m, 0_m, 2.5_m} + offset;
 		block7.transform.scale = vec3{1.5f, 1.5f, 1.5f} * prescale;
@@ -229,14 +229,14 @@ void game(GameParams const& _params) try {
 			
 			auto sphere1_id = engine.objects().create();
 			auto sphere1 = engine.objects().get(sphere1_id);
-			sphere1.meshID = "sphere"_id;
+			sphere1.modelID = "sphere"_id;
 			sphere1.transform.position = vec3{0_m, 8_m, 2_m} + offset2;
 			sphere1.transform.scale = prescale;
 			sphere1.materialID = ID("metal" + to_string(i));
 			
 			auto sphere2_id = engine.objects().create();
 			auto sphere2 = engine.objects().get(sphere2_id);
-			sphere2.meshID = "sphere"_id;
+			sphere2.modelID = "sphere"_id;
 			sphere2.transform.position = vec3{0_m, -8_m, 2_m} + offset2;
 			sphere2.transform.scale = prescale;
 			sphere2.materialID = ID("plastic" + to_string(i));

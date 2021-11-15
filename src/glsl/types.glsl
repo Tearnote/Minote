@@ -29,8 +29,8 @@ struct Command {
 	uint firstInstance;
 };
 
-// Index and vertex locations for drawing a specific mesh
-struct MeshDescriptor {
+// Index and vertex locations for drawing a specific model
+struct ModelDescriptor {
 	uint indexOffset;
 	uint indexCount;
 	uint vertexOffset;
@@ -38,7 +38,7 @@ struct MeshDescriptor {
 };
 
 struct Instance {
-	uint meshIdx;
+	uint modelIdx;
 	uint materialIdx;
 	uint colorIdx;
 	uint transformIdx;

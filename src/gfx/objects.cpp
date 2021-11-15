@@ -11,7 +11,7 @@ auto ObjectPool::create() -> ObjectID {
 	if (m_deletedIDs.empty()) {
 		
 		metadata.emplace_back(Metadata::make_default());
-		meshIDs.emplace_back();
+		modelIDs.emplace_back();
 		colors.emplace_back(1.0f); // Fully opaque
 		transforms.emplace_back(Transform::make_default());
 		materialIDs.emplace_back();
@@ -42,7 +42,7 @@ auto ObjectPool::get(ObjectID _id) -> Proxy {
 	
 	return Proxy{
 		.metadata = metadata[_id],
-		.meshID = meshIDs[_id],
+		.modelID = modelIDs[_id],
 		.color = colors[_id],
 		.transform = transforms[_id],
 		.materialID = materialIDs[_id]};

@@ -20,7 +20,7 @@ layout(binding = 0) uniform WorldConstants {
 };
 
 layout (binding = 1, std430) restrict readonly buffer Descriptors {
-	MeshDescriptor b_descriptors[];
+	ModelDescriptor b_descriptors[];
 };
 layout (binding = 2, std430) restrict readonly buffer Instances {
 	Instance b_instances[];
@@ -124,14 +124,14 @@ void main() {
 	
 	// Retrieve vertex indices
 	
-	uint meshIdx = instance.meshIdx;
-	uint indexBase = b_descriptors[meshIdx].indexOffset;
+	uint modelIdx = instance.modelIdx;
+	uint indexBase = b_descriptors[modelIdx].indexOffset;
 	indexBase += vis.triangle * 3;
 	uvec3 indices = fetchIndices(indexBase);
 	
 	// Retrieve vertex params
 	
-	uint vertexBase = b_descriptors[meshIdx].vertexOffset;
+	uint vertexBase = b_descriptors[modelIdx].vertexOffset;
 	indices += uvec3(vertexBase);
 	
 	mat3 vertices = {

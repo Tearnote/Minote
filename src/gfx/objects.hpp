@@ -52,7 +52,7 @@ struct ObjectPool {
 	struct Proxy {
 		
 		Metadata& metadata;
-		ID& meshID;
+		ID& modelID;
 		vec4& color;
 		Transform& transform;
 		ID& materialID;
@@ -85,7 +85,7 @@ struct ObjectPool {
 	// Direct access to these is discouraged, unless you're doing a whole
 	// container transfer.
 	ivector<Metadata> metadata;
-	ivector<ID> meshIDs;
+	ivector<ID> modelIDs;
 	ivector<vec4> colors;
 	ivector<Transform> transforms;
 	ivector<ID> materialIDs;

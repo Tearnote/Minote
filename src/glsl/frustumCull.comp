@@ -18,7 +18,7 @@ layout(binding = 3, std430) restrict readonly buffer Transforms {
 	mat3x4 b_transforms[];
 };
 layout(binding = 4, std430) restrict readonly buffer Descriptors {
-	MeshDescriptor b_descriptors[];
+	ModelDescriptor b_descriptors[];
 };
 layout(binding = 5, std430) restrict buffer CommandsCulled {
 	Command b_commandsCulled[];
@@ -78,12 +78,12 @@ void main() {
 	
 	// Determine if instance is culled
 	
-	uint meshIdx = b_instances[gid].meshIdx;
+	uint modelIdx = b_instances[gid].modelIdx;
 	uint transformIdx = b_instances[gid].transformIdx;
 	float scale = max(length(b_transforms[transformIdx][0].xyz),
 	              max(length(b_transforms[transformIdx][1].xyz),
 	                  length(b_transforms[transformIdx][2].xyz)));
-	float radius = b_descriptors[meshIdx].radius;
+	float radius = b_descriptors[modelIdx].radius;
 	if (!visible(transformIdx, radius * scale))
 		return;
 	
@@ -92,8 +92,8 @@ void main() {
 	uint oldInstanceCount = atomicAdd(b_instanceCountCulled.w, 1);
 	if (oldInstanceCount % 64u == 0u)
 		atomicAdd(b_instanceCountCulled.x, 1);
-	uint offset = b_commands[meshIdx].firstInstance;
-	uint newid = offset + atomicAdd(b_commandsCulled[meshIdx].instanceCount, 1);
+	uint offset = b_commands[modelIdx].firstInstance;
+	uint newid = offset + atomicAdd(b_commandsCulled[modelIdx].instanceCount, 1);
 	
 	b_instancesCulled[newid] = b_instances[gid];
 	

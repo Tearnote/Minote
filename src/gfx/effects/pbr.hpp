@@ -8,7 +8,7 @@
 #include "gfx/effects/visibility.hpp"
 #include "gfx/effects/sky.hpp"
 #include "gfx/materials.hpp"
-#include "gfx/meshes.hpp"
+#include "gfx/models.hpp"
 #include "gfx/world.hpp"
 
 namespace minote::gfx {
@@ -19,11 +19,11 @@ struct PBR {
 	static void compile(vuk::PerThreadContext&);
 	
 	static void apply(vuk::RenderGraph&, Texture2D color, Texture2D visbuf,
-		Worklist const&, Buffer<World>, MeshBuffer const&, MaterialBuffer const&,
+		Worklist const&, Buffer<World>, ModelBuffer const&, MaterialBuffer const&,
 		DrawableInstanceList const&, Cubemap ibl, Buffer<vec3> sunLuminance, Texture3D aerialPerspective);
 	
 	static void applyQuad(vuk::RenderGraph&, Texture2D color, Texture2D velocity,
-		Texture2D quadbuf, Worklist const&, Buffer<World>, MeshBuffer const&,
+		Texture2D quadbuf, Worklist const&, Buffer<World>, ModelBuffer const&,
 		MaterialBuffer const&, DrawableInstanceList const&, Cubemap ibl,
 		Buffer<vec3> sunLuminance, Texture3D aerialPerspective);
 	

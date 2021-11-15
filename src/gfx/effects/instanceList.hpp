@@ -6,7 +6,7 @@
 #include "gfx/resources/buffer.hpp"
 #include "gfx/materials.hpp"
 #include "gfx/objects.hpp"
-#include "gfx/meshes.hpp"
+#include "gfx/models.hpp"
 
 namespace minote::gfx {
 
@@ -18,7 +18,7 @@ struct BasicInstanceList {
 	using BasicTransform = ObjectPool::Transform;
 	
 	struct Instance {
-		u32 meshIdx;
+		u32 modelIdx;
 		u32 materialIdx;
 		u32 colorIdx;
 		u32 transformIdx;
@@ -32,7 +32,7 @@ struct BasicInstanceList {
 	Buffer<BasicTransform> basicTransforms;
 	
 	static auto upload(Pool&, vuk::RenderGraph&, vuk::Name, ObjectPool const&,
-		MeshBuffer const&, MaterialBuffer const&) -> BasicInstanceList;
+		ModelBuffer const&, MaterialBuffer const&) -> BasicInstanceList;
 	
 	[[nodiscard]]
 	auto capacity() const -> usize { return MaxInstances; }
@@ -73,10 +73,10 @@ struct DrawableInstanceList {
 	static void compile(vuk::PerThreadContext&);
 	
 	static auto fromUnsorted(Pool&, vuk::RenderGraph&, vuk::Name, InstanceList const&,
-		MeshBuffer const&) -> DrawableInstanceList;
+		ModelBuffer const&) -> DrawableInstanceList;
 	
 	static auto frustumCull(Pool&, vuk::RenderGraph&, vuk::Name, DrawableInstanceList const&,
-		MeshBuffer const&, mat4 view, mat4 projection) -> DrawableInstanceList;
+		ModelBuffer const&, mat4 view, mat4 projection) -> DrawableInstanceList;
 	
 	[[nodiscard]]
 	auto capacity() const -> usize { return BasicInstanceList::MaxInstances; }

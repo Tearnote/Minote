@@ -1,40 +1,82 @@
-#include "gfx/meshes.hpp"
+#include "gfx/models.hpp"
 
 #include <utility>
 #include <cassert>
 #include <cstring>
 #include "Tracy.hpp"
-#define CGLTF_IMPLEMENTATION
-#include "cgltf.h"
-#include "quill/Fmt.h"
+#include "mpack/mpack.h"
 #include "gfx/util.hpp"
 #include "base/error.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"
+#include "tools/modelSchema.hpp"
 
 namespace minote::gfx {
 
 using namespace base;
 using namespace base::literals;
+using namespace tools;
 
-void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
+void ModelList::addModel(string_view _name, std::span<char const> _model) {
 	
 	ZoneScoped;
 	
-	// Load and parse
+	// Insert model descriptor
 	
-	auto options = cgltf_options{ .type = cgltf_file_type_glb };
-	auto* gltf = static_cast<cgltf_data*>(nullptr);
-	if (auto result = cgltf_parse(&options, _mesh.data(), _mesh.size_bytes(), &gltf); result != cgltf_result_success)
-		throw runtime_error_fmt(R"(Failed to parse mesh "{}": error code {})", _name, result);
-	defer { cgltf_free(gltf); };
-	cgltf_load_buffers(&options, gltf, nullptr);
+	m_descriptorIDs.emplace(_name, m_descriptors.size());
+	auto& desc = m_descriptors.emplace_back(ModelDescriptor{
+		.indexOffset = u32(m_indices.size()),
+		.vertexOffset = u32(m_vertices.size()) });
 	
-	// Choose mesh and primitive
+	// Load model data
 	
-	assert(gltf->meshes_count == 1);
-	assert(gltf->meshes->primitives_count == 1);
-	auto& primitive = *gltf->meshes->primitives;
+	auto modelReader = mpack_reader_t();
+	mpack_reader_init_data(&modelReader, _model.data(), _model.size_bytes());
+	
+	mpack_expect_map_match(&modelReader, ModelElements);
+	mpack_expect_cstr_match(&modelReader, "format");
+	if (auto format = mpack_expect_u32(&modelReader); format != ModelFormat)
+		throw runtime_error_fmt("Unexpected model format: got {}, expected {}", format, ModelFormat);
+	
+	mpack_expect_cstr_match(&modelReader, "indexCount");
+	auto indexCount = mpack_expect_u32(&modelReader);
+	mpack_expect_cstr_match(&modelReader, "vertexCount");
+	auto vertexCount = mpack_expect_u32(&modelReader);
+	
+	auto indicesSize = m_indices.size();
+	m_indices.resize(m_indices.size() + indexCount);
+	auto indicesIt = &m_indices[indicesSize];
+	mpack_expect_cstr_match(&modelReader, "indices");
+	mpack_expect_bin_size_buf(&modelReader, reinterpret_cast<char*>(indicesIt), indexCount * sizeof(IndexType));
+	
+	auto verticesSize = m_vertices.size();
+	m_vertices.resize(m_vertices.size() + vertexCount);
+	auto verticesIt = &m_vertices[verticesSize];
+	mpack_expect_cstr_match(&modelReader, "vertices");
+	mpack_expect_bin_size_buf(&modelReader, reinterpret_cast<char*>(verticesIt), vertexCount * sizeof(VertexType));
+	
+	auto normalsSize = m_normals.size();
+	m_normals.resize(m_normals.size() + vertexCount);
+	auto normalsIt = &m_normals[normalsSize];
+	mpack_expect_cstr_match(&modelReader, "normals");
+	mpack_expect_bin_size_buf(&modelReader, reinterpret_cast<char*>(normalsIt), vertexCount * sizeof(NormalType));
+	
+	auto colorsSize = m_colors.size();
+	m_colors.resize(m_colors.size() + vertexCount);
+	auto colorsIt = &m_colors[colorsSize];
+	mpack_expect_cstr_match(&modelReader, "colors");
+	mpack_expect_bin_size_buf(&modelReader, reinterpret_cast<char*>(colorsIt), vertexCount * sizeof(ColorType));
+	
+	mpack_expect_cstr_match(&modelReader, "radius");
+	auto radius = mpack_expect_float(&modelReader);
+	
+	mpack_done_map(&modelReader);
+	mpack_reader_destroy(&modelReader);
+	
+	desc.indexCount = indexCount;
+	desc.radius = radius;
+	
+	/*
 	
 	// Fetch index data
 	
@@ -126,16 +168,16 @@ void MeshList::addGltf(string_view _name, std::span<char const> _mesh) {
 		assert(false);
 		
 	}
-	
-	L_DEBUG("Parsed GLTF mesh {}", _name);
+	*/
+	L_DEBUG("Loaded model {}", _name);
 	
 }
 
-auto MeshList::upload(Pool& _pool, vuk::Name _name) && -> MeshBuffer {
+auto ModelList::upload(Pool& _pool, vuk::Name _name) && -> ModelBuffer {
 	
 	ZoneScoped;
 	
-	auto result = MeshBuffer{
+	auto result = ModelBuffer{
 		.vertices = Buffer<vec3>::make(_pool, nameAppend(_name, "vertices"),
 			vuk::BufferUsageFlagBits::eStorageBuffer,
 			m_vertices, vuk::MemoryUsage::eGPUonly),
@@ -149,7 +191,7 @@ auto MeshList::upload(Pool& _pool, vuk::Name _name) && -> MeshBuffer {
 			vuk::BufferUsageFlagBits::eIndexBuffer |
 			vuk::BufferUsageFlagBits::eStorageBuffer,
 			m_indices, vuk::MemoryUsage::eGPUonly),
-		.descriptors = Buffer<MeshDescriptor>::make(_pool, nameAppend(_name, "descriptors"),
+		.descriptors = Buffer<ModelDescriptor>::make(_pool, nameAppend(_name, "descriptors"),
 			vuk::BufferUsageFlagBits::eStorageBuffer,
 			m_descriptors, vuk::MemoryUsage::eGPUonly),
 		.cpu_descriptorIDs = std::move(m_descriptorIDs) };
@@ -168,7 +210,7 @@ auto MeshList::upload(Pool& _pool, vuk::Name _name) && -> MeshBuffer {
 	
 	return result;
 	
-	L_DEBUG("Uploaded all meshes to GPU");
+	L_DEBUG("Uploaded all models to GPU");
 	
 }
 

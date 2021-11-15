@@ -22,7 +22,7 @@ layout(binding = 0) uniform WorldConstants {
 };
 
 layout (binding = 1, std430) restrict readonly buffer Descriptors {
-	MeshDescriptor b_descriptors[];
+	ModelDescriptor b_descriptors[];
 };
 layout (binding = 2, std430) restrict readonly buffer Instances {
 	Instance b_instances[];
@@ -82,8 +82,8 @@ void getInstanceVertexParams(out vec3 _vertex, out vec3 _normal, out vec3 _color
 	
 	// Retrieve vertex indices
 	
-	uint meshIdx = _instance.meshIdx;
-	uint indexBase = b_descriptors[meshIdx].indexOffset;
+	uint modelIdx = _instance.modelIdx;
+	uint indexBase = b_descriptors[modelIdx].indexOffset;
 	indexBase += _triangleIdx * 3;
 	uvec3 indices = fetchIndices(indexBase);
 	
@@ -92,7 +92,7 @@ void getInstanceVertexParams(out vec3 _vertex, out vec3 _normal, out vec3 _color
 	uint transformIdx = _instance.transformIdx;
 	mat4 transform = getTransform(b_transforms[transformIdx]);
 	
-	uint vertexBase = b_descriptors[meshIdx].vertexOffset;
+	uint vertexBase = b_descriptors[modelIdx].vertexOffset;
 	indices += uvec3(vertexBase);
 	
 	mat3 vertices = {

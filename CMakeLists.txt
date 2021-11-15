@@ -57,6 +57,7 @@ add_executable(Minote
         src/base/log.hpp src/base/log.cpp
         src/base/rng.hpp
         src/base/id.hpp
+        src/tools/modelSchema.hpp
         src/sys/window.hpp src/sys/window.cpp
         src/sys/vulkan.hpp src/sys/vulkan.cpp
         src/sys/system.hpp src/sys/system.cpp
@@ -79,7 +80,7 @@ add_executable(Minote
         src/gfx/materials.hpp src/gfx/materials.tpp src/gfx/materials.cpp
         src/gfx/samplers.hpp
         src/gfx/objects.hpp src/gfx/objects.cpp
-        src/gfx/meshes.hpp src/gfx/meshes.cpp
+        src/gfx/models.hpp src/gfx/models.cpp
         src/gfx/engine.hpp src/gfx/engine.cpp
         src/gfx/camera.hpp src/gfx/camera.cpp
         src/gfx/imgui.hpp src/gfx/imgui.cpp
@@ -197,7 +198,6 @@ FetchContent_Declare(cgltf
 FetchContent_MakeAvailable(cgltf)
 add_library(cgltf INTERFACE ${cgltf_SOURCE_DIR}/cgltf.h ${cgltf_SOURCE_DIR}/cgltf_write.h)
 target_include_directories(cgltf INTERFACE ${cgltf_SOURCE_DIR})
-target_link_libraries(Minote PRIVATE cgltf)
 
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
     set(TRACY_ENABLE OFF CACHE BOOL "")
@@ -217,8 +217,8 @@ target_link_libraries(Minote PRIVATE TracyClient)
 
 if(NOT TARGET robin_hood) # vuk already includes this
     FetchContent_Declare(robin_hood
-            GIT_REPOSITORY https://github.com/martinus/robin-hood-hashing/
-            GIT_TAG 3.11.3)
+        GIT_REPOSITORY https://github.com/martinus/robin-hood-hashing/
+        GIT_TAG 3.11.3)
     FetchContent_MakeAvailable(robin_hood)
 endif()
 target_link_libraries(Minote PRIVATE robin_hood)
@@ -242,6 +242,14 @@ FetchContent_Declare(gcem
         GIT_TAG 8d0e62d9c9c47dfad2cb2d800281908cf7ff16c6)
 FetchContent_MakeAvailable(gcem)
 target_link_libraries(Minote PRIVATE gcem)
+
+FetchContent_Declare(mpack
+        URL https://github.com/ludocode/mpack/releases/download/v1.1/mpack-amalgamation-1.1.tar.gz)
+FetchContent_MakeAvailable(mpack)
+add_library(mpack
+        ${mpack_SOURCE_DIR}/src/mpack/mpack.h ${mpack_SOURCE_DIR}/src/mpack/mpack.c)
+target_include_directories(mpack PUBLIC ${mpack_SOURCE_DIR}/src)
+target_link_libraries(Minote PRIVATE mpack)
 
 # Shader compilation
 
@@ -291,7 +299,17 @@ add_custom_target(Compile_shaders DEPENDS ${SHADER_OUTPUTS})
 target_include_directories(Minote PRIVATE ${PROJECT_BINARY_DIR}/generated)
 add_dependencies(Minote Compile_shaders)
 
-# Asset packaging
+# Asset pipeline
+
+add_executable(Model_conv
+        src/tools/modelSchema.hpp
+        src/tools/modelConv.cpp)
+target_include_directories(Model_conv PRIVATE src)
+target_link_libraries(Model_conv PRIVATE quill::quill)
+target_link_libraries(Model_conv PRIVATE itlib)
+target_link_libraries(Model_conv PRIVATE cgltf)
+target_link_libraries(Model_conv PRIVATE mpack)
+target_link_libraries(Model_conv PRIVATE gcem)
 
 set(ASSET_OUTPUT ${PROJECT_BINARY_DIR}/assets.db)
 add_custom_command(
@@ -310,13 +328,18 @@ add_custom_command(
 foreach(MODEL_PATH ${MODELS})
     get_filename_component(MODEL_NAME ${MODEL_PATH} NAME_WLE)
     add_custom_command(
+            OUTPUT ${PROJECT_BINARY_DIR}/models/${MODEL_NAME}.model
+            COMMAND Model_conv ${PROJECT_SOURCE_DIR}/${MODEL_PATH} ${PROJECT_BINARY_DIR}/models/${MODEL_NAME}.model
+            DEPENDS ${PROJECT_SOURCE_DIR}/${MODEL_PATH}
+            DEPENDS Model_conv
+            VERBATIM COMMAND_EXPAND_LISTS)
+    add_custom_command(
             OUTPUT ${ASSET_OUTPUT} APPEND
-            COMMAND sqlite-shell ${ASSET_OUTPUT} "INSERT OR REPLACE INTO models(name, data) VALUES('${MODEL_NAME}', readfile('${PROJECT_SOURCE_DIR}/${MODEL_PATH}'))"
-            DEPENDS ${MODEL_PATH}
+            COMMAND sqlite-shell ${ASSET_OUTPUT} "INSERT OR REPLACE INTO models(name, data) VALUES('${MODEL_NAME}', readfile('${PROJECT_BINARY_DIR}/models/${MODEL_NAME}.model'))"
+            DEPENDS ${PROJECT_BINARY_DIR}/models/${MODEL_NAME}.model
+            DEPENDS sqlite-shell
             VERBATIM COMMAND_EXPAND_LISTS)
 endforeach()
 
 add_custom_target(Package_assets DEPENDS ${ASSET_OUTPUT})
-add_dependencies(Package_assets sqlite-shell)
-
 add_dependencies(Minote Package_assets)

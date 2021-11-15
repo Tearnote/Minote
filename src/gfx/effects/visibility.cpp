@@ -38,7 +38,7 @@ void Visibility::compile(vuk::PerThreadContext& _ptc) {
 }
 
 void Visibility::apply(vuk::RenderGraph& _rg, Texture2D _visbuf, Texture2D _depth,
-	Buffer<World> _world, DrawableInstanceList const& _instances, MeshBuffer const& _meshes) {
+	Buffer<World> _world, DrawableInstanceList const& _instances, ModelBuffer const& _models) {
 	
 	_rg.add_pass({
 		.name = nameAppend(_visbuf.name, "visibility"),
@@ -48,12 +48,12 @@ void Visibility::apply(vuk::RenderGraph& _rg, Texture2D _visbuf, Texture2D _dept
 			_instances.transforms.resource(vuk::eVertexRead),
 			_visbuf.resource(vuk::eColorWrite),
 			_depth.resource(vuk::eDepthStencilRW) },
-		.execute = [_visbuf, _world, &_instances, &_meshes](vuk::CommandBuffer& cmd) {
+		.execute = [_visbuf, _world, &_instances, &_models](vuk::CommandBuffer& cmd) {
 			
 			cmdSetViewportScissor(cmd, _visbuf.size());
-			cmd.bind_index_buffer(_meshes.indices, vuk::IndexType::eUint32)
+			cmd.bind_index_buffer(_models.indices, vuk::IndexType::eUint32)
 			   .bind_uniform_buffer(0, 0, _world)
-			   .bind_storage_buffer(0, 1, _meshes.vertices)
+			   .bind_storage_buffer(0, 1, _models.vertices)
 			   .bind_storage_buffer(0, 2, _instances.instances)
 			   .bind_storage_buffer(0, 3, _instances.transforms)
 			   .bind_graphics_pipeline("visibility");
@@ -65,7 +65,7 @@ void Visibility::apply(vuk::RenderGraph& _rg, Texture2D _visbuf, Texture2D _dept
 }
 
 void Visibility::applyMS(vuk::RenderGraph& _rg, Texture2DMS _visbuf, Texture2DMS _depth,
-	Buffer<World> _world, DrawableInstanceList const& _instances, MeshBuffer const& _meshes) {
+	Buffer<World> _world, DrawableInstanceList const& _instances, ModelBuffer const& _models) {
 	
 	_rg.add_pass({
 		.name = nameAppend(_visbuf.name, "visibility_ms"),
@@ -75,12 +75,12 @@ void Visibility::applyMS(vuk::RenderGraph& _rg, Texture2DMS _visbuf, Texture2DMS
 			_instances.transforms.resource(vuk::eVertexRead),
 			_visbuf.resource(vuk::eColorWrite),
 			_depth.resource(vuk::eDepthStencilRW) },
-		.execute = [_visbuf, _world, &_instances, &_meshes](vuk::CommandBuffer& cmd) {
+		.execute = [_visbuf, _world, &_instances, &_models](vuk::CommandBuffer& cmd) {
 			
 			cmdSetViewportScissor(cmd, _visbuf.size());
-			cmd.bind_index_buffer(_meshes.indices, vuk::IndexType::eUint32)
+			cmd.bind_index_buffer(_models.indices, vuk::IndexType::eUint32)
 			   .bind_uniform_buffer(0, 0, _world)
-			   .bind_storage_buffer(0, 1, _meshes.vertices)
+			   .bind_storage_buffer(0, 1, _models.vertices)
 			   .bind_storage_buffer(0, 2, _instances.instances)
 			   .bind_storage_buffer(0, 3, _instances.transforms)
 			   .bind_graphics_pipeline("visibility_ms");
