@@ -90,6 +90,9 @@ Vulkan::Vulkan(Window& _window) {
 	// Select physical device
 	
 	auto physicalDeviceFeatures = VkPhysicalDeviceFeatures{
+#if VK_VALIDATION
+		.robustBufferAccess = VK_TRUE,
+#endif //VK_VALIDATION
 		.geometryShader = VK_TRUE,
 		.multiDrawIndirect = VK_TRUE,
 		.shaderStorageImageWriteWithoutFormat = VK_TRUE };
