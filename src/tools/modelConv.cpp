@@ -47,16 +47,16 @@ int main(int argc, char const* argv[]) {
 	assert(indexAccessor.component_type == cgltf_component_type_r_16u ||
 	       indexAccessor.component_type == cgltf_component_type_r_32u);
 	assert(indexAccessor.type == cgltf_type_scalar);
-	auto indices = ivector<IndexType>();
+	auto rawIndices = pvector<u32>();
 	if (indexAccessor.component_type == cgltf_component_type_r_16u) {
 		
 		auto* indexTypedBuffer = reinterpret_cast<u16 const*>(indexBuffer);
-		indices.insert(indices.end(), indexTypedBuffer, indexTypedBuffer + indexAccessor.count);
+		rawIndices.insert(rawIndices.end(), indexTypedBuffer, indexTypedBuffer + indexAccessor.count);
 		
 	} else {
 		
 		auto* indexTypedBuffer = reinterpret_cast<u32 const*>(indexBuffer);
-		indices.insert(indices.end(), indexTypedBuffer, indexTypedBuffer + indexAccessor.count);
+		rawIndices.insert(rawIndices.end(), indexTypedBuffer, indexTypedBuffer + indexAccessor.count);
 		
 	}
 	
@@ -64,9 +64,9 @@ int main(int argc, char const* argv[]) {
 	
 	auto radius = -1.0f;
 	auto vertexCount = 0_zu;
-	auto vertices = static_cast<VertexType const*>(nullptr);
-	auto normals = static_cast<NormalType const*>(nullptr);
-	auto colors = static_cast<ColorType const*>(nullptr);
+	auto rawVertices = static_cast<vec3 const*>(nullptr);
+	auto rawNormals = static_cast<vec3 const*>(nullptr);
+	auto rawColors = static_cast<u16vec4 const*>(nullptr);
 	
 	for (auto attrIdx: iota(0_zu, primitive.attributes_count)) {
 		
@@ -89,7 +89,7 @@ int main(int argc, char const* argv[]) {
 			
 			radius = length(pfar);
 			vertexCount = accessor.count;
-			vertices = reinterpret_cast<vec3 const*>(buffer);
+			rawVertices = reinterpret_cast<vec3 const*>(buffer);
 			continue;
 			
 		}
@@ -101,7 +101,7 @@ int main(int argc, char const* argv[]) {
 			assert(accessor.component_type == cgltf_component_type_r_32f);
 			assert(accessor.type == cgltf_type_vec3);
 			
-			normals = reinterpret_cast<vec3 const*>(buffer);
+			rawNormals = reinterpret_cast<vec3 const*>(buffer);
 			continue;
 			
 		}
@@ -113,7 +113,7 @@ int main(int argc, char const* argv[]) {
 			assert(accessor.component_type == cgltf_component_type_r_16u);
 			assert(accessor.type == cgltf_type_vec4);
 			
-			colors = reinterpret_cast<u16vec4 const*>(buffer);
+			rawColors = reinterpret_cast<u16vec4 const*>(buffer);
 			continue;
 			
 		}
@@ -125,10 +125,33 @@ int main(int argc, char const* argv[]) {
 	
 	assert(indexCount > 0_zu);
 	assert(vertexCount > 0_zu);
-	assert(vertices);
-	assert(normals);
-	assert(colors);
+	assert(rawVertices);
+	assert(rawNormals);
+	assert(rawColors);
 	assert(radius > 0.0f);
+	
+	// Convert to model schema
+	
+	auto& indices = rawIndices;
+	auto* vertices = rawVertices;
+	auto* normals = rawNormals;
+	
+	auto colors = pvector<ColorType>(vertexCount);
+	for (auto i: iota(0_zu, vertexCount)) {
+		
+		auto color = vec4{
+			pow(f32(rawColors[i].r()) / f32(0xFFFF), 1.0f / 2.2f),
+			pow(f32(rawColors[i].g()) / f32(0xFFFF), 1.0f / 2.2f),
+			pow(f32(rawColors[i].b()) / f32(0xFFFF), 1.0f / 2.2f),
+			f32(rawColors[i].a()) / f32(0xFFFF) };
+		
+		colors[i] = ColorType{
+			u8(round(color.r() * f32(0xFF))),
+			u8(round(color.g() * f32(0xFF))),
+			u8(round(color.b() * f32(0xFF))),
+			u8(round(color.a() * f32(0xFF))) };
+		
+	}
 	
 	// Write to msgpack output
 	
@@ -152,7 +175,7 @@ int main(int argc, char const* argv[]) {
 	mpack_write_cstr(&modelWriter, "normals");
 	mpack_write_bin(&modelWriter, reinterpret_cast<const char*>(normals), vertexCount * sizeof(NormalType));
 	mpack_write_cstr(&modelWriter, "colors");
-	mpack_write_bin(&modelWriter, reinterpret_cast<const char*>(colors), vertexCount * sizeof(ColorType));
+	mpack_write_bin(&modelWriter, reinterpret_cast<const char*>(colors.data()), vertexCount * sizeof(ColorType));
 	mpack_write_cstr(&modelWriter, "radius");
 	mpack_write_float(&modelWriter, radius);
 	mpack_finish_map(&modelWriter);

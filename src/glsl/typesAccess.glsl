@@ -52,19 +52,15 @@ vec3 fetchNormal(uint _n) {
 
 vec4 fetchColor(uint _n) {
 	
-	uint base = _n * 2;
-	
-	uvec2 fetches = {
-		B_COLORS[base + 0],
-		B_COLORS[base + 1]};
+	uint colorPacked = B_COLORS[_n];
 	uvec4 uresult = {
-		u32Lower(fetches.x),
-		u32Upper(fetches.x),
-		u32Lower(fetches.y),
-		u32Upper(fetches.y),
-	};
+		(colorPacked >>  0) & bitmask(8),
+		(colorPacked >>  8) & bitmask(8),
+		(colorPacked >> 16) & bitmask(8),
+		(colorPacked >> 24) };
 	vec4 result = vec4(uresult);
-	result /= float(bitmask(16));
+	result /= float(0xFF);
+	result.rgb = pow(result.rgb, vec3(2.2));
 	
 	return result;
 	

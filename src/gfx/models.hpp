@@ -11,6 +11,7 @@
 #include "base/types.hpp"
 #include "base/math.hpp"
 #include "base/id.hpp"
+#include "tools/modelSchema.hpp"
 
 namespace minote::gfx {
 
@@ -34,11 +35,11 @@ static_assert(std::is_trivially_constructible_v<ModelDescriptor>);
 struct ModelBuffer {
 	
 	// These three are indexed together
-	Buffer<vec3> vertices;
-	Buffer<vec3> normals;
-	Buffer<u16vec4> colors;
+	Buffer<tools::VertexType> vertices;
+	Buffer<tools::NormalType> normals;
+	Buffer<tools::ColorType> colors;
 	
-	Buffer<u32> indices;
+	Buffer<tools::IndexType> indices;
 	
 	Buffer<ModelDescriptor> descriptors; // GPU-accessible model metadata
 	
@@ -63,10 +64,10 @@ private:
 	ivector<ModelDescriptor> m_descriptors;
 	hashmap<ID, usize> m_descriptorIDs;
 	
-	pvector<vec3> m_vertices;
-	pvector<vec3> m_normals;
-	pvector<u16vec4> m_colors;
-	pvector<u32> m_indices;
+	pvector<tools::VertexType> m_vertices;
+	pvector<tools::NormalType> m_normals;
+	pvector<tools::ColorType> m_colors;
+	pvector<tools::IndexType> m_indices;
 	
 };
 

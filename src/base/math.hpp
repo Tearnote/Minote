@@ -26,6 +26,7 @@ constexpr auto Tau = Tau_v<f32>;
 using gcem::min;
 using gcem::max;
 using gcem::abs;
+using gcem::round;
 using gcem::floor;
 using gcem::ceil;
 

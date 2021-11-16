@@ -9,7 +9,7 @@ using namespace base;
 using IndexType = u32;
 using VertexType = vec3;
 using NormalType = vec3;
-using ColorType = u16vec4;
+using ColorType = u8vec4;
 
 constexpr auto ModelElements = 8u;
 constexpr auto ModelFormat = 1u;
