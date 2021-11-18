@@ -8,6 +8,7 @@
 #include "base/math.hpp"
 #include "base/util.hpp"
 #include "tools/modelSchema.hpp"
+#include "tools/oct.hpp"
 
 using namespace minote;
 using namespace base;
@@ -134,7 +135,10 @@ int main(int argc, char const* argv[]) {
 	
 	auto& indices = rawIndices;
 	auto* vertices = rawVertices;
-	auto* normals = rawNormals;
+	
+	auto normals = pvector<NormalType>(vertexCount);
+	for (auto i: iota(0_zu, vertexCount))
+		normals[i] = octEncode(rawNormals[i]);
 	
 	auto colors = pvector<ColorType>(vertexCount);
 	for (auto i: iota(0_zu, vertexCount)) {
@@ -173,7 +177,7 @@ int main(int argc, char const* argv[]) {
 	mpack_write_cstr(&modelWriter, "vertices");
 	mpack_write_bin(&modelWriter, reinterpret_cast<const char*>(vertices), vertexCount * sizeof(VertexType));
 	mpack_write_cstr(&modelWriter, "normals");
-	mpack_write_bin(&modelWriter, reinterpret_cast<const char*>(normals), vertexCount * sizeof(NormalType));
+	mpack_write_bin(&modelWriter, reinterpret_cast<const char*>(normals.data()), vertexCount * sizeof(NormalType));
 	mpack_write_cstr(&modelWriter, "colors");
 	mpack_write_bin(&modelWriter, reinterpret_cast<const char*>(colors.data()), vertexCount * sizeof(ColorType));
 	mpack_write_cstr(&modelWriter, "radius");

@@ -29,6 +29,7 @@ using gcem::abs;
 using gcem::round;
 using gcem::floor;
 using gcem::ceil;
+using gcem::sgn;
 
 using gcem::pow;
 using gcem::sqrt;

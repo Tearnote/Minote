@@ -39,7 +39,7 @@ layout (binding = 6, std430) restrict readonly buffer Vertices {
 	float B_VERTICES[];
 };
 layout (binding = 7, std430) restrict readonly buffer Normals {
-	float B_NORMALS[];
+	uint B_NORMALS[];
 };
 layout (binding = 8, std430) restrict readonly buffer VtxColors {
 	uint B_COLORS[];

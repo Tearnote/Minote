@@ -8,8 +8,10 @@ using namespace base;
 
 using IndexType = u32;
 using VertexType = vec3;
-using NormalType = vec3;
+using NormalType = u32; // u24 lower bits, highest u8 unused
 using ColorType = u8vec4;
+
+constexpr auto NormalOctWidth = 16u;
 
 constexpr auto ModelElements = 8u;
 constexpr auto ModelFormat = 1u;

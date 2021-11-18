@@ -35,14 +35,29 @@ vec3 fetchVertex(uint _n) {
 
 #ifdef B_NORMALS
 
+const uint NormalOctWidth = 16;
+
+vec3 octDecode(uint _oct) {
+	
+	uint mu = (1u << NormalOctWidth) - 1u;
+	
+	uvec2 d = uvec2(_oct, _oct >> NormalOctWidth) & mu;
+	vec2 v = vec2(d) / float(mu);
+	
+	v = v * 2.0 - 1.0;
+	vec3 norm = vec3(v, 1.0 - abs(v.x) - abs(v.y));
+	float t = max(-norm.z, 0.0);
+	norm.x += (norm.x > 0.0)? -t : t;
+	norm.y += (norm.y > 0.0)? -t : t;
+	
+	return normalize(norm);
+	
+}
+
 vec3 fetchNormal(uint _n) {
 	
-	uint base = _n * 3;
-	
-	return vec3(
-		B_NORMALS[base + 0],
-		B_NORMALS[base + 1],
-		B_NORMALS[base + 2]);
+	uint octNormal = B_NORMALS[_n];
+	return octDecode(octNormal);
 	
 }
 
