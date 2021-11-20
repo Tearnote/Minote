@@ -17,34 +17,44 @@ namespace minote::gfx {
 
 using namespace base;
 
-// Model metadata structure, for vertex access and analysis
-struct ModelDescriptor {
+struct Material {
 	
-	u32 indexOffset;
-	u32 indexCount;
-	u32 vertexOffset;
-	f32 radius;
+	enum struct Type: u32 {
+		None = 0, // Background - typically used for sky
+		PBR = 1,
+		Count
+	};
+	
+	vec4 color;
+	u32 id;
+	f32 metalness;
+	f32 roughness;
+	u32 pad0;
 	
 };
 
-// Ensure fast operation in large containers
-static_assert(std::is_trivially_constructible_v<ModelDescriptor>);
+using MaterialType = Material::Type;
+
+struct Mesh {
+	u32 indexOffset;
+	u32 indexCount;
+	u32 materialIdx;
+	f32 radius;
+};
 
 // A set of buffers storing vertex data for all models, and how to access each
 // model within the buffer.
 struct ModelBuffer {
 	
-	// These three are indexed together
+	Buffer<Material> materials;
+	Buffer<tools::IndexType> indices;
 	Buffer<tools::VertexType> vertices;
 	Buffer<tools::NormalType> normals;
-	Buffer<tools::ColorType> colors;
 	
-	Buffer<tools::IndexType> indices;
+	Buffer<Mesh> meshes;
 	
-	Buffer<ModelDescriptor> descriptors; // GPU-accessible model metadata
-	
-	ivector<ModelDescriptor> cpu_descriptors; // CPU-side model metadata
-	hashmap<ID, usize> cpu_descriptorIDs; // Mapping from IDs to descriptor buffer indices
+	hashmap<ID, ivector<u32, 16>> cpu_modelMeshes;
+	ivector<Mesh> cpu_meshes;
 	
 };
 
@@ -61,13 +71,15 @@ struct ModelList {
 	
 private:
 	
-	ivector<ModelDescriptor> m_descriptors;
-	hashmap<ID, usize> m_descriptorIDs;
-	
+	pvector<Material> m_materials;
+	pvector<tools::IndexType> m_indices;
 	pvector<tools::VertexType> m_vertices;
 	pvector<tools::NormalType> m_normals;
-	pvector<tools::ColorType> m_colors;
-	pvector<tools::IndexType> m_indices;
+	
+	// Mapping from model ID to a list of mesh indices
+	hashmap<ID, ivector<u32, 16>> m_modelMeshes;
+	ivector<Mesh> m_meshes;
+	
 	
 };
 

@@ -18,9 +18,9 @@ auto octEncode(vec3 _norm) -> u32 {
 			(1.0f - abs(_norm.x())) * (_norm.y() >= 0.0f? 1.0f : -1.0f) };
 	auto v = vec2(0.5f) + wrapped * 0.5f;
 	
-	auto mu = (1u << NormalOctWidth) - 1u;
+	auto mu = (1u << NormalOctBits) - 1u;
 	auto d = v * f32(mu) + vec2(0.5f);
-	return u32(floor(d.x())) | (u32(floor(d.y())) << NormalOctWidth);
+	return u32(floor(d.x())) | (u32(floor(d.y())) << NormalOctBits);
 	
 }
 

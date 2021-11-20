@@ -9,8 +9,8 @@
 #include "gfx/resources/buffer.hpp"
 #include "gfx/resources/pool.hpp"
 #include "gfx/effects/instanceList.hpp"
-#include "gfx/materials.hpp"
 #include "gfx/objects.hpp"
+#include "gfx/models.hpp"
 #include "gfx/world.hpp"
 #include "gfx/util.hpp"
 
@@ -45,10 +45,10 @@ struct Worklist {
 	static void compile(vuk::PerThreadContext&);
 	
 	static auto create(Pool&, vuk::RenderGraph&, vuk::Name, Texture2D visbuf,
-		DrawableInstanceList const&, MaterialBuffer const&) -> Worklist;
+		DrawableInstanceList const&, ModelBuffer const&) -> Worklist;
 	
 	static auto createMS(Pool&, vuk::RenderGraph&, vuk::Name, Texture2DMS visbuf,
-		DrawableInstanceList const&, MaterialBuffer const&) -> Worklist;
+		DrawableInstanceList const&, ModelBuffer const&) -> Worklist;
 	
 };
 

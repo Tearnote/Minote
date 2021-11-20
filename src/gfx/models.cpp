@@ -20,60 +20,96 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 	
 	ZoneScoped;
 	
-	// Insert model descriptor
+	// Insert the mesh descriptor
 	
-	m_descriptorIDs.emplace(_name, m_descriptors.size());
-	auto& desc = m_descriptors.emplace_back(ModelDescriptor{
-		.indexOffset = u32(m_indices.size()),
-		.vertexOffset = u32(m_vertices.size()) });
+	auto meshList = ivector<u32, 16>();
+	meshList.emplace_back(m_meshes.size());
+	m_modelMeshes.emplace(_name, std::move(meshList));
+	auto& mesh = m_meshes.emplace_back();
+	mesh.indexOffset = m_indices.size();
+	auto vertexOffset = m_vertices.size();
+	mesh.materialIdx = m_materials.size();
 	
 	// Load model data
 	
-	auto modelReader = mpack_reader_t();
-	mpack_reader_init_data(&modelReader, _model.data(), _model.size_bytes());
+	auto model = mpack_reader_t();
+	mpack_reader_init_data(&model, _model.data(), _model.size_bytes());
+	mpack_expect_map_match(&model, 3);
 	
-	mpack_expect_map_match(&modelReader, ModelElements);
-	mpack_expect_cstr_match(&modelReader, "format");
-	if (auto format = mpack_expect_u32(&modelReader); format != ModelFormat)
+	mpack_expect_cstr_match(&model, "format");
+	if (auto format = mpack_expect_u32(&model); format != ModelFormat)
 		throw runtime_error_fmt("Unexpected model format: got {}, expected {}", format, ModelFormat);
 	
-	mpack_expect_cstr_match(&modelReader, "indexCount");
-	auto indexCount = mpack_expect_u32(&modelReader);
-	mpack_expect_cstr_match(&modelReader, "vertexCount");
-	auto vertexCount = mpack_expect_u32(&modelReader);
+	// Load the materials
 	
-	auto indicesSize = m_indices.size();
-	m_indices.resize(m_indices.size() + indexCount);
-	auto indicesIt = &m_indices[indicesSize];
-	mpack_expect_cstr_match(&modelReader, "indices");
-	mpack_expect_bin_size_buf(&modelReader, reinterpret_cast<char*>(indicesIt), indexCount * sizeof(IndexType));
+	auto& material = m_materials.emplace_back();
+	material.id = +MaterialType::PBR;
 	
-	auto verticesSize = m_vertices.size();
-	m_vertices.resize(m_vertices.size() + vertexCount);
-	auto verticesIt = &m_vertices[verticesSize];
-	mpack_expect_cstr_match(&modelReader, "vertices");
-	mpack_expect_bin_size_buf(&modelReader, reinterpret_cast<char*>(verticesIt), vertexCount * sizeof(VertexType));
+	mpack_expect_cstr_match(&model, "materials");
+	auto materialCount = mpack_expect_array(&model);
+	assert(materialCount == 1);
+	mpack_expect_map_match(&model, 3);
+		
+		mpack_expect_cstr_match(&model, "color");
+		mpack_expect_array_match(&model, 4);
+		material.color[0] = mpack_expect_float(&model);
+		material.color[1] = mpack_expect_float(&model);
+		material.color[2] = mpack_expect_float(&model);
+		material.color[3] = mpack_expect_float(&model);
+		mpack_done_array(&model);
+		
+		mpack_expect_cstr_match(&model, "metalness");
+		material.metalness = mpack_expect_float(&model);
+		mpack_expect_cstr_match(&model, "roughness");
+		material.roughness = mpack_expect_float(&model);
+		
+	mpack_done_map(&model);
+	mpack_done_array(&model);
 	
-	auto normalsSize = m_normals.size();
-	m_normals.resize(m_normals.size() + vertexCount);
-	auto normalsIt = &m_normals[normalsSize];
-	mpack_expect_cstr_match(&modelReader, "normals");
-	mpack_expect_bin_size_buf(&modelReader, reinterpret_cast<char*>(normalsIt), vertexCount * sizeof(NormalType));
+	// Load the meshes
 	
-	auto colorsSize = m_colors.size();
-	m_colors.resize(m_colors.size() + vertexCount);
-	auto colorsIt = &m_colors[colorsSize];
-	mpack_expect_cstr_match(&modelReader, "colors");
-	mpack_expect_bin_size_buf(&modelReader, reinterpret_cast<char*>(colorsIt), vertexCount * sizeof(ColorType));
+	mpack_expect_cstr_match(&model, "meshes");
+	auto meshCount = mpack_expect_array(&model);
+	assert(meshCount == 1);
+	mpack_expect_map_match(&model, 7);
+		
+		mpack_expect_cstr_match(&model, "materialIdx");
+		auto materialIdx = mpack_expect_u32(&model);
+		assert(materialIdx == 0);
+		
+		mpack_expect_cstr_match(&model, "radius");
+		mesh.radius = mpack_expect_float(&model);
+		
+		mpack_expect_cstr_match(&model, "indexCount");
+		auto indexCount = mpack_expect_u32(&model);
+		mesh.indexCount = indexCount;
+		mpack_expect_cstr_match(&model, "vertexCount");
+		auto vertexCount = mpack_expect_u32(&model);
+		
+		auto indices = pvector<IndexType>(indexCount);
+		mpack_expect_cstr_match(&model, "indices");
+		mpack_expect_bin_size_buf(&model, reinterpret_cast<char*>(indices.data()), indexCount * sizeof(IndexType));
+		for(auto& index : indices)
+			index += vertexOffset; // Remove the need to use an offset in shaders
+		m_indices.insert(m_indices.end(), indices.begin(), indices.end());
+		
+		auto verticesSize = m_vertices.size();
+		m_vertices.resize(m_vertices.size() + vertexCount);
+		auto verticesIt = &m_vertices[verticesSize];
+		mpack_expect_cstr_match(&model, "vertices");
+		mpack_expect_bin_size_buf(&model, reinterpret_cast<char*>(verticesIt), vertexCount * sizeof(VertexType));
+		
+		auto normalsSize = m_normals.size();
+		m_normals.resize(m_normals.size() + vertexCount);
+		auto normalsIt = &m_normals[normalsSize];
+		mpack_expect_cstr_match(&model, "normals");
+		mpack_expect_bin_size_buf(&model, reinterpret_cast<char*>(normalsIt), vertexCount * sizeof(NormalType));
+		
+	mpack_done_map(&model);
+	mpack_done_array(&model);
 	
-	mpack_expect_cstr_match(&modelReader, "radius");
-	auto radius = mpack_expect_float(&modelReader);
-	
-	mpack_done_map(&modelReader);
-	mpack_reader_destroy(&modelReader);
-	
-	desc.indexCount = indexCount;
-	desc.radius = radius;
+	mpack_done_map(&model);
+	mpack_reader_destroy(&model);
 	
 	L_DEBUG("Loaded model {}", _name);
 	
@@ -84,35 +120,35 @@ auto ModelList::upload(Pool& _pool, vuk::Name _name) && -> ModelBuffer {
 	ZoneScoped;
 	
 	auto result = ModelBuffer{
+		.materials = Buffer<Material>::make(_pool, nameAppend(_name, "materials"),
+			vuk::BufferUsageFlagBits::eStorageBuffer,
+			m_materials, vuk::MemoryUsage::eGPUonly),
+		.indices = Buffer<IndexType>::make(_pool, nameAppend(_name, "indices"),
+			vuk::BufferUsageFlagBits::eIndexBuffer |
+			vuk::BufferUsageFlagBits::eStorageBuffer,
+			m_indices, vuk::MemoryUsage::eGPUonly),
 		.vertices = Buffer<VertexType>::make(_pool, nameAppend(_name, "vertices"),
 			vuk::BufferUsageFlagBits::eStorageBuffer,
 			m_vertices, vuk::MemoryUsage::eGPUonly),
 		.normals = Buffer<NormalType>::make(_pool, nameAppend(_name, "normals"),
 			vuk::BufferUsageFlagBits::eStorageBuffer,
 			m_normals, vuk::MemoryUsage::eGPUonly),
-		.colors = Buffer<ColorType>::make(_pool, nameAppend(_name, "colors"),
+		.meshes = Buffer<Mesh>::make(_pool, nameAppend(_name, "meshes"),
 			vuk::BufferUsageFlagBits::eStorageBuffer,
-			m_colors, vuk::MemoryUsage::eGPUonly),
-		.indices = Buffer<IndexType>::make(_pool, nameAppend(_name, "indices"),
-			vuk::BufferUsageFlagBits::eIndexBuffer |
-			vuk::BufferUsageFlagBits::eStorageBuffer,
-			m_indices, vuk::MemoryUsage::eGPUonly),
-		.descriptors = Buffer<ModelDescriptor>::make(_pool, nameAppend(_name, "descriptors"),
-			vuk::BufferUsageFlagBits::eStorageBuffer,
-			m_descriptors, vuk::MemoryUsage::eGPUonly),
-		.cpu_descriptorIDs = std::move(m_descriptorIDs) };
-	result.cpu_descriptors = std::move(m_descriptors); // Must still exist for descriptors creation
+			m_meshes, vuk::MemoryUsage::eGPUonly),
+		.cpu_modelMeshes = std::move(m_modelMeshes) };
+	result.cpu_meshes = std::move(m_meshes); // Must still exist for .meshes creation
 	
 	// Clean up in case this isn't a temporary
 	
+	m_materials.clear();
+	m_materials.shrink_to_fit();
+	m_indices.clear();
+	m_indices.shrink_to_fit();
 	m_vertices.clear();
 	m_vertices.shrink_to_fit();
 	m_normals.clear();
 	m_normals.shrink_to_fit();
-	m_colors.clear();
-	m_colors.shrink_to_fit();
-	m_indices.clear();
-	m_indices.shrink_to_fit();
 	
 	return result;
 	

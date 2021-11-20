@@ -36,6 +36,28 @@ int main(int argc, char const* argv[]) {
 	assert(gltf->meshes->primitives_count == 1);
 	auto& primitive = *gltf->meshes->primitives;
 	
+	// Fetch material
+	
+	auto color = vec4(1.0f);
+	auto pbrMetalness = 0.0f;
+	auto pbrRoughness = 0.0f;
+	if (auto* material = primitive.material; material && material->has_pbr_metallic_roughness) {
+		
+		auto& pbr = material->pbr_metallic_roughness;
+		color = vec4{
+			pbr.base_color_factor[0],
+			pbr.base_color_factor[1],
+			pbr.base_color_factor[2],
+			pbr.base_color_factor[3] };
+		pbrMetalness = pbr.metallic_factor;
+		pbrRoughness = pbr.roughness_factor;
+		
+	} else {
+		
+		fmt::print(stderr, "WARNING: Material data not present in model\n");
+		
+	}
+	
 	// Fetch index data
 	
 	assert(primitive.indices);
@@ -67,7 +89,6 @@ int main(int argc, char const* argv[]) {
 	auto vertexCount = 0_zu;
 	auto rawVertices = static_cast<vec3 const*>(nullptr);
 	auto rawNormals = static_cast<vec3 const*>(nullptr);
-	auto rawColors = static_cast<u16vec4 const*>(nullptr);
 	
 	for (auto attrIdx: iota(0_zu, primitive.attributes_count)) {
 		
@@ -107,20 +128,8 @@ int main(int argc, char const* argv[]) {
 			
 		}
 		
-		// Vertex colors
-		
-		if (std::strcmp(primitive.attributes[attrIdx].name, "COLOR_0") == 0) {
-			
-			assert(accessor.component_type == cgltf_component_type_r_16u);
-			assert(accessor.type == cgltf_type_vec4);
-			
-			rawColors = reinterpret_cast<u16vec4 const*>(buffer);
-			continue;
-			
-		}
-		
 		// Unknown attribute
-		fmt::print(stderr, "WARNING: Unknown attribute: {}", primitive.attributes[attrIdx].name);
+		fmt::print(stderr, "WARNING: Unknown attribute: {}\n", primitive.attributes[attrIdx].name);
 		
 	}
 	
@@ -128,7 +137,6 @@ int main(int argc, char const* argv[]) {
 	assert(vertexCount > 0_zu);
 	assert(rawVertices);
 	assert(rawNormals);
-	assert(rawColors);
 	assert(radius > 0.0f);
 	
 	// Convert to model schema
@@ -140,51 +148,55 @@ int main(int argc, char const* argv[]) {
 	for (auto i: iota(0_zu, vertexCount))
 		normals[i] = octEncode(rawNormals[i]);
 	
-	auto colors = pvector<ColorType>(vertexCount);
-	for (auto i: iota(0_zu, vertexCount)) {
-		
-		auto color = vec4{
-			pow(f32(rawColors[i].r()) / f32(0xFFFF), 1.0f / 2.2f),
-			pow(f32(rawColors[i].g()) / f32(0xFFFF), 1.0f / 2.2f),
-			pow(f32(rawColors[i].b()) / f32(0xFFFF), 1.0f / 2.2f),
-			f32(rawColors[i].a()) / f32(0xFFFF) };
-		
-		colors[i] = ColorType{
-			u8(round(color.r() * f32(0xFF))),
-			u8(round(color.g() * f32(0xFF))),
-			u8(round(color.b() * f32(0xFF))),
-			u8(round(color.a() * f32(0xFF))) };
-		
-	}
-	
 	// Write to msgpack output
 	
 	auto const* outputPath = argv[2];
-	auto modelWriter = mpack_writer_t();
-	mpack_writer_init_filename(&modelWriter, outputPath);
-	if (modelWriter.error != mpack_ok)
-		throw runtime_error_fmt(R"(Failed to open output file "{}" for writing: error code {})", outputPath, modelWriter.error);
+	auto model = mpack_writer_t();
+	mpack_writer_init_filename(&model, outputPath);
+	if (model.error != mpack_ok)
+		throw runtime_error_fmt(R"(Failed to open output file "{}" for writing: error code {})", outputPath, model.error);
 	
-	mpack_start_map(&modelWriter, ModelElements);
-	mpack_write_cstr(&modelWriter, "format");
-	mpack_write_u32(&modelWriter, ModelFormat);
-	mpack_write_cstr(&modelWriter, "indexCount");
-	mpack_write_u32(&modelWriter, indexCount);
-	mpack_write_cstr(&modelWriter, "vertexCount");
-	mpack_write_u32(&modelWriter, vertexCount);
-	mpack_write_cstr(&modelWriter, "indices");
-	mpack_write_bin(&modelWriter, reinterpret_cast<const char*>(indices.data()), indexCount * sizeof(IndexType));
-	mpack_write_cstr(&modelWriter, "vertices");
-	mpack_write_bin(&modelWriter, reinterpret_cast<const char*>(vertices), vertexCount * sizeof(VertexType));
-	mpack_write_cstr(&modelWriter, "normals");
-	mpack_write_bin(&modelWriter, reinterpret_cast<const char*>(normals.data()), vertexCount * sizeof(NormalType));
-	mpack_write_cstr(&modelWriter, "colors");
-	mpack_write_bin(&modelWriter, reinterpret_cast<const char*>(colors.data()), vertexCount * sizeof(ColorType));
-	mpack_write_cstr(&modelWriter, "radius");
-	mpack_write_float(&modelWriter, radius);
-	mpack_finish_map(&modelWriter);
+	mpack_start_map(&model, 3);
+		mpack_write_cstr(&model, "format");
+		mpack_write_u32(&model, ModelFormat);
+		mpack_write_cstr(&model, "materials");
+		mpack_start_array(&model, 1);
+			mpack_start_map(&model, 3);
+				mpack_write_cstr(&model, "color");
+				mpack_start_array(&model, 4);
+					mpack_write_float(&model, color.r());
+					mpack_write_float(&model, color.g());
+					mpack_write_float(&model, color.b());
+					mpack_write_float(&model, color.a());
+				mpack_finish_array(&model);
+				mpack_write_cstr(&model, "metalness");
+				mpack_write_float(&model, pbrMetalness);
+				mpack_write_cstr(&model, "roughness");
+				mpack_write_float(&model, pbrRoughness);
+			mpack_finish_map(&model);
+		mpack_finish_array(&model);
+		mpack_write_cstr(&model, "meshes");
+		mpack_start_array(&model, 1);
+			mpack_start_map(&model, 7);
+				mpack_write_cstr(&model, "materialIdx");
+				mpack_write_u32(&model, 0);
+				mpack_write_cstr(&model, "radius");
+				mpack_write_float(&model, radius);
+				mpack_write_cstr(&model, "indexCount");
+				mpack_write_u32(&model, indexCount);
+				mpack_write_cstr(&model, "vertexCount");
+				mpack_write_u32(&model, vertexCount);
+				mpack_write_cstr(&model, "indices");
+				mpack_write_bin(&model, reinterpret_cast<const char*>(indices.data()), indexCount * sizeof(IndexType));
+				mpack_write_cstr(&model, "vertices");
+				mpack_write_bin(&model, reinterpret_cast<const char*>(vertices), vertexCount * sizeof(VertexType));
+				mpack_write_cstr(&model, "normals");
+				mpack_write_bin(&model, reinterpret_cast<const char*>(normals.data()), vertexCount * sizeof(NormalType));
+			mpack_finish_map(&model);
+		mpack_finish_array(&model);
+	mpack_finish_map(&model);
 	
-	if (auto error = mpack_writer_destroy(&modelWriter); error != mpack_ok)
+	if (auto error = mpack_writer_destroy(&model); error != mpack_ok)
 		throw runtime_error_fmt(R"(Failed to write output file "{}": error code {})", outputPath, error);
 	
 	return 0;

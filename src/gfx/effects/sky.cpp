@@ -4,8 +4,8 @@
 #include "base/containers/array.hpp"
 #include "base/types.hpp"
 #include "base/util.hpp"
-#include "gfx/materials.hpp"
 #include "gfx/samplers.hpp"
+#include "gfx/models.hpp"
 #include "gfx/util.hpp"
 
 namespace minote::gfx {

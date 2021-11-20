@@ -7,7 +7,6 @@
 #include "gfx/effects/instanceList.hpp"
 #include "gfx/effects/visibility.hpp"
 #include "gfx/effects/sky.hpp"
-#include "gfx/materials.hpp"
 #include "gfx/models.hpp"
 #include "gfx/world.hpp"
 
@@ -19,13 +18,13 @@ struct PBR {
 	static void compile(vuk::PerThreadContext&);
 	
 	static void apply(vuk::RenderGraph&, Texture2D color, Texture2D visbuf,
-		Worklist const&, Buffer<World>, ModelBuffer const&, MaterialBuffer const&,
-		DrawableInstanceList const&, Cubemap ibl, Buffer<vec3> sunLuminance, Texture3D aerialPerspective);
+		Worklist const&, Buffer<World>, ModelBuffer const&, DrawableInstanceList const&,
+		Cubemap ibl, Buffer<vec3> sunLuminance, Texture3D aerialPerspective);
 	
 	static void applyQuad(vuk::RenderGraph&, Texture2D color, Texture2D velocity,
 		Texture2D quadbuf, Worklist const&, Buffer<World>, ModelBuffer const&,
-		MaterialBuffer const&, DrawableInstanceList const&, Cubemap ibl,
-		Buffer<vec3> sunLuminance, Texture3D aerialPerspective);
+		DrawableInstanceList const&, Cubemap ibl, Buffer<vec3> sunLuminance,
+		Texture3D aerialPerspective);
 	
 };
 

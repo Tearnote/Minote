@@ -30,17 +30,15 @@ struct Command {
 };
 
 // Index and vertex locations for drawing a specific model
-struct ModelDescriptor {
+struct Mesh {
 	uint indexOffset;
 	uint indexCount;
-	uint vertexOffset;
+	uint materialIdx;
 	float radius; // Distance from origin to furthest vertex
 };
 
 struct Instance {
-	uint modelIdx;
-	uint materialIdx;
-	uint colorIdx;
+	uint meshIdx;
 	uint transformIdx;
 };
 
@@ -54,9 +52,10 @@ struct BasicTransform {
 };
 
 struct Material {
+	vec4 color;
 	uint id;
-	float roughness;
 	float metalness;
+	float roughness;
 	uint pad0;
 };
 

@@ -9,7 +9,6 @@
 #include "gfx/resources/cubemap.hpp"
 #include "gfx/resources/pool.hpp"
 #include "gfx/effects/sky.hpp"
-#include "gfx/materials.hpp"
 #include "gfx/objects.hpp"
 #include "gfx/models.hpp"
 #include "gfx/camera.hpp"
@@ -32,7 +31,7 @@ struct Engine {
 		m_framerate(0.0f), m_lastFramerateCheck(0), m_framesSinceLastCheck(0) {}
 	~Engine();
 	
-	void init(ModelList&&, MaterialList&&);
+	void init(ModelList&&);
 	
 	// Render all objects to the screen. If repaint is false, the function will
 	// only render it no other thread is currently rendering. Otherwise it will
@@ -71,7 +70,6 @@ private:
 	
 	ImguiData m_imguiData;
 	ModelBuffer m_models;
-	MaterialBuffer m_materials;
 	ObjectPool m_objects;
 	Camera m_camera;
 	

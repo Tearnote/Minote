@@ -4,7 +4,6 @@
 #include "base/types.hpp"
 #include "base/math.hpp"
 #include "gfx/resources/buffer.hpp"
-#include "gfx/materials.hpp"
 #include "gfx/objects.hpp"
 #include "gfx/models.hpp"
 
@@ -18,9 +17,7 @@ struct BasicInstanceList {
 	using BasicTransform = ObjectPool::Transform;
 	
 	struct Instance {
-		u32 modelIdx;
-		u32 materialIdx;
-		u32 colorIdx;
+		u32 meshIdx;
 		u32 transformIdx;
 	};
 	
@@ -32,7 +29,7 @@ struct BasicInstanceList {
 	Buffer<BasicTransform> basicTransforms;
 	
 	static auto upload(Pool&, vuk::RenderGraph&, vuk::Name, ObjectPool const&,
-		ModelBuffer const&, MaterialBuffer const&) -> BasicInstanceList;
+		ModelBuffer const&) -> BasicInstanceList;
 	
 	[[nodiscard]]
 	auto capacity() const -> usize { return MaxInstances; }

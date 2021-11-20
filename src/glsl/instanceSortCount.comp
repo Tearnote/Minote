@@ -21,7 +21,7 @@ void main() {
 	if (gid >= u_instanceCount.w)
 		return;
 	
-	uint modelIdx = b_instances[gid].modelIdx;
-	atomicAdd(b_commands[modelIdx].instanceCount, 1);
+	uint meshIdx = b_instances[gid].meshIdx;
+	atomicAdd(b_commands[meshIdx].instanceCount, 1);
 	
 }

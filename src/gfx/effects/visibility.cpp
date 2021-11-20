@@ -108,7 +108,7 @@ void Worklist::compile(vuk::PerThreadContext& _ptc) {
 }
 
 auto Worklist::create(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
-	Texture2D _visbuf, DrawableInstanceList const& _instances, MaterialBuffer const& _materials) -> Worklist {
+	Texture2D _visbuf, DrawableInstanceList const& _instances, ModelBuffer const& _models) -> Worklist {
 	
 	auto result = Worklist();
 	
@@ -143,13 +143,14 @@ auto Worklist::create(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
 			_instances.instances.resource(vuk::eComputeRead),
 			result.counts.resource(vuk::eComputeRW),
 			result.lists.resource(vuk::eComputeWrite) },
-		.execute = [result, _visbuf, &_instances, &_materials](vuk::CommandBuffer& cmd) {
+		.execute = [result, _visbuf, &_instances, &_models](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_sampled_image(0, 0, _visbuf, NearestClamp)
 			   .bind_storage_buffer(0, 1, _instances.instances)
-			   .bind_storage_buffer(0, 2, _materials.materials)
-			   .bind_storage_buffer(0, 3, result.counts)
-			   .bind_storage_buffer(0, 4, result.lists)
+			   .bind_storage_buffer(0, 2, _models.meshes)
+			   .bind_storage_buffer(0, 3, _models.materials)
+			   .bind_storage_buffer(0, 4, result.counts)
+			   .bind_storage_buffer(0, 5, result.lists)
 			   .bind_compute_pipeline("worklist");
 			
 			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_visbuf.size()));
@@ -164,7 +165,7 @@ auto Worklist::create(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
 }
 
 auto Worklist::createMS(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
-	Texture2DMS _visbuf, DrawableInstanceList const& _instances, MaterialBuffer const& _materials) -> Worklist {
+	Texture2DMS _visbuf, DrawableInstanceList const& _instances, ModelBuffer const& _models) -> Worklist {
 	
 	auto result = Worklist();
 	
@@ -199,13 +200,14 @@ auto Worklist::createMS(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
 			_instances.instances.resource(vuk::eComputeRead),
 			result.counts.resource(vuk::eComputeRW),
 			result.lists.resource(vuk::eComputeWrite) },
-		.execute = [result, _visbuf, &_instances, &_materials](vuk::CommandBuffer& cmd) {
+		.execute = [result, _visbuf, &_instances, &_models](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_sampled_image(0, 0, _visbuf, NearestClamp)
 			   .bind_storage_buffer(0, 1, _instances.instances)
-			   .bind_storage_buffer(0, 2, _materials.materials)
-			   .bind_storage_buffer(0, 3, result.counts)
-			   .bind_storage_buffer(0, 4, result.lists)
+			   .bind_storage_buffer(0, 2, _models.meshes)
+			   .bind_storage_buffer(0, 3, _models.materials)
+			   .bind_storage_buffer(0, 4, result.counts)
+			   .bind_storage_buffer(0, 5, result.lists)
 			   .bind_compute_pipeline("worklist_ms");
 			
 			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_visbuf.size()));

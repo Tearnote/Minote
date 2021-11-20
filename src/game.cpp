@@ -10,7 +10,6 @@
 #include "base/math.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"
-#include "gfx/materials.hpp"
 #include "gfx/models.hpp"
 #include "assets.hpp"
 #include "main.hpp"
@@ -43,71 +42,9 @@ void game(GameParams const& _params) try {
 		
 	});
 	
-	auto materialList = gfx::MaterialList();
-	materialList.addMaterial("matte"_id, gfx::MaterialPBR::make({
-		.roughness = 0.6f,
-		.metalness = 0.0f }));
-	materialList.addMaterial("shiny"_id, gfx::MaterialPBR::make({
-		.roughness = 0.2f,
-		.metalness = 1.0f }));
-	materialList.addMaterial("plastic0"_id, gfx::MaterialPBR::make({
-		.roughness = 0.0f,
-		.metalness = 0.0f }));
-	materialList.addMaterial("plastic1"_id, gfx::MaterialPBR::make({
-		.roughness = 0.125f,
-		.metalness = 0.0f }));
-	materialList.addMaterial("plastic2"_id, gfx::MaterialPBR::make({
-		.roughness = 0.25f,
-		.metalness = 0.0f }));
-	materialList.addMaterial("plastic3"_id, gfx::MaterialPBR::make({
-		.roughness = 0.375f,
-		.metalness = 0.0f }));
-	materialList.addMaterial("plastic4"_id, gfx::MaterialPBR::make({
-		.roughness = 0.5f,
-		.metalness = 0.0f }));
-	materialList.addMaterial("plastic5"_id, gfx::MaterialPBR::make({
-		.roughness = 0.625f,
-		.metalness = 0.0f }));
-	materialList.addMaterial("plastic6"_id, gfx::MaterialPBR::make({
-		.roughness = 0.75f,
-		.metalness = 0.0f }));
-	materialList.addMaterial("plastic7"_id, gfx::MaterialPBR::make({
-		.roughness = 0.875f,
-		.metalness = 0.0f }));
-	materialList.addMaterial("plastic8"_id, gfx::MaterialPBR::make({
-		.roughness = 0.875f,
-		.metalness = 1.0f }));
-	materialList.addMaterial("metal0"_id, gfx::MaterialPBR::make({
-		.roughness = 0.0f,
-		.metalness = 1.0f }));
-	materialList.addMaterial("metal1"_id, gfx::MaterialPBR::make({
-		.roughness = 0.125f,
-		.metalness = 1.0f }));
-	materialList.addMaterial("metal2"_id, gfx::MaterialPBR::make({
-		.roughness = 0.25f,
-		.metalness = 1.0f }));
-	materialList.addMaterial("metal3"_id, gfx::MaterialPBR::make({
-		.roughness = 0.375f,
-		.metalness = 1.0f }));
-	materialList.addMaterial("metal4"_id, gfx::MaterialPBR::make({
-		.roughness = 0.5f,
-		.metalness = 1.0f }));
-	materialList.addMaterial("metal5"_id, gfx::MaterialPBR::make({
-		.roughness = 0.625f,
-		.metalness = 1.0f }));
-	materialList.addMaterial("metal6"_id, gfx::MaterialPBR::make({
-		.roughness = 0.75f,
-		.metalness = 1.0f }));
-	materialList.addMaterial("metal7"_id, gfx::MaterialPBR::make({
-		.roughness = 0.875f,
-		.metalness = 1.0f }));
-	materialList.addMaterial("metal8"_id, gfx::MaterialPBR::make({
-		.roughness = 0.875f,
-		.metalness = 1.0f }));
-	
 	// Initialize the engine
 	
-	engine.init(std::move(modelList), std::move(materialList));
+	engine.init(std::move(modelList));
 	
 	engine.camera() = gfx::Camera{
 		.position = {8.2_m, -11.2_m, 64.3_m},
@@ -135,7 +72,6 @@ void game(GameParams const& _params) try {
 	};
 	
 	constexpr auto prescale = vec3{1_m, 1_m, 1_m};
-	constexpr auto rotation = quat::angleAxis(180_deg, {1.0f, 0.0f, 0.0f});
 	constexpr auto Expand = 0u;
 	constexpr auto Spacing = 25_m;
 	
@@ -151,7 +87,6 @@ void game(GameParams const& _params) try {
 		testscene.modelID = "testscene"_id;
 		testscene.transform.position = vec3{0_m, 0_m, 64_m} + offset;
 		testscene.transform.scale = prescale;
-		testscene.materialID = "matte"_id;
 		
 	}
 	
@@ -166,8 +101,6 @@ void game(GameParams const& _params) try {
 		block1.color = {0.9f, 0.9f, 1.0f, 1.0f};
 		block1.transform.position = offset;
 		block1.transform.scale = vec3{12.0f, 12.0f, 1.0f} * prescale;
-		block1.transform.rotation = rotation;
-		block1.materialID = "matte"_id;
 		
 		auto block2_id = engine.objects().create();
 		auto block2 = engine.objects().get(block2_id);
@@ -175,8 +108,6 @@ void game(GameParams const& _params) try {
 		block2.color = {0.9f, 0.1f, 0.1f, 1.0f};
 		block2.transform.position = vec3{-4_m, -4_m, 2_m} + offset;
 		block2.transform.scale = prescale;
-		block2.transform.rotation = rotation;
-		block2.materialID = "matte"_id;
 		
 		auto block3_id = engine.objects().create();
 		auto block3 = engine.objects().get(block3_id);
@@ -184,8 +115,6 @@ void game(GameParams const& _params) try {
 		block3.color = {0.9f, 0.1f, 0.1f, 1.0f};
 		block3.transform.position = vec3{4_m, -4_m, 2_m} + offset;
 		block3.transform.scale = prescale;
-		block3.transform.rotation = rotation;
-		block3.materialID = "matte"_id;
 		
 		auto block4_id = engine.objects().create();
 		auto block4 = engine.objects().get(block4_id);
@@ -193,8 +122,6 @@ void game(GameParams const& _params) try {
 		block4.color = {0.9f, 0.1f, 0.1f, 1.0f};
 		block4.transform.position = vec3{-4_m, 4_m, 2_m} + offset;
 		block4.transform.scale = prescale;
-		block4.transform.rotation = rotation;
-		block4.materialID = "matte"_id;
 		
 		auto block5_id = engine.objects().create();
 		auto block5 = engine.objects().get(block5_id);
@@ -202,8 +129,6 @@ void game(GameParams const& _params) try {
 		block5.color = {0.9f, 0.1f, 0.1f, 1.0f};
 		block5.transform.position = vec3{4_m, 4_m, 2_m} + offset;
 		block5.transform.scale = prescale;
-		block5.transform.rotation = rotation;
-		block5.materialID = "matte"_id;
 		
 		auto block6_id = engine.objects().create();
 		auto block6 = engine.objects().get(block6_id);
@@ -211,8 +136,6 @@ void game(GameParams const& _params) try {
 		block6.color = {0.1f, 0.1f, 0.9f, 1.0f};
 		block6.transform.position = vec3{7_m, 0_m, 2_m} + offset;
 		block6.transform.scale = prescale;
-		block6.transform.rotation = rotation;
-		block6.materialID = "matte"_id;
 		
 		auto block7_id = engine.objects().create();
 		auto block7 = engine.objects().get(block7_id);
@@ -221,7 +144,6 @@ void game(GameParams const& _params) try {
 		block7.color = {0.2f, 0.9f, 0.5f, 1.0f};
 		block7.transform.position = vec3{0_m, 0_m, 2.5_m} + offset;
 		block7.transform.scale = vec3{1.5f, 1.5f, 1.5f} * prescale;
-		block7.materialID = "shiny"_id;
 		
 		for (auto i: iota(0, 9)) {
 			
@@ -232,14 +154,12 @@ void game(GameParams const& _params) try {
 			sphere1.modelID = "sphere"_id;
 			sphere1.transform.position = vec3{0_m, 8_m, 2_m} + offset2;
 			sphere1.transform.scale = prescale;
-			sphere1.materialID = ID("metal" + to_string(i));
 			
 			auto sphere2_id = engine.objects().create();
 			auto sphere2 = engine.objects().get(sphere2_id);
 			sphere2.modelID = "sphere"_id;
 			sphere2.transform.position = vec3{0_m, -8_m, 2_m} + offset2;
 			sphere2.transform.scale = prescale;
-			sphere2.materialID = ID("plastic" + to_string(i));
 			
 		}
 		
@@ -341,10 +261,9 @@ void game(GameParams const& _params) try {
 		{
 			
 			ZoneScopedN("Rotating blocks");
-			constexpr auto rotateTransform = quat::angleAxis(180_deg, {1.0f, 0.0f, 0.0f});
-			auto rotateTransformAnim = quat::angleAxis(radians(ratio(sys::System::getTime(), 20_ms)), {0.0f, 0.0f, 1.0f});
+			auto rotateAnim = quat::angleAxis(radians(ratio(sys::System::getTime(), 20_ms)), {0.0f, 0.0f, 1.0f});
 			for (auto& obj: dynamicObjects)
-				engine.objects().get(obj).transform.rotation = rotateTransformAnim * rotateTransform;
+				engine.objects().get(obj).transform.rotation = rotateAnim;
 			
 		}
 		

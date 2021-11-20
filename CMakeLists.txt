@@ -77,7 +77,6 @@ add_executable(Minote
         src/gfx/effects/clear.hpp src/gfx/effects/clear.cpp
         src/gfx/effects/pbr.hpp src/gfx/effects/pbr.cpp
         src/gfx/effects/sky.hpp src/gfx/effects/sky.cpp
-        src/gfx/materials.hpp src/gfx/materials.tpp src/gfx/materials.cpp
         src/gfx/samplers.hpp
         src/gfx/objects.hpp src/gfx/objects.cpp
         src/gfx/models.hpp src/gfx/models.cpp

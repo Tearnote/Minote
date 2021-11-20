@@ -55,7 +55,6 @@ struct ObjectPool {
 		ID& modelID;
 		vec4& color;
 		Transform& transform;
-		ID& materialID;
 		
 	};
 	
@@ -88,7 +87,6 @@ struct ObjectPool {
 	ivector<ID> modelIDs;
 	ivector<vec4> colors;
 	ivector<Transform> transforms;
-	ivector<ID> materialIDs;
 	
 private:
 	

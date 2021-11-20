@@ -10,9 +10,8 @@ namespace minote::gfx {
 
 using namespace base;
 
-auto BasicInstanceList::upload(Pool& _pool, vuk::RenderGraph& _rg,
-	vuk::Name _name, ObjectPool const& _objects,
-	ModelBuffer const& _models, MaterialBuffer const& _materials) -> BasicInstanceList {
+auto BasicInstanceList::upload(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
+	ObjectPool const& _objects, ModelBuffer const& _models) -> BasicInstanceList {
 	
 	ZoneScoped;
 	
@@ -22,7 +21,7 @@ auto BasicInstanceList::upload(Pool& _pool, vuk::RenderGraph& _rg,
 	
 	auto instancesCount = 0u;
 	
-	// Copy all valid objects
+	// Queue up meshes of all valid objects
 	
 	for (auto id: iota(ObjectID(0), _objects.size())) {
 		
@@ -31,14 +30,11 @@ auto BasicInstanceList::upload(Pool& _pool, vuk::RenderGraph& _rg,
 			continue;
 		
 		auto modelID = _objects.modelIDs[id];
-		auto modelIdx = _models.cpu_descriptorIDs.at(modelID);
-		auto materialID = _objects.materialIDs[id];
-		auto materialIdx = _materials.materialIDs.at(materialID);
+		assert(_models.cpu_modelMeshes.at(modelID).size() == 1);
+		auto meshIdx = _models.cpu_modelMeshes.at(modelID)[0];
 		
 		instances[instancesCount] = Instance{
-			.modelIdx = u32(modelIdx),
-			.materialIdx = u32(materialIdx),
-			.colorIdx = instancesCount,
+			.meshIdx = u32(meshIdx),
 			.transformIdx = instancesCount };
 		colors[instancesCount] = _objects.colors[id];
 		basicTransforms[instancesCount] = _objects.transforms[id];
@@ -162,15 +158,15 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 	// Create a mostly prefilled command buffer
 	
 	auto commandsData = pvector<Command>();
-	commandsData.reserve(_models.descriptors.size());
+	commandsData.reserve(_models.meshes.size());
 	
-	for (auto& descriptor: _models.cpu_descriptors) {
+	for (auto& mesh: _models.cpu_meshes) {
 		
 		commandsData.emplace_back(Command{
-			.indexCount = descriptor.indexCount,
+			.indexCount = mesh.indexCount,
 			.instanceCount = 0, // Calculated in step 1
-			.firstIndex = descriptor.indexOffset,
-			.vertexOffset = i32(descriptor.vertexOffset),
+			.firstIndex = mesh.indexOffset,
+			.vertexOffset = 0, // Pre-applied
 			.firstInstance = 0 }); // Calculated in step 2
 		
 	}
@@ -213,7 +209,7 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 			cmd.bind_storage_buffer(0, 0, result.commands)
 			   .bind_compute_pipeline("instance_sort_scan");
 			
-			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32(_models.descriptors.size()));
+			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32(_models.meshes.size()));
 			
 			cmd.dispatch(1);
 			
@@ -300,7 +296,7 @@ auto DrawableInstanceList::frustumCull(Pool& _pool, vuk::RenderGraph& _rg, vuk::
 			   .bind_uniform_buffer(0, 1, _source.instancesCount)
 			   .bind_storage_buffer(0, 2, _source.instances)
 			   .bind_storage_buffer(0, 3, result.transforms)
-			   .bind_storage_buffer(0, 4, _models.descriptors)
+			   .bind_storage_buffer(0, 4, _models.meshes)
 			   .bind_storage_buffer(0, 5, result.commands)
 			   .bind_storage_buffer(0, 6, result.instancesCount)
 			   .bind_storage_buffer(0, 7, result.instances)
@@ -323,7 +319,7 @@ auto DrawableInstanceList::frustumCull(Pool& _pool, vuk::RenderGraph& _rg, vuk::
 					
 				}() };
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, pushConstants);
-			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32(_models.descriptors.size()));
+			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32(_models.meshes.size()));
 			
 			cmd.dispatch_indirect(_source.instancesCount);
 			

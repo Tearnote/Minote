@@ -50,7 +50,7 @@ Engine::~Engine() {
 	
 }
 
-void Engine::init(ModelList&& _modelList, MaterialList&& _materialList) {
+void Engine::init(ModelList&& _modelList) {
 	
 	ZoneScoped;
 	
@@ -84,7 +84,6 @@ void Engine::init(ModelList&& _modelList, MaterialList&& _materialList) {
 	ImGui::NewFrame();
 	
 	m_models = std::move(_modelList).upload(m_permPool, "models");
-	m_materials = std::move(_materialList).upload(m_permPool, "materials");
 	
 	// Perform precalculations
 	auto precalc = vuk::RenderGraph();
@@ -308,7 +307,7 @@ void Engine::render() {
 	}
 	
 	auto world = m_world.upload(m_framePool, "world");
-	auto basicInstances = BasicInstanceList::upload(m_permPool, rg, "basicInstances", m_objects, m_models, m_materials);
+	auto basicInstances = BasicInstanceList::upload(m_permPool, rg, "basicInstances", m_objects, m_models);
 	
 	// Set up the rendergraph
 	
@@ -334,8 +333,9 @@ void Engine::render() {
 		
 		Clear::apply(rg, color, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 		Visibility::apply(rg, visbuf, depth, world, culledDrawables, m_models);
-		auto worklist = Worklist::create(m_swapchainPool, rg, "worklist", visbuf, culledDrawables, m_materials);
-		PBR::apply(rg, color, visbuf, worklist, world, m_models, m_materials,
+		auto worklist = Worklist::create(m_swapchainPool, rg, "worklist", visbuf,
+			culledDrawables, m_models);
+		PBR::apply(rg, color, visbuf, worklist, world, m_models,
 			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
 		Sky::draw(rg, color, worklist, cameraSky, m_atmosphere, world);
 		
@@ -348,11 +348,11 @@ void Engine::render() {
 		if (m_flushTemporalResources)
 			Clear::apply(rg, colorPrev, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 		Visibility::applyMS(rg, visbufMS, depthMS, world, culledDrawables, m_models);
-		auto worklistMS = Worklist::createMS(m_swapchainPool, rg, "worklist_ms",
-			visbufMS, culledDrawables, m_materials);
+		auto worklistMS = Worklist::createMS(m_swapchainPool, rg, "worklist_ms", visbufMS,
+			culledDrawables, m_models);
 		Antialiasing::quadAssign(rg, visbufMS, quadbuf, jitterMap, world);
 		PBR::applyQuad(rg, clusterOut, velocity, quadbuf, worklistMS, world, m_models,
-			m_materials, culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
+			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
 		Sky::drawQuad(rg, clusterOut, velocity, quadbuf, worklistMS, cameraSky, m_atmosphere, world);
 		Antialiasing::quadResolve(rg, colorCurrent, velocity, quadbuf, jitterMap,
 			clusterOut, colorPrev, world);
