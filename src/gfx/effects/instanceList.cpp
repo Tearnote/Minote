@@ -15,9 +15,9 @@ auto BasicInstanceList::upload(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _na
 	
 	ZoneScoped;
 	
-	auto instances = pvector<Instance>(_objects.size());
-	auto colors = pvector<vec4>(_objects.size());
-	auto basicTransforms = pvector<BasicTransform>(_objects.size());
+	auto instances = pvector<Instance>();
+	auto colors = pvector<vec4>();
+	auto basicTransforms = pvector<BasicTransform>();
 	
 	auto instancesCount = 0u;
 	
@@ -30,22 +30,19 @@ auto BasicInstanceList::upload(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _na
 			continue;
 		
 		auto modelID = _objects.modelIDs[id];
-		assert(_models.cpu_modelMeshes.at(modelID).size() == 1);
-		auto meshIdx = _models.cpu_modelMeshes.at(modelID)[0];
-		
-		instances[instancesCount] = Instance{
-			.meshIdx = u32(meshIdx),
-			.transformIdx = instancesCount };
-		colors[instancesCount] = _objects.colors[id];
-		basicTransforms[instancesCount] = _objects.transforms[id];
-		
-		instancesCount += 1;
+		for (auto meshIdx: _models.cpu_modelMeshes.at(modelID)) {
+			
+			instances.emplace_back(Instance{
+				.meshIdx = u32(meshIdx),
+				.transformIdx = instancesCount });
+			colors.emplace_back(_objects.colors[id]);
+			basicTransforms.emplace_back(_objects.transforms[id]);
+			
+			instancesCount += 1;
+			
+		}
 		
 	}
-	
-	instances.resize(instancesCount);
-	colors.resize(instancesCount);
-	basicTransforms.resize(instancesCount);
 	
 	// Upload data to GPU
 	

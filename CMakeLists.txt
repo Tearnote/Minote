@@ -319,6 +319,7 @@ add_custom_command(
 set(MODELS
         models/block.glb
         models/sphere.glb
+        models/hierarchy.glb
         models/testscene.glb)
 add_custom_command(
         OUTPUT ${ASSET_OUTPUT} APPEND

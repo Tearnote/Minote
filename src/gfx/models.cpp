@@ -20,16 +20,6 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 	
 	ZoneScoped;
 	
-	// Insert the mesh descriptor
-	
-	auto meshList = ivector<u32, 16>();
-	meshList.emplace_back(m_meshes.size());
-	m_modelMeshes.emplace(_name, std::move(meshList));
-	auto& mesh = m_meshes.emplace_back();
-	mesh.indexOffset = m_indices.size();
-	auto vertexOffset = m_vertices.size();
-	mesh.materialIdx = m_materials.size();
-	
 	// Load model data
 	
 	auto model = mpack_reader_t();
@@ -42,40 +32,68 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 	
 	// Load the materials
 	
-	auto& material = m_materials.emplace_back();
-	material.id = +MaterialType::PBR;
+	auto materialOffset = m_materials.size();
 	
 	mpack_expect_cstr_match(&model, "materials");
 	auto materialCount = mpack_expect_array(&model);
-	assert(materialCount == 1);
-	mpack_expect_map_match(&model, 3);
+	m_materials.reserve(m_materials.size() + materialCount);
+	for (auto i: iota(0u, materialCount)) {
 		
-		mpack_expect_cstr_match(&model, "color");
-		mpack_expect_array_match(&model, 4);
-		material.color[0] = mpack_expect_float(&model);
-		material.color[1] = mpack_expect_float(&model);
-		material.color[2] = mpack_expect_float(&model);
-		material.color[3] = mpack_expect_float(&model);
-		mpack_done_array(&model);
+		auto& material = m_materials.emplace_back();
+		material.id = +MaterialType::PBR;
 		
-		mpack_expect_cstr_match(&model, "metalness");
-		material.metalness = mpack_expect_float(&model);
-		mpack_expect_cstr_match(&model, "roughness");
-		material.roughness = mpack_expect_float(&model);
+		mpack_expect_map_match(&model, 3);
+			
+			mpack_expect_cstr_match(&model, "color");
+			mpack_expect_array_match(&model, 4);
+			material.color[0] = mpack_expect_float(&model);
+			material.color[1] = mpack_expect_float(&model);
+			material.color[2] = mpack_expect_float(&model);
+			material.color[3] = mpack_expect_float(&model);
+			mpack_done_array(&model);
+			
+			mpack_expect_cstr_match(&model, "metalness");
+			material.metalness = mpack_expect_float(&model);
+			mpack_expect_cstr_match(&model, "roughness");
+			material.roughness = mpack_expect_float(&model);
+			
+		mpack_done_map(&model);
 		
-	mpack_done_map(&model);
+	}
 	mpack_done_array(&model);
+	
+	// Safety fallback
+	if (materialCount == 0) {
+		
+		auto& material = m_materials.emplace_back();
+		material.id = +MaterialType::PBR;
+		material.color = {1.0f, 1.0f, 1.0f, 1.0f};
+		material.metalness = 0.0f;
+		material.roughness = 0.0f;
+		L_WARN("Model {} has no materials, using defaults", _name);
+		
+	}
 	
 	// Load the meshes
 	
 	mpack_expect_cstr_match(&model, "meshes");
 	auto meshCount = mpack_expect_array(&model);
-	assert(meshCount == 1);
-	mpack_expect_map_match(&model, 7);
+	m_meshes.reserve(m_meshes.size() + meshCount);
+	auto meshList = ivector<u32>();
+	meshList.reserve(meshCount);
+	
+	for (auto i: iota(0u, meshCount)) {
+		
+		meshList.emplace_back(m_meshes.size());
+		auto& mesh = m_meshes.emplace_back();
+		mesh.indexOffset = m_indices.size();
+		auto vertexOffset = m_vertices.size();
+		
+		mpack_expect_map_match(&model, 7);
 		
 		mpack_expect_cstr_match(&model, "materialIdx");
 		auto materialIdx = mpack_expect_u32(&model);
-		assert(materialIdx == 0);
+		mesh.materialIdx = materialOffset + materialIdx;
 		
 		mpack_expect_cstr_match(&model, "radius");
 		mesh.radius = mpack_expect_float(&model);
@@ -105,13 +123,16 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 		mpack_expect_cstr_match(&model, "normals");
 		mpack_expect_bin_size_buf(&model, reinterpret_cast<char*>(normalsIt), vertexCount * sizeof(NormalType));
 		
-	mpack_done_map(&model);
+		mpack_done_map(&model);
+		
+	}
 	mpack_done_array(&model);
+	m_modelMeshes.emplace(_name, std::move(meshList));
 	
 	mpack_done_map(&model);
 	mpack_reader_destroy(&model);
 	
-	L_DEBUG("Loaded model {}", _name);
+	L_DEBUG("Loaded model {}: {} materials, {} meshes", _name, materialCount, meshCount);
 	
 }
 

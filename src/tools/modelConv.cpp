@@ -30,123 +30,151 @@ int main(int argc, char const* argv[]) {
 	defer { cgltf_free(gltf); };
 	cgltf_load_buffers(&options, gltf, nullptr);
 	
-	// Choose mesh and primitive
+	// Confirm requirements
 	
-	assert(gltf->meshes_count == 1);
-	assert(gltf->meshes->primitives_count == 1);
-	auto& primitive = *gltf->meshes->primitives;
+	assert(gltf->scenes_count == 1);
 	
-	// Fetch material
+	// Fetch materials
 	
-	auto color = vec4(1.0f);
-	auto pbrMetalness = 0.0f;
-	auto pbrRoughness = 0.0f;
-	if (auto* material = primitive.material; material && material->has_pbr_metallic_roughness) {
+	struct Material {
+		vec4 color;
+		f32 metalness;
+		f32 roughness;
+	};
+	auto materials = ivector<Material>();
+	materials.reserve(gltf->materials_count);
+	for (auto i: iota(0_zu, gltf->materials_count)) {
 		
-		auto& pbr = material->pbr_metallic_roughness;
-		color = vec4{
-			pbr.base_color_factor[0],
-			pbr.base_color_factor[1],
-			pbr.base_color_factor[2],
-			pbr.base_color_factor[3] };
-		pbrMetalness = pbr.metallic_factor;
-		pbrRoughness = pbr.roughness_factor;
-		
-	} else {
-		
-		fmt::print(stderr, "WARNING: Material data not present in model\n");
+		auto& material = gltf->materials[i];
+		auto& pbr = material.pbr_metallic_roughness;
+		materials.emplace_back(Material{
+			.color = vec4{
+				pbr.base_color_factor[0],
+				pbr.base_color_factor[1],
+				pbr.base_color_factor[2],
+				pbr.base_color_factor[3] },
+			.metalness = pbr.metallic_factor,
+			.roughness = pbr.roughness_factor });
 		
 	}
+	if (gltf->materials_count == 0)
+		fmt::print(stderr, "WARNING: Material data not present\n");
 	
-	// Fetch index data
+	// Iterate over all meshes
 	
-	assert(primitive.indices);
-	auto& indexAccessor = *primitive.indices;
-	auto* indexBuffer = static_cast<char const*>(indexAccessor.buffer_view->buffer->data);
-	assert(indexBuffer);
-	indexBuffer += indexAccessor.buffer_view->offset;
-	auto indexCount = indexAccessor.count;
-	
-	assert(indexAccessor.component_type == cgltf_component_type_r_16u ||
-	       indexAccessor.component_type == cgltf_component_type_r_32u);
-	assert(indexAccessor.type == cgltf_type_scalar);
-	auto rawIndices = pvector<u32>();
-	if (indexAccessor.component_type == cgltf_component_type_r_16u) {
+	struct Mesh {
+		u32 materialIdx;
+		f32 radius;
+		u32 indexCount;
+		u32 vertexCount;
+		pvector<IndexType> indices;
+		pvector<VertexType> vertices;
+		pvector<vec3> rawNormals;
+		pvector<NormalType> normals;
+	};
+	auto meshes = ivector<Mesh>();
+	meshes.reserve(gltf->meshes_count);
+	for (auto i: iota(0_zu, gltf->meshes_count)) {
 		
-		auto* indexTypedBuffer = reinterpret_cast<u16 const*>(indexBuffer);
-		rawIndices.insert(rawIndices.end(), indexTypedBuffer, indexTypedBuffer + indexAccessor.count);
+		auto& mesh = meshes.emplace_back();
+		assert(gltf->meshes[i].primitives_count == 1);
+		auto& primitive = gltf->meshes[i].primitives[0];
 		
-	} else {
+		// Fetch material index
 		
-		auto* indexTypedBuffer = reinterpret_cast<u32 const*>(indexBuffer);
-		rawIndices.insert(rawIndices.end(), indexTypedBuffer, indexTypedBuffer + indexAccessor.count);
+		mesh.materialIdx = primitive.material? (primitive.material - gltf->materials) : 0;
 		
-	}
-	
-	// Fetch all vertex attributes
-	
-	auto radius = -1.0f;
-	auto vertexCount = 0_zu;
-	auto rawVertices = static_cast<vec3 const*>(nullptr);
-	auto rawNormals = static_cast<vec3 const*>(nullptr);
-	
-	for (auto attrIdx: iota(0_zu, primitive.attributes_count)) {
+		// Fetch index data
 		
-		auto& accessor = *primitive.attributes[attrIdx].data;
-		auto* buffer = static_cast<char const*>(accessor.buffer_view->buffer->data);
-		assert(buffer);
-		buffer += accessor.buffer_view->offset;
+		assert(primitive.indices);
+		auto& indexAccessor = *primitive.indices;
+		auto* indexBuffer = static_cast<char const*>(indexAccessor.buffer_view->buffer->data);
+		assert(indexBuffer);
+		indexBuffer += indexAccessor.buffer_view->offset;
+		mesh.indexCount = indexAccessor.count;
 		
-		// Vertex positions
-		
-		if (std::strcmp(primitive.attributes[attrIdx].name, "POSITION") == 0) {
+		assert(indexAccessor.component_type == cgltf_component_type_r_16u ||
+			indexAccessor.component_type == cgltf_component_type_r_32u);
+		assert(indexAccessor.type == cgltf_type_scalar);
+		if (indexAccessor.component_type == cgltf_component_type_r_16u) {
 			
-			assert(accessor.component_type == cgltf_component_type_r_32f);
-			assert(accessor.type == cgltf_type_vec3);
+			auto* indexTypedBuffer = reinterpret_cast<u16 const*>(indexBuffer);
+			mesh.indices.insert(mesh.indices.end(), indexTypedBuffer, indexTypedBuffer + indexAccessor.count);
 			
-			// Calculate the AABB and furthest point from the origin
-			auto aabbMin = vec3{accessor.min[0], accessor.min[1], accessor.min[2]};
-			auto aabbMax = vec3{accessor.max[0], accessor.max[1], accessor.max[2]};
-			auto pfar = max(abs(aabbMin), abs(aabbMax));
+		} else {
 			
-			radius = length(pfar);
-			vertexCount = accessor.count;
-			rawVertices = reinterpret_cast<vec3 const*>(buffer);
-			continue;
+			auto* indexTypedBuffer = reinterpret_cast<u32 const*>(indexBuffer);
+			mesh.indices.insert(mesh.indices.end(), indexTypedBuffer, indexTypedBuffer + indexAccessor.count);
 			
 		}
 		
-		// Vertex normals
+		// Fetch all vertex attributes
 		
-		if (std::strcmp(primitive.attributes[attrIdx].name, "NORMAL") == 0) {
+		for (auto attrIdx: iota(0_zu, primitive.attributes_count)) {
 			
-			assert(accessor.component_type == cgltf_component_type_r_32f);
-			assert(accessor.type == cgltf_type_vec3);
+			auto& accessor = *primitive.attributes[attrIdx].data;
+			auto* buffer = static_cast<char const*>(accessor.buffer_view->buffer->data);
+			assert(buffer);
+			buffer += accessor.buffer_view->offset;
 			
-			rawNormals = reinterpret_cast<vec3 const*>(buffer);
-			continue;
+			// Vertex positions
+			
+			if (std::strcmp(primitive.attributes[attrIdx].name, "POSITION") == 0) {
+				
+				assert(accessor.component_type == cgltf_component_type_r_32f);
+				assert(accessor.type == cgltf_type_vec3);
+				
+				// Calculate the AABB and furthest point from the origin
+				auto aabbMin = vec3{accessor.min[0], accessor.min[1], accessor.min[2]};
+				auto aabbMax = vec3{accessor.max[0], accessor.max[1], accessor.max[2]};
+				auto pfar = max(abs(aabbMin), abs(aabbMax));
+				
+				mesh.radius = length(pfar);
+				mesh.vertexCount = accessor.count;
+				mesh.vertices.resize(accessor.count);
+				std::memcpy(mesh.vertices.data(), buffer, accessor.count * sizeof(VertexType));
+				continue;
+				
+			}
+			
+			// Vertex normals
+			
+			if (std::strcmp(primitive.attributes[attrIdx].name, "NORMAL") == 0) {
+				
+				assert(accessor.component_type == cgltf_component_type_r_32f);
+				assert(accessor.type == cgltf_type_vec3);
+				
+				mesh.rawNormals.resize(accessor.count);
+				std::memcpy(mesh.rawNormals.data(), buffer, accessor.count * sizeof(vec3));
+				continue;
+				
+			}
+			
+			// Unknown attribute
+			fmt::print(stderr, "WARNING: Unknown attribute: {}\n", primitive.attributes[attrIdx].name);
 			
 		}
 		
-		// Unknown attribute
-		fmt::print(stderr, "WARNING: Unknown attribute: {}\n", primitive.attributes[attrIdx].name);
+		assert(mesh.indexCount > 0_zu);
+		assert(mesh.vertexCount > 0_zu);
+		assert(mesh.indices.size());
+		assert(mesh.vertices.size());
+		assert(mesh.rawNormals.size());
+		assert(mesh.radius > 0.0f);
 		
 	}
-	
-	assert(indexCount > 0_zu);
-	assert(vertexCount > 0_zu);
-	assert(rawVertices);
-	assert(rawNormals);
-	assert(radius > 0.0f);
 	
 	// Convert to model schema
 	
-	auto& indices = rawIndices;
-	auto* vertices = rawVertices;
+	for(auto& mesh: meshes) {
+		
+		mesh.normals.resize(mesh.vertexCount);
+		for (auto i: iota(0_zu, mesh.vertexCount))
+			mesh.normals[i] = octEncode(mesh.rawNormals[i]);
+		
+		assert(mesh.normals.size());
 	
-	auto normals = pvector<NormalType>(vertexCount);
-	for (auto i: iota(0_zu, vertexCount))
-		normals[i] = octEncode(rawNormals[i]);
+	}
 	
 	// Write to msgpack output
 	
@@ -160,39 +188,47 @@ int main(int argc, char const* argv[]) {
 		mpack_write_cstr(&model, "format");
 		mpack_write_u32(&model, ModelFormat);
 		mpack_write_cstr(&model, "materials");
-		mpack_start_array(&model, 1);
+		mpack_start_array(&model, materials.size());
+		for (auto& material: materials) {
+			
 			mpack_start_map(&model, 3);
 				mpack_write_cstr(&model, "color");
 				mpack_start_array(&model, 4);
-					mpack_write_float(&model, color.r());
-					mpack_write_float(&model, color.g());
-					mpack_write_float(&model, color.b());
-					mpack_write_float(&model, color.a());
+					mpack_write_float(&model, material.color.r());
+					mpack_write_float(&model, material.color.g());
+					mpack_write_float(&model, material.color.b());
+					mpack_write_float(&model, material.color.a());
 				mpack_finish_array(&model);
 				mpack_write_cstr(&model, "metalness");
-				mpack_write_float(&model, pbrMetalness);
+				mpack_write_float(&model, material.metalness);
 				mpack_write_cstr(&model, "roughness");
-				mpack_write_float(&model, pbrRoughness);
+				mpack_write_float(&model, material.roughness);
 			mpack_finish_map(&model);
+			
+		}
 		mpack_finish_array(&model);
 		mpack_write_cstr(&model, "meshes");
-		mpack_start_array(&model, 1);
+		mpack_start_array(&model, meshes.size());
+		for (auto& mesh: meshes) {
+			
 			mpack_start_map(&model, 7);
 				mpack_write_cstr(&model, "materialIdx");
-				mpack_write_u32(&model, 0);
+				mpack_write_u32(&model, mesh.materialIdx);
 				mpack_write_cstr(&model, "radius");
-				mpack_write_float(&model, radius);
+				mpack_write_float(&model, mesh.radius);
 				mpack_write_cstr(&model, "indexCount");
-				mpack_write_u32(&model, indexCount);
+				mpack_write_u32(&model, mesh.indexCount);
 				mpack_write_cstr(&model, "vertexCount");
-				mpack_write_u32(&model, vertexCount);
+				mpack_write_u32(&model, mesh.vertexCount);
 				mpack_write_cstr(&model, "indices");
-				mpack_write_bin(&model, reinterpret_cast<const char*>(indices.data()), indexCount * sizeof(IndexType));
+				mpack_write_bin(&model, reinterpret_cast<const char*>(mesh.indices.data()), mesh.indexCount * sizeof(IndexType));
 				mpack_write_cstr(&model, "vertices");
-				mpack_write_bin(&model, reinterpret_cast<const char*>(vertices), vertexCount * sizeof(VertexType));
+				mpack_write_bin(&model, reinterpret_cast<const char*>(mesh.vertices.data()), mesh.vertexCount * sizeof(VertexType));
 				mpack_write_cstr(&model, "normals");
-				mpack_write_bin(&model, reinterpret_cast<const char*>(normals.data()), vertexCount * sizeof(NormalType));
+				mpack_write_bin(&model, reinterpret_cast<const char*>(mesh.normals.data()), mesh.vertexCount * sizeof(NormalType));
 			mpack_finish_map(&model);
+			
+		}
 		mpack_finish_array(&model);
 	mpack_finish_map(&model);
 	
