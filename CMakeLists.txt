@@ -224,7 +224,7 @@ target_link_libraries(Minote PRIVATE robin_hood)
 
 FetchContent_Declare(itlib
         GIT_REPOSITORY https://github.com/iboB/itlib
-        GIT_TAG v1.3.0)
+        GIT_TAG v1.4.5)
 FetchContent_MakeAvailable(itlib)
 target_compile_definitions(itlib INTERFACE ITLIB_STATIC_VECTOR_ERROR_HANDLING=ITLIB_STATIC_VECTOR_ERROR_HANDLING_THROW)
 target_compile_definitions(itlib INTERFACE ITLIB_SMALL_VECTOR_ERROR_HANDLING=ITLIB_SMALL_VECTOR_ERROR_HANDLING_THROW)

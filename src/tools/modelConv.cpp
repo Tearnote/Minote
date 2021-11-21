@@ -30,10 +30,6 @@ int main(int argc, char const* argv[]) {
 	defer { cgltf_free(gltf); };
 	cgltf_load_buffers(&options, gltf, nullptr);
 	
-	// Confirm requirements
-	
-	assert(gltf->scenes_count == 1);
-	
 	// Fetch materials
 	
 	struct Material {
@@ -60,7 +56,25 @@ int main(int argc, char const* argv[]) {
 	if (gltf->materials_count == 0)
 		fmt::print(stderr, "WARNING: Material data not present\n");
 	
-	// Iterate over all meshes
+	// Queue up the base nodes
+	
+	struct Worknode {
+		cgltf_node* node;
+		mat4 parentTransform;
+	};
+	auto worknodes = ivector<Worknode>();
+	assert(gltf->scenes_count == 1);
+	auto& scene = gltf->scenes[0];
+	for (auto i: iota(0u, scene.nodes_count)) {
+		
+		auto node = scene.nodes[i];
+		worknodes.emplace_back(Worknode{
+			.node = node,
+			.parentTransform = mat4::identity() });
+		
+	}
+	
+	// Iterate over the node hierarchy
 	
 	struct Mesh {
 		u32 materialIdx;
@@ -74,11 +88,44 @@ int main(int argc, char const* argv[]) {
 	};
 	auto meshes = ivector<Mesh>();
 	meshes.reserve(gltf->meshes_count);
-	for (auto i: iota(0_zu, gltf->meshes_count)) {
+	while (!worknodes.empty()) {
 		
+		auto worknode = worknodes.back();
+		worknodes.pop_back();
+		auto& node = *worknode.node;
+		
+		// Compute the transform
+		
+		auto translation = node.has_translation?
+			mat4::translate(vec3{node.translation[0], node.translation[1], node.translation[2]}) :
+			mat4::identity();
+		auto rotation = node.has_rotation?
+			mat4::rotate(quat{node.rotation[3], node.rotation[0], node.rotation[1], node.rotation[2]}) :
+			mat4::identity();
+		auto scale = node.has_scale?
+			mat4::scale(vec3{node.scale[0], node.scale[1], node.scale[2]}) :
+			mat4::identity();
+		auto transform = worknode.parentTransform * translation * rotation * scale;
+		
+		// Queue up all children nodes
+		
+		for (auto i: iota(0u, node.children_count)) {
+			
+			auto child = node.children[i];
+			worknodes.emplace_back(Worknode{
+				.node = child,
+				.parentTransform = transform });
+			
+		}
+		
+		// Process the node's mesh
+		
+		if (!node.mesh || meshes.size() >= 1020)
+			continue;
+		auto& nodeMesh = *node.mesh;
+		assert(nodeMesh.primitives_count == 1);
+		auto& primitive = nodeMesh.primitives[0];
 		auto& mesh = meshes.emplace_back();
-		assert(gltf->meshes[i].primitives_count == 1);
-		auto& primitive = gltf->meshes[i].primitives[0];
 		
 		// Fetch material index
 		
@@ -161,6 +208,15 @@ int main(int argc, char const* argv[]) {
 		assert(mesh.vertices.size());
 		assert(mesh.rawNormals.size());
 		assert(mesh.radius > 0.0f);
+		
+		// Transform the vertices
+		
+		for (auto& vertex: mesh.vertices)
+			vertex = vec3(transform * vec4(vertex, 1.0f));
+		
+		auto normTransform = transpose(inverse(transform));
+		for (auto& normal: mesh.rawNormals)
+			normal = normalize(vec3(normTransform * vec4(normal, 0.0f)));
 		
 	}
 	

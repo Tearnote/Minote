@@ -155,7 +155,7 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 	// Create a mostly prefilled command buffer
 	
 	auto commandsData = pvector<Command>();
-	commandsData.reserve(_models.meshes.size());
+	commandsData.reserve(_models.cpu_meshes.size());
 	
 	for (auto& mesh: _models.cpu_meshes) {
 		
@@ -206,7 +206,7 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 			cmd.bind_storage_buffer(0, 0, result.commands)
 			   .bind_compute_pipeline("instance_sort_scan");
 			
-			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32(_models.meshes.size()));
+			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32(_models.cpu_meshes.size()));
 			
 			cmd.dispatch(1);
 			
@@ -316,7 +316,7 @@ auto DrawableInstanceList::frustumCull(Pool& _pool, vuk::RenderGraph& _rg, vuk::
 					
 				}() };
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, pushConstants);
-			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32(_models.meshes.size()));
+			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32(_models.cpu_meshes.size()));
 			
 			cmd.dispatch_indirect(_source.instancesCount);
 			
