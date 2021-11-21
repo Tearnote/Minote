@@ -263,7 +263,9 @@ set(SHADER_SOURCES
         src/glsl/sky/skyDraw.comp
         src/glsl/instanceSortCount.comp
         src/glsl/instanceSortWrite.comp
-        src/glsl/instanceSortScan.comp
+        src/glsl/instanceSortScan1.comp
+        src/glsl/instanceSortScan2.comp
+        src/glsl/instanceSortScan3.comp
         src/glsl/bloomDownKaris.comp
         src/glsl/cubePostfilter.comp
         src/glsl/cubePrefilter.comp

@@ -8,11 +8,16 @@ layout(local_size_x = 1024) in;
 
 shared uint sh_subgroupScans[gl_WorkGroupSize.x / 8];
 
-layout (binding = 0, std430) restrict buffer Commands {
+layout(binding = 0, std430) restrict buffer Commands {
 	Command b_commands[];
 };
+layout(binding = 1, std430) restrict writeonly buffer Temp {
+	uint b_temp[];
+};
 
-layout(constant_id = 0) const uint u_commandCount = 0;
+layout(push_constant) uniform Constants {
+	uint u_commandCount;
+};
 
 void main() {
 	
@@ -69,6 +74,9 @@ void main() {
 			accum += subgroupAdd(subvalue);
 			
 		}
+		
+		if (subgroupElect())
+			b_temp[gl_WorkGroupID.x] = accum;
 		
 	}
 	

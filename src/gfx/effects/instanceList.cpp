@@ -129,11 +129,23 @@ void DrawableInstanceList::compile(vuk::PerThreadContext& _ptc) {
 	}, "instanceSortCount.comp");
 	_ptc.ctx.create_named_pipeline("instance_sort_count", instanceSortCountPci);
 	
-	auto instanceSortScanPci = vuk::ComputePipelineBaseCreateInfo();
-	instanceSortScanPci.add_spirv(std::vector<u32>{
-#include "spv/instanceSortScan.comp.spv"
-	}, "instanceSortScan.comp");
-	_ptc.ctx.create_named_pipeline("instance_sort_scan", instanceSortScanPci);
+	auto instanceSortScan1Pci = vuk::ComputePipelineBaseCreateInfo();
+	instanceSortScan1Pci.add_spirv(std::vector<u32>{
+#include "spv/instanceSortScan1.comp.spv"
+	}, "instanceSortScan1.comp");
+	_ptc.ctx.create_named_pipeline("instance_sort_scan1", instanceSortScan1Pci);
+	
+	auto instanceSortScan2Pci = vuk::ComputePipelineBaseCreateInfo();
+	instanceSortScan2Pci.add_spirv(std::vector<u32>{
+#include "spv/instanceSortScan2.comp.spv"
+	}, "instanceSortScan2.comp");
+	_ptc.ctx.create_named_pipeline("instance_sort_scan2", instanceSortScan2Pci);
+	
+	auto instanceSortScan3Pci = vuk::ComputePipelineBaseCreateInfo();
+	instanceSortScan3Pci.add_spirv(std::vector<u32>{
+#include "spv/instanceSortScan3.comp.spv"
+	}, "instanceSortScan3.comp");
+	_ptc.ctx.create_named_pipeline("instance_sort_scan3", instanceSortScan3Pci);
 	
 	auto instanceSortWritePci = vuk::ComputePipelineBaseCreateInfo();
 	instanceSortWritePci.add_spirv(std::vector<u32>{
@@ -197,22 +209,61 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 	
 	// Step 2: Prefix sum the command offset
 	
-	assert(result.commands.length() <= 1024);
+	assert(result.commands.length() <= 1024 * 1024);
+	
+	auto scanTemp = Buffer<u32>::make(_pool, nameAppend(_name, "scan temp"),
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		divRoundUp(result.commands.length(), 1024_zu), vuk::MemoryUsage::eGPUonly);
+	scanTemp.attach(_rg, vuk::eNone, vuk::eNone);
 	
 	_rg.add_pass({
-		.name = nameAppend(_name, "sort scan"),
+		.name = nameAppend(_name, "sort scan1"),
 		.resources = {
-			result.commands.resource(vuk::eComputeRW) },
-		.execute = [&_models, result](vuk::CommandBuffer& cmd) {
+			result.commands.resource(vuk::eComputeRW),
+			scanTemp.resource(vuk::eComputeWrite) },
+		.execute = [&_models, result, scanTemp](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_storage_buffer(0, 0, result.commands)
-			   .bind_compute_pipeline("instance_sort_scan");
+			   .bind_storage_buffer(0, 1, scanTemp)
+			   .bind_compute_pipeline("instance_sort_scan1");
 			
-			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32(_models.cpu_meshes.size()));
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, u32(result.commands.length()));
 			
-			cmd.dispatch(1);
+			cmd.dispatch_invocations(result.commands.length());
 			
 		}});
+	
+	_rg.add_pass({
+		.name = nameAppend(_name, "sort scan2"),
+		.resources = {
+			scanTemp.resource(vuk::eComputeRW) },
+		.execute = [scanTemp](vuk::CommandBuffer& cmd) {
+			
+			cmd.bind_storage_buffer(0, 0, scanTemp)
+			   .bind_compute_pipeline("instance_sort_scan2");
+			
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, u32(scanTemp.length()));
+			
+			cmd.dispatch_invocations(scanTemp.length());
+			
+	}});
+	
+	_rg.add_pass({
+		.name = nameAppend(_name, "sort scan3"),
+		.resources = {
+			scanTemp.resource(vuk::eComputeRead),
+			result.commands.resource(vuk::eComputeRW) },
+		.execute = [scanTemp, result](vuk::CommandBuffer& cmd) {
+			
+			cmd.bind_storage_buffer(0, 0, scanTemp)
+			   .bind_storage_buffer(0, 1, result.commands)
+			   .bind_compute_pipeline("instance_sort_scan3");
+			
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, u32(result.commands.length()));
+			
+			cmd.dispatch_invocations(result.commands.length());
+			
+	}});
 	
 	// Step 3: Write out at sorted position
 	

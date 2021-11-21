@@ -32,6 +32,13 @@ constexpr auto divRoundUp(vec<N, T> _v, T _div) -> vec<N, T> {
 	
 }
 
+template<integral T>
+constexpr auto divRoundUp(T _val, T _div) -> T {
+	
+	return (_val - T(1)) / _div + T(1);
+	
+}
+
 // Create a new vuk Name by appending a provided suffix.
 inline auto nameAppend(vuk::Name name, string_view suffix) -> vuk::Name {
 	

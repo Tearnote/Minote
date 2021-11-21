@@ -121,7 +121,7 @@ int main(int argc, char const* argv[]) {
 		
 		// Process the node's mesh
 		
-		if (!node.mesh || meshes.size() >= 1020)
+		if (!node.mesh)
 			continue;
 		auto& nodeMesh = *node.mesh;
 		assert(nodeMesh.primitives_count == 1);
