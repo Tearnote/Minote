@@ -147,8 +147,8 @@ void Engine::render() {
 		m_world.prevViewProjection = m_world.viewProjection;
 	
 	// Sun properties
-	static auto sunPitch = 12_deg;
-	static auto sunYaw = 3_deg;
+	static auto sunPitch = 16_deg;
+	static auto sunYaw = 8_deg;
 	ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 60.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
 	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
 	m_world.sunDirection =

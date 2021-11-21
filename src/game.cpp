@@ -47,9 +47,9 @@ void game(GameParams const& _params) try {
 	engine.init(std::move(modelList));
 	
 	engine.camera() = gfx::Camera{
-		.position = {8.2_m, -11.2_m, 64.3_m},
-		.yaw = 127.8_deg,
-		.pitch = 6.3_deg,
+		.position = {8.57_m, -16.07_m, 69.20_m},
+		.yaw = 2.41412449f,
+		.pitch = 0.113862038f,
 		.lookSpeed = 1.0f / 256.0f,
 		.moveSpeed = 1_m / 16.0f};
 	
