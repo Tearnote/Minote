@@ -31,6 +31,7 @@ struct Command {
 
 // Index and vertex locations for drawing a specific model
 struct Mesh {
+	mat4 transform;
 	uint indexOffset;
 	uint indexCount;
 	uint materialIdx;
@@ -60,7 +61,7 @@ struct Material {
 };
 
 // Convert from BasicTransform to Transform
-mat3x4 encodeTransform(BasicTransform _t) {
+mat4 encodeTransform(BasicTransform _t) {
 	
 	const float rw = _t.rotation.x;
 	const float rx = _t.rotation.y;
@@ -76,10 +77,13 @@ mat3x4 encodeTransform(BasicTransform _t) {
 	rotationMat[1] *= _t.scale.y;
 	rotationMat[2] *= _t.scale.z;
 	
-	mat3x4 result;
-	result[0] = vec4(rotationMat[0], _t.position.x);
-	result[1] = vec4(rotationMat[1], _t.position.y);
-	result[2] = vec4(rotationMat[2], _t.position.z);
+	rotationMat = transpose(rotationMat);
+	
+	mat4 result;
+	result[0] = vec4(rotationMat[0], 0.0);
+	result[1] = vec4(rotationMat[1], 0.0);
+	result[2] = vec4(rotationMat[2], 0.0);
+	result[3] = vec4(_t.position, 1.0);
 	return result;
 	
 }

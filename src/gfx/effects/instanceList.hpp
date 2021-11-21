@@ -48,7 +48,8 @@ struct InstanceList {
 	
 	static void compile(vuk::PerThreadContext&);
 	
-	static auto fromBasic(Pool&, vuk::RenderGraph&, vuk::Name, BasicInstanceList&&) -> InstanceList;
+	static auto fromBasic(Pool&, vuk::RenderGraph&, vuk::Name, BasicInstanceList&&,
+		ModelBuffer const&) -> InstanceList;
 	
 	[[nodiscard]]
 	auto capacity() const -> usize { return BasicInstanceList::MaxInstances; }

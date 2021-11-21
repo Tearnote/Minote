@@ -77,6 +77,7 @@ int main(int argc, char const* argv[]) {
 	// Iterate over the node hierarchy
 	
 	struct Mesh {
+		mat4 transform;
 		u32 materialIdx;
 		f32 radius;
 		u32 indexCount;
@@ -126,6 +127,7 @@ int main(int argc, char const* argv[]) {
 		assert(nodeMesh.primitives_count == 1);
 		auto& primitive = nodeMesh.primitives[0];
 		auto& mesh = meshes.emplace_back();
+		mesh.transform = transform;
 		
 		// Fetch material index
 		
@@ -209,15 +211,6 @@ int main(int argc, char const* argv[]) {
 		assert(mesh.rawNormals.size());
 		assert(mesh.radius > 0.0f);
 		
-		// Transform the vertices
-		
-		for (auto& vertex: mesh.vertices)
-			vertex = vec3(transform * vec4(vertex, 1.0f));
-		
-		auto normTransform = transpose(inverse(transform));
-		for (auto& normal: mesh.rawNormals)
-			normal = normalize(vec3(normTransform * vec4(normal, 0.0f)));
-		
 	}
 	
 	// Convert to model schema
@@ -267,7 +260,13 @@ int main(int argc, char const* argv[]) {
 		mpack_start_array(&model, meshes.size());
 		for (auto& mesh: meshes) {
 			
-			mpack_start_map(&model, 7);
+			mpack_start_map(&model, 8);
+				mpack_write_cstr(&model, "transform");
+				mpack_start_array(&model, 16);
+					for (auto y: iota(0, 4))
+					for (auto x: iota(0, 4))
+						mpack_write_float(&model, mesh.transform[x][y]);
+				mpack_finish_array(&model);
 				mpack_write_cstr(&model, "materialIdx");
 				mpack_write_u32(&model, mesh.materialIdx);
 				mpack_write_cstr(&model, "radius");

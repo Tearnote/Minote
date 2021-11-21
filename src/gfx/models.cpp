@@ -89,7 +89,14 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 		mesh.indexOffset = m_indices.size();
 		auto vertexOffset = m_vertices.size();
 		
-		mpack_expect_map_match(&model, 7);
+		mpack_expect_map_match(&model, 8);
+		
+		mpack_expect_cstr_match(&model, "transform");
+		mpack_expect_array_match(&model, 16);
+		for (auto y: iota(0, 4))
+		for (auto x: iota(0, 4))
+			mesh.transform[x][y] = mpack_expect_float(&model);
+		mpack_done_array(&model);
 		
 		mpack_expect_cstr_match(&model, "materialIdx");
 		auto materialIdx = mpack_expect_u32(&model);

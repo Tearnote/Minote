@@ -86,7 +86,7 @@ void InstanceList::compile(vuk::PerThreadContext& _ptc) {
 }
 
 auto InstanceList::fromBasic(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
-	BasicInstanceList&& _basic) -> InstanceList {
+	BasicInstanceList&& _basic, ModelBuffer const& _models) -> InstanceList {
 	
 	auto transforms = Buffer<Transform>::make(_pool, nameAppend(_name, "transforms"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
@@ -100,11 +100,13 @@ auto InstanceList::fromBasic(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name
 			_basic.instancesCount.resource(vuk::eIndirectRead),
 			_basic.basicTransforms.resource(vuk::eComputeRead),
 			transforms.resource(vuk::eComputeWrite) },
-		.execute = [_basic, transforms](vuk::CommandBuffer& cmd) {
+		.execute = [_basic, transforms, &_models](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _basic.instancesCount)
 			   .bind_storage_buffer(0, 1, _basic.basicTransforms)
 			   .bind_storage_buffer(0, 2, transforms)
+			   .bind_storage_buffer(0, 3, _basic.instances)
+			   .bind_storage_buffer(0, 4, _models.meshes)
 			   .bind_compute_pipeline("transform_conv");
 			
 			cmd.dispatch_indirect(_basic.instancesCount);

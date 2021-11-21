@@ -14,6 +14,12 @@ layout (binding = 1, std430) restrict readonly buffer BasicTransforms {
 layout (binding = 2, std430) restrict writeonly buffer Transforms {
 	mat3x4 b_transforms[];
 };
+layout (binding = 3, std430) restrict readonly buffer Instances {
+	Instance b_instances[];
+};
+layout(binding = 4, std430) restrict readonly buffer Meshes {
+	Mesh b_meshes[];
+};
 
 void main() {
 	
@@ -21,6 +27,10 @@ void main() {
 	if (gid >= u_instanceCount.w)
 		return;
 	
-	b_transforms[gid] = encodeTransform(b_basicTransforms[gid]);
+	mat4 transform = encodeTransform(b_basicTransforms[gid]);
+	uint meshIdx = b_instances[gid].meshIdx;
+	mat4 meshTransform = b_meshes[meshIdx].transform;
+	
+	b_transforms[gid] = mat3x4(transpose(transform * meshTransform));
 	
 }

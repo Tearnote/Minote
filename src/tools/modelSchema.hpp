@@ -10,7 +10,7 @@ using IndexType = u32;
 using VertexType = vec3;
 using NormalType = u32;
 
-constexpr auto ModelFormat = 2u;
+constexpr auto ModelFormat = 3u;
 constexpr auto NormalOctBits = 16u;
 
 // An object file is an ordered map:
@@ -20,6 +20,7 @@ constexpr auto NormalOctBits = 16u;
 //    - metalness: f32
 //    - roughness: f32
 //  - meshes: array of ordered maps:
+//    - transform: mat4
 //    - materialIdx: u32
 //    - radius: f32
 //    - indexCount: u32

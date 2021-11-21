@@ -312,7 +312,7 @@ void Engine::render() {
 	// Set up the rendergraph
 	
 	// Instance list processing
-	auto instances = InstanceList::fromBasic(m_permPool, rg, "instances", std::move(basicInstances));
+	auto instances = InstanceList::fromBasic(m_permPool, rg, "instances", std::move(basicInstances), m_models);
 	auto drawables = DrawableInstanceList::fromUnsorted(m_permPool, rg, "drawables", instances, m_models);
 	auto culledDrawables = DrawableInstanceList::frustumCull(m_permPool, rg, "culledDrawables", drawables,
 		m_models, m_world.view, m_world.projection);

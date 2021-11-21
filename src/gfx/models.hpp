@@ -36,6 +36,7 @@ struct Material {
 using MaterialType = Material::Type;
 
 struct Mesh {
+	mat4 transform;
 	u32 indexOffset;
 	u32 indexCount;
 	u32 materialIdx;
