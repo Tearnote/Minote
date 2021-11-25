@@ -27,10 +27,8 @@ struct Buffer {
 	
 	// Construct a buffer inside a pool and transfer data into it. If the pool already contained
 	// a buffer under the same name, the existing one is retrieved instead, but the transfer
-	// still proceeds. For GPU-only buffers, the transfer is not waited for.
-	// Setting elementCapacity allows for a buffer larger than provided data.
-	static auto make(Pool&, vuk::Name, vuk::BufferUsageFlags, std::span<T const> data,
-		vuk::MemoryUsage = vuk::MemoryUsage::eCPUtoGPU, usize elementCapacity = 0_zu) -> Buffer<T>;
+	// still proceeds. Setting elementCapacity allows for a buffer larger than provided data.
+	static auto make(Pool&, vuk::Name, vuk::BufferUsageFlags, std::span<T const> data, usize elementCapacity = 0_zu) -> Buffer<T>;
 	
 	// Create a buffer reference that starts at the specified element count.
 	auto offsetView(usize elements) const -> vuk::Buffer;

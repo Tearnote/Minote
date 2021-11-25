@@ -307,14 +307,14 @@ void Engine::render() {
 	}
 	
 	auto world = m_world.upload(m_framePool, "world");
-	auto basicInstances = BasicInstanceList::upload(m_permPool, rg, "basicInstances", m_objects, m_models);
+	auto basicInstances = BasicInstanceList::upload(m_framePool, rg, "basicInstances", m_objects, m_models);
 	
 	// Set up the rendergraph
 	
 	// Instance list processing
-	auto instances = InstanceList::fromBasic(m_permPool, rg, "instances", std::move(basicInstances), m_models);
-	auto drawables = DrawableInstanceList::fromUnsorted(m_permPool, rg, "drawables", instances, m_models);
-	auto culledDrawables = DrawableInstanceList::frustumCull(m_permPool, rg, "culledDrawables", drawables,
+	auto instances = InstanceList::fromBasic(m_framePool, rg, "instances", std::move(basicInstances), m_models);
+	auto drawables = DrawableInstanceList::fromUnsorted(m_framePool, rg, "drawables", instances, m_models);
+	auto culledDrawables = DrawableInstanceList::frustumCull(m_framePool, rg, "culledDrawables", drawables,
 		m_models, m_world.view, m_world.projection);
 	
 	// Sky generation
@@ -333,7 +333,7 @@ void Engine::render() {
 		
 		Clear::apply(rg, color, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 		Visibility::apply(rg, visbuf, depth, world, culledDrawables, m_models);
-		auto worklist = Worklist::create(m_swapchainPool, rg, "worklist", visbuf,
+		auto worklist = Worklist::create(m_framePool, rg, "worklist", visbuf,
 			culledDrawables, m_models);
 		PBR::apply(rg, color, visbuf, worklist, world, m_models,
 			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
@@ -348,7 +348,7 @@ void Engine::render() {
 		if (m_flushTemporalResources)
 			Clear::apply(rg, colorPrev, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 		Visibility::applyMS(rg, visbufMS, depthMS, world, culledDrawables, m_models);
-		auto worklistMS = Worklist::createMS(m_swapchainPool, rg, "worklist_ms", visbufMS,
+		auto worklistMS = Worklist::createMS(m_framePool, rg, "worklist_ms", visbufMS,
 			culledDrawables, m_models);
 		Antialiasing::quadAssign(rg, visbufMS, quadbuf, jitterMap, world);
 		PBR::applyQuad(rg, clusterOut, velocity, quadbuf, worklistMS, world, m_models,

@@ -150,20 +150,20 @@ auto ModelList::upload(Pool& _pool, vuk::Name _name) && -> ModelBuffer {
 	auto result = ModelBuffer{
 		.materials = Buffer<Material>::make(_pool, nameAppend(_name, "materials"),
 			vuk::BufferUsageFlagBits::eStorageBuffer,
-			m_materials, vuk::MemoryUsage::eGPUonly),
+			m_materials),
 		.indices = Buffer<IndexType>::make(_pool, nameAppend(_name, "indices"),
 			vuk::BufferUsageFlagBits::eIndexBuffer |
 			vuk::BufferUsageFlagBits::eStorageBuffer,
-			m_indices, vuk::MemoryUsage::eGPUonly),
+			m_indices),
 		.vertices = Buffer<VertexType>::make(_pool, nameAppend(_name, "vertices"),
 			vuk::BufferUsageFlagBits::eStorageBuffer,
-			m_vertices, vuk::MemoryUsage::eGPUonly),
+			m_vertices),
 		.normals = Buffer<NormalType>::make(_pool, nameAppend(_name, "normals"),
 			vuk::BufferUsageFlagBits::eStorageBuffer,
-			m_normals, vuk::MemoryUsage::eGPUonly),
+			m_normals),
 		.meshes = Buffer<Mesh>::make(_pool, nameAppend(_name, "meshes"),
 			vuk::BufferUsageFlagBits::eStorageBuffer,
-			m_meshes, vuk::MemoryUsage::eGPUonly),
+			m_meshes),
 		.cpu_modelMeshes = std::move(m_modelMeshes) };
 	result.cpu_meshes = std::move(m_meshes); // Must still exist for .meshes creation
 	

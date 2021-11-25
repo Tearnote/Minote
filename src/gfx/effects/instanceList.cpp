@@ -21,6 +21,23 @@ auto BasicInstanceList::upload(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _na
 	
 	auto instancesCount = 0u;
 	
+	// Precalculate mesh count
+	
+	for (auto id: iota(ObjectID(0), _objects.size())) {
+		
+		auto& metadata = _objects.metadata[id];
+		if (!metadata.exists || !metadata.visible)
+			continue;
+		
+		auto modelID = _objects.modelIDs[id];
+		instancesCount += _models.cpu_modelMeshes.at(modelID).size();
+		
+	}
+	
+	instances.reserve(instancesCount);
+	colors.reserve(instancesCount);
+	basicTransforms.reserve(instancesCount);
+	
 	// Queue up meshes of all valid objects
 	
 	for (auto id: iota(ObjectID(0), _objects.size())) {
@@ -34,11 +51,9 @@ auto BasicInstanceList::upload(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _na
 			
 			instances.emplace_back(Instance{
 				.meshIdx = u32(meshIdx),
-				.transformIdx = instancesCount });
+				.transformIdx = u32(basicTransforms.size()) });
 			colors.emplace_back(_objects.colors[id]);
 			basicTransforms.emplace_back(_objects.transforms[id]);
-			
-			instancesCount += 1;
 			
 		}
 		
@@ -57,13 +72,13 @@ auto BasicInstanceList::upload(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _na
 		std::span(&instancesCountData, 1));
 	result.instances = Buffer<Instance>::make(_pool, nameAppend(_name, "instances"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
-		instances, vuk::MemoryUsage::eGPUonly, MaxInstances);
+		instances, MaxInstances);
 	result.colors = Buffer<vec4>::make(_pool, nameAppend(_name, "colors"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
-		colors, vuk::MemoryUsage::eGPUonly, MaxInstances);
+		colors, MaxInstances);
 	result.basicTransforms = Buffer<BasicTransform>::make(_pool, nameAppend(_name, "basicTransforms"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
-		basicTransforms, vuk::MemoryUsage::eGPUonly, MaxInstances);
+		basicTransforms, MaxInstances);
 	_pool.ptc().dma_task();
 	
 	result.instancesCount.attach(_rg, vuk::eHostWrite, vuk::eNone);
@@ -184,7 +199,7 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 	
 	result.commands = Buffer<Command>::make(_pool, nameAppend(_name, "commands"),
 		vuk::BufferUsageFlagBits::eStorageBuffer | vuk::BufferUsageFlagBits::eIndirectBuffer,
-		commandsData, vuk::MemoryUsage::eGPUonly);
+		commandsData);
 	_pool.ptc().dma_task();
 	result.commands.attach(_rg, vuk::eTransferDst, vuk::eNone);
 	
@@ -213,7 +228,7 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 	
 	auto scanTemp = Buffer<u32>::make(_pool, nameAppend(_name, "scan temp"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
-		divRoundUp(result.commands.length(), 1024_zu), vuk::MemoryUsage::eGPUonly);
+		divRoundUp(result.commands.length(), 1024_zu));
 	scanTemp.attach(_rg, vuk::eNone, vuk::eNone);
 	
 	_rg.add_pass({
@@ -309,7 +324,7 @@ auto DrawableInstanceList::frustumCull(Pool& _pool, vuk::RenderGraph& _rg, vuk::
 	auto commandsData = ivector<Command>(_source.commands.length());
 	result.commands = Buffer<Command>::make(_pool, nameAppend(_name, "commands"),
 		vuk::BufferUsageFlagBits::eStorageBuffer | vuk::BufferUsageFlagBits::eIndirectBuffer,
-		commandsData, vuk::MemoryUsage::eGPUonly);
+		commandsData);
 	_pool.ptc().dma_task();
 	result.commands.attach(_rg, vuk::eHostWrite, vuk::eNone);
 	

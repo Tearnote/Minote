@@ -1,6 +1,7 @@
 #include "gfx/resources/buffer.hpp"
 
 #include <cassert>
+#include <cstring>
 
 namespace minote::gfx {
 
@@ -35,13 +36,11 @@ auto Buffer<T>::make(Pool& _pool, vuk::Name _name, vuk::BufferUsageFlags _usage,
 
 template<typename T>
 auto Buffer<T>::make(Pool& _pool, vuk::Name _name, vuk::BufferUsageFlags _usage,
-	std::span<T const> _data, vuk::MemoryUsage _memUsage, usize _elementCapacity) -> Buffer<T> {
+	std::span<T const> _data, usize _elementCapacity) -> Buffer<T> {
 	
-	assert(_memUsage == vuk::MemoryUsage::eCPUtoGPU ||
-	       _memUsage == vuk::MemoryUsage::eGPUonly);
 	assert(_elementCapacity == 0 || _elementCapacity >= _data.size());
 	
-	auto& buffer = [&_pool, _name, &_data, _usage, _memUsage, _elementCapacity]() -> vuk::Buffer& {
+	auto& buffer = [&_pool, _name, &_data, _usage, _elementCapacity]() -> vuk::Buffer& {
 		
 		if (_pool.contains(_name)) {
 			
@@ -49,16 +48,12 @@ auto Buffer<T>::make(Pool& _pool, vuk::Name _name, vuk::BufferUsageFlags _usage,
 			
 		} else {
 			
-			auto usage = _usage;
-			if (_memUsage == vuk::MemoryUsage::eGPUonly)
-				usage |= vuk::BufferUsageFlagBits::eTransferDst;
-			
 			auto size = _data.size_bytes();
 			if (_elementCapacity != 0)
 				size = _elementCapacity * sizeof(T);
 			
 			return *_pool.insert<vuk::Unique<vuk::Buffer>>(_name,
-				_pool.ptc().allocate_buffer(_memUsage, usage, size, alignof(T)));
+				_pool.ptc().allocate_buffer(vuk::MemoryUsage::eCPUtoGPU, _usage, size, alignof(T)));
 			
 		}
 		
@@ -66,10 +61,7 @@ auto Buffer<T>::make(Pool& _pool, vuk::Name _name, vuk::BufferUsageFlags _usage,
 	
 	assert(buffer.size >= _data.size_bytes());
 	
-	if (_memUsage == vuk::MemoryUsage::eCPUtoGPU)
-		std::memcpy(buffer.mapped_ptr, _data.data(), _data.size_bytes());
-	else
-		_pool.ptc().upload(buffer, _data);
+	std::memcpy(buffer.mapped_ptr, _data.data(), _data.size_bytes());
 	
 	return Buffer<T>{
 		.name = _name,
