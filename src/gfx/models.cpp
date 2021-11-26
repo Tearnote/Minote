@@ -42,7 +42,7 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 		auto& material = m_materials.emplace_back();
 		material.id = +MaterialType::PBR;
 		
-		mpack_expect_map_match(&model, 3);
+		mpack_expect_map_match(&model, 4);
 			
 			mpack_expect_cstr_match(&model, "color");
 			mpack_expect_array_match(&model, 4);
@@ -50,6 +50,13 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 			material.color[1] = mpack_expect_float(&model);
 			material.color[2] = mpack_expect_float(&model);
 			material.color[3] = mpack_expect_float(&model);
+			mpack_done_array(&model);
+			
+			mpack_expect_cstr_match(&model, "emissive");
+			mpack_expect_array_match(&model, 3);
+			material.emissive[0] = mpack_expect_float(&model);
+			material.emissive[1] = mpack_expect_float(&model);
+			material.emissive[2] = mpack_expect_float(&model);
 			mpack_done_array(&model);
 			
 			mpack_expect_cstr_match(&model, "metalness");
@@ -68,6 +75,7 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 		auto& material = m_materials.emplace_back();
 		material.id = +MaterialType::PBR;
 		material.color = {1.0f, 1.0f, 1.0f, 1.0f};
+		material.emissive = {0.0f, 0.0f, 0.0f};
 		material.metalness = 0.0f;
 		material.roughness = 0.0f;
 		L_WARN("Model {} has no materials, using defaults", _name);

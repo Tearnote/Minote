@@ -229,13 +229,17 @@ vec3 shadeVisSamplePBR(uint _visValue, vec2 _screenPos, out vec2 _velocity) {
 		slice = 0.5;
 		
 	}
-	float w = sqrt(slice / AerialPerspectiveSize.z);	// squared distribution
+	float w = sqrt(slice / AerialPerspectiveSize.z); // squared distribution
 	
 	vec3 ap = weight * textureLod(s_aerialPerspective, vec3(sampleUv, w), 0.0).xyz;
 	
+	// Emissive lighting
+	
+	vec3 emissive = material.emissive * 8.0;
+	
 	// Result write
 	
-	return surface + ap;
+	return surface + ap + emissive;
 	
 }
 

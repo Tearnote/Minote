@@ -26,10 +26,11 @@ struct Material {
 	};
 	
 	vec4 color;
+	vec3 emissive;
 	u32 id;
 	f32 metalness;
 	f32 roughness;
-	u32 pad0;
+	vec2 pad0;
 	
 };
 

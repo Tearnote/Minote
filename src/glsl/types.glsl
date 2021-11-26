@@ -54,10 +54,11 @@ struct BasicTransform {
 
 struct Material {
 	vec4 color;
+	vec3 emissive;
 	uint id;
 	float metalness;
 	float roughness;
-	uint pad0;
+	vec2 pad0;
 };
 
 // Convert from BasicTransform to Transform

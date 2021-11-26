@@ -34,6 +34,7 @@ int main(int argc, char const* argv[]) {
 	
 	struct Material {
 		vec4 color;
+		vec3 emissive;
 		f32 metalness;
 		f32 roughness;
 	};
@@ -49,6 +50,10 @@ int main(int argc, char const* argv[]) {
 				pbr.base_color_factor[1],
 				pbr.base_color_factor[2],
 				pbr.base_color_factor[3] },
+			.emissive = vec3{
+				material.emissive_factor[0],
+				material.emissive_factor[1],
+				material.emissive_factor[2] },
 			.metalness = pbr.metallic_factor,
 			.roughness = pbr.roughness_factor });
 		
@@ -240,13 +245,19 @@ int main(int argc, char const* argv[]) {
 		mpack_start_array(&model, materials.size());
 		for (auto& material: materials) {
 			
-			mpack_start_map(&model, 3);
+			mpack_start_map(&model, 4);
 				mpack_write_cstr(&model, "color");
 				mpack_start_array(&model, 4);
 					mpack_write_float(&model, material.color.r());
 					mpack_write_float(&model, material.color.g());
 					mpack_write_float(&model, material.color.b());
 					mpack_write_float(&model, material.color.a());
+				mpack_finish_array(&model);
+				mpack_write_cstr(&model, "emissive");
+				mpack_start_array(&model, 3);
+					mpack_write_float(&model, material.emissive.r());
+					mpack_write_float(&model, material.emissive.g());
+					mpack_write_float(&model, material.emissive.b());
 				mpack_finish_array(&model);
 				mpack_write_cstr(&model, "metalness");
 				mpack_write_float(&model, material.metalness);
