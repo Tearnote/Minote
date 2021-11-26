@@ -121,7 +121,10 @@ void main() {
 	
 	// Blend together the cluster contributions
 	
-	mat4 currentSamples = clusterOuts * clusterWeights;
+	mat4 currentSamples = mat4(0.0);
+	for (uint i = 0; i < 4; i += 1)
+	for (uint j = 0; j < 4; j += 1)
+		currentSamples[i] += vec4(tonemapWithWeight(clusterOuts[j].rgb, clusterWeights[i][j]), clusterWeights[i][j]);
 	
 	// Blend with previous frames and write out the result
 	
@@ -130,7 +133,7 @@ void main() {
 		uint historySampleAge = uint(historySamples[i].a);
 		float blendRatio = (1.0 / float(CONVERGE_FRAMES)) * (CONVERGE_FRAMES - min(historySampleAge, CONVERGE_FRAMES - 1));
 		uint newAge = min(historySampleAge + 1, CONVERGE_FRAMES - 1);
-		vec3 result = mix(historySamples[i].rgb, currentSamples[i].rgb, blendRatio);
+		vec3 result = mix(historySamples[i].rgb, tonemapInvert(currentSamples[i].rgb), blendRatio);
 		
 		uvec2 pos = gid + uvec2(QuadPixelOffsets[i]);
 		uint seed = u_sourceSize.x * u_sourceSize.y * u_world.frameCounter + pos.x * u_sourceSize.y + pos.y;
