@@ -220,7 +220,7 @@ vec3 shadeVisSamplePBR(uint _visValue, vec2 _screenPos, out vec2 _velocity) {
 	
 	// Aerial perspective
 	
-	float slice = aerialPerspectiveDepthToSlice(1.0 - clipVertex.z);
+	float slice = aerialPerspectiveDepthToSlice(clipVertex.z);
 	float weight = 1.0;
 	if (slice < 0.5) {
 		
