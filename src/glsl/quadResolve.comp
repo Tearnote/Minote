@@ -120,12 +120,14 @@ void main() {
 		
 		// OOB test
 		
+		bool doesJitter = false;
+		bool didJitter = false;
 		if (all(greaterThanEqual(historyLocation, vec2(0.0))) && all(lessThan(historyLocation, vec2(u_sourceSize)))) {
 			
 			// Current jitter test
 			
-			bool doesJitter = isQuadJittered(s_jitterMap, uvec2(currentLocation));
-			bool didJitter = isQuadJittered(s_jitterMapPrev, uvec2(historyLocation));
+			doesJitter = isQuadJittered(s_jitterMap, uvec2(currentLocation));
+			didJitter = isQuadJittered(s_jitterMapPrev, uvec2(historyLocation));
 			
 			if (doesJitter && didJitter) {
 				
@@ -133,14 +135,11 @@ void main() {
 				
 			// History jitter test
 				
-			} else if (!didJitter) {
+			} else {
 				
 				// Go over each history cluster and check if it's valid
 				
 				for (uint j = 0; j < 4; j += 1) {
-					
-					// Invalid if was jittered in previous frame
-					
 					
 					uvec2 historyCluster = texelFetch(s_quadbufPrev, ivec2(historyQuad + QuadPixelOffsets[j]), 0).xy;
 					historyValues[j] = historyCluster.x;
@@ -172,7 +171,8 @@ void main() {
 		if (validHistoryClusters[0] &&
 		    validHistoryClusters[1] &&
 		    validHistoryClusters[2] &&
-		    validHistoryClusters[3]) {
+		    validHistoryClusters[3] &&
+		   (doesJitter == didJitter)) {
 			
 			resultType = 0;
 			
