@@ -220,7 +220,8 @@ void Engine::render() {
 	auto quadbufCurrent = Texture2D();
 	auto quadbufPrev = Texture2D();
 	auto velocity = Texture2D();
-	auto jitterMap = Texture2D();
+	auto jitterMapCurrent = Texture2D();
+	auto jitterMapPrev = Texture2D();
 	auto clusterOutCurrent = Texture2D();
 	auto clusterOutPrev = Texture2D();
 	auto colorCurrent = Texture2D();
@@ -282,12 +283,25 @@ void Engine::render() {
 			vuk::ImageUsageFlagBits::eTransferDst);
 		velocity.attach(rg, vuk::eNone, vuk::eNone);
 		
-		jitterMap = Texture2D::make(m_swapchainPool, "jitterMap",
-			divRoundUp(viewport, 8u), vuk::Format::eR16Uint,
-			vuk::ImageUsageFlagBits::eStorage |
-			vuk::ImageUsageFlagBits::eSampled |
-			vuk::ImageUsageFlagBits::eTransferDst);
-		jitterMap.attach(rg, vuk::eNone, vuk::eNone);
+		auto jitterMaps = to_array({
+			Texture2D::make(m_swapchainPool, "jitterMap0",
+				divRoundUp(viewport, 8u), vuk::Format::eR16Uint,
+				vuk::ImageUsageFlagBits::eStorage |
+				vuk::ImageUsageFlagBits::eSampled |
+				vuk::ImageUsageFlagBits::eTransferDst),
+			Texture2D::make(m_swapchainPool, "jitterMap1",
+				divRoundUp(viewport, 8u), vuk::Format::eR16Uint,
+				vuk::ImageUsageFlagBits::eStorage |
+				vuk::ImageUsageFlagBits::eSampled |
+				vuk::ImageUsageFlagBits::eTransferDst) });
+		jitterMapCurrent = jitterMaps[oddFrame];
+		jitterMapPrev = jitterMaps[!oddFrame];
+		
+		jitterMapCurrent.attach(rg, vuk::eNone, vuk::eTransferSrc);
+		if (m_flushTemporalResources)
+			jitterMapPrev.attach(rg, vuk::eNone, vuk::eNone);
+		else
+			jitterMapPrev.attach(rg, vuk::eTransferSrc, vuk::eNone);
 		
 		auto clusterOuts = to_array({
 			Texture2D::make(m_swapchainPool, "cluster_out0",
@@ -371,7 +385,7 @@ void Engine::render() {
 		Clear::apply(rg, clusterOutCurrent, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 		Clear::apply(rg, colorCurrent, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 		Clear::apply(rg, velocity, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
-		Clear::apply(rg, jitterMap, vuk::ClearColor(0u, 0u, 0u, 0u));
+		Clear::apply(rg, jitterMapCurrent, vuk::ClearColor(0u, 0u, 0u, 0u));
 		if (m_flushTemporalResources) {
 			
 			Clear::apply(rg, quadbufPrev, vuk::ClearColor(0u, 0u, 0u, 0u));
@@ -382,12 +396,12 @@ void Engine::render() {
 		Visibility::applyMS(rg, visbufMS, depthMS, world, culledDrawables, m_models);
 		auto worklistMS = Worklist::createMS(m_framePool, rg, "worklist_ms", visbufMS,
 			culledDrawables, m_models);
-		Antialiasing::quadAssign(rg, visbufMS, quadbufCurrent, jitterMap, world);
+		Antialiasing::quadAssign(rg, visbufMS, quadbufCurrent, jitterMapCurrent, world);
 		PBR::applyQuad(rg, clusterOutCurrent, velocity, quadbufCurrent, worklistMS, world, m_models,
 			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
 		Sky::drawQuad(rg, clusterOutCurrent, velocity, quadbufCurrent, worklistMS, cameraSky, m_atmosphere, world);
-		Antialiasing::quadResolve(rg, colorCurrent, velocity, quadbufCurrent, jitterMap,
-			clusterOutCurrent, colorPrev, quadbufPrev, clusterOutPrev, world);
+		Antialiasing::quadResolve(rg, colorCurrent, velocity, quadbufCurrent, jitterMapCurrent,
+			clusterOutCurrent, colorPrev, quadbufPrev, clusterOutPrev, jitterMapPrev, world);
 		rg.add_pass({
 			.name = nameAppend(colorCurrent.name, "copy"),
 			.resources = {

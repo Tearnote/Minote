@@ -16,31 +16,24 @@ layout(binding = 3) uniform sampler2D s_clusterOut;
 layout(binding = 4) uniform sampler2D s_history;
 layout(binding = 5) uniform usampler2D s_quadbufPrev;
 layout(binding = 6) uniform sampler2D s_clusterOutPrev;
-layout(binding = 7) uniform sampler2D s_velocity;
-layout(binding = 8) restrict writeonly uniform image2D i_target;
+layout(binding = 7) uniform usampler2D s_jitterMapPrev;
+layout(binding = 8) uniform sampler2D s_velocity;
+layout(binding = 9) restrict writeonly uniform image2D i_target;
 
 layout(constant_id = 0) const uint u_sourceSizePacked = 0;
 const uvec2 u_sourceSize = U16FROMU32(u_sourceSizePacked);
 
 #define CONVERGE_FRAMES 10
+#define TAA_DEBUG 0
 
-bool isQuadJittered(uvec2 _gid) {
+bool isQuadJittered(usampler2D _map, uvec2 _gid) {
 	
-	uint jitterSample = texelFetch(s_jitterMap, ivec2(_gid / 8), 0).r;
+	uint jitterSample = texelFetch(_map, ivec2(_gid / 8), 0).r;
 	uvec2 quadOffset = (_gid / 2) % 4;
 	uint quadMask = 1u << (quadOffset.x + quadOffset.y * 4);
 	return (jitterSample & quadMask) != 0;
 	
 }
-
-bool shouldReject(uint _value, vec2 _currentPos) {
-	
-	if (isQuadJittered(uvec2(_currentPos)))
-		return false;
-	
-	return true;
-	
-};
 
 // https://research.activision.com/publications/archives/filmic-smaasharp-morphological-and-temporal-antialiasing
 #define REPROJECTION_SHARPNESS 25.0
@@ -94,55 +87,180 @@ void main() {
 		
 	}
 	
-	// Reproject from the history buffer
+	// For each pixel, perform TAA
 	
-	mat4 historySamples; // .a is sample age
 	for (uint i = 0; i < 4; i += 1) {
+		
+		// Calculate each cluster's contribution to current pixel
+		
+		const float WeightStep = 1.0 / float(SUBSAMPLE_COUNT);
+		uint mask = bitmask(SUBSAMPLE_COUNT) << (i * SUBSAMPLE_COUNT);
+		vec4 clusterWeights;
+		for (uint j = 0; j < 4; j += 1)
+			clusterWeights[j] = float(bitCount(clusterSubsamples[j] & mask)) * WeightStep;
+		
+		// Blend together the cluster contributions to obtain current sample
+		
+		vec3 currentSample = vec3(0.0);
+		for (uint j = 0; j < 4; j += 1)
+			currentSample += tonemapWithWeight(clusterOuts[j], clusterWeights[j]);
+		currentSample = tonemapInvert(currentSample);
+		
+		// Reproject to get history position
 		
 		vec2 currentLocation = vec2(gid + QuadPixelOffsets[i]) + vec2(0.5);
 		vec2 historyLocation = currentLocation - clusterVelocities[i];
-		if (any(lessThan(historyLocation, vec2(0.0))) || any(greaterThan(historyLocation, vec2(u_sourceSize)))
-			|| shouldReject(clusterValues[i], currentLocation)
-			)
-			historySamples[i] = vec4(0.0);
-		else
-			historySamples[i] = sampleHistory(historyLocation);
+		uvec2 historyQuad = uvec2(historyLocation) & ~1u;
 		
-	}
-	
-	// Calculate each cluster's contribution to each pixel
-	
-	const float WeightStep = 1.0 / float(SUBSAMPLE_COUNT);
-	mat4 clusterWeights;
-	for (uint i = 0; i < 4; i += 1) {
+		// Check how many history clusters are usable
 		
-		uint mask = bitmask(SUBSAMPLE_COUNT) << (i * SUBSAMPLE_COUNT);
-		for (uint j = 0; j < 4; j += 1)
-			clusterWeights[i][j] = float(bitCount(clusterSubsamples[j] & mask)) * WeightStep;
+		bool validHistoryClusters[4] = {false, false, false, false};
+		uvec4 historyValues;
+		uvec4 historySubsamples;
 		
-	}
-	
-	// Blend together the cluster contributions
-	
-	mat4x3 currentSamples = mat4x3(0.0);
-	for (uint i = 0; i < 4; i += 1)
-	for (uint j = 0; j < 4; j += 1)
-		currentSamples[i] += tonemapWithWeight(clusterOuts[j], clusterWeights[i][j]);
-	
-	// Blend with previous frames and write out the result
-	
-	for (uint i = 0; i < 4; i += 1) {
+		// OOB test
 		
-		uint historySampleAge = uint(historySamples[i].a);
-		float blendRatio = (1.0 / float(CONVERGE_FRAMES)) * (CONVERGE_FRAMES - min(historySampleAge, CONVERGE_FRAMES - 1));
-		uint newAge = min(historySampleAge + 1, CONVERGE_FRAMES - 1);
-		vec3 result = mix(historySamples[i].rgb, tonemapInvert(currentSamples[i]), blendRatio);
+		if (all(greaterThanEqual(historyLocation, vec2(0.0))) && all(lessThan(historyLocation, vec2(u_sourceSize)))) {
+			
+			// Current jitter test
+			
+			bool doesJitter = isQuadJittered(s_jitterMap, uvec2(currentLocation));
+			bool didJitter = isQuadJittered(s_jitterMapPrev, uvec2(historyLocation));
+			
+			if (doesJitter && didJitter) {
+				
+				validHistoryClusters = bool[](true, true, true, true);
+				
+			// History jitter test
+				
+			} else if (!didJitter) {
+				
+				// Go over each history cluster and check if it's valid
+				
+				for (uint j = 0; j < 4; j += 1) {
+					
+					// Invalid if was jittered in previous frame
+					
+					
+					uvec2 historyCluster = texelFetch(s_quadbufPrev, ivec2(historyQuad + QuadPixelOffsets[j]), 0).xy;
+					historyValues[j] = historyCluster.x;
+					historySubsamples[j] = historyCluster.y;
+					
+					for (uint k = 0; k < 4; k += 1) {
+						
+						if (historyValues[j] == clusterValues[k]) {
+							
+							validHistoryClusters[j] = true;
+							break;
+							
+						}
+						
+					}
+					
+				}
+				
+			}
+			
+		}
+		
+		vec4 result; // .a is age
+		
+		uint resultType;
+		
+		// All clusters valid? Sample the history
+		
+		if (validHistoryClusters[0] &&
+		    validHistoryClusters[1] &&
+		    validHistoryClusters[2] &&
+		    validHistoryClusters[3]) {
+			
+			resultType = 0;
+			
+			vec4 historySample = sampleHistory(historyLocation);
+			uint historySampleAge = uint(historySample.a);
+			float blendRatio = (1.0 / float(CONVERGE_FRAMES)) * (CONVERGE_FRAMES - min(historySampleAge, CONVERGE_FRAMES - 1));
+			uint newAge = min(historySampleAge + 1, CONVERGE_FRAMES - 1);
+			result = vec4(mix(historySample.rgb, currentSample, blendRatio), float(newAge));
+			
+		// No clusters valid? Use current sample only, reset age
+			
+		} else if (!validHistoryClusters[0] &&
+		           !validHistoryClusters[1] &&
+		           !validHistoryClusters[2] &&
+		           !validHistoryClusters[3]) {
+			
+			resultType = 1;
+			
+			result = vec4(currentSample, 1.0);
+			
+		// Some clusters valid? Create a history pixel from valid history clusters
+			
+		} else {
+			
+			resultType = 2;
+			
+			// Normalize weights of valid history clusters
+			
+			float validHistoryWeightSum = 0.0;
+			vec4 historyWeights = vec4(0.0);
+			for (uint j = 0; j < 4; j += 1) {
+				
+				if (validHistoryClusters[j]) {
+					
+					historyWeights[j] = float(bitCount(historySubsamples[j])) * WeightStep;
+					validHistoryWeightSum += historyWeights[j];
+					
+				}
+				
+			}
+			
+			for (uint j = 0; j < 4; j += 1)
+				historyWeights[j] /= validHistoryWeightSum;
+			
+			// Fetch history cluster results
+			
+			mat4x3 historyOuts;
+			for (uint j = 0; j < 4; j += 1)
+				historyOuts[j] = texelFetch(s_clusterOutPrev, ivec2(historyQuad + QuadPixelOffsets[j]), 0).rgb;
+			
+			// Create a history pixel from new weights
+			
+			vec3 historySample = vec3(0.0);
+			for (uint j = 0; j < 4; j += 1)
+				historySample += tonemapWithWeight(historyOuts[j], historyWeights[j]);
+			historySample = tonemapInvert(historySample);
+			
+			// Blend history pixel with current
+			
+			const float blendRatio = (1.0 / float(CONVERGE_FRAMES)) * (CONVERGE_FRAMES - 1);
+			result = vec4(mix(historySample.rgb, currentSample, blendRatio), 2.0);
+			
+		}
+		
+#if TAA_DEBUG
+		switch (resultType) {
+			
+			case 0:
+			result.rgb = vec3(0.389, 0.625, 0.774);
+			break;
+			case 1:
+			result.rgb = vec3(0.900, 0.145, 0.160);
+			break;
+			case 2:
+			result.rgb = vec3(0.010, 0.190, 0.465);
+			break;
+			
+		}
+#endif //TAA_DEBUG
+		
+		// Dither and write out
 		
 		uvec2 pos = gid + uvec2(QuadPixelOffsets[i]);
 		uint seed = u_sourceSize.x * u_sourceSize.y * u_world.frameCounter + pos.x * u_sourceSize.y + pos.y;
 		result += (randFloat(seed) * 2.0 - 1.0) * 0.0005;
+		result = max(result, 0.0);
 		
-		imageStore(i_target, ivec2(gid + QuadPixelOffsets[i]), vec4(result, float(newAge)));
+		imageStore(i_target, ivec2(gid + QuadPixelOffsets[i]), result);
 		
 	}
 	
