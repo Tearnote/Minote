@@ -65,11 +65,11 @@ vec4 sampleHistory(vec2 _uv) {
 	
 	vec2 tc0 = sourcePxPitch * (centerPosition - 1.0);
 	vec2 tc3 = sourcePxPitch * (centerPosition + 2.0);
-	vec4 color = vec4(textureLod(s_history, vec2(tc12.x, tc0.y ), 0.0).rgb, 1.0) * (w12.x * w0.y ) +
-	             vec4(textureLod(s_history, vec2(tc0.x,  tc12.y), 0.0).rgb, 1.0) * (w0.x  * w12.y) +
-	             vec4(centerColor.rgb,                                      1.0) * (w12.x * w12.y) +
-	             vec4(textureLod(s_history, vec2(tc3.x,  tc12.y), 0.0).rgb, 1.0) * (w3.x  * w12.y) +
-	             vec4(textureLod(s_history, vec2(tc12.x, tc3.y ), 0.0).rgb, 1.0) * (w12.x * w3.y );
+	vec3 color = textureLod(s_history, vec2(tc12.x, tc0.y ), 0.0).rgb * (w12.x * w0.y ) +
+	             textureLod(s_history, vec2(tc0.x,  tc12.y), 0.0).rgb * (w0.x  * w12.y) +
+	             centerColor.rgb                                      * (w12.x * w12.y) +
+	             textureLod(s_history, vec2(tc3.x,  tc12.y), 0.0).rgb * (w3.x  * w12.y) +
+	             textureLod(s_history, vec2(tc12.x, tc3.y ), 0.0).rgb * (w12.x * w3.y );
 	return vec4(color.rgb, centerColor.a);
 	
 }
@@ -82,14 +82,14 @@ void main() {
 	
 	uvec4 clusterValues;
 	uvec4 clusterSubsamples;
-	mat4 clusterOuts;
+	mat4x3 clusterOuts;
 	mat4x2 clusterVelocities;
 	for (uint i = 0; i < 4; i += 1) {
 		
 		uvec2 cluster = texelFetch(s_quadbuf, ivec2(gid + QuadPixelOffsets[i]), 0).xy;
 		clusterValues[i] = cluster.x;
 		clusterSubsamples[i] = cluster.y;
-		clusterOuts[i] = texelFetch(s_clusterOut, ivec2(gid + QuadPixelOffsets[i]), 0);
+		clusterOuts[i] = texelFetch(s_clusterOut, ivec2(gid + QuadPixelOffsets[i]), 0).rgb;
 		clusterVelocities[i] = texelFetch(s_velocity, ivec2(gid + QuadPixelOffsets[i]), 0).xy;
 		
 	}
@@ -124,10 +124,10 @@ void main() {
 	
 	// Blend together the cluster contributions
 	
-	mat4 currentSamples = mat4(0.0);
+	mat4x3 currentSamples = mat4x3(0.0);
 	for (uint i = 0; i < 4; i += 1)
 	for (uint j = 0; j < 4; j += 1)
-		currentSamples[i] += vec4(tonemapWithWeight(clusterOuts[j].rgb, clusterWeights[i][j]), clusterWeights[i][j]);
+		currentSamples[i] += tonemapWithWeight(clusterOuts[j], clusterWeights[i][j]);
 	
 	// Blend with previous frames and write out the result
 	
@@ -136,7 +136,7 @@ void main() {
 		uint historySampleAge = uint(historySamples[i].a);
 		float blendRatio = (1.0 / float(CONVERGE_FRAMES)) * (CONVERGE_FRAMES - min(historySampleAge, CONVERGE_FRAMES - 1));
 		uint newAge = min(historySampleAge + 1, CONVERGE_FRAMES - 1);
-		vec3 result = mix(historySamples[i].rgb, tonemapInvert(currentSamples[i].rgb), blendRatio);
+		vec3 result = mix(historySamples[i].rgb, tonemapInvert(currentSamples[i]), blendRatio);
 		
 		uvec2 pos = gid + uvec2(QuadPixelOffsets[i]);
 		uint seed = u_sourceSize.x * u_sourceSize.y * u_world.frameCounter + pos.x * u_sourceSize.y + pos.y;
