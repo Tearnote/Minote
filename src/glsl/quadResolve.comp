@@ -14,8 +14,10 @@ layout(binding = 1) uniform usampler2D s_quadbuf;
 layout(binding = 2) uniform usampler2D s_jitterMap;
 layout(binding = 3) uniform sampler2D s_clusterOut;
 layout(binding = 4) uniform sampler2D s_history;
-layout(binding = 5) uniform sampler2D s_velocity;
-layout(binding = 6) restrict writeonly uniform image2D i_target;
+layout(binding = 5) uniform usampler2D s_quadbufPrev;
+layout(binding = 6) uniform sampler2D s_clusterOutPrev;
+layout(binding = 7) uniform sampler2D s_velocity;
+layout(binding = 8) restrict writeonly uniform image2D i_target;
 
 layout(constant_id = 0) const uint u_sourceSizePacked = 0;
 const uvec2 u_sourceSize = U16FROMU32(u_sourceSizePacked);

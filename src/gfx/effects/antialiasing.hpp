@@ -19,7 +19,8 @@ struct Antialiasing {
 		Texture2D jitterMap, Buffer<World>);
 	
 	static void quadResolve(vuk::RenderGraph&, Texture2D target, Texture2D velocity,
-		Texture2D quadbuf, Texture2D jitterMap, Texture2D outputs, Texture2D targetPrev, Buffer<World>);
+		Texture2D quadbuf, Texture2D jitterMap, Texture2D outputs,
+		Texture2D targetPrev, Texture2D quadbufPrev, Texture2D outputsPrev, Buffer<World>);
 	
 };
 
