@@ -44,7 +44,9 @@ bool shouldReject(uint _value, vec2 _currentPos) {
 
 // https://research.activision.com/publications/archives/filmic-smaasharp-morphological-and-temporal-antialiasing
 #define REPROJECTION_SHARPNESS 25.0
-vec4 sampleHistory(vec2 _uv, vec4 _metrics) {
+vec4 sampleHistory(vec2 _uv) {
+	
+	const vec2 sourcePxPitch = vec2(1.0) / vec2(u_sourceSize);
 	
 	vec2 centerPosition = floor(_uv - 0.5) + 0.5;
 	vec2 f = _uv - centerPosition;
@@ -58,11 +60,11 @@ vec4 sampleHistory(vec2 _uv, vec4 _metrics) {
 	vec2 w3 =         c  * f3 -                c * f2;
 	
 	vec2 w12 = w1 + w2;
-	vec2 tc12 = _metrics.xy * (centerPosition + w2 / w12);
+	vec2 tc12 = sourcePxPitch * (centerPosition + w2 / w12);
 	vec4 centerColor = textureLod(s_history, vec2(tc12.x, tc12.y), 0.0);
 	
-	vec2 tc0 = _metrics.xy * (centerPosition - 1.0);
-	vec2 tc3 = _metrics.xy * (centerPosition + 2.0);
+	vec2 tc0 = sourcePxPitch * (centerPosition - 1.0);
+	vec2 tc3 = sourcePxPitch * (centerPosition + 2.0);
 	vec4 color = vec4(textureLod(s_history, vec2(tc12.x, tc0.y ), 0.0).rgb, 1.0) * (w12.x * w0.y ) +
 	             vec4(textureLod(s_history, vec2(tc0.x,  tc12.y), 0.0).rgb, 1.0) * (w0.x  * w12.y) +
 	             vec4(centerColor.rgb,                                      1.0) * (w12.x * w12.y) +
@@ -75,7 +77,6 @@ vec4 sampleHistory(vec2 _uv, vec4 _metrics) {
 void main() {
 	
 	uvec2 gid = gl_GlobalInvocationID.xy * 2;
-	vec4 targetMetrics = vec4(vec2(1.0) / vec2(u_sourceSize), vec2(u_sourceSize));
 	
 	// Read quad and cluster output samples
 	
@@ -105,7 +106,7 @@ void main() {
 			)
 			historySamples[i] = vec4(0.0);
 		else
-			historySamples[i] = sampleHistory(historyLocation, targetMetrics);
+			historySamples[i] = sampleHistory(historyLocation);
 		
 	}
 	
