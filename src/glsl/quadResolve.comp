@@ -23,7 +23,7 @@ layout(binding = 9) restrict writeonly uniform image2D i_target;
 layout(constant_id = 0) const uint u_sourceSizePacked = 0;
 const uvec2 u_sourceSize = U16FROMU32(u_sourceSizePacked);
 
-#define CONVERGE_FRAMES 10
+#define CONVERGE_FRAMES 15
 #define TAA_DEBUG 0
 
 bool isQuadJittered(usampler2D _map, uvec2 _gid) {
