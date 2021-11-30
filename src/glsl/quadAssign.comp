@@ -11,7 +11,7 @@ layout(binding = 0) uniform WorldConstants {
 	World u_world;
 };
 layout(binding = 1) uniform usampler2DMS s_visbuf;
-layout(binding = 2) restrict writeonly uniform uimage2D i_quadResolve;
+layout(binding = 2) restrict writeonly uniform uimage2D i_quadbuf;
 layout(binding = 3) restrict writeonly uniform uimage2D i_jitterMap;
 
 shared uvec4 sh_jitter;
@@ -35,24 +35,16 @@ void main() {
 	
 	// Read vis samples
 	
-	uint visSamples[VIS_SAMPLE_COUNT];
-	for (uint i = 0; i < VIS_SAMPLE_COUNT; i += 1)
+	uint visSamples[QUAD_SAMPLE_COUNT];
+	for (uint i = 0; i < QUAD_SAMPLE_COUNT; i += 1)
 		visSamples[i] = texelFetch(s_visbuf, ivec2(gid + QuadPixelOffsets[i / SUBSAMPLE_COUNT]), int(i % SUBSAMPLE_COUNT)).x;
 	
 	// Count unique samples and their frequency
 	
-	uint clusterValues[4];
-	uint clusterValueFreqs[4];
-	
-	for (uint i = 0; i < 4; i += 1) {
-		
-		clusterValues[i] = -2u;
-		clusterValueFreqs[i] = 0;
-		
-	}
-	
+	uint clusterValues[4] =  {-2u, -2u, -2u, -2u};
+	uint clusterValueFreqs[4] = {0u, 0u, 0u, 0u};
 	uint uniqueValues = 0;
-	for (uint i = 0; i < VIS_SAMPLE_COUNT; i += 1) {
+	for (uint i = 0; i < QUAD_SAMPLE_COUNT; i += 1) {
 		
 		// If repeat, increment frequency
 		// Check if value is unique
@@ -140,7 +132,7 @@ void main() {
 	// Centroids aren't written to the cluster output at the moment, so they're not saved
 	// vec2 clusterCentroids[4] = {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}};
 	
-	for (uint subIdx = 0; subIdx < VIS_SAMPLE_COUNT; subIdx += 1) {
+	for (uint subIdx = 0; subIdx < QUAD_SAMPLE_COUNT; subIdx += 1) {
 		
 		uint quadPx = subIdx / SUBSAMPLE_COUNT;
 		vec2 subsamplePosition = vec2(QuadPixelOffsets[quadPx]) + QuadSubsampleLocations[subIdx % SUBSAMPLE_COUNT];
@@ -187,7 +179,7 @@ void main() {
 	// Write out the results
 	
 	for (uint i = 0; i < 4; i += 1)
-		imageStore(i_quadResolve, ivec2(gid + QuadPixelOffsets[i]), uvec4(clusterValues[i], clusterSubsamples[i], 0, 0));
+		imageStore(i_quadbuf, ivec2(gid + QuadPixelOffsets[i]), uvec4(clusterValues[i], clusterSubsamples[i], 0, 0));
 	
 	if (gl_LocalInvocationIndex < 4)
 		imageStore(i_jitterMap, ivec2(gid / 8 + QuadPixelOffsets[gl_LocalInvocationIndex]), uvec4(sh_jitter[gl_LocalInvocationIndex], 0, 0, 0));

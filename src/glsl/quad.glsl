@@ -2,7 +2,7 @@
 #define QUAD_GLSL
 
 #define SUBSAMPLE_COUNT 8
-#define VIS_SAMPLE_COUNT (4 * SUBSAMPLE_COUNT)
+#define QUAD_SAMPLE_COUNT (4 * SUBSAMPLE_COUNT)
 
 const vec2 QuadSubsampleLocations[SUBSAMPLE_COUNT] = {
 	{0.5625, 0.3125},

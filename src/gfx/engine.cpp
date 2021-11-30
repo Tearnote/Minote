@@ -394,9 +394,9 @@ void Engine::render() {
 			
 		}
 		Visibility::applyMS(rg, visbufMS, depthMS, world, culledDrawables, m_models);
-		auto worklistMS = Worklist::createMS(m_framePool, rg, "worklist_ms", visbufMS,
-			culledDrawables, m_models);
 		Antialiasing::quadAssign(rg, visbufMS, quadbufCurrent, jitterMapCurrent, world);
+		auto worklistMS = Worklist::create(m_framePool, rg, "worklist_ms", quadbufCurrent,
+			culledDrawables, m_models);
 		PBR::applyQuad(rg, clusterOutCurrent, velocity, quadbufCurrent, worklistMS, world, m_models,
 			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
 		Sky::drawQuad(rg, clusterOutCurrent, velocity, quadbufCurrent, worklistMS, cameraSky, m_atmosphere, world);
