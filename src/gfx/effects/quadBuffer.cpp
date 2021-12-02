@@ -1,6 +1,7 @@
 #include "gfx/effects/quadBuffer.hpp"
 
 #include "base/containers/array.hpp"
+#include "gfx/effects/clear.hpp"
 #include "gfx/samplers.hpp"
 #include "gfx/util.hpp"
 
@@ -10,9 +11,15 @@ void QuadBuffer::compile(vuk::PerThreadContext& _ptc) {
 	
 	auto clusterFormPci = vuk::ComputePipelineBaseCreateInfo();
 	clusterFormPci.add_spirv(std::vector<u32>{
-#include "spv/clusterForm.comp.spv"
-	}, "clusterForm.comp");
-	_ptc.ctx.create_named_pipeline("clusterForm", clusterFormPci);
+#include "spv/quadClusterize.comp.spv"
+	}, "quadClusterize.comp");
+	_ptc.ctx.create_named_pipeline("quadClusterize", clusterFormPci);
+	
+	auto quadResolvePci = vuk::ComputePipelineBaseCreateInfo();
+	quadResolvePci.add_spirv(std::vector<u32>{
+#include "spv/quadResolve.comp.spv"
+	}, "quadResolve.comp");
+	_ptc.ctx.create_named_pipeline("quadResolve", quadResolvePci);
 	
 }
 
@@ -110,15 +117,24 @@ auto QuadBuffer::create(vuk::RenderGraph& _rg, Pool& _pool,
 	
 	result.velocity.attach(_rg, vuk::eNone, vuk::eNone);
 	
+	Clear::apply(_rg, result.jitterMap, vuk::ClearColor(0u, 0u, 0u, 0u));
+	if (_flushTemporal) {
+		
+		Clear::apply(_rg, result.clusterDefPrev, vuk::ClearColor(0u, 0u, 0u, 0u));
+		Clear::apply(_rg, result.clusterOutPrev, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
+		Clear::apply(_rg, result.outputPrev, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
+		
+	}
+	
 	return result;
 	
 }
 
-void QuadBuffer::formClusters(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
+void QuadBuffer::clusterize(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
 	Texture2DMS _visbuf, Buffer<World> _world) {
 	
 	_rg.add_pass({
-		.name = nameAppend(_quadbuf.name, "clusterForm"),
+		.name = nameAppend(_quadbuf.name, "clusterize"),
 		.resources = {
 			_visbuf.resource(vuk::eComputeSampled),
 			_quadbuf.clusterDef.resource(vuk::eComputeWrite),
@@ -129,10 +145,63 @@ void QuadBuffer::formClusters(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
 				.bind_sampled_image(0, 1, _visbuf, NearestClamp)
 				.bind_storage_image(0, 2, _quadbuf.clusterDef)
 				.bind_storage_image(0, 3, _quadbuf.jitterMap)
-				.bind_compute_pipeline("clusterForm");
+				.bind_compute_pipeline("quadClusterize");
 			
 			auto invocationCount = _visbuf.size() / 2u + _visbuf.size() % 2u;
 			cmd.dispatch_invocations(invocationCount.x(), invocationCount.y());
+			
+	}});
+	
+}
+
+void QuadBuffer::resolve(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
+	Texture2D _output, Buffer<World> _world) {
+	
+	_rg.add_pass({
+		.name = nameAppend(_quadbuf.name, "resolve"),
+		.resources = {
+			_quadbuf.clusterDef.resource(vuk::eComputeSampled),
+			_quadbuf.jitterMap.resource(vuk::eComputeSampled),
+			_quadbuf.clusterOut.resource(vuk::eComputeSampled),
+			_quadbuf.outputPrev.resource(vuk::eComputeSampled),
+			_quadbuf.clusterDefPrev.resource(vuk::eComputeSampled),
+			_quadbuf.clusterOutPrev.resource(vuk::eComputeSampled),
+			_quadbuf.jitterMapPrev.resource(vuk::eComputeSampled),
+			_quadbuf.velocity.resource(vuk::eComputeSampled),
+			_quadbuf.output.resource(vuk::eComputeWrite) },
+		.execute = [_quadbuf, _world](vuk::CommandBuffer& cmd) {
+			
+			cmd.bind_uniform_buffer(0, 0, _world)
+			   .bind_sampled_image(0, 1, _quadbuf.clusterDef, NearestClamp)
+			   .bind_sampled_image(0, 2, _quadbuf.jitterMap, NearestClamp)
+			   .bind_sampled_image(0, 3, _quadbuf.clusterOut, NearestClamp)
+			   .bind_sampled_image(0, 4, _quadbuf.outputPrev, LinearClamp)
+			   .bind_sampled_image(0, 5, _quadbuf.clusterDefPrev, NearestClamp)
+			   .bind_sampled_image(0, 6, _quadbuf.clusterOutPrev, NearestClamp)
+			   .bind_sampled_image(0, 7, _quadbuf.jitterMapPrev, NearestClamp)
+			   .bind_sampled_image(0, 8, _quadbuf.velocity, LinearClamp)
+			   .bind_storage_image(0, 9, _quadbuf.output)
+			   .specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_quadbuf.output.size()))
+			   .bind_compute_pipeline("quadResolve");
+			
+			auto invocationCount = _quadbuf.output.size() / 2u + _quadbuf.output.size() % 2u;
+			cmd.dispatch_invocations(invocationCount.x(), invocationCount.y());
+			
+	}});
+	
+	_rg.add_pass({
+		.name = nameAppend(_quadbuf.name, "copy"),
+		.resources = {
+			_quadbuf.output.resource(vuk::eTransferSrc),
+			_output.resource(vuk::eTransferDst) },
+		.execute = [_quadbuf, _output](vuk::CommandBuffer& cmd) {
+			
+			cmd.blit_image(_quadbuf.output.name, _output.name, vuk::ImageBlit{
+				.srcSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
+				.srcOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(_output.size().x()), i32(_output.size().y()), 1}},
+				.dstSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
+				.dstOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(_output.size().x()), i32(_output.size().y()), 1}} },
+				vuk::Filter::eNearest);
 			
 	}});
 	

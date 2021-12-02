@@ -75,15 +75,14 @@ void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf,
 	
 }
 
-void PBR::applyQuad(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _velocity,
-	Texture2D _quadbuf, Worklist const& _worklist, Buffer<World> _world,
-	ModelBuffer const& _models, DrawableInstanceList const& _instances,
-	Cubemap _ibl, Buffer<vec3> _sunLuminance, Texture3D _aerialPerspective) {
+void PBR::applyQuad(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
+	Worklist const& _worklist, Buffer<World> _world, ModelBuffer const& _models,
+	DrawableInstanceList const& _instances, Cubemap _ibl,
+	Buffer<vec3> _sunLuminance, Texture3D _aerialPerspective) {
 	
 	_rg.add_pass({
-		.name = nameAppend(_color.name, "pbr_quad"),
+		.name = nameAppend(_quadbuf.name, "pbr_quad"),
 		.resources = {
-			_quadbuf.resource(vuk::eComputeSampled),
 			_worklist.counts.resource(vuk::eIndirectRead),
 			_worklist.lists.resource(vuk::eComputeRead),
 			_instances.instances.resource(vuk::eComputeRead),
@@ -92,10 +91,11 @@ void PBR::applyQuad(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _velocity
 			_sunLuminance.resource(vuk::eComputeRead),
 			_aerialPerspective.resource(vuk::eComputeSampled),
 			_ibl.resource(vuk::eComputeSampled),
-			_velocity.resource(vuk::eComputeWrite),
-			_color.resource(vuk::eComputeWrite) },
-		.execute = [_color, _quadbuf, &_worklist, _world, &_models, _velocity,
-			&_instances, _ibl, _sunLuminance, _aerialPerspective,
+			_quadbuf.clusterDef.resource(vuk::eComputeSampled),
+			_quadbuf.velocity.resource(vuk::eComputeWrite),
+			_quadbuf.clusterOut.resource(vuk::eComputeWrite) },
+		.execute = [_quadbuf, &_worklist, _world, &_models, &_instances, _ibl,
+			_sunLuminance, _aerialPerspective,
 			tileCount=_worklist.counts.offsetView(+MaterialType::PBR)](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
@@ -110,15 +110,15 @@ void PBR::applyQuad(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _velocity
 			   .bind_uniform_buffer(0, 9, _sunLuminance)
 			   .bind_sampled_image(0, 10, _ibl, TrilinearClamp)
 			   .bind_sampled_image(0, 11, _aerialPerspective, TrilinearClamp)
-			   .bind_sampled_image(0, 12, _quadbuf, NearestClamp)
-			   .bind_storage_image(0, 13, _color)
-			   .bind_storage_image(0, 14, _velocity)
+			   .bind_sampled_image(0, 12, _quadbuf.clusterDef, NearestClamp)
+			   .bind_storage_image(0, 13, _quadbuf.clusterOut)
+			   .bind_storage_image(0, 14, _quadbuf.velocity)
 			   .bind_storage_buffer(0, 15, _worklist.lists)
 			   .bind_compute_pipeline("pbr_quad");
 			
 			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16({_aerialPerspective.size().x(), _aerialPerspective.size().y()}));
 			cmd.specialization_constants(1, vuk::ShaderStageFlagBits::eCompute, _aerialPerspective.size().z());
-			cmd.specialization_constants(2, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_color.size()));
+			cmd.specialization_constants(2, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_quadbuf.clusterOut.size()));
 			cmd.specialization_constants(3, vuk::ShaderStageFlagBits::eCompute, _worklist.tileDimensions.x() * _worklist.tileDimensions.y() * +MaterialType::PBR);
 			
 			cmd.dispatch_indirect(tileCount);

@@ -52,8 +52,8 @@ layout(binding = 9) uniform SunLuminance {
 layout(binding = 10) uniform samplerCube s_cubemap;
 layout(binding = 11) uniform sampler3D s_aerialPerspective;
 
-layout(binding = 12) uniform usampler2D s_quadbuf;
-layout(binding = 13) restrict writeonly uniform image2D i_target;
+layout(binding = 12) uniform usampler2D s_clusterDef;
+layout(binding = 13) restrict writeonly uniform image2D i_clusterOut;
 layout(binding = 14) restrict writeonly uniform image2D i_velocity;
 layout(binding = 15, std430) restrict readonly buffer TileLists {
 	uint B_LISTS[];
@@ -252,7 +252,7 @@ void main() {
 	
 	uvec2 quadbufSample;
 	if (all(lessThan(gid, TargetSize)))
-		quadbufSample = texelFetch(s_quadbuf, ivec2(gid), 0).xy;
+		quadbufSample = texelFetch(s_clusterDef, ivec2(gid), 0).xy;
 	else
 		quadbufSample = uvec2(-1u, 0u);
 	
@@ -266,7 +266,7 @@ void main() {
 		vec2 clusterCentroid = subsamplePosAverage(clusterSubsamples);
 		vec2 velocity;
 		clusterResult = shadeVisSamplePBR(clusterValue, vec2(gid & ~1u) + clusterCentroid, velocity);
-		imageStore(i_target, ivec2(gid), vec4(clusterResult, 1.0));
+		imageStore(i_clusterOut, ivec2(gid), vec4(clusterResult, 1.0));
 		imageStore(i_velocity, ivec2(gid), vec4(velocity, 0.0, 0.0));
 		
 	}

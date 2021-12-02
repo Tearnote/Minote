@@ -11,7 +11,7 @@ layout(binding = 0) uniform WorldConstants {
 	World u_world;
 };
 layout(binding = 1) uniform usampler2DMS s_visbuf;
-layout(binding = 2) restrict writeonly uniform uimage2D i_quadbuf;
+layout(binding = 2) restrict writeonly uniform uimage2D i_clusterDef;
 layout(binding = 3) restrict writeonly uniform uimage2D i_jitterMap;
 
 shared uvec4 sh_jitter;
@@ -179,7 +179,7 @@ void main() {
 	// Write out the results
 	
 	for (uint i = 0; i < 4; i += 1)
-		imageStore(i_quadbuf, ivec2(gid + QuadPixelOffsets[i]), uvec4(clusterValues[i], clusterSubsamples[i], 0, 0));
+		imageStore(i_clusterDef, ivec2(gid + QuadPixelOffsets[i]), uvec4(clusterValues[i], clusterSubsamples[i], 0, 0));
 	
 	if (gl_LocalInvocationIndex < 4)
 		imageStore(i_jitterMap, ivec2(gid / 8 + QuadPixelOffsets[gl_LocalInvocationIndex]), uvec4(sh_jitter[gl_LocalInvocationIndex], 0, 0, 0));

@@ -33,7 +33,9 @@ struct QuadBuffer {
 	static auto create(vuk::RenderGraph&, Pool&,
 		vuk::Name, uvec2 size, bool flushTemporal = false) -> QuadBuffer;
 	
-	static void formClusters(vuk::RenderGraph&, QuadBuffer&, Texture2DMS visbuf, Buffer<World>);
+	static void clusterize(vuk::RenderGraph&, QuadBuffer&, Texture2DMS visbuf, Buffer<World>);
+	
+	static void resolve(vuk::RenderGraph&, QuadBuffer&, Texture2D output, Buffer<World>);
 	
 };
 

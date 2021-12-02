@@ -14,9 +14,8 @@
 #include "sys/system.hpp"
 #include "gfx/resources/texture2dms.hpp"
 #include "gfx/resources/texture2d.hpp"
-#include "gfx/effects/antialiasing.hpp"
 #include "gfx/effects/instanceList.hpp"
-#include "gfx/effects/quadBuffer.hpp"
+#include "gfx/effects/quadbuffer.hpp"
 #include "gfx/effects/cubeFilter.hpp"
 #include "gfx/effects/visibility.hpp"
 #include "gfx/effects/tonemap.hpp"
@@ -62,7 +61,6 @@ void Engine::init(ModelList&& _modelList) {
 	// Compile pipelines
 	
 	DrawableInstanceList::compile(ptc);
-	Antialiasing::compile(ptc);
 	InstanceList::compile(ptc);
 	QuadBuffer::compile(ptc);
 	CubeFilter::compile(ptc);
@@ -219,7 +217,7 @@ void Engine::render() {
 	auto visbufMS = Texture2DMS();
 	auto depth = Texture2D();
 	auto depthMS = Texture2DMS();
-	auto quadBuf = QuadBuffer();
+	auto quadbuf = QuadBuffer();
 	if (antialiasing == AntialiasingType::None) {
 		
 		visbuf = Texture2D::make(m_swapchainPool, "visbuf",
@@ -250,7 +248,7 @@ void Engine::render() {
 			vuk::Samples::e8);
 		depthMS.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearDepthStencil(0.0f, 0));
 		
-		quadBuf = QuadBuffer::create(rg, m_swapchainPool, "quadBuf", viewport, m_flushTemporalResources);
+		quadbuf = QuadBuffer::create(rg, m_swapchainPool, "quadbuf", viewport, m_flushTemporalResources);
 		
 	}
 	
@@ -289,38 +287,14 @@ void Engine::render() {
 		
 	} else {
 		
-		Clear::apply(rg, quadBuf.jitterMap, vuk::ClearColor(0u, 0u, 0u, 0u));
-		if (m_flushTemporalResources) {
-			
-			Clear::apply(rg, quadBuf.clusterDefPrev, vuk::ClearColor(0u, 0u, 0u, 0u));
-			Clear::apply(rg, quadBuf.clusterOutPrev, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
-			Clear::apply(rg, quadBuf.outputPrev, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
-			
-		}
 		Visibility::applyMS(rg, visbufMS, depthMS, world, culledDrawables, m_models);
-		QuadBuffer::formClusters(rg, quadBuf, visbufMS, world);
-		auto worklistMS = Worklist::create(m_framePool, rg, "worklist_ms", quadBuf.clusterDef,
+		QuadBuffer::clusterize(rg, quadbuf, visbufMS, world);
+		auto worklistMS = Worklist::create(m_framePool, rg, "worklist_ms", quadbuf.clusterDef,
 			culledDrawables, m_models);
-		PBR::applyQuad(rg, quadBuf.clusterOut, quadBuf.velocity, quadBuf.clusterDef, worklistMS, world, m_models,
+		PBR::applyQuad(rg, quadbuf, worklistMS, world, m_models,
 			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
-		Sky::drawQuad(rg, quadBuf.clusterOut, quadBuf.velocity, quadBuf.clusterDef, worklistMS, cameraSky, m_atmosphere, world);
-		Antialiasing::quadResolve(rg, quadBuf.output, quadBuf.velocity, quadBuf.clusterDef, quadBuf.jitterMap,
-			quadBuf.clusterOut, quadBuf.outputPrev, quadBuf.clusterDefPrev, quadBuf.clusterOutPrev, quadBuf.jitterMapPrev, world);
-		rg.add_pass({
-			.name = nameAppend(quadBuf.output.name, "copy"),
-			.resources = {
-				quadBuf.output.resource(vuk::eTransferSrc),
-				color.resource(vuk::eTransferDst) },
-			.execute = [output=quadBuf.output, color](vuk::CommandBuffer& cmd) {
-				
-				cmd.blit_image(output.name, color.name, vuk::ImageBlit{
-					.srcSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
-					.srcOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(output.size().x()), i32(output.size().y()), 1}},
-					.dstSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
-					.dstOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(output.size().x()), i32(output.size().y()), 1}} },
-					vuk::Filter::eNearest);
-				
-		}});
+		Sky::drawQuad(rg, quadbuf, worklistMS, cameraSky, m_atmosphere, world);
+		QuadBuffer::resolve(rg, quadbuf, color, world);
 		
 	}
 	

@@ -10,15 +10,15 @@ layout(local_size_x = 8, local_size_y = 8) in;
 layout(binding = 0) uniform WorldConstants {
 	World u_world;
 };
-layout(binding = 1) uniform usampler2D s_quadbuf;
+layout(binding = 1) uniform usampler2D s_clusterDef;
 layout(binding = 2) uniform usampler2D s_jitterMap;
 layout(binding = 3) uniform sampler2D s_clusterOut;
-layout(binding = 4) uniform sampler2D s_history;
-layout(binding = 5) uniform usampler2D s_quadbufPrev;
+layout(binding = 4) uniform sampler2D s_outputPrev;
+layout(binding = 5) uniform usampler2D s_clusterDefPrev;
 layout(binding = 6) uniform sampler2D s_clusterOutPrev;
 layout(binding = 7) uniform usampler2D s_jitterMapPrev;
 layout(binding = 8) uniform sampler2D s_velocity;
-layout(binding = 9) restrict writeonly uniform image2D i_target;
+layout(binding = 9) restrict writeonly uniform image2D i_output;
 
 layout(constant_id = 0) const uint u_sourceSizePacked = 0;
 const uvec2 u_sourceSize = U16FROMU32(u_sourceSizePacked);
@@ -54,15 +54,15 @@ vec4 sampleHistory(vec2 _uv) {
 	
 	vec2 w12 = w1 + w2;
 	vec2 tc12 = sourcePxPitch * (centerPosition + w2 / w12);
-	vec4 centerColor = textureLod(s_history, vec2(tc12.x, tc12.y), 0.0);
+	vec4 centerColor = textureLod(s_outputPrev, vec2(tc12.x, tc12.y), 0.0);
 	
 	vec2 tc0 = sourcePxPitch * (centerPosition - 1.0);
 	vec2 tc3 = sourcePxPitch * (centerPosition + 2.0);
-	vec3 color = textureLod(s_history, vec2(tc12.x, tc0.y ), 0.0).rgb * (w12.x * w0.y ) +
-	             textureLod(s_history, vec2(tc0.x,  tc12.y), 0.0).rgb * (w0.x  * w12.y) +
-	             centerColor.rgb                                      * (w12.x * w12.y) +
-	             textureLod(s_history, vec2(tc3.x,  tc12.y), 0.0).rgb * (w3.x  * w12.y) +
-	             textureLod(s_history, vec2(tc12.x, tc3.y ), 0.0).rgb * (w12.x * w3.y );
+	vec3 color = textureLod(s_outputPrev, vec2(tc12.x, tc0.y ), 0.0).rgb * (w12.x * w0.y ) +
+	             textureLod(s_outputPrev, vec2(tc0.x,  tc12.y), 0.0).rgb * (w0.x  * w12.y) +
+	             centerColor.rgb                                         * (w12.x * w12.y) +
+	             textureLod(s_outputPrev, vec2(tc3.x,  tc12.y), 0.0).rgb * (w3.x  * w12.y) +
+	             textureLod(s_outputPrev, vec2(tc12.x, tc3.y ), 0.0).rgb * (w12.x * w3.y );
 	return vec4(color.rgb, centerColor.a);
 	
 }
@@ -79,7 +79,7 @@ void main() {
 	mat4x2 clusterVelocities;
 	for (uint i = 0; i < 4; i += 1) {
 		
-		uvec2 cluster = texelFetch(s_quadbuf, ivec2(gid + QuadPixelOffsets[i]), 0).xy;
+		uvec2 cluster = texelFetch(s_clusterDef, ivec2(gid + QuadPixelOffsets[i]), 0).xy;
 		clusterValues[i] = cluster.x;
 		clusterSubsamples[i] = cluster.y;
 		clusterOuts[i] = texelFetch(s_clusterOut, ivec2(gid + QuadPixelOffsets[i]), 0).rgb;
@@ -141,7 +141,7 @@ void main() {
 				
 				for (uint j = 0; j < 4; j += 1) {
 					
-					uvec2 historyCluster = texelFetch(s_quadbufPrev, ivec2(historyQuad + QuadPixelOffsets[j]), 0).xy;
+					uvec2 historyCluster = texelFetch(s_clusterDefPrev, ivec2(historyQuad + QuadPixelOffsets[j]), 0).xy;
 					historyValues[j] = historyCluster.x;
 					historySubsamples[j] = historyCluster.y;
 					
@@ -260,7 +260,7 @@ void main() {
 		result += (randFloat(seed) * 2.0 - 1.0) * 0.0005;
 		result = max(result, 0.0);
 		
-		imageStore(i_target, ivec2(gid + QuadPixelOffsets[i]), result);
+		imageStore(i_output, ivec2(gid + QuadPixelOffsets[i]), result);
 		
 	}
 	

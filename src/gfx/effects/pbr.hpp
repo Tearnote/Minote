@@ -5,6 +5,7 @@
 #include "gfx/resources/texture2d.hpp"
 #include "gfx/resources/cubemap.hpp"
 #include "gfx/effects/instanceList.hpp"
+#include "gfx/effects/quadBuffer.hpp"
 #include "gfx/effects/visibility.hpp"
 #include "gfx/effects/sky.hpp"
 #include "gfx/models.hpp"
@@ -21,10 +22,9 @@ struct PBR {
 		Worklist const&, Buffer<World>, ModelBuffer const&, DrawableInstanceList const&,
 		Cubemap ibl, Buffer<vec3> sunLuminance, Texture3D aerialPerspective);
 	
-	static void applyQuad(vuk::RenderGraph&, Texture2D color, Texture2D velocity,
-		Texture2D quadbuf, Worklist const&, Buffer<World>, ModelBuffer const&,
-		DrawableInstanceList const&, Cubemap ibl, Buffer<vec3> sunLuminance,
-		Texture3D aerialPerspective);
+	static void applyQuad(vuk::RenderGraph&, QuadBuffer&, Worklist const&,
+		Buffer<World>, ModelBuffer const&, DrawableInstanceList const&,
+		Cubemap ibl, Buffer<vec3> sunLuminance, Texture3D aerialPerspective);
 	
 };
 
