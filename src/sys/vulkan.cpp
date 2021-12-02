@@ -100,7 +100,8 @@ Vulkan::Vulkan(Window& _window) {
 		.shaderDrawParameters = VK_TRUE };
 	auto physicalDeviceVulkan12Features = VkPhysicalDeviceVulkan12Features{
 		.hostQueryReset = VK_TRUE,
-		.vulkanMemoryModel = VK_TRUE };
+		.vulkanMemoryModel = VK_TRUE,
+		.vulkanMemoryModelDeviceScope = VK_TRUE };
 	
 	auto physicalDeviceSelectorResult = vkb::PhysicalDeviceSelector(instance)
 		.set_surface(surface)
