@@ -16,6 +16,7 @@
 #include "gfx/resources/texture2d.hpp"
 #include "gfx/effects/antialiasing.hpp"
 #include "gfx/effects/instanceList.hpp"
+#include "gfx/effects/quadBuffer.hpp"
 #include "gfx/effects/cubeFilter.hpp"
 #include "gfx/effects/visibility.hpp"
 #include "gfx/effects/tonemap.hpp"
@@ -63,6 +64,7 @@ void Engine::init(ModelList&& _modelList) {
 	DrawableInstanceList::compile(ptc);
 	Antialiasing::compile(ptc);
 	InstanceList::compile(ptc);
+	QuadBuffer::compile(ptc);
 	CubeFilter::compile(ptc);
 	Atmosphere::compile(ptc);
 	Visibility::compile(ptc);
@@ -217,15 +219,7 @@ void Engine::render() {
 	auto visbufMS = Texture2DMS();
 	auto depth = Texture2D();
 	auto depthMS = Texture2DMS();
-	auto quadbufCurrent = Texture2D();
-	auto quadbufPrev = Texture2D();
-	auto velocity = Texture2D();
-	auto jitterMapCurrent = Texture2D();
-	auto jitterMapPrev = Texture2D();
-	auto clusterOutCurrent = Texture2D();
-	auto clusterOutPrev = Texture2D();
-	auto colorCurrent = Texture2D();
-	auto colorPrev = Texture2D();
+	auto quadBuf = QuadBuffer();
 	if (antialiasing == AntialiasingType::None) {
 		
 		visbuf = Texture2D::make(m_swapchainPool, "visbuf",
@@ -242,8 +236,6 @@ void Engine::render() {
 		
 	} else {
 		
-		auto oddFrame = m_vk.context->frame_counter.load() % 2;
-		
 		visbufMS = Texture2DMS::make(m_swapchainPool, "visbuf_ms",
 			viewport, vuk::Format::eR32Uint,
 			vuk::ImageUsageFlagBits::eColorAttachment |
@@ -258,92 +250,7 @@ void Engine::render() {
 			vuk::Samples::e8);
 		depthMS.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearDepthStencil(0.0f, 0));
 		
-		auto quadbufs = to_array({
-			Texture2D::make(m_swapchainPool, "quadbuf0",
-				viewport, vuk::Format::eR32G32Uint,
-				vuk::ImageUsageFlagBits::eStorage |
-				vuk::ImageUsageFlagBits::eSampled),
-			Texture2D::make(m_swapchainPool, "quadbuf1",
-				viewport, vuk::Format::eR32G32Uint,
-				vuk::ImageUsageFlagBits::eStorage |
-				vuk::ImageUsageFlagBits::eSampled) });
-		quadbufCurrent = quadbufs[oddFrame];
-		quadbufPrev = quadbufs[!oddFrame];
-		
-		quadbufCurrent.attach(rg, vuk::eNone, vuk::eTransferSrc);
-		if (m_flushTemporalResources)
-			quadbufPrev.attach(rg, vuk::eNone, vuk::eNone);
-		else
-			quadbufPrev.attach(rg, vuk::eTransferSrc, vuk::eNone);
-		
-		velocity = Texture2D::make(m_swapchainPool, "velocity",
-			viewport, vuk::Format::eR16G16Sfloat,
-			vuk::ImageUsageFlagBits::eStorage |
-			vuk::ImageUsageFlagBits::eSampled |
-			vuk::ImageUsageFlagBits::eTransferDst);
-		velocity.attach(rg, vuk::eNone, vuk::eNone);
-		
-		auto jitterMaps = to_array({
-			Texture2D::make(m_swapchainPool, "jitterMap0",
-				divRoundUp(viewport, 8u), vuk::Format::eR16Uint,
-				vuk::ImageUsageFlagBits::eStorage |
-				vuk::ImageUsageFlagBits::eSampled |
-				vuk::ImageUsageFlagBits::eTransferDst),
-			Texture2D::make(m_swapchainPool, "jitterMap1",
-				divRoundUp(viewport, 8u), vuk::Format::eR16Uint,
-				vuk::ImageUsageFlagBits::eStorage |
-				vuk::ImageUsageFlagBits::eSampled |
-				vuk::ImageUsageFlagBits::eTransferDst) });
-		jitterMapCurrent = jitterMaps[oddFrame];
-		jitterMapPrev = jitterMaps[!oddFrame];
-		
-		jitterMapCurrent.attach(rg, vuk::eNone, vuk::eTransferSrc);
-		if (m_flushTemporalResources)
-			jitterMapPrev.attach(rg, vuk::eNone, vuk::eNone);
-		else
-			jitterMapPrev.attach(rg, vuk::eTransferSrc, vuk::eNone);
-		
-		auto clusterOuts = to_array({
-			Texture2D::make(m_swapchainPool, "cluster_out0",
-				viewport, vuk::Format::eR16G16B16A16Sfloat,
-				vuk::ImageUsageFlagBits::eStorage |
-				vuk::ImageUsageFlagBits::eSampled |
-				vuk::ImageUsageFlagBits::eTransferDst),
-			Texture2D::make(m_swapchainPool, "cluster_out1",
-				viewport, vuk::Format::eR16G16B16A16Sfloat,
-				vuk::ImageUsageFlagBits::eStorage |
-				vuk::ImageUsageFlagBits::eSampled |
-				vuk::ImageUsageFlagBits::eTransferDst) });
-		clusterOutCurrent = clusterOuts[oddFrame];
-		clusterOutPrev = clusterOuts[!oddFrame];
-		
-		clusterOutCurrent.attach(rg, vuk::eNone, vuk::eTransferSrc);
-		if (m_flushTemporalResources)
-			clusterOutPrev.attach(rg, vuk::eNone, vuk::eNone);
-		else
-			clusterOutPrev.attach(rg, vuk::eTransferSrc, vuk::eNone);
-		
-		auto colors = to_array({
-			Texture2D::make(m_swapchainPool, "color0",
-				viewport, vuk::Format::eR16G16B16A16Sfloat,
-				vuk::ImageUsageFlagBits::eSampled |
-				vuk::ImageUsageFlagBits::eStorage |
-				vuk::ImageUsageFlagBits::eTransferSrc |
-				vuk::ImageUsageFlagBits::eTransferDst),
-			Texture2D::make(m_swapchainPool, "color1",
-				viewport, vuk::Format::eR16G16B16A16Sfloat,
-				vuk::ImageUsageFlagBits::eSampled |
-				vuk::ImageUsageFlagBits::eStorage |
-				vuk::ImageUsageFlagBits::eTransferSrc |
-				vuk::ImageUsageFlagBits::eTransferDst) });
-		colorCurrent = colors[oddFrame];
-		colorPrev = colors[!oddFrame];
-		
-		colorCurrent.attach(rg, vuk::eNone, vuk::eTransferSrc);
-		if (m_flushTemporalResources)
-			colorPrev.attach(rg, vuk::eNone, vuk::eNone);
-		else
-			colorPrev.attach(rg, vuk::eTransferSrc, vuk::eNone);
+		quadBuf = QuadBuffer::create(rg, m_swapchainPool, "quadBuf", viewport, m_flushTemporalResources);
 		
 	}
 	
@@ -382,38 +289,35 @@ void Engine::render() {
 		
 	} else {
 		
-		Clear::apply(rg, clusterOutCurrent, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
-		Clear::apply(rg, colorCurrent, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
-		Clear::apply(rg, velocity, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
-		Clear::apply(rg, jitterMapCurrent, vuk::ClearColor(0u, 0u, 0u, 0u));
+		Clear::apply(rg, quadBuf.jitterMap, vuk::ClearColor(0u, 0u, 0u, 0u));
 		if (m_flushTemporalResources) {
 			
-			Clear::apply(rg, quadbufPrev, vuk::ClearColor(0u, 0u, 0u, 0u));
-			Clear::apply(rg, clusterOutPrev, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
-			Clear::apply(rg, colorPrev, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
+			Clear::apply(rg, quadBuf.clusterDefPrev, vuk::ClearColor(0u, 0u, 0u, 0u));
+			Clear::apply(rg, quadBuf.clusterOutPrev, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
+			Clear::apply(rg, quadBuf.outputPrev, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 			
 		}
 		Visibility::applyMS(rg, visbufMS, depthMS, world, culledDrawables, m_models);
-		Antialiasing::quadAssign(rg, visbufMS, quadbufCurrent, jitterMapCurrent, world);
-		auto worklistMS = Worklist::create(m_framePool, rg, "worklist_ms", quadbufCurrent,
+		Antialiasing::quadAssign(rg, visbufMS, quadBuf.clusterDef, quadBuf.jitterMap, world);
+		auto worklistMS = Worklist::create(m_framePool, rg, "worklist_ms", quadBuf.clusterDef,
 			culledDrawables, m_models);
-		PBR::applyQuad(rg, clusterOutCurrent, velocity, quadbufCurrent, worklistMS, world, m_models,
+		PBR::applyQuad(rg, quadBuf.clusterOut, quadBuf.velocity, quadBuf.clusterDef, worklistMS, world, m_models,
 			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
-		Sky::drawQuad(rg, clusterOutCurrent, velocity, quadbufCurrent, worklistMS, cameraSky, m_atmosphere, world);
-		Antialiasing::quadResolve(rg, colorCurrent, velocity, quadbufCurrent, jitterMapCurrent,
-			clusterOutCurrent, colorPrev, quadbufPrev, clusterOutPrev, jitterMapPrev, world);
+		Sky::drawQuad(rg, quadBuf.clusterOut, quadBuf.velocity, quadBuf.clusterDef, worklistMS, cameraSky, m_atmosphere, world);
+		Antialiasing::quadResolve(rg, quadBuf.output, quadBuf.velocity, quadBuf.clusterDef, quadBuf.jitterMap,
+			quadBuf.clusterOut, quadBuf.outputPrev, quadBuf.clusterDefPrev, quadBuf.clusterOutPrev, quadBuf.jitterMapPrev, world);
 		rg.add_pass({
-			.name = nameAppend(colorCurrent.name, "copy"),
+			.name = nameAppend(quadBuf.output.name, "copy"),
 			.resources = {
-				colorCurrent.resource(vuk::eTransferSrc),
+				quadBuf.output.resource(vuk::eTransferSrc),
 				color.resource(vuk::eTransferDst) },
-			.execute = [colorCurrent, color](vuk::CommandBuffer& cmd) {
+			.execute = [output=quadBuf.output, color](vuk::CommandBuffer& cmd) {
 				
-				cmd.blit_image(colorCurrent.name, color.name, vuk::ImageBlit{
+				cmd.blit_image(output.name, color.name, vuk::ImageBlit{
 					.srcSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
-					.srcOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(colorCurrent.size().x()), i32(colorCurrent.size().y()), 1}},
+					.srcOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(output.size().x()), i32(output.size().y()), 1}},
 					.dstSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
-					.dstOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(colorCurrent.size().x()), i32(colorCurrent.size().y()), 1}} },
+					.dstOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(output.size().x()), i32(output.size().y()), 1}} },
 					vuk::Filter::eNearest);
 				
 		}});

@@ -70,6 +70,7 @@ add_executable(Minote
         src/gfx/effects/cubeFilterCoeffs.hpp
         src/gfx/effects/antialiasing.hpp src/gfx/effects/antialiasing.cpp
         src/gfx/effects/instanceList.hpp src/gfx/effects/instanceList.cpp
+        src/gfx/effects/quadBuffer.hpp src/gfx/effects/quadBuffer.cpp
         src/gfx/effects/cubeFilter.hpp src/gfx/effects/cubeFilter.cpp
         src/gfx/effects/visibility.hpp src/gfx/effects/visibility.cpp
         src/gfx/effects/tonemap.hpp src/gfx/effects/tonemap.cpp
