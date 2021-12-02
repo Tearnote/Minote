@@ -1,13 +1,18 @@
 #include "gfx/effects/quadBuffer.hpp"
 
 #include "base/containers/array.hpp"
+#include "gfx/samplers.hpp"
 #include "gfx/util.hpp"
 
 namespace minote::gfx {
 
 void QuadBuffer::compile(vuk::PerThreadContext& _ptc) {
 	
-	;
+	auto clusterFormPci = vuk::ComputePipelineBaseCreateInfo();
+	clusterFormPci.add_spirv(std::vector<u32>{
+#include "spv/clusterForm.comp.spv"
+	}, "clusterForm.comp");
+	_ptc.ctx.create_named_pipeline("clusterForm", clusterFormPci);
 	
 }
 
@@ -15,6 +20,7 @@ auto QuadBuffer::create(vuk::RenderGraph& _rg, Pool& _pool,
 	vuk::Name _name, uvec2 _size, bool _flushTemporal) -> QuadBuffer {
 	
 	auto result = QuadBuffer();
+	result.name = _name;
 	
 	auto oddFrame = _pool.ptc().ctx.frame_counter.load() % 2;
 	
@@ -105,6 +111,30 @@ auto QuadBuffer::create(vuk::RenderGraph& _rg, Pool& _pool,
 	result.velocity.attach(_rg, vuk::eNone, vuk::eNone);
 	
 	return result;
+	
+}
+
+void QuadBuffer::formClusters(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
+	Texture2DMS _visbuf, Buffer<World> _world) {
+	
+	_rg.add_pass({
+		.name = nameAppend(_quadbuf.name, "clusterForm"),
+		.resources = {
+			_visbuf.resource(vuk::eComputeSampled),
+			_quadbuf.clusterDef.resource(vuk::eComputeWrite),
+			_quadbuf.jitterMap.resource(vuk::eComputeWrite) },
+		.execute = [_quadbuf, _visbuf, _world](vuk::CommandBuffer& cmd) {
+			
+			cmd.bind_uniform_buffer(0, 0, _world)
+				.bind_sampled_image(0, 1, _visbuf, NearestClamp)
+				.bind_storage_image(0, 2, _quadbuf.clusterDef)
+				.bind_storage_image(0, 3, _quadbuf.jitterMap)
+				.bind_compute_pipeline("clusterForm");
+			
+			auto invocationCount = _visbuf.size() / 2u + _visbuf.size() % 2u;
+			cmd.dispatch_invocations(invocationCount.x(), invocationCount.y());
+			
+	}});
 	
 }
 

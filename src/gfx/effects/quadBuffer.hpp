@@ -2,8 +2,11 @@
 
 #include "vuk/RenderGraph.hpp"
 #include "vuk/Context.hpp"
+#include "gfx/resources/texture2dms.hpp"
 #include "gfx/resources/texture2d.hpp"
+#include "gfx/resources/buffer.hpp"
 #include "gfx/resources/pool.hpp"
+#include "gfx/world.hpp"
 
 namespace minote::gfx {
 
@@ -23,10 +26,14 @@ struct QuadBuffer {
 	
 	Texture2D velocity;
 	
+	vuk::Name name;
+	
 	static void compile(vuk::PerThreadContext&);
 	
 	static auto create(vuk::RenderGraph&, Pool&,
 		vuk::Name, uvec2 size, bool flushTemporal = false) -> QuadBuffer;
+	
+	static void formClusters(vuk::RenderGraph&, QuadBuffer&, Texture2DMS visbuf, Buffer<World>);
 	
 };
 

@@ -298,7 +298,7 @@ void Engine::render() {
 			
 		}
 		Visibility::applyMS(rg, visbufMS, depthMS, world, culledDrawables, m_models);
-		Antialiasing::quadAssign(rg, visbufMS, quadBuf.clusterDef, quadBuf.jitterMap, world);
+		QuadBuffer::formClusters(rg, quadBuf, visbufMS, world);
 		auto worklistMS = Worklist::create(m_framePool, rg, "worklist_ms", quadBuf.clusterDef,
 			culledDrawables, m_models);
 		PBR::applyQuad(rg, quadBuf.clusterOut, quadBuf.velocity, quadBuf.clusterDef, worklistMS, world, m_models,
