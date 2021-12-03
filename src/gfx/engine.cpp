@@ -289,6 +289,7 @@ void Engine::render() {
 		
 		Visibility::applyMS(rg, visbufMS, depthMS, world, culledDrawables, m_models);
 		QuadBuffer::clusterize(rg, quadbuf, visbufMS, world);
+		QuadBuffer::genBuffers(rg, quadbuf, m_models, culledDrawables, world);
 		auto worklistMS = Worklist::create(m_framePool, rg, "worklist_ms", quadbuf.clusterDef,
 			culledDrawables, m_models);
 		PBR::applyQuad(rg, quadbuf, worklistMS, world, m_models,

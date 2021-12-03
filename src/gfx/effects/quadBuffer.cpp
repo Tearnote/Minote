@@ -9,11 +9,17 @@ namespace minote::gfx {
 
 void QuadBuffer::compile(vuk::PerThreadContext& _ptc) {
 	
-	auto clusterFormPci = vuk::ComputePipelineBaseCreateInfo();
-	clusterFormPci.add_spirv(std::vector<u32>{
+	auto quadClusterizePci = vuk::ComputePipelineBaseCreateInfo();
+	quadClusterizePci.add_spirv(std::vector<u32>{
 #include "spv/quadClusterize.comp.spv"
 	}, "quadClusterize.comp");
-	_ptc.ctx.create_named_pipeline("quadClusterize", clusterFormPci);
+	_ptc.ctx.create_named_pipeline("quadClusterize", quadClusterizePci);
+	
+	auto quadGenBuffersPci = vuk::ComputePipelineBaseCreateInfo();
+	quadGenBuffersPci.add_spirv(std::vector<u32>{
+#include "spv/quadGenBuffers.comp.spv"
+	}, "quadGenBuffers.comp");
+	_ptc.ctx.create_named_pipeline("quadGenBuffers", quadGenBuffersPci);
 	
 	auto quadResolvePci = vuk::ComputePipelineBaseCreateInfo();
 	quadResolvePci.add_spirv(std::vector<u32>{
@@ -142,15 +148,46 @@ void QuadBuffer::clusterize(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
 		.execute = [_quadbuf, _visbuf, _world](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
-				.bind_sampled_image(0, 1, _visbuf, NearestClamp)
-				.bind_storage_image(0, 2, _quadbuf.clusterDef)
-				.bind_storage_image(0, 3, _quadbuf.jitterMap)
-				.bind_compute_pipeline("quadClusterize");
+			   .bind_sampled_image(0, 1, _visbuf, NearestClamp)
+			   .bind_storage_image(0, 2, _quadbuf.clusterDef)
+			   .bind_storage_image(0, 3, _quadbuf.jitterMap)
+			   .bind_compute_pipeline("quadClusterize");
 			
 			auto invocationCount = _visbuf.size() / 2u + _visbuf.size() % 2u;
 			cmd.dispatch_invocations(invocationCount.x(), invocationCount.y());
 			
 	}});
+	
+}
+
+void QuadBuffer::genBuffers(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
+	ModelBuffer const& _models, DrawableInstanceList const& _instances, Buffer<World> _world) {
+	
+	_rg.add_pass({
+		
+		.name = nameAppend(_quadbuf.name, "genBuffers"),
+		.resources = {
+			_instances.instances.resource(vuk::eComputeRead),
+			_instances.transforms.resource(vuk::eComputeRead),
+			_quadbuf.clusterDef.resource(vuk::eComputeRead),
+			_quadbuf.velocity.resource(vuk::eComputeWrite) },
+		.execute = [_quadbuf, _world, &_models, &_instances](vuk::CommandBuffer& cmd) {
+			
+			cmd.bind_uniform_buffer(0, 0, _world)
+			   .bind_storage_buffer(0, 1, _models.meshes)
+			   .bind_storage_buffer(0, 2, _instances.instances)
+			   .bind_storage_buffer(0, 3, _instances.transforms)
+			   .bind_storage_buffer(0, 4, _models.indices)
+			   .bind_storage_buffer(0, 5, _models.vertices)
+			   .bind_sampled_image(0, 6, _quadbuf.clusterDef, NearestClamp)
+			   .bind_storage_image(0, 7, _quadbuf.velocity)
+			   .bind_compute_pipeline("quadGenBuffers");
+			
+			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_quadbuf.clusterDef.size()));
+			
+			cmd.dispatch_invocations(_quadbuf.clusterDef.size().x(), _quadbuf.clusterDef.size().y());
+			
+		}});
 	
 }
 

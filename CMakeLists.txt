@@ -268,6 +268,7 @@ set(SHADER_SOURCES
         src/glsl/instanceSortScan3.comp
         src/glsl/bloomDownKaris.comp
         src/glsl/cubePostfilter.comp
+        src/glsl/quadGenBuffers.comp
         src/glsl/quadClusterize.comp
         src/glsl/cubePrefilter.comp
         src/glsl/transformConv.comp

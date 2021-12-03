@@ -6,6 +6,8 @@
 #include "gfx/resources/texture2d.hpp"
 #include "gfx/resources/buffer.hpp"
 #include "gfx/resources/pool.hpp"
+#include "gfx/effects/instanceList.hpp"
+#include "gfx/models.hpp"
 #include "gfx/world.hpp"
 
 namespace minote::gfx {
@@ -34,6 +36,9 @@ struct QuadBuffer {
 		vuk::Name, uvec2 size, bool flushTemporal = false) -> QuadBuffer;
 	
 	static void clusterize(vuk::RenderGraph&, QuadBuffer&, Texture2DMS visbuf, Buffer<World>);
+	
+	static void genBuffers(vuk::RenderGraph&, QuadBuffer&, ModelBuffer const&,
+		DrawableInstanceList const&, Buffer<World>);
 	
 	static void resolve(vuk::RenderGraph&, QuadBuffer&, Texture2D output, Buffer<World>);
 	

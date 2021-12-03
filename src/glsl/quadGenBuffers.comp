@@ -1,0 +1,117 @@
+#version 460
+#pragma shader_stage(compute)
+
+layout(local_size_x = 8, local_size_y = 8) in;
+
+#include "visibility.glsl"
+#include "types.glsl"
+#include "quad.glsl"
+#include "util.glsl"
+
+#define B_INDICES b_indices
+#define B_VERTICES b_vertices
+
+layout(binding = 0) uniform WorldConstants {
+	World u_world;
+};
+
+layout (binding = 1, std430) restrict readonly buffer Meshes {
+	Mesh b_meshes[];
+};
+layout (binding = 2, std430) restrict readonly buffer Instances {
+	Instance b_instances[];
+};
+layout(binding = 3, std430) restrict readonly buffer Transforms {
+	mat3x4 b_transforms[];
+};
+
+layout (binding = 4, std430) restrict readonly buffer Indices {
+	uint B_INDICES[];
+};
+layout (binding = 5, std430) restrict readonly buffer Vertices {
+	float B_VERTICES[];
+};
+
+layout(binding = 6) uniform usampler2D s_clusterDef;
+layout(binding = 7) restrict writeonly uniform image2D i_velocity;
+
+layout(constant_id = 0) const uint QuadbufSizePacked = 0;
+const uvec2 QuadbufSize = uvec2(U16FROMU32(QuadbufSizePacked));
+
+#include "typesAccess.glsl"
+
+void main() {
+	
+	uvec2 gid = gl_GlobalInvocationID.xy;
+	if (any(greaterThanEqual(gid, QuadbufSize)))
+		return;
+	
+	uvec2 quadbufSample = texelFetch(s_clusterDef, ivec2(gid), 0).xy;
+	uint clusterValue = quadbufSample.x;
+	uint clusterSubsamples = quadbufSample.y;
+	
+	vec2 velocity;
+	if (clusterValue != -1u && clusterSubsamples != 0) { // Valid triangle cluster
+		
+		VisSample vis = unpackVisibility(clusterValue);
+		
+		Instance instance = b_instances[vis.instance];
+		uint meshIdx = instance.meshIdx;
+		Mesh mesh = b_meshes[meshIdx];
+		
+		uint indexBase = mesh.indexOffset;
+		indexBase += vis.triangle * 3;
+		uvec3 indices = fetchIndices(indexBase);
+		
+		uint transformIdx = instance.transformIdx;
+		mat4 transform = getTransform(b_transforms[transformIdx]);
+		
+		mat3 vertices = {
+			fetchVertex(indices.x),
+			fetchVertex(indices.y),
+			fetchVertex(indices.z) };
+		
+		mat4 ndcTransform = u_world.viewProjection * transform;
+		mat3x4 verticesNDC = {
+			ndcTransform * vec4(vertices[0], 1.0),
+			ndcTransform * vec4(vertices[1], 1.0),
+			ndcTransform * vec4(vertices[2], 1.0) };
+		
+		vec2 uv = vec2(gid & ~1u) + subsamplePosAverage(clusterSubsamples);
+		uv /= QuadbufSize;
+		vec3 barycentrics = calculateBarycentrics(verticesNDC, uv * 2.0 - 1.0);
+		// barycentrics = clampBarycentrics(barycentrics);
+		
+		vec3 vertex =
+			vertices[0] * barycentrics.x +
+			vertices[1] * barycentrics.y +
+			vertices[2] * barycentrics.z;
+		vec4 vertexW = transform * vec4(vertex, 1.0);
+		vertex = vertexW.xyz / vertexW.w;
+		
+		vec4 clipVertexW = u_world.viewProjection * vec4(vertex, 1.0);
+		vec3 clipVertex = clipVertexW.xyz / clipVertexW.w;
+		
+		vec4 prevClipVertexW = u_world.prevViewProjection * vec4(vertex, 1.0);
+		vec3 prevClipVertex = prevClipVertexW.xyz / prevClipVertexW.w;
+		
+		velocity = clipVertex.xy * vec2(QuadbufSize) - prevClipVertex.xy * vec2(QuadbufSize);
+		velocity /= 2.0;
+		
+	} else { // Invalid / sky cluster
+	
+		vec2 uv = gid / vec2(QuadbufSize);
+		vec3 clipSpace = vec3(uv * vec2(2.0) - vec2(1.0), 0.0);
+		vec4 hPos = u_world.viewProjectionInverse * vec4(clipSpace, 1.0);
+		
+		vec4 prevClipVertexW = u_world.prevViewProjection * hPos;
+		vec3 prevClipVertex = prevClipVertexW.xyz / prevClipVertexW.w;
+	
+		velocity = clipSpace.xy * vec2(QuadbufSize) - prevClipVertex.xy * vec2(QuadbufSize);
+		velocity /= 2.0;
+		
+	}
+	
+	imageStore(i_velocity, ivec2(gid), vec4(velocity, 0.0, 0.0));
+	
+}

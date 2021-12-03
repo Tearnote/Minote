@@ -310,7 +310,6 @@ void Sky::drawQuad(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
 			_worklist.counts.resource(vuk::eIndirectRead),
 			_worklist.lists.resource(vuk::eComputeRead),
 			_quadbuf.clusterDef.resource(vuk::eComputeSampled),
-			_quadbuf.velocity.resource(vuk::eComputeWrite),
 			_quadbuf.clusterOut.resource(vuk::eComputeWrite) },
 		.execute = [&_worklist, _skyView, &_atmo, _world, _quadbuf,
 			tileCount=_worklist.counts.offsetView(+MaterialType::None)](vuk::CommandBuffer& cmd) {
@@ -321,8 +320,7 @@ void Sky::drawQuad(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
 			   .bind_sampled_image(0, 3, _skyView, LinearClamp)
 			   .bind_storage_buffer(0, 4, _worklist.lists)
 			   .bind_sampled_image(0, 5, _quadbuf.clusterDef, NearestClamp)
-			   .bind_storage_image(0, 6, _quadbuf.velocity)
-			   .bind_storage_image(0, 7, _quadbuf.clusterOut)
+			   .bind_storage_image(0, 6, _quadbuf.clusterOut)
 			   .bind_compute_pipeline("sky_draw_quad");
 			
 			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_skyView.size()));

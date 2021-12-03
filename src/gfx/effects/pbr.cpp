@@ -92,7 +92,6 @@ void PBR::applyQuad(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
 			_aerialPerspective.resource(vuk::eComputeSampled),
 			_ibl.resource(vuk::eComputeSampled),
 			_quadbuf.clusterDef.resource(vuk::eComputeSampled),
-			_quadbuf.velocity.resource(vuk::eComputeWrite),
 			_quadbuf.clusterOut.resource(vuk::eComputeWrite) },
 		.execute = [_quadbuf, &_worklist, _world, &_models, &_instances, _ibl,
 			_sunLuminance, _aerialPerspective,
@@ -112,8 +111,7 @@ void PBR::applyQuad(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
 			   .bind_sampled_image(0, 11, _aerialPerspective, TrilinearClamp)
 			   .bind_sampled_image(0, 12, _quadbuf.clusterDef, NearestClamp)
 			   .bind_storage_image(0, 13, _quadbuf.clusterOut)
-			   .bind_storage_image(0, 14, _quadbuf.velocity)
-			   .bind_storage_buffer(0, 15, _worklist.lists)
+			   .bind_storage_buffer(0, 14, _worklist.lists)
 			   .bind_compute_pipeline("pbr_quad");
 			
 			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16({_aerialPerspective.size().x(), _aerialPerspective.size().y()}));
