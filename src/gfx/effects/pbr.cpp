@@ -25,8 +25,8 @@ void PBR::compile(vuk::PerThreadContext& _ptc) {
 }
 
 void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf,
-	Worklist const& _worklist, Buffer<World> _world, ModelBuffer const& _models,
-	DrawableInstanceList const& _instances, Cubemap _ibl, Buffer<vec3> _sunLuminance, Texture3D _aerialPerspective) {
+	Worklist _worklist, Buffer<World> _world, ModelBuffer const& _models,
+	DrawableInstanceList _instances, Cubemap _ibl, Buffer<vec3> _sunLuminance, Texture3D _aerialPerspective) {
 	
 	assert(_color.size() == _visbuf.size());
 	
@@ -43,8 +43,8 @@ void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf,
 			_aerialPerspective.resource(vuk::eComputeSampled),
 			_ibl.resource(vuk::eComputeSampled),
 			_color.resource(vuk::eComputeWrite) },
-		.execute = [_color, _visbuf, &_worklist, _world, &_models,
-			&_instances, _ibl, _sunLuminance, _aerialPerspective,
+		.execute = [_color, _visbuf, _worklist, _world, &_models,
+			_instances, _ibl, _sunLuminance, _aerialPerspective,
 			tileCount=_worklist.counts.offsetView(+MaterialType::PBR)](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
@@ -76,8 +76,8 @@ void PBR::apply(vuk::RenderGraph& _rg, Texture2D _color, Texture2D _visbuf,
 }
 
 void PBR::applyQuad(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
-	Worklist const& _worklist, Buffer<World> _world, ModelBuffer const& _models,
-	DrawableInstanceList const& _instances, Cubemap _ibl,
+	Worklist _worklist, Buffer<World> _world, ModelBuffer const& _models,
+	DrawableInstanceList _instances, Cubemap _ibl,
 	Buffer<vec3> _sunLuminance, Texture3D _aerialPerspective) {
 	
 	_rg.add_pass({
@@ -93,7 +93,7 @@ void PBR::applyQuad(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
 			_ibl.resource(vuk::eComputeSampled),
 			_quadbuf.clusterDef.resource(vuk::eComputeSampled),
 			_quadbuf.clusterOut.resource(vuk::eComputeWrite) },
-		.execute = [_quadbuf, &_worklist, _world, &_models, &_instances, _ibl,
+		.execute = [_quadbuf, _worklist, _world, &_models, _instances, _ibl,
 			_sunLuminance, _aerialPerspective,
 			tileCount=_worklist.counts.offsetView(+MaterialType::PBR)](vuk::CommandBuffer& cmd) {
 			

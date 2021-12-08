@@ -19,11 +19,11 @@ struct PBR {
 	static void compile(vuk::PerThreadContext&);
 	
 	static void apply(vuk::RenderGraph&, Texture2D color, Texture2D visbuf,
-		Worklist const&, Buffer<World>, ModelBuffer const&, DrawableInstanceList const&,
+		Worklist, Buffer<World>, ModelBuffer const&, DrawableInstanceList,
 		Cubemap ibl, Buffer<vec3> sunLuminance, Texture3D aerialPerspective);
 	
-	static void applyQuad(vuk::RenderGraph&, QuadBuffer&, Worklist const&,
-		Buffer<World>, ModelBuffer const&, DrawableInstanceList const&,
+	static void applyQuad(vuk::RenderGraph&, QuadBuffer&, Worklist,
+		Buffer<World>, ModelBuffer const&, DrawableInstanceList,
 		Cubemap ibl, Buffer<vec3> sunLuminance, Texture3D aerialPerspective);
 	
 };

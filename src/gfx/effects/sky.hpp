@@ -13,6 +13,7 @@
 #include "gfx/effects/visibility.hpp"
 #include "gfx/camera.hpp"
 #include "gfx/world.hpp"
+#include "gfx/frame.hpp"
 
 namespace minote::gfx {
 
@@ -72,7 +73,7 @@ struct Atmosphere {
 	// Build required shaders.
 	static void compile(vuk::PerThreadContext&);
 	
-	static auto create(Pool&, vuk::RenderGraph&, vuk::Name, Params const&) -> Atmosphere;
+	static auto create(Pool&, Frame&, vuk::Name, Params const&) -> Atmosphere;
 	
 };
 
@@ -90,25 +91,25 @@ struct Sky {
 	static void compile(vuk::PerThreadContext&);
 	
 	static auto createView(Pool&, vuk::RenderGraph&, vuk::Name, vec3 probePos,
-		Atmosphere const&, Buffer<World>) -> Texture2D;
+		Atmosphere, Buffer<World>) -> Texture2D;
 	
 	static auto createAerialPerspective(Pool&, vuk::RenderGraph&, vuk::Name,
-		vec3 probePos, mat4 invViewProj, Atmosphere const&, Buffer<World>) -> Texture3D;
+		vec3 probePos, mat4 invViewProj, Atmosphere, Buffer<World>) -> Texture3D;
 	
 	static auto createSunLuminance(Pool&, vuk::RenderGraph&, vuk::Name,
-		vec3 probePos, Atmosphere const&, Buffer<World>) -> Buffer<vec3>;
+		vec3 probePos, Atmosphere, Buffer<World>) -> Buffer<vec3>;
 	
 	// Draw the sky in the background of an image (where visibility buffer is
 	// empty).
 	static void draw(vuk::RenderGraph&, Texture2D target,
-		Worklist const&, Texture2D skyView, Atmosphere const&, Buffer<World>);
+		Worklist const&, Texture2D skyView, Atmosphere, Buffer<World>);
 		
-	static void drawQuad(vuk::RenderGraph&, QuadBuffer&, Worklist const&,
-		Texture2D skyView, Atmosphere const&, Buffer<World>);
+	static void drawQuad(vuk::RenderGraph&, QuadBuffer&, Worklist,
+		Texture2D skyView, Atmosphere, Buffer<World>);
 	
 	// Draw the sky into an existing cubemap. Target is the mip 0 of provided image.
 	static void draw(vuk::RenderGraph&, Cubemap target,
-		vec3 probePos, Texture2D skyView, Atmosphere const&, Buffer<World>);
+		vec3 probePos, Texture2D skyView, Atmosphere, Buffer<World>);
 	
 };
 

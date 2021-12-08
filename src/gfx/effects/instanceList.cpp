@@ -10,8 +10,8 @@ namespace minote::gfx {
 
 using namespace base;
 
-auto BasicInstanceList::upload(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
-	ObjectPool const& _objects, ModelBuffer const& _models) -> BasicInstanceList {
+auto BasicInstanceList::upload(Pool& _pool, Frame& _frame, vuk::Name _name,
+	ObjectPool const& _objects) -> BasicInstanceList {
 	
 	ZoneScoped;
 	
@@ -30,7 +30,7 @@ auto BasicInstanceList::upload(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _na
 			continue;
 		
 		auto modelID = _objects.modelIDs[id];
-		instancesCount += _models.cpu_modelMeshes.at(modelID).size();
+		instancesCount += _frame.models.cpu_modelMeshes.at(modelID).size();
 		
 	}
 	
@@ -47,7 +47,7 @@ auto BasicInstanceList::upload(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _na
 			continue;
 		
 		auto modelID = _objects.modelIDs[id];
-		for (auto meshIdx: _models.cpu_modelMeshes.at(modelID)) {
+		for (auto meshIdx: _frame.models.cpu_modelMeshes.at(modelID)) {
 			
 			instances.emplace_back(Instance{
 				.meshIdx = u32(meshIdx),
@@ -81,10 +81,10 @@ auto BasicInstanceList::upload(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _na
 		basicTransforms, MaxInstances);
 	_pool.ptc().dma_task();
 	
-	result.instancesCount.attach(_rg, vuk::eHostWrite, vuk::eNone);
-	result.instances.attach(_rg, vuk::eTransferDst, vuk::eNone);
-	result.colors.attach(_rg, vuk::eTransferDst, vuk::eNone);
-	result.basicTransforms.attach(_rg, vuk::eTransferDst, vuk::eNone);
+	result.instancesCount.attach(_frame.rg, vuk::eHostWrite, vuk::eNone);
+	result.instances.attach(_frame.rg, vuk::eTransferDst, vuk::eNone);
+	result.colors.attach(_frame.rg, vuk::eTransferDst, vuk::eNone);
+	result.basicTransforms.attach(_frame.rg, vuk::eTransferDst, vuk::eNone);
 	
 	return result;
 	
@@ -177,7 +177,7 @@ void DrawableInstanceList::compile(vuk::PerThreadContext& _ptc) {
 }
 
 auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
-	InstanceList const& _unsorted, ModelBuffer const& _models) -> DrawableInstanceList {
+	InstanceList _unsorted, ModelBuffer const& _models) -> DrawableInstanceList {
 	
 	auto result = DrawableInstanceList();
 	
@@ -211,7 +211,7 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 			_unsorted.instancesCount.resource(vuk::eIndirectRead),
 			_unsorted.instances.resource(vuk::eComputeRead),
 			result.commands.resource(vuk::eComputeWrite) },
-		.execute = [&_unsorted, result](vuk::CommandBuffer& cmd) {
+		.execute = [_unsorted, result](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _unsorted.instancesCount)
 			   .bind_storage_buffer(0, 1, _unsorted.instances)
@@ -298,7 +298,7 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 			_unsorted.instances.resource(vuk::eComputeRead),
 			result.commands.resource(vuk::eComputeRW),
 			result.instances.resource(vuk::eComputeWrite) },
-		.execute = [&_unsorted, result](vuk::CommandBuffer& cmd) {
+		.execute = [_unsorted, result](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _unsorted.instancesCount)
 			   .bind_storage_buffer(0, 1, _unsorted.instances)
@@ -315,7 +315,7 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 }
 
 auto DrawableInstanceList::frustumCull(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
-	DrawableInstanceList const& _source, ModelBuffer const& _models, mat4 _view, mat4 _projection) -> DrawableInstanceList {
+	DrawableInstanceList _source, ModelBuffer const& _models, mat4 _view, mat4 _projection) -> DrawableInstanceList {
 	
 	auto result = DrawableInstanceList();
 	
@@ -355,7 +355,7 @@ auto DrawableInstanceList::frustumCull(Pool& _pool, vuk::RenderGraph& _rg, vuk::
 			result.commands.resource(vuk::eComputeRW),
 			result.instancesCount.resource(vuk::eComputeWrite),
 			result.instances.resource(vuk::eComputeWrite) },
-		.execute = [&_source, result, &_models, _view, _projection](vuk::CommandBuffer& cmd) {
+		.execute = [_source, result, &_models, _view, _projection](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_storage_buffer(0, 0, _source.commands)
 			   .bind_uniform_buffer(0, 1, _source.instancesCount)

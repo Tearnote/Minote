@@ -56,10 +56,12 @@ void Atmosphere::compile(vuk::PerThreadContext& _ptc) {
 	
 }
 
-auto Atmosphere::create(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
+auto Atmosphere::create(Pool& _pool, Frame& _f, vuk::Name _name,
 	Params const& _params) -> Atmosphere {
 	
 	auto result = Atmosphere();
+	
+	bool calculate = !_pool.contains(nameAppend(_name, "transmittance"));
 	
 	result.transmittance = Texture2D::make(_pool, nameAppend(_name, "transmittance"),
 		TransmittanceSize, TransmittanceFormat,
@@ -75,42 +77,46 @@ auto Atmosphere::create(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
 		vuk::BufferUsageFlagBits::eUniformBuffer,
 		std::span(&_params, 1));
 	
-	result.transmittance.attach(_rg, vuk::eNone, vuk::eComputeSampled);
-	result.multiScattering.attach(_rg, vuk::eNone, vuk::eComputeSampled);
-	
-	_rg.add_pass({
-		.name = nameAppend(result.transmittance.name, "gen"),
-		.resources = {
-			result.transmittance.resource(vuk::eComputeWrite) },
-		.execute = [result](vuk::CommandBuffer& cmd) {
-			
-			cmd.bind_uniform_buffer(0, 0, result.params)
-			   .bind_storage_image(0, 1, result.transmittance)
-			   .bind_compute_pipeline("sky_gen_transmittance");
-			
-			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(result.transmittance.size()));
-			
-			cmd.dispatch_invocations(result.transmittance.size().x(), result.transmittance.size().y());
-			
-		}});
-	
-	_rg.add_pass({
-		.name = nameAppend(result.multiScattering.name, "gen"),
-		.resources = {
-			result.transmittance.resource(vuk::eComputeSampled),
-			result.multiScattering.resource(vuk::eComputeWrite) },
-		.execute = [result](vuk::CommandBuffer& cmd) {
-			
-			cmd.bind_uniform_buffer(0, 0, result.params)
-			   .bind_sampled_image(0, 1, result.transmittance, LinearClamp)
-			   .bind_storage_image(0, 2, result.multiScattering)
-			   .bind_compute_pipeline("sky_gen_multi_scattering");
-			
-			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(result.multiScattering.size()));
-			
-			cmd.dispatch_invocations(result.multiScattering.size().x(), result.multiScattering.size().y(), 1);
-			
-		}});
+	if (calculate) {
+		
+		result.transmittance.attach(_f.rg, vuk::eNone, vuk::eComputeSampled);
+		result.multiScattering.attach(_f.rg, vuk::eNone, vuk::eComputeSampled);
+		
+		_f.rg.add_pass({
+			.name = nameAppend(result.transmittance.name, "gen"),
+			.resources = {
+				result.transmittance.resource(vuk::eComputeWrite) },
+			.execute = [result](vuk::CommandBuffer& cmd) {
+				
+				cmd.bind_uniform_buffer(0, 0, result.params)
+				.bind_storage_image(0, 1, result.transmittance)
+				.bind_compute_pipeline("sky_gen_transmittance");
+				
+				cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(result.transmittance.size()));
+				
+				cmd.dispatch_invocations(result.transmittance.size().x(), result.transmittance.size().y());
+				
+			}});
+		
+		_f.rg.add_pass({
+			.name = nameAppend(result.multiScattering.name, "gen"),
+			.resources = {
+				result.transmittance.resource(vuk::eComputeSampled),
+				result.multiScattering.resource(vuk::eComputeWrite) },
+			.execute = [result](vuk::CommandBuffer& cmd) {
+				
+				cmd.bind_uniform_buffer(0, 0, result.params)
+				.bind_sampled_image(0, 1, result.transmittance, LinearClamp)
+				.bind_storage_image(0, 2, result.multiScattering)
+				.bind_compute_pipeline("sky_gen_multi_scattering");
+				
+				cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(result.multiScattering.size()));
+				
+				cmd.dispatch_invocations(result.multiScattering.size().x(), result.multiScattering.size().y(), 1);
+				
+			}});
+		
+	}
 	
 	return result;
 	
@@ -157,7 +163,7 @@ void Sky::compile(vuk::PerThreadContext& _ptc) {
 }
 
 auto Sky::createView(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
-	vec3 _probePos, Atmosphere const& _atmo, Buffer<World> _world) -> Texture2D {
+	vec3 _probePos, Atmosphere _atmo, Buffer<World> _world) -> Texture2D {
 	
 	auto view = Texture2D::make(_pool, _name,
 		ViewSize, ViewFormat,
@@ -170,7 +176,7 @@ auto Sky::createView(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
 		.name = nameAppend(_name, "gen"),
 		.resources = {
 			view.resource(vuk::eComputeWrite) },
-		.execute = [view, _world, _probePos, &_atmo](vuk::CommandBuffer& cmd) {
+		.execute = [view, _world, _probePos, _atmo](vuk::CommandBuffer& cmd) {
 			
 			struct PushConstants {
 				vec3 probePosition;
@@ -197,7 +203,7 @@ auto Sky::createView(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
 }
 
 auto Sky::createAerialPerspective(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
-	vec3 _probePos, mat4 _invViewProj, Atmosphere const& _atmo, Buffer<World> _world) -> Texture3D {
+	vec3 _probePos, mat4 _invViewProj, Atmosphere _atmo, Buffer<World> _world) -> Texture3D {
 	
 	auto aerialPerspective = Texture3D::make(_pool, _name,
 		AerialPerspectiveSize, AerialPerspectiveFormat,
@@ -210,7 +216,7 @@ auto Sky::createAerialPerspective(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name 
 		.name = nameAppend(_name, "gen"),
 		.resources = {
 			aerialPerspective.resource(vuk::eComputeWrite) },
-		.execute = [aerialPerspective, _world, &_atmo, _invViewProj, _probePos](vuk::CommandBuffer& cmd) {
+		.execute = [aerialPerspective, _world, _atmo, _invViewProj, _probePos](vuk::CommandBuffer& cmd) {
 			
 			struct PushConstants {
 				mat4 invViewProj;
@@ -239,7 +245,7 @@ auto Sky::createAerialPerspective(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name 
 }
 
 auto Sky::createSunLuminance(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
-	vec3 _probePos, Atmosphere const& _atmo, Buffer<World> _world) -> Buffer<vec3> {
+	vec3 _probePos, Atmosphere _atmo, Buffer<World> _world) -> Buffer<vec3> {
 	
 	auto sunLuminance = Buffer<vec3>::make(_pool, _name,
 		vuk::BufferUsageFlagBits::eStorageBuffer | vuk::BufferUsageFlagBits::eUniformBuffer);
@@ -250,7 +256,7 @@ auto Sky::createSunLuminance(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name
 		.name = nameAppend(_name, "gen"),
 		.resources = {
 			sunLuminance.resource(vuk::eComputeWrite) },
-		.execute = [sunLuminance, _world, &_atmo, _probePos](vuk::CommandBuffer& cmd) {
+		.execute = [sunLuminance, _world, _atmo, _probePos](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_uniform_buffer(0, 1, _atmo.params)
@@ -269,7 +275,7 @@ auto Sky::createSunLuminance(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name
 }
 
 void Sky::draw(vuk::RenderGraph& _rg, Texture2D _target, Worklist const& _worklist,
-	Texture2D _skyView, Atmosphere const& _atmo, Buffer<World> _world) {
+	Texture2D _skyView, Atmosphere _atmo, Buffer<World> _world) {
 	
 	_rg.add_pass({
 		.name = nameAppend(_target.name, "sky"),
@@ -278,7 +284,7 @@ void Sky::draw(vuk::RenderGraph& _rg, Texture2D _target, Worklist const& _workli
 			_worklist.counts.resource(vuk::eIndirectRead),
 			_worklist.lists.resource(vuk::eComputeRead),
 			_target.resource(vuk::eComputeRW) },
-		.execute = [_target, &_worklist, _skyView, &_atmo, _world,
+		.execute = [_target, &_worklist, _skyView, _atmo, _world,
 			tileCount=_worklist.counts.offsetView(+MaterialType::None)](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
@@ -301,7 +307,7 @@ void Sky::draw(vuk::RenderGraph& _rg, Texture2D _target, Worklist const& _workli
 }
 
 void Sky::drawQuad(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
-	Worklist const& _worklist, Texture2D _skyView, Atmosphere const& _atmo, Buffer<World> _world) {
+	Worklist _worklist, Texture2D _skyView, Atmosphere _atmo, Buffer<World> _world) {
 	
 	_rg.add_pass({
 		.name = nameAppend(_quadbuf.name, "sky Quad"),
@@ -311,7 +317,7 @@ void Sky::drawQuad(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
 			_worklist.lists.resource(vuk::eComputeRead),
 			_quadbuf.clusterDef.resource(vuk::eComputeSampled),
 			_quadbuf.clusterOut.resource(vuk::eComputeWrite) },
-		.execute = [&_worklist, _skyView, &_atmo, _world, _quadbuf,
+		.execute = [_worklist, _skyView, _atmo, _world, _quadbuf,
 			tileCount=_worklist.counts.offsetView(+MaterialType::None)](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
@@ -334,14 +340,14 @@ void Sky::drawQuad(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
 }
 
 void Sky::draw(vuk::RenderGraph& _rg, Cubemap _target, vec3 _probePos,
-	Texture2D _skyView, Atmosphere const& _atmo, Buffer<World> _world) {
+	Texture2D _skyView, Atmosphere _atmo, Buffer<World> _world) {
 	
 	_rg.add_pass({
 		.name = nameAppend(_target.name, "sky"),
 		.resources = {
 			_skyView.resource(vuk::eComputeSampled),
 			_target.resource(vuk::eComputeWrite) },
-		.execute = [_target, _skyView, &_atmo, _world, _probePos](vuk::CommandBuffer& cmd) {
+		.execute = [_target, _skyView, _atmo, _world, _probePos](vuk::CommandBuffer& cmd) {
 			
 			struct PushConstants {
 				vec3 probePosition;

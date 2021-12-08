@@ -84,6 +84,7 @@ add_executable(Minote
         src/gfx/camera.hpp src/gfx/camera.cpp
         src/gfx/imgui.hpp src/gfx/imgui.cpp
         src/gfx/world.hpp src/gfx/world.cpp
+        src/gfx/frame.hpp src/gfx/frame.cpp
         src/gfx/util.hpp
         #src/playstate.hpp src/playstate.cpp
         src/assets.hpp src/assets.tpp src/assets.cpp

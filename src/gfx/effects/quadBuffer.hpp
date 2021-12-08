@@ -38,7 +38,7 @@ struct QuadBuffer {
 	static void clusterize(vuk::RenderGraph&, QuadBuffer&, Texture2DMS visbuf, Buffer<World>);
 	
 	static void genBuffers(vuk::RenderGraph&, QuadBuffer&, ModelBuffer const&,
-		DrawableInstanceList const&, Buffer<World>);
+		DrawableInstanceList, Buffer<World>);
 	
 	static void resolve(vuk::RenderGraph&, QuadBuffer&, Texture2D output, Buffer<World>);
 	

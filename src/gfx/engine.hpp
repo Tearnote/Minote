@@ -8,7 +8,6 @@
 #include "sys/vulkan.hpp"
 #include "gfx/resources/cubemap.hpp"
 #include "gfx/resources/pool.hpp"
-#include "gfx/effects/sky.hpp"
 #include "gfx/objects.hpp"
 #include "gfx/models.hpp"
 #include "gfx/camera.hpp"
@@ -27,8 +26,11 @@ struct Engine {
 	static constexpr auto NearPlane = 0.1_m;
 	
 	// Create the engine in uninitialized state.
-	Engine(sys::Vulkan& vk): m_vk(vk),
-		m_framerate(0.0f), m_lastFramerateCheck(0), m_framesSinceLastCheck(0) {}
+	Engine(sys::Vulkan& vk):
+		m_vk(vk),
+		m_framerate(0.0f),
+		m_lastFramerateCheck(0),
+		m_framesSinceLastCheck(0) {}
 	~Engine();
 	
 	void init(ModelList&&);
@@ -71,13 +73,14 @@ private:
 	ImguiData m_imguiData;
 	ModelBuffer m_models;
 	ObjectPool m_objects;
+	World m_world;
 	Camera m_camera;
 	
 	Pool m_permPool;
 	Pool m_framePool;
 	Pool m_swapchainPool;
-	World m_world;
-	Atmosphere m_atmosphere;
+	
+	friend struct Frame;
 	
 };
 

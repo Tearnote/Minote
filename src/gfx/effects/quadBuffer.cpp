@@ -161,7 +161,7 @@ void QuadBuffer::clusterize(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
 }
 
 void QuadBuffer::genBuffers(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
-	ModelBuffer const& _models, DrawableInstanceList const& _instances, Buffer<World> _world) {
+	ModelBuffer const& _models, DrawableInstanceList _instances, Buffer<World> _world) {
 	
 	_rg.add_pass({
 		
@@ -171,7 +171,7 @@ void QuadBuffer::genBuffers(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
 			_instances.transforms.resource(vuk::eComputeRead),
 			_quadbuf.clusterDef.resource(vuk::eComputeRead),
 			_quadbuf.velocity.resource(vuk::eComputeWrite) },
-		.execute = [_quadbuf, _world, &_models, &_instances](vuk::CommandBuffer& cmd) {
+		.execute = [_quadbuf, _world, &_models, _instances](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _world)
 			   .bind_storage_buffer(0, 1, _models.meshes)

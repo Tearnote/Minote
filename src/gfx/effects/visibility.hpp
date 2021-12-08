@@ -25,10 +25,10 @@ struct Visibility {
 	static void compile(vuk::PerThreadContext&);
 	
 	static void apply(vuk::RenderGraph&, Texture2D visbuf, Texture2D depth, Buffer<World>,
-		DrawableInstanceList const&, ModelBuffer const&);
+		DrawableInstanceList, ModelBuffer const&);
 	
 	static void applyMS(vuk::RenderGraph&, Texture2DMS visbuf, Texture2DMS depth, Buffer<World>,
-		DrawableInstanceList const&, ModelBuffer const&);
+		DrawableInstanceList, ModelBuffer const&);
 	
 };
 
@@ -45,7 +45,7 @@ struct Worklist {
 	static void compile(vuk::PerThreadContext&);
 	
 	static auto create(Pool&, vuk::RenderGraph&, vuk::Name, Texture2D visbuf,
-		DrawableInstanceList const&, ModelBuffer const&) -> Worklist;
+		DrawableInstanceList, ModelBuffer const&) -> Worklist;
 	
 };
 

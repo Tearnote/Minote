@@ -22,6 +22,7 @@
 #include "gfx/effects/bloom.hpp"
 #include "gfx/effects/clear.hpp"
 #include "gfx/effects/pbr.hpp"
+#include "gfx/frame.hpp"
 #include "gfx/util.hpp"
 #include "main.hpp"
 
@@ -58,8 +59,6 @@ void Engine::init(ModelList&& _modelList) {
 	auto ptc = ifc.begin();
 	m_permPool.setPtc(ptc);
 	
-	// Compile pipelines
-	
 	DrawableInstanceList::compile(ptc);
 	InstanceList::compile(ptc);
 	QuadBuffer::compile(ptc);
@@ -72,7 +71,6 @@ void Engine::init(ModelList&& _modelList) {
 	PBR::compile(ptc);
 	Sky::compile(ptc);
 	
-	// Initialize internal resources
 	m_swapchainDirty = false;
 	m_flushTemporalResources = true;
 	
@@ -85,16 +83,9 @@ void Engine::init(ModelList&& _modelList) {
 	
 	m_models = std::move(_modelList).upload(m_permPool, "models");
 	
-	// Perform precalculations
-	auto precalc = vuk::RenderGraph();
-	m_atmosphere = Atmosphere::create(m_permPool, precalc, "earth", Atmosphere::Params::earth());
-	
 	// Finalize
 	
 	ptc.wait_all_transfers();
-	
-	auto erg = std::move(precalc).link(ptc, compileOpts);
-	vuk::execute_submit_and_wait(ptc, std::move(erg));
 	
 	L_INFO("Graphics engine initialized");
 	
@@ -161,20 +152,16 @@ void Engine::render() {
 	m_world.sunIlluminance = vec3(sunIlluminance);
 	
 	// Runtime settings
-	enum struct AntialiasingType {
-		None = 0,
-		Quad = 1,
-	};
-	static auto antialiasing = AntialiasingType::Quad;
+	static auto antialiasing = Frame::AntialiasingType::Quad;
 	static auto antialiasingInt = +antialiasing;
 	auto AntialiasingStrings = to_array({
 		"None",
 		"Quad" });
 	ImGui::RadioButton(AntialiasingStrings[0], &antialiasingInt, 0);
 	ImGui::RadioButton(AntialiasingStrings[1], &antialiasingInt, 1);
-	antialiasing = AntialiasingType(antialiasingInt);
+	antialiasing = Frame::AntialiasingType(antialiasingInt);
 	
-	// Begin frame
+	// Prepare frame
 	
 	auto ifc = m_vk.context->begin();
 	auto ptc = ifc.begin();
@@ -183,28 +170,7 @@ void Engine::render() {
 	m_swapchainPool.setPtc(ptc);
 	auto rg = vuk::RenderGraph();
 	
-	// Create per-frame resources
-	
-	auto iblUnfiltered = Cubemap::make(m_permPool, "iblUnfiltered",
-		256, vuk::Format::eR16G16B16A16Sfloat,
-		vuk::ImageUsageFlagBits::eStorage |
-		vuk::ImageUsageFlagBits::eSampled |
-		vuk::ImageUsageFlagBits::eTransferSrc);
-	auto iblFiltered = Cubemap::make(m_permPool, "iblFiltered",
-		256, vuk::Format::eR16G16B16A16Sfloat,
-		vuk::ImageUsageFlagBits::eStorage |
-		vuk::ImageUsageFlagBits::eSampled |
-		vuk::ImageUsageFlagBits::eTransferDst);
-	iblUnfiltered.attach(rg, vuk::eNone, vuk::eNone);
-	iblFiltered.attach(rg, vuk::eNone, vuk::eNone);
-	constexpr auto IblProbePosition = vec3{0_m, 0_m, 10_m};
-	
-	auto color = Texture2D::make(m_swapchainPool, "color",
-		viewport, vuk::Format::eR16G16B16A16Sfloat,
-		vuk::ImageUsageFlagBits::eSampled |
-		vuk::ImageUsageFlagBits::eStorage |
-		vuk::ImageUsageFlagBits::eTransferDst);
-	color.attach(rg, vuk::eNone, vuk::eNone);
+	// Create main rendering destination
 	
 	auto screen = Texture2D::make(m_swapchainPool, "screen",
 		viewport, vuk::Format::eR8G8B8A8Unorm,
@@ -213,98 +179,15 @@ void Engine::render() {
 		vuk::ImageUsageFlagBits::eStorage);
 	screen.attach(rg, vuk::eNone, vuk::eNone);
 	
-	auto visbuf = Texture2D();
-	auto visbufMS = Texture2DMS();
-	auto depth = Texture2D();
-	auto depthMS = Texture2DMS();
-	auto quadbuf = QuadBuffer();
-	if (antialiasing == AntialiasingType::None) {
-		
-		visbuf = Texture2D::make(m_swapchainPool, "visbuf",
-			viewport, vuk::Format::eR32Uint,
-			vuk::ImageUsageFlagBits::eColorAttachment |
-			vuk::ImageUsageFlagBits::eSampled);
-		visbuf.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearColor(-1u, -1u, -1u, -1u));
-		
-		depth = Texture2D::make(m_swapchainPool, "depth",
-			viewport, vuk::Format::eD32Sfloat,
-			vuk::ImageUsageFlagBits::eDepthStencilAttachment |
-			vuk::ImageUsageFlagBits::eSampled);
-		depth.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearDepthStencil(0.0f, 0));
-		
-	} else {
-		
-		visbufMS = Texture2DMS::make(m_swapchainPool, "visbuf_ms",
-			viewport, vuk::Format::eR32Uint,
-			vuk::ImageUsageFlagBits::eColorAttachment |
-			vuk::ImageUsageFlagBits::eSampled,
-			vuk::Samples::e8);
-		visbufMS.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearColor(-1u, -1u, -1u, -1u));
-		
-		depthMS = Texture2DMS::make(m_swapchainPool, "depth_ms",
-			viewport, vuk::Format::eD32Sfloat,
-			vuk::ImageUsageFlagBits::eDepthStencilAttachment |
-			vuk::ImageUsageFlagBits::eSampled,
-			vuk::Samples::e8);
-		depthMS.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearDepthStencil(0.0f, 0));
-		
-		quadbuf = QuadBuffer::create(rg, m_swapchainPool, "quadbuf", viewport, m_flushTemporalResources);
-		
-	}
+	// Draw frame
 	
-	auto world = m_world.upload(m_framePool, "world");
-	auto basicInstances = BasicInstanceList::upload(m_framePool, rg, "basicInstances", m_objects, m_models);
-	
-	// Set up the rendergraph
-	
-	// Instance list processing
-	auto instances = InstanceList::fromBasic(m_framePool, rg, "instances", std::move(basicInstances), m_models);
-	auto drawables = DrawableInstanceList::fromUnsorted(m_framePool, rg, "drawables", instances, m_models);
-	auto culledDrawables = DrawableInstanceList::frustumCull(m_framePool, rg, "culledDrawables", drawables,
-		m_models, m_world.view, m_world.projection);
-	
-	// Sky generation
-	auto cameraSky = Sky::createView(m_permPool, rg, "cameraSky", m_camera.position, m_atmosphere, world);
-	auto cubeSky = Sky::createView(m_permPool, rg, "cubeSky", IblProbePosition, m_atmosphere, world);
-	auto aerialPerspective = Sky::createAerialPerspective(m_permPool, rg, "aerialPerspective",
-		m_camera.position, m_world.viewProjectionInverse, m_atmosphere, world);
-	auto sunLuminance = Sky::createSunLuminance(m_permPool, rg, "sunLuminance", m_world.cameraPos, m_atmosphere, world);
-	
-	// IBL generation
-	Sky::draw(rg, iblUnfiltered, IblProbePosition, cubeSky, m_atmosphere, world);
-	CubeFilter::apply(rg, iblUnfiltered, iblFiltered);
-	
-	// Scene drawing
-	if (antialiasing == AntialiasingType::None) {
-		
-		Clear::apply(rg, color, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
-		Visibility::apply(rg, visbuf, depth, world, culledDrawables, m_models);
-		auto worklist = Worklist::create(m_framePool, rg, "worklist", visbuf,
-			culledDrawables, m_models);
-		PBR::apply(rg, color, visbuf, worklist, world, m_models,
-			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
-		Sky::draw(rg, color, worklist, cameraSky, m_atmosphere, world);
-		
-	} else {
-		
-		Visibility::applyMS(rg, visbufMS, depthMS, world, culledDrawables, m_models);
-		QuadBuffer::clusterize(rg, quadbuf, visbufMS, world);
-		QuadBuffer::genBuffers(rg, quadbuf, m_models, culledDrawables, world);
-		auto worklistMS = Worklist::create(m_framePool, rg, "worklist_ms", quadbuf.clusterDef,
-			culledDrawables, m_models);
-		PBR::applyQuad(rg, quadbuf, worklistMS, world, m_models,
-			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
-		Sky::drawQuad(rg, quadbuf, worklistMS, cameraSky, m_atmosphere, world);
-		QuadBuffer::resolve(rg, quadbuf, color, world);
-		
-	}
-	
-	// Postprocessing
-	Bloom::apply(rg, m_swapchainPool, color);
-	Tonemap::apply(rg, color, screen);
+	auto frame = Frame(*this, rg);
+	frame.draw(screen, m_objects, antialiasing, m_flushTemporalResources);
 	
 	ImGui::Render();
 	ImGui_ImplVuk_Render(m_framePool, ptc, rg, screen.name, m_imguiData, ImGui::GetDrawData());
+	
+	// Blit frame to swapchain
 	
 	rg.attach_swapchain("swapchain", m_vk.swapchain, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 	rg.add_pass({
