@@ -29,8 +29,10 @@ void QuadBuffer::compile(vuk::PerThreadContext& _ptc) {
 	
 }
 
-auto QuadBuffer::create(vuk::RenderGraph& _rg, Pool& _pool,
+auto QuadBuffer::create(Pool& _pool, Frame& _frame,
 	vuk::Name _name, uvec2 _size, bool _flushTemporal) -> QuadBuffer {
+	
+	auto& rg = _frame.rg;
 	
 	auto result = QuadBuffer();
 	result.name = _name;
@@ -101,34 +103,34 @@ auto QuadBuffer::create(vuk::RenderGraph& _rg, Pool& _pool,
 		vuk::ImageUsageFlagBits::eSampled |
 		vuk::ImageUsageFlagBits::eTransferDst);
 	
-	result.clusterDef.attach(_rg, vuk::eNone, vuk::eComputeRead);
-	result.jitterMap.attach(_rg, vuk::eNone, vuk::eComputeRead);
-	result.clusterOut.attach(_rg, vuk::eNone, vuk::eComputeRead);
-	result.output.attach(_rg, vuk::eNone, vuk::eTransferSrc);
+	result.clusterDef.attach(rg, vuk::eNone, vuk::eComputeRead);
+	result.jitterMap.attach(rg, vuk::eNone, vuk::eComputeRead);
+	result.clusterOut.attach(rg, vuk::eNone, vuk::eComputeRead);
+	result.output.attach(rg, vuk::eNone, vuk::eTransferSrc);
 	if (_flushTemporal) {
 		
-		result.clusterDefPrev.attach(_rg, vuk::eNone, vuk::eNone);
-		result.jitterMapPrev.attach(_rg, vuk::eNone, vuk::eNone);
-		result.clusterOutPrev.attach(_rg, vuk::eNone, vuk::eNone);
-		result.outputPrev.attach(_rg, vuk::eNone, vuk::eNone);
+		result.clusterDefPrev.attach(rg, vuk::eNone, vuk::eNone);
+		result.jitterMapPrev.attach(rg, vuk::eNone, vuk::eNone);
+		result.clusterOutPrev.attach(rg, vuk::eNone, vuk::eNone);
+		result.outputPrev.attach(rg, vuk::eNone, vuk::eNone);
 		
 	} else {
 		
-		result.clusterDefPrev.attach(_rg, vuk::eComputeRead, vuk::eNone);
-		result.jitterMapPrev.attach(_rg, vuk::eComputeRead, vuk::eNone);
-		result.clusterOutPrev.attach(_rg, vuk::eComputeRead, vuk::eNone);
-		result.outputPrev.attach(_rg, vuk::eTransferSrc, vuk::eNone);
+		result.clusterDefPrev.attach(rg, vuk::eComputeRead, vuk::eNone);
+		result.jitterMapPrev.attach(rg, vuk::eComputeRead, vuk::eNone);
+		result.clusterOutPrev.attach(rg, vuk::eComputeRead, vuk::eNone);
+		result.outputPrev.attach(rg, vuk::eTransferSrc, vuk::eNone);
 		
 	}
 	
-	result.velocity.attach(_rg, vuk::eNone, vuk::eNone);
+	result.velocity.attach(rg, vuk::eNone, vuk::eNone);
 	
-	Clear::apply(_rg, result.jitterMap, vuk::ClearColor(0u, 0u, 0u, 0u));
+	Clear::apply(rg, result.jitterMap, vuk::ClearColor(0u, 0u, 0u, 0u));
 	if (_flushTemporal) {
 		
-		Clear::apply(_rg, result.clusterDefPrev, vuk::ClearColor(0u, 0u, 0u, 0u));
-		Clear::apply(_rg, result.clusterOutPrev, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
-		Clear::apply(_rg, result.outputPrev, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
+		Clear::apply(rg, result.clusterDefPrev, vuk::ClearColor(0u, 0u, 0u, 0u));
+		Clear::apply(rg, result.clusterOutPrev, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
+		Clear::apply(rg, result.outputPrev, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 		
 	}
 	

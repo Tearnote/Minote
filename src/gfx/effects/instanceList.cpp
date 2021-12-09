@@ -63,7 +63,7 @@ auto BasicInstanceList::upload(Pool& _pool, Frame& _frame, vuk::Name _name,
 	
 	auto result = BasicInstanceList();
 	
-	auto instancesCountGroups = instancesCount / 64u + (instancesCount % 64u != 0u);
+	auto instancesCountGroups = divRoundUp(instancesCount, 64u);
 	auto instancesCountData = uvec4{instancesCountGroups, 1, 1, instancesCount};
 	result.instancesCount = Buffer<uvec4>::make(_pool, nameAppend(_name, "instanceCount"),
 		vuk::BufferUsageFlagBits::eStorageBuffer |
@@ -79,7 +79,6 @@ auto BasicInstanceList::upload(Pool& _pool, Frame& _frame, vuk::Name _name,
 	result.basicTransforms = Buffer<BasicTransform>::make(_pool, nameAppend(_name, "basicTransforms"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		basicTransforms, MaxInstances);
-	_pool.ptc().dma_task();
 	
 	result.instancesCount.attach(_frame.rg, vuk::eHostWrite, vuk::eNone);
 	result.instances.attach(_frame.rg, vuk::eTransferDst, vuk::eNone);
@@ -100,28 +99,28 @@ void InstanceList::compile(vuk::PerThreadContext& _ptc) {
 	
 }
 
-auto InstanceList::fromBasic(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
-	BasicInstanceList&& _basic, ModelBuffer const& _models) -> InstanceList {
+auto InstanceList::fromBasic(Pool& _pool, Frame& _frame, vuk::Name _name,
+	BasicInstanceList&& _basic) -> InstanceList {
 	
 	auto transforms = Buffer<Transform>::make(_pool, nameAppend(_name, "transforms"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		_basic.capacity());
 	
-	transforms.attach(_rg, vuk::eNone, vuk::eNone);
+	transforms.attach(_frame.rg, vuk::eNone, vuk::eNone);
 	
-	_rg.add_pass({
+	_frame.rg.add_pass({
 		.name = nameAppend(_basic.basicTransforms.name, "conversion"),
 		.resources = {
 			_basic.instancesCount.resource(vuk::eIndirectRead),
 			_basic.basicTransforms.resource(vuk::eComputeRead),
 			transforms.resource(vuk::eComputeWrite) },
-		.execute = [_basic, transforms, &_models](vuk::CommandBuffer& cmd) {
+		.execute = [_basic, transforms, &_frame](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _basic.instancesCount)
 			   .bind_storage_buffer(0, 1, _basic.basicTransforms)
 			   .bind_storage_buffer(0, 2, transforms)
 			   .bind_storage_buffer(0, 3, _basic.instances)
-			   .bind_storage_buffer(0, 4, _models.meshes)
+			   .bind_storage_buffer(0, 4, _frame.models.meshes)
 			   .bind_compute_pipeline("transform_conv");
 			
 			cmd.dispatch_indirect(_basic.instancesCount);
@@ -176,17 +175,19 @@ void DrawableInstanceList::compile(vuk::PerThreadContext& _ptc) {
 	
 }
 
-auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
-	InstanceList _unsorted, ModelBuffer const& _models) -> DrawableInstanceList {
+auto DrawableInstanceList::fromUnsorted(Pool& _pool, Frame& _frame, vuk::Name _name,
+	InstanceList _unsorted) -> DrawableInstanceList {
+	
+	auto& rg = _frame.rg;
 	
 	auto result = DrawableInstanceList();
 	
 	// Create a mostly prefilled command buffer
 	
 	auto commandsData = pvector<Command>();
-	commandsData.reserve(_models.cpu_meshes.size());
+	commandsData.reserve(_frame.models.cpu_meshes.size());
 	
-	for (auto& mesh: _models.cpu_meshes) {
+	for (auto& mesh: _frame.models.cpu_meshes) {
 		
 		commandsData.emplace_back(Command{
 			.indexCount = mesh.indexCount,
@@ -200,12 +201,11 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 	result.commands = Buffer<Command>::make(_pool, nameAppend(_name, "commands"),
 		vuk::BufferUsageFlagBits::eStorageBuffer | vuk::BufferUsageFlagBits::eIndirectBuffer,
 		commandsData);
-	_pool.ptc().dma_task();
-	result.commands.attach(_rg, vuk::eTransferDst, vuk::eNone);
+	result.commands.attach(rg, vuk::eTransferDst, vuk::eNone);
 	
 	// Step 1: Count how many instances there are of each mesh
 	
-	_rg.add_pass({
+	rg.add_pass({
 		.name = nameAppend(_name, "sort count"),
 		.resources = {
 			_unsorted.instancesCount.resource(vuk::eIndirectRead),
@@ -226,17 +226,17 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 	
 	assert(result.commands.length() <= 1024 * 1024);
 	
-	auto scanTemp = Buffer<u32>::make(_pool, nameAppend(_name, "scan temp"),
+	auto scanTemp = Buffer<u32>::make(_frame.framePool, nameAppend(_name, "scanTemp"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		divRoundUp(result.commands.length(), 1024_zu));
-	scanTemp.attach(_rg, vuk::eNone, vuk::eNone);
+	scanTemp.attach(rg, vuk::eNone, vuk::eNone);
 	
-	_rg.add_pass({
+	rg.add_pass({
 		.name = nameAppend(_name, "sort scan1"),
 		.resources = {
 			result.commands.resource(vuk::eComputeRW),
 			scanTemp.resource(vuk::eComputeWrite) },
-		.execute = [&_models, result, scanTemp](vuk::CommandBuffer& cmd) {
+		.execute = [result, scanTemp](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_storage_buffer(0, 0, result.commands)
 			   .bind_storage_buffer(0, 1, scanTemp)
@@ -248,7 +248,7 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 			
 		}});
 	
-	_rg.add_pass({
+	rg.add_pass({
 		.name = nameAppend(_name, "sort scan2"),
 		.resources = {
 			scanTemp.resource(vuk::eComputeRW) },
@@ -263,7 +263,7 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 			
 	}});
 	
-	_rg.add_pass({
+	rg.add_pass({
 		.name = nameAppend(_name, "sort scan3"),
 		.resources = {
 			scanTemp.resource(vuk::eComputeRead),
@@ -289,9 +289,9 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 	result.instances = Buffer<Instance>::make(_pool, nameAppend(_name, "instances"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		_unsorted.capacity());
-	result.instances.attach(_rg, vuk::eNone, vuk::eNone);
+	result.instances.attach(rg, vuk::eNone, vuk::eNone);
 	
-	_rg.add_pass({
+	rg.add_pass({
 		.name = nameAppend(_name, "sort write"),
 		.resources = {
 			_unsorted.instancesCount.resource(vuk::eIndirectRead),
@@ -314,8 +314,8 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, vuk::RenderGraph& _rg, vuk:
 	
 }
 
-auto DrawableInstanceList::frustumCull(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
-	DrawableInstanceList _source, ModelBuffer const& _models, mat4 _view, mat4 _projection) -> DrawableInstanceList {
+auto DrawableInstanceList::frustumCull(Pool& _pool, Frame& _frame, vuk::Name _name,
+	DrawableInstanceList _source, mat4 _view, mat4 _projection) -> DrawableInstanceList {
 	
 	auto result = DrawableInstanceList();
 	
@@ -325,8 +325,7 @@ auto DrawableInstanceList::frustumCull(Pool& _pool, vuk::RenderGraph& _rg, vuk::
 	result.commands = Buffer<Command>::make(_pool, nameAppend(_name, "commands"),
 		vuk::BufferUsageFlagBits::eStorageBuffer | vuk::BufferUsageFlagBits::eIndirectBuffer,
 		commandsData);
-	_pool.ptc().dma_task();
-	result.commands.attach(_rg, vuk::eHostWrite, vuk::eNone);
+	result.commands.attach(_frame.rg, vuk::eHostWrite, vuk::eNone);
 	
 	// Create destination buffers
 	
@@ -342,10 +341,10 @@ auto DrawableInstanceList::frustumCull(Pool& _pool, vuk::RenderGraph& _rg, vuk::
 	result.colors = _source.colors;
 	result.transforms = _source.transforms;
 	
-	result.instancesCount.attach(_rg, vuk::eNone, vuk::eNone);
-	result.instances.attach(_rg, vuk::eNone, vuk::eNone);
+	result.instancesCount.attach(_frame.rg, vuk::eNone, vuk::eNone);
+	result.instances.attach(_frame.rg, vuk::eNone, vuk::eNone);
 	
-	_rg.add_pass({
+	_frame.rg.add_pass({
 		.name = nameAppend(_name, "frustum cull"),
 		.resources = {
 			_source.commands.resource(vuk::eComputeRead),
@@ -355,13 +354,13 @@ auto DrawableInstanceList::frustumCull(Pool& _pool, vuk::RenderGraph& _rg, vuk::
 			result.commands.resource(vuk::eComputeRW),
 			result.instancesCount.resource(vuk::eComputeWrite),
 			result.instances.resource(vuk::eComputeWrite) },
-		.execute = [_source, result, &_models, _view, _projection](vuk::CommandBuffer& cmd) {
+		.execute = [_source, result, &_frame, _view, _projection](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_storage_buffer(0, 0, _source.commands)
 			   .bind_uniform_buffer(0, 1, _source.instancesCount)
 			   .bind_storage_buffer(0, 2, _source.instances)
 			   .bind_storage_buffer(0, 3, result.transforms)
-			   .bind_storage_buffer(0, 4, _models.meshes)
+			   .bind_storage_buffer(0, 4, _frame.models.meshes)
 			   .bind_storage_buffer(0, 5, result.commands)
 			   .bind_storage_buffer(0, 6, result.instancesCount)
 			   .bind_storage_buffer(0, 7, result.instances)
@@ -384,7 +383,7 @@ auto DrawableInstanceList::frustumCull(Pool& _pool, vuk::RenderGraph& _rg, vuk::
 					
 				}() };
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, pushConstants);
-			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32(_models.cpu_meshes.size()));
+			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32(_frame.models.cpu_meshes.size()));
 			
 			cmd.dispatch_indirect(_source.instancesCount);
 			

@@ -90,14 +90,13 @@ struct Sky {
 	// Build the shader.
 	static void compile(vuk::PerThreadContext&);
 	
-	static auto createView(Pool&, vuk::RenderGraph&, vuk::Name, vec3 probePos,
-		Atmosphere, Buffer<World>) -> Texture2D;
+	static auto createView(Pool&, Frame&, vuk::Name, vec3 probePos, Atmosphere) -> Texture2D;
 	
-	static auto createAerialPerspective(Pool&, vuk::RenderGraph&, vuk::Name,
-		vec3 probePos, mat4 invViewProj, Atmosphere, Buffer<World>) -> Texture3D;
+	static auto createAerialPerspective(Pool&, Frame&, vuk::Name,
+		vec3 probePos, mat4 invViewProj, Atmosphere) -> Texture3D;
 	
-	static auto createSunLuminance(Pool&, vuk::RenderGraph&, vuk::Name,
-		vec3 probePos, Atmosphere, Buffer<World>) -> Buffer<vec3>;
+	static auto createSunLuminance(Pool&, Frame&, vuk::Name,
+		vec3 probePos, Atmosphere) -> Buffer<vec3>;
 	
 	// Draw the sky in the background of an image (where visibility buffer is
 	// empty).

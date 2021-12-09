@@ -9,6 +9,7 @@
 #include "gfx/effects/instanceList.hpp"
 #include "gfx/models.hpp"
 #include "gfx/world.hpp"
+#include "gfx/frame.hpp"
 
 namespace minote::gfx {
 
@@ -32,7 +33,7 @@ struct QuadBuffer {
 	
 	static void compile(vuk::PerThreadContext&);
 	
-	static auto create(vuk::RenderGraph&, Pool&,
+	static auto create(Pool&, Frame&,
 		vuk::Name, uvec2 size, bool flushTemporal = false) -> QuadBuffer;
 	
 	static void clusterize(vuk::RenderGraph&, QuadBuffer&, Texture2DMS visbuf, Buffer<World>);

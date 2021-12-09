@@ -47,8 +47,7 @@ struct InstanceList {
 	
 	static void compile(vuk::PerThreadContext&);
 	
-	static auto fromBasic(Pool&, vuk::RenderGraph&, vuk::Name, BasicInstanceList&&,
-		ModelBuffer const&) -> InstanceList;
+	static auto fromBasic(Pool&, Frame&, vuk::Name, BasicInstanceList&&) -> InstanceList;
 	
 	[[nodiscard]]
 	auto capacity() const -> usize { return BasicInstanceList::MaxInstances; }
@@ -69,11 +68,10 @@ struct DrawableInstanceList {
 	
 	static void compile(vuk::PerThreadContext&);
 	
-	static auto fromUnsorted(Pool&, vuk::RenderGraph&, vuk::Name, InstanceList,
-		ModelBuffer const&) -> DrawableInstanceList;
+	static auto fromUnsorted(Pool&, Frame&, vuk::Name, InstanceList) -> DrawableInstanceList;
 	
-	static auto frustumCull(Pool&, vuk::RenderGraph&, vuk::Name, DrawableInstanceList,
-		ModelBuffer const&, mat4 view, mat4 projection) -> DrawableInstanceList;
+	static auto frustumCull(Pool&, Frame&, vuk::Name, DrawableInstanceList,
+		mat4 view, mat4 projection) -> DrawableInstanceList;
 	
 	[[nodiscard]]
 	auto capacity() const -> usize { return BasicInstanceList::MaxInstances; }

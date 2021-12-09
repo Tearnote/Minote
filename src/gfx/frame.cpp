@@ -29,7 +29,7 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, AntialiasingType _aa, 
 	
 	// Upload resources
 	
-	auto world = cpu_world.upload(framePool, "world");
+	world = cpu_world.upload(framePool, "world");
 	auto basicInstances = BasicInstanceList::upload(framePool, *this, "basicInstances", _objects);
 	auto atmosphere = Atmosphere::create(permPool, *this, "earth", Atmosphere::Params::earth());
 	auto viewport = _target.size();
@@ -48,7 +48,7 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, AntialiasingType _aa, 
 		vuk::ImageUsageFlagBits::eTransferDst);
 	iblUnfiltered.attach(rg, vuk::eNone, vuk::eNone);
 	iblFiltered.attach(rg, vuk::eNone, vuk::eNone);
-	constexpr auto IblProbePosition = vec3{0_m, 0_m, 10_m};
+	constexpr auto IblProbePosition = vec3{0_m, 0_m, 64_m};
 	
 	auto color = Texture2D::make(swapchainPool, "color",
 		viewport, vuk::Format::eR16G16B16A16Sfloat,
@@ -90,24 +90,24 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, AntialiasingType _aa, 
 			vuk::Samples::e8);
 		std::get<Texture2DMS>(v_depth).attach(rg, vuk::eClear, vuk::eNone, vuk::ClearDepthStencil(0.0f, 0));
 		
-		quadbuf = QuadBuffer::create(rg, swapchainPool, "quadbuf", viewport, _flush);
+		quadbuf = QuadBuffer::create(swapchainPool, *this, "quadbuf", viewport, _flush);
 		
 	}
 	
 	// Create rendering passes
 	
 	// Instance list processing
-	auto instances = InstanceList::fromBasic(framePool, rg, "instances", std::move(basicInstances), models);
-	auto drawables = DrawableInstanceList::fromUnsorted(framePool, rg, "drawables", instances, models);
-	auto culledDrawables = DrawableInstanceList::frustumCull(framePool, rg, "culledDrawables", drawables,
-		models, cpu_world.view, cpu_world.projection);
+	auto instances = InstanceList::fromBasic(framePool, *this, "instances", std::move(basicInstances));
+	auto drawables = DrawableInstanceList::fromUnsorted(framePool, *this, "drawables", instances);
+	auto culledDrawables = DrawableInstanceList::frustumCull(framePool, *this, "culledDrawables", drawables,
+		cpu_world.view, cpu_world.projection);
 	
 	// Sky generation
-	auto cameraSky = Sky::createView(permPool, rg, "cameraSky", cpu_world.cameraPos, atmosphere, world);
-	auto cubeSky = Sky::createView(permPool, rg, "cubeSky", IblProbePosition, atmosphere, world);
-	auto aerialPerspective = Sky::createAerialPerspective(permPool, rg, "aerialPerspective",
-		cpu_world.cameraPos, cpu_world.viewProjectionInverse, atmosphere, world);
-	auto sunLuminance = Sky::createSunLuminance(permPool, rg, "sunLuminance", cpu_world.cameraPos, atmosphere, world);
+	auto cameraSky = Sky::createView(permPool, *this, "cameraSky", cpu_world.cameraPos, atmosphere);
+	auto cubeSky = Sky::createView(permPool, *this, "cubeSky", IblProbePosition, atmosphere);
+	auto aerialPerspective = Sky::createAerialPerspective(permPool, *this, "aerialPerspective",
+		cpu_world.cameraPos, cpu_world.viewProjectionInverse, atmosphere);
+	auto sunLuminance = Sky::createSunLuminance(permPool, *this, "sunLuminance", cpu_world.cameraPos, atmosphere);
 	
 	// IBL generation
 	Sky::draw(rg, iblUnfiltered, IblProbePosition, cubeSky, atmosphere, world);
