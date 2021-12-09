@@ -169,7 +169,7 @@ void QuadBuffer::genBuffers(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
 		.resources = {
 			_instances.instances.resource(vuk::eComputeRead),
 			_instances.transforms.resource(vuk::eComputeRead),
-			_quadbuf.clusterDef.resource(vuk::eComputeRead),
+			_quadbuf.clusterDef.resource(vuk::eComputeSampled),
 			_quadbuf.velocity.resource(vuk::eComputeWrite) },
 		.execute = [_quadbuf, _world, &_models, _instances](vuk::CommandBuffer& cmd) {
 			
