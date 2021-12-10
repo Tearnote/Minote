@@ -37,10 +37,10 @@ void Visibility::compile(vuk::PerThreadContext& _ptc) {
 	
 }
 
-void Visibility::apply(vuk::RenderGraph& _rg, Texture2D _visbuf, Texture2D _depth,
-	Buffer<World> _world, DrawableInstanceList _instances, ModelBuffer const& _models) {
+void Visibility::apply(Frame& _frame, Texture2D _visbuf, Texture2D _depth,
+	DrawableInstanceList _instances) {
 	
-	_rg.add_pass({
+	_frame.rg.add_pass({
 		.name = nameAppend(_visbuf.name, "visibility"),
 		.resources = {
 			_instances.commands.resource(vuk::eIndirectRead),
@@ -48,12 +48,12 @@ void Visibility::apply(vuk::RenderGraph& _rg, Texture2D _visbuf, Texture2D _dept
 			_instances.transforms.resource(vuk::eVertexRead),
 			_visbuf.resource(vuk::eColorWrite),
 			_depth.resource(vuk::eDepthStencilRW) },
-		.execute = [_visbuf, _world, _instances, &_models](vuk::CommandBuffer& cmd) {
+		.execute = [_visbuf, _instances, &_frame](vuk::CommandBuffer& cmd) {
 			
 			cmdSetViewportScissor(cmd, _visbuf.size());
-			cmd.bind_index_buffer(_models.indices, vuk::IndexType::eUint32)
-			   .bind_uniform_buffer(0, 0, _world)
-			   .bind_storage_buffer(0, 1, _models.vertices)
+			cmd.bind_index_buffer(_frame.models.indices, vuk::IndexType::eUint32)
+			   .bind_uniform_buffer(0, 0, _frame.world)
+			   .bind_storage_buffer(0, 1, _frame.models.vertices)
 			   .bind_storage_buffer(0, 2, _instances.instances)
 			   .bind_storage_buffer(0, 3, _instances.transforms)
 			   .bind_graphics_pipeline("visibility");
@@ -64,10 +64,10 @@ void Visibility::apply(vuk::RenderGraph& _rg, Texture2D _visbuf, Texture2D _dept
 	
 }
 
-void Visibility::applyMS(vuk::RenderGraph& _rg, Texture2DMS _visbuf, Texture2DMS _depth,
-	Buffer<World> _world, DrawableInstanceList _instances, ModelBuffer const& _models) {
+void Visibility::applyMS(Frame& _frame, Texture2DMS _visbuf, Texture2DMS _depth,
+	DrawableInstanceList _instances) {
 	
-	_rg.add_pass({
+	_frame.rg.add_pass({
 		.name = nameAppend(_visbuf.name, "visibility_ms"),
 		.resources = {
 			_instances.commands.resource(vuk::eIndirectRead),
@@ -75,12 +75,12 @@ void Visibility::applyMS(vuk::RenderGraph& _rg, Texture2DMS _visbuf, Texture2DMS
 			_instances.transforms.resource(vuk::eVertexRead),
 			_visbuf.resource(vuk::eColorWrite),
 			_depth.resource(vuk::eDepthStencilRW) },
-		.execute = [_visbuf, _world, _instances, &_models](vuk::CommandBuffer& cmd) {
+		.execute = [_visbuf, _instances, &_frame](vuk::CommandBuffer& cmd) {
 			
 			cmdSetViewportScissor(cmd, _visbuf.size());
-			cmd.bind_index_buffer(_models.indices, vuk::IndexType::eUint32)
-			   .bind_uniform_buffer(0, 0, _world)
-			   .bind_storage_buffer(0, 1, _models.vertices)
+			cmd.bind_index_buffer(_frame.models.indices, vuk::IndexType::eUint32)
+			   .bind_uniform_buffer(0, 0, _frame.world)
+			   .bind_storage_buffer(0, 1, _frame.models.vertices)
 			   .bind_storage_buffer(0, 2, _instances.instances)
 			   .bind_storage_buffer(0, 3, _instances.transforms)
 			   .bind_graphics_pipeline("visibility_ms");
@@ -107,8 +107,8 @@ void Worklist::compile(vuk::PerThreadContext& _ptc) {
 	
 }
 
-auto Worklist::create(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
-	Texture2D _visbuf, DrawableInstanceList _instances, ModelBuffer const& _models) -> Worklist {
+auto Worklist::create(Pool& _pool, Frame& _frame, vuk::Name _name,
+	Texture2D _visbuf, DrawableInstanceList _instances) -> Worklist {
 	
 	auto result = Worklist();
 	
@@ -122,7 +122,7 @@ auto Worklist::create(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
 	auto initialCounts = array<uvec4, ListCount>();
 	initialCounts.fill(InitialCount);
 	
-	result.counts = Buffer<uvec4>::make(_pool, nameAppend(_name, "counts"),
+	result.counts = Buffer<uvec4>::make(_frame.framePool, nameAppend(_name, "counts"),
 		vuk::BufferUsageFlagBits::eStorageBuffer |
 		vuk::BufferUsageFlagBits::eIndirectBuffer,
 		initialCounts);
@@ -131,24 +131,24 @@ auto Worklist::create(Pool& _pool, vuk::RenderGraph& _rg, vuk::Name _name,
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		usize(result.tileDimensions.x() * result.tileDimensions.y()) * ListCount);
 	
-	result.counts.attach(_rg, vuk::eHostWrite, vuk::eNone);
-	result.lists.attach(_rg, vuk::eNone, vuk::eNone);
+	result.counts.attach(_frame.rg, vuk::eHostWrite, vuk::eNone);
+	result.lists.attach(_frame.rg, vuk::eNone, vuk::eNone);
 	
 	// Generate worklists
 	
-	_rg.add_pass({
+	_frame.rg.add_pass({
 		.name = nameAppend(_name, "gen"),
 		.resources = {
 			_visbuf.resource(vuk::eComputeSampled),
 			_instances.instances.resource(vuk::eComputeRead),
 			result.counts.resource(vuk::eComputeRW),
 			result.lists.resource(vuk::eComputeWrite) },
-		.execute = [result, _visbuf, _instances, &_models](vuk::CommandBuffer& cmd) {
+		.execute = [result, _visbuf, _instances, &_frame](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_sampled_image(0, 0, _visbuf, NearestClamp)
 			   .bind_storage_buffer(0, 1, _instances.instances)
-			   .bind_storage_buffer(0, 2, _models.meshes)
-			   .bind_storage_buffer(0, 3, _models.materials)
+			   .bind_storage_buffer(0, 2, _frame.models.meshes)
+			   .bind_storage_buffer(0, 3, _frame.models.materials)
 			   .bind_storage_buffer(0, 4, result.counts)
 			   .bind_storage_buffer(0, 5, result.lists)
 			   .bind_compute_pipeline("worklist");

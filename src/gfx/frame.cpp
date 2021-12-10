@@ -110,8 +110,8 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, AntialiasingType _aa, 
 	auto sunLuminance = Sky::createSunLuminance(permPool, *this, "sunLuminance", cpu_world.cameraPos, atmosphere);
 	
 	// IBL generation
-	Sky::draw(rg, iblUnfiltered, IblProbePosition, cubeSky, atmosphere, world);
-	CubeFilter::apply(rg, iblUnfiltered, iblFiltered);
+	Sky::draw(*this, iblUnfiltered, IblProbePosition, cubeSky, atmosphere);
+	CubeFilter::apply(*this, iblUnfiltered, iblFiltered);
 	
 	// Scene drawing
 	if (_aa == AntialiasingType::None) {
@@ -119,34 +119,32 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, AntialiasingType _aa, 
 		auto visbuf = std::get<Texture2D>(v_visbuf);
 		auto depth = std::get<Texture2D>(v_depth);
 		
-		Clear::apply(rg, color, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
-		Visibility::apply(rg, visbuf, depth, world, culledDrawables, models);
-		auto worklist = Worklist::create(framePool, rg, "worklist", visbuf,
-			culledDrawables, models);
-		PBR::apply(rg, color, visbuf, worklist, world, models,
-			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
-		Sky::draw(rg, color, worklist, cameraSky, atmosphere, world);
+		Clear::apply(*this, color, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
+		Visibility::apply(*this, visbuf, depth, culledDrawables);
+		auto worklist = Worklist::create(swapchainPool, *this, "worklist", visbuf, culledDrawables);
+		PBR::apply(*this, color, visbuf, worklist, culledDrawables,
+			iblFiltered, sunLuminance, aerialPerspective);
+		Sky::draw(*this, color, worklist, cameraSky, atmosphere);
 		
 	} else {
 		
 		auto visbuf = std::get<Texture2DMS>(v_visbuf);
 		auto depth = std::get<Texture2DMS>(v_depth);
 		
-		Visibility::applyMS(rg, visbuf, depth, world, culledDrawables, models);
-		QuadBuffer::clusterize(rg, quadbuf, visbuf, world);
-		QuadBuffer::genBuffers(rg, quadbuf, models, culledDrawables, world);
-		auto worklistMS = Worklist::create(framePool, rg, "worklist_ms", quadbuf.clusterDef,
-			culledDrawables, models);
-		PBR::applyQuad(rg, quadbuf, worklistMS, world, models,
-			culledDrawables, iblFiltered, sunLuminance, aerialPerspective);
-		Sky::drawQuad(rg, quadbuf, worklistMS, cameraSky, atmosphere, world);
-		QuadBuffer::resolve(rg, quadbuf, color, world);
+		Visibility::applyMS(*this, visbuf, depth, culledDrawables);
+		QuadBuffer::clusterize(*this, quadbuf, visbuf);
+		QuadBuffer::genBuffers(*this, quadbuf, culledDrawables);
+		auto worklistMS = Worklist::create(swapchainPool, *this, "worklist_ms", quadbuf.clusterDef, culledDrawables);
+		PBR::applyQuad(*this, quadbuf, worklistMS, culledDrawables,
+			iblFiltered, sunLuminance, aerialPerspective);
+		Sky::drawQuad(*this, quadbuf, worklistMS, cameraSky, atmosphere);
+		QuadBuffer::resolve(*this, quadbuf, color);
 		
 	}
 	
 	// Postprocessing
-	Bloom::apply(rg, swapchainPool, color);
-	Tonemap::apply(rg, color, _target);
+	Bloom::apply(*this, swapchainPool, color);
+	Tonemap::apply(*this, color, _target);
 	
 }
 

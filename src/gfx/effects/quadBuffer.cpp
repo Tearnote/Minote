@@ -32,8 +32,6 @@ void QuadBuffer::compile(vuk::PerThreadContext& _ptc) {
 auto QuadBuffer::create(Pool& _pool, Frame& _frame,
 	vuk::Name _name, uvec2 _size, bool _flushTemporal) -> QuadBuffer {
 	
-	auto& rg = _frame.rg;
-	
 	auto result = QuadBuffer();
 	result.name = _name;
 	
@@ -103,34 +101,34 @@ auto QuadBuffer::create(Pool& _pool, Frame& _frame,
 		vuk::ImageUsageFlagBits::eSampled |
 		vuk::ImageUsageFlagBits::eTransferDst);
 	
-	result.clusterDef.attach(rg, vuk::eNone, vuk::eComputeRead);
-	result.jitterMap.attach(rg, vuk::eNone, vuk::eComputeRead);
-	result.clusterOut.attach(rg, vuk::eNone, vuk::eComputeRead);
-	result.output.attach(rg, vuk::eNone, vuk::eTransferSrc);
+	result.clusterDef.attach(_frame.rg, vuk::eNone, vuk::eComputeRead);
+	result.jitterMap.attach(_frame.rg, vuk::eNone, vuk::eComputeRead);
+	result.clusterOut.attach(_frame.rg, vuk::eNone, vuk::eComputeRead);
+	result.output.attach(_frame.rg, vuk::eNone, vuk::eTransferSrc);
 	if (_flushTemporal) {
 		
-		result.clusterDefPrev.attach(rg, vuk::eNone, vuk::eNone);
-		result.jitterMapPrev.attach(rg, vuk::eNone, vuk::eNone);
-		result.clusterOutPrev.attach(rg, vuk::eNone, vuk::eNone);
-		result.outputPrev.attach(rg, vuk::eNone, vuk::eNone);
+		result.clusterDefPrev.attach(_frame.rg, vuk::eNone, vuk::eNone);
+		result.jitterMapPrev.attach(_frame.rg, vuk::eNone, vuk::eNone);
+		result.clusterOutPrev.attach(_frame.rg, vuk::eNone, vuk::eNone);
+		result.outputPrev.attach(_frame.rg, vuk::eNone, vuk::eNone);
 		
 	} else {
 		
-		result.clusterDefPrev.attach(rg, vuk::eComputeRead, vuk::eNone);
-		result.jitterMapPrev.attach(rg, vuk::eComputeRead, vuk::eNone);
-		result.clusterOutPrev.attach(rg, vuk::eComputeRead, vuk::eNone);
-		result.outputPrev.attach(rg, vuk::eTransferSrc, vuk::eNone);
+		result.clusterDefPrev.attach(_frame.rg, vuk::eComputeRead, vuk::eNone);
+		result.jitterMapPrev.attach(_frame.rg, vuk::eComputeRead, vuk::eNone);
+		result.clusterOutPrev.attach(_frame.rg, vuk::eComputeRead, vuk::eNone);
+		result.outputPrev.attach(_frame.rg, vuk::eTransferSrc, vuk::eNone);
 		
 	}
 	
-	result.velocity.attach(rg, vuk::eNone, vuk::eNone);
+	result.velocity.attach(_frame.rg, vuk::eNone, vuk::eNone);
 	
-	Clear::apply(rg, result.jitterMap, vuk::ClearColor(0u, 0u, 0u, 0u));
+	Clear::apply(_frame, result.jitterMap, vuk::ClearColor(0u, 0u, 0u, 0u));
 	if (_flushTemporal) {
 		
-		Clear::apply(rg, result.clusterDefPrev, vuk::ClearColor(0u, 0u, 0u, 0u));
-		Clear::apply(rg, result.clusterOutPrev, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
-		Clear::apply(rg, result.outputPrev, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
+		Clear::apply(_frame, result.clusterDefPrev, vuk::ClearColor(0u, 0u, 0u, 0u));
+		Clear::apply(_frame, result.clusterOutPrev, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
+		Clear::apply(_frame, result.outputPrev, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 		
 	}
 	
@@ -138,18 +136,17 @@ auto QuadBuffer::create(Pool& _pool, Frame& _frame,
 	
 }
 
-void QuadBuffer::clusterize(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
-	Texture2DMS _visbuf, Buffer<World> _world) {
+void QuadBuffer::clusterize(Frame& _frame, QuadBuffer& _quadbuf, Texture2DMS _visbuf) {
 	
-	_rg.add_pass({
+	_frame.rg.add_pass({
 		.name = nameAppend(_quadbuf.name, "clusterize"),
 		.resources = {
 			_visbuf.resource(vuk::eComputeSampled),
 			_quadbuf.clusterDef.resource(vuk::eComputeWrite),
 			_quadbuf.jitterMap.resource(vuk::eComputeWrite) },
-		.execute = [_quadbuf, _visbuf, _world](vuk::CommandBuffer& cmd) {
+		.execute = [_quadbuf, _visbuf, &_frame](vuk::CommandBuffer& cmd) {
 			
-			cmd.bind_uniform_buffer(0, 0, _world)
+			cmd.bind_uniform_buffer(0, 0, _frame.world)
 			   .bind_sampled_image(0, 1, _visbuf, NearestClamp)
 			   .bind_storage_image(0, 2, _quadbuf.clusterDef)
 			   .bind_storage_image(0, 3, _quadbuf.jitterMap)
@@ -162,10 +159,9 @@ void QuadBuffer::clusterize(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
 	
 }
 
-void QuadBuffer::genBuffers(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
-	ModelBuffer const& _models, DrawableInstanceList _instances, Buffer<World> _world) {
+void QuadBuffer::genBuffers(Frame& _frame, QuadBuffer& _quadbuf, DrawableInstanceList _instances) {
 	
-	_rg.add_pass({
+	_frame.rg.add_pass({
 		
 		.name = nameAppend(_quadbuf.name, "genBuffers"),
 		.resources = {
@@ -173,14 +169,14 @@ void QuadBuffer::genBuffers(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
 			_instances.transforms.resource(vuk::eComputeRead),
 			_quadbuf.clusterDef.resource(vuk::eComputeSampled),
 			_quadbuf.velocity.resource(vuk::eComputeWrite) },
-		.execute = [_quadbuf, _world, &_models, _instances](vuk::CommandBuffer& cmd) {
+		.execute = [_quadbuf, &_frame, _instances](vuk::CommandBuffer& cmd) {
 			
-			cmd.bind_uniform_buffer(0, 0, _world)
-			   .bind_storage_buffer(0, 1, _models.meshes)
+			cmd.bind_uniform_buffer(0, 0, _frame.world)
+			   .bind_storage_buffer(0, 1, _frame.models.meshes)
 			   .bind_storage_buffer(0, 2, _instances.instances)
 			   .bind_storage_buffer(0, 3, _instances.transforms)
-			   .bind_storage_buffer(0, 4, _models.indices)
-			   .bind_storage_buffer(0, 5, _models.vertices)
+			   .bind_storage_buffer(0, 4, _frame.models.indices)
+			   .bind_storage_buffer(0, 5, _frame.models.vertices)
 			   .bind_sampled_image(0, 6, _quadbuf.clusterDef, NearestClamp)
 			   .bind_storage_image(0, 7, _quadbuf.velocity)
 			   .bind_compute_pipeline("quadGenBuffers");
@@ -193,10 +189,9 @@ void QuadBuffer::genBuffers(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
 	
 }
 
-void QuadBuffer::resolve(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
-	Texture2D _output, Buffer<World> _world) {
+void QuadBuffer::resolve(Frame& _frame, QuadBuffer& _quadbuf, Texture2D _output) {
 	
-	_rg.add_pass({
+	_frame.rg.add_pass({
 		.name = nameAppend(_quadbuf.name, "resolve"),
 		.resources = {
 			_quadbuf.clusterDef.resource(vuk::eComputeSampled),
@@ -208,9 +203,9 @@ void QuadBuffer::resolve(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
 			_quadbuf.jitterMapPrev.resource(vuk::eComputeSampled),
 			_quadbuf.velocity.resource(vuk::eComputeSampled),
 			_quadbuf.output.resource(vuk::eComputeWrite) },
-		.execute = [_quadbuf, _world](vuk::CommandBuffer& cmd) {
+		.execute = [_quadbuf, &_frame](vuk::CommandBuffer& cmd) {
 			
-			cmd.bind_uniform_buffer(0, 0, _world)
+			cmd.bind_uniform_buffer(0, 0, _frame.world)
 			   .bind_sampled_image(0, 1, _quadbuf.clusterDef, NearestClamp)
 			   .bind_sampled_image(0, 2, _quadbuf.jitterMap, NearestClamp)
 			   .bind_sampled_image(0, 3, _quadbuf.clusterOut, NearestClamp)
@@ -228,7 +223,7 @@ void QuadBuffer::resolve(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
 			
 	}});
 	
-	_rg.add_pass({
+	_frame.rg.add_pass({
 		.name = nameAppend(_quadbuf.name, "copy"),
 		.resources = {
 			_quadbuf.output.resource(vuk::eTransferSrc),

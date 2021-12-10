@@ -19,9 +19,9 @@ void Tonemap::compile(vuk::PerThreadContext& _ptc) {
 	
 }
 
-void Tonemap::apply(vuk::RenderGraph& _rg, Texture2D _source, Texture2D _target) {
+void Tonemap::apply(Frame& _frame, Texture2D _source, Texture2D _target) {
 	
-	_rg.add_pass({
+	_frame.rg.add_pass({
 		.name = nameAppend(_source.name, "tonemapping"),
 		.resources = {
 			_source.resource(vuk::eComputeSampled),

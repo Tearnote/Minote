@@ -1,8 +1,8 @@
 #pragma once
 
-#include "vuk/RenderGraph.hpp"
 #include "vuk/Context.hpp"
 #include "gfx/resources/cubemap.hpp"
+#include "gfx/frame.hpp"
 
 namespace minote::gfx {
 
@@ -21,7 +21,7 @@ struct CubeFilter {
 	static void compile(vuk::PerThreadContext&);
 	
 	// Using mip0 of src as input, generate MipCount mips in dst.
-	static void apply(vuk::RenderGraph&, Cubemap src, Cubemap dst);
+	static void apply(Frame&, Cubemap src, Cubemap dst);
 	
 };
 

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "vuk/RenderGraph.hpp"
 #include "vuk/Context.hpp"
 #include "gfx/resources/texture2d.hpp"
 #include "gfx/resources/pool.hpp"
+#include "gfx/frame.hpp"
 
 namespace minote::gfx {
 
@@ -25,7 +25,7 @@ struct Bloom {
 	static void compile(vuk::PerThreadContext&);
 	
 	// Create a pass that applies bloom to the specified image.
-	static void apply(vuk::RenderGraph&, Pool&, Texture2D target);
+	static void apply(Frame&, Pool&, Texture2D target);
 	
 };
 

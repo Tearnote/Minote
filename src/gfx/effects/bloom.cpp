@@ -34,7 +34,7 @@ void Bloom::compile(vuk::PerThreadContext& _ptc) {
 	
 }
 
-void Bloom::apply(vuk::RenderGraph& _rg, Pool& _pool, Texture2D _target) {
+void Bloom::apply(Frame& _frame, Pool& _pool, Texture2D _target) {
 	
 	assert(_target.size().x() >= (1u << BloomPasses));
 	assert(_target.size().y() >= (1u << BloomPasses));
@@ -46,10 +46,10 @@ void Bloom::apply(vuk::RenderGraph& _rg, Pool& _pool, Texture2D _target) {
 		vuk::ImageUsageFlagBits::eStorage |
 		vuk::ImageUsageFlagBits::eSampled,
 		BloomPasses);
-	bloomTemp.attach(_rg, vuk::eNone, vuk::eNone);
+	bloomTemp.attach(_frame.rg, vuk::eNone, vuk::eNone);
 	
 	// Downsample pass: repeatedly draw the source image into increasingly smaller mips
-	_rg.add_pass({
+	_frame.rg.add_pass({
 		.name = nameAppend(_target.name, "bloom down"),
 		.resources = {
 			_target.resource(vuk::eComputeSampled),
@@ -92,7 +92,7 @@ void Bloom::apply(vuk::RenderGraph& _rg, Pool& _pool, Texture2D _target) {
 		}});
 	
 	// Upsample pass: same as downsample, but in reverse order
-	_rg.add_pass({
+	_frame.rg.add_pass({
 		.name = nameAppend(_target.name, "bloom up"),
 		.resources = {
 			bloomTemp.resource(vuk::eComputeRW),

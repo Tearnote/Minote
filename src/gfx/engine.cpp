@@ -20,6 +20,7 @@
 #include "gfx/effects/tonemap.hpp"
 #include "gfx/effects/bloom.hpp"
 #include "gfx/effects/pbr.hpp"
+#include "gfx/effects/sky.hpp"
 #include "gfx/frame.hpp"
 #include "gfx/util.hpp"
 #include "main.hpp"

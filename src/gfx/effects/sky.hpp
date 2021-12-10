@@ -1,8 +1,6 @@
 #pragma once
 
-#include "vuk/RenderGraph.hpp"
 #include "vuk/Context.hpp"
-#include "vuk/Image.hpp"
 #include "base/math.hpp"
 #include "gfx/resources/texture3d.hpp"
 #include "gfx/resources/texture2d.hpp"
@@ -12,7 +10,6 @@
 #include "gfx/effects/quadBuffer.hpp"
 #include "gfx/effects/visibility.hpp"
 #include "gfx/camera.hpp"
-#include "gfx/world.hpp"
 #include "gfx/frame.hpp"
 
 namespace minote::gfx {
@@ -100,15 +97,12 @@ struct Sky {
 	
 	// Draw the sky in the background of an image (where visibility buffer is
 	// empty).
-	static void draw(vuk::RenderGraph&, Texture2D target,
-		Worklist const&, Texture2D skyView, Atmosphere, Buffer<World>);
+	static void draw(Frame&, Texture2D target, Worklist, Texture2D skyView, Atmosphere);
 		
-	static void drawQuad(vuk::RenderGraph&, QuadBuffer&, Worklist,
-		Texture2D skyView, Atmosphere, Buffer<World>);
+	static void drawQuad(Frame&, QuadBuffer&, Worklist, Texture2D skyView, Atmosphere);
 	
 	// Draw the sky into an existing cubemap. Target is the mip 0 of provided image.
-	static void draw(vuk::RenderGraph&, Cubemap target,
-		vec3 probePos, Texture2D skyView, Atmosphere, Buffer<World>);
+	static void draw(Frame&, Cubemap target, vec3 probePos, Texture2D skyView, Atmosphere);
 	
 };
 

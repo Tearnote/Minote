@@ -273,20 +273,20 @@ auto Sky::createSunLuminance(Pool& _pool, Frame& _frame, vuk::Name _name,
 	
 }
 
-void Sky::draw(vuk::RenderGraph& _rg, Texture2D _target, Worklist const& _worklist,
-	Texture2D _skyView, Atmosphere _atmo, Buffer<World> _world) {
+void Sky::draw(Frame& _frame, Texture2D _target, Worklist _worklist,
+	Texture2D _skyView, Atmosphere _atmo) {
 	
-	_rg.add_pass({
+	_frame.rg.add_pass({
 		.name = nameAppend(_target.name, "sky"),
 		.resources = {
 			_skyView.resource(vuk::eComputeSampled),
 			_worklist.counts.resource(vuk::eIndirectRead),
 			_worklist.lists.resource(vuk::eComputeRead),
 			_target.resource(vuk::eComputeRW) },
-		.execute = [_target, &_worklist, _skyView, _atmo, _world,
+		.execute = [_target, _worklist, _skyView, _atmo, &_frame,
 			tileCount=_worklist.counts.offsetView(+MaterialType::None)](vuk::CommandBuffer& cmd) {
 			
-			cmd.bind_uniform_buffer(0, 0, _world)
+			cmd.bind_uniform_buffer(0, 0, _frame.world)
 			   .bind_uniform_buffer(0, 1, _atmo.params)
 			   .bind_sampled_image(0, 2, _atmo.transmittance, LinearClamp)
 			   .bind_sampled_image(0, 3, _skyView, LinearClamp)
@@ -305,10 +305,10 @@ void Sky::draw(vuk::RenderGraph& _rg, Texture2D _target, Worklist const& _workli
 	
 }
 
-void Sky::drawQuad(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
-	Worklist _worklist, Texture2D _skyView, Atmosphere _atmo, Buffer<World> _world) {
+void Sky::drawQuad(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
+	Texture2D _skyView, Atmosphere _atmo) {
 	
-	_rg.add_pass({
+	_frame.rg.add_pass({
 		.name = nameAppend(_quadbuf.name, "sky Quad"),
 		.resources = {
 			_skyView.resource(vuk::eComputeSampled),
@@ -316,10 +316,10 @@ void Sky::drawQuad(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
 			_worklist.lists.resource(vuk::eComputeRead),
 			_quadbuf.clusterDef.resource(vuk::eComputeSampled),
 			_quadbuf.clusterOut.resource(vuk::eComputeWrite) },
-		.execute = [_worklist, _skyView, _atmo, _world, _quadbuf,
+		.execute = [_worklist, _skyView, _atmo, _quadbuf, &_frame,
 			tileCount=_worklist.counts.offsetView(+MaterialType::None)](vuk::CommandBuffer& cmd) {
 			
-			cmd.bind_uniform_buffer(0, 0, _world)
+			cmd.bind_uniform_buffer(0, 0, _frame.world)
 			   .bind_uniform_buffer(0, 1, _atmo.params)
 			   .bind_sampled_image(0, 2, _atmo.transmittance, LinearClamp)
 			   .bind_sampled_image(0, 3, _skyView, LinearClamp)
@@ -338,15 +338,14 @@ void Sky::drawQuad(vuk::RenderGraph& _rg, QuadBuffer& _quadbuf,
 	
 }
 
-void Sky::draw(vuk::RenderGraph& _rg, Cubemap _target, vec3 _probePos,
-	Texture2D _skyView, Atmosphere _atmo, Buffer<World> _world) {
+void Sky::draw(Frame& _frame, Cubemap _target, vec3 _probePos, Texture2D _skyView, Atmosphere _atmo) {
 	
-	_rg.add_pass({
+	_frame.rg.add_pass({
 		.name = nameAppend(_target.name, "sky"),
 		.resources = {
 			_skyView.resource(vuk::eComputeSampled),
 			_target.resource(vuk::eComputeWrite) },
-		.execute = [_target, _skyView, _atmo, _world, _probePos](vuk::CommandBuffer& cmd) {
+		.execute = [_target, _skyView, _atmo, &_frame, _probePos](vuk::CommandBuffer& cmd) {
 			
 			struct PushConstants {
 				vec3 probePosition;
@@ -354,7 +353,7 @@ void Sky::draw(vuk::RenderGraph& _rg, Cubemap _target, vec3 _probePos,
 				uvec2 skyViewSize;
 			};
 			
-			cmd.bind_uniform_buffer(0, 0, _world)
+			cmd.bind_uniform_buffer(0, 0, _frame.world)
 			   .bind_uniform_buffer(0, 1, _atmo.params)
 			   .bind_sampled_image(0, 2, _atmo.transmittance, LinearClamp)
 			   .bind_sampled_image(0, 3, _skyView, LinearClamp)

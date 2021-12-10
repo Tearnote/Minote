@@ -1,6 +1,5 @@
 #pragma once
 
-#include "vuk/RenderGraph.hpp"
 #include "vuk/Context.hpp"
 #include "base/types.hpp"
 #include "base/math.hpp"
@@ -9,9 +8,8 @@
 #include "gfx/resources/buffer.hpp"
 #include "gfx/resources/pool.hpp"
 #include "gfx/effects/instanceList.hpp"
-#include "gfx/objects.hpp"
 #include "gfx/models.hpp"
-#include "gfx/world.hpp"
+#include "gfx/frame.hpp"
 #include "gfx/util.hpp"
 
 namespace minote::gfx {
@@ -24,11 +22,9 @@ struct Visibility {
 	// Build the shader.
 	static void compile(vuk::PerThreadContext&);
 	
-	static void apply(vuk::RenderGraph&, Texture2D visbuf, Texture2D depth, Buffer<World>,
-		DrawableInstanceList, ModelBuffer const&);
+	static void apply(Frame&, Texture2D visbuf, Texture2D depth, DrawableInstanceList);
 	
-	static void applyMS(vuk::RenderGraph&, Texture2DMS visbuf, Texture2DMS depth, Buffer<World>,
-		DrawableInstanceList, ModelBuffer const&);
+	static void applyMS(Frame&, Texture2DMS visbuf, Texture2DMS depth, DrawableInstanceList);
 	
 };
 
@@ -44,8 +40,7 @@ struct Worklist {
 	// Build the shader.
 	static void compile(vuk::PerThreadContext&);
 	
-	static auto create(Pool&, vuk::RenderGraph&, vuk::Name, Texture2D visbuf,
-		DrawableInstanceList, ModelBuffer const&) -> Worklist;
+	static auto create(Pool&, Frame&, vuk::Name, Texture2D visbuf, DrawableInstanceList) -> Worklist;
 	
 };
 
