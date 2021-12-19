@@ -28,7 +28,7 @@ struct Engine {
 	// Create the engine in uninitialized state.
 	Engine(sys::Vulkan& vk):
 		m_vk(vk),
-		m_framerate(0.0f),
+		m_framerate(60.0f),
 		m_lastFramerateCheck(0),
 		m_framesSinceLastCheck(0) {}
 	~Engine();
@@ -51,6 +51,8 @@ struct Engine {
 	
 	// Use freely to modify the rendering camera
 	auto camera() -> Camera& { return m_camera; }
+	
+	auto fps() const -> f32 { return m_framerate; }
 	
 	// Not copyable, not movable
 	Engine(Engine const&) = delete;
