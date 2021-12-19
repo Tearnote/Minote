@@ -24,6 +24,7 @@ struct QuadBuffer {
 	Texture2D clusterOutPrev;
 	Texture2D outputPrev;
 	
+	Texture2D normal;
 	Texture2D velocity;
 	
 	vuk::Name name;

@@ -91,6 +91,7 @@ void PBR::applyQuad(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
 			_aerialPerspective.resource(vuk::eComputeSampled),
 			_ibl.resource(vuk::eComputeSampled),
 			_quadbuf.clusterDef.resource(vuk::eComputeSampled),
+			_quadbuf.normal.resource(vuk::eComputeSampled),
 			_quadbuf.clusterOut.resource(vuk::eComputeWrite) },
 		.execute = [_quadbuf, _worklist, &_frame, _instances, _ibl,
 			_sunLuminance, _aerialPerspective,
@@ -103,12 +104,12 @@ void PBR::applyQuad(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
 			   .bind_storage_buffer(0, 4, _instances.transforms)
 			   .bind_storage_buffer(0, 5, _frame.models.indices)
 			   .bind_storage_buffer(0, 6, _frame.models.vertices)
-			   .bind_storage_buffer(0, 7, _frame.models.normals)
-			   .bind_storage_buffer(0, 8, _frame.models.materials)
-			   .bind_uniform_buffer(0, 9, _sunLuminance)
-			   .bind_sampled_image(0, 10, _ibl, TrilinearClamp)
-			   .bind_sampled_image(0, 11, _aerialPerspective, TrilinearClamp)
-			   .bind_sampled_image(0, 12, _quadbuf.clusterDef, NearestClamp)
+			   .bind_storage_buffer(0, 7, _frame.models.materials)
+			   .bind_uniform_buffer(0, 8, _sunLuminance)
+			   .bind_sampled_image(0, 9, _ibl, TrilinearClamp)
+			   .bind_sampled_image(0, 10, _aerialPerspective, TrilinearClamp)
+			   .bind_sampled_image(0, 11, _quadbuf.clusterDef, NearestClamp)
+			   .bind_sampled_image(0, 12, _quadbuf.normal, NearestClamp)
 			   .bind_storage_image(0, 13, _quadbuf.clusterOut)
 			   .bind_storage_buffer(0, 14, _worklist.lists)
 			   .bind_compute_pipeline("pbr_quad");

@@ -13,7 +13,6 @@ layout(local_size_x = 1, local_size_y = 64) in;
 
 #define B_INDICES b_indices
 #define B_VERTICES b_vertices
-#define B_NORMALS b_normals
 #define B_LISTS b_lists
 
 layout(binding = 0) uniform WorldConstants {
@@ -39,20 +38,18 @@ layout (binding = 5, std430) restrict readonly buffer Indices {
 layout (binding = 6, std430) restrict readonly buffer Vertices {
 	float B_VERTICES[];
 };
-layout (binding = 7, std430) restrict readonly buffer Normals {
-	uint B_NORMALS[];
-};
-layout (binding = 8, std430) restrict readonly buffer Materials {
+layout (binding = 7, std430) restrict readonly buffer Materials {
 	Material b_materials[];
 };
 
-layout(binding = 9) uniform SunLuminance {
+layout(binding = 8) uniform SunLuminance {
 	vec3 u_sunLuminance;
 };
-layout(binding = 10) uniform samplerCube s_cubemap;
-layout(binding = 11) uniform sampler3D s_aerialPerspective;
+layout(binding = 9) uniform samplerCube s_cubemap;
+layout(binding = 10) uniform sampler3D s_aerialPerspective;
 
-layout(binding = 12) uniform usampler2D s_clusterDef;
+layout(binding = 11) uniform usampler2D s_clusterDef;
+layout(binding = 12) uniform usampler2D s_normal;
 layout(binding = 13) restrict writeonly uniform image2D i_clusterOut;
 layout(binding = 14, std430) restrict readonly buffer TileLists {
 	uint B_LISTS[];
@@ -72,7 +69,7 @@ const uvec2 TargetSize = uvec2(U16FROMU32(TargetSizePacked));
 #define USE_ACCURATE_NORMAL_INTERPOLATION 0
 #define IBL_MIP_COUNT 8.0
 
-void getInstanceVertexParams(out vec3 _vertex, out vec3 _normal,
+void getInstanceVertexParams(out vec3 _vertex,
 	Instance _instance, Mesh _mesh, uint _triangleIdx, vec2 _uv) {
 	
 	// Retrieve vertex indices
@@ -90,11 +87,6 @@ void getInstanceVertexParams(out vec3 _vertex, out vec3 _normal,
 		fetchVertex(indices.x),
 		fetchVertex(indices.y),
 		fetchVertex(indices.z) };
-	
-	mat3 normals = {
-		fetchNormal(indices.x),
-		fetchNormal(indices.y),
-		fetchNormal(indices.z) };
 	
 	// Calculate barycentrics
 	
@@ -115,22 +107,6 @@ void getInstanceVertexParams(out vec3 _vertex, out vec3 _normal,
 		vertices[2] * barycentrics.z;
 	vec4 vertexW = transform * vec4(_vertex, 1.0);
 	_vertex = vertexW.xyz / vertexW.w;
-	
-#if USE_ACCURATE_NORMAL_INTERPOLATION
-	
-	_normal = normalInterp(normals, barycentrics);
-	
-#else //USE_ACCURATE_NORMAL_INTERPOLATION
-	
-	mat3 normTransform = mat3(inverse(transpose(transform)));
-	
-	_normal =
-		normals[0] * barycentrics.x +
-		normals[1] * barycentrics.y +
-		normals[2] * barycentrics.z;
-	_normal = normalize(normTransform * _normal);
-	
-#endif //USE_ACCURATE_NORMAL_INTERPOLATION
 	
 }
 
@@ -156,7 +132,7 @@ float dApprox(float _roughness, float _RoL) {
 	
 }
 
-vec3 shadeVisSamplePBR(uint _visValue, vec2 _screenPos) {
+vec3 shadeVisSamplePBR(uint _visValue, vec2 _screenPos, vec3 _normal) {
 	
 	vec2 sampleUv = _screenPos / vec2(TargetSize);
 	VisSample vis = unpackVisibility(_visValue);
@@ -168,8 +144,7 @@ vec3 shadeVisSamplePBR(uint _visValue, vec2 _screenPos) {
 	Material material = b_materials[materialIdx];
 	
 	vec3 vertex;
-	vec3 normal;
-	getInstanceVertexParams(vertex, normal, instance, mesh, vis.triangle, sampleUv);
+	getInstanceVertexParams(vertex, instance, mesh, vis.triangle, sampleUv);
 	
 	vec4 clipVertexW = u_world.viewProjection * vec4(vertex, 1.0);
 	vec3 clipVertex = clipVertexW.xyz / clipVertexW.w;
@@ -177,7 +152,7 @@ vec3 shadeVisSamplePBR(uint _visValue, vec2 _screenPos) {
 	// Standard vectors
 	
 	vec3 viewDirection = normalize(u_world.cameraPos - vertex);
-	float NoV = dot(normal, viewDirection);
+	float NoV = dot(_normal, viewDirection);
 	
 	// Empirical sun visibility above the horizon
 	
@@ -198,11 +173,11 @@ vec3 shadeVisSamplePBR(uint _visValue, vec2 _screenPos) {
 	vec3 color = b_colors[colorIdx].rgb * material.color.rgb;
 	vec3 f0 = max(color * material.metalness, vec3(0.04));
 	
-	vec3 iblDiffuse = textureLod(s_cubemap, normal, IBL_MIP_COUNT - 2.0).rgb;
-	vec3 sunDiffuse = sunColor * max(dot(normal, u_world.sunDirection), 0.0);
+	vec3 iblDiffuse = textureLod(s_cubemap, _normal, IBL_MIP_COUNT - 2.0).rgb;
+	vec3 sunDiffuse = sunColor * max(dot(_normal, u_world.sunDirection), 0.0);
 	vec3 diffuse = color * (iblDiffuse + sunDiffuse) * (1.0 - material.metalness);
 	
-	vec3 reflection = reflect(viewDirection, normal);
+	vec3 reflection = reflect(viewDirection, _normal);
 	float iblMip = max(7.0 - 0.480898 * log(2.0 / pow(material.roughness, 4.0) - 1.0), 0.0);
 	vec3 iblSpecular = vec3(textureLod(s_cubemap, -reflection, iblMip));
 	float SunMinRoughness = 1.0 / 16.0;
@@ -257,7 +232,9 @@ void main() {
 	if (clusterValue != -1u && clusterSubsamples != 0) {
 		
 		vec2 clusterCentroid = subsamplePosAverage(clusterSubsamples);
-		clusterResult = shadeVisSamplePBR(clusterValue, vec2(gid & ~1u) + clusterCentroid);
+		uint normalOct = texelFetch(s_normal, ivec2(gid), 0).x;
+		vec3 normal = octDecode(normalOct);
+		clusterResult = shadeVisSamplePBR(clusterValue, vec2(gid & ~1u) + clusterCentroid, normal);
 		imageStore(i_clusterOut, ivec2(gid), vec4(clusterResult, 1.0));
 		
 	}

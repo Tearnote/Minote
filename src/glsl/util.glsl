@@ -201,4 +201,39 @@ vec3 tonemapInvert(vec3 _c) {
 	
 }
 
+// Octahedral normal encoding
+// https://www.shadertoy.com/view/Mtfyzl
+
+const uint NormalOctWidth = 16;
+
+uint octEncode(vec3 _vec) {
+	
+	uint mu = (1u << NormalOctWidth) - 1u;
+	
+	_vec /= abs(_vec.x) + abs(_vec.y) + abs(_vec.z);
+	_vec.xy = (_vec.z >= 0.0)? _vec.xy : (1.0 - abs(_vec.yx)) * sign(_vec.xy);
+	vec2 v = 0.5 + 0.5 * _vec.xy;
+	
+	uvec2 d = uvec2(floor(v * float(mu) + 0.5));
+	return (d.y << NormalOctWidth) | d.x;
+	
+}
+
+vec3 octDecode(uint _oct) {
+	
+	uint mu = (1u << NormalOctWidth) - 1u;
+	
+	uvec2 d = uvec2(_oct, _oct >> NormalOctWidth) & mu;
+	vec2 v = vec2(d) / float(mu);
+	
+	v = v * 2.0 - 1.0;
+	vec3 norm = vec3(v, 1.0 - abs(v.x) - abs(v.y));
+	float t = max(-norm.z, 0.0);
+	norm.x += (norm.x > 0.0)? -t : t;
+	norm.y += (norm.y > 0.0)? -t : t;
+	
+	return normalize(norm);
+	
+}
+
 #endif //UTILS_GLSL

@@ -98,8 +98,12 @@ auto QuadBuffer::create(Pool& _pool, Frame& _frame,
 	result.velocity = Texture2D::make(_pool, nameAppend(_name, "velocity"),
 		_size, vuk::Format::eR16G16Sfloat,
 		vuk::ImageUsageFlagBits::eStorage |
-		vuk::ImageUsageFlagBits::eSampled |
-		vuk::ImageUsageFlagBits::eTransferDst);
+		vuk::ImageUsageFlagBits::eSampled);
+	
+	result.normal = Texture2D::make(_pool, nameAppend(_name, "normals"),
+		_size, vuk::Format::eR32Uint,
+		vuk::ImageUsageFlagBits::eStorage |
+		vuk::ImageUsageFlagBits::eSampled);
 	
 	result.clusterDef.attach(_frame.rg, vuk::eNone, vuk::eComputeRead);
 	result.jitterMap.attach(_frame.rg, vuk::eNone, vuk::eComputeRead);
@@ -122,6 +126,7 @@ auto QuadBuffer::create(Pool& _pool, Frame& _frame,
 	}
 	
 	result.velocity.attach(_frame.rg, vuk::eNone, vuk::eNone);
+	result.normal.attach(_frame.rg, vuk::eNone, vuk::eNone);
 	
 	Clear::apply(_frame, result.jitterMap, vuk::ClearColor(0u, 0u, 0u, 0u));
 	if (_flushTemporal) {
@@ -168,6 +173,7 @@ void QuadBuffer::genBuffers(Frame& _frame, QuadBuffer& _quadbuf, DrawableInstanc
 			_instances.instances.resource(vuk::eComputeRead),
 			_instances.transforms.resource(vuk::eComputeRead),
 			_quadbuf.clusterDef.resource(vuk::eComputeSampled),
+			_quadbuf.normal.resource(vuk::eComputeWrite),
 			_quadbuf.velocity.resource(vuk::eComputeWrite) },
 		.execute = [_quadbuf, &_frame, _instances](vuk::CommandBuffer& cmd) {
 			
@@ -177,8 +183,10 @@ void QuadBuffer::genBuffers(Frame& _frame, QuadBuffer& _quadbuf, DrawableInstanc
 			   .bind_storage_buffer(0, 3, _instances.transforms)
 			   .bind_storage_buffer(0, 4, _frame.models.indices)
 			   .bind_storage_buffer(0, 5, _frame.models.vertices)
-			   .bind_sampled_image(0, 6, _quadbuf.clusterDef, NearestClamp)
-			   .bind_storage_image(0, 7, _quadbuf.velocity)
+			   .bind_storage_buffer(0, 6, _frame.models.normals)
+			   .bind_sampled_image(0, 7, _quadbuf.clusterDef, NearestClamp)
+			   .bind_storage_image(0, 8, _quadbuf.normal)
+			   .bind_storage_image(0, 9, _quadbuf.velocity)
 			   .bind_compute_pipeline("quadGenBuffers");
 			
 			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_quadbuf.clusterDef.size()));
