@@ -95,6 +95,11 @@ auto QuadBuffer::create(Pool& _pool, Frame& _frame,
 	result.output = outputs[oddFrame];
 	result.outputPrev = outputs[!oddFrame];
 	
+	result.offset = Texture2D::make(_pool, nameAppend(_name, "offset"),
+		_size, vuk::Format::eR8G8Unorm,
+		vuk::ImageUsageFlagBits::eStorage |
+		vuk::ImageUsageFlagBits::eSampled);
+	
 	result.velocity = Texture2D::make(_pool, nameAppend(_name, "velocity"),
 		_size, vuk::Format::eR16G16Sfloat,
 		vuk::ImageUsageFlagBits::eStorage |
@@ -125,6 +130,7 @@ auto QuadBuffer::create(Pool& _pool, Frame& _frame,
 		
 	}
 	
+	result.offset.attach(_frame.rg, vuk::eNone, vuk::eNone);
 	result.velocity.attach(_frame.rg, vuk::eNone, vuk::eNone);
 	result.normal.attach(_frame.rg, vuk::eNone, vuk::eNone);
 	
@@ -173,6 +179,7 @@ void QuadBuffer::genBuffers(Frame& _frame, QuadBuffer& _quadbuf, DrawableInstanc
 			_instances.instances.resource(vuk::eComputeRead),
 			_instances.transforms.resource(vuk::eComputeRead),
 			_quadbuf.clusterDef.resource(vuk::eComputeSampled),
+			_quadbuf.offset.resource(vuk::eComputeWrite),
 			_quadbuf.normal.resource(vuk::eComputeWrite),
 			_quadbuf.velocity.resource(vuk::eComputeWrite) },
 		.execute = [_quadbuf, &_frame, _instances](vuk::CommandBuffer& cmd) {
@@ -185,8 +192,9 @@ void QuadBuffer::genBuffers(Frame& _frame, QuadBuffer& _quadbuf, DrawableInstanc
 			   .bind_storage_buffer(0, 5, _frame.models.vertices)
 			   .bind_storage_buffer(0, 6, _frame.models.normals)
 			   .bind_sampled_image(0, 7, _quadbuf.clusterDef, NearestClamp)
-			   .bind_storage_image(0, 8, _quadbuf.normal)
-			   .bind_storage_image(0, 9, _quadbuf.velocity)
+			   .bind_storage_image(0, 8, _quadbuf.offset)
+			   .bind_storage_image(0, 9, _quadbuf.normal)
+			   .bind_storage_image(0, 10, _quadbuf.velocity)
 			   .bind_compute_pipeline("quadGenBuffers");
 			
 			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_quadbuf.clusterDef.size()));

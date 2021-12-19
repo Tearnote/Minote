@@ -23,7 +23,8 @@ layout(binding = 4, std430) restrict readonly buffer TileLists {
 	uint B_LISTS[];
 };
 layout(binding = 5) uniform usampler2D s_clusterDef;
-layout(binding = 6) writeonly uniform image2D i_clusterOut;
+layout(binding = 6) uniform sampler2D s_offset;
+layout(binding = 7) writeonly uniform image2D i_clusterOut;
 
 layout(constant_id = 0) const uint SkyViewSizePacked = 0;
 layout(constant_id = 1) const uint TargetSizePacked = 0;
@@ -88,7 +89,7 @@ void main() {
 	vec3 clusterResult;
 	if (clusterValue == -1u && clusterSubsamples != 0) {
 		
-		vec2 clusterCentroid = subsamplePosAverage(clusterSubsamples);
+		vec2 clusterCentroid = texelFetch(s_offset, ivec2(gid), 0).xy * 2.0;
 		clusterResult = shadeSkySample(vec2(gid & ~1u) + clusterCentroid);
 		imageStore(i_clusterOut, ivec2(gid), vec4(clusterResult, 1.0));
 		

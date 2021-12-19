@@ -49,9 +49,10 @@ layout(binding = 9) uniform samplerCube s_cubemap;
 layout(binding = 10) uniform sampler3D s_aerialPerspective;
 
 layout(binding = 11) uniform usampler2D s_clusterDef;
-layout(binding = 12) uniform usampler2D s_normal;
-layout(binding = 13) restrict writeonly uniform image2D i_clusterOut;
-layout(binding = 14, std430) restrict readonly buffer TileLists {
+layout(binding = 12) uniform sampler2D s_offset;
+layout(binding = 13) uniform usampler2D s_normal;
+layout(binding = 14) restrict writeonly uniform image2D i_clusterOut;
+layout(binding = 15, std430) restrict readonly buffer TileLists {
 	uint B_LISTS[];
 };
 
@@ -231,7 +232,7 @@ void main() {
 	vec3 clusterResult;
 	if (clusterValue != -1u && clusterSubsamples != 0) {
 		
-		vec2 clusterCentroid = subsamplePosAverage(clusterSubsamples);
+		vec2 clusterCentroid = texelFetch(s_offset, ivec2(gid), 0).xy * 2.0;
 		uint normalOct = texelFetch(s_normal, ivec2(gid), 0).x;
 		vec3 normal = octDecode(normalOct);
 		clusterResult = shadeVisSamplePBR(clusterValue, vec2(gid & ~1u) + clusterCentroid, normal);

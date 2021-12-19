@@ -37,8 +37,9 @@ layout (binding = 6, std430) restrict readonly buffer Normals {
 };
 
 layout(binding = 7) uniform usampler2D s_clusterDef;
-layout(binding = 8) restrict writeonly uniform uimage2D i_normal;
-layout(binding = 9) restrict writeonly uniform image2D i_velocity;
+layout(binding = 8) restrict writeonly uniform image2D i_offset;
+layout(binding = 9) restrict writeonly uniform uimage2D i_normal;
+layout(binding = 10) restrict writeonly uniform image2D i_velocity;
 
 layout(constant_id = 0) const uint QuadbufSizePacked = 0;
 const uvec2 QuadbufSize = uvec2(U16FROMU32(QuadbufSizePacked));
@@ -56,6 +57,7 @@ void main() {
 	uvec2 quadbufSample = texelFetch(s_clusterDef, ivec2(gid), 0).xy;
 	uint clusterValue = quadbufSample.x;
 	uint clusterSubsamples = quadbufSample.y;
+	vec2 offset = subsamplePosAverage(clusterSubsamples);
 	
 	uint normalOct;
 	vec2 velocity;
@@ -144,6 +146,7 @@ void main() {
 		
 	}
 	
+	imageStore(i_offset, ivec2(gid), vec4(offset * 0.5, 0, 0));
 	imageStore(i_normal, ivec2(gid), uvec4(normalOct, 0, 0, 0));
 	imageStore(i_velocity, ivec2(gid), vec4(velocity, 0.0, 0.0));
 	
