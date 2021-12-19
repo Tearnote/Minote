@@ -10,7 +10,6 @@
 #include "gfx/effects/pbr.hpp"
 #include "gfx/effects/sky.hpp"
 #include "base/math.hpp"
-#include <variant>
 
 namespace minote::gfx {
 
@@ -25,7 +24,7 @@ Frame::Frame(Engine& _engine, vuk::RenderGraph& _rg):
 	models(_engine.m_models),
 	cpu_world(_engine.m_world) {}
 
-void Frame::draw(Texture2D _target, ObjectPool& _objects, AntialiasingType _aa, bool _flush) {
+void Frame::draw(Texture2D _target, ObjectPool& _objects, bool _flush) {
 	
 	// Upload resources
 	
@@ -57,42 +56,21 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, AntialiasingType _aa, 
 		vuk::ImageUsageFlagBits::eTransferDst);
 	color.attach(rg, vuk::eNone, vuk::eNone);
 	
-	auto v_visbuf = std::variant<std::monostate, Texture2D, Texture2DMS>();
-	auto v_depth = std::variant<std::monostate, Texture2D, Texture2DMS>();
-	auto quadbuf = QuadBuffer();
-	if (_aa == AntialiasingType::None) {
-		
-		v_visbuf = Texture2D::make(swapchainPool, "visbuf",
-			viewport, vuk::Format::eR32Uint,
-			vuk::ImageUsageFlagBits::eColorAttachment |
-			vuk::ImageUsageFlagBits::eSampled);
-		std::get<Texture2D>(v_visbuf).attach(rg, vuk::eClear, vuk::eNone, vuk::ClearColor(-1u, -1u, -1u, -1u));
-		
-		v_depth = Texture2D::make(swapchainPool, "depth",
-			viewport, vuk::Format::eD32Sfloat,
-			vuk::ImageUsageFlagBits::eDepthStencilAttachment |
-			vuk::ImageUsageFlagBits::eSampled);
-		std::get<Texture2D>(v_depth).attach(rg, vuk::eClear, vuk::eNone, vuk::ClearDepthStencil(0.0f, 0));
-		
-	} else {
-		
-		v_visbuf = Texture2DMS::make(swapchainPool, "visbufMS",
-			viewport, vuk::Format::eR32Uint,
-			vuk::ImageUsageFlagBits::eColorAttachment |
-			vuk::ImageUsageFlagBits::eSampled,
-			vuk::Samples::e8);
-		std::get<Texture2DMS>(v_visbuf).attach(rg, vuk::eClear, vuk::eNone, vuk::ClearColor(-1u, -1u, -1u, -1u));
-		
-		v_depth = Texture2DMS::make(swapchainPool, "depthMS",
-			viewport, vuk::Format::eD32Sfloat,
-			vuk::ImageUsageFlagBits::eDepthStencilAttachment |
-			vuk::ImageUsageFlagBits::eSampled,
-			vuk::Samples::e8);
-		std::get<Texture2DMS>(v_depth).attach(rg, vuk::eClear, vuk::eNone, vuk::ClearDepthStencil(0.0f, 0));
-		
-		quadbuf = QuadBuffer::create(swapchainPool, *this, "quadbuf", viewport, _flush);
-		
-	}
+	auto visbuf = Texture2DMS::make(swapchainPool, "visbufMS",
+		viewport, vuk::Format::eR32Uint,
+		vuk::ImageUsageFlagBits::eColorAttachment |
+		vuk::ImageUsageFlagBits::eSampled,
+		vuk::Samples::e8);
+	visbuf.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearColor(-1u, -1u, -1u, -1u));
+	
+	auto depth = Texture2DMS::make(swapchainPool, "depthMS",
+		viewport, vuk::Format::eD32Sfloat,
+		vuk::ImageUsageFlagBits::eDepthStencilAttachment |
+		vuk::ImageUsageFlagBits::eSampled,
+		vuk::Samples::e8);
+	depth.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearDepthStencil(0.0f, 0));
+	
+	auto quadbuf = QuadBuffer::create(swapchainPool, *this, "quadbuf", viewport, _flush);
 	
 	// Create rendering passes
 	
@@ -113,34 +91,14 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, AntialiasingType _aa, 
 	Sky::draw(*this, iblUnfiltered, IblProbePosition, cubeSky, atmosphere);
 	CubeFilter::apply(*this, iblUnfiltered, iblFiltered);
 	
-	// Scene drawing
-	if (_aa == AntialiasingType::None) {
-		
-		auto visbuf = std::get<Texture2D>(v_visbuf);
-		auto depth = std::get<Texture2D>(v_depth);
-		
-		Clear::apply(*this, color, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
-		Visibility::apply(*this, visbuf, depth, culledDrawables);
-		auto worklist = Worklist::create(swapchainPool, *this, "worklist", visbuf, culledDrawables);
-		PBR::apply(*this, color, visbuf, worklist, culledDrawables,
-			iblFiltered, sunLuminance, aerialPerspective);
-		Sky::draw(*this, color, worklist, cameraSky, atmosphere);
-		
-	} else {
-		
-		auto visbuf = std::get<Texture2DMS>(v_visbuf);
-		auto depth = std::get<Texture2DMS>(v_depth);
-		
-		Visibility::applyMS(*this, visbuf, depth, culledDrawables);
-		QuadBuffer::clusterize(*this, quadbuf, visbuf);
-		QuadBuffer::genBuffers(*this, quadbuf, culledDrawables);
-		auto worklistMS = Worklist::create(swapchainPool, *this, "worklist_ms", quadbuf.clusterDef, culledDrawables);
-		PBR::applyQuad(*this, quadbuf, worklistMS, culledDrawables,
-			iblFiltered, sunLuminance, aerialPerspective);
-		Sky::drawQuad(*this, quadbuf, worklistMS, cameraSky, atmosphere);
-		QuadBuffer::resolve(*this, quadbuf, color);
-		
-	}
+	Visibility::applyMS(*this, visbuf, depth, culledDrawables);
+	QuadBuffer::clusterize(*this, quadbuf, visbuf);
+	QuadBuffer::genBuffers(*this, quadbuf, culledDrawables);
+	auto worklistMS = Worklist::create(swapchainPool, *this, "worklist_ms", quadbuf.clusterDef, culledDrawables);
+	PBR::apply(*this, quadbuf, worklistMS, culledDrawables,
+		iblFiltered, sunLuminance, aerialPerspective);
+	Sky::draw(*this, quadbuf, worklistMS, cameraSky, atmosphere);
+	QuadBuffer::resolve(*this, quadbuf, color);
 	
 	// Postprocessing
 	Bloom::apply(*this, swapchainPool, color);

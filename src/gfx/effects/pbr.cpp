@@ -16,66 +16,9 @@ void PBR::compile(vuk::PerThreadContext& _ptc) {
 	}, "pbr.comp");
 	_ptc.ctx.create_named_pipeline("pbr", pbrPci);
 	
-	auto pbrQuadPci = vuk::ComputePipelineBaseCreateInfo();
-	pbrQuadPci.add_spirv(std::vector<u32>{
-#include "spv/pbrQuad.comp.spv"
-	}, "pbrQuad.comp");
-	_ptc.ctx.create_named_pipeline("pbr_quad", pbrQuadPci);
-	
 }
 
-void PBR::apply(Frame& _frame, Texture2D _result, Texture2D _visbuf, Worklist _worklist,
-	DrawableInstanceList _instances, Cubemap _ibl,
-	Buffer<vec3> _sunLuminance, Texture3D _aerialPerspective) {
-	
-	assert(_result.size() == _visbuf.size());
-	
-	_frame.rg.add_pass({
-		.name = nameAppend(_result.name, "pbr"),
-		.resources = {
-			_visbuf.resource(vuk::eComputeSampled),
-			_worklist.counts.resource(vuk::eIndirectRead),
-			_worklist.lists.resource(vuk::eComputeRead),
-			_instances.instances.resource(vuk::eComputeRead),
-			_instances.colors.resource(vuk::eComputeRead),
-			_instances.transforms.resource(vuk::eComputeRead),
-			_sunLuminance.resource(vuk::eComputeRead),
-			_aerialPerspective.resource(vuk::eComputeSampled),
-			_ibl.resource(vuk::eComputeSampled),
-			_result.resource(vuk::eComputeWrite) },
-		.execute = [_result, _visbuf, _worklist, &_frame,
-			_instances, _ibl, _sunLuminance, _aerialPerspective,
-			tileCount=_worklist.counts.offsetView(+MaterialType::PBR)](vuk::CommandBuffer& cmd) {
-			
-			cmd.bind_uniform_buffer(0, 0, _frame.world)
-			   .bind_storage_buffer(0, 1, _frame.models.meshes)
-			   .bind_storage_buffer(0, 2, _instances.instances)
-			   .bind_storage_buffer(0, 3, _instances.colors)
-			   .bind_storage_buffer(0, 4, _instances.transforms)
-			   .bind_storage_buffer(0, 5, _frame.models.indices)
-			   .bind_storage_buffer(0, 6, _frame.models.vertices)
-			   .bind_storage_buffer(0, 7, _frame.models.normals)
-			   .bind_storage_buffer(0, 8, _frame.models.materials)
-			   .bind_uniform_buffer(0, 9, _sunLuminance)
-			   .bind_sampled_image(0, 10, _ibl, TrilinearClamp)
-			   .bind_sampled_image(0, 11, _aerialPerspective, TrilinearClamp)
-			   .bind_sampled_image(0, 12, _visbuf, NearestClamp)
-			   .bind_storage_image(0, 13, _result)
-			   .bind_storage_buffer(0, 14, _worklist.lists)
-			   .bind_compute_pipeline("pbr");
-			
-			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16({_aerialPerspective.size().x(), _aerialPerspective.size().y()}));
-			cmd.specialization_constants(1, vuk::ShaderStageFlagBits::eCompute, _aerialPerspective.size().z());
-			cmd.specialization_constants(2, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_result.size()));
-			cmd.specialization_constants(3, vuk::ShaderStageFlagBits::eCompute, _worklist.tileDimensions.x() * _worklist.tileDimensions.y() * +MaterialType::PBR);
-			
-			cmd.dispatch_indirect(tileCount);
-			
-		}});
-	
-}
-
-void PBR::applyQuad(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
+void PBR::apply(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
 	DrawableInstanceList _instances, Cubemap _ibl,
 	Buffer<vec3> _sunLuminance, Texture3D _aerialPerspective) {
 	
@@ -112,7 +55,7 @@ void PBR::applyQuad(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
 			   .bind_sampled_image(0, 12, _quadbuf.normal, NearestClamp)
 			   .bind_storage_image(0, 13, _quadbuf.clusterOut)
 			   .bind_storage_buffer(0, 14, _worklist.lists)
-			   .bind_compute_pipeline("pbr_quad");
+			   .bind_compute_pipeline("pbr");
 			
 			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16({_aerialPerspective.size().x(), _aerialPerspective.size().y()}));
 			cmd.specialization_constants(1, vuk::ShaderStageFlagBits::eCompute, _aerialPerspective.size().z());

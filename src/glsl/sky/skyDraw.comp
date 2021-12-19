@@ -1,7 +1,7 @@
 #version 460
 #pragma shader_stage(compute)
 
-layout(local_size_x = 1, local_size_y = 8, local_size_z = 8) in;
+layout(local_size_x = 1, local_size_y = 64) in;
 
 #include "skyTypes.glsl"
 #include "../types.glsl"
@@ -9,6 +9,7 @@ layout(local_size_x = 1, local_size_y = 8, local_size_z = 8) in;
 
 #define U_ATMO u_atmo
 #define S_TRANSMITTANCE s_transmittance
+#define B_LISTS b_lists
 
 layout(binding = 0) uniform WorldConstants {
 	World u_world;
@@ -19,10 +20,10 @@ layout(binding = 1) uniform Atmosphere {
 layout(binding = 2) uniform sampler2D S_TRANSMITTANCE;
 layout(binding = 3) uniform sampler2D s_skyView;
 layout(binding = 4, std430) restrict readonly buffer TileLists {
-	uint b_lists[];
+	uint B_LISTS[];
 };
-layout(binding = 5) uniform sampler2D s_targetRead;
-layout(binding = 6) writeonly uniform image2D i_target;
+layout(binding = 5) uniform usampler2D s_clusterDef;
+layout(binding = 6) writeonly uniform image2D i_clusterOut;
 
 layout(constant_id = 0) const uint SkyViewSizePacked = 0;
 layout(constant_id = 1) const uint TargetSizePacked = 0;
@@ -32,27 +33,12 @@ const uvec2 SkyViewSize = U16FROMU32(SkyViewSizePacked);
 const uvec2 TargetSize = U16FROMU32(TargetSizePacked);
 
 #include "sky.glsl"
+#include "../worklist.glsl"
+#include "../quad.glsl"
 
-void main() {
+vec3 shadeSkySample(vec2 _gid) {
 	
-	// Retrieve tile
-	
-	uint tilePacked = b_lists[TileOffset + gl_GlobalInvocationID.x];
-	uvec2 tile = u16Fromu32(tilePacked);
-	
-	// Bounds check
-	
-	uvec2 gid = tile * gl_WorkGroupSize.yz + gl_LocalInvocationID.yz;
-	if (any(greaterThanEqual(gid, TargetSize)))
-		return;
-	
-	// Retrieve pixel alpha
-	
-	vec4 pixel = texelFetch(s_targetRead, ivec2(gid), 0);
-	if (pixel.a >= 1.0) // Not a sky sample
-		return;
-	
-	vec2 gUv = vec2(gid) / vec2(TargetSize);
+	vec2 gUv = _gid / vec2(TargetSize);
 	vec3 clipSpace = vec3(gUv * vec2(2.0) - vec2(1.0), 0.0);
 	vec4 hPos = u_world.viewProjectionInverse * vec4(clipSpace, 1.0);
 	
@@ -78,12 +64,34 @@ void main() {
 	vec3 sun = getSunLuminance(worldPos, worldDir, u_world.sunDirection, u_world.sunIlluminance)
 		* (120000.0 / u_world.sunIlluminance);
 	
-	// Blend the result
+	return skyView + sun;
 	
-	vec3 pixelMapped = tonemapWithWeight(pixel.rgb, pixel.a);
-	vec3 sky = skyView + sun;
-	vec3 skyMapped = tonemapWithWeight(sky, 1.0 - pixel.a);
-	vec4 result = vec4(tonemapInvert(pixelMapped + skyMapped), 1.0);
-	imageStore(i_target, ivec2(gid), result);
+}
+
+void main() {
+	
+	uvec2 lid = mortonOrder(gl_LocalInvocationID.y);
+	uvec2 gid = getTileGid(gl_WorkGroupID.x, TileOffset) + lid;
+	
+	// Retrieve cluster data
+	
+	uvec2 quadbufSample;
+	if (all(lessThan(gid, TargetSize)))
+		quadbufSample = texelFetch(s_clusterDef, ivec2(gid), 0).xy;
+	else
+		quadbufSample = uvec2(0u, 0u);
+	
+	// Shade the cluster
+	
+	uint clusterValue = quadbufSample.x;
+	uint clusterSubsamples = quadbufSample.y;
+	vec3 clusterResult;
+	if (clusterValue == -1u && clusterSubsamples != 0) {
+		
+		vec2 clusterCentroid = subsamplePosAverage(clusterSubsamples);
+		clusterResult = shadeSkySample(vec2(gid & ~1u) + clusterCentroid);
+		imageStore(i_clusterOut, ivec2(gid), vec4(clusterResult, 1.0));
+		
+	}
 	
 }

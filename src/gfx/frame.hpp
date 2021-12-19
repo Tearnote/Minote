@@ -18,13 +18,8 @@ using namespace base;
 
 struct Frame {
 	
-	enum struct AntialiasingType {
-		None = 0,
-		Quad = 1,
-	};
-	
 	explicit Frame(Engine&, vuk::RenderGraph&);
-	void draw(Texture2D target, ObjectPool&, AntialiasingType, bool flush);
+	void draw(Texture2D target, ObjectPool&, bool flush);
 	
 	vuk::PerThreadContext& ptc;
 	vuk::RenderGraph& rg;

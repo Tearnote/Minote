@@ -150,16 +150,6 @@ void Engine::render() {
 	ImGui::SliderFloat("Sun illuminance", &sunIlluminance, 0.01f, 100.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
 	m_world.sunIlluminance = vec3(sunIlluminance);
 	
-	// Runtime settings
-	static auto antialiasing = Frame::AntialiasingType::Quad;
-	static auto antialiasingInt = +antialiasing;
-	auto AntialiasingStrings = to_array({
-		"None",
-		"Quad" });
-	ImGui::RadioButton(AntialiasingStrings[0], &antialiasingInt, 0);
-	ImGui::RadioButton(AntialiasingStrings[1], &antialiasingInt, 1);
-	antialiasing = Frame::AntialiasingType(antialiasingInt);
-	
 	// Prepare frame
 	
 	auto ifc = m_vk.context->begin();
@@ -181,7 +171,7 @@ void Engine::render() {
 	// Draw frame
 	
 	auto frame = Frame(*this, rg);
-	frame.draw(screen, m_objects, antialiasing, m_flushTemporalResources);
+	frame.draw(screen, m_objects, m_flushTemporalResources);
 	
 	ImGui::Render();
 	ImGui_ImplVuk_Render(m_framePool, ptc, rg, screen.name, m_imguiData, ImGui::GetDrawData());

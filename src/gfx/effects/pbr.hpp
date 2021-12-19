@@ -19,10 +19,7 @@ struct PBR {
 	// Build the shader.
 	static void compile(vuk::PerThreadContext&);
 	
-	static void apply(Frame&, Texture2D target, Texture2D visbuf, Worklist,
-		DrawableInstanceList, Cubemap ibl, Buffer<vec3> sunLuminance, Texture3D aerialPerspective);
-	
-	static void applyQuad(Frame&, QuadBuffer&, Worklist, DrawableInstanceList,
+	static void apply(Frame&, QuadBuffer&, Worklist, DrawableInstanceList,
 		Cubemap ibl, Buffer<vec3> sunLuminance, Texture3D aerialPerspective);
 	
 };

@@ -95,11 +95,7 @@ struct Sky {
 	static auto createSunLuminance(Pool&, Frame&, vuk::Name,
 		vec3 probePos, Atmosphere) -> Buffer<vec3>;
 	
-	// Draw the sky in the background of an image (where visibility buffer is
-	// empty).
-	static void draw(Frame&, Texture2D target, Worklist, Texture2D skyView, Atmosphere);
-		
-	static void drawQuad(Frame&, QuadBuffer&, Worklist, Texture2D skyView, Atmosphere);
+	static void draw(Frame&, QuadBuffer&, Worklist, Texture2D skyView, Atmosphere);
 	
 	// Draw the sky into an existing cubemap. Target is the mip 0 of provided image.
 	static void draw(Frame&, Cubemap target, vec3 probePos, Texture2D skyView, Atmosphere);

@@ -260,7 +260,6 @@ set(SHADER_SOURCES
         src/glsl/sky/skyGenSunLuminance.comp
         src/glsl/sky/skyDrawCubemap.comp
         src/glsl/sky/skyGenSkyView.comp
-        src/glsl/sky/skyDrawQuad.comp
         src/glsl/sky/skyDraw.comp
         src/glsl/instanceSortCount.comp
         src/glsl/instanceSortWrite.comp
@@ -281,7 +280,6 @@ set(SHADER_SOURCES
         src/glsl/tonemap.comp
         src/glsl/bloomUp.comp
         src/glsl/imgui.vert src/glsl/imgui.frag
-        src/glsl/pbrQuad.comp
         src/glsl/pbr.comp)
 
 foreach(SHADER_PATH ${SHADER_SOURCES})

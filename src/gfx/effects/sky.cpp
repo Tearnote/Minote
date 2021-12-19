@@ -142,12 +142,6 @@ void Sky::compile(vuk::PerThreadContext& _ptc) {
 	}, "skyDraw.comp");
 	_ptc.ctx.create_named_pipeline("sky_draw", skyDrawPci);
 	
-	auto skyDrawQuadPci = vuk::ComputePipelineBaseCreateInfo();
-	skyDrawQuadPci.add_spirv(std::vector<u32>{
-#include "spv/skyDrawQuad.comp.spv"
-	}, "skyDrawQuad.comp");
-	_ptc.ctx.create_named_pipeline("sky_draw_quad", skyDrawQuadPci);
-	
 	auto skyDrawCubemapPci = vuk::ComputePipelineBaseCreateInfo();
 	skyDrawCubemapPci.add_spirv(std::vector<u32>{
 #include "spv/skyDrawCubemap.comp.spv"
@@ -273,39 +267,7 @@ auto Sky::createSunLuminance(Pool& _pool, Frame& _frame, vuk::Name _name,
 	
 }
 
-void Sky::draw(Frame& _frame, Texture2D _target, Worklist _worklist,
-	Texture2D _skyView, Atmosphere _atmo) {
-	
-	_frame.rg.add_pass({
-		.name = nameAppend(_target.name, "sky"),
-		.resources = {
-			_skyView.resource(vuk::eComputeSampled),
-			_worklist.counts.resource(vuk::eIndirectRead),
-			_worklist.lists.resource(vuk::eComputeRead),
-			_target.resource(vuk::eComputeRW) },
-		.execute = [_target, _worklist, _skyView, _atmo, &_frame,
-			tileCount=_worklist.counts.offsetView(+MaterialType::None)](vuk::CommandBuffer& cmd) {
-			
-			cmd.bind_uniform_buffer(0, 0, _frame.world)
-			   .bind_uniform_buffer(0, 1, _atmo.params)
-			   .bind_sampled_image(0, 2, _atmo.transmittance, LinearClamp)
-			   .bind_sampled_image(0, 3, _skyView, LinearClamp)
-			   .bind_storage_buffer(0, 4, _worklist.lists)
-			   .bind_sampled_image(0, 5, _target, NearestClamp, vuk::ImageLayout::eGeneral)
-			   .bind_storage_image(0, 6, _target)
-			   .bind_compute_pipeline("sky_draw");
-			
-			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_skyView.size()));
-			cmd.specialization_constants(1, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_target.size()));
-			cmd.specialization_constants(2, vuk::ShaderStageFlagBits::eCompute, _worklist.tileDimensions.x() * _worklist.tileDimensions.y() * +MaterialType::None);
-			
-			cmd.dispatch_indirect(tileCount);
-			
-		}});
-	
-}
-
-void Sky::drawQuad(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
+void Sky::draw(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
 	Texture2D _skyView, Atmosphere _atmo) {
 	
 	_frame.rg.add_pass({
@@ -326,7 +288,7 @@ void Sky::drawQuad(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
 			   .bind_storage_buffer(0, 4, _worklist.lists)
 			   .bind_sampled_image(0, 5, _quadbuf.clusterDef, NearestClamp)
 			   .bind_storage_image(0, 6, _quadbuf.clusterOut)
-			   .bind_compute_pipeline("sky_draw_quad");
+			   .bind_compute_pipeline("sky_draw");
 			
 			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_skyView.size()));
 			cmd.specialization_constants(1, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_quadbuf.clusterOut.size()));
