@@ -20,7 +20,7 @@ using namespace base;
 struct Material {
 	
 	enum struct Type: u32 {
-		None = 0, // Background - typically used for sky
+		None = 0, // Invalid
 		PBR = 1,
 		Count
 	};

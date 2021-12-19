@@ -228,9 +228,8 @@ void main() {
 	// Shade the cluster
 	
 	uint clusterValue = quadbufSample.x;
-	uint clusterSubsamples = quadbufSample.y;
 	vec3 clusterResult;
-	if (clusterValue != -1u && clusterSubsamples != 0) {
+	if (clusterValue != -1u) {
 		
 		vec2 clusterCentroid = texelFetch(s_offset, ivec2(gid), 0).xy * 2.0;
 		uint normalOct = texelFetch(s_normal, ivec2(gid), 0).x;
