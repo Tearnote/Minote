@@ -27,6 +27,7 @@ struct QuadBuffer {
 	Texture2D outputPrev;
 	
 	Texture2D offset;
+	Texture2D depth;
 	Texture2D normal;
 	Texture2D velocity;
 	

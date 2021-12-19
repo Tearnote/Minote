@@ -8,11 +8,8 @@ layout(local_size_x = 1, local_size_y = 64) in;
 #include "visibility.glsl"
 #include "constants.glsl"
 #include "types.glsl"
-#include "quad.glsl"
 #include "util.glsl"
 
-#define B_INDICES b_indices
-#define B_VERTICES b_vertices
 #define B_LISTS b_lists
 
 layout(binding = 0) uniform WorldConstants {
@@ -28,31 +25,22 @@ layout (binding = 2, std430) restrict readonly buffer Instances {
 layout (binding = 3, std430) restrict readonly buffer Colors {
 	vec4 b_colors[];
 };
-layout(binding = 4, std430) restrict readonly buffer Transforms {
-	mat3x4 b_transforms[];
-};
-
-layout (binding = 5, std430) restrict readonly buffer Indices {
-	uint B_INDICES[];
-};
-layout (binding = 6, std430) restrict readonly buffer Vertices {
-	float B_VERTICES[];
-};
-layout (binding = 7, std430) restrict readonly buffer Materials {
+layout (binding = 4, std430) restrict readonly buffer Materials {
 	Material b_materials[];
 };
 
-layout(binding = 8) uniform SunLuminance {
+layout(binding = 5) uniform SunLuminance {
 	vec3 u_sunLuminance;
 };
-layout(binding = 9) uniform samplerCube s_cubemap;
-layout(binding = 10) uniform sampler3D s_aerialPerspective;
+layout(binding = 6) uniform samplerCube s_cubemap;
+layout(binding = 7) uniform sampler3D s_aerialPerspective;
 
-layout(binding = 11) uniform usampler2D s_visbuf;
-layout(binding = 12) uniform sampler2D s_offset;
-layout(binding = 13) uniform usampler2D s_normal;
-layout(binding = 14) restrict writeonly uniform image2D i_clusterOut;
-layout(binding = 15, std430) restrict readonly buffer TileLists {
+layout(binding = 8) uniform usampler2D s_visbuf;
+layout(binding = 9) uniform sampler2D s_offset;
+layout(binding = 10) uniform sampler2D s_depth;
+layout(binding = 11) uniform usampler2D s_normal;
+layout(binding = 12) restrict writeonly uniform image2D i_clusterOut;
+layout(binding = 13, std430) restrict readonly buffer TileLists {
 	uint B_LISTS[];
 };
 
@@ -67,49 +55,7 @@ const uvec2 TargetSize = uvec2(U16FROMU32(TargetSizePacked));
 #include "typesAccess.glsl"
 #include "worklist.glsl"
 
-#define USE_ACCURATE_NORMAL_INTERPOLATION 0
 #define IBL_MIP_COUNT 8.0
-
-void getInstanceVertexParams(out vec3 _vertex,
-	Instance _instance, Mesh _mesh, uint _triangleIdx, vec2 _uv) {
-	
-	// Retrieve vertex indices
-	
-	uint indexBase = _mesh.indexOffset;
-	indexBase += _triangleIdx * 3;
-	uvec3 indices = fetchIndices(indexBase);
-	
-	// Retrieve vertex params
-	
-	uint transformIdx = _instance.transformIdx;
-	mat4 transform = getTransform(b_transforms[transformIdx]);
-	
-	mat3 vertices = {
-		fetchVertex(indices.x),
-		fetchVertex(indices.y),
-		fetchVertex(indices.z) };
-	
-	// Calculate barycentrics
-	
-	mat4 ndcTransform = u_world.viewProjection * transform;
-	mat3x4 verticesNDC = {
-		ndcTransform * vec4(vertices[0], 1.0),
-		ndcTransform * vec4(vertices[1], 1.0),
-		ndcTransform * vec4(vertices[2], 1.0) };
-	
-	vec3 barycentrics = calculateBarycentrics(verticesNDC, _uv * 2.0 - 1.0);
-	// barycentrics = clampBarycentrics(barycentrics);
-	
-	// Interpolate params
-	
-	_vertex =
-		vertices[0] * barycentrics.x +
-		vertices[1] * barycentrics.y +
-		vertices[2] * barycentrics.z;
-	vec4 vertexW = transform * vec4(_vertex, 1.0);
-	_vertex = vertexW.xyz / vertexW.w;
-	
-}
 
 vec3 envBRDFApprox(vec3 _f0, float _NoV, float _roughness) {
 	
@@ -133,9 +79,8 @@ float dApprox(float _roughness, float _RoL) {
 	
 }
 
-vec3 shadeVisSamplePBR(uint _visValue, vec2 _screenPos, vec3 _normal) {
+vec3 shadeVisSamplePBR(uint _visValue, vec2 _uv, vec3 _clipVertex, vec3 _normal) {
 	
-	vec2 sampleUv = _screenPos / vec2(TargetSize);
 	VisSample vis = unpackVisibility(_visValue);
 	
 	Instance instance = b_instances[vis.instance];
@@ -144,11 +89,8 @@ vec3 shadeVisSamplePBR(uint _visValue, vec2 _screenPos, vec3 _normal) {
 	uint materialIdx = mesh.materialIdx;
 	Material material = b_materials[materialIdx];
 	
-	vec3 vertex;
-	getInstanceVertexParams(vertex, instance, mesh, vis.triangle, sampleUv);
-	
-	vec4 clipVertexW = u_world.viewProjection * vec4(vertex, 1.0);
-	vec3 clipVertex = clipVertexW.xyz / clipVertexW.w;
+	vec4 vertexW = u_world.viewProjectionInverse * vec4(_clipVertex, 1.0);
+	vec3 vertex = vertexW.xyz / vertexW.w;
 	
 	// Standard vectors
 	
@@ -189,7 +131,7 @@ vec3 shadeVisSamplePBR(uint _visValue, vec2 _screenPos, vec3 _normal) {
 	
 	// Aerial perspective
 	
-	float slice = aerialPerspectiveDepthToSlice(clipVertex.z);
+	float slice = aerialPerspectiveDepthToSlice(_clipVertex.z);
 	float weight = 1.0;
 	if (slice < 0.5) {
 		
@@ -200,7 +142,7 @@ vec3 shadeVisSamplePBR(uint _visValue, vec2 _screenPos, vec3 _normal) {
 	}
 	float w = sqrt(slice / AerialPerspectiveSize.z); // squared distribution
 	
-	vec3 ap = weight * textureLod(s_aerialPerspective, vec3(sampleUv, w), 0.0).xyz;
+	vec3 ap = weight * textureLod(s_aerialPerspective, vec3(_uv, w), 0.0).xyz;
 	
 	// Emissive lighting
 	
@@ -231,9 +173,16 @@ void main() {
 	if (visbuf != -1u) {
 		
 		vec2 clusterCentroid = texelFetch(s_offset, ivec2(gid), 0).xy * 2.0;
+		
+		float depth = texelFetch(s_depth, ivec2(gid), 0).x;
+		vec2 clusterPos = vec2(gid & ~1u) + clusterCentroid;
+		vec2 screenUv = clusterPos / vec2(TargetSize);
+		vec3 clipPos = vec3(screenUv * 2.0 - 1.0, depth);
+		
 		uint normalOct = texelFetch(s_normal, ivec2(gid), 0).x;
 		vec3 normal = octDecode(normalOct);
-		clusterResult = shadeVisSamplePBR(visbuf, vec2(gid & ~1u) + clusterCentroid, normal);
+		
+		clusterResult = shadeVisSamplePBR(visbuf, screenUv, clipPos, normal);
 		imageStore(i_clusterOut, ivec2(gid), vec4(clusterResult, 1.0));
 		
 	}

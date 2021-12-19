@@ -175,6 +175,15 @@ void main() {
 	// for (uint i = 0; i < 4; i += 1)
 	// 	clusterCentroids[i] /= float(bitCount(clusterSubsamples[i]));
 	
+	// Clear out empty clusters
+	
+	for (uint i = 1; i < 4; i += 1) {
+		
+		if (clusterSubsamples[i] == 0)
+			clusterValues[i] = -1u;
+		
+	}
+	
 	barrier();
 	
 	// Write out the results

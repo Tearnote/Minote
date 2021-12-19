@@ -29,12 +29,12 @@ void PBR::apply(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
 			_worklist.lists.resource(vuk::eComputeRead),
 			_instances.instances.resource(vuk::eComputeRead),
 			_instances.colors.resource(vuk::eComputeRead),
-			_instances.transforms.resource(vuk::eComputeRead),
 			_sunLuminance.resource(vuk::eComputeRead),
 			_aerialPerspective.resource(vuk::eComputeSampled),
 			_ibl.resource(vuk::eComputeSampled),
 			_quadbuf.visbuf.resource(vuk::eComputeSampled),
 			_quadbuf.offset.resource(vuk::eComputeSampled),
+			_quadbuf.depth.resource(vuk::eComputeSampled),
 			_quadbuf.normal.resource(vuk::eComputeSampled),
 			_quadbuf.clusterOut.resource(vuk::eComputeWrite) },
 		.execute = [_quadbuf, _worklist, &_frame, _instances, _ibl,
@@ -45,18 +45,16 @@ void PBR::apply(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
 			   .bind_storage_buffer(0, 1, _frame.models.meshes)
 			   .bind_storage_buffer(0, 2, _instances.instances)
 			   .bind_storage_buffer(0, 3, _instances.colors)
-			   .bind_storage_buffer(0, 4, _instances.transforms)
-			   .bind_storage_buffer(0, 5, _frame.models.indices)
-			   .bind_storage_buffer(0, 6, _frame.models.vertices)
-			   .bind_storage_buffer(0, 7, _frame.models.materials)
-			   .bind_uniform_buffer(0, 8, _sunLuminance)
-			   .bind_sampled_image(0, 9, _ibl, TrilinearClamp)
-			   .bind_sampled_image(0, 10, _aerialPerspective, TrilinearClamp)
-			   .bind_sampled_image(0, 11, _quadbuf.visbuf, NearestClamp)
-			   .bind_sampled_image(0, 12, _quadbuf.offset, NearestClamp)
-			   .bind_sampled_image(0, 13, _quadbuf.normal, NearestClamp)
-			   .bind_storage_image(0, 14, _quadbuf.clusterOut)
-			   .bind_storage_buffer(0, 15, _worklist.lists)
+			   .bind_storage_buffer(0, 4, _frame.models.materials)
+			   .bind_uniform_buffer(0, 5, _sunLuminance)
+			   .bind_sampled_image(0, 6, _ibl, TrilinearClamp)
+			   .bind_sampled_image(0, 7, _aerialPerspective, TrilinearClamp)
+			   .bind_sampled_image(0, 8, _quadbuf.visbuf, NearestClamp)
+			   .bind_sampled_image(0, 9, _quadbuf.offset, NearestClamp)
+			   .bind_sampled_image(0, 10, _quadbuf.depth, NearestClamp)
+			   .bind_sampled_image(0, 11, _quadbuf.normal, NearestClamp)
+			   .bind_storage_image(0, 12, _quadbuf.clusterOut)
+			   .bind_storage_buffer(0, 13, _worklist.lists)
 			   .bind_compute_pipeline("pbr");
 			
 			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16({_aerialPerspective.size().x(), _aerialPerspective.size().y()}));
