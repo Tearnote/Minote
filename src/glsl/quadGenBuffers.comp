@@ -36,10 +36,11 @@ layout (binding = 6, std430) restrict readonly buffer Normals {
 	uint B_NORMALS[];
 };
 
-layout(binding = 7) uniform usampler2D s_clusterDef;
-layout(binding = 8) restrict writeonly uniform image2D i_offset;
-layout(binding = 9) restrict writeonly uniform uimage2D i_normal;
-layout(binding = 10) restrict writeonly uniform image2D i_velocity;
+layout(binding = 7) uniform usampler2D s_visbuf;
+layout(binding = 8) uniform usampler2D s_subsamples;
+layout(binding = 9) restrict writeonly uniform image2D i_offset;
+layout(binding = 10) restrict writeonly uniform uimage2D i_normal;
+layout(binding = 11) restrict writeonly uniform image2D i_velocity;
 
 layout(constant_id = 0) const uint QuadbufSizePacked = 0;
 const uvec2 QuadbufSize = uvec2(U16FROMU32(QuadbufSizePacked));
@@ -54,16 +55,15 @@ void main() {
 	if (any(greaterThanEqual(gid, QuadbufSize)))
 		return;
 	
-	uvec2 quadbufSample = texelFetch(s_clusterDef, ivec2(gid), 0).xy;
-	uint clusterValue = quadbufSample.x;
-	uint clusterSubsamples = quadbufSample.y;
-	vec2 offset = subsamplePosAverage(clusterSubsamples);
+	uint visbuf = texelFetch(s_visbuf, ivec2(gid), 0).x;
+	uint subsamples = texelFetch(s_subsamples, ivec2(gid), 0).x;
+	vec2 offset = subsamplePosAverage(subsamples);
 	
 	uint normalOct;
 	vec2 velocity;
-	if (clusterValue != -1u && clusterSubsamples != 0) { // Valid triangle cluster
+	if (visbuf != -1u) { // Valid triangle cluster
 		
-		VisSample vis = unpackVisibility(clusterValue);
+		VisSample vis = unpackVisibility(visbuf);
 		
 		Instance instance = b_instances[vis.instance];
 		uint meshIdx = instance.meshIdx;
@@ -92,7 +92,7 @@ void main() {
 			ndcTransform * vec4(vertices[1], 1.0),
 			ndcTransform * vec4(vertices[2], 1.0) };
 		
-		vec2 uv = vec2(gid & ~1u) + subsamplePosAverage(clusterSubsamples);
+		vec2 uv = vec2(gid & ~1u) + offset;
 		uv /= QuadbufSize;
 		vec3 barycentrics = calculateBarycentrics(verticesNDC, uv * 2.0 - 1.0);
 		// barycentrics = clampBarycentrics(barycentrics);

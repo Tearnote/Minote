@@ -48,7 +48,7 @@ layout(binding = 8) uniform SunLuminance {
 layout(binding = 9) uniform samplerCube s_cubemap;
 layout(binding = 10) uniform sampler3D s_aerialPerspective;
 
-layout(binding = 11) uniform usampler2D s_clusterDef;
+layout(binding = 11) uniform usampler2D s_visbuf;
 layout(binding = 12) uniform sampler2D s_offset;
 layout(binding = 13) uniform usampler2D s_normal;
 layout(binding = 14) restrict writeonly uniform image2D i_clusterOut;
@@ -219,22 +219,21 @@ void main() {
 	
 	// Retrieve cluster data
 	
-	uvec2 quadbufSample;
+	uint visbuf;
 	if (all(lessThan(gid, TargetSize)))
-		quadbufSample = texelFetch(s_clusterDef, ivec2(gid), 0).xy;
+		visbuf = texelFetch(s_visbuf, ivec2(gid), 0).x;
 	else
-		quadbufSample = uvec2(-1u, 0u);
+		visbuf = -1u;
 	
 	// Shade the cluster
 	
-	uint clusterValue = quadbufSample.x;
 	vec3 clusterResult;
-	if (clusterValue != -1u) {
+	if (visbuf != -1u) {
 		
 		vec2 clusterCentroid = texelFetch(s_offset, ivec2(gid), 0).xy * 2.0;
 		uint normalOct = texelFetch(s_normal, ivec2(gid), 0).x;
 		vec3 normal = octDecode(normalOct);
-		clusterResult = shadeVisSamplePBR(clusterValue, vec2(gid & ~1u) + clusterCentroid, normal);
+		clusterResult = shadeVisSamplePBR(visbuf, vec2(gid & ~1u) + clusterCentroid, normal);
 		imageStore(i_clusterOut, ivec2(gid), vec4(clusterResult, 1.0));
 		
 	}

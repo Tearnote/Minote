@@ -33,7 +33,7 @@ void PBR::apply(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
 			_sunLuminance.resource(vuk::eComputeRead),
 			_aerialPerspective.resource(vuk::eComputeSampled),
 			_ibl.resource(vuk::eComputeSampled),
-			_quadbuf.clusterDef.resource(vuk::eComputeSampled),
+			_quadbuf.visbuf.resource(vuk::eComputeSampled),
 			_quadbuf.offset.resource(vuk::eComputeSampled),
 			_quadbuf.normal.resource(vuk::eComputeSampled),
 			_quadbuf.clusterOut.resource(vuk::eComputeWrite) },
@@ -52,7 +52,7 @@ void PBR::apply(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
 			   .bind_uniform_buffer(0, 8, _sunLuminance)
 			   .bind_sampled_image(0, 9, _ibl, TrilinearClamp)
 			   .bind_sampled_image(0, 10, _aerialPerspective, TrilinearClamp)
-			   .bind_sampled_image(0, 11, _quadbuf.clusterDef, NearestClamp)
+			   .bind_sampled_image(0, 11, _quadbuf.visbuf, NearestClamp)
 			   .bind_sampled_image(0, 12, _quadbuf.offset, NearestClamp)
 			   .bind_sampled_image(0, 13, _quadbuf.normal, NearestClamp)
 			   .bind_storage_image(0, 14, _quadbuf.clusterOut)

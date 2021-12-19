@@ -276,7 +276,7 @@ void Sky::draw(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
 			_skyView.resource(vuk::eComputeSampled),
 			_worklist.counts.resource(vuk::eIndirectRead),
 			_worklist.lists.resource(vuk::eComputeRead),
-			_quadbuf.clusterDef.resource(vuk::eComputeSampled),
+			_quadbuf.visbuf.resource(vuk::eComputeSampled),
 			_quadbuf.offset.resource(vuk::eComputeSampled),
 			_quadbuf.clusterOut.resource(vuk::eComputeWrite) },
 		.execute = [_worklist, _skyView, _atmo, _quadbuf, &_frame,
@@ -287,7 +287,7 @@ void Sky::draw(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
 			   .bind_sampled_image(0, 2, _atmo.transmittance, LinearClamp)
 			   .bind_sampled_image(0, 3, _skyView, LinearClamp)
 			   .bind_storage_buffer(0, 4, _worklist.lists)
-			   .bind_sampled_image(0, 5, _quadbuf.clusterDef, NearestClamp)
+			   .bind_sampled_image(0, 5, _quadbuf.visbuf, NearestClamp)
 			   .bind_sampled_image(0, 6, _quadbuf.offset, NearestClamp)
 			   .bind_storage_image(0, 7, _quadbuf.clusterOut)
 			   .bind_compute_pipeline("sky_draw");

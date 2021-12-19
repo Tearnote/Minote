@@ -10,15 +10,17 @@ layout(local_size_x = 8, local_size_y = 8) in;
 layout(binding = 0) uniform WorldConstants {
 	World u_world;
 };
-layout(binding = 1) uniform usampler2D s_clusterDef;
-layout(binding = 2) uniform usampler2D s_jitterMap;
-layout(binding = 3) uniform sampler2D s_clusterOut;
-layout(binding = 4) uniform sampler2D s_outputPrev;
-layout(binding = 5) uniform usampler2D s_clusterDefPrev;
-layout(binding = 6) uniform sampler2D s_clusterOutPrev;
-layout(binding = 7) uniform usampler2D s_jitterMapPrev;
-layout(binding = 8) uniform sampler2D s_velocity;
-layout(binding = 9) restrict writeonly uniform image2D i_output;
+layout(binding = 1) uniform usampler2D s_visbuf;
+layout(binding = 2) uniform usampler2D s_subsamples;
+layout(binding = 3) uniform usampler2D s_jitterMap;
+layout(binding = 4) uniform sampler2D s_clusterOut;
+layout(binding = 5) uniform sampler2D s_outputPrev;
+layout(binding = 6) uniform usampler2D s_visbufPrev;
+layout(binding = 7) uniform usampler2D s_subsamplesPrev;
+layout(binding = 8) uniform sampler2D s_clusterOutPrev;
+layout(binding = 9) uniform usampler2D s_jitterMapPrev;
+layout(binding = 10) uniform sampler2D s_velocity;
+layout(binding = 11) restrict writeonly uniform image2D i_output;
 
 layout(constant_id = 0) const uint u_sourceSizePacked = 0;
 const uvec2 u_sourceSize = U16FROMU32(u_sourceSizePacked);
@@ -79,11 +81,11 @@ void main() {
 	mat4x2 clusterVelocities;
 	for (uint i = 0; i < 4; i += 1) {
 		
-		uvec2 cluster = texelFetch(s_clusterDef, ivec2(gid + QuadPixelOffsets[i]), 0).xy;
-		clusterValues[i] = cluster.x;
-		clusterSubsamples[i] = cluster.y;
-		clusterOuts[i] = texelFetch(s_clusterOut, ivec2(gid + QuadPixelOffsets[i]), 0).rgb;
-		clusterVelocities[i] = texelFetch(s_velocity, ivec2(gid + QuadPixelOffsets[i]), 0).xy;
+		uvec2 pos = gid + uvec2(QuadPixelOffsets[i]);
+		clusterValues[i] = texelFetch(s_visbuf, ivec2(pos), 0).x;
+		clusterSubsamples[i] = texelFetch(s_subsamples, ivec2(pos), 0).x;
+		clusterOuts[i] = texelFetch(s_clusterOut, ivec2(pos), 0).rgb;
+		clusterVelocities[i] = texelFetch(s_velocity, ivec2(pos), 0).xy;
 		
 	}
 	
@@ -141,9 +143,9 @@ void main() {
 				
 				for (uint j = 0; j < 4; j += 1) {
 					
-					uvec2 historyCluster = texelFetch(s_clusterDefPrev, ivec2(historyQuad + QuadPixelOffsets[j]), 0).xy;
-					historyValues[j] = historyCluster.x;
-					historySubsamples[j] = historyCluster.y;
+					uvec2 historyPos = historyQuad + uvec2(QuadPixelOffsets[j]);
+					historyValues[j] = texelFetch(s_visbufPrev, ivec2(historyPos), 0).x;
+					historySubsamples[j] = texelFetch(s_subsamplesPrev, ivec2(historyPos), 0).x;
 					
 					for (uint k = 0; k < 4; k += 1) {
 						
