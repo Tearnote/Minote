@@ -157,6 +157,24 @@ float randFloat(uint _v) {
 	
 }
 
+uvec2 randInt2d(uvec2 _v) {
+	
+	_v = _v * 1664525u + 1013904223u;
+	
+	_v.x += _v.y * 1664525u;
+	_v.y += _v.x * 1664525u;
+	
+	_v = _v ^ (_v >> 16u);
+	
+	_v.x += _v.y * 1664525u;
+	_v.y += _v.x * 1664525u;
+	
+	_v = _v ^ (_v >> 16u);
+	
+	return _v;
+	
+}
+
 // https://graphics.pixar.com/library/OrthonormalB/paper.pdf
 void orthonormalBasis(vec3 _n, out vec3 _b1, out vec3 _b2) {
 	

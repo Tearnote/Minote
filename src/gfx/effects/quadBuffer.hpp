@@ -14,18 +14,19 @@ using namespace base;
 
 struct QuadBuffer {
 	
-	Texture2D visbuf;
 	Texture2D subsamples;
+	Texture2D hash;
 	Texture2D jitterMap;
 	Texture2D clusterOut;
 	Texture2D output;
 	
-	Texture2D visbufPrev;
 	Texture2D subsamplesPrev;
+	Texture2D hashPrev;
 	Texture2D jitterMapPrev;
 	Texture2D clusterOutPrev;
 	Texture2D outputPrev;
 	
+	Texture2D visbuf;
 	Texture2D offset;
 	Texture2D depth;
 	Texture2D normal;

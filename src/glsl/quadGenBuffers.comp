@@ -38,10 +38,11 @@ layout (binding = 6, std430) restrict readonly buffer Normals {
 
 layout(binding = 7) uniform usampler2D s_visbuf;
 layout(binding = 8) uniform usampler2D s_subsamples;
-layout(binding = 9) restrict writeonly uniform image2D i_offset;
-layout(binding = 10) restrict writeonly uniform image2D i_depth;
-layout(binding = 11) restrict writeonly uniform uimage2D i_normal;
-layout(binding = 12) restrict writeonly uniform image2D i_velocity;
+layout(binding = 9) restrict writeonly uniform uimage2D i_hash;
+layout(binding = 10) restrict writeonly uniform image2D i_offset;
+layout(binding = 11) restrict writeonly uniform image2D i_depth;
+layout(binding = 12) restrict writeonly uniform uimage2D i_normal;
+layout(binding = 13) restrict writeonly uniform image2D i_velocity;
 
 layout(constant_id = 0) const uint QuadbufSizePacked = 0;
 const uvec2 QuadbufSize = uvec2(U16FROMU32(QuadbufSizePacked));
@@ -60,6 +61,7 @@ void main() {
 	uint subsamples = texelFetch(s_subsamples, ivec2(gid), 0).x;
 	vec2 offset = subsamplePosAverage(subsamples);
 	
+	uint hash;
 	float depth;
 	uint normalOct;
 	vec2 velocity;
@@ -129,6 +131,9 @@ void main() {
 		vec4 prevClipVertexW = u_world.prevViewProjection * vec4(vertex, 1.0);
 		vec3 prevClipVertex = prevClipVertexW.xyz / prevClipVertexW.w;
 		
+		uvec2 hash2d = randInt2d(uvec2(instance.meshIdx, instance.transformIdx));
+		hash = hash2d.x;
+		
 		depth = clipVertex.z;
 		
 		velocity = clipVertex.xy * vec2(QuadbufSize) - prevClipVertex.xy * vec2(QuadbufSize);
@@ -143,6 +148,8 @@ void main() {
 		vec4 prevClipVertexW = u_world.prevViewProjection * hPos;
 		vec3 prevClipVertex = prevClipVertexW.xyz / prevClipVertexW.w;
 		
+		hash = 0;
+		
 		normalOct = 0;
 		
 		depth = 0.0;
@@ -152,6 +159,7 @@ void main() {
 		
 	}
 	
+	imageStore(i_hash, ivec2(gid), uvec4(hash, 0, 0, 0));
 	imageStore(i_offset, ivec2(gid), vec4(offset * 0.5, 0, 0));
 	imageStore(i_depth, ivec2(gid), vec4(depth, 0, 0, 0));
 	imageStore(i_normal, ivec2(gid), uvec4(normalOct, 0, 0, 0));
