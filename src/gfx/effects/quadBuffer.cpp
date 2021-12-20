@@ -53,12 +53,12 @@ auto QuadBuffer::create(Pool& _pool, Frame& _frame,
 	
 	auto hashes = to_array({
 		Texture2D::make(_pool, nameAppend(_name, "hash0"),
-			_size, vuk::Format::eR32Uint,
+			_size, vuk::Format::eR16Uint,
 			vuk::ImageUsageFlagBits::eStorage |
 			vuk::ImageUsageFlagBits::eSampled |
 			vuk::ImageUsageFlagBits::eTransferDst),
 		Texture2D::make(_pool, nameAppend(_name, "hash1"),
-			_size, vuk::Format::eR32Uint,
+			_size, vuk::Format::eR16Uint,
 			vuk::ImageUsageFlagBits::eStorage |
 			vuk::ImageUsageFlagBits::eSampled |
 			vuk::ImageUsageFlagBits::eTransferDst) });

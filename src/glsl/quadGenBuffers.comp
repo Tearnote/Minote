@@ -132,7 +132,7 @@ void main() {
 		vec3 prevClipVertex = prevClipVertexW.xyz / prevClipVertexW.w;
 		
 		uvec2 hash2d = randInt2d(uvec2(instance.meshIdx, instance.transformIdx));
-		hash = hash2d.x;
+		hash = hash2d.x & bitmask(16);
 		
 		depth = clipVertex.z;
 		
