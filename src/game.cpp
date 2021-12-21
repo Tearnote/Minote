@@ -181,7 +181,7 @@ void game(GameParams const& _params) try {
 	
 	while (!sys::System::isQuitting()) {
 		
-		auto framerateScale = 144.0f / engine.fps();
+		auto framerateScale = min(144.0f / engine.fps(), 8.0f);
 		engine.camera().moveSpeed = 1_m / 16.0f * framerateScale;
 		
 		// Input handling

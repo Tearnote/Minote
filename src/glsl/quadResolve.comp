@@ -10,12 +10,12 @@ layout(local_size_x = 8, local_size_y = 8) in;
 layout(binding = 0) uniform WorldConstants {
 	World u_world;
 };
-layout(binding = 1) uniform usampler2D s_visbuf;
+layout(binding = 1) uniform usampler2D s_hash;
 layout(binding = 2) uniform usampler2D s_subsamples;
 layout(binding = 3) uniform usampler2D s_jitterMap;
 layout(binding = 4) uniform sampler2D s_clusterOut;
 layout(binding = 5) uniform sampler2D s_outputPrev;
-layout(binding = 6) uniform usampler2D s_visbufPrev;
+layout(binding = 6) uniform usampler2D s_hashPrev;
 layout(binding = 7) uniform usampler2D s_subsamplesPrev;
 layout(binding = 8) uniform sampler2D s_clusterOutPrev;
 layout(binding = 9) uniform usampler2D s_jitterMapPrev;
@@ -26,7 +26,6 @@ layout(constant_id = 0) const uint u_sourceSizePacked = 0;
 const uvec2 u_sourceSize = U16FROMU32(u_sourceSizePacked);
 
 #define CONVERGE_FRAMES 15
-#define TAA_DEBUG 0
 
 bool isQuadJittered(usampler2D _map, uvec2 _gid) {
 	
@@ -82,7 +81,7 @@ void main() {
 	for (uint i = 0; i < 4; i += 1) {
 		
 		uvec2 pos = gid + uvec2(QuadPixelOffsets[i]);
-		clusterValues[i] = texelFetch(s_visbuf, ivec2(pos), 0).x;
+		clusterValues[i] = texelFetch(s_hash, ivec2(pos), 0).x;
 		clusterSubsamples[i] = texelFetch(s_subsamples, ivec2(pos), 0).x;
 		clusterOuts[i] = texelFetch(s_clusterOut, ivec2(pos), 0).rgb;
 		clusterVelocities[i] = texelFetch(s_velocity, ivec2(pos), 0).xy;
@@ -114,69 +113,32 @@ void main() {
 		vec2 historyLocation = currentLocation - clusterVelocities[i];
 		uvec2 historyQuad = uvec2(historyLocation) & ~1u;
 		
-		// Check how many history clusters are usable
+		// History rejection tests
 		
-		bool validHistoryClusters[4] = {false, false, false, false};
-		uvec4 historyValues;
-		uvec4 historySubsamples;
+		bool reject = true;
 		
 		// OOB test
-		
-		bool doesJitter = false;
-		bool didJitter = false;
 		if (all(greaterThanEqual(historyLocation, vec2(0.0))) && all(lessThan(historyLocation, vec2(u_sourceSize)))) {
 			
 			// Current jitter test
 			
-			doesJitter = isQuadJittered(s_jitterMap, uvec2(currentLocation));
-			didJitter = isQuadJittered(s_jitterMapPrev, uvec2(historyLocation));
+			bool doesJitter = isQuadJittered(s_jitterMap, uvec2(currentLocation));
+			bool didJitter = isQuadJittered(s_jitterMapPrev, uvec2(historyLocation));
 			
-			if (doesJitter && didJitter) {
-				
-				validHistoryClusters = bool[](true, true, true, true);
-				
-			// History jitter test
-				
-			} else {
-				
-				// Go over each history cluster and check if it's valid
-				
-				for (uint j = 0; j < 4; j += 1) {
-					
-					uvec2 historyPos = historyQuad + uvec2(QuadPixelOffsets[j]);
-					historyValues[j] = texelFetch(s_visbufPrev, ivec2(historyPos), 0).x;
-					historySubsamples[j] = texelFetch(s_subsamplesPrev, ivec2(historyPos), 0).x;
-					
-					for (uint k = 0; k < 4; k += 1) {
-						
-						if (historyValues[j] == clusterValues[k]) {
-							
-							validHistoryClusters[j] = true;
-							break;
-							
-						}
-						
-					}
-					
-				}
-				
-			}
+			if (doesJitter && didJitter)
+				reject = false;
 			
 		}
 		
 		vec4 result; // .a is age
 		
-		uint resultType;
-		
 		// All clusters valid? Sample the history
 		
-		if (validHistoryClusters[0] &&
-		    validHistoryClusters[1] &&
-		    validHistoryClusters[2] &&
-		    validHistoryClusters[3] &&
-		   (doesJitter == didJitter)) {
+		if (reject) {
 			
-			resultType = 0;
+			result = vec4(currentSample, 1.0);
+			
+		} else {
 			
 			vec4 historySample = sampleHistory(historyLocation);
 			uint historySampleAge = uint(historySample.a);
@@ -184,76 +146,7 @@ void main() {
 			uint newAge = min(historySampleAge + 1, CONVERGE_FRAMES - 1);
 			result = vec4(mix(historySample.rgb, currentSample, blendRatio), float(newAge));
 			
-		// No clusters valid? Use current sample only, reset age
-			
-		} else if (!validHistoryClusters[0] &&
-		           !validHistoryClusters[1] &&
-		           !validHistoryClusters[2] &&
-		           !validHistoryClusters[3]) {
-			
-			resultType = 1;
-			
-			result = vec4(currentSample, 1.0);
-			
-		// Some clusters valid? Create a history pixel from valid history clusters
-			
-		} else {
-			
-			resultType = 2;
-			
-			// Normalize weights of valid history clusters
-			
-			float validHistoryWeightSum = 0.0;
-			vec4 historyWeights = vec4(0.0);
-			for (uint j = 0; j < 4; j += 1) {
-				
-				if (validHistoryClusters[j]) {
-					
-					historyWeights[j] = float(bitCount(historySubsamples[j])) * WeightStep;
-					validHistoryWeightSum += historyWeights[j];
-					
-				}
-				
-			}
-			
-			for (uint j = 0; j < 4; j += 1)
-				historyWeights[j] /= validHistoryWeightSum;
-			
-			// Fetch history cluster results
-			
-			mat4x3 historyOuts;
-			for (uint j = 0; j < 4; j += 1)
-				historyOuts[j] = texelFetch(s_clusterOutPrev, ivec2(historyQuad + QuadPixelOffsets[j]), 0).rgb;
-			
-			// Create a history pixel from new weights
-			
-			vec3 historySample = vec3(0.0);
-			for (uint j = 0; j < 4; j += 1)
-				historySample += tonemapWithWeight(historyOuts[j], historyWeights[j]);
-			historySample = tonemapInvert(historySample);
-			
-			// Blend history pixel with current
-			
-			const float blendRatio = (1.0 / float(CONVERGE_FRAMES)) * (CONVERGE_FRAMES - 1);
-			result = vec4(mix(historySample.rgb, currentSample, blendRatio), 2.0);
-			
 		}
-		
-#if TAA_DEBUG
-		switch (resultType) {
-			
-			case 0:
-			result.rgb = vec3(0.389, 0.625, 0.774);
-			break;
-			case 1:
-			result.rgb = vec3(0.900, 0.145, 0.160);
-			break;
-			case 2:
-			result.rgb = vec3(0.010, 0.190, 0.465);
-			break;
-			
-		}
-#endif //TAA_DEBUG
 		
 		// Dither and write out
 		
