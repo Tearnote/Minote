@@ -37,34 +37,7 @@ void Visibility::compile(vuk::PerThreadContext& _ptc) {
 	
 }
 
-void Visibility::apply(Frame& _frame, Texture2D _visbuf, Texture2D _depth,
-	DrawableInstanceList _instances) {
-	
-	_frame.rg.add_pass({
-		.name = nameAppend(_visbuf.name, "visibility"),
-		.resources = {
-			_instances.commands.resource(vuk::eIndirectRead),
-			_instances.instances.resource(vuk::eVertexRead),
-			_instances.transforms.resource(vuk::eVertexRead),
-			_visbuf.resource(vuk::eColorWrite),
-			_depth.resource(vuk::eDepthStencilRW) },
-		.execute = [_visbuf, _instances, &_frame](vuk::CommandBuffer& cmd) {
-			
-			cmdSetViewportScissor(cmd, _visbuf.size());
-			cmd.bind_index_buffer(_frame.models.indices, vuk::IndexType::eUint32)
-			   .bind_uniform_buffer(0, 0, _frame.world)
-			   .bind_storage_buffer(0, 1, _frame.models.vertices)
-			   .bind_storage_buffer(0, 2, _instances.instances)
-			   .bind_storage_buffer(0, 3, _instances.transforms)
-			   .bind_graphics_pipeline("visibility");
-			
-			cmd.draw_indexed_indirect(_instances.commands.length(), _instances.commands);
-			
-		}});
-	
-}
-
-void Visibility::applyMS(Frame& _frame, Texture2DMS _visbuf, Texture2DMS _depth,
+void Visibility::apply(Frame& _frame, Texture2DMS _visbuf, Texture2DMS _depth,
 	DrawableInstanceList _instances) {
 	
 	_frame.rg.add_pass({

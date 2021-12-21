@@ -22,9 +22,7 @@ struct Visibility {
 	// Build the shader.
 	static void compile(vuk::PerThreadContext&);
 	
-	static void apply(Frame&, Texture2D visbuf, Texture2D depth, DrawableInstanceList);
-	
-	static void applyMS(Frame&, Texture2DMS visbuf, Texture2DMS depth, DrawableInstanceList);
+	static void apply(Frame&, Texture2DMS visbuf, Texture2DMS depth, DrawableInstanceList);
 	
 };
 

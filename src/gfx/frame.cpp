@@ -91,7 +91,7 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, bool _flush) {
 	Sky::draw(*this, iblUnfiltered, IblProbePosition, cubeSky, atmosphere);
 	CubeFilter::apply(*this, iblUnfiltered, iblFiltered);
 	
-	Visibility::applyMS(*this, visbuf, depth, culledDrawables);
+	Visibility::apply(*this, visbuf, depth, culledDrawables);
 	QuadBuffer::clusterize(*this, quadbuf, visbuf);
 	QuadBuffer::genBuffers(*this, quadbuf, culledDrawables);
 	auto worklistMS = Worklist::create(swapchainPool, *this, "worklist_ms", quadbuf.visbuf, culledDrawables);
