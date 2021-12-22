@@ -11,12 +11,13 @@ struct World {
 	mat4 viewProjectionInverse;
 	mat4 prevViewProjection;
 	uvec2 viewportSize;
-	vec2 pad0;
+	float nearPlane;
+	float pad0;
 	vec3 cameraPos;
 	uint frameCounter;
 	
 	vec3 sunDirection;
-	float pad2;
+	float pad1;
 	vec3 sunIlluminance;
 };
 

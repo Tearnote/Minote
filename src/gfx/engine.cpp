@@ -130,6 +130,7 @@ void Engine::render() {
 	m_world.viewProjection = m_world.projection * m_world.view;
 	m_world.viewProjectionInverse = inverse(m_world.viewProjection);
 	m_world.viewportSize = viewport;
+	m_world.nearPlane = NearPlane;
 	m_world.cameraPos = m_camera.position;
 	m_world.frameCounter = m_vk.context->frame_counter.load();
 	

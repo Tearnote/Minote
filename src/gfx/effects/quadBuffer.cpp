@@ -37,61 +37,19 @@ auto QuadBuffer::create(Pool& _pool, Frame& _frame,
 	
 	auto oddFrame = _pool.ptc().ctx.frame_counter.load() % 2;
 	
-	auto subsampless = to_array({
-		Texture2D::make(_pool, nameAppend(_name, "subsamples0"),
-			_size, vuk::Format::eR32Uint,
-			vuk::ImageUsageFlagBits::eStorage |
-			vuk::ImageUsageFlagBits::eSampled |
-		vuk::ImageUsageFlagBits::eTransferDst),
-		Texture2D::make(_pool, nameAppend(_name, "subsamples1"),
-			_size, vuk::Format::eR32Uint,
-			vuk::ImageUsageFlagBits::eStorage |
-			vuk::ImageUsageFlagBits::eSampled |
-		vuk::ImageUsageFlagBits::eTransferDst) });
-	result.subsamples = subsampless[oddFrame];
-	result.subsamplesPrev = subsampless[!oddFrame];
-	
-	auto hashes = to_array({
-		Texture2D::make(_pool, nameAppend(_name, "hash0"),
-			_size, vuk::Format::eR16Uint,
+	auto quadDepths = to_array({
+		Texture2D::make(_pool, nameAppend(_name, "quadDepth0"),
+			divRoundUp(_size, 2u), vuk::Format::eR16Sfloat,
 			vuk::ImageUsageFlagBits::eStorage |
 			vuk::ImageUsageFlagBits::eSampled |
 			vuk::ImageUsageFlagBits::eTransferDst),
-		Texture2D::make(_pool, nameAppend(_name, "hash1"),
-			_size, vuk::Format::eR16Uint,
+		Texture2D::make(_pool, nameAppend(_name, "quadDepth1"),
+			divRoundUp(_size, 2u), vuk::Format::eR16Sfloat,
 			vuk::ImageUsageFlagBits::eStorage |
 			vuk::ImageUsageFlagBits::eSampled |
 			vuk::ImageUsageFlagBits::eTransferDst) });
-	result.hash = hashes[oddFrame];
-	result.hashPrev = hashes[!oddFrame];
-	
-	auto jitterMaps = to_array({
-		Texture2D::make(_pool, nameAppend(_name, "jitterMap0"),
-			divRoundUp(_size, 8u), vuk::Format::eR16Uint,
-			vuk::ImageUsageFlagBits::eStorage |
-			vuk::ImageUsageFlagBits::eSampled |
-			vuk::ImageUsageFlagBits::eTransferDst),
-		Texture2D::make(_pool, nameAppend(_name, "jitterMap1"),
-			divRoundUp(_size, 8u), vuk::Format::eR16Uint,
-			vuk::ImageUsageFlagBits::eStorage |
-			vuk::ImageUsageFlagBits::eSampled |
-			vuk::ImageUsageFlagBits::eTransferDst) });
-	result.jitterMap = jitterMaps[oddFrame];
-	result.jitterMapPrev = jitterMaps[!oddFrame];
-	
-	auto clusterOuts = to_array({
-		Texture2D::make(_pool, nameAppend(_name, "clusterOut0"),
-			_size, vuk::Format::eR16G16B16A16Sfloat,
-			vuk::ImageUsageFlagBits::eStorage |
-			vuk::ImageUsageFlagBits::eSampled |
-			vuk::ImageUsageFlagBits::eTransferDst),
-		Texture2D::make(_pool, nameAppend(_name, "clusterOut1"),
-			_size, vuk::Format::eR16G16B16A16Sfloat,
-			vuk::ImageUsageFlagBits::eStorage |
-			vuk::ImageUsageFlagBits::eSampled |
-			vuk::ImageUsageFlagBits::eTransferDst) });
-	result.clusterOut = clusterOuts[oddFrame];
-	result.clusterOutPrev = clusterOuts[!oddFrame];
+	result.quadDepth = quadDepths[oddFrame];
+	result.quadDepthPrev = quadDepths[!oddFrame];
 	
 	auto outputs = to_array({
 		Texture2D::make(_pool, nameAppend(_name, "output0"),
@@ -114,6 +72,11 @@ auto QuadBuffer::create(Pool& _pool, Frame& _frame,
 		vuk::ImageUsageFlagBits::eStorage |
 		vuk::ImageUsageFlagBits::eSampled);
 	
+	result.subsamples = Texture2D::make(_pool, nameAppend(_name, "subsamples"),
+		_size, vuk::Format::eR32Uint,
+		vuk::ImageUsageFlagBits::eStorage |
+		vuk::ImageUsageFlagBits::eSampled);
+	
 	result.offset = Texture2D::make(_pool, nameAppend(_name, "offset"),
 		_size, vuk::Format::eR8G8Unorm,
 		vuk::ImageUsageFlagBits::eStorage |
@@ -124,8 +87,18 @@ auto QuadBuffer::create(Pool& _pool, Frame& _frame,
 		vuk::ImageUsageFlagBits::eStorage |
 		vuk::ImageUsageFlagBits::eSampled);
 	
-	result.velocity = Texture2D::make(_pool, nameAppend(_name, "velocity"),
-		_size, vuk::Format::eR16G16Sfloat,
+	result.jitterMap = Texture2D::make(_pool, nameAppend(_name, "jitterMap"),
+		divRoundUp(_size, 8u), vuk::Format::eR16Uint,
+		vuk::ImageUsageFlagBits::eStorage |
+		vuk::ImageUsageFlagBits::eSampled);
+	
+	result.quadDepthRepro = Texture2D::make(_pool, nameAppend(_name, "quadDepthRepro"),
+		divRoundUp(_size, 2u), vuk::Format::eR16Sfloat,
+		vuk::ImageUsageFlagBits::eStorage |
+		vuk::ImageUsageFlagBits::eSampled);
+	
+	result.clusterOut = Texture2D::make(_pool, nameAppend(_name, "clusterOut"),
+		_size, vuk::Format::eR16G16B16A16Sfloat,
 		vuk::ImageUsageFlagBits::eStorage |
 		vuk::ImageUsageFlagBits::eSampled);
 	
@@ -134,41 +107,39 @@ auto QuadBuffer::create(Pool& _pool, Frame& _frame,
 		vuk::ImageUsageFlagBits::eStorage |
 		vuk::ImageUsageFlagBits::eSampled);
 	
-	result.hash.attach(_frame.rg, vuk::eNone, vuk::eComputeRead);
-	result.subsamples.attach(_frame.rg, vuk::eNone, vuk::eComputeRead);
-	result.jitterMap.attach(_frame.rg, vuk::eNone, vuk::eComputeRead);
-	result.clusterOut.attach(_frame.rg, vuk::eNone, vuk::eComputeRead);
+	result.velocity = Texture2D::make(_pool, nameAppend(_name, "velocity"),
+		_size, vuk::Format::eR16G16Sfloat,
+		vuk::ImageUsageFlagBits::eStorage |
+		vuk::ImageUsageFlagBits::eSampled);
+	
+	result.quadDepth.attach(_frame.rg, vuk::eNone, vuk::eComputeRead);
 	result.output.attach(_frame.rg, vuk::eNone, vuk::eTransferSrc);
 	if (_flushTemporal) {
 		
-		result.hashPrev.attach(_frame.rg, vuk::eNone, vuk::eNone);
-		result.subsamplesPrev.attach(_frame.rg, vuk::eNone, vuk::eNone);
-		result.jitterMapPrev.attach(_frame.rg, vuk::eNone, vuk::eNone);
-		result.clusterOutPrev.attach(_frame.rg, vuk::eNone, vuk::eNone);
+		result.quadDepthPrev.attach(_frame.rg, vuk::eNone, vuk::eNone);
 		result.outputPrev.attach(_frame.rg, vuk::eNone, vuk::eNone);
 		
 	} else {
 		
-		result.hashPrev.attach(_frame.rg, vuk::eComputeRead, vuk::eNone);
-		result.subsamplesPrev.attach(_frame.rg, vuk::eComputeRead, vuk::eNone);
-		result.jitterMapPrev.attach(_frame.rg, vuk::eComputeRead, vuk::eNone);
-		result.clusterOutPrev.attach(_frame.rg, vuk::eComputeRead, vuk::eNone);
+		result.quadDepthPrev.attach(_frame.rg, vuk::eComputeRead, vuk::eNone);
 		result.outputPrev.attach(_frame.rg, vuk::eTransferSrc, vuk::eNone);
 		
 	}
 	
 	result.visbuf.attach(_frame.rg, vuk::eNone, vuk::eNone);
+	result.subsamples.attach(_frame.rg, vuk::eNone, vuk::eNone);
 	result.offset.attach(_frame.rg, vuk::eNone, vuk::eNone);
 	result.depth.attach(_frame.rg, vuk::eNone, vuk::eNone);
-	result.velocity.attach(_frame.rg, vuk::eNone, vuk::eNone);
+	result.jitterMap.attach(_frame.rg, vuk::eNone, vuk::eNone);
+	result.quadDepthRepro.attach(_frame.rg, vuk::eNone, vuk::eNone);
+	result.clusterOut.attach(_frame.rg, vuk::eNone, vuk::eNone);
 	result.normal.attach(_frame.rg, vuk::eNone, vuk::eNone);
+	result.velocity.attach(_frame.rg, vuk::eNone, vuk::eNone);
 	
 	Clear::apply(_frame, result.jitterMap, vuk::ClearColor(0u, 0u, 0u, 0u));
 	if (_flushTemporal) {
 		
-		Clear::apply(_frame, result.hashPrev, vuk::ClearColor(0u, 0u, 0u, 0u));
-		Clear::apply(_frame, result.subsamplesPrev, vuk::ClearColor(0u, 0u, 0u, 0u));
-		Clear::apply(_frame, result.clusterOutPrev, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
+		Clear::apply(_frame, result.quadDepthPrev, vuk::ClearColor(1.0f, 1.0f, 1.0f, 1.0f));
 		Clear::apply(_frame, result.outputPrev, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 		
 	}
@@ -212,9 +183,10 @@ void QuadBuffer::genBuffers(Frame& _frame, QuadBuffer& _quadbuf, DrawableInstanc
 			_instances.transforms.resource(vuk::eComputeRead),
 			_quadbuf.visbuf.resource(vuk::eComputeSampled),
 			_quadbuf.subsamples.resource(vuk::eComputeSampled),
-			_quadbuf.hash.resource(vuk::eComputeWrite),
 			_quadbuf.offset.resource(vuk::eComputeWrite),
 			_quadbuf.depth.resource(vuk::eComputeWrite),
+			_quadbuf.quadDepth.resource(vuk::eComputeWrite),
+			_quadbuf.quadDepthRepro.resource(vuk::eComputeWrite),
 			_quadbuf.normal.resource(vuk::eComputeWrite),
 			_quadbuf.velocity.resource(vuk::eComputeWrite) },
 		.execute = [_quadbuf, &_frame, _instances](vuk::CommandBuffer& cmd) {
@@ -228,16 +200,17 @@ void QuadBuffer::genBuffers(Frame& _frame, QuadBuffer& _quadbuf, DrawableInstanc
 			   .bind_storage_buffer(0, 6, _frame.models.normals)
 			   .bind_sampled_image(0, 7, _quadbuf.visbuf, NearestClamp)
 			   .bind_sampled_image(0, 8, _quadbuf.subsamples, NearestClamp)
-			   .bind_storage_image(0, 9, _quadbuf.hash)
-			   .bind_storage_image(0, 10, _quadbuf.offset)
-			   .bind_storage_image(0, 11, _quadbuf.depth)
-			   .bind_storage_image(0, 12, _quadbuf.normal)
-			   .bind_storage_image(0, 13, _quadbuf.velocity)
+			   .bind_storage_image(0, 9, _quadbuf.offset)
+			   .bind_storage_image(0, 10, _quadbuf.depth)
+			   .bind_storage_image(0, 11, _quadbuf.quadDepth)
+			   .bind_storage_image(0, 12, _quadbuf.quadDepthRepro)
+			   .bind_storage_image(0, 13, _quadbuf.normal)
+			   .bind_storage_image(0, 14, _quadbuf.velocity)
 			   .bind_compute_pipeline("quadGenBuffers");
 			
 			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_quadbuf.visbuf.size()));
 			
-			cmd.dispatch_invocations(_quadbuf.visbuf.size().x(), _quadbuf.visbuf.size().y());
+			cmd.dispatch_invocations(divRoundUp(_quadbuf.visbuf.size().x(), 8u), divRoundUp(_quadbuf.visbuf.size().y(), 8u));
 			
 		}});
 	
@@ -248,31 +221,25 @@ void QuadBuffer::resolve(Frame& _frame, QuadBuffer& _quadbuf, Texture2D _output)
 	_frame.rg.add_pass({
 		.name = nameAppend(_quadbuf.name, "resolve"),
 		.resources = {
-			_quadbuf.hash.resource(vuk::eComputeSampled),
 			_quadbuf.subsamples.resource(vuk::eComputeSampled),
 			_quadbuf.jitterMap.resource(vuk::eComputeSampled),
 			_quadbuf.clusterOut.resource(vuk::eComputeSampled),
 			_quadbuf.outputPrev.resource(vuk::eComputeSampled),
-			_quadbuf.hashPrev.resource(vuk::eComputeSampled),
-			_quadbuf.subsamplesPrev.resource(vuk::eComputeSampled),
-			_quadbuf.clusterOutPrev.resource(vuk::eComputeSampled),
-			_quadbuf.jitterMapPrev.resource(vuk::eComputeSampled),
 			_quadbuf.velocity.resource(vuk::eComputeSampled),
+			_quadbuf.quadDepthRepro.resource(vuk::eComputeSampled),
+			_quadbuf.quadDepthPrev.resource(vuk::eComputeSampled),
 			_quadbuf.output.resource(vuk::eComputeWrite) },
 		.execute = [_quadbuf, &_frame](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _frame.world)
-			   .bind_sampled_image(0, 1, _quadbuf.hash, NearestClamp)
-			   .bind_sampled_image(0, 2, _quadbuf.subsamples, NearestClamp)
-			   .bind_sampled_image(0, 3, _quadbuf.jitterMap, NearestClamp)
-			   .bind_sampled_image(0, 4, _quadbuf.clusterOut, NearestClamp)
-			   .bind_sampled_image(0, 5, _quadbuf.outputPrev, LinearClamp)
-			   .bind_sampled_image(0, 6, _quadbuf.hashPrev, NearestClamp)
-			   .bind_sampled_image(0, 7, _quadbuf.subsamplesPrev, NearestClamp)
-			   .bind_sampled_image(0, 8, _quadbuf.clusterOutPrev, NearestClamp)
-			   .bind_sampled_image(0, 9, _quadbuf.jitterMapPrev, NearestClamp)
-			   .bind_sampled_image(0, 10, _quadbuf.velocity, LinearClamp)
-			   .bind_storage_image(0, 11, _quadbuf.output)
+			   .bind_sampled_image(0, 1, _quadbuf.subsamples, NearestClamp)
+			   .bind_sampled_image(0, 2, _quadbuf.jitterMap, NearestClamp)
+			   .bind_sampled_image(0, 3, _quadbuf.clusterOut, NearestClamp)
+			   .bind_sampled_image(0, 4, _quadbuf.outputPrev, LinearClamp)
+			   .bind_sampled_image(0, 5, _quadbuf.velocity, LinearClamp)
+			   .bind_sampled_image(0, 6, _quadbuf.quadDepthRepro, LinearClamp)
+			   .bind_sampled_image(0, 7, _quadbuf.quadDepthPrev, LinearClamp)
+			   .bind_storage_image(0, 8, _quadbuf.output)
 			   .specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_quadbuf.output.size()))
 			   .bind_compute_pipeline("quadResolve");
 			

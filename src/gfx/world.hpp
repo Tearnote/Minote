@@ -20,12 +20,13 @@ struct World {
 	mat4 viewProjectionInverse;
 	mat4 prevViewProjection;
 	uvec2 viewportSize;
-	vec2 pad0;
+	f32 nearPlane;
+	f32 pad0;
 	vec3 cameraPos;
 	u32 frameCounter;
 	
 	vec3 sunDirection;
-	f32 pad2;
+	f32 pad1;
 	vec3 sunIlluminance;
 	
 	// Upload the world data to the GPU, to be used as a uniform.

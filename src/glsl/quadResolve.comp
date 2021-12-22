@@ -10,22 +10,19 @@ layout(local_size_x = 8, local_size_y = 8) in;
 layout(binding = 0) uniform WorldConstants {
 	World u_world;
 };
-layout(binding = 1) uniform usampler2D s_hash;
-layout(binding = 2) uniform usampler2D s_subsamples;
-layout(binding = 3) uniform usampler2D s_jitterMap;
-layout(binding = 4) uniform sampler2D s_clusterOut;
-layout(binding = 5) uniform sampler2D s_outputPrev;
-layout(binding = 6) uniform usampler2D s_hashPrev;
-layout(binding = 7) uniform usampler2D s_subsamplesPrev;
-layout(binding = 8) uniform sampler2D s_clusterOutPrev;
-layout(binding = 9) uniform usampler2D s_jitterMapPrev;
-layout(binding = 10) uniform sampler2D s_velocity;
-layout(binding = 11) restrict writeonly uniform image2D i_output;
+layout(binding = 1) uniform usampler2D s_subsamples;
+layout(binding = 2) uniform usampler2D s_jitterMap;
+layout(binding = 3) uniform sampler2D s_clusterOut;
+layout(binding = 4) uniform sampler2D s_outputPrev;
+layout(binding = 5) uniform sampler2D s_velocity;
+layout(binding = 6) uniform sampler2D s_quadDepthRepro;
+layout(binding = 7) uniform sampler2D s_quadDepthPrev;
+layout(binding = 8) restrict writeonly uniform image2D i_output;
 
 layout(constant_id = 0) const uint u_sourceSizePacked = 0;
 const uvec2 u_sourceSize = U16FROMU32(u_sourceSizePacked);
 
-#define CONVERGE_FRAMES 15
+#define CONVERGE_FRAMES 16
 
 bool isQuadJittered(usampler2D _map, uvec2 _gid) {
 	
@@ -74,14 +71,12 @@ void main() {
 	
 	// Read quad and cluster output samples
 	
-	uvec4 clusterValues;
 	uvec4 clusterSubsamples;
 	mat4x3 clusterOuts;
 	mat4x2 clusterVelocities;
 	for (uint i = 0; i < 4; i += 1) {
 		
 		uvec2 pos = gid + uvec2(QuadPixelOffsets[i]);
-		clusterValues[i] = texelFetch(s_hash, ivec2(pos), 0).x;
 		clusterSubsamples[i] = texelFetch(s_subsamples, ivec2(pos), 0).x;
 		clusterOuts[i] = texelFetch(s_clusterOut, ivec2(pos), 0).rgb;
 		clusterVelocities[i] = texelFetch(s_velocity, ivec2(pos), 0).xy;
@@ -123,9 +118,13 @@ void main() {
 			// Current jitter test
 			
 			bool doesJitter = isQuadJittered(s_jitterMap, uvec2(currentLocation));
-			bool didJitter = isQuadJittered(s_jitterMapPrev, uvec2(historyLocation));
 			
-			if (doesJitter && didJitter)
+			float depthRepro = u_world.nearPlane / texelFetch(s_quadDepthRepro, ivec2(historyLocation) / 2, 0).x;
+			float depthPrev = u_world.nearPlane / texelFetch(s_quadDepthPrev, ivec2(historyLocation) / 2, 0).x;
+			float depthAbsError = abs(depthRepro - depthPrev);
+			bool depthPass = depthAbsError < 0.001;
+			
+			if (doesJitter && (depthPass || all(equal(clusterVelocities[i], vec2(0.0)))))
 				reject = false;
 			
 		}
@@ -134,19 +133,13 @@ void main() {
 		
 		// All clusters valid? Sample the history
 		
-		if (reject) {
-			
-			result = vec4(currentSample, 1.0);
-			
-		} else {
-			
-			vec4 historySample = sampleHistory(historyLocation);
-			uint historySampleAge = uint(historySample.a);
-			float blendRatio = (1.0 / float(CONVERGE_FRAMES)) * (CONVERGE_FRAMES - min(historySampleAge, CONVERGE_FRAMES - 1));
-			uint newAge = min(historySampleAge + 1, CONVERGE_FRAMES - 1);
-			result = vec4(mix(historySample.rgb, currentSample, blendRatio), float(newAge));
-			
-		}
+		vec4 historySample = sampleHistory(historyLocation);
+		uint historySampleAge = uint(historySample.a);
+		if (reject)
+			historySampleAge /= 4;
+		float blendRatio = (1.0 / float(CONVERGE_FRAMES)) * (CONVERGE_FRAMES - min(historySampleAge, CONVERGE_FRAMES - 1));
+		uint newAge = min(historySampleAge + 1, CONVERGE_FRAMES - 1);
+		result = vec4(mix(historySample.rgb, currentSample, blendRatio), float(newAge));
 		
 		// Dither and write out
 		

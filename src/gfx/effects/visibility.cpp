@@ -24,24 +24,13 @@ void Visibility::compile(vuk::PerThreadContext& _ptc) {
 	visibilityPci.depth_stencil_state.depthCompareOp = vuk::CompareOp::eGreater;
 	_ptc.ctx.create_named_pipeline("visibility", visibilityPci);
 	
-	auto visibilityMSPci = vuk::PipelineBaseCreateInfo();
-	visibilityMSPci.add_spirv(std::vector<u32>{
-#include "spv/visibility.vert.spv"
-	}, "visibility.vert");
-	visibilityMSPci.add_spirv(std::vector<u32>{
-#include "spv/visibility.frag.spv"
-	}, "visibility.frag");
-	visibilityMSPci.rasterization_state.cullMode = vuk::CullModeFlagBits::eBack;
-	visibilityMSPci.depth_stencil_state.depthCompareOp = vuk::CompareOp::eGreater;
-	_ptc.ctx.create_named_pipeline("visibility_ms", visibilityMSPci);
-	
 }
 
 void Visibility::apply(Frame& _frame, Texture2DMS _visbuf, Texture2DMS _depth,
 	DrawableInstanceList _instances) {
 	
 	_frame.rg.add_pass({
-		.name = nameAppend(_visbuf.name, "visibility_ms"),
+		.name = nameAppend(_visbuf.name, "visibility"),
 		.resources = {
 			_instances.commands.resource(vuk::eIndirectRead),
 			_instances.instances.resource(vuk::eVertexRead),
@@ -56,7 +45,7 @@ void Visibility::apply(Frame& _frame, Texture2DMS _visbuf, Texture2DMS _depth,
 			   .bind_storage_buffer(0, 1, _frame.models.vertices)
 			   .bind_storage_buffer(0, 2, _instances.instances)
 			   .bind_storage_buffer(0, 3, _instances.transforms)
-			   .bind_graphics_pipeline("visibility_ms");
+			   .bind_graphics_pipeline("visibility");
 			
 			cmd.draw_indexed_indirect(_instances.commands.length(), _instances.commands);
 			
