@@ -37,12 +37,19 @@ void main() {
 	// Read vis samples
 	
 	uint visSamples[QUAD_SAMPLE_COUNT];
-	for (uint i = 0; i < QUAD_SAMPLE_COUNT; i += 1)
-		visSamples[i] = texelFetch(s_visbuf, ivec2(gid + QuadPixelOffsets[i / SUBSAMPLE_COUNT]), int(i % SUBSAMPLE_COUNT)).x;
+	for (uint i = 0; i < QUAD_SAMPLE_COUNT; i += 1) {
+		
+		uvec2 pos = gid + uvec2(QuadPixelOffsets[i / SUBSAMPLE_COUNT]);
+		if (any(greaterThanEqual(pos, textureSize(s_visbuf))))
+			visSamples[i] = -2u;
+		else
+			visSamples[i] = texelFetch(s_visbuf, ivec2(pos), int(i % SUBSAMPLE_COUNT)).x;
+		
+	}
 	
 	// Count unique samples and their frequency
 	
-	uint clusterValues[4] =  {-2u, -2u, -2u, -2u};
+	uint clusterValues[4] = {-2u, -2u, -2u, -2u};
 	uint clusterValueFreqs[4] = {0u, 0u, 0u, 0u};
 	uint uniqueValues = 0;
 	for (uint i = 0; i < QUAD_SAMPLE_COUNT; i += 1) {
