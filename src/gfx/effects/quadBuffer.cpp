@@ -90,7 +90,8 @@ auto QuadBuffer::create(Pool& _pool, Frame& _frame,
 	result.jitterMap = Texture2D::make(_pool, nameAppend(_name, "jitterMap"),
 		divRoundUp(_size, 8u), vuk::Format::eR16Uint,
 		vuk::ImageUsageFlagBits::eStorage |
-		vuk::ImageUsageFlagBits::eSampled);
+		vuk::ImageUsageFlagBits::eSampled |
+		vuk::ImageUsageFlagBits::eTransferDst);
 	
 	result.quadDepthRepro = Texture2D::make(_pool, nameAppend(_name, "quadDepthRepro"),
 		divRoundUp(_size, 2u), vuk::Format::eR16Sfloat,

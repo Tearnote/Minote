@@ -123,8 +123,9 @@ void main() {
 			float depthPrev = u_world.nearPlane / texelFetch(s_quadDepthPrev, ivec2(historyLocation) / 2, 0).x;
 			float depthAbsError = abs(depthRepro - depthPrev);
 			bool depthPass = depthAbsError < 0.001;
+			bool movementPass = all(lessThan(abs(clusterVelocities[i]), vec2(0.1)));
 			
-			if (doesJitter && (depthPass || all(equal(clusterVelocities[i], vec2(0.0)))))
+			if (doesJitter && (depthPass || movementPass))
 				reject = false;
 			
 		}
