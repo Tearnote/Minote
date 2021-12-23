@@ -23,7 +23,7 @@
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
-#include "util.glsl"
+#include "../util.glsl"
 
 layout(binding = 0) uniform samplerCube s_source;
 layout(binding = 1) restrict writeonly uniform image2DArray i_target;

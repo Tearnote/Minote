@@ -4,7 +4,7 @@
 
 layout(local_size_x = 1024) in;
 
-#include "types.glsl"
+#include "../types.glsl"
 
 shared uint sh_subgroupScans[gl_WorkGroupSize.x / 8];
 

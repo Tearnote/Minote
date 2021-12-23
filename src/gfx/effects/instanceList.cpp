@@ -93,9 +93,9 @@ void InstanceList::compile(vuk::PerThreadContext& _ptc) {
 	
 	auto transformConvPci = vuk::ComputePipelineBaseCreateInfo();
 	transformConvPci.add_spirv(std::vector<u32>{
-#include "spv/transformConv.comp.spv"
-	}, "transformConv.comp");
-	_ptc.ctx.create_named_pipeline("transform_conv", transformConvPci);
+#include "spv/instanceList/transformConv.comp.spv"
+	}, "instanceList/transformConv.comp");
+	_ptc.ctx.create_named_pipeline("instanceList/transformConv", transformConvPci);
 	
 }
 
@@ -109,7 +109,7 @@ auto InstanceList::fromBasic(Pool& _pool, Frame& _frame, vuk::Name _name,
 	transforms.attach(_frame.rg, vuk::eNone, vuk::eNone);
 	
 	_frame.rg.add_pass({
-		.name = nameAppend(_basic.basicTransforms.name, "conversion"),
+		.name = nameAppend(_basic.basicTransforms.name, "instanceList/transformConv"),
 		.resources = {
 			_basic.instancesCount.resource(vuk::eIndirectRead),
 			_basic.basicTransforms.resource(vuk::eComputeRead),
@@ -121,7 +121,7 @@ auto InstanceList::fromBasic(Pool& _pool, Frame& _frame, vuk::Name _name,
 			   .bind_storage_buffer(0, 2, transforms)
 			   .bind_storage_buffer(0, 3, _basic.instances)
 			   .bind_storage_buffer(0, 4, _frame.models.meshes)
-			   .bind_compute_pipeline("transform_conv");
+			   .bind_compute_pipeline("instanceList/transformConv");
 			
 			cmd.dispatch_indirect(_basic.instancesCount);
 			
@@ -139,39 +139,39 @@ void DrawableInstanceList::compile(vuk::PerThreadContext& _ptc) {
 	
 	auto instanceSortCountPci = vuk::ComputePipelineBaseCreateInfo();
 	instanceSortCountPci.add_spirv(std::vector<u32>{
-#include "spv/instanceSortCount.comp.spv"
-	}, "instanceSortCount.comp");
-	_ptc.ctx.create_named_pipeline("instance_sort_count", instanceSortCountPci);
+#include "spv/instanceList/sortCount.comp.spv"
+	}, "instanceList/sortCount.comp");
+	_ptc.ctx.create_named_pipeline("instanceList/sortCount", instanceSortCountPci);
 	
 	auto instanceSortScan1Pci = vuk::ComputePipelineBaseCreateInfo();
 	instanceSortScan1Pci.add_spirv(std::vector<u32>{
-#include "spv/instanceSortScan1.comp.spv"
-	}, "instanceSortScan1.comp");
-	_ptc.ctx.create_named_pipeline("instance_sort_scan1", instanceSortScan1Pci);
+#include "spv/instanceList/sortScan1.comp.spv"
+	}, "instanceList/sortScan1.comp");
+	_ptc.ctx.create_named_pipeline("instanceList/sortScan1", instanceSortScan1Pci);
 	
 	auto instanceSortScan2Pci = vuk::ComputePipelineBaseCreateInfo();
 	instanceSortScan2Pci.add_spirv(std::vector<u32>{
-#include "spv/instanceSortScan2.comp.spv"
-	}, "instanceSortScan2.comp");
-	_ptc.ctx.create_named_pipeline("instance_sort_scan2", instanceSortScan2Pci);
+#include "spv/instanceList/sortScan2.comp.spv"
+	}, "instanceList/sortScan2.comp");
+	_ptc.ctx.create_named_pipeline("instanceList/sortScan2", instanceSortScan2Pci);
 	
 	auto instanceSortScan3Pci = vuk::ComputePipelineBaseCreateInfo();
 	instanceSortScan3Pci.add_spirv(std::vector<u32>{
-#include "spv/instanceSortScan3.comp.spv"
-	}, "instanceSortScan3.comp");
-	_ptc.ctx.create_named_pipeline("instance_sort_scan3", instanceSortScan3Pci);
+#include "spv/instanceList/sortScan3.comp.spv"
+	}, "instanceList/sortScan3.comp");
+	_ptc.ctx.create_named_pipeline("instanceList/sortScan3", instanceSortScan3Pci);
 	
 	auto instanceSortWritePci = vuk::ComputePipelineBaseCreateInfo();
 	instanceSortWritePci.add_spirv(std::vector<u32>{
-#include "spv/instanceSortWrite.comp.spv"
-	}, "instanceSortWrite.comp");
-	_ptc.ctx.create_named_pipeline("instance_sort_write", instanceSortWritePci);
+#include "spv/instanceList/sortWrite.comp.spv"
+	}, "instanceList/sortWrite.comp");
+	_ptc.ctx.create_named_pipeline("instanceList/sortWrite", instanceSortWritePci);
 	
 	auto frustumCullPci = vuk::ComputePipelineBaseCreateInfo();
 	frustumCullPci.add_spirv(std::vector<u32>{
-#include "spv/frustumCull.comp.spv"
-	}, "frustumCull.comp");
-	_ptc.ctx.create_named_pipeline("frustum_cull", frustumCullPci);
+#include "spv/instanceList/frustumCull.comp.spv"
+	}, "instanceList/frustumCull.comp");
+	_ptc.ctx.create_named_pipeline("instanceList/frustumCull", frustumCullPci);
 	
 }
 
@@ -206,7 +206,7 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, Frame& _frame, vuk::Name _n
 	// Step 1: Count how many instances there are of each mesh
 	
 	rg.add_pass({
-		.name = nameAppend(_name, "sort count"),
+		.name = nameAppend(_name, "instanceList/sortCount"),
 		.resources = {
 			_unsorted.instancesCount.resource(vuk::eIndirectRead),
 			_unsorted.instances.resource(vuk::eComputeRead),
@@ -216,7 +216,7 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, Frame& _frame, vuk::Name _n
 			cmd.bind_uniform_buffer(0, 0, _unsorted.instancesCount)
 			   .bind_storage_buffer(0, 1, _unsorted.instances)
 			   .bind_storage_buffer(0, 2, result.commands)
-			   .bind_compute_pipeline("instance_sort_count");
+			   .bind_compute_pipeline("instanceList/sortCount");
 			
 			cmd.dispatch_indirect(_unsorted.instancesCount);
 			
@@ -232,7 +232,7 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, Frame& _frame, vuk::Name _n
 	scanTemp.attach(rg, vuk::eNone, vuk::eNone);
 	
 	rg.add_pass({
-		.name = nameAppend(_name, "sort scan1"),
+		.name = nameAppend(_name, "instanceList/sortScan1"),
 		.resources = {
 			result.commands.resource(vuk::eComputeRW),
 			scanTemp.resource(vuk::eComputeWrite) },
@@ -240,7 +240,7 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, Frame& _frame, vuk::Name _n
 			
 			cmd.bind_storage_buffer(0, 0, result.commands)
 			   .bind_storage_buffer(0, 1, scanTemp)
-			   .bind_compute_pipeline("instance_sort_scan1");
+			   .bind_compute_pipeline("instanceList/sortScan1");
 			
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, u32(result.commands.length()));
 			
@@ -249,13 +249,13 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, Frame& _frame, vuk::Name _n
 		}});
 	
 	rg.add_pass({
-		.name = nameAppend(_name, "sort scan2"),
+		.name = nameAppend(_name, "instanceList/sortScan2"),
 		.resources = {
 			scanTemp.resource(vuk::eComputeRW) },
 		.execute = [scanTemp](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_storage_buffer(0, 0, scanTemp)
-			   .bind_compute_pipeline("instance_sort_scan2");
+			   .bind_compute_pipeline("instanceList/sortScan2");
 			
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, u32(scanTemp.length()));
 			
@@ -264,7 +264,7 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, Frame& _frame, vuk::Name _n
 	}});
 	
 	rg.add_pass({
-		.name = nameAppend(_name, "sort scan3"),
+		.name = nameAppend(_name, "instanceList/sortScan3"),
 		.resources = {
 			scanTemp.resource(vuk::eComputeRead),
 			result.commands.resource(vuk::eComputeRW) },
@@ -272,7 +272,7 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, Frame& _frame, vuk::Name _n
 			
 			cmd.bind_storage_buffer(0, 0, scanTemp)
 			   .bind_storage_buffer(0, 1, result.commands)
-			   .bind_compute_pipeline("instance_sort_scan3");
+			   .bind_compute_pipeline("instanceList/sortScan3");
 			
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, u32(result.commands.length()));
 			
@@ -292,7 +292,7 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, Frame& _frame, vuk::Name _n
 	result.instances.attach(rg, vuk::eNone, vuk::eNone);
 	
 	rg.add_pass({
-		.name = nameAppend(_name, "sort write"),
+		.name = nameAppend(_name, "instanceList/sortWrite"),
 		.resources = {
 			_unsorted.instancesCount.resource(vuk::eIndirectRead),
 			_unsorted.instances.resource(vuk::eComputeRead),
@@ -304,7 +304,7 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, Frame& _frame, vuk::Name _n
 			   .bind_storage_buffer(0, 1, _unsorted.instances)
 			   .bind_storage_buffer(0, 2, result.commands)
 			   .bind_storage_buffer(0, 3, result.instances)
-			   .bind_compute_pipeline("instance_sort_write");
+			   .bind_compute_pipeline("instanceList/sortWrite");
 			
 			cmd.dispatch_indirect(_unsorted.instancesCount);
 			
@@ -345,7 +345,7 @@ auto DrawableInstanceList::frustumCull(Pool& _pool, Frame& _frame, vuk::Name _na
 	result.instances.attach(_frame.rg, vuk::eNone, vuk::eNone);
 	
 	_frame.rg.add_pass({
-		.name = nameAppend(_name, "frustum cull"),
+		.name = nameAppend(_name, "instanceList/frustumCull"),
 		.resources = {
 			_source.commands.resource(vuk::eComputeRead),
 			_source.instancesCount.resource(vuk::eIndirectRead),
@@ -364,7 +364,7 @@ auto DrawableInstanceList::frustumCull(Pool& _pool, Frame& _frame, vuk::Name _na
 			   .bind_storage_buffer(0, 5, result.commands)
 			   .bind_storage_buffer(0, 6, result.instancesCount)
 			   .bind_storage_buffer(0, 7, result.instances)
-			   .bind_compute_pipeline("frustum_cull");
+			   .bind_compute_pipeline("instanceList/frustumCull");
 			
 			struct PushConstants {
 				mat4 view;

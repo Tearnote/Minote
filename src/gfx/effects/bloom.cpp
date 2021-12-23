@@ -16,21 +16,21 @@ void Bloom::compile(vuk::PerThreadContext& _ptc) {
 	
 	auto bloomDownPci = vuk::ComputePipelineBaseCreateInfo();
 	bloomDownPci.add_spirv(std::vector<u32>{
-#include "spv/bloomDown.comp.spv"
-	}, "bloomDown.comp");
-	_ptc.ctx.create_named_pipeline("bloom_down", bloomDownPci);
+#include "spv/bloom/down.comp.spv"
+	}, "bloom/down.comp");
+	_ptc.ctx.create_named_pipeline("bloom/down", bloomDownPci);
 	
 	auto bloomDownKarisPci = vuk::ComputePipelineBaseCreateInfo();
 	bloomDownKarisPci.add_spirv(std::vector<u32>{
-#include "spv/bloomDownKaris.comp.spv"
-	}, "bloomDownKaris.comp");
-	_ptc.ctx.create_named_pipeline("bloom_down_karis", bloomDownKarisPci);
+#include "spv/bloom/downKaris.comp.spv"
+	}, "bloom/downKaris.comp");
+	_ptc.ctx.create_named_pipeline("bloom/downKaris", bloomDownKarisPci);
 	
 	auto bloomUpPci = vuk::ComputePipelineBaseCreateInfo();
 	bloomUpPci.add_spirv(std::vector<u32>{
-#include "spv/bloomUp.comp.spv"
-	}, "bloomUp.comp");
-	_ptc.ctx.create_named_pipeline("bloom_up", bloomUpPci);
+#include "spv/bloom/up.comp.spv"
+	}, "bloom/up.comp");
+	_ptc.ctx.create_named_pipeline("bloom/up", bloomUpPci);
 	
 }
 
@@ -50,7 +50,7 @@ void Bloom::apply(Frame& _frame, Pool& _pool, Texture2D _target) {
 	
 	// Downsample pass: repeatedly draw the source image into increasingly smaller mips
 	_frame.rg.add_pass({
-		.name = nameAppend(_target.name, "bloom down"),
+		.name = nameAppend(_target.name, "bloom/down"),
 		.resources = {
 			_target.resource(vuk::eComputeSampled),
 			bloomTemp.resource(vuk::eComputeRW) },
@@ -66,7 +66,7 @@ void Bloom::apply(Frame& _frame, Pool& _pool, Texture2D _target) {
 					cmd.bind_sampled_image(0, 0, _target, LinearClamp);
 					sourceSize = _target.size();
 					
-					cmd.bind_compute_pipeline("bloom_down_karis");
+					cmd.bind_compute_pipeline("bloom/downKaris");
 					
 				} else { // Read from intermediate mip
 					
@@ -74,7 +74,7 @@ void Bloom::apply(Frame& _frame, Pool& _pool, Texture2D _target) {
 					cmd.bind_sampled_image(0, 0, *temp.mipView(i - 1), LinearClamp);
 					sourceSize = _target.size() >> i;
 					
-					cmd.bind_compute_pipeline("bloom_down");
+					cmd.bind_compute_pipeline("bloom/down");
 					
 				}
 				cmd.bind_storage_image(0, 1, *temp.mipView(i));
@@ -93,7 +93,7 @@ void Bloom::apply(Frame& _frame, Pool& _pool, Texture2D _target) {
 	
 	// Upsample pass: same as downsample, but in reverse order
 	_frame.rg.add_pass({
-		.name = nameAppend(_target.name, "bloom up"),
+		.name = nameAppend(_target.name, "bloom/up"),
 		.resources = {
 			bloomTemp.resource(vuk::eComputeRW),
 			_target.resource(vuk::eComputeRW) },
@@ -122,7 +122,7 @@ void Bloom::apply(Frame& _frame, Pool& _pool, Texture2D _target) {
 					
 				}
 				
-				cmd.bind_compute_pipeline("bloom_up");
+				cmd.bind_compute_pipeline("bloom/up");
 				
 				cmd.specialize_constants(0, u32Fromu16(sourceSize));
 				cmd.specialize_constants(1, u32Fromu16(targetSize));

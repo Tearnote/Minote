@@ -3,7 +3,7 @@
 
 layout(local_size_x = 64) in;
 
-#include "types.glsl"
+#include "../types.glsl"
 
 layout(binding = 0) uniform InstanceCount {
 	uvec4 u_instanceCount;
@@ -11,8 +11,11 @@ layout(binding = 0) uniform InstanceCount {
 layout (binding = 1, std430) restrict readonly buffer Instances {
 	Instance b_instances[];
 };
-layout (binding = 2, std430) restrict writeonly buffer Commands {
+layout (binding = 2, std430) restrict buffer Commands {
 	Command b_commands[];
+};
+layout (binding = 3, std430) restrict writeonly buffer InstancesSorted {
+	Instance b_instancesSorted[];
 };
 
 void main() {
@@ -22,6 +25,9 @@ void main() {
 		return;
 	
 	uint meshIdx = b_instances[gid].meshIdx;
-	atomicAdd(b_commands[meshIdx].instanceCount, 1);
+	uint offset = b_commands[meshIdx].firstInstance;
+	uint newid = offset + atomicAdd(b_commands[meshIdx].instanceCount, 1);
+	
+	b_instancesSorted[newid] = b_instances[gid];
 	
 }

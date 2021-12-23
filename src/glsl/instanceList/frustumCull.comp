@@ -3,7 +3,7 @@
 
 layout(local_size_x = 64) in;
 
-#include "types.glsl"
+#include "../types.glsl"
 
 layout(binding = 0, std430) restrict readonly buffer Commands {
 	Command b_commands[];

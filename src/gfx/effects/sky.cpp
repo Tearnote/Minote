@@ -44,15 +44,15 @@ void Atmosphere::compile(vuk::PerThreadContext& _ptc) {
 	
 	auto skyGenTransmittancePci = vuk::ComputePipelineBaseCreateInfo();
 	skyGenTransmittancePci.add_spirv(std::vector<u32>{
-#include "spv/skyGenTransmittance.comp.spv"
-	}, "skyGenTransmittance.comp");
-	_ptc.ctx.create_named_pipeline("sky_gen_transmittance", skyGenTransmittancePci);
+#include "spv/sky/genTransmittance.comp.spv"
+	}, "sky/genTransmittance.comp");
+	_ptc.ctx.create_named_pipeline("sky/genTransmittance", skyGenTransmittancePci);
 
 	auto skyGenMultiScatteringPci = vuk::ComputePipelineBaseCreateInfo();
 	skyGenMultiScatteringPci.add_spirv(std::vector<u32>{
-#include "spv/skyGenMultiScattering.comp.spv"
-	}, "skyGenMultiScattering.comp");
-	_ptc.ctx.create_named_pipeline("sky_gen_multi_scattering", skyGenMultiScatteringPci);
+#include "spv/sky/genMultiScattering.comp.spv"
+	}, "sky/genMultiScattering.comp");
+	_ptc.ctx.create_named_pipeline("sky/genMultiScattering", skyGenMultiScatteringPci);
 	
 }
 
@@ -83,14 +83,14 @@ auto Atmosphere::create(Pool& _pool, Frame& _frame, vuk::Name _name,
 		result.multiScattering.attach(_frame.rg, vuk::eNone, vuk::eComputeSampled);
 		
 		_frame.rg.add_pass({
-			.name = nameAppend(result.transmittance.name, "gen"),
+			.name = nameAppend(result.transmittance.name, "sky/genTransmittance"),
 			.resources = {
 				result.transmittance.resource(vuk::eComputeWrite) },
 			.execute = [result](vuk::CommandBuffer& cmd) {
 				
 				cmd.bind_uniform_buffer(0, 0, result.params)
 				.bind_storage_image(0, 1, result.transmittance)
-				.bind_compute_pipeline("sky_gen_transmittance");
+				.bind_compute_pipeline("sky/genTransmittance");
 				
 				cmd.specialize_constants(0, u32Fromu16(result.transmittance.size()));
 				
@@ -99,7 +99,7 @@ auto Atmosphere::create(Pool& _pool, Frame& _frame, vuk::Name _name,
 			}});
 		
 		_frame.rg.add_pass({
-			.name = nameAppend(result.multiScattering.name, "gen"),
+			.name = nameAppend(result.multiScattering.name, "sky/genMultiScattering"),
 			.resources = {
 				result.transmittance.resource(vuk::eComputeSampled),
 				result.multiScattering.resource(vuk::eComputeWrite) },
@@ -108,7 +108,7 @@ auto Atmosphere::create(Pool& _pool, Frame& _frame, vuk::Name _name,
 				cmd.bind_uniform_buffer(0, 0, result.params)
 				.bind_sampled_image(0, 1, result.transmittance, LinearClamp)
 				.bind_storage_image(0, 2, result.multiScattering)
-				.bind_compute_pipeline("sky_gen_multi_scattering");
+				.bind_compute_pipeline("sky/genMultiScattering");
 				
 				cmd.specialize_constants(0, u32Fromu16(result.multiScattering.size()));
 				
@@ -126,33 +126,33 @@ void Sky::compile(vuk::PerThreadContext& _ptc) {
 	
 	auto skyGenSkyViewPci = vuk::ComputePipelineBaseCreateInfo();
 	skyGenSkyViewPci.add_spirv(std::vector<u32>{
-#include "spv/skyGenSkyView.comp.spv"
-	}, "skyGenSkyView.comp");
-	_ptc.ctx.create_named_pipeline("sky_gen_sky_view", skyGenSkyViewPci);
+#include "spv/sky/genSkyView.comp.spv"
+	}, "sky/genSkyView.comp");
+	_ptc.ctx.create_named_pipeline("sky/genSkyView", skyGenSkyViewPci);
 	
 	auto skyGenSunLuminancePci = vuk::ComputePipelineBaseCreateInfo();
 	skyGenSunLuminancePci.add_spirv(std::vector<u32>{
-#include "spv/skyGenSunLuminance.comp.spv"
-	}, "skyGenSunLuminance.comp");
-	_ptc.ctx.create_named_pipeline("sky_gen_sun_luminance", skyGenSunLuminancePci);
+#include "spv/sky/genSunLuminance.comp.spv"
+	}, "sky/genSunLuminance.comp");
+	_ptc.ctx.create_named_pipeline("sky/genSunLuminance", skyGenSunLuminancePci);
 	
 	auto skyDrawPci = vuk::ComputePipelineBaseCreateInfo();
 	skyDrawPci.add_spirv(std::vector<u32>{
-#include "spv/skyDraw.comp.spv"
-	}, "skyDraw.comp");
-	_ptc.ctx.create_named_pipeline("sky_draw", skyDrawPci);
+#include "spv/sky/draw.comp.spv"
+	}, "sky/draw.comp");
+	_ptc.ctx.create_named_pipeline("sky/draw", skyDrawPci);
 	
 	auto skyDrawCubemapPci = vuk::ComputePipelineBaseCreateInfo();
 	skyDrawCubemapPci.add_spirv(std::vector<u32>{
-#include "spv/skyDrawCubemap.comp.spv"
-	}, "skyDrawCubemap.comp");
-	_ptc.ctx.create_named_pipeline("sky_draw_cubemap", skyDrawCubemapPci);
+#include "spv/sky/drawCubemap.comp.spv"
+	}, "sky/drawCubemap.comp");
+	_ptc.ctx.create_named_pipeline("sky/drawCubemap", skyDrawCubemapPci);
 	
 	auto skyAerialPerspectivePci = vuk::ComputePipelineBaseCreateInfo();
 	skyAerialPerspectivePci.add_spirv(std::vector<u32>{
-#include "spv/skyGenAerialPerspective.comp.spv"
-	}, "skyGenAerialPerspectivePci.comp");
-	_ptc.ctx.create_named_pipeline("sky_gen_aerial_perspective", skyAerialPerspectivePci);
+#include "spv/sky/genAerialPerspective.comp.spv"
+	}, "sky/genAerialPerspective.comp");
+	_ptc.ctx.create_named_pipeline("sky/genAerialPerspective", skyAerialPerspectivePci);
 	
 }
 
@@ -167,7 +167,7 @@ auto Sky::createView(Pool& _pool, Frame& _frame, vuk::Name _name,
 	view.attach(_frame.rg, vuk::eNone, vuk::eNone);
 	
 	_frame.rg.add_pass({
-		.name = nameAppend(_name, "gen"),
+		.name = nameAppend(_name, "sky/genSkyView"),
 		.resources = {
 			view.resource(vuk::eComputeWrite) },
 		.execute = [view, &_frame, _probePos, _atmo](vuk::CommandBuffer& cmd) {
@@ -183,7 +183,7 @@ auto Sky::createView(Pool& _pool, Frame& _frame, vuk::Name _name,
 			   .bind_sampled_image(0, 2, _atmo.transmittance, LinearClamp)
 			   .bind_sampled_image(0, 3, _atmo.multiScattering, LinearClamp)
 			   .bind_storage_image(0, 4, view)
-			   .bind_compute_pipeline("sky_gen_sky_view");
+			   .bind_compute_pipeline("sky/genSkyView");
 			
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, _probePos);
 			cmd.specialize_constants(0, u32Fromu16(view.size()));
@@ -206,7 +206,7 @@ auto Sky::createAerialPerspective(Pool& _pool, Frame& _frame, vuk::Name _name,
 	aerialPerspective.attach(_frame.rg, vuk::eNone, vuk::eNone);
 	
 	_frame.rg.add_pass({
-		.name = nameAppend(_name, "gen"),
+		.name = nameAppend(_name, "sky/genAerialPerspective"),
 		.resources = {
 			aerialPerspective.resource(vuk::eComputeWrite) },
 		.execute = [aerialPerspective, &_frame, _atmo, _invViewProj, _probePos](vuk::CommandBuffer& cmd) {
@@ -221,7 +221,7 @@ auto Sky::createAerialPerspective(Pool& _pool, Frame& _frame, vuk::Name _name,
 			   .bind_sampled_image(0, 2, _atmo.transmittance, LinearClamp)
 			   .bind_sampled_image(0, 3, _atmo.multiScattering, LinearClamp)
 			   .bind_storage_image(0, 4, aerialPerspective)
-			   .bind_compute_pipeline("sky_gen_aerial_perspective");
+			   .bind_compute_pipeline("sky/genAerialPerspective");
 			
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
 				   .invViewProj = _invViewProj,
@@ -246,7 +246,7 @@ auto Sky::createSunLuminance(Pool& _pool, Frame& _frame, vuk::Name _name,
 	sunLuminance.attach(_frame.rg, vuk::eNone, vuk::eNone);
 	
 	_frame.rg.add_pass({
-		.name = nameAppend(_name, "gen"),
+		.name = nameAppend(_name, "sky/genSunLuminance"),
 		.resources = {
 			sunLuminance.resource(vuk::eComputeWrite) },
 		.execute = [sunLuminance,&_frame, _atmo, _probePos](vuk::CommandBuffer& cmd) {
@@ -255,7 +255,7 @@ auto Sky::createSunLuminance(Pool& _pool, Frame& _frame, vuk::Name _name,
 			   .bind_uniform_buffer(0, 1, _atmo.params)
 			   .bind_sampled_image(0, 2, _atmo.transmittance, LinearClamp)
 			   .bind_storage_buffer(0, 3, sunLuminance)
-			   .bind_compute_pipeline("sky_gen_sun_luminance");
+			   .bind_compute_pipeline("sky/genSunLuminance");
 			
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, _probePos);
 			
@@ -271,7 +271,7 @@ void Sky::draw(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
 	Texture2D _skyView, Atmosphere _atmo) {
 	
 	_frame.rg.add_pass({
-		.name = nameAppend(_quadbuf.name, "sky Quad"),
+		.name = nameAppend(_quadbuf.name, "sky/draw"),
 		.resources = {
 			_skyView.resource(vuk::eComputeSampled),
 			_worklist.counts.resource(vuk::eIndirectRead),
@@ -290,7 +290,7 @@ void Sky::draw(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
 			   .bind_sampled_image(0, 5, _quadbuf.visbuf, NearestClamp)
 			   .bind_sampled_image(0, 6, _quadbuf.offset, NearestClamp)
 			   .bind_storage_image(0, 7, _quadbuf.clusterOut)
-			   .bind_compute_pipeline("sky_draw");
+			   .bind_compute_pipeline("sky/draw");
 			
 			cmd.specialize_constants(0, u32Fromu16(_skyView.size()));
 			cmd.specialize_constants(1, u32Fromu16(_quadbuf.clusterOut.size()));
@@ -305,7 +305,7 @@ void Sky::draw(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
 void Sky::draw(Frame& _frame, Cubemap _target, vec3 _probePos, Texture2D _skyView, Atmosphere _atmo) {
 	
 	_frame.rg.add_pass({
-		.name = nameAppend(_target.name, "sky"),
+		.name = nameAppend(_target.name, "sky/drawCubemap"),
 		.resources = {
 			_skyView.resource(vuk::eComputeSampled),
 			_target.resource(vuk::eComputeWrite) },
@@ -322,7 +322,7 @@ void Sky::draw(Frame& _frame, Cubemap _target, vec3 _probePos, Texture2D _skyVie
 			   .bind_sampled_image(0, 2, _atmo.transmittance, LinearClamp)
 			   .bind_sampled_image(0, 3, _skyView, LinearClamp)
 			   .bind_storage_image(0, 4, _target)
-			   .bind_compute_pipeline("sky_draw_cubemap");
+			   .bind_compute_pipeline("sky/drawCubemap");
 			
 			auto* sides = cmd.map_scratch_uniform_binding<array<mat4, 6>>(0, 5);
 			*sides = to_array<mat4>({

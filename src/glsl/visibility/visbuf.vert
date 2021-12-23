@@ -1,7 +1,7 @@
 #version 460
 #pragma shader_stage(vertex)
 
-#include "types.glsl"
+#include "../types.glsl"
 
 #define B_VERTICES b_vertices
 
@@ -20,7 +20,7 @@ layout(std430, binding = 3) restrict readonly buffer Transforms {
 	mat3x4 b_transforms[];
 };
 
-#include "typesAccess.glsl"
+#include "../typesAccess.glsl"
 
 void main() {
 	

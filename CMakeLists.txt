@@ -253,43 +253,44 @@ target_link_libraries(Minote PRIVATE mpack)
 
 # Shader compilation
 
+set(SHADER_DIR_PREFIX src/glsl)
 set(SHADER_SOURCES
-        src/glsl/sky/skyGenAerialPerspective.comp
-        src/glsl/sky/skyGenMultiScattering.comp
-        src/glsl/sky/skyGenTransmittance.comp
-        src/glsl/sky/skyGenSunLuminance.comp
-        src/glsl/sky/skyDrawCubemap.comp
-        src/glsl/sky/skyGenSkyView.comp
-        src/glsl/sky/skyDraw.comp
-        src/glsl/instanceSortCount.comp
-        src/glsl/instanceSortWrite.comp
-        src/glsl/instanceSortScan1.comp
-        src/glsl/instanceSortScan2.comp
-        src/glsl/instanceSortScan3.comp
-        src/glsl/bloomDownKaris.comp
-        src/glsl/cubePostfilter.comp
-        src/glsl/quadGenBuffers.comp
-        src/glsl/quadClusterize.comp
-        src/glsl/cubePrefilter.comp
-        src/glsl/transformConv.comp
-        src/glsl/quadResolve.comp
-        src/glsl/frustumCull.comp
-        src/glsl/visibility.vert src/glsl/visibility.frag
-        src/glsl/bloomDown.comp
-        src/glsl/worklist.comp
-        src/glsl/tonemap.comp
-        src/glsl/bloomUp.comp
-        src/glsl/imgui.vert src/glsl/imgui.frag
-        src/glsl/pbr.comp)
+        instanceList/transformConv.comp
+        instanceList/frustumCull.comp
+        instanceList/sortCount.comp
+        instanceList/sortWrite.comp
+        instanceList/sortScan1.comp
+        instanceList/sortScan2.comp
+        instanceList/sortScan3.comp
+        cubeFilter/post.comp
+        cubeFilter/pre.comp
+        visibility/worklist.comp
+        visibility/visbuf.vert visibility/visbuf.frag
+        bloom/downKaris.comp
+        bloom/down.comp
+        bloom/up.comp
+        quad/genBuffers.comp
+        quad/clusterize.comp
+        quad/resolve.comp
+        sky/genAerialPerspective.comp
+        sky/genMultiScattering.comp
+        sky/genTransmittance.comp
+        sky/genSunLuminance.comp
+        sky/drawCubemap.comp
+        sky/genSkyView.comp
+        sky/draw.comp
+        tonemap.comp
+        imgui.vert imgui.frag
+        pbr.comp)
 
 foreach(SHADER_PATH ${SHADER_SOURCES})
-    get_filename_component(SHADER_FILENAME ${SHADER_PATH} NAME)
-    set(SHADER_OUTPUT ${PROJECT_BINARY_DIR}/generated/spv/${SHADER_FILENAME}.spv)
+    get_filename_component(SHADER_DIR ${SHADER_PATH} DIRECTORY)
+    set(SHADER_OUTPUT ${PROJECT_BINARY_DIR}/generated/spv/${SHADER_PATH}.spv)
     add_custom_command(
             OUTPUT ${SHADER_OUTPUT}
-            COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/generated/spv/"
-            COMMAND $ENV{VULKAN_SDK}/Bin/glslc.exe --target-env=vulkan1.2 -mfmt=num $<$<NOT:$<CONFIG:Release>>:-g> -MD -MF ${SHADER_OUTPUT}.d -o ${SHADER_OUTPUT} ${PROJECT_SOURCE_DIR}/${SHADER_PATH}
-            DEPENDS ${SHADER_PATH}
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/generated/spv/${SHADER_DIR}
+            COMMAND $ENV{VULKAN_SDK}/Bin/glslc.exe --target-env=vulkan1.2 -mfmt=num $<$<NOT:$<CONFIG:Release>>:-g> -MD -MF ${SHADER_OUTPUT}.d -o ${SHADER_OUTPUT} ${PROJECT_SOURCE_DIR}/${SHADER_DIR_PREFIX}/${SHADER_PATH}
+            DEPENDS ${SHADER_DIR_PREFIX}/${SHADER_PATH}
             DEPFILE ${SHADER_OUTPUT}.d
             VERBATIM COMMAND_EXPAND_LISTS)
     list(APPEND SHADER_OUTPUTS ${SHADER_OUTPUT})

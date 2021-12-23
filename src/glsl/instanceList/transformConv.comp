@@ -3,7 +3,7 @@
 
 layout(local_size_x = 64) in;
 
-#include "types.glsl"
+#include "../types.glsl"
 
 layout(binding = 0) uniform InstanceCount {
 	uvec4 u_instanceCount;

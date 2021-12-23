@@ -33,9 +33,9 @@ layout(constant_id = 2) const uint TileOffset = 0;
 const uvec2 SkyViewSize = U16FROMU32(SkyViewSizePacked);
 const uvec2 TargetSize = U16FROMU32(TargetSizePacked);
 
+#include "../visibility/worklist.glsl"
+#include "../quad/quad.glsl"
 #include "sky.glsl"
-#include "../worklist.glsl"
-#include "../quad.glsl"
 
 vec3 shadeSkySample(vec2 _gid) {
 	

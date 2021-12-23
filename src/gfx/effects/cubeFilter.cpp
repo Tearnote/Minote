@@ -15,17 +15,17 @@ using namespace base;
 
 void CubeFilter::compile(vuk::PerThreadContext& _ptc) {
 	
-	auto cubePrefilterPci = vuk::ComputePipelineBaseCreateInfo();
-	cubePrefilterPci.add_spirv(std::vector<u32>{
-#include "spv/cubePrefilter.comp.spv"
-	}, "cubePrefilter.comp");
-	_ptc.ctx.create_named_pipeline("cube_prefilter", cubePrefilterPci);
+	auto cubeFilterPrePci = vuk::ComputePipelineBaseCreateInfo();
+	cubeFilterPrePci.add_spirv(std::vector<u32>{
+#include "spv/cubeFilter/pre.comp.spv"
+	}, "cubeFilter/pre.comp");
+	_ptc.ctx.create_named_pipeline("cubeFilter/pre", cubeFilterPrePci);
 	
-	auto cubePostfilterPci = vuk::ComputePipelineBaseCreateInfo();
-	cubePostfilterPci.add_spirv(std::vector<u32>{
-#include "spv/cubePostfilter.comp.spv"
-	}, "cubePostfilter.comp");
-	_ptc.ctx.create_named_pipeline("cube_postfilter", cubePostfilterPci);
+	auto cubeFilterPostPci = vuk::ComputePipelineBaseCreateInfo();
+	cubeFilterPostPci.add_spirv(std::vector<u32>{
+#include "spv/cubeFilter/post.comp.spv"
+	}, "cubeFilter/post.comp");
+	_ptc.ctx.create_named_pipeline("cubeFilter/post", cubeFilterPostPci);
 	
 }
 
@@ -35,7 +35,7 @@ void CubeFilter::apply(Frame& _frame, Cubemap _src, Cubemap _dst) {
 	assert(_dst.size() == uvec2(BaseSize));
 	
 	_frame.rg.add_pass({
-		.name = nameAppend(_src.name, "prefilter"),
+		.name = nameAppend(_src.name, "cubeFilter/pre"),
 		.resources = {
 			_src.resource(vuk::eComputeWrite) },
 		.execute = [_src](vuk::CommandBuffer& cmd) {
@@ -46,7 +46,7 @@ void CubeFilter::apply(Frame& _frame, Cubemap _src, Cubemap _dst) {
 				
 				cmd.bind_sampled_image(0, 0, *_src.mipView(i-1), LinearClamp)
 				   .bind_storage_image(0, 1, *_src.mipArrayView(i))
-				   .bind_compute_pipeline("cube_prefilter");
+				   .bind_compute_pipeline("cubeFilter/pre");
 				
 				cmd.specialize_constants(0, _src.size().x() >> i);
 				
@@ -59,7 +59,7 @@ void CubeFilter::apply(Frame& _frame, Cubemap _src, Cubemap _dst) {
 		}});
 	
 	_frame.rg.add_pass({
-		.name = nameAppend(_src.name, "postfilter"),
+		.name = nameAppend(_src.name, "cubeFilter/post"),
 		.resources = {
 			_src.resource(vuk::eComputeRead),
 			_dst.resource(vuk::eComputeWrite) },
@@ -73,7 +73,7 @@ void CubeFilter::apply(Frame& _frame, Cubemap _src, Cubemap _dst) {
 			   .bind_storage_image(0, 5, *_dst.mipArrayView(5))
 			   .bind_storage_image(0, 6, *_dst.mipArrayView(6))
 			   .bind_storage_image(0, 7, *_dst.mipArrayView(7))
-			   .bind_compute_pipeline("cube_postfilter");
+			   .bind_compute_pipeline("cubeFilter/post");
 			
 			auto* coeffs = cmd.map_scratch_uniform_binding<vec4[7][5][3][24]>(0, 8);
 			std::memcpy(coeffs, IBLCoefficients, sizeof(IBLCoefficients));

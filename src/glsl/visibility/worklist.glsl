@@ -1,7 +1,7 @@
 #ifndef WORKLIST_GLSL
 #define WORKLIST_GLSL
 
-#include "util.glsl"
+#include "../util.glsl"
 
 #define WORKLIST_TILESIZE 8
 

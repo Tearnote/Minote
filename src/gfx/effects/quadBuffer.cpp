@@ -11,21 +11,21 @@ void QuadBuffer::compile(vuk::PerThreadContext& _ptc) {
 	
 	auto quadClusterizePci = vuk::ComputePipelineBaseCreateInfo();
 	quadClusterizePci.add_spirv(std::vector<u32>{
-#include "spv/quadClusterize.comp.spv"
+#include "spv/quad/clusterize.comp.spv"
 	}, "quadClusterize.comp");
-	_ptc.ctx.create_named_pipeline("quadClusterize", quadClusterizePci);
+	_ptc.ctx.create_named_pipeline("quad/clusterize", quadClusterizePci);
 	
 	auto quadGenBuffersPci = vuk::ComputePipelineBaseCreateInfo();
 	quadGenBuffersPci.add_spirv(std::vector<u32>{
-#include "spv/quadGenBuffers.comp.spv"
-	}, "quadGenBuffers.comp");
-	_ptc.ctx.create_named_pipeline("quadGenBuffers", quadGenBuffersPci);
+#include "spv/quad/genBuffers.comp.spv"
+	}, "quad/genBuffers.comp");
+	_ptc.ctx.create_named_pipeline("quad/genBuffers", quadGenBuffersPci);
 	
 	auto quadResolvePci = vuk::ComputePipelineBaseCreateInfo();
 	quadResolvePci.add_spirv(std::vector<u32>{
-#include "spv/quadResolve.comp.spv"
-	}, "quadResolve.comp");
-	_ptc.ctx.create_named_pipeline("quadResolve", quadResolvePci);
+#include "spv/quad/resolve.comp.spv"
+	}, "quad/resolve.comp");
+	_ptc.ctx.create_named_pipeline("quad/resolve", quadResolvePci);
 	
 }
 
@@ -152,7 +152,7 @@ auto QuadBuffer::create(Pool& _pool, Frame& _frame,
 void QuadBuffer::clusterize(Frame& _frame, QuadBuffer& _quadbuf, Texture2DMS _visbuf) {
 	
 	_frame.rg.add_pass({
-		.name = nameAppend(_quadbuf.name, "clusterize"),
+		.name = nameAppend(_quadbuf.name, "quad/clusterize"),
 		.resources = {
 			_visbuf.resource(vuk::eComputeSampled),
 			_quadbuf.visbuf.resource(vuk::eComputeWrite),
@@ -165,7 +165,7 @@ void QuadBuffer::clusterize(Frame& _frame, QuadBuffer& _quadbuf, Texture2DMS _vi
 			   .bind_storage_image(0, 2, _quadbuf.visbuf)
 			   .bind_storage_image(0, 3, _quadbuf.subsamples)
 			   .bind_storage_image(0, 4, _quadbuf.jitterMap)
-			   .bind_compute_pipeline("quadClusterize");
+			   .bind_compute_pipeline("quad/clusterize");
 			
 			auto invocationCount = _visbuf.size() / 2u + _visbuf.size() % 2u;
 			cmd.dispatch_invocations(invocationCount.x(), invocationCount.y());
@@ -178,7 +178,7 @@ void QuadBuffer::genBuffers(Frame& _frame, QuadBuffer& _quadbuf, DrawableInstanc
 	
 	_frame.rg.add_pass({
 		
-		.name = nameAppend(_quadbuf.name, "genBuffers"),
+		.name = nameAppend(_quadbuf.name, "quad/genBuffers"),
 		.resources = {
 			_instances.instances.resource(vuk::eComputeRead),
 			_instances.transforms.resource(vuk::eComputeRead),
@@ -207,7 +207,7 @@ void QuadBuffer::genBuffers(Frame& _frame, QuadBuffer& _quadbuf, DrawableInstanc
 			   .bind_storage_image(0, 12, _quadbuf.quadDepthRepro)
 			   .bind_storage_image(0, 13, _quadbuf.normal)
 			   .bind_storage_image(0, 14, _quadbuf.velocity)
-			   .bind_compute_pipeline("quadGenBuffers");
+			   .bind_compute_pipeline("quad/genBuffers");
 			
 			cmd.specialize_constants(0, u32Fromu16(_quadbuf.visbuf.size()));
 			
@@ -220,7 +220,7 @@ void QuadBuffer::genBuffers(Frame& _frame, QuadBuffer& _quadbuf, DrawableInstanc
 void QuadBuffer::resolve(Frame& _frame, QuadBuffer& _quadbuf, Texture2D _output) {
 	
 	_frame.rg.add_pass({
-		.name = nameAppend(_quadbuf.name, "resolve"),
+		.name = nameAppend(_quadbuf.name, "quad/resolve"),
 		.resources = {
 			_quadbuf.subsamples.resource(vuk::eComputeSampled),
 			_quadbuf.jitterMap.resource(vuk::eComputeSampled),
@@ -242,7 +242,7 @@ void QuadBuffer::resolve(Frame& _frame, QuadBuffer& _quadbuf, Texture2D _output)
 			   .bind_sampled_image(0, 7, _quadbuf.quadDepthPrev, LinearClamp)
 			   .bind_storage_image(0, 8, _quadbuf.output)
 			   .specialize_constants(0, u32Fromu16(_quadbuf.output.size()))
-			   .bind_compute_pipeline("quadResolve");
+			   .bind_compute_pipeline("quad/resolve");
 			
 			auto invocationCount = _quadbuf.output.size() / 2u + _quadbuf.output.size() % 2u;
 			cmd.dispatch_invocations(invocationCount.x(), invocationCount.y());

@@ -4,10 +4,10 @@
 
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 64) in;
 
-#include "visibility.glsl"
-#include "types.glsl"
+#include "../visibility/visbuf.glsl"
+#include "../types.glsl"
+#include "../util.glsl"
 #include "quad.glsl"
-#include "util.glsl"
 
 #define B_INDICES b_indices
 #define B_VERTICES b_vertices
@@ -51,7 +51,7 @@ const uvec2 QuadbufSize = uvec2(U16FROMU32(QuadbufSizePacked));
 
 #define USE_ACCURATE_NORMAL_INTERPOLATION 0
 
-#include "typesAccess.glsl"
+#include "../typesAccess.glsl"
 
 float quadMedian(float _n) {
 	

@@ -4,8 +4,8 @@
 layout(local_size_x = 1, local_size_y = 64) in;
 
 #include "sky/skyAccess.glsl"
-#include "visibilityTypes.glsl"
-#include "visibility.glsl"
+#include "visibility/visbufTypes.glsl"
+#include "visibility/visbuf.glsl"
 #include "constants.glsl"
 #include "types.glsl"
 #include "util.glsl"
@@ -53,7 +53,7 @@ const uvec3 AerialPerspectiveSize = uvec3(U16FROMU32(AerialPerspectiveSizeXYPack
 const uvec2 TargetSize = uvec2(U16FROMU32(TargetSizePacked));
 
 #include "typesAccess.glsl"
-#include "worklist.glsl"
+#include "visibility/worklist.glsl"
 
 #define IBL_MIP_COUNT 8.0
 

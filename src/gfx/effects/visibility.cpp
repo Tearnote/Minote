@@ -15,12 +15,12 @@ void Visibility::compile(vuk::PerThreadContext& _ptc) {
 	
 	auto visibilityPci = vuk::PipelineBaseCreateInfo();
 	visibilityPci.add_spirv(std::vector<u32>{
-#include "spv/visibility.vert.spv"
-	}, "visibility.vert");
+#include "spv/visibility/visbuf.vert.spv"
+	}, "visibility/visbuf.vert");
 	visibilityPci.add_spirv(std::vector<u32>{
-#include "spv/visibility.frag.spv"
-	}, "visibility.frag");
-	_ptc.ctx.create_named_pipeline("visibility", visibilityPci);
+#include "spv/visibility/visbuf.frag.spv"
+	}, "visibility/visbuf.frag");
+	_ptc.ctx.create_named_pipeline("visibility/visbuf", visibilityPci);
 	
 }
 
@@ -28,7 +28,7 @@ void Visibility::apply(Frame& _frame, Texture2DMS _visbuf, Texture2DMS _depth,
 	DrawableInstanceList _instances) {
 	
 	_frame.rg.add_pass({
-		.name = nameAppend(_visbuf.name, "visibility"),
+		.name = nameAppend(_visbuf.name, "visibility/visbuf"),
 		.resources = {
 			_instances.commands.resource(vuk::eIndirectRead),
 			_instances.instances.resource(vuk::eVertexRead),
@@ -52,7 +52,7 @@ void Visibility::apply(Frame& _frame, Texture2DMS _visbuf, Texture2DMS _depth,
 			   .bind_storage_buffer(0, 1, _frame.models.vertices)
 			   .bind_storage_buffer(0, 2, _instances.instances)
 			   .bind_storage_buffer(0, 3, _instances.transforms)
-			   .bind_graphics_pipeline("visibility");
+			   .bind_graphics_pipeline("visibility/visbuf");
 			
 			cmd.draw_indexed_indirect(_instances.commands.length(), _instances.commands);
 			
@@ -64,15 +64,9 @@ void Worklist::compile(vuk::PerThreadContext& _ptc) {
 	
 	auto worklistPci = vuk::ComputePipelineBaseCreateInfo();
 	worklistPci.add_spirv(std::vector<u32>{
-#include "spv/worklist.comp.spv"
-	}, "worklist.comp");
-	_ptc.ctx.create_named_pipeline("worklist", worklistPci);
-	
-	auto worklistMSPci = vuk::ComputePipelineBaseCreateInfo();
-	worklistMSPci.add_spirv(std::vector<u32>{
-#include "spv/worklistMS.comp.spv"
-	}, "worklistMS.comp");
-	_ptc.ctx.create_named_pipeline("worklist_ms", worklistMSPci);
+#include "spv/visibility/worklist.comp.spv"
+	}, "visibility/worklist.comp");
+	_ptc.ctx.create_named_pipeline("visibility/worklist", worklistPci);
 	
 }
 
@@ -106,7 +100,7 @@ auto Worklist::create(Pool& _pool, Frame& _frame, vuk::Name _name,
 	// Generate worklists
 	
 	_frame.rg.add_pass({
-		.name = nameAppend(_name, "gen"),
+		.name = nameAppend(_name, "visibility/worklist"),
 		.resources = {
 			_visbuf.resource(vuk::eComputeSampled),
 			_instances.instances.resource(vuk::eComputeRead),
@@ -120,7 +114,7 @@ auto Worklist::create(Pool& _pool, Frame& _frame, vuk::Name _name,
 			   .bind_storage_buffer(0, 3, _frame.models.materials)
 			   .bind_storage_buffer(0, 4, result.counts)
 			   .bind_storage_buffer(0, 5, result.lists)
-			   .bind_compute_pipeline("worklist");
+			   .bind_compute_pipeline("visibility/worklist");
 			
 			cmd.specialize_constants(0, u32Fromu16(_visbuf.size()));
 			cmd.specialize_constants(1, ListCount);

@@ -3,9 +3,9 @@
 
 layout(local_size_x = 8, local_size_y = 8) in;
 
-#include "types.glsl"
+#include "../types.glsl"
+#include "../util.glsl"
 #include "quad.glsl"
-#include "util.glsl"
 
 layout(binding = 0) uniform WorldConstants {
 	World u_world;

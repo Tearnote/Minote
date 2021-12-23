@@ -1,10 +1,10 @@
 // Utilities for working with visibility buffer data
 
-#ifndef VISIBILITY_GLSL
-#define VISIBILITY_GLSL
+#ifndef VISBUF_GLSL
+#define VISBUF_GLSL
 
-#include "visibilityTypes.glsl"
-#include "util.glsl"
+#include "visbufTypes.glsl"
+#include "../util.glsl"
 
 #define TRIANGLE_ID_BITS 14u
 
@@ -124,4 +124,4 @@ vec3 normalInterp(mat3 _normals, vec3 _weights) {
 	
 }
 
-#endif //VISIBILITY_GLSL
+#endif //VISBUF_GLSL

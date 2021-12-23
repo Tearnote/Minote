@@ -5,7 +5,7 @@ layout(location = 0) in flat uint InstanceIdx;
 
 layout(location = 0) out uint out_visibility;
 
-#include "visibility.glsl"
+#include "visbuf.glsl"
 
 void main() {
 	

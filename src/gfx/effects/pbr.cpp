@@ -23,7 +23,7 @@ void PBR::apply(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
 	Buffer<vec3> _sunLuminance, Texture3D _aerialPerspective) {
 	
 	_frame.rg.add_pass({
-		.name = nameAppend(_quadbuf.name, "pbr_quad"),
+		.name = nameAppend(_quadbuf.name, "pbr"),
 		.resources = {
 			_worklist.counts.resource(vuk::eIndirectRead),
 			_worklist.lists.resource(vuk::eComputeRead),
