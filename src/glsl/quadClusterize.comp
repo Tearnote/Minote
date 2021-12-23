@@ -86,9 +86,12 @@ void main() {
 	
 	if (uniqueValues >= 4) {
 		
-		uint initialSubsample = u_world.frameCounter % SUBSAMPLE_COUNT;
-		for (uint i = 0; i < 4; i += 1)
+		for (uint i = 0; i < 4; i += 1) {
+			
+			uint initialSubsample = (u_world.frameCounter + gid.x + gid.y * 5 + i) % SUBSAMPLE_COUNT;
 			clusterValues[i] = visSamples[i * SUBSAMPLE_COUNT + initialSubsample];
+			
+		}
 		
 		// Mark the quad as jittered
 		
