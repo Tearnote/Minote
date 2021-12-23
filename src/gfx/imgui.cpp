@@ -107,7 +107,6 @@ auto ImGui_ImplVuk_Init(vuk::PerThreadContext& _ptc) -> ImguiData {
 	imguiPci.add_spirv(std::vector<u32>{
 #include "spv/imgui.frag.spv"
 	}, "imgui.frag");
-	imguiPci.set_blend(vuk::BlendPreset::eAlphaBlend);
 	_ptc.ctx.create_named_pipeline("imgui", imguiPci);
 	
 	L_DEBUG("ImGui initialized");
@@ -174,9 +173,13 @@ void ImGui_ImplVuk_Render(Pool& _pool, vuk::PerThreadContext& _ptc, vuk::RenderG
 	auto pass = vuk::Pass{
 		.name = "Imgui",
 		.resources = { vuk::Resource(_target, vuk::Resource::Type::eImage, vuk::eColorRW) },
-		.execute = [&_imdata, imvert, imind, _drawdata, reset_render_state](vuk::CommandBuffer& cmd) {
+		.execute = [&_imdata, imvert, imind, _drawdata, reset_render_state, _target](vuk::CommandBuffer& cmd) {
 			
+			cmd.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor);
+			cmd.set_rasterization(vuk::PipelineRasterizationStateCreateInfo{});
+			cmd.set_color_blend(_target, vuk::BlendPreset::eAlphaBlend);
 			reset_render_state(_imdata, cmd, _drawdata, imvert, imind);
+			
 			// Will project scissor/clipping rectangles into framebuffer space
 			auto clip_off = _drawdata->DisplayPos;         // (0,0) unless using multi-viewports
 			auto clip_scale = _drawdata->FramebufferScale; // (1,1) unless using retina display which are often (2,2)

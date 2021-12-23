@@ -209,7 +209,7 @@ void QuadBuffer::genBuffers(Frame& _frame, QuadBuffer& _quadbuf, DrawableInstanc
 			   .bind_storage_image(0, 14, _quadbuf.velocity)
 			   .bind_compute_pipeline("quadGenBuffers");
 			
-			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_quadbuf.visbuf.size()));
+			cmd.specialize_constants(0, u32Fromu16(_quadbuf.visbuf.size()));
 			
 			cmd.dispatch_invocations(divRoundUp(_quadbuf.visbuf.size().x(), 8u), divRoundUp(_quadbuf.visbuf.size().y(), 8u));
 			
@@ -241,7 +241,7 @@ void QuadBuffer::resolve(Frame& _frame, QuadBuffer& _quadbuf, Texture2D _output)
 			   .bind_sampled_image(0, 6, _quadbuf.quadDepthRepro, LinearClamp)
 			   .bind_sampled_image(0, 7, _quadbuf.quadDepthPrev, LinearClamp)
 			   .bind_storage_image(0, 8, _quadbuf.output)
-			   .specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_quadbuf.output.size()))
+			   .specialize_constants(0, u32Fromu16(_quadbuf.output.size()))
 			   .bind_compute_pipeline("quadResolve");
 			
 			auto invocationCount = _quadbuf.output.size() / 2u + _quadbuf.output.size() % 2u;

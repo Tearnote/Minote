@@ -57,10 +57,10 @@ void PBR::apply(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
 			   .bind_storage_buffer(0, 13, _worklist.lists)
 			   .bind_compute_pipeline("pbr");
 			
-			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16({_aerialPerspective.size().x(), _aerialPerspective.size().y()}));
-			cmd.specialization_constants(1, vuk::ShaderStageFlagBits::eCompute, _aerialPerspective.size().z());
-			cmd.specialization_constants(2, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_quadbuf.clusterOut.size()));
-			cmd.specialization_constants(3, vuk::ShaderStageFlagBits::eCompute, _worklist.tileDimensions.x() * _worklist.tileDimensions.y() * +MaterialType::PBR);
+			cmd.specialize_constants(0, u32Fromu16({_aerialPerspective.size().x(), _aerialPerspective.size().y()}));
+			cmd.specialize_constants(1, _aerialPerspective.size().z());
+			cmd.specialize_constants(2, u32Fromu16(_quadbuf.clusterOut.size()));
+			cmd.specialize_constants(3, _worklist.tileDimensions.x() * _worklist.tileDimensions.y() * +MaterialType::PBR);
 			
 			cmd.dispatch_indirect(tileCount);
 			

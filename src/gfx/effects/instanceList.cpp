@@ -383,7 +383,7 @@ auto DrawableInstanceList::frustumCull(Pool& _pool, Frame& _frame, vuk::Name _na
 					
 				}() };
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, pushConstants);
-			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32(_frame.models.cpu_meshes.size()));
+			cmd.specialize_constants(0, u32(_frame.models.cpu_meshes.size()));
 			
 			cmd.dispatch_indirect(_source.instancesCount);
 			

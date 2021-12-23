@@ -20,8 +20,6 @@ void Visibility::compile(vuk::PerThreadContext& _ptc) {
 	visibilityPci.add_spirv(std::vector<u32>{
 #include "spv/visibility.frag.spv"
 	}, "visibility.frag");
-	visibilityPci.rasterization_state.cullMode = vuk::CullModeFlagBits::eBack;
-	visibilityPci.depth_stencil_state.depthCompareOp = vuk::CompareOp::eGreater;
 	_ptc.ctx.create_named_pipeline("visibility", visibilityPci);
 	
 }
@@ -39,7 +37,16 @@ void Visibility::apply(Frame& _frame, Texture2DMS _visbuf, Texture2DMS _depth,
 			_depth.resource(vuk::eDepthStencilRW) },
 		.execute = [_visbuf, _instances, &_frame](vuk::CommandBuffer& cmd) {
 			
-			cmdSetViewportScissor(cmd, _visbuf.size());
+			cmd.set_viewport(0, vuk::Rect2D::framebuffer());
+			cmd.set_scissor(0, vuk::Rect2D::framebuffer());
+			cmd.set_color_blend(_visbuf.name, vuk::BlendPreset::eOff);
+			cmd.set_rasterization(vuk::PipelineRasterizationStateCreateInfo{
+				.cullMode = vuk::CullModeFlagBits::eBack });
+			cmd.set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
+				.depthTestEnable = true,
+				.depthWriteEnable = true,
+				.depthCompareOp = vuk::CompareOp::eGreater });
+			
 			cmd.bind_index_buffer(_frame.models.indices, vuk::IndexType::eUint32)
 			   .bind_uniform_buffer(0, 0, _frame.world)
 			   .bind_storage_buffer(0, 1, _frame.models.vertices)
@@ -115,8 +122,8 @@ auto Worklist::create(Pool& _pool, Frame& _frame, vuk::Name _name,
 			   .bind_storage_buffer(0, 5, result.lists)
 			   .bind_compute_pipeline("worklist");
 			
-			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_visbuf.size()));
-			cmd.specialization_constants(1, vuk::ShaderStageFlagBits::eCompute, ListCount);
+			cmd.specialize_constants(0, u32Fromu16(_visbuf.size()));
+			cmd.specialize_constants(1, ListCount);
 			
 			cmd.dispatch_invocations(_visbuf.size().x(), _visbuf.size().y());
 			

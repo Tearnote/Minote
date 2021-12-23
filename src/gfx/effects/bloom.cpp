@@ -79,8 +79,8 @@ void Bloom::apply(Frame& _frame, Pool& _pool, Texture2D _target) {
 				}
 				cmd.bind_storage_image(0, 1, *temp.mipView(i));
 				
-				cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(sourceSize));
-				cmd.specialization_constants(1, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(targetSize));
+				cmd.specialize_constants(0, u32Fromu16(sourceSize));
+				cmd.specialize_constants(1, u32Fromu16(targetSize));
 				
 				cmd.dispatch_invocations(_target.size().x() >> (i + 1), _target.size().y() >> (i + 1), 1);
 				
@@ -124,8 +124,8 @@ void Bloom::apply(Frame& _frame, Pool& _pool, Texture2D _target) {
 				
 				cmd.bind_compute_pipeline("bloom_up");
 				
-				cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(sourceSize));
-				cmd.specialization_constants(1, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(targetSize));
+				cmd.specialize_constants(0, u32Fromu16(sourceSize));
+				cmd.specialize_constants(1, u32Fromu16(targetSize));
 				cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, power);
 				
 				cmd.dispatch_invocations(_target.size().x() >> i, _target.size().y() >> i, 1);

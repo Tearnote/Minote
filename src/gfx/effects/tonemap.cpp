@@ -32,7 +32,7 @@ void Tonemap::apply(Frame& _frame, Texture2D _source, Texture2D _target) {
 			   .bind_storage_image(0, 1, _target)
 			   .bind_compute_pipeline("tonemap");
 			
-			cmd.specialization_constants(0, vuk::ShaderStageFlagBits::eCompute, u32Fromu16(_target.size()));
+			cmd.specialize_constants(0, u32Fromu16(_target.size()));
 			
 			cmd.dispatch_invocations(_target.size().x(), _target.size().y());
 			
