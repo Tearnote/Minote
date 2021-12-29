@@ -86,9 +86,16 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 	
 	mpack_expect_cstr_match(&model, "meshes");
 	auto meshCount = mpack_expect_array(&model);
+	
+	m_modelIndices.emplace(_name, m_models.size());
+	m_models.emplace_back(Model{
+		.meshCount = meshCount,
+		.meshOffset = u32(m_meshes.size()) });
+	
 	m_meshes.reserve(m_meshes.size() + meshCount);
 	auto meshList = ivector<u32>();
 	meshList.reserve(meshCount);
+	
 	
 	for (auto i: iota(0u, meshCount)) {
 		
@@ -142,7 +149,6 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 		
 	}
 	mpack_done_array(&model);
-	m_modelMeshes.emplace(_name, std::move(meshList));
 	
 	mpack_done_map(&model);
 	mpack_reader_destroy(&model);
@@ -172,8 +178,9 @@ auto ModelList::upload(Pool& _pool, vuk::Name _name) && -> ModelBuffer {
 		.meshes = Buffer<Mesh>::make(_pool, nameAppend(_name, "meshes"),
 			vuk::BufferUsageFlagBits::eStorageBuffer,
 			m_meshes),
-		.cpu_modelMeshes = std::move(m_modelMeshes) };
+		.cpu_modelIndices = std::move(m_modelIndices) };
 	result.cpu_meshes = std::move(m_meshes); // Must still exist for .meshes creation
+	result.cpu_models = std::move(m_models);
 	
 	// Clean up in case this isn't a temporary
 	

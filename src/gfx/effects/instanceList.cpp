@@ -30,7 +30,8 @@ auto BasicInstanceList::upload(Pool& _pool, Frame& _frame, vuk::Name _name,
 			continue;
 		
 		auto modelID = _objects.modelIDs[id];
-		instancesCount += _frame.models.cpu_modelMeshes.at(modelID).size();
+		auto modelIdx = _frame.models.cpu_modelIndices.at(modelID);
+		instancesCount += _frame.models.cpu_models[modelIdx].meshCount;
 		
 	}
 	
@@ -47,10 +48,12 @@ auto BasicInstanceList::upload(Pool& _pool, Frame& _frame, vuk::Name _name,
 			continue;
 		
 		auto modelID = _objects.modelIDs[id];
-		for (auto meshIdx: _frame.models.cpu_modelMeshes.at(modelID)) {
+		auto modelIdx = _frame.models.cpu_modelIndices.at(modelID);
+		auto& model = _frame.models.cpu_models[modelIdx];
+		for (auto meshIdx: iota(model.meshOffset, model.meshOffset + model.meshCount)) {
 			
 			instances.emplace_back(Instance{
-				.meshIdx = u32(meshIdx),
+				.meshIdx = meshIdx,
 				.transformIdx = u32(basicTransforms.size()) });
 			colors.emplace_back(_objects.colors[id]);
 			basicTransforms.emplace_back(_objects.transforms[id]);

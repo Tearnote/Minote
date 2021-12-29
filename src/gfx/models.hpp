@@ -44,6 +44,11 @@ struct Mesh {
 	f32 radius;
 };
 
+struct Model {
+	u32 meshCount;
+	u32 meshOffset;
+};
+
 // A set of buffers storing vertex data for all models, and how to access each
 // model within the buffer.
 struct ModelBuffer {
@@ -55,8 +60,9 @@ struct ModelBuffer {
 	
 	Buffer<Mesh> meshes;
 	
-	hashmap<ID, ivector<u32, 16>> cpu_modelMeshes;
 	ivector<Mesh> cpu_meshes;
+	ivector<Model> cpu_models;
+	hashmap<ID, u32> cpu_modelIndices;
 	
 };
 
@@ -78,9 +84,9 @@ private:
 	pvector<tools::VertexType> m_vertices;
 	pvector<tools::NormalType> m_normals;
 	
-	// Mapping from model ID to a list of mesh indices
-	hashmap<ID, ivector<u32, 16>> m_modelMeshes;
-	ivector<Mesh> m_meshes;
+	ivector<Mesh> m_meshes; // Mesh descriptors, for indexing into vertex buffers
+	ivector<Model> m_models; // Model descriptors, for indexing into m_modelMeshes
+	hashmap<ID, u32> m_modelIndices; // Mapping of model IDs to their index in m_models
 	
 	
 };
