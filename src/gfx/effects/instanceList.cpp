@@ -165,12 +165,6 @@ void InstanceList::compile(vuk::PerThreadContext& _ptc) {
 	}, "instanceList/instanceScan3.comp");
 	_ptc.ctx.create_named_pipeline("instanceList/instanceScan3", instanceScan3Pci);
 	
-	auto instanceSortCountPci = vuk::ComputePipelineBaseCreateInfo();
-	instanceSortCountPci.add_spirv(std::vector<u32>{
-#include "spv/instanceList/sortCount.comp.spv"
-	}, "instanceList/sortCount.comp");
-	_ptc.ctx.create_named_pipeline("instanceList/sortCount", instanceSortCountPci);
-	
 	auto instanceSortScan1Pci = vuk::ComputePipelineBaseCreateInfo();
 	instanceSortScan1Pci.add_spirv(std::vector<u32>{
 #include "spv/instanceList/sortScan1.comp.spv"
@@ -332,52 +326,6 @@ auto InstanceList::fromObjects(Pool& _pool, Frame& _frame, vuk::Name _name,
 			
 	}});
 	
-	rg.add_pass({
-		.name = nameAppend(_name, "instanceList/instanceScan3"),
-		.resources = {
-			result.instancesCount.resource(vuk::eIndirectRead),
-			_objects.modelIndices.resource(vuk::eComputeRead),
-			_objects.transforms.resource(vuk::eComputeRead),
-			objectsScan.resource(vuk::eComputeRead),
-			instancesScanTemp.resource(vuk::eComputeRead),
-			instancesTemp.resource(vuk::eComputeRead),
-			instancesUnsorted.resource(vuk::eComputeWrite) },
-		.execute = [&_frame, _objects, result, objectsScan, instancesScanTemp,
-			instancesTemp, instancesUnsorted, _view, _projection](vuk::CommandBuffer& cmd) {
-			
-			cmd.bind_uniform_buffer(0, 0, result.instancesCount)
-			   .bind_storage_buffer(0, 1, _frame.models.models)
-			   .bind_storage_buffer(0, 2, _frame.models.meshes)
-			   .bind_storage_buffer(0, 3, _objects.modelIndices)
-			   .bind_storage_buffer(0, 4, _objects.transforms)
-			   .bind_storage_buffer(0, 5, objectsScan)
-			   .bind_storage_buffer(0, 6, instancesScanTemp)
-			   .bind_storage_buffer(0, 7, instancesTemp)
-			   .bind_storage_buffer(0, 8, instancesUnsorted)
-			   .bind_compute_pipeline("instanceList/instanceScan3");
-			
-			struct PushConstants {
-				mat4 view;
-				vec4 frustum;
-			};
-			auto pushConstants = PushConstants{
-				.view = _view,
-				.frustum = [_projection] {
-					
-					auto projectionT = transpose(_projection);
-					vec4 frustumX = projectionT[3] + projectionT[0];
-					vec4 frustumY = projectionT[3] + projectionT[1];
-					frustumX /= length(vec3(frustumX));
-					frustumY /= length(vec3(frustumY));
-					return vec4{frustumX.x(), frustumX.z(), frustumY.y(), frustumY.z()};
-					
-				}() };
-			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, pushConstants);
-			
-			cmd.dispatch_indirect(result.instancesCount);
-			
-		}});
-	
 	// Create a mostly prefilled command buffer
 	
 	auto commandsData = pvector<Command>();
@@ -398,20 +346,49 @@ auto InstanceList::fromObjects(Pool& _pool, Frame& _frame, vuk::Name _name,
 		commandsData);
 	result.commands.attach(rg, vuk::eHostWrite, vuk::eNone);
 	
-	// Count how many instances there are of each mesh
-	
 	rg.add_pass({
-		.name = nameAppend(_name, "instanceList/sortCount"),
+		.name = nameAppend(_name, "instanceList/instanceScan3"),
 		.resources = {
 			result.instancesCount.resource(vuk::eIndirectRead),
-			instancesUnsorted.resource(vuk::eComputeRead),
-			result.commands.resource(vuk::eComputeWrite) },
-		.execute = [result, instancesUnsorted](vuk::CommandBuffer& cmd) {
+			_objects.modelIndices.resource(vuk::eComputeRead),
+			_objects.transforms.resource(vuk::eComputeRead),
+			objectsScan.resource(vuk::eComputeRead),
+			instancesScanTemp.resource(vuk::eComputeRead),
+			instancesTemp.resource(vuk::eComputeRead),
+			instancesUnsorted.resource(vuk::eComputeWrite),
+			result.commands.resource(vuk::eComputeRW) },
+		.execute = [&_frame, _objects, result, objectsScan, instancesScanTemp,
+			instancesTemp, instancesUnsorted, _view, _projection](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, result.instancesCount)
-			   .bind_storage_buffer(0, 1, instancesUnsorted)
-			   .bind_storage_buffer(0, 2, result.commands)
-			   .bind_compute_pipeline("instanceList/sortCount");
+			   .bind_storage_buffer(0, 1, _frame.models.models)
+			   .bind_storage_buffer(0, 2, _frame.models.meshes)
+			   .bind_storage_buffer(0, 3, _objects.modelIndices)
+			   .bind_storage_buffer(0, 4, _objects.transforms)
+			   .bind_storage_buffer(0, 5, objectsScan)
+			   .bind_storage_buffer(0, 6, instancesScanTemp)
+			   .bind_storage_buffer(0, 7, instancesTemp)
+			   .bind_storage_buffer(0, 8, instancesUnsorted)
+			   .bind_storage_buffer(0, 9, result.commands)
+			   .bind_compute_pipeline("instanceList/instanceScan3");
+			
+			struct PushConstants {
+				mat4 view;
+				vec4 frustum;
+			};
+			auto pushConstants = PushConstants{
+				.view = _view,
+				.frustum = [_projection] {
+					
+					auto projectionT = transpose(_projection);
+					vec4 frustumX = projectionT[3] + projectionT[0];
+					vec4 frustumY = projectionT[3] + projectionT[1];
+					frustumX /= length(vec3(frustumX));
+					frustumY /= length(vec3(frustumY));
+					return vec4{frustumX.x(), frustumX.z(), frustumY.y(), frustumY.z()};
+					
+				}() };
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, pushConstants);
 			
 			cmd.dispatch_indirect(result.instancesCount);
 			

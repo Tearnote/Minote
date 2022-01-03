@@ -33,6 +33,9 @@ layout(binding = 7, std430) restrict readonly buffer Scanned {
 layout(binding = 8, std430) restrict writeonly buffer Instances {
 	Instance b_instances[];
 };
+layout(binding = 9, std430) restrict buffer Commands {
+	Command b_commands[];
+};
 
 layout(push_constant) uniform Constants {
 	mat4 u_view;
@@ -73,6 +76,8 @@ void main() {
 	float radius = b_meshes[meshIdx].radius;
 	if (!visible(transform, radius * scale))
 		meshIdx = -1u;
+	else
+		atomicAdd(b_commands[meshIdx].instanceCount, 1);
 	
 	b_instances[gid].objectIdx = objectIdx;
 	b_instances[gid].meshIdx = meshIdx;

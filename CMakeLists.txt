@@ -263,7 +263,6 @@ set(SHADER_SOURCES
 	instanceList/objectScan1.comp
 	instanceList/objectScan2.comp
 	instanceList/objectScan3.comp
-	instanceList/sortCount.comp
 	instanceList/sortWrite.comp
 	instanceList/sortScan1.comp
 	instanceList/sortScan2.comp
