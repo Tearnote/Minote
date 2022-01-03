@@ -19,7 +19,7 @@ void PBR::compile(vuk::PerThreadContext& _ptc) {
 }
 
 void PBR::apply(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
-	DrawableInstanceList _instances, Cubemap _ibl,
+	InstanceList _instances, Cubemap _ibl,
 	Buffer<vec3> _sunLuminance, Texture3D _aerialPerspective) {
 	
 	_frame.rg.add_pass({

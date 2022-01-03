@@ -17,6 +17,12 @@ vec3 rcp(vec3 _v) {
 	
 }
 
+uint divRoundUp(uint _val, uint _div) {
+	
+	return (_val - 1) / _div + 1;
+	
+};
+
 // https://github.com/CesiumGS/cesium/blob/main/Source/Shaders/Builtin/Functions/fastApproximateAtan.glsl
 // Used under MIT license
 float fastAtan(float _x) {

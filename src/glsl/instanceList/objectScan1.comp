@@ -1,0 +1,91 @@
+#version 460
+#pragma shader_stage(compute)
+#extension GL_KHR_shader_subgroup_arithmetic: enable
+
+layout(local_size_x = 1024) in;
+
+#include "../types.glsl"
+
+shared uint sh_subgroupScans[gl_WorkGroupSize.x / 8];
+
+layout(binding = 0) uniform ObjectCount {
+	uvec3 u_objectCountGroups;
+	uint u_objectCount;
+};
+layout(binding = 1, std430) restrict readonly buffer Models {
+	Model b_models[];
+};
+layout(binding = 2, std430) restrict readonly buffer ModelIndices {
+	uint b_modelIndices[];
+};
+layout(binding = 3, std430) restrict writeonly buffer Temp {
+	uint b_temp[];
+};
+layout(binding = 4, std430) restrict writeonly buffer Scanned {
+	uint b_scanned[];
+};
+
+void main() {
+	
+	uint gid = gl_GlobalInvocationID.x;
+	
+	// Read value
+	
+	uint value;
+	if (gid < u_objectCount)
+		value = b_models[b_modelIndices[gid]].meshCount;
+	else
+		value = 0;
+	
+	// Prefix sum within subgroup
+	
+	uint scanned = subgroupExclusiveAdd(value);
+	
+	// Write out subgroup sum to shared mem
+	
+	uint valueSum = subgroupAdd(value);
+	if (subgroupElect())
+		sh_subgroupScans[gl_SubgroupID] = valueSum;
+	
+	barrier();
+	
+	// Prefix sum on shared mem
+	
+	if (gl_SubgroupID == 0) {
+		
+		uint elements = gl_WorkGroupSize.x / gl_SubgroupSize;
+		uint loops = max(elements / gl_SubgroupSize, 1);
+		uint accum = 0;
+		for (uint i = 0; i < loops; i += 1) {
+			
+			uint address = gl_SubgroupInvocationID + i * gl_SubgroupSize;
+			
+			uint subvalue;
+			if (gl_SubgroupInvocationID < elements)
+				subvalue = sh_subgroupScans[address];
+			else
+				subvalue = 0;
+			
+			uint subscanned = subgroupExclusiveAdd(subvalue);
+			
+			if (gl_SubgroupInvocationID < elements)
+				sh_subgroupScans[address] = subscanned + accum;
+			
+			accum += subgroupAdd(subvalue);
+			
+		}
+		
+		if (subgroupElect())
+			b_temp[gl_WorkGroupID.x] = accum;
+		
+	}
+	
+	barrier();
+	
+	// Write out results
+	
+	scanned += sh_subgroupScans[gl_SubgroupID];
+	if (gid < u_objectCount)
+		b_scanned[gid] = scanned;
+	
+}

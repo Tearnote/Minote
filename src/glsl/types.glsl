@@ -39,9 +39,14 @@ struct Mesh {
 	float radius; // Distance from origin to furthest vertex
 };
 
+struct Model {
+	uint meshOffset;
+	uint meshCount;
+};
+
 struct Instance {
+	uint objectIdx;
 	uint meshIdx;
-	uint transformIdx;
 };
 
 // Components of an instance transform

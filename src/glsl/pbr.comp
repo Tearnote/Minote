@@ -16,16 +16,16 @@ layout(binding = 0) uniform WorldConstants {
 	World u_world;
 };
 
-layout (binding = 1, std430) restrict readonly buffer Meshes {
+layout(binding = 1, std430) restrict readonly buffer Meshes {
 	Mesh b_meshes[];
 };
-layout (binding = 2, std430) restrict readonly buffer Instances {
+layout(binding = 2, std430) restrict readonly buffer Instances {
 	Instance b_instances[];
 };
-layout (binding = 3, std430) restrict readonly buffer Colors {
+layout(binding = 3, std430) restrict readonly buffer Colors {
 	vec4 b_colors[];
 };
-layout (binding = 4, std430) restrict readonly buffer Materials {
+layout(binding = 4, std430) restrict readonly buffer Materials {
 	Material b_materials[];
 };
 
@@ -112,7 +112,7 @@ vec3 shadeVisSamplePBR(uint _visValue, vec2 _uv, vec3 _clipVertex, vec3 _normal)
 	
 	// PBR calculation
 	
-	uint colorIdx = instance.transformIdx;
+	uint colorIdx = instance.objectIdx;
 	vec3 color = b_colors[colorIdx].rgb * material.color.rgb;
 	vec3 f0 = max(color * material.metalness, vec3(0.04));
 	

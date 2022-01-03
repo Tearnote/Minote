@@ -1,0 +1,50 @@
+#version 460
+#pragma shader_stage(compute)
+
+layout(local_size_x = 1024) in;
+
+#include "../types.glsl"
+#include "../util.glsl"
+
+layout(binding = 0) uniform ObjectCount {
+	uvec3 u_objectCountGroups;
+	uint u_objectCount;
+};
+layout(binding = 1, std430) restrict readonly buffer Models {
+	Model b_models[];
+};
+layout(binding = 2, std430) restrict readonly buffer ModelIndices {
+	uint b_modelIndices[];
+};
+layout(binding = 3, std430) restrict readonly buffer Temp {
+	uint b_temp[];
+};
+layout(binding = 4, std430) restrict buffer Scanned {
+	uint b_scanned[];
+};
+layout(binding = 5, std430) restrict writeonly buffer Instances {
+	uint b_instances[];
+};
+layout(binding = 6, std430) restrict writeonly buffer InstanceCount {
+	uvec4 b_instancesCount;
+};
+
+void main() {
+	
+	uint gid = gl_GlobalInvocationID.x;
+	if (gid >= u_objectCount)
+		return;
+	
+	uint result = b_scanned[gid] + b_temp[gl_WorkGroupID.x];
+	b_scanned[gid] = result;
+	b_instances[result] = 1;
+	
+	if (gid == u_objectCount - 1) {
+		
+		uint instanceCount = result + b_models[b_modelIndices[gid]].meshCount;
+		uint instanceCountGroups = divRoundUp(instanceCount, 1024);
+		b_instancesCount = uvec4(instanceCountGroups, 1, 1, instanceCount);
+		
+	}
+	
+}

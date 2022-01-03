@@ -29,7 +29,7 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, bool _flush) {
 	// Upload resources
 	
 	world = cpu_world.upload(framePool, "world");
-	auto basicInstances = BasicInstanceList::upload(framePool, *this, "basicInstances", _objects);
+	auto basicObjects = BasicObjectList::upload(framePool, *this, "basicObjects", _objects);
 	auto atmosphere = Atmosphere::create(permPool, *this, "earth", Atmosphere::Params::earth());
 	auto viewport = _target.size();
 	
@@ -75,10 +75,8 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, bool _flush) {
 	// Create rendering passes
 	
 	// Instance list processing
-	auto instances = InstanceList::fromBasic(framePool, *this, "instances", std::move(basicInstances));
-	auto drawables = DrawableInstanceList::fromUnsorted(framePool, *this, "drawables", instances);
-	auto culledDrawables = DrawableInstanceList::frustumCull(framePool, *this, "culledDrawables", drawables,
-		cpu_world.view, cpu_world.projection);
+	auto objects = ObjectList::fromBasic(framePool, *this, "objects", std::move(basicObjects));
+	auto instances = InstanceList::fromObjects(framePool, *this, "instances", objects);
 	
 	// Sky generation
 	auto cameraSky = Sky::createView(permPool, *this, "cameraSky", cpu_world.cameraPos, atmosphere);
@@ -91,11 +89,12 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, bool _flush) {
 	Sky::draw(*this, iblUnfiltered, IblProbePosition, cubeSky, atmosphere);
 	CubeFilter::apply(*this, iblUnfiltered, iblFiltered);
 	
-	Visibility::apply(*this, visbuf, depth, culledDrawables);
+	// Drawing
+	Visibility::apply(*this, visbuf, depth, instances);
 	QuadBuffer::clusterize(*this, quadbuf, visbuf);
-	QuadBuffer::genBuffers(*this, quadbuf, culledDrawables);
-	auto worklist = Worklist::create(swapchainPool, *this, "worklist", quadbuf.visbuf, culledDrawables);
-	PBR::apply(*this, quadbuf, worklist, culledDrawables,
+	QuadBuffer::genBuffers(*this, quadbuf, instances);
+	auto worklist = Worklist::create(swapchainPool, *this, "worklist", quadbuf.visbuf, instances);
+	PBR::apply(*this, quadbuf, worklist, instances,
 		iblFiltered, sunLuminance, aerialPerspective);
 	Sky::draw(*this, quadbuf, worklist, cameraSky, atmosphere);
 	QuadBuffer::resolve(*this, quadbuf, color);

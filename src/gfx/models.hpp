@@ -45,8 +45,8 @@ struct Mesh {
 };
 
 struct Model {
-	u32 meshCount;
 	u32 meshOffset;
+	u32 meshCount;
 };
 
 // A set of buffers storing vertex data for all models, and how to access each
@@ -59,6 +59,7 @@ struct ModelBuffer {
 	Buffer<tools::NormalType> normals;
 	
 	Buffer<Mesh> meshes;
+	Buffer<Model> models;
 	
 	ivector<Mesh> cpu_meshes;
 	ivector<Model> cpu_models;

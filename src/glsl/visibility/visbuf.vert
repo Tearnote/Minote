@@ -10,13 +10,16 @@ layout(location = 0) out flat uint InstanceIdx;
 layout(binding = 0) uniform WorldConstants {
 	World u_world;
 };
-layout(std430, binding = 1) restrict readonly buffer Vertices {
+layout(binding = 1, std430) restrict readonly buffer Vertices {
 	float B_VERTICES[];
 };
-layout(std430, binding = 2) restrict readonly buffer Instances {
+layout(binding = 2, std430) restrict readonly buffer Meshes {
+	Mesh b_meshes[];
+};
+layout(binding = 3, std430) restrict readonly buffer Instances {
 	Instance b_instances[];
 };
-layout(std430, binding = 3) restrict readonly buffer Transforms {
+layout(binding = 4, std430) restrict readonly buffer Transforms {
 	mat3x4 b_transforms[];
 };
 
@@ -28,8 +31,9 @@ void main() {
 	
 	vec3 vertex = fetchVertex(gl_VertexIndex);
 	
-	uint transformIdx = b_instances[gl_InstanceIndex].transformIdx;
-	mat4 transform = getTransform(b_transforms[transformIdx]);
+	mat4 transform = b_meshes[b_instances[gl_InstanceIndex].meshIdx].transform;
+	uint transformIdx = b_instances[gl_InstanceIndex].objectIdx;
+	transform = getTransform(b_transforms[transformIdx]) * transform;
 	gl_Position = u_world.viewProjection * transform * vec4(vertex, 1.0);
 	
 }

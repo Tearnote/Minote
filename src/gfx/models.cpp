@@ -89,8 +89,8 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 	
 	m_modelIndices.emplace(_name, m_models.size());
 	m_models.emplace_back(Model{
-		.meshCount = meshCount,
-		.meshOffset = u32(m_meshes.size()) });
+		.meshOffset = u32(m_meshes.size()),
+		.meshCount = meshCount });
 	
 	m_meshes.reserve(m_meshes.size() + meshCount);
 	auto meshList = ivector<u32>();
@@ -178,6 +178,9 @@ auto ModelList::upload(Pool& _pool, vuk::Name _name) && -> ModelBuffer {
 		.meshes = Buffer<Mesh>::make(_pool, nameAppend(_name, "meshes"),
 			vuk::BufferUsageFlagBits::eStorageBuffer,
 			m_meshes),
+		.models = Buffer<Model>::make(_pool, nameAppend(_name, "models"),
+			vuk::BufferUsageFlagBits::eStorageBuffer,
+			m_models),
 		.cpu_modelIndices = std::move(m_modelIndices) };
 	result.cpu_meshes = std::move(m_meshes); // Must still exist for .meshes creation
 	result.cpu_models = std::move(m_models);

@@ -1,7 +1,7 @@
 #version 460
 #pragma shader_stage(compute)
 
-layout(local_size_x = 64) in;
+layout(local_size_x = 1024) in;
 
 #include "../types.glsl"
 

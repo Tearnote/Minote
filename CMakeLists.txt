@@ -256,13 +256,20 @@ target_link_libraries(Minote PRIVATE mpack)
 
 set(SHADER_DIR_PREFIX src/glsl)
 set(SHADER_SOURCES
+	instanceList/instanceScan1.comp
+	instanceList/instanceScan2.comp
+	instanceList/instanceScan3.comp
 	instanceList/transformConv.comp
-	instanceList/frustumCull.comp
+	# instanceList/frustumCull.comp
+	instanceList/objectScan1.comp
+	instanceList/objectScan2.comp
+	instanceList/objectScan3.comp
 	instanceList/sortCount.comp
 	instanceList/sortWrite.comp
 	instanceList/sortScan1.comp
 	instanceList/sortScan2.comp
 	instanceList/sortScan3.comp
+	instanceList/sortWrite.comp
 	cubeFilter/post.comp
 	cubeFilter/pre.comp
 	visibility/worklist.comp
@@ -322,7 +329,6 @@ add_custom_command(
 set(MODELS
 	models/block.glb
 	models/sphere.glb
-	models/hierarchy.glb
 	models/testscene.glb)
 add_custom_command(
 	OUTPUT ${ASSET_OUTPUT} APPEND

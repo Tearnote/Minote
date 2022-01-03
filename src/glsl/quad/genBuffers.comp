@@ -89,8 +89,9 @@ void main() {
 		indexBase += vis.triangle * 3;
 		uvec3 indices = fetchIndices(indexBase);
 		
-		uint transformIdx = instance.transformIdx;
-		mat4 transform = getTransform(b_transforms[transformIdx]);
+		mat4 transform = b_meshes[meshIdx].transform;
+		uint transformIdx = instance.objectIdx;
+		transform = getTransform(b_transforms[transformIdx]) * transform;
 		
 		mat3 vertices = {
 			fetchVertex(indices.x),

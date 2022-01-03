@@ -75,7 +75,7 @@ void game(GameParams const& _params) try {
 	constexpr auto Expand = 0u;
 	constexpr auto Spacing = 25_m;
 	
-	constexpr auto TestScenes = 1;
+	constexpr auto TestScenes = 2;
 	for (auto x: iota(0, TestScenes))
 	for (auto y: iota(0, TestScenes)) {
 		
@@ -91,12 +91,6 @@ void game(GameParams const& _params) try {
 	}
 	
 	// Create another test scene
-	
-	auto hierarchy_id = engine.objects().create();
-	auto hierarchy = engine.objects().get(hierarchy_id);
-	hierarchy.modelID = "hierarchy"_id;
-	hierarchy.transform.position = vec3{12_m, 0_m, 64_m};
-	hierarchy.transform.scale = prescale;
 	
 	for (auto x = -Spacing * Expand; x <= Spacing * Expand; x += Spacing)
 	for (auto y = -Spacing * Expand; y <= Spacing * Expand; y += Spacing) {

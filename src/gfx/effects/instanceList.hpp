@@ -12,69 +12,71 @@ namespace minote::gfx {
 using namespace base;
 using namespace base::literals;
 
-struct BasicInstanceList {
+struct BasicObjectList {
 	
 	using BasicTransform = ObjectPool::Transform;
 	
-	struct Instance {
-		u32 meshIdx;
-		u32 transformIdx;
-	};
+	static constexpr auto MaxObjects = 65536_zu;
 	
-	static constexpr auto MaxInstances = 262144_zu;
-	
-	Buffer<uvec4> instancesCount;
-	Buffer<Instance> instances;
+	Buffer<uvec4> objectsCount;
+	Buffer<u32> modelIndices;
 	Buffer<vec4> colors;
 	Buffer<BasicTransform> basicTransforms;
 	
-	static auto upload(Pool&, Frame&, vuk::Name, ObjectPool const&) -> BasicInstanceList;
+	static auto upload(Pool&, Frame&, vuk::Name, ObjectPool const&) -> BasicObjectList;
 	
 	[[nodiscard]]
-	auto capacity() const -> usize { return MaxInstances; }
+	static constexpr auto capacity() -> usize { return MaxObjects; }
+	
+};
+
+struct ObjectList {
+	
+	using Transform = array<vec4, 3>;
+	
+	Buffer<uvec4> objectsCount;
+	Buffer<u32> modelIndices;
+	Buffer<vec4> colors;
+	Buffer<Transform> transforms;
+	
+	static void compile(vuk::PerThreadContext&);
+	
+	static auto fromBasic(Pool&, Frame&, vuk::Name, BasicObjectList&&) -> ObjectList;
+	
+	[[nodiscard]]
+	static constexpr auto capacity() -> usize { return BasicObjectList::MaxObjects; }
 	
 };
 
 struct InstanceList {
 	
-	using Instance = BasicInstanceList::Instance;
-	using Transform = array<vec4, 3>;
-	
-	Buffer<uvec4> instancesCount;
-	Buffer<Instance> instances;
-	Buffer<vec4> colors;
-	Buffer<Transform> transforms;
-	
-	static void compile(vuk::PerThreadContext&);
-	
-	static auto fromBasic(Pool&, Frame&, vuk::Name, BasicInstanceList&&) -> InstanceList;
-	
-	[[nodiscard]]
-	auto capacity() const -> usize { return BasicInstanceList::MaxInstances; }
-	
-};
-
-struct DrawableInstanceList {
-	
 	using Command = VkDrawIndexedIndirectCommand;
-	using Instance = BasicInstanceList::Instance;
 	using Transform = array<vec4, 3>;
 	
-	Buffer<Command> commands;
-	Buffer<uvec4> instancesCount;
-	Buffer<Instance> instances;
+	struct Instance {
+		u32 objectIdx;
+		u32 meshIdx;
+	};
+	
+	static constexpr auto MaxInstances = 262144_zu;
+	
+	// Object data
 	Buffer<vec4> colors;
 	Buffer<Transform> transforms;
 	
+	// Instance data
+	Buffer<uvec4> instancesCount;
+	Buffer<Instance> instances;
+	
+	// Draw data
+	Buffer<Command> commands;
+	
 	static void compile(vuk::PerThreadContext&);
 	
-	static auto fromUnsorted(Pool&, Frame&, vuk::Name, InstanceList) -> DrawableInstanceList;
-	
-	static auto frustumCull(Pool&, Frame&, vuk::Name, DrawableInstanceList,
-		mat4 view, mat4 projection) -> DrawableInstanceList;
+	static auto fromObjects(Pool&, Frame&, vuk::Name, ObjectList) -> InstanceList;
 	
 	[[nodiscard]]
-	auto capacity() const -> usize { return BasicInstanceList::MaxInstances; }
+	static constexpr auto capacity() -> usize { return MaxInstances; }
 	
 };
 

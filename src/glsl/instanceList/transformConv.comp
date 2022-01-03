@@ -1,12 +1,13 @@
 #version 460
 #pragma shader_stage(compute)
 
-layout(local_size_x = 64) in;
+layout(local_size_x = 1024) in;
 
 #include "../types.glsl"
 
-layout(binding = 0) uniform InstanceCount {
-	uvec4 u_instanceCount;
+layout(binding = 0) uniform ObjectCount {
+	uvec3 u_objectCountGroups;
+	uint u_objectCount;
 };
 layout (binding = 1, std430) restrict readonly buffer BasicTransforms {
 	BasicTransform b_basicTransforms[];
@@ -14,23 +15,14 @@ layout (binding = 1, std430) restrict readonly buffer BasicTransforms {
 layout (binding = 2, std430) restrict writeonly buffer Transforms {
 	mat3x4 b_transforms[];
 };
-layout (binding = 3, std430) restrict readonly buffer Instances {
-	Instance b_instances[];
-};
-layout(binding = 4, std430) restrict readonly buffer Meshes {
-	Mesh b_meshes[];
-};
 
 void main() {
 	
 	uint gid = gl_GlobalInvocationID.x;
-	if (gid >= u_instanceCount.w)
+	if (gid >= u_objectCount)
 		return;
 	
 	mat4 transform = encodeTransform(b_basicTransforms[gid]);
-	uint meshIdx = b_instances[gid].meshIdx;
-	mat4 meshTransform = b_meshes[meshIdx].transform;
-	
-	b_transforms[gid] = mat3x4(transpose(transform * meshTransform));
+	b_transforms[gid] = mat3x4(transpose(transform));
 	
 }

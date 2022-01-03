@@ -174,7 +174,7 @@ void QuadBuffer::clusterize(Frame& _frame, QuadBuffer& _quadbuf, Texture2DMS _vi
 	
 }
 
-void QuadBuffer::genBuffers(Frame& _frame, QuadBuffer& _quadbuf, DrawableInstanceList _instances) {
+void QuadBuffer::genBuffers(Frame& _frame, QuadBuffer& _quadbuf, InstanceList _instances) {
 	
 	_frame.rg.add_pass({
 		

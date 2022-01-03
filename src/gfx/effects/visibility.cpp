@@ -25,7 +25,7 @@ void Visibility::compile(vuk::PerThreadContext& _ptc) {
 }
 
 void Visibility::apply(Frame& _frame, Texture2DMS _visbuf, Texture2DMS _depth,
-	DrawableInstanceList _instances) {
+	InstanceList _instances) {
 	
 	_frame.rg.add_pass({
 		.name = nameAppend(_visbuf.name, "visibility/visbuf"),
@@ -50,8 +50,9 @@ void Visibility::apply(Frame& _frame, Texture2DMS _visbuf, Texture2DMS _depth,
 			cmd.bind_index_buffer(_frame.models.indices, vuk::IndexType::eUint32)
 			   .bind_uniform_buffer(0, 0, _frame.world)
 			   .bind_storage_buffer(0, 1, _frame.models.vertices)
-			   .bind_storage_buffer(0, 2, _instances.instances)
-			   .bind_storage_buffer(0, 3, _instances.transforms)
+			   .bind_storage_buffer(0, 2, _frame.models.meshes)
+			   .bind_storage_buffer(0, 3, _instances.instances)
+			   .bind_storage_buffer(0, 4, _instances.transforms)
 			   .bind_graphics_pipeline("visibility/visbuf");
 			
 			cmd.draw_indexed_indirect(_instances.commands.length(), _instances.commands);
@@ -71,7 +72,7 @@ void Worklist::compile(vuk::PerThreadContext& _ptc) {
 }
 
 auto Worklist::create(Pool& _pool, Frame& _frame, vuk::Name _name,
-	Texture2D _visbuf, DrawableInstanceList _instances) -> Worklist {
+	Texture2D _visbuf, InstanceList _instances) -> Worklist {
 	
 	auto result = Worklist();
 	

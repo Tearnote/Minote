@@ -10,18 +10,18 @@ namespace minote::gfx {
 
 using namespace base;
 
-auto BasicInstanceList::upload(Pool& _pool, Frame& _frame, vuk::Name _name,
-	ObjectPool const& _objects) -> BasicInstanceList {
+auto BasicObjectList::upload(Pool& _pool, Frame& _frame, vuk::Name _name,
+	ObjectPool const& _objects) -> BasicObjectList {
 	
 	ZoneScoped;
 	
-	auto instances = pvector<Instance>();
+	auto modelIndices = pvector<u32>();
 	auto colors = pvector<vec4>();
 	auto basicTransforms = pvector<BasicTransform>();
 	
-	auto instancesCount = 0u;
+	auto objectsCount = 0u;
 	
-	// Precalculate mesh count
+	// Precalculate object count
 	
 	for (auto id: iota(ObjectID(0), _objects.size())) {
 		
@@ -29,17 +29,15 @@ auto BasicInstanceList::upload(Pool& _pool, Frame& _frame, vuk::Name _name,
 		if (!metadata.exists || !metadata.visible)
 			continue;
 		
-		auto modelID = _objects.modelIDs[id];
-		auto modelIdx = _frame.models.cpu_modelIndices.at(modelID);
-		instancesCount += _frame.models.cpu_models[modelIdx].meshCount;
+		objectsCount += 1;
 		
 	}
 	
-	instances.reserve(instancesCount);
-	colors.reserve(instancesCount);
-	basicTransforms.reserve(instancesCount);
+	modelIndices.reserve(objectsCount);
+	colors.reserve(objectsCount);
+	basicTransforms.reserve(objectsCount);
 	
-	// Queue up meshes of all valid objects
+	// Queue up all valid objects
 	
 	for (auto id: iota(ObjectID(0), _objects.size())) {
 		
@@ -49,61 +47,54 @@ auto BasicInstanceList::upload(Pool& _pool, Frame& _frame, vuk::Name _name,
 		
 		auto modelID = _objects.modelIDs[id];
 		auto modelIdx = _frame.models.cpu_modelIndices.at(modelID);
-		auto& model = _frame.models.cpu_models[modelIdx];
-		for (auto meshIdx: iota(model.meshOffset, model.meshOffset + model.meshCount)) {
-			
-			instances.emplace_back(Instance{
-				.meshIdx = meshIdx,
-				.transformIdx = u32(basicTransforms.size()) });
-			colors.emplace_back(_objects.colors[id]);
-			basicTransforms.emplace_back(_objects.transforms[id]);
-			
-		}
+		modelIndices.emplace_back(modelIdx);
+		colors.emplace_back(_objects.colors[id]);
+		basicTransforms.emplace_back(_objects.transforms[id]);
 		
 	}
 	
 	// Upload data to GPU
 	
-	auto result = BasicInstanceList();
+	auto result = BasicObjectList();
 	
-	auto instancesCountGroups = divRoundUp(instancesCount, 64u);
-	auto instancesCountData = uvec4{instancesCountGroups, 1, 1, instancesCount};
-	result.instancesCount = Buffer<uvec4>::make(_pool, nameAppend(_name, "instanceCount"),
+	auto objectsCountGroups = divRoundUp(objectsCount, 1024u);
+	auto objectsCountData = uvec4{objectsCountGroups, 1, 1, objectsCount};
+	result.objectsCount = Buffer<uvec4>::make(_pool, nameAppend(_name, "objectsCount"),
 		vuk::BufferUsageFlagBits::eStorageBuffer |
 		vuk::BufferUsageFlagBits::eUniformBuffer |
 		vuk::BufferUsageFlagBits::eIndirectBuffer,
-		std::span(&instancesCountData, 1));
-	result.instances = Buffer<Instance>::make(_pool, nameAppend(_name, "instances"),
+		std::span(&objectsCountData, 1));
+	result.modelIndices = Buffer<u32>::make(_pool, nameAppend(_name, "modelIndices"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
-		instances, MaxInstances);
+		modelIndices, MaxObjects);
 	result.colors = Buffer<vec4>::make(_pool, nameAppend(_name, "colors"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
-		colors, MaxInstances);
+		colors, MaxObjects);
 	result.basicTransforms = Buffer<BasicTransform>::make(_pool, nameAppend(_name, "basicTransforms"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
-		basicTransforms, MaxInstances);
+		basicTransforms, MaxObjects);
 	
-	result.instancesCount.attach(_frame.rg, vuk::eHostWrite, vuk::eNone);
-	result.instances.attach(_frame.rg, vuk::eTransferDst, vuk::eNone);
-	result.colors.attach(_frame.rg, vuk::eTransferDst, vuk::eNone);
-	result.basicTransforms.attach(_frame.rg, vuk::eTransferDst, vuk::eNone);
+	result.objectsCount.attach(_frame.rg, vuk::eHostWrite, vuk::eNone);
+	result.modelIndices.attach(_frame.rg, vuk::eHostWrite, vuk::eNone);
+	result.colors.attach(_frame.rg, vuk::eHostWrite, vuk::eNone);
+	result.basicTransforms.attach(_frame.rg, vuk::eHostWrite, vuk::eNone);
 	
 	return result;
 	
 }
 
-void InstanceList::compile(vuk::PerThreadContext& _ptc) {
+void ObjectList::compile(vuk::PerThreadContext& _ptc) {
 	
 	auto transformConvPci = vuk::ComputePipelineBaseCreateInfo();
 	transformConvPci.add_spirv(std::vector<u32>{
 #include "spv/instanceList/transformConv.comp.spv"
 	}, "instanceList/transformConv.comp");
-	_ptc.ctx.create_named_pipeline("instanceList/transformConv", transformConvPci);
+	_ptc.ctx.create_named_pipeline("objectList/transformConv", transformConvPci);
 	
 }
 
-auto InstanceList::fromBasic(Pool& _pool, Frame& _frame, vuk::Name _name,
-	BasicInstanceList&& _basic) -> InstanceList {
+auto ObjectList::fromBasic(Pool& _pool, Frame& _frame, vuk::Name _name,
+	BasicObjectList&& _basic) -> ObjectList {
 	
 	auto transforms = Buffer<Transform>::make(_pool, nameAppend(_name, "transforms"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
@@ -112,33 +103,67 @@ auto InstanceList::fromBasic(Pool& _pool, Frame& _frame, vuk::Name _name,
 	transforms.attach(_frame.rg, vuk::eNone, vuk::eNone);
 	
 	_frame.rg.add_pass({
-		.name = nameAppend(_basic.basicTransforms.name, "instanceList/transformConv"),
+		.name = nameAppend(_basic.basicTransforms.name, "objectList/transformConv"),
 		.resources = {
-			_basic.instancesCount.resource(vuk::eIndirectRead),
+			_basic.objectsCount.resource(vuk::eIndirectRead),
 			_basic.basicTransforms.resource(vuk::eComputeRead),
 			transforms.resource(vuk::eComputeWrite) },
 		.execute = [_basic, transforms, &_frame](vuk::CommandBuffer& cmd) {
 			
-			cmd.bind_uniform_buffer(0, 0, _basic.instancesCount)
+			cmd.bind_uniform_buffer(0, 0, _basic.objectsCount)
 			   .bind_storage_buffer(0, 1, _basic.basicTransforms)
 			   .bind_storage_buffer(0, 2, transforms)
-			   .bind_storage_buffer(0, 3, _basic.instances)
-			   .bind_storage_buffer(0, 4, _frame.models.meshes)
-			   .bind_compute_pipeline("instanceList/transformConv");
+			   .bind_compute_pipeline("objectList/transformConv");
 			
-			cmd.dispatch_indirect(_basic.instancesCount);
+			cmd.dispatch_indirect(_basic.objectsCount);
 			
 		}});
 	
-	return InstanceList{
-		.instancesCount = _basic.instancesCount,
-		.instances = _basic.instances,
+	return ObjectList{
+		.objectsCount = _basic.objectsCount,
+		.modelIndices = _basic.modelIndices,
 		.colors = _basic.colors,
 		.transforms = transforms };
 	
 }
 
-void DrawableInstanceList::compile(vuk::PerThreadContext& _ptc) {
+void InstanceList::compile(vuk::PerThreadContext& _ptc) {
+	
+	auto objectScan1Pci = vuk::ComputePipelineBaseCreateInfo();
+	objectScan1Pci.add_spirv(std::vector<u32>{
+#include "spv/instanceList/objectScan1.comp.spv"
+	}, "instanceList/objectScan1.comp");
+	_ptc.ctx.create_named_pipeline("instanceList/objectScan1", objectScan1Pci);
+	
+	auto objectScan2Pci = vuk::ComputePipelineBaseCreateInfo();
+	objectScan2Pci.add_spirv(std::vector<u32>{
+#include "spv/instanceList/objectScan2.comp.spv"
+	}, "instanceList/objectScan2.comp");
+	_ptc.ctx.create_named_pipeline("instanceList/objectScan2", objectScan2Pci);
+	
+	auto objectScan3Pci = vuk::ComputePipelineBaseCreateInfo();
+	objectScan3Pci.add_spirv(std::vector<u32>{
+#include "spv/instanceList/objectScan3.comp.spv"
+	}, "instanceList/objectScan3.comp");
+	_ptc.ctx.create_named_pipeline("instanceList/objectScan3", objectScan3Pci);
+	
+	auto instanceScan1Pci = vuk::ComputePipelineBaseCreateInfo();
+	instanceScan1Pci.add_spirv(std::vector<u32>{
+#include "spv/instanceList/instanceScan1.comp.spv"
+	}, "instanceList/instanceScan1.comp");
+	_ptc.ctx.create_named_pipeline("instanceList/instanceScan1", instanceScan1Pci);
+	
+	auto instanceScan2Pci = vuk::ComputePipelineBaseCreateInfo();
+	instanceScan2Pci.add_spirv(std::vector<u32>{
+#include "spv/instanceList/instanceScan2.comp.spv"
+	}, "instanceList/instanceScan2.comp");
+	_ptc.ctx.create_named_pipeline("instanceList/instanceScan2", instanceScan2Pci);
+	
+	auto instanceScan3Pci = vuk::ComputePipelineBaseCreateInfo();
+	instanceScan3Pci.add_spirv(std::vector<u32>{
+#include "spv/instanceList/instanceScan3.comp.spv"
+	}, "instanceList/instanceScan3.comp");
+	_ptc.ctx.create_named_pipeline("instanceList/instanceScan3", instanceScan3Pci);
 	
 	auto instanceSortCountPci = vuk::ComputePipelineBaseCreateInfo();
 	instanceSortCountPci.add_spirv(std::vector<u32>{
@@ -169,27 +194,179 @@ void DrawableInstanceList::compile(vuk::PerThreadContext& _ptc) {
 #include "spv/instanceList/sortWrite.comp.spv"
 	}, "instanceList/sortWrite.comp");
 	_ptc.ctx.create_named_pipeline("instanceList/sortWrite", instanceSortWritePci);
-	
+	/*
 	auto frustumCullPci = vuk::ComputePipelineBaseCreateInfo();
 	frustumCullPci.add_spirv(std::vector<u32>{
 #include "spv/instanceList/frustumCull.comp.spv"
 	}, "instanceList/frustumCull.comp");
 	_ptc.ctx.create_named_pipeline("instanceList/frustumCull", frustumCullPci);
-	
+	*/
 }
 
-auto DrawableInstanceList::fromUnsorted(Pool& _pool, Frame& _frame, vuk::Name _name,
-	InstanceList _unsorted) -> DrawableInstanceList {
+auto InstanceList::fromObjects(Pool& _pool, Frame& _frame, vuk::Name _name,
+	ObjectList _objects) -> InstanceList {
 	
 	auto& rg = _frame.rg;
 	
-	auto result = DrawableInstanceList();
+	auto result = InstanceList();
+	
+	// Prefix sum over object mesh count
+	
+	assert(_objects.capacity() <= 1024 * 1024);
+	
+	auto objectsScan = Buffer<u32>::make(_frame.permPool, nameAppend(_name, "objectsScan"),
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		_objects.capacity());
+	auto objectsScanTemp = Buffer<u32>::make(_frame.permPool, nameAppend(_name, "objectsScanTemp"),
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		divRoundUp(_objects.capacity(), 1024_zu));
+	objectsScan.attach(rg, vuk::eNone, vuk::eNone);
+	objectsScanTemp.attach(rg, vuk::eNone, vuk::eNone);
+	
+	auto instancesTempInit = ivector<u32>(InstanceList::capacity());
+	auto instancesTemp = Buffer<u32>::make(_frame.framePool, nameAppend(_name, "instancesTemp"),
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		instancesTempInit);
+	instancesTemp.attach(rg, vuk::eNone, vuk::eNone);
+	
+	result.instancesCount = Buffer<uvec4>::make(_pool, nameAppend(_name, "instancesCount"),
+		vuk::BufferUsageFlagBits::eIndirectBuffer |
+		vuk::BufferUsageFlagBits::eStorageBuffer |
+		vuk::BufferUsageFlagBits::eUniformBuffer);
+	result.instancesCount.attach(rg, vuk::eNone, vuk::eNone);
+	
+	rg.add_pass({
+		.name = nameAppend(_name, "instanceList/objectScan1"),
+		.resources = {
+			_objects.objectsCount.resource(vuk::eIndirectRead),
+			_objects.modelIndices.resource(vuk::eComputeRead),
+			objectsScanTemp.resource(vuk::eComputeWrite),
+			objectsScan.resource(vuk::eComputeWrite) },
+		.execute = [&_frame, _objects, objectsScan, objectsScanTemp](vuk::CommandBuffer& cmd) {
+			
+			cmd.bind_uniform_buffer(0, 0, _objects.objectsCount)
+			   .bind_storage_buffer(0, 1, _frame.models.models)
+			   .bind_storage_buffer(0, 2, _objects.modelIndices)
+			   .bind_storage_buffer(0, 3, objectsScanTemp)
+			   .bind_storage_buffer(0, 4, objectsScan)
+			   .bind_compute_pipeline("instanceList/objectScan1");
+			
+			cmd.dispatch_indirect(_objects.objectsCount);
+			
+		}});
+	
+	rg.add_pass({
+		.name = nameAppend(_name, "instanceList/objectScan2"),
+		.resources = {
+			_objects.objectsCount.resource(vuk::eComputeRead),
+			objectsScanTemp.resource(vuk::eComputeRW) },
+		.execute = [_objects, objectsScanTemp](vuk::CommandBuffer& cmd) {
+			
+			cmd.bind_uniform_buffer(0, 0, _objects.objectsCount)
+			   .bind_storage_buffer(0, 1, objectsScanTemp)
+			   .bind_compute_pipeline("instanceList/objectScan2");
+			
+			cmd.dispatch(1);
+			
+	}});
+	
+	rg.add_pass({
+		.name = nameAppend(_name, "instanceList/objectScan3"),
+		.resources = {
+			_objects.objectsCount.resource(vuk::eIndirectRead),
+			_objects.modelIndices.resource(vuk::eComputeRead),
+			objectsScanTemp.resource(vuk::eComputeRead),
+			objectsScan.resource(vuk::eComputeRW),
+			instancesTemp.resource(vuk::eComputeWrite), // Span starts are marked here in preparation for next step
+			result.instancesCount.resource(vuk::eComputeWrite) }, // Last invocation writes instance count
+		.execute = [&_frame, result, _objects, objectsScanTemp, objectsScan, instancesTemp](vuk::CommandBuffer& cmd) {
+			
+			cmd.bind_uniform_buffer(0, 0, _objects.objectsCount)
+			   .bind_storage_buffer(0, 1, _frame.models.models)
+			   .bind_storage_buffer(0, 2, _objects.modelIndices)
+			   .bind_storage_buffer(0, 3, objectsScanTemp)
+			   .bind_storage_buffer(0, 4, objectsScan)
+			   .bind_storage_buffer(0, 5, instancesTemp)
+			   .bind_storage_buffer(0, 6, result.instancesCount)
+			   .bind_compute_pipeline("instanceList/objectScan3");
+			
+			cmd.dispatch_indirect(_objects.objectsCount);
+			
+		}});
+	
+	// Prefix sum over instance list
+	
+	auto instancesScanTemp = Buffer<u32>::make(_frame.permPool, nameAppend(_name, "instancesScanTemp"),
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		divRoundUp(capacity(), 1024_zu));
+	instancesScanTemp.attach(rg, vuk::eNone, vuk::eNone);
+	
+	auto instancesUnsorted = Buffer<Instance>::make(_frame.permPool, nameAppend(_name, "instancesUnsorted"),
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		InstanceList::capacity());
+	instancesUnsorted.attach(rg, vuk::eNone, vuk::eNone);
+	
+	rg.add_pass({
+		.name = nameAppend(_name, "instanceList/instanceScan1"),
+		.resources = {
+			result.instancesCount.resource(vuk::eIndirectRead),
+			instancesTemp.resource(vuk::eComputeRW),
+			instancesScanTemp.resource(vuk::eComputeWrite) },
+		.execute = [result, instancesTemp, instancesScanTemp](vuk::CommandBuffer& cmd) {
+			
+			cmd.bind_uniform_buffer(0, 0, result.instancesCount)
+			   .bind_storage_buffer(0, 1, instancesTemp)
+			   .bind_storage_buffer(0, 2, instancesScanTemp)
+			   .bind_compute_pipeline("instanceList/instanceScan1");
+			
+			cmd.dispatch_indirect(result.instancesCount);
+			
+		}});
+	
+	rg.add_pass({
+		.name = nameAppend(_name, "instanceList/instanceScan2"),
+		.resources = {
+			result.instancesCount.resource(vuk::eComputeRead),
+			instancesScanTemp.resource(vuk::eComputeRW) },
+		.execute = [result, instancesScanTemp](vuk::CommandBuffer& cmd) {
+			
+			cmd.bind_uniform_buffer(0, 0, result.instancesCount)
+			   .bind_storage_buffer(0, 1, instancesScanTemp)
+			   .bind_compute_pipeline("instanceList/instanceScan2");
+			
+			cmd.dispatch(1);
+			
+	}});
+	
+	rg.add_pass({
+		.name = nameAppend(_name, "instanceList/instanceScan3"),
+		.resources = {
+			result.instancesCount.resource(vuk::eIndirectRead),
+			_objects.modelIndices.resource(vuk::eComputeRead),
+			objectsScan.resource(vuk::eComputeRead),
+			instancesScanTemp.resource(vuk::eComputeRead),
+			instancesTemp.resource(vuk::eComputeRead),
+			instancesUnsorted.resource(vuk::eComputeWrite) },
+		.execute = [&_frame, _objects, result, objectsScan,
+			instancesScanTemp, instancesTemp, instancesUnsorted](vuk::CommandBuffer& cmd) {
+			
+			cmd.bind_uniform_buffer(0, 0, result.instancesCount)
+			   .bind_storage_buffer(0, 1, _frame.models.models)
+			   .bind_storage_buffer(0, 2, _objects.modelIndices)
+			   .bind_storage_buffer(0, 3, objectsScan)
+			   .bind_storage_buffer(0, 4, instancesScanTemp)
+			   .bind_storage_buffer(0, 5, instancesTemp)
+			   .bind_storage_buffer(0, 6, instancesUnsorted)
+			   .bind_compute_pipeline("instanceList/instanceScan3");
+			
+			cmd.dispatch_indirect(result.instancesCount);
+			
+		}});
 	
 	// Create a mostly prefilled command buffer
 	
 	auto commandsData = pvector<Command>();
 	commandsData.reserve(_frame.models.cpu_meshes.size());
-	
 	for (auto& mesh: _frame.models.cpu_meshes) {
 		
 		commandsData.emplace_back(Command{
@@ -200,32 +377,32 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, Frame& _frame, vuk::Name _n
 			.firstInstance = 0 }); // Calculated in step 2
 		
 	}
-	
-	result.commands = Buffer<Command>::make(_pool, nameAppend(_name, "commands"),
-		vuk::BufferUsageFlagBits::eStorageBuffer | vuk::BufferUsageFlagBits::eIndirectBuffer,
+	result.commands = Buffer<Command>::make(_frame.framePool, nameAppend(_name, "commands"),
+		vuk::BufferUsageFlagBits::eStorageBuffer |
+		vuk::BufferUsageFlagBits::eIndirectBuffer,
 		commandsData);
-	result.commands.attach(rg, vuk::eTransferDst, vuk::eNone);
+	result.commands.attach(rg, vuk::eHostWrite, vuk::eNone);
 	
-	// Step 1: Count how many instances there are of each mesh
+	// Count how many instances there are of each mesh
 	
 	rg.add_pass({
 		.name = nameAppend(_name, "instanceList/sortCount"),
 		.resources = {
-			_unsorted.instancesCount.resource(vuk::eIndirectRead),
-			_unsorted.instances.resource(vuk::eComputeRead),
+			result.instancesCount.resource(vuk::eIndirectRead),
+			instancesUnsorted.resource(vuk::eComputeRead),
 			result.commands.resource(vuk::eComputeWrite) },
-		.execute = [_unsorted, result](vuk::CommandBuffer& cmd) {
+		.execute = [result, instancesUnsorted](vuk::CommandBuffer& cmd) {
 			
-			cmd.bind_uniform_buffer(0, 0, _unsorted.instancesCount)
-			   .bind_storage_buffer(0, 1, _unsorted.instances)
+			cmd.bind_uniform_buffer(0, 0, result.instancesCount)
+			   .bind_storage_buffer(0, 1, instancesUnsorted)
 			   .bind_storage_buffer(0, 2, result.commands)
 			   .bind_compute_pipeline("instanceList/sortCount");
 			
-			cmd.dispatch_indirect(_unsorted.instancesCount);
+			cmd.dispatch_indirect(result.instancesCount);
 			
 		}});
 	
-	// Step 2: Prefix sum the command offset
+	// Prefix sum the command offset
 	
 	assert(result.commands.length() <= 1024 * 1024);
 	
@@ -262,9 +439,9 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, Frame& _frame, vuk::Name _n
 			
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, u32(scanTemp.length()));
 			
-			cmd.dispatch_invocations(scanTemp.length());
+			cmd.dispatch_invocations(1);
 			
-	}});
+		}});
 	
 	rg.add_pass({
 		.name = nameAppend(_name, "instanceList/sortScan3"),
@@ -281,46 +458,45 @@ auto DrawableInstanceList::fromUnsorted(Pool& _pool, Frame& _frame, vuk::Name _n
 			
 			cmd.dispatch_invocations(result.commands.length());
 			
-	}});
+		}});
 	
-	// Step 3: Write out at sorted position
+	// Write out at sorted position
 	
-	result.instancesCount = _unsorted.instancesCount;
-	result.colors = _unsorted.colors;
-	result.transforms = _unsorted.transforms;
+	result.colors = _objects.colors;
+	result.transforms = _objects.transforms;
 	
 	result.instances = Buffer<Instance>::make(_pool, nameAppend(_name, "instances"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
-		_unsorted.capacity());
+		capacity());
 	result.instances.attach(rg, vuk::eNone, vuk::eNone);
 	
 	rg.add_pass({
 		.name = nameAppend(_name, "instanceList/sortWrite"),
 		.resources = {
-			_unsorted.instancesCount.resource(vuk::eIndirectRead),
-			_unsorted.instances.resource(vuk::eComputeRead),
+			result.instancesCount.resource(vuk::eIndirectRead),
+			instancesUnsorted.resource(vuk::eComputeRead),
 			result.commands.resource(vuk::eComputeRW),
 			result.instances.resource(vuk::eComputeWrite) },
-		.execute = [_unsorted, result](vuk::CommandBuffer& cmd) {
+		.execute = [result, instancesUnsorted](vuk::CommandBuffer& cmd) {
 			
-			cmd.bind_uniform_buffer(0, 0, _unsorted.instancesCount)
-			   .bind_storage_buffer(0, 1, _unsorted.instances)
+			cmd.bind_uniform_buffer(0, 0, result.instancesCount)
+			   .bind_storage_buffer(0, 1, instancesUnsorted)
 			   .bind_storage_buffer(0, 2, result.commands)
 			   .bind_storage_buffer(0, 3, result.instances)
 			   .bind_compute_pipeline("instanceList/sortWrite");
 			
-			cmd.dispatch_indirect(_unsorted.instancesCount);
+			cmd.dispatch_indirect(result.instancesCount);
 			
 		}});
 	
 	return result;
 	
 }
-
-auto DrawableInstanceList::frustumCull(Pool& _pool, Frame& _frame, vuk::Name _name,
-	DrawableInstanceList _source, mat4 _view, mat4 _projection) -> DrawableInstanceList {
+/*
+auto InstanceList::frustumCull(Pool& _pool, Frame& _frame, vuk::Name _name,
+	InstanceList _source, mat4 _view, mat4 _projection) -> InstanceList {
 	
-	auto result = DrawableInstanceList();
+	auto result = InstanceList();
 	
 	// Create a zero-filled command buffer
 	
@@ -395,5 +571,5 @@ auto DrawableInstanceList::frustumCull(Pool& _pool, Frame& _frame, vuk::Name _na
 	return result;
 	
 }
-
+*/
 }
