@@ -25,9 +25,13 @@ void main() {
 		return;
 	
 	uint meshIdx = b_instances[gid].meshIdx;
-	uint offset = b_commands[meshIdx].firstInstance;
-	uint newid = offset + atomicAdd(b_commands[meshIdx].instanceCount, 1);
-	
-	b_instancesSorted[newid] = b_instances[gid];
+	if (meshIdx != -1u) {
+		
+		uint offset = b_commands[meshIdx].firstInstance;
+		uint newid = offset + atomicAdd(b_commands[meshIdx].instanceCount, 1);
+		
+		b_instancesSorted[newid] = b_instances[gid];
+		
+	}
 	
 }

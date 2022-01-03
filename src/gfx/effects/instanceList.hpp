@@ -73,7 +73,7 @@ struct InstanceList {
 	
 	static void compile(vuk::PerThreadContext&);
 	
-	static auto fromObjects(Pool&, Frame&, vuk::Name, ObjectList) -> InstanceList;
+	static auto fromObjects(Pool&, Frame&, vuk::Name, ObjectList, mat4 view, mat4 projection) -> InstanceList;
 	
 	[[nodiscard]]
 	static constexpr auto capacity() -> usize { return MaxInstances; }

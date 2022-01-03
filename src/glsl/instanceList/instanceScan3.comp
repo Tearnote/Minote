@@ -12,21 +12,46 @@ layout(binding = 0) uniform InstanceCount {
 layout(binding = 1, std430) restrict readonly buffer Models {
 	Model b_models[];
 };
-layout(binding = 2, std430) restrict readonly buffer ModelIndices {
+layout(binding = 2, std430) restrict readonly buffer Meshes {
+	Mesh b_meshes[];
+};
+layout(binding = 3, std430) restrict readonly buffer ModelIndices {
 	uint b_modelIndices[];
 };
-layout(binding = 3, std430) restrict readonly buffer ObjectsScanned {
+layout(binding = 4, std430) restrict readonly buffer Transforms {
+	mat3x4 b_transforms[];
+};
+layout(binding = 5, std430) restrict readonly buffer ObjectsScanned {
 	uint b_objectsScanned[];
 };
-layout(binding = 4, std430) restrict readonly buffer Temp {
+layout(binding = 6, std430) restrict readonly buffer Temp {
 	uint b_temp[];
 };
-layout(binding = 5, std430) restrict readonly buffer Scanned {
+layout(binding = 7, std430) restrict readonly buffer Scanned {
 	uint b_scanned[];
 };
-layout(binding = 6, std430) restrict writeonly buffer Instances {
+layout(binding = 8, std430) restrict writeonly buffer Instances {
 	Instance b_instances[];
 };
+
+layout(push_constant) uniform Constants {
+	mat4 u_view;
+	vec4 u_frustum;
+};
+
+bool visible(mat4 _transform, float _radius) {
+	
+	vec3 position = _transform[3].rgb;
+	
+	vec3 center = (u_view * vec4(position, 1.0)).xyz;
+	
+	bool result = true;
+	result = result && center.z * u_frustum[1] - abs(center.x) * u_frustum[0] > -_radius;
+	result = result && center.z * u_frustum[3] - abs(center.y) * u_frustum[2] > -_radius;
+	
+	return result;
+	
+}
 
 void main() {
 	
@@ -37,6 +62,17 @@ void main() {
 	uint objectIdx = b_scanned[gid] + b_temp[gl_WorkGroupID.x] - 1;
 	uint modelIdx = b_modelIndices[objectIdx];
 	uint meshIdx = gid - b_objectsScanned[objectIdx] + b_models[modelIdx].meshOffset;
+	
+	// Frustum culling
+	
+	mat4 transform = b_meshes[meshIdx].transform;
+	transform = getTransform(b_transforms[objectIdx]) * transform;
+	float scale = max(length(transform[0].xyz),
+	              max(length(transform[1].xyz),
+	                  length(transform[2].xyz)));
+	float radius = b_meshes[meshIdx].radius;
+	if (!visible(transform, radius * scale))
+		meshIdx = -1u;
 	
 	b_instances[gid].objectIdx = objectIdx;
 	b_instances[gid].meshIdx = meshIdx;

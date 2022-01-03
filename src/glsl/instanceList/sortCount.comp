@@ -23,6 +23,7 @@ void main() {
 		return;
 	
 	uint meshIdx = b_instances[gid].meshIdx;
-	atomicAdd(b_commands[meshIdx].instanceCount, 1);
+	if (meshIdx != -1u)
+		atomicAdd(b_commands[meshIdx].instanceCount, 1);
 	
 }

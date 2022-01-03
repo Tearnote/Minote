@@ -76,7 +76,8 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, bool _flush) {
 	
 	// Instance list processing
 	auto objects = ObjectList::fromBasic(framePool, *this, "objects", std::move(basicObjects));
-	auto instances = InstanceList::fromObjects(framePool, *this, "instances", objects);
+	auto instances = InstanceList::fromObjects(framePool, *this, "instances", objects,
+		cpu_world.view, cpu_world.projection);
 	
 	// Sky generation
 	auto cameraSky = Sky::createView(permPool, *this, "cameraSky", cpu_world.cameraPos, atmosphere);

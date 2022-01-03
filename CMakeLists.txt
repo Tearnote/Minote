@@ -260,7 +260,6 @@ set(SHADER_SOURCES
 	instanceList/instanceScan2.comp
 	instanceList/instanceScan3.comp
 	instanceList/transformConv.comp
-	# instanceList/frustumCull.comp
 	instanceList/objectScan1.comp
 	instanceList/objectScan2.comp
 	instanceList/objectScan3.comp

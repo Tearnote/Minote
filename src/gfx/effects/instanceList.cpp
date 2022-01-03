@@ -194,17 +194,11 @@ void InstanceList::compile(vuk::PerThreadContext& _ptc) {
 #include "spv/instanceList/sortWrite.comp.spv"
 	}, "instanceList/sortWrite.comp");
 	_ptc.ctx.create_named_pipeline("instanceList/sortWrite", instanceSortWritePci);
-	/*
-	auto frustumCullPci = vuk::ComputePipelineBaseCreateInfo();
-	frustumCullPci.add_spirv(std::vector<u32>{
-#include "spv/instanceList/frustumCull.comp.spv"
-	}, "instanceList/frustumCull.comp");
-	_ptc.ctx.create_named_pipeline("instanceList/frustumCull", frustumCullPci);
-	*/
+	
 }
 
 auto InstanceList::fromObjects(Pool& _pool, Frame& _frame, vuk::Name _name,
-	ObjectList _objects) -> InstanceList {
+	ObjectList _objects, mat4 _view, mat4 _projection) -> InstanceList {
 	
 	auto& rg = _frame.rg;
 	
@@ -343,21 +337,42 @@ auto InstanceList::fromObjects(Pool& _pool, Frame& _frame, vuk::Name _name,
 		.resources = {
 			result.instancesCount.resource(vuk::eIndirectRead),
 			_objects.modelIndices.resource(vuk::eComputeRead),
+			_objects.transforms.resource(vuk::eComputeRead),
 			objectsScan.resource(vuk::eComputeRead),
 			instancesScanTemp.resource(vuk::eComputeRead),
 			instancesTemp.resource(vuk::eComputeRead),
 			instancesUnsorted.resource(vuk::eComputeWrite) },
-		.execute = [&_frame, _objects, result, objectsScan,
-			instancesScanTemp, instancesTemp, instancesUnsorted](vuk::CommandBuffer& cmd) {
+		.execute = [&_frame, _objects, result, objectsScan, instancesScanTemp,
+			instancesTemp, instancesUnsorted, _view, _projection](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, result.instancesCount)
 			   .bind_storage_buffer(0, 1, _frame.models.models)
-			   .bind_storage_buffer(0, 2, _objects.modelIndices)
-			   .bind_storage_buffer(0, 3, objectsScan)
-			   .bind_storage_buffer(0, 4, instancesScanTemp)
-			   .bind_storage_buffer(0, 5, instancesTemp)
-			   .bind_storage_buffer(0, 6, instancesUnsorted)
+			   .bind_storage_buffer(0, 2, _frame.models.meshes)
+			   .bind_storage_buffer(0, 3, _objects.modelIndices)
+			   .bind_storage_buffer(0, 4, _objects.transforms)
+			   .bind_storage_buffer(0, 5, objectsScan)
+			   .bind_storage_buffer(0, 6, instancesScanTemp)
+			   .bind_storage_buffer(0, 7, instancesTemp)
+			   .bind_storage_buffer(0, 8, instancesUnsorted)
 			   .bind_compute_pipeline("instanceList/instanceScan3");
+			
+			struct PushConstants {
+				mat4 view;
+				vec4 frustum;
+			};
+			auto pushConstants = PushConstants{
+				.view = _view,
+				.frustum = [_projection] {
+					
+					auto projectionT = transpose(_projection);
+					vec4 frustumX = projectionT[3] + projectionT[0];
+					vec4 frustumY = projectionT[3] + projectionT[1];
+					frustumX /= length(vec3(frustumX));
+					frustumY /= length(vec3(frustumY));
+					return vec4{frustumX.x(), frustumX.z(), frustumY.y(), frustumY.z()};
+					
+				}() };
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, pushConstants);
 			
 			cmd.dispatch_indirect(result.instancesCount);
 			
@@ -492,84 +507,5 @@ auto InstanceList::fromObjects(Pool& _pool, Frame& _frame, vuk::Name _name,
 	return result;
 	
 }
-/*
-auto InstanceList::frustumCull(Pool& _pool, Frame& _frame, vuk::Name _name,
-	InstanceList _source, mat4 _view, mat4 _projection) -> InstanceList {
-	
-	auto result = InstanceList();
-	
-	// Create a zero-filled command buffer
-	
-	auto commandsData = ivector<Command>(_source.commands.length());
-	result.commands = Buffer<Command>::make(_pool, nameAppend(_name, "commands"),
-		vuk::BufferUsageFlagBits::eStorageBuffer | vuk::BufferUsageFlagBits::eIndirectBuffer,
-		commandsData);
-	result.commands.attach(_frame.rg, vuk::eHostWrite, vuk::eNone);
-	
-	// Create destination buffers
-	
-	auto instancesCountData = uvec4{0, 1, 1, 0}; // Zero-initializing instancesCount
-	result.instancesCount = Buffer<uvec4>::make(_pool, nameAppend(_name, "instanceCount"),
-		vuk::BufferUsageFlagBits::eStorageBuffer |
-		vuk::BufferUsageFlagBits::eUniformBuffer |
-		vuk::BufferUsageFlagBits::eIndirectBuffer,
-		std::span(&instancesCountData, 1));
-	result.instances = Buffer<Instance>::make(_pool, nameAppend(_name, "instance"),
-		vuk::BufferUsageFlagBits::eStorageBuffer,
-		_source.capacity());
-	result.colors = _source.colors;
-	result.transforms = _source.transforms;
-	
-	result.instancesCount.attach(_frame.rg, vuk::eNone, vuk::eNone);
-	result.instances.attach(_frame.rg, vuk::eNone, vuk::eNone);
-	
-	_frame.rg.add_pass({
-		.name = nameAppend(_name, "instanceList/frustumCull"),
-		.resources = {
-			_source.commands.resource(vuk::eComputeRead),
-			_source.instancesCount.resource(vuk::eIndirectRead),
-			_source.instances.resource(vuk::eComputeRead),
-			_source.transforms.resource(vuk::eComputeRead),
-			result.commands.resource(vuk::eComputeRW),
-			result.instancesCount.resource(vuk::eComputeWrite),
-			result.instances.resource(vuk::eComputeWrite) },
-		.execute = [_source, result, &_frame, _view, _projection](vuk::CommandBuffer& cmd) {
-			
-			cmd.bind_storage_buffer(0, 0, _source.commands)
-			   .bind_uniform_buffer(0, 1, _source.instancesCount)
-			   .bind_storage_buffer(0, 2, _source.instances)
-			   .bind_storage_buffer(0, 3, result.transforms)
-			   .bind_storage_buffer(0, 4, _frame.models.meshes)
-			   .bind_storage_buffer(0, 5, result.commands)
-			   .bind_storage_buffer(0, 6, result.instancesCount)
-			   .bind_storage_buffer(0, 7, result.instances)
-			   .bind_compute_pipeline("instanceList/frustumCull");
-			
-			struct PushConstants {
-				mat4 view;
-				vec4 frustum;
-			};
-			auto pushConstants = PushConstants{
-				.view = _view,
-				.frustum = [_projection] {
-					
-					auto projectionT = transpose(_projection);
-					vec4 frustumX = projectionT[3] + projectionT[0];
-					vec4 frustumY = projectionT[3] + projectionT[1];
-					frustumX /= length(vec3(frustumX));
-					frustumY /= length(vec3(frustumY));
-					return vec4{frustumX.x(), frustumX.z(), frustumY.y(), frustumY.z()};
-					
-				}() };
-			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, pushConstants);
-			cmd.specialize_constants(0, u32(_frame.models.cpu_meshes.size()));
-			
-			cmd.dispatch_indirect(_source.instancesCount);
-			
-		}});
-	
-	return result;
-	
-}
-*/
+
 }
