@@ -12,8 +12,14 @@ layout(binding = 0) uniform ObjectCount {
 layout (binding = 1, std430) restrict readonly buffer BasicTransforms {
 	BasicTransform b_basicTransforms[];
 };
-layout (binding = 2, std430) restrict writeonly buffer Transforms {
+layout (binding = 2, std430) restrict readonly buffer PrevBasicTransforms {
+	BasicTransform b_prevBasicTransforms[];
+};
+layout (binding = 3, std430) restrict writeonly buffer Transforms {
 	mat3x4 b_transforms[];
+};
+layout (binding = 4, std430) restrict writeonly buffer PrevTransforms {
+	mat3x4 b_prevTransforms[];
 };
 
 void main() {
@@ -24,5 +30,7 @@ void main() {
 	
 	mat4 transform = encodeTransform(b_basicTransforms[gid]);
 	b_transforms[gid] = mat3x4(transpose(transform));
+	mat4 prevTransform = encodeTransform(b_prevBasicTransforms[gid]);
+	b_prevTransforms[gid] = mat3x4(transpose(prevTransform));
 	
 }

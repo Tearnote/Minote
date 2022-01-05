@@ -22,6 +22,7 @@ struct BasicObjectList {
 	Buffer<u32> modelIndices;
 	Buffer<vec4> colors;
 	Buffer<BasicTransform> basicTransforms;
+	Buffer<BasicTransform> prevBasicTransforms;
 	
 	static auto upload(Pool&, Frame&, vuk::Name, ObjectPool const&) -> BasicObjectList;
 	
@@ -38,6 +39,7 @@ struct ObjectList {
 	Buffer<u32> modelIndices;
 	Buffer<vec4> colors;
 	Buffer<Transform> transforms;
+	Buffer<Transform> prevTransforms;
 	
 	static void compile(vuk::PerThreadContext&);
 	
@@ -63,6 +65,7 @@ struct InstanceList {
 	// Object data
 	Buffer<vec4> colors;
 	Buffer<Transform> transforms;
+	Buffer<Transform> prevTransforms;
 	
 	// Instance data
 	Buffer<uvec4> instancesCount;

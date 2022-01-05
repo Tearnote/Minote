@@ -265,6 +265,7 @@ void Engine::render() {
 	m_flushTemporalResources = false;
 	ImGui::NewFrame();
 	m_framePool.reset();
+	m_objects.copyTransforms();
 	FrameMark;
 	
 }

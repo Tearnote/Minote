@@ -182,6 +182,7 @@ void QuadBuffer::genBuffers(Frame& _frame, QuadBuffer& _quadbuf, InstanceList _i
 		.resources = {
 			_instances.instances.resource(vuk::eComputeRead),
 			_instances.transforms.resource(vuk::eComputeRead),
+			_instances.prevTransforms.resource(vuk::eComputeRead),
 			_quadbuf.visbuf.resource(vuk::eComputeSampled),
 			_quadbuf.subsamples.resource(vuk::eComputeSampled),
 			_quadbuf.offset.resource(vuk::eComputeWrite),
@@ -196,17 +197,18 @@ void QuadBuffer::genBuffers(Frame& _frame, QuadBuffer& _quadbuf, InstanceList _i
 			   .bind_storage_buffer(0, 1, _frame.models.meshes)
 			   .bind_storage_buffer(0, 2, _instances.instances)
 			   .bind_storage_buffer(0, 3, _instances.transforms)
-			   .bind_storage_buffer(0, 4, _frame.models.indices)
-			   .bind_storage_buffer(0, 5, _frame.models.vertices)
-			   .bind_storage_buffer(0, 6, _frame.models.normals)
-			   .bind_sampled_image(0, 7, _quadbuf.visbuf, NearestClamp)
-			   .bind_sampled_image(0, 8, _quadbuf.subsamples, NearestClamp)
-			   .bind_storage_image(0, 9, _quadbuf.offset)
-			   .bind_storage_image(0, 10, _quadbuf.depth)
-			   .bind_storage_image(0, 11, _quadbuf.quadDepth)
-			   .bind_storage_image(0, 12, _quadbuf.quadDepthRepro)
-			   .bind_storage_image(0, 13, _quadbuf.normal)
-			   .bind_storage_image(0, 14, _quadbuf.velocity)
+			   .bind_storage_buffer(0, 4, _instances.prevTransforms)
+			   .bind_storage_buffer(0, 5, _frame.models.indices)
+			   .bind_storage_buffer(0, 6, _frame.models.vertices)
+			   .bind_storage_buffer(0, 7, _frame.models.normals)
+			   .bind_sampled_image(0, 8, _quadbuf.visbuf, NearestClamp)
+			   .bind_sampled_image(0, 9, _quadbuf.subsamples, NearestClamp)
+			   .bind_storage_image(0, 10, _quadbuf.offset)
+			   .bind_storage_image(0, 11, _quadbuf.depth)
+			   .bind_storage_image(0, 12, _quadbuf.quadDepth)
+			   .bind_storage_image(0, 13, _quadbuf.quadDepthRepro)
+			   .bind_storage_image(0, 14, _quadbuf.normal)
+			   .bind_storage_image(0, 15, _quadbuf.velocity)
 			   .bind_compute_pipeline("quad/genBuffers");
 			
 			cmd.specialize_constants(0, u32Fromu16(_quadbuf.visbuf.size()));

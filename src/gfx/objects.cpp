@@ -14,6 +14,7 @@ auto ObjectPool::create() -> ObjectID {
 		modelIDs.emplace_back();
 		colors.emplace_back(1.0f); // Fully opaque
 		transforms.emplace_back(Transform::make_default());
+		prevTransforms.emplace_back(Transform::make_default());
 		
 		return size() - 1;
 		
@@ -24,6 +25,7 @@ auto ObjectPool::create() -> ObjectID {
 		metadata[id] = Metadata::make_default();
 		colors[id] = vec4(1.0f); // Fully opaque
 		transforms[id] = Transform::make_default();
+		prevTransforms[id] = Transform::make_default();
 		return id;
 		
 	}
@@ -44,6 +46,12 @@ auto ObjectPool::get(ObjectID _id) -> Proxy {
 		.modelID = modelIDs[_id],
 		.color = colors[_id],
 		.transform = transforms[_id] };
+	
+}
+
+void ObjectPool::copyTransforms() {
+	
+	prevTransforms = transforms;
 	
 }
 

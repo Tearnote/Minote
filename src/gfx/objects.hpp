@@ -76,6 +76,8 @@ struct ObjectPool {
 	[[nodiscard]]
 	auto get(ObjectID) -> Proxy;
 	
+	void copyTransforms();
+	
 	// Return the current size of the pool. This might include nonexistent
 	// objects, so it's only useful for transfers.
 	[[nodiscard]]
@@ -87,6 +89,7 @@ struct ObjectPool {
 	ivector<ID> modelIDs;
 	ivector<vec4> colors;
 	ivector<Transform> transforms;
+	ivector<Transform> prevTransforms;
 	
 private:
 	

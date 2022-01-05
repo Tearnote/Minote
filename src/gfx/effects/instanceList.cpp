@@ -18,6 +18,7 @@ auto BasicObjectList::upload(Pool& _pool, Frame& _frame, vuk::Name _name,
 	auto modelIndices = pvector<u32>();
 	auto colors = pvector<vec4>();
 	auto basicTransforms = pvector<BasicTransform>();
+	auto prevBasicTransforms = pvector<BasicTransform>();
 	
 	auto objectsCount = 0u;
 	
@@ -36,6 +37,7 @@ auto BasicObjectList::upload(Pool& _pool, Frame& _frame, vuk::Name _name,
 	modelIndices.reserve(objectsCount);
 	colors.reserve(objectsCount);
 	basicTransforms.reserve(objectsCount);
+	prevBasicTransforms.reserve(objectsCount);
 	
 	// Queue up all valid objects
 	
@@ -50,6 +52,7 @@ auto BasicObjectList::upload(Pool& _pool, Frame& _frame, vuk::Name _name,
 		modelIndices.emplace_back(modelIdx);
 		colors.emplace_back(_objects.colors[id]);
 		basicTransforms.emplace_back(_objects.transforms[id]);
+		prevBasicTransforms.emplace_back(_objects.prevTransforms[id]);
 		
 	}
 	
@@ -73,11 +76,15 @@ auto BasicObjectList::upload(Pool& _pool, Frame& _frame, vuk::Name _name,
 	result.basicTransforms = Buffer<BasicTransform>::make(_pool, nameAppend(_name, "basicTransforms"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		basicTransforms, MaxObjects);
+	result.prevBasicTransforms = Buffer<BasicTransform>::make(_pool, nameAppend(_name, "prevBasicTransforms"),
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		prevBasicTransforms, MaxObjects);
 	
 	result.objectsCount.attach(_frame.rg, vuk::eHostWrite, vuk::eNone);
 	result.modelIndices.attach(_frame.rg, vuk::eHostWrite, vuk::eNone);
 	result.colors.attach(_frame.rg, vuk::eHostWrite, vuk::eNone);
 	result.basicTransforms.attach(_frame.rg, vuk::eHostWrite, vuk::eNone);
+	result.prevBasicTransforms.attach(_frame.rg, vuk::eHostWrite, vuk::eNone);
 	
 	return result;
 	
@@ -99,20 +106,27 @@ auto ObjectList::fromBasic(Pool& _pool, Frame& _frame, vuk::Name _name,
 	auto transforms = Buffer<Transform>::make(_pool, nameAppend(_name, "transforms"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		_basic.capacity());
+	auto prevTransforms = Buffer<Transform>::make(_pool, nameAppend(_name, "prevTransforms"),
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		_basic.capacity());
 	
 	transforms.attach(_frame.rg, vuk::eNone, vuk::eNone);
+	prevTransforms.attach(_frame.rg, vuk::eNone, vuk::eNone);
 	
 	_frame.rg.add_pass({
 		.name = nameAppend(_basic.basicTransforms.name, "objectList/transformConv"),
 		.resources = {
 			_basic.objectsCount.resource(vuk::eIndirectRead),
 			_basic.basicTransforms.resource(vuk::eComputeRead),
-			transforms.resource(vuk::eComputeWrite) },
-		.execute = [_basic, transforms, &_frame](vuk::CommandBuffer& cmd) {
+			transforms.resource(vuk::eComputeWrite),
+			prevTransforms.resource(vuk::eComputeWrite) },
+		.execute = [&_frame, _basic, transforms, prevTransforms](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _basic.objectsCount)
 			   .bind_storage_buffer(0, 1, _basic.basicTransforms)
-			   .bind_storage_buffer(0, 2, transforms)
+			   .bind_storage_buffer(0, 2, _basic.prevBasicTransforms)
+			   .bind_storage_buffer(0, 3, transforms)
+			   .bind_storage_buffer(0, 4, prevTransforms)
 			   .bind_compute_pipeline("objectList/transformConv");
 			
 			cmd.dispatch_indirect(_basic.objectsCount);
@@ -123,7 +137,8 @@ auto ObjectList::fromBasic(Pool& _pool, Frame& _frame, vuk::Name _name,
 		.objectsCount = _basic.objectsCount,
 		.modelIndices = _basic.modelIndices,
 		.colors = _basic.colors,
-		.transforms = transforms };
+		.transforms = transforms,
+		.prevTransforms = prevTransforms };
 	
 }
 
@@ -456,6 +471,7 @@ auto InstanceList::fromObjects(Pool& _pool, Frame& _frame, vuk::Name _name,
 	
 	result.colors = _objects.colors;
 	result.transforms = _objects.transforms;
+	result.prevTransforms = _objects.prevTransforms;
 	
 	result.instances = Buffer<Instance>::make(_pool, nameAppend(_name, "instances"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
