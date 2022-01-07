@@ -1,0 +1,177 @@
+#version 460
+#pragma shader_stage(compute)
+
+layout(local_size_x = 8, local_size_y = 8) in;
+
+#include "../visibility/visbuf.glsl"
+#include "../types.glsl"
+#include "../util.glsl"
+
+#define B_INDICES b_indices
+#define B_VERTICES b_vertices
+
+layout(binding = 0) uniform WorldConstants {
+	World u_world;
+};
+
+layout (binding = 1, std430) restrict readonly buffer Meshes {
+	Mesh b_meshes[];
+};
+layout (binding = 2, std430) restrict readonly buffer Instances {
+	Instance b_instances[];
+};
+layout(binding = 3, std430) restrict readonly buffer Transforms {
+	mat3x4 b_transforms[];
+};
+
+layout (binding = 4, std430) restrict readonly buffer Indices {
+	uint B_INDICES[];
+};
+layout (binding = 5, std430) restrict readonly buffer Vertices {
+	float B_VERTICES[];
+};
+
+layout(binding = 6) uniform usampler2D s_visbuf;
+layout(binding = 7) uniform sampler2D s_offset;
+layout(binding = 8) uniform sampler2D s_depth;
+layout(binding = 9) uniform usampler2D s_shadowbuf;
+layout(binding = 10) restrict writeonly uniform image2D i_shadowOut;
+
+layout(push_constant) uniform Constants {
+	mat4 u_shadowViewProjection;
+};
+
+layout(constant_id = 0) const uint ShadowbufSizePacked = 0;
+layout(constant_id = 1) const uint ShadowOutSizePacked = 0;
+const uvec2 ShadowbufSize = uvec2(U16FROMU32(ShadowbufSizePacked));
+const uvec2 ShadowOutSize = uvec2(U16FROMU32(ShadowOutSizePacked));
+
+#include "../typesAccess.glsl"
+
+struct Ray
+{
+    vec3 origin;
+    vec3 direction;
+};
+
+bool intersect_triangle_any_fast
+
+	(Ray   ray,  /* ray for the intersection */
+	 vec3  v0,   /* vertex 0 */
+	 vec3  v1,   /* vertex 1 */
+	 vec3  v2,   /* vertex 2 */
+	 float mint, /* lower bound for t */
+	 float maxt) /* upper bound for t */
+	 
+/*
+	Returns true if there is an intersection with the triangle (v0,v1,v2).
+	The intersection is accepted if it is in (mint, maxt) along the ray.
+	Uses the metric tensor for intersection computation.
+	
+	For the derivation see the appendix.
+*/
+
+{	
+	/* edges and non-normalized normal */
+	vec3 e0 = v1-v0;
+	vec3 e1 = v2-v0;
+	vec3 n = cross(e0,e1);
+	
+	/* intersect plane in which the triangle is situated */
+	float t = dot(v0-ray.origin,n) / dot(ray.direction,n);
+	vec3 p = ray.origin + t*ray.direction;
+	
+	/* intersection position relative to v0 */
+	vec3 p0 = p - v0;
+	
+	/* transform p0 with the basis vectors */
+	vec2 b = vec2(dot(p0,e0), dot(p0,e1));
+	
+	/* adjoint of the 2x2 metric tensor (contravariant) */
+	mat2 A_adj = mat2(dot(e1,e1), -dot(e0,e1), -dot(e0,e1), dot(e0,e0));
+	
+	/* denominator of the inverse 2x2 metric tensor (contravariant) */
+	float inv_det = 1.0/(A_adj[0][0]*A_adj[1][1]-A_adj[0][1]*A_adj[1][0]);
+	
+	/* barycentric coordinate */
+	vec2 uv = inv_det * (A_adj * b);
+	
+	return mint<t && t<maxt && 0<uv.x && 0<uv.y && uv.x+uv.y<1;
+	
+} /* intersect_triangle_any_fast */
+
+void main() {
+	
+	uvec2 gid = gl_GlobalInvocationID.xy;
+	if (any(greaterThanEqual(gid, ShadowOutSize)))
+		return;
+	
+	float result = 1.0;
+	uint visbuf = texelFetch(s_visbuf, ivec2(gid), 0).x;
+	if (visbuf != -1u) { // Valid triangle cluster
+		
+		vec2 clusterCentroid = texelFetch(s_offset, ivec2(gid), 0).xy * 2.0;
+		
+		float depth = texelFetch(s_depth, ivec2(gid), 0).x;
+		vec2 clusterPos = vec2(gid & ~1u) + clusterCentroid;
+		vec2 screenUv = clusterPos / vec2(ShadowOutSize);
+		vec3 clipPos = vec3(screenUv * 2.0 - 1.0, depth);
+		
+		vec4 worldVertexW = u_world.viewProjectionInverse * vec4(clipPos, 1.0);
+		vec3 worldVertex = worldVertexW.xyz / worldVertexW.w;
+		
+		vec4 shadowVertexW = (u_shadowViewProjection * u_world.viewProjectionInverse) * vec4(clipPos, 1.0);
+		vec3 shadowVertex = shadowVertexW.xyz / shadowVertexW.w;
+		vec2 shadowUv = shadowVertex.xy * 0.5 + 0.5;
+		uvec2 shadowPos = uvec2(shadowUv * ShadowbufSize);
+		
+		result = 1.0;
+		
+		for (uint y = 0; y < 3; y += 1)
+		for (uint x = 0; x < 3; x += 1) {
+			
+			uvec2 newShadowPos = shadowPos + uvec2(x, y) - uvec2(1);
+			if (any(greaterThanEqual(newShadowPos, ShadowbufSize)))
+				continue;
+			
+			uint shadowValue = texelFetch(s_shadowbuf, ivec2(newShadowPos), 0).x;
+			if (shadowValue == -1u)
+				continue;
+			
+			VisSample shadowVis = unpackVisibility(shadowValue);
+			Instance instance = b_instances[shadowVis.instance];
+			uint meshIdx = instance.meshIdx;
+			Mesh mesh = b_meshes[meshIdx];
+			
+			uint indexBase = mesh.indexOffset;
+			indexBase += shadowVis.triangle * 3;
+			uvec3 indices = fetchIndices(indexBase);
+			
+			mat4 meshTransform = b_meshes[meshIdx].transform;
+			uint transformIdx = instance.objectIdx;
+			mat4 transform = getTransform(b_transforms[transformIdx]) * meshTransform;
+			
+			mat3 vertices = {
+				fetchVertex(indices.x),
+				fetchVertex(indices.y),
+				fetchVertex(indices.z) };
+			for (uint i = 0; i < 3; i += 1) {
+				
+				vec4 transformed = transform * vec4(vertices[i], 1.0);
+				vertices[i] = transformed.xyz / transformed.w;
+				
+			}
+			
+			Ray ray;
+			ray.origin = worldVertex;
+			ray.direction = u_world.sunDirection;
+			if (intersect_triangle_any_fast(ray, vertices[0], vertices[1], vertices[2], 0.000001, 100000000000.0))
+				result = 0.0;
+			
+		}
+		
+	}
+	
+	imageStore(i_shadowOut, ivec2(gid), vec4(result, 0.0, 0.0, 0.0));
+	
+}

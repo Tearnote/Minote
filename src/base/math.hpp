@@ -242,6 +242,9 @@ constexpr auto operator>>(vec<Dim, T> const&, T) -> vec<Dim, T>;
 
 // Unary vector operations
 
+template<usize Dim, arithmetic T>
+constexpr auto operator-(vec<Dim, T> const&) -> vec<Dim, T>;
+
 // Component-wise absolute value
 template<usize Dim, std::floating_point T>
 constexpr auto abs(vec<Dim, T> const&) -> vec<Dim, T>;
@@ -467,6 +470,11 @@ constexpr auto look(vec<3, Prec> pos, vec<3, Prec> dir, vec<3, Prec> up) -> mat<
 // 1.0 at zNear, 0.0 at infinity.
 template<std::floating_point Prec = f32>
 constexpr auto perspective(Prec vFov, Prec aspectRatio, Prec zNear) -> mat<4, Prec>;
+
+// Creates an orthographic matrix. The matrix uses inverted depth:
+// 1.0 at zNear, 0.0 at zFar.
+template<std::floating_point Prec = f32>
+constexpr auto orthographic(Prec width, Prec height, Prec zNear, Prec zFar) -> mat<4, Prec>;
 
 //=== GLSL-like matrix aliases
 

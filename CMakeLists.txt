@@ -74,6 +74,7 @@ add_executable(Minote
 	src/gfx/effects/cubeFilter.hpp src/gfx/effects/cubeFilter.cpp
 	src/gfx/effects/visibility.hpp src/gfx/effects/visibility.cpp
 	src/gfx/effects/tonemap.hpp src/gfx/effects/tonemap.cpp
+	src/gfx/effects/shadow.hpp src/gfx/effects/shadow.cpp
 	src/gfx/effects/bloom.hpp src/gfx/effects/bloom.cpp
 	src/gfx/effects/clear.hpp src/gfx/effects/clear.cpp
 	src/gfx/effects/pbr.hpp src/gfx/effects/pbr.cpp
@@ -272,6 +273,8 @@ set(SHADER_SOURCES
 	cubeFilter/pre.comp
 	visibility/worklist.comp
 	visibility/visbuf.vert visibility/visbuf.frag
+	shadow/genBuffer.vert shadow/genBuffer.frag
+	shadow/genShadow.comp
 	bloom/downKaris.comp
 	bloom/down.comp
 	bloom/up.comp

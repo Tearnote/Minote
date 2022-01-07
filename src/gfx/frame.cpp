@@ -5,6 +5,7 @@
 #include "gfx/effects/cubeFilter.hpp"
 #include "gfx/effects/visibility.hpp"
 #include "gfx/effects/tonemap.hpp"
+#include "gfx/effects/shadow.hpp"
 #include "gfx/effects/bloom.hpp"
 #include "gfx/effects/clear.hpp"
 #include "gfx/effects/pbr.hpp"
@@ -72,6 +73,18 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, bool _flush) {
 	
 	auto quadbuf = QuadBuffer::create(swapchainPool, *this, "quadbuf", viewport, _flush);
 	
+	auto shadowbuf = Texture2D::make(swapchainPool, "shadowbuf",
+		uvec2(2048), vuk::Format::eR32Uint,
+		vuk::ImageUsageFlagBits::eColorAttachment |
+		vuk::ImageUsageFlagBits::eSampled);
+	shadowbuf.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearColor(-1u, -1u, -1u, -1u));
+	
+	auto shadowOut = Texture2D::make(swapchainPool, "shadowOut",
+		viewport, vuk::Format::eR8Unorm,
+		vuk::ImageUsageFlagBits::eStorage |
+		vuk::ImageUsageFlagBits::eSampled);
+	shadowOut.attach(rg, vuk::eNone, vuk::eNone);
+	
 	// Create rendering passes
 	
 	// Instance list processing
@@ -92,10 +105,12 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, bool _flush) {
 	
 	// Drawing
 	Visibility::apply(*this, visbuf, depth, instances);
+	Shadow::genBuffer(*this, shadowbuf, instances);
 	QuadBuffer::clusterize(*this, quadbuf, visbuf);
 	QuadBuffer::genBuffers(*this, quadbuf, instances);
+	Shadow::genShadow(*this, shadowbuf, shadowOut, quadbuf, instances);
 	auto worklist = Worklist::create(swapchainPool, *this, "worklist", quadbuf.visbuf, instances);
-	PBR::apply(*this, quadbuf, worklist, instances,
+	PBR::apply(*this, quadbuf, worklist, instances, shadowOut,
 		iblFiltered, sunLuminance, aerialPerspective);
 	Sky::draw(*this, quadbuf, worklist, cameraSky, atmosphere);
 	QuadBuffer::resolve(*this, quadbuf, color);
