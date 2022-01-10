@@ -13,9 +13,9 @@ struct Shadow {
 	// Build the shader.
 	static void compile(vuk::PerThreadContext&);
 	
-	static void genBuffer(Frame&, Texture2D shadowbuf, InstanceList);
+	static void genBuffer(Frame&, Texture2DMS shadowbuf, InstanceList);
 	
-	static void genShadow(Frame&, Texture2D shadowbuf, Texture2D shadowOut, QuadBuffer&, InstanceList);
+	static void genShadow(Frame&, Texture2DMS shadowbuf, Texture2D shadowOut, QuadBuffer&, InstanceList);
 	
 };
 

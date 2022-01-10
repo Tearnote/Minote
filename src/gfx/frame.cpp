@@ -73,10 +73,11 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, bool _flush) {
 	
 	auto quadbuf = QuadBuffer::create(swapchainPool, *this, "quadbuf", viewport, _flush);
 	
-	auto shadowbuf = Texture2D::make(swapchainPool, "shadowbuf",
-		uvec2(2048), vuk::Format::eR32Uint,
+	auto shadowbuf = Texture2DMS::make(swapchainPool, "shadowbuf",
+		uvec2(1024), vuk::Format::eR32Uint,
 		vuk::ImageUsageFlagBits::eColorAttachment |
-		vuk::ImageUsageFlagBits::eSampled);
+		vuk::ImageUsageFlagBits::eSampled,
+		vuk::Samples::e8);
 	shadowbuf.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearColor(-1u, -1u, -1u, -1u));
 	
 	auto shadowOut = Texture2D::make(swapchainPool, "shadowOut",

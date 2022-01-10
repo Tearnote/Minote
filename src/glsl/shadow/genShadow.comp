@@ -4,6 +4,7 @@
 layout(local_size_x = 8, local_size_y = 8) in;
 
 #include "../visibility/visbuf.glsl"
+#include "../quad/quad.glsl"
 #include "../types.glsl"
 #include "../util.glsl"
 
@@ -35,7 +36,7 @@ layout(binding = 6) uniform usampler2D s_visbuf;
 layout(binding = 7) uniform sampler2D s_offset;
 layout(binding = 8) uniform sampler2D s_depth;
 layout(binding = 9) uniform usampler2D s_normal;
-layout(binding = 10) uniform usampler2D s_shadowbuf;
+layout(binding = 10) uniform usampler2DMS s_shadowbuf;
 layout(binding = 11) restrict writeonly uniform image2D i_shadowOut;
 
 layout(push_constant) uniform Constants {
@@ -127,7 +128,7 @@ void main() {
 		vec4 shadowVertexW = (u_shadowViewProjection * u_world.viewProjectionInverse) * vec4(clipPos, 1.0);
 		vec3 shadowVertex = shadowVertexW.xyz / shadowVertexW.w;
 		vec2 shadowUv = shadowVertex.xy * 0.5 + 0.5;
-		uvec2 shadowPos = uvec2(shadowUv * ShadowbufSize);
+		vec2 shadowPos = shadowUv * ShadowbufSize;
 		
 		if (dot(normal, u_world.sunDirection) < 0.0) {
 			
@@ -135,14 +136,21 @@ void main() {
 			
 		} else {
 			
-			for (uint y = 0; y < 3; y += 1)
-			for (uint x = 0; x < 3; x += 1) {
+			for (uint z = 0; z < 8; z += 1) {
 				
-				uvec2 newShadowPos = shadowPos + uvec2(x, y) - uvec2(1);
-				if (any(greaterThanEqual(newShadowPos, ShadowbufSize)))
+				uvec2 shadowCoord = uvec2(shadowPos);
+				if (fract(shadowPos.x) - QuadSubsampleLocations[z].x < -0.5)
+					shadowCoord.x -= 1;
+				if (fract(shadowPos.x) - QuadSubsampleLocations[z].x > 0.5)
+					shadowCoord.x += 1;
+				if (fract(shadowPos.y) - QuadSubsampleLocations[z].y < -0.5)
+					shadowCoord.y -= 1;
+				if (fract(shadowPos.y) - QuadSubsampleLocations[z].y > 0.5)
+					shadowCoord.y += 1;
+				if (any(greaterThanEqual(shadowCoord, ShadowbufSize)))
 					continue;
 				
-				uint shadowValue = texelFetch(s_shadowbuf, ivec2(newShadowPos), 0).x;
+				uint shadowValue = texelFetch(s_shadowbuf, ivec2(shadowCoord), int(z)).x;
 				if (shadowValue == -1u)
 					continue;
 				

@@ -30,11 +30,12 @@ void Shadow::compile(vuk::PerThreadContext& _ptc) {
 	
 }
 
-void Shadow::genBuffer(Frame& _frame, Texture2D _shadowbuf, InstanceList _instances) {
+void Shadow::genBuffer(Frame& _frame, Texture2DMS _shadowbuf, InstanceList _instances) {
 	
-	auto depth = Texture2D::make(_frame.permPool, nameAppend(_shadowbuf.name, "depth"),
+	auto depth = Texture2DMS::make(_frame.permPool, nameAppend(_shadowbuf.name, "depth"),
 		_shadowbuf.size(), vuk::Format::eD32Sfloat,
-		vuk::ImageUsageFlagBits::eDepthStencilAttachment);
+		vuk::ImageUsageFlagBits::eDepthStencilAttachment,
+		vuk::Samples::e8);
 	depth.attach(_frame.rg, vuk::eClear, vuk::eNone, vuk::ClearDepthStencil(0.0f, 0));
 	
 	_frame.rg.add_pass({
@@ -76,7 +77,7 @@ void Shadow::genBuffer(Frame& _frame, Texture2D _shadowbuf, InstanceList _instan
 	
 }
 
-void Shadow::genShadow(Frame& _frame, Texture2D _shadowbuf, Texture2D _shadowOut,
+void Shadow::genShadow(Frame& _frame, Texture2DMS _shadowbuf, Texture2D _shadowOut,
 	QuadBuffer& _quadbuf, InstanceList _instances) {
 	
 	_frame.rg.add_pass({
