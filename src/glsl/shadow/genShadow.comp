@@ -165,7 +165,7 @@ void main() {
 			Ray ray;
 			ray.origin = worldVertex;
 			ray.direction = u_world.sunDirection;
-			if (intersect_triangle_any_fast(ray, vertices[0], vertices[1], vertices[2], 0.000001, 100000000000.0))
+			if (intersect_triangle_any_fast(ray, vertices[0], vertices[1], vertices[2], 0.00002, 1000.0))
 				result = 0.0;
 			
 		}

@@ -55,7 +55,7 @@ void Shadow::genBuffer(Frame& _frame, Texture2D _shadowbuf, InstanceList _instan
 			cmd.set_scissor(0, vuk::Rect2D::framebuffer());
 			cmd.set_color_blend(_shadowbuf.name, vuk::BlendPreset::eOff);
 			cmd.set_rasterization(vuk::PipelineRasterizationStateCreateInfo{
-				.cullMode = vuk::CullModeFlagBits::eBack });
+				.cullMode = vuk::CullModeFlagBits::eFront });
 			cmd.set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
 				.depthTestEnable = true,
 				.depthWriteEnable = true,
