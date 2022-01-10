@@ -105,8 +105,9 @@ void Shadow::genShadow(Frame& _frame, Texture2D _shadowbuf, Texture2D _shadowOut
 			   .bind_sampled_image(0, 6, _quadbuf.visbuf, NearestClamp)
 			   .bind_sampled_image(0, 7, _quadbuf.offset, NearestClamp)
 			   .bind_sampled_image(0, 8, _quadbuf.depth, NearestClamp)
-			   .bind_sampled_image(0, 9, _shadowbuf, NearestClamp)
-			   .bind_storage_image(0, 10, _shadowOut)
+			   .bind_sampled_image(0, 9, _quadbuf.normal, NearestClamp)
+			   .bind_sampled_image(0, 10, _shadowbuf, NearestClamp)
+			   .bind_storage_image(0, 11, _shadowOut)
 			   .bind_compute_pipeline("shadow/genShadow");
 			
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, viewProjection);

@@ -34,8 +34,9 @@ layout (binding = 5, std430) restrict readonly buffer Vertices {
 layout(binding = 6) uniform usampler2D s_visbuf;
 layout(binding = 7) uniform sampler2D s_offset;
 layout(binding = 8) uniform sampler2D s_depth;
-layout(binding = 9) uniform usampler2D s_shadowbuf;
-layout(binding = 10) restrict writeonly uniform image2D i_shadowOut;
+layout(binding = 9) uniform usampler2D s_normal;
+layout(binding = 10) uniform usampler2D s_shadowbuf;
+layout(binding = 11) restrict writeonly uniform image2D i_shadowOut;
 
 layout(push_constant) uniform Constants {
 	mat4 u_shadowViewProjection;
@@ -120,53 +121,62 @@ void main() {
 		vec4 worldVertexW = u_world.viewProjectionInverse * vec4(clipPos, 1.0);
 		vec3 worldVertex = worldVertexW.xyz / worldVertexW.w;
 		
+		uint normalOct = texelFetch(s_normal, ivec2(gid), 0).x;
+		vec3 normal = octDecode(normalOct);
+		
 		vec4 shadowVertexW = (u_shadowViewProjection * u_world.viewProjectionInverse) * vec4(clipPos, 1.0);
 		vec3 shadowVertex = shadowVertexW.xyz / shadowVertexW.w;
 		vec2 shadowUv = shadowVertex.xy * 0.5 + 0.5;
 		uvec2 shadowPos = uvec2(shadowUv * ShadowbufSize);
 		
-		result = 1.0;
-		
-		for (uint y = 0; y < 3; y += 1)
-		for (uint x = 0; x < 3; x += 1) {
+		if (dot(normal, u_world.sunDirection) < 0.0) {
 			
-			uvec2 newShadowPos = shadowPos + uvec2(x, y) - uvec2(1);
-			if (any(greaterThanEqual(newShadowPos, ShadowbufSize)))
-				continue;
+			result = 0.0;
 			
-			uint shadowValue = texelFetch(s_shadowbuf, ivec2(newShadowPos), 0).x;
-			if (shadowValue == -1u)
-				continue;
+		} else {
 			
-			VisSample shadowVis = unpackVisibility(shadowValue);
-			Instance instance = b_instances[shadowVis.instance];
-			uint meshIdx = instance.meshIdx;
-			Mesh mesh = b_meshes[meshIdx];
-			
-			uint indexBase = mesh.indexOffset;
-			indexBase += shadowVis.triangle * 3;
-			uvec3 indices = fetchIndices(indexBase);
-			
-			mat4 meshTransform = b_meshes[meshIdx].transform;
-			uint transformIdx = instance.objectIdx;
-			mat4 transform = getTransform(b_transforms[transformIdx]) * meshTransform;
-			
-			mat3 vertices = {
-				fetchVertex(indices.x),
-				fetchVertex(indices.y),
-				fetchVertex(indices.z) };
-			for (uint i = 0; i < 3; i += 1) {
+			for (uint y = 0; y < 3; y += 1)
+			for (uint x = 0; x < 3; x += 1) {
 				
-				vec4 transformed = transform * vec4(vertices[i], 1.0);
-				vertices[i] = transformed.xyz / transformed.w;
+				uvec2 newShadowPos = shadowPos + uvec2(x, y) - uvec2(1);
+				if (any(greaterThanEqual(newShadowPos, ShadowbufSize)))
+					continue;
+				
+				uint shadowValue = texelFetch(s_shadowbuf, ivec2(newShadowPos), 0).x;
+				if (shadowValue == -1u)
+					continue;
+				
+				VisSample shadowVis = unpackVisibility(shadowValue);
+				Instance instance = b_instances[shadowVis.instance];
+				uint meshIdx = instance.meshIdx;
+				Mesh mesh = b_meshes[meshIdx];
+				
+				uint indexBase = mesh.indexOffset;
+				indexBase += shadowVis.triangle * 3;
+				uvec3 indices = fetchIndices(indexBase);
+				
+				mat4 meshTransform = b_meshes[meshIdx].transform;
+				uint transformIdx = instance.objectIdx;
+				mat4 transform = getTransform(b_transforms[transformIdx]) * meshTransform;
+				
+				mat3 vertices = {
+					fetchVertex(indices.x),
+					fetchVertex(indices.y),
+					fetchVertex(indices.z) };
+				for (uint i = 0; i < 3; i += 1) {
+					
+					vec4 transformed = transform * vec4(vertices[i], 1.0);
+					vertices[i] = transformed.xyz / transformed.w;
+					
+				}
+				
+				Ray ray;
+				ray.origin = worldVertex;
+				ray.direction = u_world.sunDirection;
+				if (intersect_triangle_any_fast(ray, vertices[0], vertices[1], vertices[2], 0.00002, 1000.0))
+					result = 0.0;
 				
 			}
-			
-			Ray ray;
-			ray.origin = worldVertex;
-			ray.direction = u_world.sunDirection;
-			if (intersect_triangle_any_fast(ray, vertices[0], vertices[1], vertices[2], 0.00002, 1000.0))
-				result = 0.0;
 			
 		}
 		
