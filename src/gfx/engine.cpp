@@ -18,7 +18,6 @@
 #include "gfx/effects/cubeFilter.hpp"
 #include "gfx/effects/visibility.hpp"
 #include "gfx/effects/tonemap.hpp"
-#include "gfx/effects/shadow.hpp"
 #include "gfx/effects/bloom.hpp"
 #include "gfx/effects/pbr.hpp"
 #include "gfx/effects/sky.hpp"
@@ -67,7 +66,6 @@ void Engine::init(ModelList&& _modelList) {
 	Visibility::compile(ptc);
 	Worklist::compile(ptc);
 	Tonemap::compile(ptc);
-	Shadow::compile(ptc);
 	Bloom::compile(ptc);
 	PBR::compile(ptc);
 	Sky::compile(ptc);

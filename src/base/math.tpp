@@ -303,18 +303,6 @@ constexpr auto operator>>(vec<Dim, T> const& _left, T _right) -> vec<Dim, T> {
 	
 }
 
-template<usize Dim, arithmetic T>
-constexpr auto operator-(vec<Dim, T> const& _vec) -> vec<Dim, T> {
-	
-	auto result = vec<Dim, T>();
-	
-	for (auto i: iota(0_zu, Dim))
-		result[i] = -_vec[i];
-	
-	return result;
-	
-}
-
 template<usize Dim, std::floating_point T>
 constexpr auto abs(vec<Dim, T> const& _vec) -> vec<Dim, T> {
 	
@@ -761,24 +749,6 @@ constexpr auto perspective(Prec _vFov, Prec _aspectRatio, Prec _zNear) -> mat<4,
 	result[1][1] = (Prec(2) * _zNear) / (top - bottom);
 	result[2][3] = Prec(1);
 	result[3][2] = Prec(2) * _zNear;
-	
-	return result;
-	
-}
-
-template<std::floating_point Prec>
-constexpr auto orthographic(Prec _width, Prec _height, Prec _zNear, Prec _zFar) -> mat<4, Prec> {
-	
-	auto depthRange = _zFar - _zNear;
-	
-	auto result = mat<4, Prec>();
-	result.fill(0);
-	
-	result[0][0] = Prec(2) / _width;
-	result[1][1] = Prec(2) / _height;
-	result[2][2] = Prec(1) / depthRange;
-	result[3][3] = Prec(1);
-	result[3][2] = -_zNear / depthRange;
 	
 	return result;
 	
