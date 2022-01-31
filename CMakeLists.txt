@@ -252,6 +252,11 @@ add_library(mpack
 target_include_directories(mpack PUBLIC ${mpack_SOURCE_DIR}/src)
 target_link_libraries(Minote PRIVATE mpack)
 
+FetchContent_Declare(meshoptimizer
+	GIT_REPOSITORY https://github.com/zeux/meshoptimizer
+	GIT_TAG 70b6cc38a64eeb549567599418bc4ed3ebd607da)
+FetchContent_MakeAvailable(meshoptimizer)
+
 # Shader compilation
 
 set(SHADER_DIR_PREFIX src/glsl)
@@ -312,6 +317,7 @@ add_executable(Model_conv
 	src/tools/modelSchema.hpp
 	src/tools/modelConv.cpp)
 target_include_directories(Model_conv PRIVATE src)
+target_link_libraries(Model_conv PRIVATE meshoptimizer)
 target_link_libraries(Model_conv PRIVATE quill::quill)
 target_link_libraries(Model_conv PRIVATE itlib)
 target_link_libraries(Model_conv PRIVATE cgltf)

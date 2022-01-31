@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cstring>
+#include "meshoptimizer.h"
 #include "mpack/mpack.h"
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
@@ -87,9 +88,11 @@ int main(int argc, char const* argv[]) {
 		f32 radius;
 		u32 indexCount;
 		u32 vertexCount;
+		
+		pvector<vec3> rawNormals;
+		
 		pvector<IndexType> indices;
 		pvector<VertexType> vertices;
-		pvector<vec3> rawNormals;
 		pvector<NormalType> normals;
 	};
 	auto meshes = ivector<Mesh>();
@@ -218,16 +221,61 @@ int main(int argc, char const* argv[]) {
 		
 	}
 	
-	// Convert to model schema
+	// Optimize and convert the mesh data
 	
 	for(auto& mesh: meshes) {
+		
+		// Encode normals with octahedral encoding
 		
 		mesh.normals.resize(mesh.vertexCount);
 		for (auto i: iota(0_zu, mesh.vertexCount))
 			mesh.normals[i] = octEncode(mesh.rawNormals[i]);
 		
 		assert(mesh.normals.size());
-	
+		
+		// Prepare data for meshoptimizer
+		
+		auto streams = to_array<meshopt_Stream>({
+			{mesh.vertices.data(), sizeof(VertexType), sizeof(VertexType)},
+			{mesh.normals.data(), sizeof(NormalType), sizeof(NormalType)},
+		});
+		
+		assert(sizeof(IndexType) == sizeof(unsigned int));
+		
+		// Generate remap table
+		
+		auto remapTemp = pvector<unsigned int>(mesh.indexCount);
+		auto uniqueVertexCount = meshopt_generateVertexRemapMulti(remapTemp.data(),
+			mesh.indices.data(), mesh.indexCount, mesh.vertexCount,
+			streams.data(), streams.size());
+		
+		assert(uniqueVertexCount);
+		
+		// Apply remap
+		
+		auto verticesRemapped = pvector<VertexType>(uniqueVertexCount);
+		auto normalsRemapped = pvector<NormalType>(uniqueVertexCount);
+		auto indicesRemapped = pvector<IndexType>(mesh.indexCount);
+		
+		meshopt_remapVertexBuffer(verticesRemapped.data(),
+			mesh.vertices.data(), mesh.vertexCount, sizeof(VertexType),
+			remapTemp.data());
+		meshopt_remapVertexBuffer(normalsRemapped.data(),
+			mesh.normals.data(), mesh.vertexCount, sizeof(NormalType),
+			remapTemp.data());
+		meshopt_remapIndexBuffer(indicesRemapped.data(),
+			mesh.indices.data(), mesh.indexCount, remapTemp.data());
+		
+		mesh.vertices = std::move(verticesRemapped);
+		mesh.normals = std::move(normalsRemapped);
+		mesh.indices = std::move(indicesRemapped);
+		
+		mesh.vertexCount = uniqueVertexCount;
+		
+		assert(mesh.vertices.size() == uniqueVertexCount);
+		assert(mesh.normals.size() == uniqueVertexCount);
+		assert(mesh.indices.size() == mesh.indexCount);
+		
 	}
 	
 	// Write to msgpack output
