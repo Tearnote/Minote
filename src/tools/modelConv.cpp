@@ -244,7 +244,7 @@ int main(int argc, char const* argv[]) {
 		
 		// Generate remap table
 		
-		auto remapTemp = pvector<unsigned int>(mesh.indexCount);
+		auto remapTemp = pvector<unsigned int>(mesh.vertexCount);
 		auto uniqueVertexCount = meshopt_generateVertexRemapMulti(remapTemp.data(),
 			mesh.indices.data(), mesh.indexCount, mesh.vertexCount,
 			streams.data(), streams.size());
@@ -256,6 +256,41 @@ int main(int argc, char const* argv[]) {
 		auto verticesRemapped = pvector<VertexType>(uniqueVertexCount);
 		auto normalsRemapped = pvector<NormalType>(uniqueVertexCount);
 		auto indicesRemapped = pvector<IndexType>(mesh.indexCount);
+		
+		meshopt_remapVertexBuffer(verticesRemapped.data(),
+			mesh.vertices.data(), mesh.vertexCount, sizeof(VertexType),
+			remapTemp.data());
+		meshopt_remapVertexBuffer(normalsRemapped.data(),
+			mesh.normals.data(), mesh.vertexCount, sizeof(NormalType),
+			remapTemp.data());
+		meshopt_remapIndexBuffer(indicesRemapped.data(),
+			mesh.indices.data(), mesh.indexCount, remapTemp.data());
+		
+		mesh.vertices = std::move(verticesRemapped);
+		mesh.normals = std::move(normalsRemapped);
+		mesh.indices = std::move(indicesRemapped);
+		
+		mesh.vertexCount = uniqueVertexCount;
+		
+		assert(mesh.vertices.size() == uniqueVertexCount);
+		assert(mesh.normals.size() == uniqueVertexCount);
+		assert(mesh.indices.size() == mesh.indexCount);
+		
+		// Optimize for memory efficiency
+		
+		meshopt_optimizeVertexCache(mesh.indices.data(), mesh.indices.data(), mesh.indexCount, mesh.vertexCount);
+		meshopt_optimizeOverdraw(mesh.indices.data(), mesh.indices.data(), mesh.indexCount,
+			&mesh.vertices.data()->x(), mesh.vertexCount, sizeof(VertexType),
+			1.05f);
+		
+		remapTemp.resize(mesh.vertexCount);
+		uniqueVertexCount = meshopt_optimizeVertexFetchRemap(remapTemp.data(),
+			mesh.indices.data(), mesh.indexCount, mesh.vertexCount);
+		assert(uniqueVertexCount);
+		
+		verticesRemapped = pvector<VertexType>(uniqueVertexCount);
+		normalsRemapped = pvector<NormalType>(uniqueVertexCount);
+		indicesRemapped = pvector<IndexType>(mesh.indexCount);
 		
 		meshopt_remapVertexBuffer(verticesRemapped.data(),
 			mesh.vertices.data(), mesh.vertexCount, sizeof(VertexType),
