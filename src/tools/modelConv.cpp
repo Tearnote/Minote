@@ -223,6 +223,8 @@ int main(int argc, char const* argv[]) {
 	
 	// Optimize and convert the mesh data
 	
+	auto splitMeshes = ivector<Mesh>();
+	
 	for(auto& mesh: meshes) {
 		
 		// Encode normals with octahedral encoding
@@ -311,6 +313,55 @@ int main(int argc, char const* argv[]) {
 		assert(mesh.normals.size() == uniqueVertexCount);
 		assert(mesh.indices.size() == mesh.indexCount);
 		
+		// Split into meshlets
+		
+		auto maxMeshletCount = meshopt_buildMeshletsBound(mesh.indices.size(), MeshletMaxVerts, MeshletMaxTris);
+		auto meshlets = pvector<meshopt_Meshlet>(maxMeshletCount);
+		auto meshletVertices = pvector<unsigned int>(maxMeshletCount * MeshletMaxVerts);
+		auto meshletTriangles = pvector<unsigned char>(maxMeshletCount * MeshletMaxTris * 3);
+		auto meshletCount = meshopt_buildMeshlets(meshlets.data(), meshletVertices.data(), meshletTriangles.data(),
+			mesh.indices.data(), mesh.indexCount, &mesh.vertices.data()->x(), mesh.vertexCount, sizeof(VertexType),
+			MeshletMaxVerts, MeshletMaxTris, MeshletConeWeight);
+		
+		auto& lastMeshlet = meshlets.back();
+		meshletVertices.resize(lastMeshlet.vertex_offset + lastMeshlet.vertex_count);
+		meshletTriangles.resize(lastMeshlet.triangle_offset + ((lastMeshlet.triangle_count * 3 + 3) & ~3));
+		meshlets.resize(meshletCount);
+		
+		// Convert meshlets back to instances
+		
+		for (auto& meshlet: meshlets) {
+			
+			auto& splitMesh = splitMeshes.emplace_back();
+			splitMesh.transform = mesh.transform;
+			splitMesh.materialIdx = mesh.materialIdx;
+			splitMesh.radius = mesh.radius;
+			splitMesh.indexCount = meshlet.triangle_count * 3;
+			splitMesh.vertexCount = meshlet.vertex_count;
+			
+			splitMesh.vertices.reserve(splitMesh.vertexCount);
+			splitMesh.normals.reserve(splitMesh.vertexCount);
+			splitMesh.indices.reserve(splitMesh.indexCount);
+			
+			for (auto i: iota(0u, meshlet.vertex_count)) {
+				
+				splitMesh.vertices.emplace_back(mesh.vertices[meshletVertices[meshlet.vertex_offset + i]]);
+				splitMesh.normals.emplace_back(mesh.normals[meshletVertices[meshlet.vertex_offset + i]]);
+				
+			}
+			
+			for (auto i: iota(0u, meshlet.triangle_count)) {
+				
+				auto triangle = meshletTriangles.begin() + meshlet.triangle_offset + (i * 3);
+				
+				splitMesh.indices.emplace_back(triangle[0]);
+				splitMesh.indices.emplace_back(triangle[1]);
+				splitMesh.indices.emplace_back(triangle[2]);
+				
+			}
+			
+		}
+		
 	}
 	
 	// Write to msgpack output
@@ -351,8 +402,8 @@ int main(int argc, char const* argv[]) {
 		}
 		mpack_finish_array(&model);
 		mpack_write_cstr(&model, "meshes");
-		mpack_start_array(&model, meshes.size());
-		for (auto& mesh: meshes) {
+		mpack_start_array(&model, splitMeshes.size());
+		for (auto& mesh: splitMeshes) {
 			
 			mpack_start_map(&model, 8);
 				mpack_write_cstr(&model, "transform");

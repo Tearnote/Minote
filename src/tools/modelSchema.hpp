@@ -12,6 +12,9 @@ using NormalType = u32;
 
 constexpr auto ModelFormat = 4u;
 constexpr auto NormalOctBits = 16u;
+constexpr auto MeshletMaxVerts = 64u;
+constexpr auto MeshletMaxTris = 124u;
+constexpr auto MeshletConeWeight = 0.5f;
 
 // An object file is an ordered map:
 //  - format: u32, must be equal to ModelFormat
