@@ -31,22 +31,27 @@ struct Command {
 };
 
 // Index and vertex locations for drawing a specific model
-struct Mesh {
-	mat4 transform;
+struct Meshlet {
+	uint materialIdx;
 	uint indexOffset;
 	uint indexCount;
-	uint materialIdx;
-	float radius; // Distance from origin to furthest vertex
+	uint vertexOffset;
+	uint vertexDataOffset;
+	uint pad0;
+	uint pad1;
+	uint pad2;
+	vec3 boundingSphereCenter;
+	float boundingSphereRadius;
 };
 
 struct Model {
-	uint meshOffset;
-	uint meshCount;
+	uint meshletOffset;
+	uint meshletCount;
 };
 
 struct Instance {
 	uint objectIdx;
-	uint meshIdx;
+	uint meshletIdx;
 };
 
 // Components of an instance transform

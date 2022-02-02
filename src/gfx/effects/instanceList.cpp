@@ -344,14 +344,14 @@ auto InstanceList::fromObjects(Pool& _pool, Frame& _frame, vuk::Name _name,
 	// Create a mostly prefilled command buffer
 	
 	auto commandsData = pvector<Command>();
-	commandsData.reserve(_frame.models.cpu_meshes.size());
-	for (auto& mesh: _frame.models.cpu_meshes) {
+	commandsData.reserve(_frame.models.cpu_meshlets.size());
+	for (auto& meshlet: _frame.models.cpu_meshlets) {
 		
 		commandsData.emplace_back(Command{
-			.indexCount = mesh.indexCount,
+			.indexCount = meshlet.indexCount,
 			.instanceCount = 0, // Calculated in step 1
-			.firstIndex = mesh.indexOffset,
-			.vertexOffset = 0, // Pre-applied
+			.firstIndex = meshlet.indexOffset,
+			.vertexOffset = 0,
 			.firstInstance = 0 }); // Calculated in step 2
 		
 	}
@@ -377,7 +377,7 @@ auto InstanceList::fromObjects(Pool& _pool, Frame& _frame, vuk::Name _name,
 			
 			cmd.bind_uniform_buffer(0, 0, result.instancesCount)
 			   .bind_storage_buffer(0, 1, _frame.models.models)
-			   .bind_storage_buffer(0, 2, _frame.models.meshes)
+			   .bind_storage_buffer(0, 2, _frame.models.meshlets)
 			   .bind_storage_buffer(0, 3, _objects.modelIndices)
 			   .bind_storage_buffer(0, 4, _objects.transforms)
 			   .bind_storage_buffer(0, 5, objectsScan)

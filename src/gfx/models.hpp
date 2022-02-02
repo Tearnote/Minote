@@ -36,17 +36,25 @@ struct Material {
 
 using MaterialType = Material::Type;
 
-struct Mesh {
-	mat4 transform;
+struct Meshlet {
+	u32 materialIdx;
+	
 	u32 indexOffset;
 	u32 indexCount;
-	u32 materialIdx;
-	f32 radius;
+	u32 vertexOffset;
+	u32 vertexDataOffset;
+	
+	u32 pad0;
+	u32 pad1;
+	u32 pad2;
+	
+	vec3 boundingSphereCenter;
+	f32 boundingSphereRadius;
 };
 
 struct Model {
-	u32 meshOffset;
-	u32 meshCount;
+	u32 meshletOffset;
+	u32 meshletCount;
 };
 
 // A set of buffers storing vertex data for all models, and how to access each
@@ -54,14 +62,15 @@ struct Model {
 struct ModelBuffer {
 	
 	Buffer<Material> materials;
-	Buffer<tools::IndexType> indices;
+	Buffer<u32> triIndices;
+	Buffer<tools::VertIndexType> vertIndices;
 	Buffer<tools::VertexType> vertices;
 	Buffer<tools::NormalType> normals;
 	
-	Buffer<Mesh> meshes;
+	Buffer<Meshlet> meshlets;
 	Buffer<Model> models;
 	
-	ivector<Mesh> cpu_meshes;
+	ivector<Meshlet> cpu_meshlets;
 	ivector<Model> cpu_models;
 	hashmap<ID, u32> cpu_modelIndices;
 	
@@ -81,12 +90,13 @@ struct ModelList {
 private:
 	
 	pvector<Material> m_materials;
-	pvector<tools::IndexType> m_indices;
+	pvector<u32> m_triIndices;
+	pvector<tools::VertIndexType> m_vertIndices;
 	pvector<tools::VertexType> m_vertices;
 	pvector<tools::NormalType> m_normals;
 	
-	ivector<Mesh> m_meshes; // Mesh descriptors, for indexing into vertex buffers
-	ivector<Model> m_models; // Model descriptors, for indexing into m_modelMeshes
+	ivector<Meshlet> m_meshlets; // Meshlet descriptors, for access to index buffers
+	ivector<Model> m_models; // Model descriptors, for access to m_modelMeshes
 	hashmap<ID, u32> m_modelIndices; // Mapping of model IDs to their index in m_models
 	
 	

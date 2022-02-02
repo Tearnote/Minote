@@ -33,7 +33,7 @@ void main() {
 	
 	uint value;
 	if (gid < u_objectCount)
-		value = b_models[b_modelIndices[gid]].meshCount;
+		value = b_models[b_modelIndices[gid]].meshletCount;
 	else
 		value = 0;
 	

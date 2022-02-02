@@ -42,7 +42,7 @@ void PBR::apply(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
 			tileCount=_worklist.counts.offsetView(+MaterialType::PBR)](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _frame.world)
-			   .bind_storage_buffer(0, 1, _frame.models.meshes)
+			   .bind_storage_buffer(0, 1, _frame.models.meshlets)
 			   .bind_storage_buffer(0, 2, _instances.instances)
 			   .bind_storage_buffer(0, 3, _instances.colors)
 			   .bind_storage_buffer(0, 4, _frame.models.materials)

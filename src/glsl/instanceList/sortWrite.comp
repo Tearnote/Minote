@@ -24,11 +24,11 @@ void main() {
 	if (gid >= u_instanceCount.w)
 		return;
 	
-	uint meshIdx = b_instances[gid].meshIdx;
-	if (meshIdx != -1u) {
+	uint meshletIdx = b_instances[gid].meshletIdx;
+	if (meshletIdx != -1u) {
 		
-		uint offset = b_commands[meshIdx].firstInstance;
-		uint newid = offset + atomicAdd(b_commands[meshIdx].instanceCount, 1);
+		uint offset = b_commands[meshletIdx].firstInstance;
+		uint newid = offset + atomicAdd(b_commands[meshletIdx].instanceCount, 1);
 		
 		b_instancesSorted[newid] = b_instances[gid];
 		

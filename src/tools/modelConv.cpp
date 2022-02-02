@@ -16,6 +16,50 @@ using namespace base;
 using namespace base::literals;
 using namespace tools;
 
+struct Worknode {
+	cgltf_node* node;
+	mat4 parentTransform;
+};
+
+struct Material {
+	vec4 color;
+	vec3 emissive;
+	f32 metalness;
+	f32 roughness;
+};
+
+using RawIndexType = u32;
+using RawVertexType = vec3;
+using RawNormalType = vec3;
+
+struct RawMesh {
+	mat4 transform;
+	u32 materialIdx;
+	
+	pvector<RawIndexType> indices;
+	pvector<RawVertexType> vertices;
+	pvector<RawNormalType> normals;
+};
+
+struct Meshlet {
+	u32 indexOffset;
+	u32 indexCount;
+	u32 vertexOffset;
+	
+	vec3 boundingSphereCenter;
+	f32 boundingSphereRadius;
+};
+
+struct Mesh {
+	u32 materialIdx;
+	
+	pvector<Meshlet> meshlets;
+	pvector<TriIndexType> triIndices;
+	pvector<VertIndexType> vertIndices;
+	pvector<VertexType> vertices;
+	pvector<NormalType> normals;
+};
+
 int main(int argc, char const* argv[]) {
 	
 	if (argc != 3)
@@ -33,12 +77,6 @@ int main(int argc, char const* argv[]) {
 	
 	// Fetch materials
 	
-	struct Material {
-		vec4 color;
-		vec3 emissive;
-		f32 metalness;
-		f32 roughness;
-	};
 	auto materials = ivector<Material>();
 	materials.reserve(gltf->materials_count);
 	for (auto i: iota(0_zu, gltf->materials_count)) {
@@ -64,10 +102,6 @@ int main(int argc, char const* argv[]) {
 	
 	// Queue up the base nodes
 	
-	struct Worknode {
-		cgltf_node* node;
-		mat4 parentTransform;
-	};
 	auto worknodes = ivector<Worknode>();
 	assert(gltf->scenes_count == 1);
 	auto& scene = gltf->scenes[0];
@@ -82,21 +116,8 @@ int main(int argc, char const* argv[]) {
 	
 	// Iterate over the node hierarchy
 	
-	struct Mesh {
-		mat4 transform;
-		u32 materialIdx;
-		f32 radius;
-		u32 indexCount;
-		u32 vertexCount;
-		
-		pvector<vec3> rawNormals;
-		
-		pvector<IndexType> indices;
-		pvector<VertexType> vertices;
-		pvector<NormalType> normals;
-	};
-	auto meshes = ivector<Mesh>();
-	meshes.reserve(gltf->meshes_count);
+	auto rawMeshes = ivector<RawMesh>();
+	rawMeshes.reserve(gltf->meshes_count);
 	while (!worknodes.empty()) {
 		
 		auto worknode = worknodes.back();
@@ -134,7 +155,7 @@ int main(int argc, char const* argv[]) {
 		auto& nodeMesh = *node.mesh;
 		assert(nodeMesh.primitives_count == 1);
 		auto& primitive = nodeMesh.primitives[0];
-		auto& mesh = meshes.emplace_back();
+		auto& mesh = rawMeshes.emplace_back();
 		mesh.transform = transform;
 		
 		// Fetch material index
@@ -148,7 +169,7 @@ int main(int argc, char const* argv[]) {
 		auto* indexBuffer = static_cast<char const*>(indexAccessor.buffer_view->buffer->data);
 		assert(indexBuffer);
 		indexBuffer += indexAccessor.buffer_view->offset;
-		mesh.indexCount = indexAccessor.count;
+		auto indexCount = indexAccessor.count;
 		
 		assert(indexAccessor.component_type == cgltf_component_type_r_16u ||
 			indexAccessor.component_type == cgltf_component_type_r_32u);
@@ -156,12 +177,12 @@ int main(int argc, char const* argv[]) {
 		if (indexAccessor.component_type == cgltf_component_type_r_16u) {
 			
 			auto* indexTypedBuffer = reinterpret_cast<u16 const*>(indexBuffer);
-			mesh.indices.insert(mesh.indices.end(), indexTypedBuffer, indexTypedBuffer + indexAccessor.count);
+			mesh.indices.insert(mesh.indices.end(), indexTypedBuffer, indexTypedBuffer + indexCount);
 			
 		} else {
 			
 			auto* indexTypedBuffer = reinterpret_cast<u32 const*>(indexBuffer);
-			mesh.indices.insert(mesh.indices.end(), indexTypedBuffer, indexTypedBuffer + indexAccessor.count);
+			mesh.indices.insert(mesh.indices.end(), indexTypedBuffer, indexTypedBuffer + indexCount);
 			
 		}
 		
@@ -181,15 +202,9 @@ int main(int argc, char const* argv[]) {
 				assert(accessor.component_type == cgltf_component_type_r_32f);
 				assert(accessor.type == cgltf_type_vec3);
 				
-				// Calculate the AABB and furthest point from the origin
-				auto aabbMin = vec3{accessor.min[0], accessor.min[1], accessor.min[2]};
-				auto aabbMax = vec3{accessor.max[0], accessor.max[1], accessor.max[2]};
-				auto pfar = max(abs(aabbMin), abs(aabbMax));
-				
-				mesh.radius = length(pfar);
-				mesh.vertexCount = accessor.count;
-				mesh.vertices.resize(accessor.count);
-				std::memcpy(mesh.vertices.data(), buffer, accessor.count * sizeof(VertexType));
+				auto vertexCount = accessor.count;
+				mesh.vertices.resize(vertexCount);
+				std::memcpy(mesh.vertices.data(), buffer, vertexCount * sizeof(RawVertexType));
 				continue;
 				
 			}
@@ -201,164 +216,162 @@ int main(int argc, char const* argv[]) {
 				assert(accessor.component_type == cgltf_component_type_r_32f);
 				assert(accessor.type == cgltf_type_vec3);
 				
-				mesh.rawNormals.resize(accessor.count);
-				std::memcpy(mesh.rawNormals.data(), buffer, accessor.count * sizeof(vec3));
+				auto vertexCount = accessor.count;
+				mesh.normals.resize(vertexCount);
+				std::memcpy(mesh.normals.data(), buffer, vertexCount * sizeof(RawNormalType));
 				continue;
 				
 			}
 			
 			// Unknown attribute
-			fmt::print(stderr, "WARNING: Unknown attribute: {}\n", primitive.attributes[attrIdx].name);
+			fmt::print(stderr, "WARNING: Ignoring unknown attribute: {}\n", primitive.attributes[attrIdx].name);
 			
 		}
 		
-		assert(mesh.indexCount > 0_zu);
-		assert(mesh.vertexCount > 0_zu);
 		assert(mesh.indices.size());
 		assert(mesh.vertices.size());
-		assert(mesh.rawNormals.size());
-		assert(mesh.radius > 0.0f);
+		assert(mesh.normals.size());
+		assert(mesh.vertices.size() == mesh.normals.size());
 		
 	}
 	
-	// Optimize and convert the mesh data
+	// Optimize mesh data
 	
-	auto splitMeshes = ivector<Mesh>();
-	
-	for(auto& mesh: meshes) {
-		
-		// Encode normals with octahedral encoding
-		
-		mesh.normals.resize(mesh.vertexCount);
-		for (auto i: iota(0_zu, mesh.vertexCount))
-			mesh.normals[i] = octEncode(mesh.rawNormals[i]);
-		
-		assert(mesh.normals.size());
+	for(auto& mesh: rawMeshes) {
 		
 		// Prepare data for meshoptimizer
 		
 		auto streams = to_array<meshopt_Stream>({
-			{mesh.vertices.data(), sizeof(VertexType), sizeof(VertexType)},
-			{mesh.normals.data(), sizeof(NormalType), sizeof(NormalType)},
+			{mesh.vertices.data(), sizeof(RawVertexType), sizeof(RawVertexType)},
+			{mesh.normals.data(), sizeof(RawNormalType), sizeof(RawNormalType)},
 		});
 		
-		assert(sizeof(IndexType) == sizeof(unsigned int));
+		// meshoptimizer assumptions
+		static_assert(sizeof(RawVertexType) == sizeof(float) * 3);
+		static_assert(sizeof(RawIndexType) == sizeof(unsigned int));
 		
 		// Generate remap table
 		
-		auto remapTemp = pvector<unsigned int>(mesh.vertexCount);
+		auto remapTemp = pvector<unsigned int>(mesh.vertices.size());
 		auto uniqueVertexCount = meshopt_generateVertexRemapMulti(remapTemp.data(),
-			mesh.indices.data(), mesh.indexCount, mesh.vertexCount,
+			mesh.indices.data(), mesh.indices.size(), mesh.vertices.size(),
 			streams.data(), streams.size());
 		
 		assert(uniqueVertexCount);
 		
 		// Apply remap
 		
-		auto verticesRemapped = pvector<VertexType>(uniqueVertexCount);
-		auto normalsRemapped = pvector<NormalType>(uniqueVertexCount);
-		auto indicesRemapped = pvector<IndexType>(mesh.indexCount);
+		auto verticesRemapped = pvector<RawVertexType>(uniqueVertexCount);
+		auto normalsRemapped = pvector<RawNormalType>(uniqueVertexCount);
+		auto indicesRemapped = pvector<RawIndexType>(mesh.indices.size());
 		
 		meshopt_remapVertexBuffer(verticesRemapped.data(),
-			mesh.vertices.data(), mesh.vertexCount, sizeof(VertexType),
+			mesh.vertices.data(), mesh.vertices.size(), sizeof(RawVertexType),
 			remapTemp.data());
 		meshopt_remapVertexBuffer(normalsRemapped.data(),
-			mesh.normals.data(), mesh.vertexCount, sizeof(NormalType),
+			mesh.normals.data(), mesh.normals.size(), sizeof(RawNormalType),
 			remapTemp.data());
 		meshopt_remapIndexBuffer(indicesRemapped.data(),
-			mesh.indices.data(), mesh.indexCount, remapTemp.data());
+			mesh.indices.data(), mesh.indices.size(), remapTemp.data());
 		
 		mesh.vertices = std::move(verticesRemapped);
 		mesh.normals = std::move(normalsRemapped);
 		mesh.indices = std::move(indicesRemapped);
 		
-		mesh.vertexCount = uniqueVertexCount;
-		
 		assert(mesh.vertices.size() == uniqueVertexCount);
 		assert(mesh.normals.size() == uniqueVertexCount);
-		assert(mesh.indices.size() == mesh.indexCount);
 		
 		// Optimize for memory efficiency
 		
-		meshopt_optimizeVertexCache(mesh.indices.data(), mesh.indices.data(), mesh.indexCount, mesh.vertexCount);
-		meshopt_optimizeOverdraw(mesh.indices.data(), mesh.indices.data(), mesh.indexCount,
-			&mesh.vertices.data()->x(), mesh.vertexCount, sizeof(VertexType),
+		meshopt_optimizeVertexCache(mesh.indices.data(), mesh.indices.data(), mesh.indices.size(), mesh.vertices.size());
+		meshopt_optimizeOverdraw(mesh.indices.data(), mesh.indices.data(), mesh.indices.size(),
+			&mesh.vertices[0].x(), mesh.vertices.size(), sizeof(RawVertexType),
 			1.05f);
 		
-		remapTemp.resize(mesh.vertexCount);
+		remapTemp.resize(mesh.vertices.size());
 		uniqueVertexCount = meshopt_optimizeVertexFetchRemap(remapTemp.data(),
-			mesh.indices.data(), mesh.indexCount, mesh.vertexCount);
+			mesh.indices.data(), mesh.indices.size(), mesh.vertices.size());
 		assert(uniqueVertexCount);
 		
-		verticesRemapped = pvector<VertexType>(uniqueVertexCount);
-		normalsRemapped = pvector<NormalType>(uniqueVertexCount);
-		indicesRemapped = pvector<IndexType>(mesh.indexCount);
+		verticesRemapped = pvector<RawVertexType>(uniqueVertexCount);
+		normalsRemapped = pvector<RawNormalType>(uniqueVertexCount);
+		indicesRemapped = pvector<RawIndexType>(mesh.indices.size());
 		
 		meshopt_remapVertexBuffer(verticesRemapped.data(),
-			mesh.vertices.data(), mesh.vertexCount, sizeof(VertexType),
+			mesh.vertices.data(), mesh.vertices.size(), sizeof(RawVertexType),
 			remapTemp.data());
 		meshopt_remapVertexBuffer(normalsRemapped.data(),
-			mesh.normals.data(), mesh.vertexCount, sizeof(NormalType),
+			mesh.normals.data(), mesh.normals.size(), sizeof(RawNormalType),
 			remapTemp.data());
 		meshopt_remapIndexBuffer(indicesRemapped.data(),
-			mesh.indices.data(), mesh.indexCount, remapTemp.data());
+			mesh.indices.data(), mesh.indices.size(), remapTemp.data());
 		
 		mesh.vertices = std::move(verticesRemapped);
 		mesh.normals = std::move(normalsRemapped);
 		mesh.indices = std::move(indicesRemapped);
 		
-		mesh.vertexCount = uniqueVertexCount;
-		
 		assert(mesh.vertices.size() == uniqueVertexCount);
 		assert(mesh.normals.size() == uniqueVertexCount);
-		assert(mesh.indices.size() == mesh.indexCount);
 		
-		// Split into meshlets
+	}
+	
+	// Convert meshes into meshlet representation
+	
+	auto meshes = ivector<Mesh>();
+	
+	for (auto& rawMesh: rawMeshes) {
 		
-		auto maxMeshletCount = meshopt_buildMeshletsBound(mesh.indices.size(), MeshletMaxVerts, MeshletMaxTris);
-		auto meshlets = pvector<meshopt_Meshlet>(maxMeshletCount);
+		auto& mesh = meshes.emplace_back();
+		mesh.materialIdx = rawMesh.materialIdx;
+		
+		// Pre-transform vertices
+		
+		mesh.vertices.reserve(rawMesh.vertices.size());
+		for (auto v: rawMesh.vertices)
+			mesh.vertices.push_back(vec3(rawMesh.transform * vec4(v, 1.0f)));
+		
+		// Convert normals to oct encoding
+		
+		mesh.normals.reserve(rawMesh.normals.size());
+		for (auto n: rawMesh.normals)
+			mesh.normals.push_back(octEncode(n));
+		
+		// Generate the meshlets
+		
+		// meshoptimizer assumptions
+		static_assert(sizeof(TriIndexType) == sizeof(unsigned char));
+		static_assert(sizeof(VertIndexType) == sizeof(unsigned int));
+		
+		auto maxMeshletCount = meshopt_buildMeshletsBound(rawMesh.indices.size(), MeshletMaxVerts, MeshletMaxTris);
+		auto rawMeshlets = pvector<meshopt_Meshlet>(maxMeshletCount);
 		auto meshletVertices = pvector<unsigned int>(maxMeshletCount * MeshletMaxVerts);
 		auto meshletTriangles = pvector<unsigned char>(maxMeshletCount * MeshletMaxTris * 3);
-		auto meshletCount = meshopt_buildMeshlets(meshlets.data(), meshletVertices.data(), meshletTriangles.data(),
-			mesh.indices.data(), mesh.indexCount, &mesh.vertices.data()->x(), mesh.vertexCount, sizeof(VertexType),
+		auto meshletCount = meshopt_buildMeshlets(rawMeshlets.data(), meshletVertices.data(), meshletTriangles.data(),
+			rawMesh.indices.data(), rawMesh.indices.size(), &rawMesh.vertices[0].x(), rawMesh.vertices.size(), sizeof(RawVertexType),
 			MeshletMaxVerts, MeshletMaxTris, MeshletConeWeight);
+		rawMeshlets.resize(meshletCount);
 		
-		auto& lastMeshlet = meshlets.back();
+		auto& lastMeshlet = rawMeshlets.back();
 		meshletVertices.resize(lastMeshlet.vertex_offset + lastMeshlet.vertex_count);
 		meshletTriangles.resize(lastMeshlet.triangle_offset + ((lastMeshlet.triangle_count * 3 + 3) & ~3));
-		meshlets.resize(meshletCount);
 		
-		// Convert meshlets back to instances
+		// Write meshlet data
 		
-		for (auto& meshlet: meshlets) {
+		mesh.triIndices = std::move(meshletTriangles);
+		mesh.vertIndices = std::move(meshletVertices);
+		
+		mesh.meshlets.reserve(meshletCount);
+		for (auto& rawMeshlet: rawMeshlets) {
 			
-			auto& splitMesh = splitMeshes.emplace_back();
-			splitMesh.transform = mesh.transform;
-			splitMesh.materialIdx = mesh.materialIdx;
-			splitMesh.radius = mesh.radius;
-			splitMesh.indexCount = meshlet.triangle_count * 3;
-			splitMesh.vertexCount = meshlet.vertex_count;
+			auto& meshlet = mesh.meshlets.emplace_back();
 			
-			splitMesh.vertices.reserve(splitMesh.vertexCount);
-			splitMesh.normals.reserve(splitMesh.vertexCount);
-			splitMesh.indices.reserve(splitMesh.indexCount);
+			meshlet.indexOffset = rawMeshlet.triangle_offset;
+			meshlet.indexCount = (rawMeshlet.triangle_count * 3 + 3) & ~3;
+			meshlet.vertexOffset = rawMeshlet.vertex_offset;
 			
-			for (auto i: iota(0u, meshlet.vertex_count)) {
-				
-				splitMesh.vertices.emplace_back(mesh.vertices[meshletVertices[meshlet.vertex_offset + i]]);
-				splitMesh.normals.emplace_back(mesh.normals[meshletVertices[meshlet.vertex_offset + i]]);
-				
-			}
-			
-			for (auto i: iota(0u, meshlet.triangle_count)) {
-				
-				auto triangle = meshletTriangles.begin() + meshlet.triangle_offset + (i * 3);
-				
-				splitMesh.indices.emplace_back(triangle[0]);
-				splitMesh.indices.emplace_back(triangle[1]);
-				splitMesh.indices.emplace_back(triangle[2]);
-				
-			}
+			//TODO culling data
+			meshlet.boundingSphereCenter = vec3(0.0f);
+			meshlet.boundingSphereRadius = 0.0f;
 			
 		}
 		
@@ -372,9 +385,9 @@ int main(int argc, char const* argv[]) {
 	if (model.error != mpack_ok)
 		throw runtime_error_fmt(R"(Failed to open output file "{}" for writing: error code {})", outputPath, model.error);
 	
-	mpack_start_map(&model, 3);
-		mpack_write_cstr(&model, "format");
-		mpack_write_u32(&model, ModelFormat);
+	mpack_write_u32(&model, ModelMagic);
+	mpack_start_map(&model, 2);
+		
 		mpack_write_cstr(&model, "materials");
 		mpack_start_array(&model, materials.size());
 		for (auto& material: materials) {
@@ -401,35 +414,61 @@ int main(int argc, char const* argv[]) {
 			
 		}
 		mpack_finish_array(&model);
+		
 		mpack_write_cstr(&model, "meshes");
-		mpack_start_array(&model, splitMeshes.size());
-		for (auto& mesh: splitMeshes) {
+		mpack_start_array(&model, meshes.size());
+		for (auto& mesh: meshes) {
 			
-			mpack_start_map(&model, 8);
-				mpack_write_cstr(&model, "transform");
-				mpack_start_array(&model, 16);
-					for (auto y: iota(0, 4))
-					for (auto x: iota(0, 4))
-						mpack_write_float(&model, mesh.transform[x][y]);
-				mpack_finish_array(&model);
+			mpack_start_map(&model, 6);
+				
 				mpack_write_cstr(&model, "materialIdx");
 				mpack_write_u32(&model, mesh.materialIdx);
-				mpack_write_cstr(&model, "radius");
-				mpack_write_float(&model, mesh.radius);
-				mpack_write_cstr(&model, "indexCount");
-				mpack_write_u32(&model, mesh.indexCount);
-				mpack_write_cstr(&model, "vertexCount");
-				mpack_write_u32(&model, mesh.vertexCount);
-				mpack_write_cstr(&model, "indices");
-				mpack_write_bin(&model, reinterpret_cast<const char*>(mesh.indices.data()), mesh.indexCount * sizeof(IndexType));
+				
+				mpack_write_cstr(&model, "meshlets");
+				mpack_start_array(&model, mesh.meshlets.size());
+				for (auto& meshlet: mesh.meshlets) {
+					
+					mpack_start_map(&model, 5);
+						mpack_write_cstr(&model, "indexOffset");
+						mpack_write_u32(&model, meshlet.indexOffset);
+						mpack_write_cstr(&model, "indexCount");
+						mpack_write_u32(&model, meshlet.indexCount);
+						mpack_write_cstr(&model, "vertexOffset");
+						mpack_write_u32(&model, meshlet.vertexOffset);
+						mpack_write_cstr(&model, "boundingSphereCenter");
+						mpack_start_array(&model, 3);
+							mpack_write_float(&model, meshlet.boundingSphereCenter.x());
+							mpack_write_float(&model, meshlet.boundingSphereCenter.y());
+							mpack_write_float(&model, meshlet.boundingSphereCenter.z());
+						mpack_finish_array(&model);
+						mpack_write_cstr(&model, "boundingSphereRadius");
+						mpack_write_float(&model, meshlet.boundingSphereRadius);
+					mpack_finish_map(&model);
+					
+				}
+				mpack_finish_array(&model);
+				
+				mpack_write_cstr(&model, "triIndices");
+				mpack_write_bin(&model, reinterpret_cast<const char*>(mesh.triIndices.data()),
+					mesh.triIndices.size() * sizeof(TriIndexType));
+				
+				mpack_write_cstr(&model, "vertIndices");
+				mpack_write_bin(&model, reinterpret_cast<const char*>(mesh.vertIndices.data()),
+					mesh.vertIndices.size() * sizeof(VertIndexType));
+				
 				mpack_write_cstr(&model, "vertices");
-				mpack_write_bin(&model, reinterpret_cast<const char*>(mesh.vertices.data()), mesh.vertexCount * sizeof(VertexType));
+				mpack_write_bin(&model, reinterpret_cast<const char*>(mesh.vertices.data()),
+					mesh.vertices.size() * sizeof(VertexType));
+				
 				mpack_write_cstr(&model, "normals");
-				mpack_write_bin(&model, reinterpret_cast<const char*>(mesh.normals.data()), mesh.vertexCount * sizeof(NormalType));
+				mpack_write_bin(&model, reinterpret_cast<const char*>(mesh.normals.data()),
+					mesh.normals.size() * sizeof(NormalType));
+				
 			mpack_finish_map(&model);
 			
 		}
 		mpack_finish_array(&model);
+		
 	mpack_finish_map(&model);
 	
 	if (auto error = mpack_writer_destroy(&model); error != mpack_ok)

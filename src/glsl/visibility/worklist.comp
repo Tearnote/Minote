@@ -14,8 +14,8 @@ layout(binding = 0) uniform usampler2D s_visbuf;
 layout(binding = 1, std430) restrict readonly buffer Instances {
 	Instance b_instances[];
 };
-layout(binding = 2, std430) restrict readonly buffer Meshes {
-	Mesh b_meshes[];
+layout(binding = 2, std430) restrict readonly buffer Meshlets {
+	Meshlet b_meshlets[];
 };
 layout(binding = 3, std430) restrict readonly buffer Materials {
 	Material b_materials[];
@@ -59,8 +59,8 @@ void main() {
 		} else {
 			
 			VisSample vis = unpackVisibility(visPacked);
-			uint meshIdx = b_instances[vis.instance].meshIdx;
-			uint materialIdx = b_meshes[meshIdx].materialIdx;
+			uint meshletIdx = b_instances[vis.instance].meshletIdx;
+			uint materialIdx = b_meshlets[meshletIdx].materialIdx;
 			materialID = b_materials[materialIdx].id;
 			
 		}

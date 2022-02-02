@@ -12,8 +12,8 @@ layout(binding = 0) uniform InstanceCount {
 layout(binding = 1, std430) restrict readonly buffer Models {
 	Model b_models[];
 };
-layout(binding = 2, std430) restrict readonly buffer Meshes {
-	Mesh b_meshes[];
+layout(binding = 2, std430) restrict readonly buffer Meshlets {
+	Meshlet b_meshlets[];
 };
 layout(binding = 3, std430) restrict readonly buffer ModelIndices {
 	uint b_modelIndices[];
@@ -44,6 +44,9 @@ layout(push_constant) uniform Constants {
 
 bool visible(mat4 _transform, float _radius) {
 	
+	//TODO Fix frustum culling
+	return true;
+	
 	vec3 position = _transform[3].rgb;
 	
 	vec3 center = (u_view * vec4(position, 1.0)).xyz;
@@ -64,22 +67,21 @@ void main() {
 	
 	uint objectIdx = b_scanned[gid] + b_temp[gl_WorkGroupID.x] - 1;
 	uint modelIdx = b_modelIndices[objectIdx];
-	uint meshIdx = gid - b_objectsScanned[objectIdx] + b_models[modelIdx].meshOffset;
+	uint meshletIdx = gid - b_objectsScanned[objectIdx] + b_models[modelIdx].meshletOffset;
 	
 	// Frustum culling
 	
-	mat4 transform = b_meshes[meshIdx].transform;
-	transform = getTransform(b_transforms[objectIdx]) * transform;
+	mat4 transform = getTransform(b_transforms[objectIdx]);
 	float scale = max(length(transform[0].xyz),
 	              max(length(transform[1].xyz),
 	                  length(transform[2].xyz)));
-	float radius = b_meshes[meshIdx].radius;
+	float radius = b_meshlets[meshletIdx].boundingSphereRadius;
 	if (!visible(transform, radius * scale))
-		meshIdx = -1u;
+		meshletIdx = -1u;
 	else
-		atomicAdd(b_commands[meshIdx].instanceCount, 1);
+		atomicAdd(b_commands[meshletIdx].instanceCount, 1);
 	
 	b_instances[gid].objectIdx = objectIdx;
-	b_instances[gid].meshIdx = meshIdx;
+	b_instances[gid].meshletIdx = meshletIdx;
 	
 }

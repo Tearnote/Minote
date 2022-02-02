@@ -47,12 +47,13 @@ void Visibility::apply(Frame& _frame, Texture2DMS _visbuf, Texture2DMS _depth,
 				.depthWriteEnable = true,
 				.depthCompareOp = vuk::CompareOp::eGreater });
 			
-			cmd.bind_index_buffer(_frame.models.indices, vuk::IndexType::eUint32)
+			cmd.bind_index_buffer(_frame.models.triIndices, vuk::IndexType::eUint32)
 			   .bind_uniform_buffer(0, 0, _frame.world)
-			   .bind_storage_buffer(0, 1, _frame.models.vertices)
-			   .bind_storage_buffer(0, 2, _frame.models.meshes)
-			   .bind_storage_buffer(0, 3, _instances.instances)
-			   .bind_storage_buffer(0, 4, _instances.transforms)
+			   .bind_storage_buffer(0, 1, _frame.models.vertIndices)
+			   .bind_storage_buffer(0, 2, _frame.models.vertices)
+			   .bind_storage_buffer(0, 3, _frame.models.meshlets)
+			   .bind_storage_buffer(0, 4, _instances.instances)
+			   .bind_storage_buffer(0, 5, _instances.transforms)
 			   .bind_graphics_pipeline("visibility/visbuf");
 			
 			cmd.draw_indexed_indirect(_instances.commands.length(), _instances.commands);
@@ -111,7 +112,7 @@ auto Worklist::create(Pool& _pool, Frame& _frame, vuk::Name _name,
 			
 			cmd.bind_sampled_image(0, 0, _visbuf, NearestClamp)
 			   .bind_storage_buffer(0, 1, _instances.instances)
-			   .bind_storage_buffer(0, 2, _frame.models.meshes)
+			   .bind_storage_buffer(0, 2, _frame.models.meshlets)
 			   .bind_storage_buffer(0, 3, _frame.models.materials)
 			   .bind_storage_buffer(0, 4, result.counts)
 			   .bind_storage_buffer(0, 5, result.lists)

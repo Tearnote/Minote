@@ -16,8 +16,8 @@ layout(binding = 0) uniform WorldConstants {
 	World u_world;
 };
 
-layout(binding = 1, std430) restrict readonly buffer Meshes {
-	Mesh b_meshes[];
+layout(binding = 1, std430) restrict readonly buffer Meshlets {
+	Meshlet b_meshlets[];
 };
 layout(binding = 2, std430) restrict readonly buffer Instances {
 	Instance b_instances[];
@@ -84,9 +84,9 @@ vec3 shadeVisSamplePBR(uint _visValue, vec2 _uv, vec3 _clipVertex, vec3 _normal)
 	VisSample vis = unpackVisibility(_visValue);
 	
 	Instance instance = b_instances[vis.instance];
-	uint meshIdx = instance.meshIdx;
-	Mesh mesh = b_meshes[meshIdx];
-	uint materialIdx = mesh.materialIdx;
+	uint meshletIdx = instance.meshletIdx;
+	Meshlet meshlet = b_meshlets[meshletIdx];
+	uint materialIdx = meshlet.materialIdx;
 	Material material = b_materials[materialIdx];
 	
 	vec4 vertexW = u_world.viewProjectionInverse * vec4(_clipVertex, 1.0);

@@ -9,7 +9,6 @@ layout(local_size_x = 1, local_size_y = 1, local_size_z = 64) in;
 #include "../util.glsl"
 #include "quad.glsl"
 
-#define B_INDICES b_indices
 #define B_VERTICES b_vertices
 #define B_NORMALS b_normals
 
@@ -17,8 +16,8 @@ layout(binding = 0) uniform WorldConstants {
 	World u_world;
 };
 
-layout (binding = 1, std430) restrict readonly buffer Meshes {
-	Mesh b_meshes[];
+layout (binding = 1, std430) restrict readonly buffer Meshlets {
+	Meshlet b_meshlets[];
 };
 layout (binding = 2, std430) restrict readonly buffer Instances {
 	Instance b_instances[];
@@ -30,24 +29,27 @@ layout(binding = 4, std430) restrict readonly buffer PrevTransforms {
 	mat3x4 b_prevTransforms[];
 };
 
-layout (binding = 5, std430) restrict readonly buffer Indices {
-	uint B_INDICES[];
+layout (binding = 5, std430) restrict readonly buffer TriIndices {
+	uint b_triIndices[];
 };
-layout (binding = 6, std430) restrict readonly buffer Vertices {
+layout (binding = 6, std430) restrict readonly buffer VertIndices {
+	uint b_vertIndices[];
+};
+layout (binding = 7, std430) restrict readonly buffer Vertices {
 	float B_VERTICES[];
 };
-layout (binding = 7, std430) restrict readonly buffer Normals {
+layout (binding = 8, std430) restrict readonly buffer Normals {
 	uint B_NORMALS[];
 };
 
-layout(binding = 8) uniform usampler2D s_visbuf;
-layout(binding = 9) uniform usampler2D s_subsamples;
-layout(binding = 10) restrict writeonly uniform image2D i_offset;
-layout(binding = 11) restrict writeonly uniform image2D i_depth;
-layout(binding = 12) restrict writeonly uniform image2D i_quadDepth;
-layout(binding = 13) restrict writeonly uniform image2D i_quadDepthRepro;
-layout(binding = 14) restrict writeonly uniform uimage2D i_normal;
-layout(binding = 15) restrict writeonly uniform image2D i_velocity;
+layout(binding = 9) uniform usampler2D s_visbuf;
+layout(binding = 10) uniform usampler2D s_subsamples;
+layout(binding = 11) restrict writeonly uniform image2D i_offset;
+layout(binding = 12) restrict writeonly uniform image2D i_depth;
+layout(binding = 13) restrict writeonly uniform image2D i_quadDepth;
+layout(binding = 14) restrict writeonly uniform image2D i_quadDepthRepro;
+layout(binding = 15) restrict writeonly uniform uimage2D i_normal;
+layout(set = 1, binding = 0) restrict writeonly uniform image2D i_velocity;
 
 layout(constant_id = 0) const uint QuadbufSizePacked = 0;
 const uvec2 QuadbufSize = uvec2(U16FROMU32(QuadbufSizePacked));
@@ -85,27 +87,34 @@ void main() {
 		VisSample vis = unpackVisibility(visbuf);
 		
 		Instance instance = b_instances[vis.instance];
-		uint meshIdx = instance.meshIdx;
-		Mesh mesh = b_meshes[meshIdx];
+		uint meshletIdx = instance.meshletIdx;
+		Meshlet meshlet = b_meshlets[meshletIdx];
 		
-		uint indexBase = mesh.indexOffset;
-		indexBase += vis.triangle * 3;
-		uvec3 indices = fetchIndices(indexBase);
+		uint triIndex = vis.triangle * 3;
+		uvec3 triIndices = {
+			b_triIndices[triIndex + 0],
+			b_triIndices[triIndex + 1],
+			b_triIndices[triIndex + 2] };
+		triIndices += uvec3(meshlet.vertexOffset);
+		uvec3 vertIndices = {
+			b_vertIndices[triIndices.x],
+			b_vertIndices[triIndices.y],
+			b_vertIndices[triIndices.z] };
+		vertIndices += uvec3(meshlet.vertexDataOffset);
 		
-		mat4 meshTransform = b_meshes[meshIdx].transform;
 		uint transformIdx = instance.objectIdx;
-		mat4 transform = getTransform(b_transforms[transformIdx]) * meshTransform;
-		mat4 prevTransform = getTransform(b_prevTransforms[transformIdx]) * meshTransform;
+		mat4 transform = getTransform(b_transforms[transformIdx]);
+		mat4 prevTransform = getTransform(b_prevTransforms[transformIdx]);
 		
 		mat3 vertices = {
-			fetchVertex(indices.x),
-			fetchVertex(indices.y),
-			fetchVertex(indices.z) };
+			fetchVertex(vertIndices.x),
+			fetchVertex(vertIndices.y),
+			fetchVertex(vertIndices.z) };
 		
 		mat3 normals = {
-			fetchNormal(indices.x),
-			fetchNormal(indices.y),
-			fetchNormal(indices.z) };
+			fetchNormal(vertIndices.x),
+			fetchNormal(vertIndices.y),
+			fetchNormal(vertIndices.z) };
 		
 		mat4 ndcTransform = u_world.viewProjection * transform;
 		mat3x4 verticesNDC = {

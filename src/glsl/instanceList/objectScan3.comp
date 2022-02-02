@@ -41,7 +41,7 @@ void main() {
 	
 	if (gid == u_objectCount - 1) {
 		
-		uint instanceCount = result + b_models[b_modelIndices[gid]].meshCount;
+		uint instanceCount = result + b_models[b_modelIndices[gid]].meshletCount;
 		uint instanceCountGroups = divRoundUp(instanceCount, 1024);
 		b_instancesCount = uvec4(instanceCountGroups, 1, 1, instanceCount);
 		

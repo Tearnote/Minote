@@ -6,7 +6,7 @@
 #include "visbufTypes.glsl"
 #include "../util.glsl"
 
-#define TRIANGLE_ID_BITS 14u
+#define TRIANGLE_ID_BITS 7u
 
 VisSample unpackVisibility(uint _packed) {
 	
