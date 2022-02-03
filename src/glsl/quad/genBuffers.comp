@@ -100,7 +100,6 @@ void main() {
 			b_vertIndices[triIndices.x],
 			b_vertIndices[triIndices.y],
 			b_vertIndices[triIndices.z] };
-		vertIndices += uvec3(meshlet.vertexDataOffset);
 		
 		uint transformIdx = instance.objectIdx;
 		mat4 transform = getTransform(b_transforms[transformIdx]);

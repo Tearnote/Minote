@@ -20,54 +20,54 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 	
 	ZoneScoped;
 	
-	// Load model data
+	// Load in data
 	
-	auto model = mpack_reader_t();
-	mpack_reader_init_data(&model, _model.data(), _model.size_bytes());
+	auto in = mpack_reader_t();
+	mpack_reader_init_data(&in, _model.data(), _model.size_bytes());
 	
-	if (auto magic = mpack_expect_u32(&model); magic != ModelMagic)
+	if (auto magic = mpack_expect_u32(&in); magic != ModelMagic)
 		throw runtime_error_fmt("Wrong magic number of model {}: got {}, expected {}", _name, magic, ModelMagic);
 	
-	mpack_expect_map_match(&model, 2);
+	mpack_expect_map_match(&in, 6);
 	
 	// Load the materials
 	
 	auto materialOffset = m_materials.size();
 	
-	mpack_expect_cstr_match(&model, "materials");
-	auto materialCount = mpack_expect_array(&model);
+	mpack_expect_cstr_match(&in, "materials");
+	auto materialCount = mpack_expect_array(&in);
 	m_materials.reserve(m_materials.size() + materialCount);
 	for (auto i: iota(0u, materialCount)) {
 		
 		auto& material = m_materials.emplace_back();
 		material.id = +MaterialType::PBR;
 		
-		mpack_expect_map_match(&model, 4);
+		mpack_expect_map_match(&in, 4);
 		
-		mpack_expect_cstr_match(&model, "color");
-		mpack_expect_array_match(&model, 4);
-		material.color[0] = mpack_expect_float(&model);
-		material.color[1] = mpack_expect_float(&model);
-		material.color[2] = mpack_expect_float(&model);
-		material.color[3] = mpack_expect_float(&model);
-		mpack_done_array(&model);
+		mpack_expect_cstr_match(&in, "color");
+		mpack_expect_array_match(&in, 4);
+		material.color[0] = mpack_expect_float(&in);
+		material.color[1] = mpack_expect_float(&in);
+		material.color[2] = mpack_expect_float(&in);
+		material.color[3] = mpack_expect_float(&in);
+		mpack_done_array(&in);
 		
-		mpack_expect_cstr_match(&model, "emissive");
-		mpack_expect_array_match(&model, 3);
-		material.emissive[0] = mpack_expect_float(&model);
-		material.emissive[1] = mpack_expect_float(&model);
-		material.emissive[2] = mpack_expect_float(&model);
-		mpack_done_array(&model);
+		mpack_expect_cstr_match(&in, "emissive");
+		mpack_expect_array_match(&in, 3);
+		material.emissive[0] = mpack_expect_float(&in);
+		material.emissive[1] = mpack_expect_float(&in);
+		material.emissive[2] = mpack_expect_float(&in);
+		mpack_done_array(&in);
 		
-		mpack_expect_cstr_match(&model, "metalness");
-		material.metalness = mpack_expect_float(&model);
-		mpack_expect_cstr_match(&model, "roughness");
-		material.roughness = mpack_expect_float(&model);
+		mpack_expect_cstr_match(&in, "metalness");
+		material.metalness = mpack_expect_float(&in);
+		mpack_expect_cstr_match(&in, "roughness");
+		material.roughness = mpack_expect_float(&in);
 		
-		mpack_done_map(&model);
+		mpack_done_map(&in);
 		
 	}
-	mpack_done_array(&model);
+	mpack_done_array(&in);
 	
 	// Safety fallback
 	if (materialCount == 0) {
@@ -82,99 +82,88 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 		
 	}
 	
-	// Load the meshlets from the meshes
+	// Load the meshlets
 	
 	m_modelIndices.emplace(_name, m_models.size());
-	auto& modelDesc = m_models.emplace_back(Model{
+	auto& model = m_models.emplace_back(Model{
 		.meshletOffset = u32(m_meshlets.size()),
 		.meshletCount = 0 });
 	
-	mpack_expect_cstr_match(&model, "meshes");
-	auto meshCount = mpack_expect_array(&model);
-	for (auto i: iota(0u, meshCount)) {
+	mpack_expect_cstr_match(&in, "meshlets");
+	auto meshletCount = mpack_expect_array(&in);
+	model.meshletCount += meshletCount;
+	for (auto i: iota(0u, meshletCount)) {
 		
-		mpack_expect_map_match(&model, 6);
+		mpack_expect_map_match(&in, 6);
 		
-		mpack_expect_cstr_match(&model, "materialIdx");
-		auto materialIdx = mpack_expect_u32(&model);
+		auto& meshlet = m_meshlets.emplace_back();
 		
-		mpack_expect_cstr_match(&model, "meshlets");
-		auto meshletCount = mpack_expect_array(&model);
-		modelDesc.meshletCount += meshletCount;
-		for (auto j: iota(0u, meshletCount)) {
-			
-			mpack_expect_map_match(&model, 5);
-			
-			auto& meshlet = m_meshlets.emplace_back();
-			meshlet.materialIdx = materialOffset + materialIdx;
-			meshlet.vertexDataOffset = m_vertices.size();
-			
-			mpack_expect_cstr_match(&model, "indexOffset");
-			auto indexOffset = mpack_expect_u32(&model);
-			meshlet.indexOffset = indexOffset + m_triIndices.size();
-			
-			mpack_expect_cstr_match(&model, "indexCount");
-			auto indexCount = mpack_expect_u32(&model);
-			meshlet.indexCount = indexCount;
-			
-			mpack_expect_cstr_match(&model, "vertexOffset");
-			auto vertexOffset = mpack_expect_u32(&model);
-			meshlet.vertexOffset = vertexOffset + m_vertIndices.size();
-			
-			mpack_expect_cstr_match(&model, "boundingSphereCenter");
-			mpack_expect_array_match(&model, 3);
-			for (auto i: iota(0, 3))
-				meshlet.boundingSphereCenter[i] = mpack_expect_float(&model);
-			mpack_done_array(&model);
-			
-			mpack_expect_cstr_match(&model, "boundingSphereRadius");
-			meshlet.boundingSphereRadius = mpack_expect_float(&model);
-			
-			mpack_done_map(&model);
-			
-		}
-		mpack_done_array(&model);
+		mpack_expect_cstr_match(&in, "materialIdx");
+		auto materialIdx = mpack_expect_u32(&in);
+		meshlet.materialIdx = materialOffset + materialIdx;
 		
-		mpack_expect_cstr_match(&model, "triIndices");
-		auto triIndexCount = mpack_expect_bin(&model) / sizeof(TriIndexType);
-		auto triIndices = pvector<TriIndexType>(triIndexCount);
-		mpack_read_bytes(&model, reinterpret_cast<char*>(triIndices.data()), triIndexCount * sizeof(TriIndexType));
-		m_triIndices.insert(m_triIndices.end(), triIndices.begin(), triIndices.end());
-		mpack_done_bin(&model);
+		mpack_expect_cstr_match(&in, "indexOffset");
+		auto indexOffset = mpack_expect_u32(&in);
+		meshlet.indexOffset = indexOffset + m_triIndices.size();
 		
-		mpack_expect_cstr_match(&model, "vertIndices");
-		auto vertIndexCount = mpack_expect_bin(&model) / sizeof(VertIndexType);
-		auto vertIndexOffset = m_vertIndices.size();
-		m_vertIndices.resize(vertIndexOffset + vertIndexCount);
-		auto* vertIndicesIt = &m_vertIndices[vertIndexOffset];
-		mpack_read_bytes(&model, reinterpret_cast<char*>(vertIndicesIt), vertIndexCount * sizeof(VertIndexType));
-		mpack_done_bin(&model);
+		mpack_expect_cstr_match(&in, "indexCount");
+		auto indexCount = mpack_expect_u32(&in);
+		meshlet.indexCount = indexCount;
 		
-		mpack_expect_cstr_match(&model, "vertices");
-		auto vertexCount = mpack_expect_bin(&model) / sizeof(VertexType);
-		auto vertexOffset = m_vertices.size();
-		m_vertices.resize(vertexOffset + vertexCount);
-		auto* verticesIt = &m_vertices[vertexOffset];
-		mpack_read_bytes(&model, reinterpret_cast<char*>(verticesIt), vertexCount * sizeof(VertexType));
-		mpack_done_bin(&model);
+		mpack_expect_cstr_match(&in, "vertexOffset");
+		auto vertexOffset = mpack_expect_u32(&in);
+		meshlet.vertexOffset = vertexOffset + m_vertIndices.size();
 		
-		mpack_expect_cstr_match(&model, "normals");
-		auto normalCount = mpack_expect_bin(&model) / sizeof(NormalType);
-		auto normalOffset = m_normals.size();
-		m_normals.resize(normalOffset + normalCount);
-		auto* normalsIt = &m_normals[normalOffset];
-		mpack_read_bytes(&model, reinterpret_cast<char*>(normalsIt), normalCount * sizeof(NormalType));
-		mpack_done_bin(&model);
+		mpack_expect_cstr_match(&in, "boundingSphereCenter");
+		mpack_expect_array_match(&in, 3);
+		for (auto i: iota(0, 3))
+			meshlet.boundingSphereCenter[i] = mpack_expect_float(&in);
+		mpack_done_array(&in);
 		
-		mpack_done_map(&model);
+		mpack_expect_cstr_match(&in, "boundingSphereRadius");
+		meshlet.boundingSphereRadius = mpack_expect_float(&in);
+		
+		mpack_done_map(&in);
 		
 	}
-	mpack_done_array(&model);
+	mpack_done_array(&in);
 	
-	mpack_done_map(&model);
-	mpack_reader_destroy(&model);
+	mpack_expect_cstr_match(&in, "triIndices");
+	auto triIndexCount = mpack_expect_bin(&in) / sizeof(TriIndexType);
+	auto triIndices = pvector<TriIndexType>(triIndexCount);
+	mpack_read_bytes(&in, reinterpret_cast<char*>(triIndices.data()), triIndexCount * sizeof(TriIndexType));
+	m_triIndices.insert(m_triIndices.end(), triIndices.begin(), triIndices.end());
+	mpack_done_bin(&in);
 	
-	L_DEBUG("Loaded model {}: {} materials, {} meshlets", _name, materialCount, modelDesc.meshletCount);
+	mpack_expect_cstr_match(&in, "vertIndices");
+	auto vertIndexCount = mpack_expect_bin(&in) / sizeof(VertIndexType);
+	auto vertIndices = pvector<VertIndexType>(vertIndexCount);
+	mpack_read_bytes(&in, reinterpret_cast<char*>(vertIndices.data()), vertIndexCount * sizeof(VertIndexType));
+	for (auto& v: vertIndices) // Offset values for the unified buffer
+		v += m_vertices.size();
+	m_vertIndices.insert(m_vertIndices.end(), vertIndices.begin(), vertIndices.end());
+	mpack_done_bin(&in);
+	
+	mpack_expect_cstr_match(&in, "vertices");
+	auto vertexCount = mpack_expect_bin(&in) / sizeof(VertexType);
+	auto vertexOffset = m_vertices.size();
+	m_vertices.resize(vertexOffset + vertexCount);
+	auto* verticesIt = &m_vertices[vertexOffset];
+	mpack_read_bytes(&in, reinterpret_cast<char*>(verticesIt), vertexCount * sizeof(VertexType));
+	mpack_done_bin(&in);
+	
+	mpack_expect_cstr_match(&in, "normals");
+	auto normalCount = mpack_expect_bin(&in) / sizeof(NormalType);
+	auto normalOffset = m_normals.size();
+	m_normals.resize(normalOffset + normalCount);
+	auto* normalsIt = &m_normals[normalOffset];
+	mpack_read_bytes(&in, reinterpret_cast<char*>(normalsIt), normalCount * sizeof(NormalType));
+	mpack_done_bin(&in);
+	
+	mpack_done_map(&in);
+	mpack_reader_destroy(&in);
+	
+	L_DEBUG("Loaded model {}: {} materials, {} meshlets", _name, materialCount, model.meshletCount);
 	
 }
 

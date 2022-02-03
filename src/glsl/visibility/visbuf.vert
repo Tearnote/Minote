@@ -34,7 +34,7 @@ void main() {
 	Meshlet meshlet = b_meshlets[gl_DrawID];
 	
 	uint triIdx = gl_VertexIndex + meshlet.vertexOffset;
-	uint index = b_vertIndices[triIdx] + meshlet.vertexDataOffset;
+	uint index = b_vertIndices[triIdx];
 	vec3 vertex = fetchVertex(index);
 	
 	uint transformIdx = b_instances[gl_InstanceIndex].objectIdx;

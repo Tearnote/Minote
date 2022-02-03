@@ -42,11 +42,6 @@ struct Meshlet {
 	u32 indexOffset;
 	u32 indexCount;
 	u32 vertexOffset;
-	u32 vertexDataOffset;
-	
-	u32 pad0;
-	u32 pad1;
-	u32 pad2;
 	
 	vec3 boundingSphereCenter;
 	f32 boundingSphereRadius;
