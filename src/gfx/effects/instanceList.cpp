@@ -14,10 +14,10 @@ using namespace base;
 
 constexpr auto encodeTransform(ObjectPool::Transform _in) -> InstanceList::Transform {
 	
-	auto rw = _in.rotation.x();
-	auto rx = _in.rotation.y();
-	auto ry = _in.rotation.z();
-	auto rz = _in.rotation.w();
+	auto rw = _in.rotation.w();
+	auto rx = _in.rotation.x();
+	auto ry = _in.rotation.y();
+	auto rz = _in.rotation.z();
 	
 	auto rotationMat = mat3{
 		1.0f - 2.0f * (ry * ry + rz * rz),        2.0f * (rx * ry - rw * rz),        2.0f * (rx * rz + rw * ry),
@@ -169,7 +169,7 @@ auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _f
 			   .bind_storage_buffer(0, 4, result.indices)
 			   .bind_compute_pipeline("instanceList/genIndices");
 			
-			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, u32(_instances.size()));
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, _instances.size());
 			cmd.specialize_constants(0, tools::MeshletMaxTris);
 			
 			auto triangles = _instances.size() * tools::MeshletMaxTris;

@@ -19,28 +19,31 @@ layout(binding = 0) uniform WorldConstants {
 layout(binding = 1, std430) restrict readonly buffer Meshlets {
 	Meshlet b_meshlets[];
 };
-layout(binding = 2, std430) restrict readonly buffer Instances {
+layout(binding = 2, std430) restrict readonly buffer Indices {
+	uint b_indices[];
+};
+layout(binding = 3, std430) restrict readonly buffer Instances {
 	Instance b_instances[];
 };
-layout(binding = 3, std430) restrict readonly buffer Colors {
+layout(binding = 4, std430) restrict readonly buffer Colors {
 	vec4 b_colors[];
 };
-layout(binding = 4, std430) restrict readonly buffer Materials {
+layout(binding = 5, std430) restrict readonly buffer Materials {
 	Material b_materials[];
 };
 
-layout(binding = 5) uniform SunLuminance {
+layout(binding = 6) uniform SunLuminance {
 	vec3 u_sunLuminance;
 };
-layout(binding = 6) uniform samplerCube s_cubemap;
-layout(binding = 7) uniform sampler3D s_aerialPerspective;
+layout(binding = 7) uniform samplerCube s_cubemap;
+layout(binding = 8) uniform sampler3D s_aerialPerspective;
 
-layout(binding = 8) uniform usampler2D s_visbuf;
-layout(binding = 9) uniform sampler2D s_offset;
-layout(binding = 10) uniform sampler2D s_depth;
-layout(binding = 11) uniform usampler2D s_normal;
-layout(binding = 12) restrict writeonly uniform image2D i_clusterOut;
-layout(binding = 13, std430) restrict readonly buffer TileLists {
+layout(binding = 9) uniform usampler2D s_visbuf;
+layout(binding = 10) uniform sampler2D s_offset;
+layout(binding = 11) uniform sampler2D s_depth;
+layout(binding = 12) uniform usampler2D s_normal;
+layout(binding = 13) restrict writeonly uniform image2D i_clusterOut;
+layout(binding = 14, std430) restrict readonly buffer TileLists {
 	uint B_LISTS[];
 };
 
@@ -81,9 +84,8 @@ float dApprox(float _roughness, float _RoL) {
 
 vec3 shadeVisSamplePBR(uint _visValue, vec2 _uv, vec3 _clipVertex, vec3 _normal) {
 	
-	VisSample vis = unpackVisibility(_visValue);
-	
-	Instance instance = b_instances[vis.instance];
+	uint index = b_indices[_visValue * 3];
+	Instance instance = b_instances[index >> 6];
 	uint meshletIdx = instance.meshletIdx;
 	Meshlet meshlet = b_meshlets[meshletIdx];
 	uint materialIdx = meshlet.materialIdx;

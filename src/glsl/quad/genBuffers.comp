@@ -16,10 +16,10 @@ layout(binding = 0) uniform WorldConstants {
 	World u_world;
 };
 
-layout (binding = 1, std430) restrict readonly buffer Meshlets {
+layout(binding = 1, std430) restrict readonly buffer Meshlets {
 	Meshlet b_meshlets[];
 };
-layout (binding = 2, std430) restrict readonly buffer Instances {
+layout(binding = 2, std430) restrict readonly buffer Instances {
 	Instance b_instances[];
 };
 layout(binding = 3, std430) restrict readonly buffer Transforms {
@@ -29,16 +29,16 @@ layout(binding = 4, std430) restrict readonly buffer PrevTransforms {
 	mat3x4 b_prevTransforms[];
 };
 
-layout (binding = 5, std430) restrict readonly buffer Indices {
+layout(binding = 5, std430) restrict readonly buffer Indices {
 	uint b_indices[];
 };
-layout (binding = 6, std430) restrict readonly buffer VertIndices {
+layout(binding = 6, std430) restrict readonly buffer VertIndices {
 	uint b_vertIndices[];
 };
-layout (binding = 7, std430) restrict readonly buffer Vertices {
+layout(binding = 7, std430) restrict readonly buffer Vertices {
 	float B_VERTICES[];
 };
-layout (binding = 8, std430) restrict readonly buffer Normals {
+layout(binding = 8, std430) restrict readonly buffer Normals {
 	uint B_NORMALS[];
 };
 

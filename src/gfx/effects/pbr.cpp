@@ -19,7 +19,7 @@ void PBR::compile(vuk::PerThreadContext& _ptc) {
 }
 
 void PBR::apply(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
-	InstanceList _instances, Cubemap _ibl,
+	TriangleList _triangles, InstanceList _instances, Cubemap _ibl,
 	Buffer<vec3> _sunLuminance, Texture3D _aerialPerspective) {
 	
 	_frame.rg.add_pass({
@@ -37,24 +37,25 @@ void PBR::apply(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
 			_quadbuf.depth.resource(vuk::eComputeSampled),
 			_quadbuf.normal.resource(vuk::eComputeSampled),
 			_quadbuf.clusterOut.resource(vuk::eComputeWrite) },
-		.execute = [_quadbuf, _worklist, &_frame, _instances, _ibl,
+		.execute = [_quadbuf, _worklist, &_frame, _triangles, _instances, _ibl,
 			_sunLuminance, _aerialPerspective,
 			tileCount=_worklist.counts.offsetView(+MaterialType::PBR)](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _frame.world)
 			   .bind_storage_buffer(0, 1, _frame.models.meshlets)
-			   .bind_storage_buffer(0, 2, _instances.instances)
-			   .bind_storage_buffer(0, 3, _instances.colors)
-			   .bind_storage_buffer(0, 4, _frame.models.materials)
-			   .bind_uniform_buffer(0, 5, _sunLuminance)
-			   .bind_sampled_image(0, 6, _ibl, TrilinearClamp)
-			   .bind_sampled_image(0, 7, _aerialPerspective, TrilinearClamp)
-			   .bind_sampled_image(0, 8, _quadbuf.visbuf, NearestClamp)
-			   .bind_sampled_image(0, 9, _quadbuf.offset, NearestClamp)
-			   .bind_sampled_image(0, 10, _quadbuf.depth, NearestClamp)
-			   .bind_sampled_image(0, 11, _quadbuf.normal, NearestClamp)
-			   .bind_storage_image(0, 12, _quadbuf.clusterOut)
-			   .bind_storage_buffer(0, 13, _worklist.lists)
+			   .bind_storage_buffer(0, 2, _triangles.indices)
+			   .bind_storage_buffer(0, 3, _instances.instances)
+			   .bind_storage_buffer(0, 4, _instances.colors)
+			   .bind_storage_buffer(0, 5, _frame.models.materials)
+			   .bind_uniform_buffer(0, 6, _sunLuminance)
+			   .bind_sampled_image(0, 7, _ibl, TrilinearClamp)
+			   .bind_sampled_image(0, 8, _aerialPerspective, TrilinearClamp)
+			   .bind_sampled_image(0, 9, _quadbuf.visbuf, NearestClamp)
+			   .bind_sampled_image(0, 10, _quadbuf.offset, NearestClamp)
+			   .bind_sampled_image(0, 11, _quadbuf.depth, NearestClamp)
+			   .bind_sampled_image(0, 12, _quadbuf.normal, NearestClamp)
+			   .bind_storage_image(0, 13, _quadbuf.clusterOut)
+			   .bind_storage_buffer(0, 14, _worklist.lists)
 			   .bind_compute_pipeline("pbr");
 			
 			cmd.specialize_constants(0, u32Fromu16({_aerialPerspective.size().x(), _aerialPerspective.size().y()}));
