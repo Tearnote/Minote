@@ -328,12 +328,20 @@ int main(int argc, char const* argv[]) {
 		for (auto v: mesh.vertices)
 			vertices.push_back(vec3(mesh.transform * vec4(v, 1.0f)));
 		
-		// Convert normals to oct encoding
+		// Pre-transform normals
 		
-		auto normals = pvector<NormalType>();
+		auto normTransform = transpose(inverse(mesh.transform));
+		auto normals = pvector<GltfNormalType>();
 		normals.reserve(mesh.normals.size());
 		for (auto n: mesh.normals)
-			normals.push_back(octEncode(n));
+			normals.push_back(normalize(vec3(normTransform * vec4(n, 0.0f))));
+		
+		// Convert normals to oct encoding
+		
+		auto octNormals = pvector<NormalType>();
+		octNormals.reserve(mesh.normals.size());
+		for (auto n: normals)
+			octNormals.push_back(octEncode(n));
 		
 		// Generate the meshlets
 		
@@ -383,7 +391,7 @@ int main(int argc, char const* argv[]) {
 		model.triIndices.insert(model.triIndices.end(), meshletTriangles.begin(), meshletTriangles.end());
 		model.vertIndices.insert(model.vertIndices.end(), meshletVertices.begin(), meshletVertices.end());
 		model.vertices.insert(model.vertices.end(), vertices.begin(), vertices.end());
-		model.normals.insert(model.normals.end(), normals.begin(), normals.end());
+		model.normals.insert(model.normals.end(), octNormals.begin(), octNormals.end());
 		
 	}
 	
