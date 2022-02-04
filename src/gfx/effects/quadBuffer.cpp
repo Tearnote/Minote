@@ -174,12 +174,14 @@ void QuadBuffer::clusterize(Frame& _frame, QuadBuffer& _quadbuf, Texture2DMS _vi
 	
 }
 
-void QuadBuffer::genBuffers(Frame& _frame, QuadBuffer& _quadbuf, InstanceList _instances) {
+void QuadBuffer::genBuffers(Frame& _frame, QuadBuffer& _quadbuf,
+	TriangleList _triangles, InstanceList _instances) {
 	
 	_frame.rg.add_pass({
 		
 		.name = nameAppend(_quadbuf.name, "quad/genBuffers"),
 		.resources = {
+			_triangles.indices.resource(vuk::eComputeRead),
 			_instances.instances.resource(vuk::eComputeRead),
 			_instances.transforms.resource(vuk::eComputeRead),
 			_instances.prevTransforms.resource(vuk::eComputeRead),
@@ -191,14 +193,14 @@ void QuadBuffer::genBuffers(Frame& _frame, QuadBuffer& _quadbuf, InstanceList _i
 			_quadbuf.quadDepthRepro.resource(vuk::eComputeWrite),
 			_quadbuf.normal.resource(vuk::eComputeWrite),
 			_quadbuf.velocity.resource(vuk::eComputeWrite) },
-		.execute = [_quadbuf, &_frame, _instances](vuk::CommandBuffer& cmd) {
+		.execute = [_quadbuf, &_frame, _triangles, _instances](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _frame.world)
 			   .bind_storage_buffer(0, 1, _frame.models.meshlets)
 			   .bind_storage_buffer(0, 2, _instances.instances)
 			   .bind_storage_buffer(0, 3, _instances.transforms)
 			   .bind_storage_buffer(0, 4, _instances.prevTransforms)
-			   .bind_storage_buffer(0, 5, _frame.models.triIndices)
+			   .bind_storage_buffer(0, 5, _triangles.indices)
 			   .bind_storage_buffer(0, 6, _frame.models.vertIndices)
 			   .bind_storage_buffer(0, 7, _frame.models.vertices)
 			   .bind_storage_buffer(0, 8, _frame.models.normals)

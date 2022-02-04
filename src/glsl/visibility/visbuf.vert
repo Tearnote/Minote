@@ -5,8 +5,6 @@
 
 #define B_VERTICES b_vertices
 
-layout(location = 0) out flat uint InstanceIdx;
-
 layout(binding = 0) uniform WorldConstants {
 	World u_world;
 };
@@ -30,8 +28,7 @@ layout(binding = 5, std430) restrict readonly buffer Transforms {
 
 void main() {
 	
-	InstanceIdx = gl_VertexIndex >> 6;
-	Instance instance = b_instances[InstanceIdx];
+	Instance instance = b_instances[gl_VertexIndex >> 6];
 	Meshlet meshlet = b_meshlets[instance.meshletIdx];
 	
 	uint triIdx = (gl_VertexIndex & bitmask(6)) + meshlet.vertexOffset;

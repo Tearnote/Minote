@@ -29,8 +29,8 @@ layout(binding = 4, std430) restrict readonly buffer PrevTransforms {
 	mat3x4 b_prevTransforms[];
 };
 
-layout (binding = 5, std430) restrict readonly buffer TriIndices {
-	uint b_triIndices[];
+layout (binding = 5, std430) restrict readonly buffer Indices {
+	uint b_indices[];
 };
 layout (binding = 6, std430) restrict readonly buffer VertIndices {
 	uint b_vertIndices[];
@@ -84,22 +84,23 @@ void main() {
 	vec2 velocity;
 	if (visbuf != -1u) { // Valid triangle cluster
 		
-		VisSample vis = unpackVisibility(visbuf);
+		visbuf *= 3;
+		uvec3 indices = {
+			b_indices[visbuf + 0],
+			b_indices[visbuf + 1],
+			b_indices[visbuf + 2]};
+		uint instanceIdx = indices[0] >> 6;
 		
-		Instance instance = b_instances[vis.instance];
+		Instance instance = b_instances[instanceIdx];
 		uint meshletIdx = instance.meshletIdx;
 		Meshlet meshlet = b_meshlets[meshletIdx];
 		
-		uint triIndex = vis.triangle * 3;
-		uvec3 triIndices = {
-			b_triIndices[triIndex + 0],
-			b_triIndices[triIndex + 1],
-			b_triIndices[triIndex + 2] };
-		triIndices += uvec3(meshlet.vertexOffset);
+		indices &= bitmask(6);
+		indices += uvec3(meshlet.vertexOffset);
 		uvec3 vertIndices = {
-			b_vertIndices[triIndices.x],
-			b_vertIndices[triIndices.y],
-			b_vertIndices[triIndices.z] };
+			b_vertIndices[indices[0]],
+			b_vertIndices[indices[1]],
+			b_vertIndices[indices[2]] };
 		
 		uint transformIdx = instance.objectIdx;
 		mat4 transform = getTransform(b_transforms[transformIdx]);

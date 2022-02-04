@@ -38,7 +38,7 @@ struct QuadBuffer {
 	
 	static void clusterize(Frame&, QuadBuffer&, Texture2DMS visbuf);
 	
-	static void genBuffers(Frame&, QuadBuffer&, InstanceList);
+	static void genBuffers(Frame&, QuadBuffer&, TriangleList, InstanceList);
 	
 	static void resolve(Frame&, QuadBuffer&, Texture2D output);
 	
