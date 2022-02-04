@@ -176,7 +176,6 @@ auto ModelList::upload(Pool& _pool, vuk::Name _name) && -> ModelBuffer {
 			vuk::BufferUsageFlagBits::eStorageBuffer,
 			m_materials),
 		.triIndices = Buffer<u32>::make(_pool, nameAppend(_name, "triIndices"),
-			vuk::BufferUsageFlagBits::eIndexBuffer |
 			vuk::BufferUsageFlagBits::eStorageBuffer,
 			m_triIndices),
 		.vertIndices = Buffer<VertIndexType>::make(_pool, nameAppend(_name, "vertIndices"),

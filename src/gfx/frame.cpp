@@ -29,7 +29,7 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, bool _flush) {
 	// Upload resources
 	
 	world = cpu_world.upload(framePool, "world");
-	auto basicObjects = BasicObjectList::upload(framePool, *this, "basicObjects", _objects);
+	auto instances = InstanceList::upload(framePool, *this, "instances", _objects);
 	auto atmosphere = Atmosphere::create(permPool, *this, "earth", Atmosphere::Params::earth());
 	auto viewport = _target.size();
 	
@@ -75,9 +75,7 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, bool _flush) {
 	// Create rendering passes
 	
 	// Instance list processing
-	auto objects = ObjectList::fromBasic(framePool, *this, "objects", std::move(basicObjects));
-	auto instances = InstanceList::fromObjects(framePool, *this, "instances", objects,
-		cpu_world.view, cpu_world.projection);
+	auto screenTriangles = TriangleList::fromInstances(instances, framePool, *this, "screenTriangles");
 	
 	// Sky generation
 	auto cameraSky = Sky::createView(permPool, *this, "cameraSky", cpu_world.cameraPos, atmosphere);
@@ -91,7 +89,7 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, bool _flush) {
 	CubeFilter::apply(*this, iblUnfiltered, iblFiltered);
 	
 	// Drawing
-	Visibility::apply(*this, visbuf, depth, instances);
+	Visibility::apply(*this, visbuf, depth, instances, screenTriangles);
 	QuadBuffer::clusterize(*this, quadbuf, visbuf);
 	QuadBuffer::genBuffers(*this, quadbuf, instances);
 	auto worklist = Worklist::create(swapchainPool, *this, "worklist", quadbuf.visbuf, instances);

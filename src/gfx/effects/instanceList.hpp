@@ -12,74 +12,37 @@ namespace minote::gfx {
 using namespace base;
 using namespace base::literals;
 
-struct BasicObjectList {
-	
-	using BasicTransform = ObjectPool::Transform;
-	
-	static constexpr auto MaxObjects = 65536_zu;
-	
-	Buffer<uvec4> objectsCount;
-	Buffer<u32> modelIndices;
-	Buffer<vec4> colors;
-	Buffer<BasicTransform> basicTransforms;
-	Buffer<BasicTransform> prevBasicTransforms;
-	
-	static auto upload(Pool&, Frame&, vuk::Name, ObjectPool const&) -> BasicObjectList;
-	
-	[[nodiscard]]
-	static constexpr auto capacity() -> usize { return MaxObjects; }
-	
-};
-
-struct ObjectList {
-	
-	using Transform = array<vec4, 3>;
-	
-	Buffer<uvec4> objectsCount;
-	Buffer<u32> modelIndices;
-	Buffer<vec4> colors;
-	Buffer<Transform> transforms;
-	Buffer<Transform> prevTransforms;
-	
-	static void compile(vuk::PerThreadContext&);
-	
-	static auto fromBasic(Pool&, Frame&, vuk::Name, BasicObjectList&&) -> ObjectList;
-	
-	[[nodiscard]]
-	static constexpr auto capacity() -> usize { return BasicObjectList::MaxObjects; }
-	
-};
-
 struct InstanceList {
 	
-	using Command = VkDrawIndexedIndirectCommand;
 	using Transform = array<vec4, 3>;
 	
 	struct Instance {
 		u32 objectIdx;
-		u32 meshIdx;
+		u32 meshletIdx;
 	};
 	
-	static constexpr auto MaxInstances = 262144_zu;
-	
-	// Object data
 	Buffer<vec4> colors;
 	Buffer<Transform> transforms;
 	Buffer<Transform> prevTransforms;
 	
-	// Instance data
-	Buffer<uvec4> instancesCount;
 	Buffer<Instance> instances;
 	
-	// Draw data
-	Buffer<Command> commands;
+	static auto upload(Pool&, Frame&, vuk::Name, ObjectPool const&) -> InstanceList;
+	
+	auto size() const -> usize { return instances.length(); }
+	
+};
+
+struct TriangleList {
+	
+	using Command = VkDrawIndexedIndirectCommand;
+	
+	Buffer<Command> command;
+	Buffer<u32> indices;
 	
 	static void compile(vuk::PerThreadContext&);
 	
-	static auto fromObjects(Pool&, Frame&, vuk::Name, ObjectList, mat4 view, mat4 projection) -> InstanceList;
-	
-	[[nodiscard]]
-	static constexpr auto capacity() -> usize { return MaxInstances; }
+	static auto fromInstances(InstanceList, Pool&, Frame&, vuk::Name) -> TriangleList;
 	
 };
 

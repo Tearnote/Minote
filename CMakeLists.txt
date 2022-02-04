@@ -261,18 +261,7 @@ FetchContent_MakeAvailable(meshoptimizer)
 
 set(SHADER_DIR_PREFIX src/glsl)
 set(SHADER_SOURCES
-	instanceList/instanceScan1.comp
-	instanceList/instanceScan2.comp
-	instanceList/instanceScan3.comp
-	instanceList/transformConv.comp
-	instanceList/objectScan1.comp
-	instanceList/objectScan2.comp
-	instanceList/objectScan3.comp
-	instanceList/sortWrite.comp
-	instanceList/sortScan1.comp
-	instanceList/sortScan2.comp
-	instanceList/sortScan3.comp
-	instanceList/sortWrite.comp
+	instanceList/genIndices.comp
 	cubeFilter/post.comp
 	cubeFilter/pre.comp
 	visibility/worklist.comp

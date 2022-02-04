@@ -30,14 +30,16 @@ layout(binding = 5, std430) restrict readonly buffer Transforms {
 
 void main() {
 	
-	InstanceIdx = gl_InstanceIndex;
-	Meshlet meshlet = b_meshlets[gl_DrawID];
+	InstanceIdx = gl_VertexIndex >> 6;
+	Instance instance = b_instances[InstanceIdx];
+	Meshlet meshlet = b_meshlets[instance.meshletIdx];
 	
-	uint triIdx = gl_VertexIndex + meshlet.vertexOffset;
+	uint triIdx = (gl_VertexIndex & bitmask(6)) + meshlet.vertexOffset;
+	
 	uint index = b_vertIndices[triIdx];
 	vec3 vertex = fetchVertex(index);
 	
-	uint transformIdx = b_instances[gl_InstanceIndex].objectIdx;
+	uint transformIdx = instance.objectIdx;
 	mat4 transform = getTransform(b_transforms[transformIdx]);
 	gl_Position = u_world.viewProjection * transform * vec4(vertex, 1.0);
 	

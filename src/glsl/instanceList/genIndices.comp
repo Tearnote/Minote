@@ -1,0 +1,59 @@
+#version 460
+#pragma shader_stage(compute)
+
+layout(local_size_x = 64) in;
+
+#include "../types.glsl"
+
+layout(binding = 0, std430) restrict readonly buffer Meshlets {
+	Meshlet b_meshlets[];
+};
+layout(binding = 1, std430) restrict readonly buffer Instances {
+	Instance b_instances[];
+};
+layout (binding = 2, std430) restrict readonly buffer TriIndices {
+	uint b_triIndices[];
+};
+layout(binding = 3, std430) restrict buffer DrawCommand {
+	Command b_command;
+};
+layout(binding = 4, std430) restrict writeonly buffer Indices {
+	uint b_indices[];
+};
+
+layout(push_constant) uniform Constants {
+	uint u_instanceCount;
+};
+
+layout(constant_id = 0) const uint MaxTrisPerMeshlet = 0;
+
+void main() {
+	
+	uint gid = gl_GlobalInvocationID.x;
+	
+	uint instanceIdx = gid / MaxTrisPerMeshlet;
+	uint triIdx = gid % MaxTrisPerMeshlet;
+	
+	if (instanceIdx >= u_instanceCount)
+		return;
+	
+	Instance instance = b_instances[instanceIdx];
+	Meshlet meshlet = b_meshlets[instance.meshletIdx];
+	
+	triIdx *= 3;
+	if (triIdx + 2 >= meshlet.indexCount)
+		return;
+	
+	triIdx += meshlet.indexOffset;
+	uvec3 indices = {
+		b_triIndices[triIdx + 0],
+		b_triIndices[triIdx + 1],
+		b_triIndices[triIdx + 2]};
+	
+	uint outOffset = atomicAdd(b_command.indexCount, 3);
+	uint shiftedInstance = instanceIdx << 6;
+	b_indices[outOffset + 0] = indices[0] | shiftedInstance;
+	b_indices[outOffset + 1] = indices[1] | shiftedInstance;
+	b_indices[outOffset + 2] = indices[2] | shiftedInstance;
+	
+}

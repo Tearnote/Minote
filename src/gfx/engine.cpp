@@ -58,8 +58,7 @@ void Engine::init(ModelList&& _modelList) {
 	auto ptc = ifc.begin();
 	m_permPool.setPtc(ptc);
 	
-	InstanceList::compile(ptc);
-	ObjectList::compile(ptc);
+	TriangleList::compile(ptc);
 	QuadBuffer::compile(ptc);
 	CubeFilter::compile(ptc);
 	Atmosphere::compile(ptc);

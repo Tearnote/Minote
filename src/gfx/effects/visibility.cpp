@@ -25,17 +25,18 @@ void Visibility::compile(vuk::PerThreadContext& _ptc) {
 }
 
 void Visibility::apply(Frame& _frame, Texture2DMS _visbuf, Texture2DMS _depth,
-	InstanceList _instances) {
+	InstanceList _instances, TriangleList _triangles) {
 	
 	_frame.rg.add_pass({
 		.name = nameAppend(_visbuf.name, "visibility/visbuf"),
 		.resources = {
-			_instances.commands.resource(vuk::eIndirectRead),
+			_triangles.command.resource(vuk::eIndirectRead),
+			_triangles.indices.resource(vuk::eIndexRead),
 			_instances.instances.resource(vuk::eVertexRead),
 			_instances.transforms.resource(vuk::eVertexRead),
 			_visbuf.resource(vuk::eColorWrite),
 			_depth.resource(vuk::eDepthStencilRW) },
-		.execute = [_visbuf, _instances, &_frame](vuk::CommandBuffer& cmd) {
+		.execute = [_visbuf, _instances, _triangles, &_frame](vuk::CommandBuffer& cmd) {
 			
 			cmd.set_viewport(0, vuk::Rect2D::framebuffer());
 			cmd.set_scissor(0, vuk::Rect2D::framebuffer());
@@ -47,7 +48,7 @@ void Visibility::apply(Frame& _frame, Texture2DMS _visbuf, Texture2DMS _depth,
 				.depthWriteEnable = true,
 				.depthCompareOp = vuk::CompareOp::eGreater });
 			
-			cmd.bind_index_buffer(_frame.models.triIndices, vuk::IndexType::eUint32)
+			cmd.bind_index_buffer(_triangles.indices, vuk::IndexType::eUint32)
 			   .bind_uniform_buffer(0, 0, _frame.world)
 			   .bind_storage_buffer(0, 1, _frame.models.vertIndices)
 			   .bind_storage_buffer(0, 2, _frame.models.vertices)
@@ -56,7 +57,7 @@ void Visibility::apply(Frame& _frame, Texture2DMS _visbuf, Texture2DMS _depth,
 			   .bind_storage_buffer(0, 5, _instances.transforms)
 			   .bind_graphics_pipeline("visibility/visbuf");
 			
-			cmd.draw_indexed_indirect(_instances.commands.length(), _instances.commands);
+			cmd.draw_indexed_indirect(1, _triangles.command);
 			
 		}});
 	
