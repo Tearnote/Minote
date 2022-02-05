@@ -22,7 +22,6 @@ layout(binding = 4, std430) restrict writeonly buffer Indices {
 };
 
 layout(push_constant) uniform Constants {
-	uint u_instanceCount;
 	uint u_instanceOffset;
 };
 
@@ -31,27 +30,22 @@ layout(constant_id = 0) const uint MaxTrisPerMeshlet = 0;
 void main() {
 	
 	uint gid = (gl_GlobalInvocationID.x + u_instanceOffset) * 4; // 4 triangles per thread
+	uint instanceIdx = gid / MaxTrisPerMeshlet;
+	uint triIdx = gid % MaxTrisPerMeshlet;
+	Instance instance = b_instances[instanceIdx];
+	Meshlet meshlet = b_meshlets[instance.meshletIdx];
 	
 	for (uint i = 0; i < 4; i += 1) {
 		
-		uint instanceIdx = (gid + i) / MaxTrisPerMeshlet;
-		uint triIdx = (gid + i) % MaxTrisPerMeshlet;
-		
-		// if (instanceIdx >= u_instanceCount)
-		// 	continue;
-		
-		Instance instance = b_instances[instanceIdx];
-		Meshlet meshlet = b_meshlets[instance.meshletIdx];
-		
-		triIdx *= 3;
-		if (triIdx + 2 >= meshlet.indexCount)
+		uint idx = (triIdx + i) * 3;
+		if (idx + 2 >= meshlet.indexCount)
 			continue;
 		
-		triIdx += meshlet.indexOffset;
+		idx += meshlet.indexOffset;
 		uvec3 indices = {
-			b_triIndices[triIdx + 0],
-			b_triIndices[triIdx + 1],
-			b_triIndices[triIdx + 2]};
+			b_triIndices[idx + 0],
+			b_triIndices[idx + 1],
+			b_triIndices[idx + 2]};
 		
 		uint outOffset = atomicAdd(b_command.indexCount, 3);
 		uint shiftedInstance = instanceIdx << 6;

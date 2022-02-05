@@ -181,14 +181,8 @@ auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _f
 			auto threadOffset = 0u;
 			while (threadOffset < threads) {
 				
-				struct PushConstants {
-					u32 instanceCount;
-					u32 instanceOffset;
-				};
 				auto threadCount = min(65536u * 256u - 1u, threads - threadOffset);
-				cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
-					.instanceCount = u32(threadCount),
-					.instanceOffset = threadOffset });
+				cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, threadOffset);
 				cmd.dispatch_invocations(threadCount, 1, 1);
 				
 				threadOffset += 65536u * 256u;
