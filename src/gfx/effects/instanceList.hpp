@@ -27,6 +27,8 @@ struct InstanceList {
 	
 	Buffer<Instance> instances;
 	
+	u32 triangleCount;
+	
 	static auto upload(Pool&, Frame&, vuk::Name, ObjectPool const&) -> InstanceList;
 	
 	auto size() const -> usize { return instances.length(); }

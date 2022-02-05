@@ -40,6 +40,8 @@ auto InstanceList::upload(Pool& _pool, Frame& _frame, vuk::Name _name,
 	
 	ZoneScoped;
 	
+	auto result = InstanceList();
+	
 	// Precalculate instance count
 	
 	auto modelCount = 0u;
@@ -68,6 +70,8 @@ auto InstanceList::upload(Pool& _pool, Frame& _frame, vuk::Name _name,
 	auto colors = pvector<vec4>();
 	colors.reserve(modelCount);
 	
+	result.triangleCount = 0;
+	
 	for (auto idx: iota(ObjectID(0), _objects.size())) {
 		
 		auto& metadata = _objects.metadata[idx];
@@ -86,6 +90,8 @@ auto InstanceList::upload(Pool& _pool, Frame& _frame, vuk::Name _name,
 				.objectIdx = u32(transforms.size()),
 				.meshletIdx = model.meshletOffset + i });
 			
+			result.triangleCount += divRoundUp(_frame.models.cpu_meshlets[model.meshletOffset + i].indexCount, 3u);
+			
 		}
 		
 		// Add model details
@@ -97,8 +103,6 @@ auto InstanceList::upload(Pool& _pool, Frame& _frame, vuk::Name _name,
 	}
 	
 	// Upload data to GPU
-	
-	auto result = InstanceList();
 	
 	result.colors = Buffer<vec4>::make(_pool, nameAppend(_name, "colors"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
@@ -151,7 +155,7 @@ auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _f
 	result.indices = Buffer<u32>::make(_pool, _name,
 		vuk::BufferUsageFlagBits::eIndexBuffer |
 		vuk::BufferUsageFlagBits::eStorageBuffer,
-		_instances.size() * tools::MeshletMaxTris * 3);
+		_instances.triangleCount * 3);
 	result.indices.attach(_frame.rg, vuk::eNone, vuk::eNone);
 	
 	_frame.rg.add_pass({

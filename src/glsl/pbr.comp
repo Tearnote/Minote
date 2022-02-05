@@ -85,7 +85,8 @@ float dApprox(float _roughness, float _RoL) {
 vec3 shadeVisSamplePBR(uint _visValue, vec2 _uv, vec3 _clipVertex, vec3 _normal) {
 	
 	uint index = b_indices[_visValue * 3];
-	Instance instance = b_instances[index >> 6];
+	uint instanceIdx = index >> 6;
+	Instance instance = b_instances[instanceIdx];
 	uint meshletIdx = instance.meshletIdx;
 	Meshlet meshlet = b_meshlets[meshletIdx];
 	uint materialIdx = meshlet.materialIdx;

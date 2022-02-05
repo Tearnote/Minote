@@ -75,7 +75,7 @@ void game(GameParams const& _params) try {
 	constexpr auto Expand = 0u;
 	constexpr auto Spacing = 25_m;
 	
-	constexpr auto TestScenes = 1;
+	constexpr auto TestScenes = 3;
 	for (auto x: iota(0, TestScenes))
 	for (auto y: iota(0, TestScenes)) {
 		
