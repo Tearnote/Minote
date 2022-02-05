@@ -173,11 +173,27 @@ auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _f
 			   .bind_storage_buffer(0, 4, result.indices)
 			   .bind_compute_pipeline("instanceList/genIndices");
 			
-			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, u32(_instances.size()));
 			cmd.specialize_constants(0, tools::MeshletMaxTris);
 			
 			auto triangles = _instances.size() * tools::MeshletMaxTris;
-			cmd.dispatch_invocations(divRoundUp(triangles, 4_zu), 1, 1); // 4 triangles per thread
+			auto threads = divRoundUp(triangles, 4_zu); // 4 triangles per thread
+			
+			auto threadOffset = 0u;
+			while (threadOffset < threads) {
+				
+				struct PushConstants {
+					u32 instanceCount;
+					u32 instanceOffset;
+				};
+				auto threadCount = min(65536u * 256u - 1u, threads - threadOffset);
+				cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
+					.instanceCount = u32(threadCount),
+					.instanceOffset = threadOffset });
+				cmd.dispatch_invocations(threadCount, 1, 1);
+				
+				threadOffset += 65536u * 256u;
+				
+			}
 			
 		}});
 	

@@ -23,21 +23,22 @@ layout(binding = 4, std430) restrict writeonly buffer Indices {
 
 layout(push_constant) uniform Constants {
 	uint u_instanceCount;
+	uint u_instanceOffset;
 };
 
 layout(constant_id = 0) const uint MaxTrisPerMeshlet = 0;
 
 void main() {
 	
-	uint gid = gl_GlobalInvocationID.x * 4; // 4 triangles per thread
+	uint gid = (gl_GlobalInvocationID.x + u_instanceOffset) * 4; // 4 triangles per thread
 	
 	for (uint i = 0; i < 4; i += 1) {
 		
 		uint instanceIdx = (gid + i) / MaxTrisPerMeshlet;
 		uint triIdx = (gid + i) % MaxTrisPerMeshlet;
 		
-		if (instanceIdx >= u_instanceCount)
-			continue;
+		// if (instanceIdx >= u_instanceCount)
+		// 	continue;
 		
 		Instance instance = b_instances[instanceIdx];
 		Meshlet meshlet = b_meshlets[instance.meshletIdx];
