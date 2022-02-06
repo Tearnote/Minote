@@ -44,7 +44,7 @@ struct TriangleList {
 	
 	static void compile(vuk::PerThreadContext&);
 	
-	static auto fromInstances(InstanceList, Pool&, Frame&, vuk::Name) -> TriangleList;
+	static auto fromInstances(InstanceList, Pool&, Frame&, vuk::Name, vec3 cameraPosition) -> TriangleList;
 	
 };
 

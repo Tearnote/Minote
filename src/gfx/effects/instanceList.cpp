@@ -136,7 +136,8 @@ void TriangleList::compile(vuk::PerThreadContext& _ptc) {
 	
 }
 
-auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _frame, vuk::Name _name) -> TriangleList {
+auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _frame, vuk::Name _name,
+	vec3 _cameraPosition) -> TriangleList {
 	
 	auto result = TriangleList();
 	
@@ -164,13 +165,16 @@ auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _f
 			_instances.instances.resource(vuk::eComputeRead),
 			result.command.resource(vuk::eComputeRW),
 			result.indices.resource(vuk::eComputeWrite) },
-		.execute = [result, _instances, &_frame](vuk::CommandBuffer& cmd) {
+		.execute = [result, _instances, &_frame, _cameraPosition](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_storage_buffer(0, 0, _frame.models.meshlets)
 			   .bind_storage_buffer(0, 1, _instances.instances)
-			   .bind_storage_buffer(0, 2, _frame.models.triIndices)
-			   .bind_storage_buffer(0, 3, result.command)
-			   .bind_storage_buffer(0, 4, result.indices)
+			   .bind_storage_buffer(0, 2, _instances.transforms)
+			   .bind_storage_buffer(0, 3, _frame.models.triIndices)
+			   .bind_storage_buffer(0, 4, _frame.models.vertIndices)
+			   .bind_storage_buffer(0, 5, _frame.models.vertices)
+			   .bind_storage_buffer(0, 6, result.command)
+			   .bind_storage_buffer(0, 7, result.indices)
 			   .bind_compute_pipeline("instanceList/genIndices");
 			
 			cmd.specialize_constants(0, tools::MeshletMaxTris);
@@ -181,8 +185,15 @@ auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _f
 			auto threadOffset = 0u;
 			while (threadOffset < threads) {
 				
+				struct PushConstants {
+					vec3 cameraPosition;
+					u32 instanceOffset;
+				};
+				
 				auto threadCount = min(65536u * 256u - 1u, threads - threadOffset);
-				cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, threadOffset);
+				cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
+					.cameraPosition = _cameraPosition,
+					.instanceOffset = threadOffset });
 				cmd.dispatch_invocations(threadCount, 1, 1);
 				
 				threadOffset += 65536u * 256u;
