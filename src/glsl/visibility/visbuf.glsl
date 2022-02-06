@@ -6,17 +6,6 @@
 #include "visbufTypes.glsl"
 #include "../util.glsl"
 
-#define TRIANGLE_ID_BITS 7u
-
-VisSample unpackVisibility(uint _packed) {
-	
-	VisSample result = VisSample(
-		_packed >> TRIANGLE_ID_BITS,
-		_packed & bitmask(TRIANGLE_ID_BITS));
-	return result;
-	
-}
-
 vec3 calculateBarycentrics(mat3x4 _verts, vec2 _pxNdc) {
 	
 	vec3 invW = rcp(vec3(_verts[0].w, _verts[1].w, _verts[2].w));

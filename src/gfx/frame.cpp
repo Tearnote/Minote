@@ -92,7 +92,7 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, bool _flush) {
 	Visibility::apply(*this, visbuf, depth, instances, screenTriangles);
 	QuadBuffer::clusterize(*this, quadbuf, visbuf);
 	QuadBuffer::genBuffers(*this, quadbuf, screenTriangles, instances);
-	auto worklist = Worklist::create(swapchainPool, *this, "worklist", quadbuf.visbuf, instances);
+	auto worklist = Worklist::create(swapchainPool, *this, "worklist", quadbuf.visbuf, screenTriangles, instances);
 	PBR::apply(*this, quadbuf, worklist, screenTriangles, instances,
 		iblFiltered, sunLuminance, aerialPerspective);
 	Sky::draw(*this, quadbuf, worklist, cameraSky, atmosphere);

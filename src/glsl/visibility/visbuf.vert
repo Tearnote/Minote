@@ -1,6 +1,7 @@
 #version 460
 #pragma shader_stage(vertex)
 
+#include "../instanceList/indices.glsl"
 #include "../types.glsl"
 
 #define B_VERTICES b_vertices
@@ -28,7 +29,7 @@ layout(binding = 5, std430) restrict readonly buffer Transforms {
 
 void main() {
 	
-	Instance instance = b_instances[gl_VertexIndex >> 6];
+	Instance instance = b_instances[gl_VertexIndex >> INSTANCE_ID_BITS];
 	Meshlet meshlet = b_meshlets[instance.meshletIdx];
 	
 	uint triIdx = (gl_VertexIndex & bitmask(6)) + meshlet.vertexOffset;

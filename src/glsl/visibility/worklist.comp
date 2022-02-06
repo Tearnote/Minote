@@ -5,25 +5,29 @@
 
 layout(local_size_x = 8, local_size_y = 8) in;
 
+#include "../instanceList/indices.glsl"
 #include "visbufTypes.glsl"
 #include "visbuf.glsl"
 #include "../types.glsl"
 #include "../util.glsl"
 
 layout(binding = 0) uniform usampler2D s_visbuf;
-layout(binding = 1, std430) restrict readonly buffer Instances {
+layout(binding = 1, std430) restrict readonly buffer Indices {
+	uint b_indices[];
+};
+layout(binding = 2, std430) restrict readonly buffer Instances {
 	Instance b_instances[];
 };
-layout(binding = 2, std430) restrict readonly buffer Meshlets {
+layout(binding = 3, std430) restrict readonly buffer Meshlets {
 	Meshlet b_meshlets[];
 };
-layout(binding = 3, std430) restrict readonly buffer Materials {
+layout(binding = 4, std430) restrict readonly buffer Materials {
 	Material b_materials[];
 };
-layout(binding = 4, std430) restrict buffer TileCounts {
+layout(binding = 5, std430) restrict buffer TileCounts {
 	uvec4 b_counts[];
 };
-layout(binding = 5, std430) restrict writeonly buffer TileLists {
+layout(binding = 6, std430) restrict writeonly buffer TileLists {
 	uint b_lists[];
 };
 
@@ -51,15 +55,16 @@ void main() {
 	uint materialID = -1u;
 	if (all(lessThan(gid, VisbufSize))) {
 		
-		uint visPacked = texelFetch(s_visbuf, ivec2(gid), 0).x;
-		if (visPacked == -1u) { // Sky
+		uint visValue = texelFetch(s_visbuf, ivec2(gid), 0).x;
+		if (visValue == -1u) { // Sky
 			
 			materialID = 0;
 			
 		} else {
 			
-			VisSample vis = unpackVisibility(visPacked);
-			uint meshletIdx = b_instances[vis.instance].meshletIdx;
+			uint index = b_indices[visValue * 3];
+			uint instanceIdx = index >> INSTANCE_ID_BITS;
+			uint meshletIdx = b_instances[instanceIdx].meshletIdx;
 			uint materialIdx = b_meshlets[meshletIdx].materialIdx;
 			materialID = b_materials[materialIdx].id;
 			

@@ -3,6 +3,7 @@
 
 layout(local_size_x = 256) in;
 
+#include "indices.glsl"
 #include "../types.glsl"
 
 layout(binding = 0, std430) restrict readonly buffer Meshlets {
@@ -48,7 +49,7 @@ void main() {
 			b_triIndices[idx + 2]};
 		
 		uint outOffset = atomicAdd(b_command.indexCount, 3);
-		uint shiftedInstance = instanceIdx << 6;
+		uint shiftedInstance = instanceIdx << INSTANCE_ID_BITS;
 		indices |= shiftedInstance;
 		b_indices[outOffset + 0] = indices[0];
 		b_indices[outOffset + 1] = indices[1];

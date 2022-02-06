@@ -38,7 +38,7 @@ struct Worklist {
 	// Build the shader.
 	static void compile(vuk::PerThreadContext&);
 	
-	static auto create(Pool&, Frame&, vuk::Name, Texture2D visbuf, InstanceList) -> Worklist;
+	static auto create(Pool&, Frame&, vuk::Name, Texture2D visbuf, TriangleList, InstanceList) -> Worklist;
 	
 };
 

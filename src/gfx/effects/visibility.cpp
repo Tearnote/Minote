@@ -74,7 +74,7 @@ void Worklist::compile(vuk::PerThreadContext& _ptc) {
 }
 
 auto Worklist::create(Pool& _pool, Frame& _frame, vuk::Name _name,
-	Texture2D _visbuf, InstanceList _instances) -> Worklist {
+	Texture2D _visbuf, TriangleList _triangles, InstanceList _instances) -> Worklist {
 	
 	auto result = Worklist();
 	
@@ -109,14 +109,15 @@ auto Worklist::create(Pool& _pool, Frame& _frame, vuk::Name _name,
 			_instances.instances.resource(vuk::eComputeRead),
 			result.counts.resource(vuk::eComputeRW),
 			result.lists.resource(vuk::eComputeWrite) },
-		.execute = [result, _visbuf, _instances, &_frame](vuk::CommandBuffer& cmd) {
+		.execute = [result, _visbuf, _triangles, _instances, &_frame](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_sampled_image(0, 0, _visbuf, NearestClamp)
-			   .bind_storage_buffer(0, 1, _instances.instances)
-			   .bind_storage_buffer(0, 2, _frame.models.meshlets)
-			   .bind_storage_buffer(0, 3, _frame.models.materials)
-			   .bind_storage_buffer(0, 4, result.counts)
-			   .bind_storage_buffer(0, 5, result.lists)
+			   .bind_storage_buffer(0, 1, _triangles.indices)
+			   .bind_storage_buffer(0, 2, _instances.instances)
+			   .bind_storage_buffer(0, 3, _frame.models.meshlets)
+			   .bind_storage_buffer(0, 4, _frame.models.materials)
+			   .bind_storage_buffer(0, 5, result.counts)
+			   .bind_storage_buffer(0, 6, result.lists)
 			   .bind_compute_pipeline("visibility/worklist");
 			
 			cmd.specialize_constants(0, u32Fromu16(_visbuf.size()));

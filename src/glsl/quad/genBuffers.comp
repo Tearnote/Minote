@@ -4,6 +4,7 @@
 
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 64) in;
 
+#include "../instanceList/indices.glsl"
 #include "../visibility/visbuf.glsl"
 #include "../types.glsl"
 #include "../util.glsl"
@@ -89,7 +90,7 @@ void main() {
 			b_indices[visbuf + 0],
 			b_indices[visbuf + 1],
 			b_indices[visbuf + 2]};
-		uint instanceIdx = indices[0] >> 6;
+		uint instanceIdx = indices[0] >> INSTANCE_ID_BITS;
 		
 		Instance instance = b_instances[instanceIdx];
 		uint meshletIdx = instance.meshletIdx;

@@ -3,9 +3,10 @@
 
 layout(local_size_x = 1, local_size_y = 64) in;
 
-#include "sky/skyAccess.glsl"
+#include "instanceList/indices.glsl"
 #include "visibility/visbufTypes.glsl"
 #include "visibility/visbuf.glsl"
+#include "sky/skyAccess.glsl"
 #include "constants.glsl"
 #include "types.glsl"
 #include "util.glsl"
@@ -85,7 +86,7 @@ float dApprox(float _roughness, float _RoL) {
 vec3 shadeVisSamplePBR(uint _visValue, vec2 _uv, vec3 _clipVertex, vec3 _normal) {
 	
 	uint index = b_indices[_visValue * 3];
-	uint instanceIdx = index >> 6;
+	uint instanceIdx = index >> INSTANCE_ID_BITS;
 	Instance instance = b_instances[instanceIdx];
 	uint meshletIdx = instance.meshletIdx;
 	Meshlet meshlet = b_meshlets[meshletIdx];
