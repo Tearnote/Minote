@@ -155,7 +155,7 @@ void main() {
 		for (uint i = 0; i < 4; i += 1) {
 			
 			float distSq = distanceSq(subsamplePosition, InitialCentroids[i]);
-			float primitiveBias = log2(max(clusterValues[i], subsampleValue) - min(clusterValues[i], subsampleValue) + 1) * 4.0;
+			float primitiveBias = (clusterValues[i] != subsampleValue? 4.0 : 0.0);
 			distances[i] = distSq + primitiveBias;
 			
 		}

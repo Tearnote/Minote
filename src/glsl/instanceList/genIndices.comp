@@ -38,7 +38,7 @@ layout(binding = 8, std430) restrict writeonly buffer Indices {
 
 #include "../typesAccess.glsl"
 
-#define TRI_BACKFACE_CULLING 0
+#define TRI_BACKFACE_CULLING 1
 
 layout(push_constant) uniform Constants {
 	vec3 u_cameraPosition;
