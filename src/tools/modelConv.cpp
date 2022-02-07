@@ -53,6 +53,7 @@ struct Meshlet {
 	
 	vec3 normalConeAxis;
 	f32 normalConeAngle;
+	vec3 normalConeApex;
 };
 
 struct Model {
@@ -401,6 +402,7 @@ int main(int argc, char const* argv[]) {
 			
 			meshlet.normalConeAxis = vec3{bound.cone_axis[0], bound.cone_axis[1], bound.cone_axis[2]};
 			meshlet.normalConeAngle = bound.cone_cutoff;
+			meshlet.normalConeApex = vec3{bound.cone_apex[0], bound.cone_apex[1], bound.cone_apex[2]};
 			
 		}
 		
@@ -455,7 +457,7 @@ int main(int argc, char const* argv[]) {
 		mpack_start_array(&out, model.meshlets.size());
 		for (auto& meshlet: model.meshlets) {
 			
-			mpack_start_map(&out, 8);
+			mpack_start_map(&out, 9);
 				
 				mpack_write_cstr(&out, "materialIdx");
 				mpack_write_u32(&out, meshlet.materialIdx);
@@ -481,6 +483,12 @@ int main(int argc, char const* argv[]) {
 				mpack_finish_array(&out);
 				mpack_write_cstr(&out, "normalConeAngle");
 				mpack_write_float(&out, meshlet.normalConeAngle);
+				mpack_write_cstr(&out, "normalConeApex");
+				mpack_start_array(&out, 3);
+					mpack_write_float(&out, meshlet.normalConeApex.x());
+					mpack_write_float(&out, meshlet.normalConeApex.y());
+					mpack_write_float(&out, meshlet.normalConeApex.z());
+				mpack_finish_array(&out);
 			mpack_finish_map(&out);
 			
 		}

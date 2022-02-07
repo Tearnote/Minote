@@ -43,6 +43,8 @@ struct Meshlet {
 	
 	vec3 normalConeAxis;
 	float normalConeAngle;
+	vec3 normalConeApex;
+	uint pad0;
 };
 
 struct Model {
