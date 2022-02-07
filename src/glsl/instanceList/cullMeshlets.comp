@@ -6,22 +6,25 @@ layout(local_size_x = 64) in;
 #include "../types.glsl"
 #include "../util.glsl"
 
-layout(binding = 0, std430) restrict readonly buffer Meshlets {
+layout(binding = 0) uniform CullingData {
+	vec3 u_cameraPosition;
+};
+layout(binding = 1, std430) restrict readonly buffer Meshlets {
 	Meshlet b_meshlets[];
 };
-layout(binding = 1, std430) restrict readonly buffer Instances {
+layout(binding = 2, std430) restrict readonly buffer Instances {
 	Instance b_instances[];
 };
-layout(binding = 2, std430) restrict readonly buffer Transforms {
+layout(binding = 3, std430) restrict readonly buffer Transforms {
 	mat3x4 b_transforms[];
 };
-layout(binding = 3, std430) restrict buffer OutInstanceCount {
+layout(binding = 4, std430) restrict buffer OutInstanceCount {
 	uvec4 b_outInstanceCount;
 };
-layout(binding = 4, std430) restrict writeonly buffer OutInstances {
+layout(binding = 5, std430) restrict writeonly buffer OutInstances {
 	Instance b_outInstances[];
 };
-layout(binding = 5, std430) restrict buffer GroupCounter {
+layout(binding = 6, std430) restrict buffer GroupCounter {
 	uint b_groupCounter;
 };
 
@@ -44,10 +47,29 @@ void main() {
 		uint transformIdx = instance.objectIdx;
 		mat4 transform = getTransform(b_transforms[transformIdx]);
 		
+		// Transform meshlet data
+		
+		vec3 boundingSphereCenter = vec3(transform * vec4(meshlet.boundingSphereCenter, 1.0));
+		vec3 normalConeAxis = normalize(vec3(transform * vec4(meshlet.normalConeAxis, 0.0)));
+		float boundingSphereRadius = meshlet.boundingSphereRadius * max(
+			length(vec3(transform[0])), max(
+			length(vec3(transform[1])),
+			length(vec3(transform[2]))));
+		
+		// Backface culling
+		
+		bool backfacing = 
+			dot(boundingSphereCenter - u_cameraPosition, normalConeAxis) >=
+			meshlet.normalConeAngle * length(boundingSphereCenter - u_cameraPosition) + boundingSphereRadius;
+		
 		// Write the instance
 		
-		uint outIdx = atomicAdd(b_outInstanceCount.w, 1);
-		b_outInstances[outIdx] = instance;
+		if (!backfacing) {
+			
+			uint outIdx = atomicAdd(b_outInstanceCount.w, 1);
+			b_outInstances[outIdx] = instance;
+			
+		}
 		
 	}
 	

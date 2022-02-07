@@ -42,6 +42,7 @@ void Visibility::apply(Frame& _frame, Texture2DMS _visbuf, Texture2DMS _depth,
 			cmd.set_scissor(0, vuk::Rect2D::framebuffer());
 			cmd.set_color_blend(_visbuf.name, vuk::BlendPreset::eOff);
 			cmd.set_rasterization(vuk::PipelineRasterizationStateCreateInfo{
+				// .cullMode = vuk::CullModeFlagBits::eNone });
 				.cullMode = vuk::CullModeFlagBits::eBack });
 			cmd.set_depth_stencil(vuk::PipelineDepthStencilStateCreateInfo{
 				.depthTestEnable = true,

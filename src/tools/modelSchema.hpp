@@ -15,6 +15,6 @@ constexpr auto ModelMagic = 0x10EF02FDu;
 constexpr auto NormalOctBits = 16u;
 constexpr auto MeshletMaxVerts = 64u;
 constexpr auto MeshletMaxTris = 124u;
-constexpr auto MeshletConeWeight = 0.5f;
+constexpr auto MeshletConeWeight = 1.0f;
 
 }

@@ -174,15 +174,21 @@ auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _f
 			_instances.transforms.resource(vuk::eComputeRead),
 			result.instanceCount.resource(vuk::eComputeRW),
 			result.instances.resource(vuk::eComputeWrite) },
-		.execute = [&_frame, _instances, result, groupCounter](vuk::CommandBuffer& cmd) {
+		.execute = [&_frame, _instances, result, groupCounter, _cameraPosition](vuk::CommandBuffer& cmd) {
 			
-			cmd.bind_storage_buffer(0, 0, _frame.models.meshlets)
-			   .bind_storage_buffer(0, 1, _instances.instances)
-			   .bind_storage_buffer(0, 2, _instances.transforms)
-			   .bind_storage_buffer(0, 3, result.instanceCount)
-			   .bind_storage_buffer(0, 4, result.instances)
-			   .bind_storage_buffer(0, 5, groupCounter)
+			cmd.bind_storage_buffer(0, 1, _frame.models.meshlets)
+			   .bind_storage_buffer(0, 2, _instances.instances)
+			   .bind_storage_buffer(0, 3, _instances.transforms)
+			   .bind_storage_buffer(0, 4, result.instanceCount)
+			   .bind_storage_buffer(0, 5, result.instances)
+			   .bind_storage_buffer(0, 6, groupCounter)
 			   .bind_compute_pipeline("instanceList/cullMeshlets");
+			
+			struct CullingData {
+				vec3 cameraPosition;
+			};
+			*cmd.map_scratch_uniform_binding<CullingData>(0, 0) = CullingData{
+				.cameraPosition = _cameraPosition };
 			
 			cmd.specialize_constants(0, tools::MeshletMaxTris);
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, u32(_instances.size()));
