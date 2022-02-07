@@ -261,6 +261,7 @@ FetchContent_MakeAvailable(meshoptimizer)
 
 set(SHADER_DIR_PREFIX src/glsl)
 set(SHADER_SOURCES
+	instanceList/cullMeshlets.comp
 	instanceList/genIndices.comp
 	cubeFilter/post.comp
 	cubeFilter/pre.comp

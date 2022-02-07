@@ -50,6 +50,9 @@ struct Meshlet {
 	
 	vec3 boundingSphereCenter;
 	f32 boundingSphereRadius;
+	
+	vec3 normalConeAxis;
+	f32 normalConeAngle;
 };
 
 struct Model {
@@ -362,6 +365,17 @@ int main(int argc, char const* argv[]) {
 		meshletVertices.resize(lastMeshlet.vertex_offset + lastMeshlet.vertex_count);
 		meshletTriangles.resize(lastMeshlet.triangle_offset + ((lastMeshlet.triangle_count * 3 + 3) & ~3));
 		
+		auto bounds = pvector<meshopt_Bounds>();
+		bounds.reserve(meshletCount);
+		for (auto& m: rawMeshlets) {
+			
+			bounds.emplace_back(meshopt_computeMeshletBounds(
+				&meshletVertices[m.vertex_offset],
+				&meshletTriangles[m.triangle_offset], m.triangle_count,
+				&vertices[0].x(), vertices.size(), sizeof(VertexType)));
+			
+		}
+		
 		// Offset the vertex indices
 		
 		for (auto& idx: meshletVertices)
@@ -370,8 +384,10 @@ int main(int argc, char const* argv[]) {
 		// Write meshlet descriptor
 		
 		model.meshlets.reserve(model.meshlets.size() + meshletCount);
-		for (auto& rawMeshlet: rawMeshlets) {
+		for (auto mIdx: iota(0_zu, rawMeshlets.size())) {
 			
+			auto& rawMeshlet = rawMeshlets[mIdx];
+			auto& bound = bounds[mIdx];
 			auto& meshlet = model.meshlets.emplace_back();
 			
 			meshlet.materialIdx = mesh.materialIdx;
@@ -380,9 +396,11 @@ int main(int argc, char const* argv[]) {
 			meshlet.indexCount = (rawMeshlet.triangle_count * 3 + 3) & ~3;
 			meshlet.vertexOffset = rawMeshlet.vertex_offset + model.vertIndices.size();
 			
-			//TODO culling data
-			meshlet.boundingSphereCenter = vec3(0.0f);
-			meshlet.boundingSphereRadius = 0.0f;
+			meshlet.boundingSphereCenter = vec3{bound.center[0], bound.center[1], bound.center[2]};
+			meshlet.boundingSphereRadius = bound.radius;
+			
+			meshlet.normalConeAxis = vec3{bound.cone_axis[0], bound.cone_axis[1], bound.cone_axis[2]};
+			meshlet.normalConeAngle = bound.cone_cutoff;
 			
 		}
 		
@@ -437,7 +455,7 @@ int main(int argc, char const* argv[]) {
 		mpack_start_array(&out, model.meshlets.size());
 		for (auto& meshlet: model.meshlets) {
 			
-			mpack_start_map(&out, 6);
+			mpack_start_map(&out, 8);
 				
 				mpack_write_cstr(&out, "materialIdx");
 				mpack_write_u32(&out, meshlet.materialIdx);
@@ -455,6 +473,14 @@ int main(int argc, char const* argv[]) {
 				mpack_finish_array(&out);
 				mpack_write_cstr(&out, "boundingSphereRadius");
 				mpack_write_float(&out, meshlet.boundingSphereRadius);
+				mpack_write_cstr(&out, "normalConeAxis");
+				mpack_start_array(&out, 3);
+					mpack_write_float(&out, meshlet.normalConeAxis.x());
+					mpack_write_float(&out, meshlet.normalConeAxis.y());
+					mpack_write_float(&out, meshlet.normalConeAxis.z());
+				mpack_finish_array(&out);
+				mpack_write_cstr(&out, "normalConeAngle");
+				mpack_write_float(&out, meshlet.normalConeAngle);
 			mpack_finish_map(&out);
 			
 		}

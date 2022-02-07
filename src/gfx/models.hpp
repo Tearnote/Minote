@@ -45,6 +45,9 @@ struct Meshlet {
 	
 	vec3 boundingSphereCenter;
 	f32 boundingSphereRadius;
+	
+	vec3 normalConeAxis;
+	f32 normalConeAngle;
 };
 
 struct Model {

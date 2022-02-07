@@ -14,32 +14,34 @@ layout(binding = 0, std430) restrict readonly buffer Meshlets {
 layout(binding = 1, std430) restrict readonly buffer Instances {
 	Instance b_instances[];
 };
-layout(binding = 2, std430) restrict readonly buffer Transforms {
+layout(binding = 2, std430) restrict buffer InstanceCount {
+	uvec4 b_outInstanceCount;
+};
+layout(binding = 3, std430) restrict readonly buffer Transforms {
 	mat3x4 b_transforms[];
 };
-layout(binding = 3, std430) restrict readonly buffer TriIndices {
+layout(binding = 4, std430) restrict readonly buffer TriIndices {
 	uint b_triIndices[];
 };
-layout(binding = 4, std430) restrict readonly buffer VertIndices {
+layout(binding = 5, std430) restrict readonly buffer VertIndices {
 	uint b_vertIndices[];
 };
-layout(binding = 5, std430) restrict readonly buffer Vertices {
+layout(binding = 6, std430) restrict readonly buffer Vertices {
 	float B_VERTICES[];
 };
-layout(binding = 6, std430) restrict buffer DrawCommand {
+layout(binding = 7, std430) restrict buffer DrawCommand {
 	Command b_command;
 };
-layout(binding = 7, std430) restrict writeonly buffer Indices {
+layout(binding = 8, std430) restrict writeonly buffer Indices {
 	uint b_indices[];
 };
 
 #include "../typesAccess.glsl"
 
-#define TRI_BACKFACE_CULLING 1
+#define TRI_BACKFACE_CULLING 0
 
 layout(push_constant) uniform Constants {
 	vec3 u_cameraPosition;
-	uint u_instanceOffset;
 };
 
 layout(constant_id = 0) const uint MaxTrisPerMeshlet = 0;
@@ -48,8 +50,10 @@ void main() {
 	
 	// Retrieve data global to entire meshlet instance
 	
-	uint gid = (gl_GlobalInvocationID.x + u_instanceOffset) * 4;
+	uint gid = gl_GlobalInvocationID.x * 4;
 	uint instanceIdx = gid / MaxTrisPerMeshlet;
+	if (instanceIdx >= b_outInstanceCount.w)
+		return;
 	uint triIdx = gid % MaxTrisPerMeshlet;
 	Instance instance = b_instances[instanceIdx];
 	Meshlet meshlet = b_meshlets[instance.meshletIdx];

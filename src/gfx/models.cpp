@@ -94,7 +94,7 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 	model.meshletCount += meshletCount;
 	for (auto i: iota(0u, meshletCount)) {
 		
-		mpack_expect_map_match(&in, 6);
+		mpack_expect_map_match(&in, 8);
 		
 		auto& meshlet = m_meshlets.emplace_back();
 		
@@ -122,6 +122,15 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 		
 		mpack_expect_cstr_match(&in, "boundingSphereRadius");
 		meshlet.boundingSphereRadius = mpack_expect_float(&in);
+		
+		mpack_expect_cstr_match(&in, "normalConeAxis");
+		mpack_expect_array_match(&in, 3);
+		for (auto i: iota(0, 3))
+			meshlet.normalConeAxis[i] = mpack_expect_float(&in);
+		mpack_done_array(&in);
+		
+		mpack_expect_cstr_match(&in, "normalConeAngle");
+		meshlet.normalConeAngle = mpack_expect_float(&in);
 		
 		mpack_done_map(&in);
 		

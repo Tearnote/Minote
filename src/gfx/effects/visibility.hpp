@@ -22,7 +22,7 @@ struct Visibility {
 	// Build the shader.
 	static void compile(vuk::PerThreadContext&);
 	
-	static void apply(Frame&, Texture2DMS visbuf, Texture2DMS depth, InstanceList, TriangleList);
+	static void apply(Frame&, Texture2DMS visbuf, Texture2DMS depth, TriangleList);
 	
 };
 
@@ -38,7 +38,7 @@ struct Worklist {
 	// Build the shader.
 	static void compile(vuk::PerThreadContext&);
 	
-	static auto create(Pool&, Frame&, vuk::Name, Texture2D visbuf, TriangleList, InstanceList) -> Worklist;
+	static auto create(Pool&, Frame&, vuk::Name, Texture2D visbuf, TriangleList) -> Worklist;
 	
 };
 

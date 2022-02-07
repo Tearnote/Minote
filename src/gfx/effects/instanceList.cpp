@@ -134,12 +134,62 @@ void TriangleList::compile(vuk::PerThreadContext& _ptc) {
 	}, "instanceList/genIndices.comp");
 	_ptc.ctx.create_named_pipeline("instanceList/genIndices", genIndicesPci);
 	
+	auto cullMeshletsPci = vuk::ComputePipelineBaseCreateInfo();
+	cullMeshletsPci.add_spirv(std::vector<u32>{
+#include "spv/instanceList/cullMeshlets.comp.spv"
+	}, "instanceList/cullMeshlets.comp");
+	_ptc.ctx.create_named_pipeline("instanceList/cullMeshlets", cullMeshletsPci);
+	
 }
 
 auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _frame, vuk::Name _name,
 	vec3 _cameraPosition) -> TriangleList {
 	
 	auto result = TriangleList();
+	result.colors = _instances.colors;
+	result.transforms = _instances.transforms;
+	result.prevTransforms = _instances.prevTransforms;
+	
+	result.instances = Buffer<Instance>::make(_pool, nameAppend(_name, "instances"),
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		_instances.size());
+	result.instances.attach(_frame.rg, vuk::eNone, vuk::eNone);
+	
+	auto instanceCountData = uvec4{0, 1, 1, 0};
+	result.instanceCount = Buffer<uvec4>::make(_frame.framePool, nameAppend(_name, "instanceCount"),
+		vuk::BufferUsageFlagBits::eIndirectBuffer |
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		std::span(&instanceCountData, 1));
+	result.instanceCount.attach(_frame.rg, vuk::eHostWrite, vuk::eNone);
+	
+	auto groupCounterData = 0u;
+	auto groupCounter = Buffer<u32>::make(_frame.framePool, nameAppend(_name, "groupCounter"),
+		vuk::BufferUsageFlagBits::eStorageBuffer,
+		std::span(&groupCounterData, 1));
+	
+	_frame.rg.add_pass({
+		.name = nameAppend(_name, "instanceList/cullMeshlets"),
+		.resources = {
+			_instances.instances.resource(vuk::eComputeRead),
+			_instances.transforms.resource(vuk::eComputeRead),
+			result.instanceCount.resource(vuk::eComputeRW),
+			result.instances.resource(vuk::eComputeWrite) },
+		.execute = [&_frame, _instances, result, groupCounter](vuk::CommandBuffer& cmd) {
+			
+			cmd.bind_storage_buffer(0, 0, _frame.models.meshlets)
+			   .bind_storage_buffer(0, 1, _instances.instances)
+			   .bind_storage_buffer(0, 2, _instances.transforms)
+			   .bind_storage_buffer(0, 3, result.instanceCount)
+			   .bind_storage_buffer(0, 4, result.instances)
+			   .bind_storage_buffer(0, 5, groupCounter)
+			   .bind_compute_pipeline("instanceList/cullMeshlets");
+			
+			cmd.specialize_constants(0, tools::MeshletMaxTris);
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, u32(_instances.size()));
+			
+			cmd.dispatch_invocations(_instances.size());
+			
+		}});
 	
 	auto commandData = Command({
 		.indexCount = 0, // Calculated at runtime
@@ -162,43 +212,28 @@ auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _f
 	_frame.rg.add_pass({
 		.name = nameAppend(_name, "instanceList/genIndices"),
 		.resources = {
-			_instances.instances.resource(vuk::eComputeRead),
+			result.instanceCount.resource(vuk::eIndirectRead),
+			result.instances.resource(vuk::eComputeRead),
+			result.transforms.resource(vuk::eComputeRead),
 			result.command.resource(vuk::eComputeRW),
 			result.indices.resource(vuk::eComputeWrite) },
-		.execute = [result, _instances, &_frame, _cameraPosition](vuk::CommandBuffer& cmd) {
+		.execute = [result, &_frame, _cameraPosition](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_storage_buffer(0, 0, _frame.models.meshlets)
-			   .bind_storage_buffer(0, 1, _instances.instances)
-			   .bind_storage_buffer(0, 2, _instances.transforms)
-			   .bind_storage_buffer(0, 3, _frame.models.triIndices)
-			   .bind_storage_buffer(0, 4, _frame.models.vertIndices)
-			   .bind_storage_buffer(0, 5, _frame.models.vertices)
-			   .bind_storage_buffer(0, 6, result.command)
-			   .bind_storage_buffer(0, 7, result.indices)
+			   .bind_storage_buffer(0, 1, result.instances)
+			   .bind_storage_buffer(0, 2, result.instanceCount)
+			   .bind_storage_buffer(0, 3, result.transforms)
+			   .bind_storage_buffer(0, 4, _frame.models.triIndices)
+			   .bind_storage_buffer(0, 5, _frame.models.vertIndices)
+			   .bind_storage_buffer(0, 6, _frame.models.vertices)
+			   .bind_storage_buffer(0, 7, result.command)
+			   .bind_storage_buffer(0, 8, result.indices)
 			   .bind_compute_pipeline("instanceList/genIndices");
 			
 			cmd.specialize_constants(0, tools::MeshletMaxTris);
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, _cameraPosition);
 			
-			auto triangles = _instances.size() * tools::MeshletMaxTris;
-			auto threads = divRoundUp(triangles, 4_zu); // 4 triangles per thread
-			
-			auto threadOffset = 0u;
-			while (threadOffset < threads) {
-				
-				struct PushConstants {
-					vec3 cameraPosition;
-					u32 instanceOffset;
-				};
-				
-				auto threadCount = min(65536u * 256u - 1u, threads - threadOffset);
-				cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
-					.cameraPosition = _cameraPosition,
-					.instanceOffset = threadOffset });
-				cmd.dispatch_invocations(threadCount, 1, 1);
-				
-				threadOffset += 65536u * 256u;
-				
-			}
+			cmd.dispatch_indirect(result.instanceCount);
 			
 		}});
 	

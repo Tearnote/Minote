@@ -19,7 +19,7 @@ void PBR::compile(vuk::PerThreadContext& _ptc) {
 }
 
 void PBR::apply(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
-	TriangleList _triangles, InstanceList _instances, Cubemap _ibl,
+	TriangleList _triangles, Cubemap _ibl,
 	Buffer<vec3> _sunLuminance, Texture3D _aerialPerspective) {
 	
 	_frame.rg.add_pass({
@@ -27,8 +27,9 @@ void PBR::apply(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
 		.resources = {
 			_worklist.counts.resource(vuk::eIndirectRead),
 			_worklist.lists.resource(vuk::eComputeRead),
-			_instances.instances.resource(vuk::eComputeRead),
-			_instances.colors.resource(vuk::eComputeRead),
+			_triangles.indices.resource(vuk::eComputeRead),
+			_triangles.instances.resource(vuk::eComputeRead),
+			_triangles.colors.resource(vuk::eComputeRead),
 			_sunLuminance.resource(vuk::eComputeRead),
 			_aerialPerspective.resource(vuk::eComputeSampled),
 			_ibl.resource(vuk::eComputeSampled),
@@ -37,15 +38,15 @@ void PBR::apply(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
 			_quadbuf.depth.resource(vuk::eComputeSampled),
 			_quadbuf.normal.resource(vuk::eComputeSampled),
 			_quadbuf.clusterOut.resource(vuk::eComputeWrite) },
-		.execute = [_quadbuf, _worklist, &_frame, _triangles, _instances, _ibl,
+		.execute = [_quadbuf, _worklist, &_frame, _triangles, _ibl,
 			_sunLuminance, _aerialPerspective,
 			tileCount=_worklist.counts.offsetView(+MaterialType::PBR)](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _frame.world)
 			   .bind_storage_buffer(0, 1, _frame.models.meshlets)
 			   .bind_storage_buffer(0, 2, _triangles.indices)
-			   .bind_storage_buffer(0, 3, _instances.instances)
-			   .bind_storage_buffer(0, 4, _instances.colors)
+			   .bind_storage_buffer(0, 3, _triangles.instances)
+			   .bind_storage_buffer(0, 4, _triangles.colors)
 			   .bind_storage_buffer(0, 5, _frame.models.materials)
 			   .bind_uniform_buffer(0, 6, _sunLuminance)
 			   .bind_sampled_image(0, 7, _ibl, TrilinearClamp)

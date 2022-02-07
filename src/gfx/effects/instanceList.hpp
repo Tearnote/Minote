@@ -38,6 +38,15 @@ struct InstanceList {
 struct TriangleList {
 	
 	using Command = VkDrawIndexedIndirectCommand;
+	using Transform = InstanceList::Transform;
+	using Instance = InstanceList::Instance;
+	
+	Buffer<vec4> colors;
+	Buffer<Transform> transforms;
+	Buffer<Transform> prevTransforms;
+	
+	Buffer<Instance> instances;
+	Buffer<uvec4> instanceCount;
 	
 	Buffer<Command> command;
 	Buffer<u32> indices;

@@ -1,0 +1,72 @@
+#version 460
+#pragma shader_stage(compute)
+
+layout(local_size_x = 64) in;
+
+#include "../types.glsl"
+#include "../util.glsl"
+
+layout(binding = 0, std430) restrict readonly buffer Meshlets {
+	Meshlet b_meshlets[];
+};
+layout(binding = 1, std430) restrict readonly buffer Instances {
+	Instance b_instances[];
+};
+layout(binding = 2, std430) restrict readonly buffer Transforms {
+	mat3x4 b_transforms[];
+};
+layout(binding = 3, std430) restrict buffer OutInstanceCount {
+	uvec4 b_outInstanceCount;
+};
+layout(binding = 4, std430) restrict writeonly buffer OutInstances {
+	Instance b_outInstances[];
+};
+layout(binding = 5, std430) restrict buffer GroupCounter {
+	uint b_groupCounter;
+};
+
+layout(push_constant) uniform Constants {
+	uint u_instanceCount;
+};
+
+layout(constant_id = 0) const uint MaxTrisPerMeshlet = 0;
+
+void main() {
+	
+	uint gid = gl_GlobalInvocationID.x;
+	uint lid = gl_LocalInvocationID.x;
+	if (gid < u_instanceCount) {
+		
+		// Retrieve meshlet data
+		
+		Instance instance = b_instances[gid];
+		Meshlet meshlet = b_meshlets[instance.meshletIdx];
+		uint transformIdx = instance.objectIdx;
+		mat4 transform = getTransform(b_transforms[transformIdx]);
+		
+		// Write the instance
+		
+		uint outIdx = atomicAdd(b_outInstanceCount.w, 1);
+		b_outInstances[outIdx] = instance;
+		
+	}
+	
+	// Update group counter
+	
+	barrier();
+	
+	if (lid == gl_WorkGroupSize.x - 1) {
+		
+		uint groupCount = atomicAdd(b_groupCounter, 1);
+		if (groupCount == gl_NumWorkGroups.x - 1) {
+			
+			// We're the last workgroup, write the instance groups
+			
+			groupMemoryBarrier();
+			b_outInstanceCount.x = divRoundUp(b_outInstanceCount.w * MaxTrisPerMeshlet, 4 * 256);
+			
+		}
+		
+	}
+	
+}

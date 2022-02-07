@@ -33,11 +33,16 @@ struct Command {
 // Index and vertex locations for drawing a specific model
 struct Meshlet {
 	uint materialIdx;
+	
 	uint indexOffset;
 	uint indexCount;
 	uint vertexOffset;
+	
 	vec3 boundingSphereCenter;
 	float boundingSphereRadius;
+	
+	vec3 normalConeAxis;
+	float normalConeAngle;
 };
 
 struct Model {

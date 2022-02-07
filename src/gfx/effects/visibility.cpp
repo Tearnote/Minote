@@ -25,18 +25,18 @@ void Visibility::compile(vuk::PerThreadContext& _ptc) {
 }
 
 void Visibility::apply(Frame& _frame, Texture2DMS _visbuf, Texture2DMS _depth,
-	InstanceList _instances, TriangleList _triangles) {
+	TriangleList _triangles) {
 	
 	_frame.rg.add_pass({
 		.name = nameAppend(_visbuf.name, "visibility/visbuf"),
 		.resources = {
 			_triangles.command.resource(vuk::eIndirectRead),
 			_triangles.indices.resource(vuk::eIndexRead),
-			_instances.instances.resource(vuk::eVertexRead),
-			_instances.transforms.resource(vuk::eVertexRead),
+			_triangles.instances.resource(vuk::eVertexRead),
+			_triangles.transforms.resource(vuk::eVertexRead),
 			_visbuf.resource(vuk::eColorWrite),
 			_depth.resource(vuk::eDepthStencilRW) },
-		.execute = [_visbuf, _instances, _triangles, &_frame](vuk::CommandBuffer& cmd) {
+		.execute = [_visbuf, _triangles, &_frame](vuk::CommandBuffer& cmd) {
 			
 			cmd.set_viewport(0, vuk::Rect2D::framebuffer());
 			cmd.set_scissor(0, vuk::Rect2D::framebuffer());
@@ -53,8 +53,8 @@ void Visibility::apply(Frame& _frame, Texture2DMS _visbuf, Texture2DMS _depth,
 			   .bind_storage_buffer(0, 1, _frame.models.vertIndices)
 			   .bind_storage_buffer(0, 2, _frame.models.vertices)
 			   .bind_storage_buffer(0, 3, _frame.models.meshlets)
-			   .bind_storage_buffer(0, 4, _instances.instances)
-			   .bind_storage_buffer(0, 5, _instances.transforms)
+			   .bind_storage_buffer(0, 4, _triangles.instances)
+			   .bind_storage_buffer(0, 5, _triangles.transforms)
 			   .bind_graphics_pipeline("visibility/visbuf");
 			
 			cmd.draw_indexed_indirect(1, _triangles.command);
@@ -74,7 +74,7 @@ void Worklist::compile(vuk::PerThreadContext& _ptc) {
 }
 
 auto Worklist::create(Pool& _pool, Frame& _frame, vuk::Name _name,
-	Texture2D _visbuf, TriangleList _triangles, InstanceList _instances) -> Worklist {
+	Texture2D _visbuf, TriangleList _triangles) -> Worklist {
 	
 	auto result = Worklist();
 	
@@ -106,14 +106,14 @@ auto Worklist::create(Pool& _pool, Frame& _frame, vuk::Name _name,
 		.name = nameAppend(_name, "visibility/worklist"),
 		.resources = {
 			_visbuf.resource(vuk::eComputeSampled),
-			_instances.instances.resource(vuk::eComputeRead),
+			_triangles.instances.resource(vuk::eComputeRead),
 			result.counts.resource(vuk::eComputeRW),
 			result.lists.resource(vuk::eComputeWrite) },
-		.execute = [result, _visbuf, _triangles, _instances, &_frame](vuk::CommandBuffer& cmd) {
+		.execute = [result, _visbuf, _triangles, &_frame](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_sampled_image(0, 0, _visbuf, NearestClamp)
 			   .bind_storage_buffer(0, 1, _triangles.indices)
-			   .bind_storage_buffer(0, 2, _instances.instances)
+			   .bind_storage_buffer(0, 2, _triangles.instances)
 			   .bind_storage_buffer(0, 3, _frame.models.meshlets)
 			   .bind_storage_buffer(0, 4, _frame.models.materials)
 			   .bind_storage_buffer(0, 5, result.counts)
