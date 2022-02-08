@@ -75,7 +75,8 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, bool _flush) {
 	// Create rendering passes
 	
 	// Instance list processing
-	auto screenTriangles = TriangleList::fromInstances(instances, framePool, *this, "screenTriangles", cpu_world.cameraPos);
+	auto screenTriangles = TriangleList::fromInstances(instances, framePool, *this, "screenTriangles",
+		cpu_world.view, cpu_world.projection);
 	
 	// Sky generation
 	auto cameraSky = Sky::createView(permPool, *this, "cameraSky", cpu_world.cameraPos, atmosphere);

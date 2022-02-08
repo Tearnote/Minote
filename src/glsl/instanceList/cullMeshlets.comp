@@ -7,7 +7,10 @@ layout(local_size_x = 64) in;
 #include "../util.glsl"
 
 layout(binding = 0) uniform CullingData {
-	vec3 u_cameraPosition;
+	mat4 u_view;
+	vec3 u_cameraPos;
+	uint pad0;
+	vec4 u_frustum;
 };
 layout(binding = 1, std430) restrict readonly buffer Meshlets {
 	Meshlet b_meshlets[];
@@ -53,9 +56,9 @@ void main() {
 		vec3 normalConeApex = vec3(transform * vec4(meshlet.normalConeApex, 1.0));
 		
 		float scale = max(
-			length(vec3(transform[0])), max(
-			length(vec3(transform[1])),
-			length(vec3(transform[2]))));
+			length(transform[0].xyz), max(
+			length(transform[1].xyz),
+			length(transform[2].xyz)));
 		vec3 boundingSphereCenter = vec3(transform * vec4(meshlet.boundingSphereCenter, 1.0));
 		float boundingSphereRadius = meshlet.boundingSphereRadius * scale;
 		
@@ -67,11 +70,18 @@ void main() {
 		// 	meshlet.normalConeAngle * length(boundingSphereCenter - u_cameraPosition) + boundingSphereRadius;
 		
 		bool backfacing =
-			dot(normalize(normalConeApex - u_cameraPosition), normalConeAxis) >= meshlet.normalConeAngle;
+			dot(normalize(normalConeApex - u_cameraPos), normalConeAxis) >= meshlet.normalConeAngle;
+		
+		// Frustum culling
+		
+		vec3 viewCenter = vec3(u_view * vec4(boundingSphereCenter, 1.0));
+		bool frustumCulled =
+			(viewCenter.z * u_frustum[1] - abs(viewCenter.x) * u_frustum[0] <= -boundingSphereRadius) ||
+			(viewCenter.z * u_frustum[3] - abs(viewCenter.y) * u_frustum[2] <= -boundingSphereRadius);
 		
 		// Write the instance
 		
-		if (!backfacing) {
+		if (!backfacing && !frustumCulled) {
 			
 			uint outIdx = atomicAdd(b_outInstanceCount.w, 1);
 			b_outInstances[outIdx] = instance;

@@ -143,7 +143,7 @@ void TriangleList::compile(vuk::PerThreadContext& _ptc) {
 }
 
 auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _frame, vuk::Name _name,
-	vec3 _cameraPosition) -> TriangleList {
+	mat4 _view, mat4 _projection) -> TriangleList {
 	
 	auto result = TriangleList();
 	result.colors = _instances.colors;
@@ -167,6 +167,9 @@ auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _f
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		std::span(&groupCounterData, 1));
 	
+	auto invView = inverse(_view);
+	auto cameraPos = vec3{invView[3][0], invView[3][1], invView[3][2]};
+	
 	_frame.rg.add_pass({
 		.name = nameAppend(_name, "instanceList/cullMeshlets"),
 		.resources = {
@@ -174,7 +177,7 @@ auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _f
 			_instances.transforms.resource(vuk::eComputeRead),
 			result.instanceCount.resource(vuk::eComputeRW),
 			result.instances.resource(vuk::eComputeWrite) },
-		.execute = [&_frame, _instances, result, groupCounter, _cameraPosition](vuk::CommandBuffer& cmd) {
+		.execute = [&_frame, _instances, result, groupCounter, _view, _projection, cameraPos](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_storage_buffer(0, 1, _frame.models.meshlets)
 			   .bind_storage_buffer(0, 2, _instances.instances)
@@ -185,10 +188,24 @@ auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _f
 			   .bind_compute_pipeline("instanceList/cullMeshlets");
 			
 			struct CullingData {
-				vec3 cameraPosition;
+				mat4 view;
+				vec3 cameraPos;
+				u32 pad0;
+				vec4 frustum;
 			};
 			*cmd.map_scratch_uniform_binding<CullingData>(0, 0) = CullingData{
-				.cameraPosition = _cameraPosition };
+				.view = _view,
+				.cameraPos = cameraPos,
+				.frustum = [_projection] {
+					
+					auto projectionT = transpose(_projection);
+					vec4 frustumX = projectionT[3] + projectionT[0];
+					vec4 frustumY = projectionT[3] + projectionT[1];
+					frustumX /= length(vec3(frustumX));
+					frustumY /= length(vec3(frustumY));
+					return vec4{frustumX.x(), frustumX.z(), frustumY.y(), frustumY.z()};
+					
+				}() };
 			
 			cmd.specialize_constants(0, tools::MeshletMaxTris);
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, u32(_instances.size()));
@@ -223,7 +240,7 @@ auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _f
 			result.transforms.resource(vuk::eComputeRead),
 			result.command.resource(vuk::eComputeRW),
 			result.indices.resource(vuk::eComputeWrite) },
-		.execute = [result, &_frame, _cameraPosition](vuk::CommandBuffer& cmd) {
+		.execute = [result, &_frame, _view, cameraPos](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_storage_buffer(0, 0, _frame.models.meshlets)
 			   .bind_storage_buffer(0, 1, result.instances)
@@ -237,7 +254,7 @@ auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _f
 			   .bind_compute_pipeline("instanceList/genIndices");
 			
 			cmd.specialize_constants(0, tools::MeshletMaxTris);
-			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, _cameraPosition);
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, cameraPos);
 			
 			cmd.dispatch_indirect(result.instanceCount);
 			
