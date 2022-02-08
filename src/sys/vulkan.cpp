@@ -94,11 +94,11 @@ Vulkan::Vulkan(Window& _window) {
 		.robustBufferAccess = VK_TRUE,
 #endif //VK_VALIDATION
 		.geometryShader = VK_TRUE,
-		.multiDrawIndirect = VK_TRUE,
 		.shaderStorageImageWriteWithoutFormat = VK_TRUE };
 	auto physicalDeviceVulkan11Features = VkPhysicalDeviceVulkan11Features{
 		.shaderDrawParameters = VK_TRUE };
 	auto physicalDeviceVulkan12Features = VkPhysicalDeviceVulkan12Features{
+		.samplerFilterMinmax = VK_TRUE,
 		.hostQueryReset = VK_TRUE,
 		.vulkanMemoryModel = VK_TRUE,
 		.vulkanMemoryModelDeviceScope = VK_TRUE };
