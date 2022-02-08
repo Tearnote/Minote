@@ -31,7 +31,8 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, bool _flush) {
 	world = cpu_world.upload(framePool, "world");
 	auto instances = InstanceList::upload(framePool, *this, "instances", _objects);
 	auto atmosphere = Atmosphere::create(permPool, *this, "earth", Atmosphere::Params::earth());
-	auto viewport = _target.size();
+	// Even size simplifies quad-based effects
+	auto viewport = uvec2{u32(align(_target.size().x(), 2u)), u32(align(_target.size().y(), 2u))};
 	
 	// Create textures
 	
