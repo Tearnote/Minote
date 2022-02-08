@@ -32,4 +32,15 @@ constexpr auto TrilinearRepeat = vuk::SamplerCreateInfo{
 	.addressModeU = vuk::SamplerAddressMode::eRepeat,
 	.addressModeV = vuk::SamplerAddressMode::eRepeat };
 
+inline auto const MinClampRMCI = VkSamplerReductionModeCreateInfo{
+	.sType = VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO,
+	.reductionMode = VK_SAMPLER_REDUCTION_MODE_MIN };
+
+inline auto const MinClamp = vuk::SamplerCreateInfo{
+	.pNext = &MinClampRMCI,
+	.magFilter = vuk::Filter::eLinear,
+	.minFilter = vuk::Filter::eLinear,
+	.addressModeU = vuk::SamplerAddressMode::eClampToEdge,
+	.addressModeV = vuk::SamplerAddressMode::eClampToEdge };
+
 }
