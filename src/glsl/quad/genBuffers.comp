@@ -133,9 +133,7 @@ void main() {
 			vertices[1] * barycentrics.y +
 			vertices[2] * barycentrics.z;
 		vec4 vertexW = transform * vec4(modelVertex, 1.0);
-		vec3 vertex = vertexW.xyz / vertexW.w;
 		vec4 prevVertexW = prevTransform * vec4(modelVertex, 1.0);
-		vec3 prevVertex = prevVertexW.xyz / prevVertexW.w;
 		
 #if USE_ACCURATE_NORMAL_INTERPOLATION
 		
@@ -150,14 +148,19 @@ void main() {
 		
 #endif //USE_ACCURATE_NORMAL_INTERPOLATION
 		
-		mat3 normTransform = mat3(inverse(transpose(transform)));
-		normal = normalize(normTransform * normal);
+		vec3 normalScale = {
+			dot(transform[0], transform[0]),
+			dot(transform[1], transform[1]),
+			dot(transform[2], transform[2]) };
+		normalScale = rcp(normalScale);
+		normal *= normalScale;
+		normal = normalize(mat3(transform) * normal);
 		normalOct = octEncode(normal);
 		
-		vec4 clipVertexW = u_world.viewProjection * vec4(vertex, 1.0);
+		vec4 clipVertexW = u_world.viewProjection * vertexW;
 		vec3 clipVertex = clipVertexW.xyz / clipVertexW.w;
 		
-		vec4 prevClipVertexW = u_world.prevViewProjection * vec4(prevVertex, 1.0);
+		vec4 prevClipVertexW = u_world.prevViewProjection * prevVertexW;
 		vec3 prevClipVertex = prevClipVertexW.xyz / prevClipVertexW.w;
 		
 		depth = clipVertex.z;
