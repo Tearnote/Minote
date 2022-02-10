@@ -23,6 +23,12 @@ vec3 rcp(vec3 _v) {
 	
 }
 
+vec2 saturate(vec2 _v) {
+	
+	return clamp(_v, 0.0, 1.0);
+	
+}
+
 uint divRoundUp(uint _val, uint _div) {
 	
 	return (_val - 1) / _div + 1;

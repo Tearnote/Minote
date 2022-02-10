@@ -129,7 +129,7 @@ void main() {
 				vec2 scale = vec2(HiZInner) / vec2(HiZSize);
 				
 				// Sampler is set up to do min reduction, so this computes the minimum depth of a 2x2 texel quad
-				vec2 depthUv = (aabb.xy + aabb.zw) * 0.5 * scale + offset;
+				vec2 depthUv = saturate((aabb.xy + aabb.zw) * 0.5) * scale + offset;
 				float depth = textureLod(s_hiz, depthUv, level).x;
 				float depthSphere = ZNear / (viewCenter.z - boundingSphereRadius);
 				
