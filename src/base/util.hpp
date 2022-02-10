@@ -29,11 +29,24 @@ inline auto offset_of(T1 T2::*member) -> usize {
 	
 }
 
-// Align a size to a given boundary.
-constexpr auto align(usize size, usize boundary) -> usize {
+// Align a size to a given power-of-two boundary.
+constexpr auto alignPOT(usize size, usize boundary) -> usize {
 	
 	if (boundary == 0) return size;
 	return (size + boundary - 1) & ~(boundary - 1);
+	
+}
+
+constexpr auto nextPOT(u32 n) -> u32 {
+	
+	n -= 1;
+	n |= n >> 1;
+	n |= n >> 2;
+	n |= n >> 4;
+	n |= n >> 8;
+	n |= n >> 16;
+	n += 1;
+	return n;
 	
 }
 

@@ -21,6 +21,7 @@
 #include "gfx/effects/bloom.hpp"
 #include "gfx/effects/pbr.hpp"
 #include "gfx/effects/sky.hpp"
+#include "gfx/effects/hiz.hpp"
 #include "gfx/frame.hpp"
 #include "gfx/util.hpp"
 #include "main.hpp"
@@ -67,6 +68,7 @@ void Engine::init(ModelList&& _modelList) {
 	Tonemap::compile(ptc);
 	Bloom::compile(ptc);
 	PBR::compile(ptc);
+	HiZ::compile(ptc);
 	Sky::compile(ptc);
 	
 	m_swapchainDirty = false;

@@ -9,6 +9,7 @@
 #include "gfx/effects/clear.hpp"
 #include "gfx/effects/pbr.hpp"
 #include "gfx/effects/sky.hpp"
+#include "gfx/effects/hiz.hpp"
 #include "base/math.hpp"
 
 namespace minote::gfx {
@@ -32,7 +33,7 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, bool _flush) {
 	auto instances = InstanceList::upload(framePool, *this, "instances", _objects);
 	auto atmosphere = Atmosphere::create(permPool, *this, "earth", Atmosphere::Params::earth());
 	// Even size simplifies quad-based effects
-	auto viewport = uvec2{u32(align(_target.size().x(), 2u)), u32(align(_target.size().y(), 2u))};
+	auto viewport = uvec2{u32(alignPOT(_target.size().x(), 2u)), u32(alignPOT(_target.size().y(), 2u))};
 	
 	// Create textures
 	
@@ -71,6 +72,18 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, bool _flush) {
 		vuk::Samples::e8);
 	depth.attach(rg, vuk::eClear, vuk::eNone, vuk::ClearDepthStencil(0.0f, 0));
 	
+	auto hiz = HiZ::make(swapchainPool, "hiz", depth);
+	if (_flush) {
+		
+		hiz.attach(rg, vuk::eNone, vuk::eComputeWrite);
+		Clear::apply(*this, hiz, vuk::ClearColor(1.0f, 1.0f, 1.0f, 1.0f));
+		
+	} else {
+		
+		hiz.attach(rg, vuk::eComputeWrite, vuk::eComputeWrite);
+		
+	}
+	
 	auto quadbuf = QuadBuffer::create(swapchainPool, *this, "quadbuf", viewport, _flush);
 	
 	// Create rendering passes
@@ -103,6 +116,9 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, bool _flush) {
 	// Postprocessing
 	Bloom::apply(*this, swapchainPool, color);
 	Tonemap::apply(*this, color, _target);
+	
+	// Next-frame tasks
+	HiZ::fill(*this, hiz, depth);
 	
 }
 

@@ -11,6 +11,12 @@ float rcp(float _v) {
 	
 }
 
+vec2 rcp(vec2 _v) {
+	
+	return vec2(1.0) / _v;
+	
+}
+
 vec3 rcp(vec3 _v) {
 	
 	return vec3(1.0) / _v;
