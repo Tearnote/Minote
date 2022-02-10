@@ -11,6 +11,8 @@ layout(binding = 0) uniform CullingData {
 	vec3 u_cameraPos;
 	uint pad0;
 	vec4 u_frustum;
+	float u_P00;
+	float u_P11;
 };
 layout(binding = 1, std430) restrict readonly buffer Meshlets {
 	Meshlet b_meshlets[];
@@ -21,13 +23,14 @@ layout(binding = 2, std430) restrict readonly buffer Instances {
 layout(binding = 3, std430) restrict readonly buffer Transforms {
 	mat3x4 b_transforms[];
 };
-layout(binding = 4, std430) restrict buffer OutInstanceCount {
+layout(binding = 4) uniform sampler2D s_hiz;
+layout(binding = 5, std430) restrict buffer OutInstanceCount {
 	uvec4 b_outInstanceCount;
 };
-layout(binding = 5, std430) restrict writeonly buffer OutInstances {
+layout(binding = 6, std430) restrict writeonly buffer OutInstances {
 	Instance b_outInstances[];
 };
-layout(binding = 6, std430) restrict buffer GroupCounter {
+layout(binding = 7, std430) restrict buffer GroupCounter {
 	uint b_groupCounter;
 };
 
@@ -36,6 +39,34 @@ layout(push_constant) uniform Constants {
 };
 
 layout(constant_id = 0) const uint MaxTrisPerMeshlet = 0;
+layout(constant_id = 1) const float ZNear = 0.0;
+layout(constant_id = 2) const uint HiZSizePacked = 0;
+const uvec2 HiZSize = uvec2(U16FROMU32(HiZSizePacked));
+layout(constant_id = 3) const uint HiZInnerPacked = 0;
+const uvec2 HiZInner = uvec2(U16FROMU32(HiZInnerPacked));
+
+// 2D Polyhedral Bounds of a Clipped, Perspective-Projected 3D Sphere. Michael Mara, Morgan McGuire. 2013
+bool projectSphere(vec3 C, float r, float znear, float P00, float P11, out vec4 aabb) {
+	
+	if (C.z < r + znear)
+		return false;
+	
+	vec2 cx = -C.xz;
+	vec2 vx = vec2(sqrt(dot(cx, cx) - r * r), r);
+	vec2 minx = mat2(vx.x, vx.y, -vx.y, vx.x) * cx;
+	vec2 maxx = mat2(vx.x, -vx.y, vx.y, vx.x) * cx;
+	
+	vec2 cy = -C.yz;
+	vec2 vy = vec2(sqrt(dot(cy, cy) - r * r), r);
+	vec2 miny = mat2(vy.x, vy.y, -vy.y, vy.x) * cy;
+	vec2 maxy = mat2(vy.x, -vy.y, vy.y, vy.x) * cy;
+	
+	aabb = vec4(minx.x / minx.y * P00, miny.x / miny.y * P11, maxx.x / maxx.y * P00, maxy.x / maxy.y * P11);
+	aabb = aabb.xwzy * vec4(0.5f, -0.5f, 0.5f, -0.5f) + vec4(0.5f); // clip space -> uv space
+	
+	return true;
+	
+}
 
 void main() {
 	
@@ -62,6 +93,8 @@ void main() {
 		vec3 boundingSphereCenter = vec3(transform * vec4(meshlet.boundingSphereCenter, 1.0));
 		float boundingSphereRadius = meshlet.boundingSphereRadius * scale;
 		
+		bool visible = true;
+		
 		// Backface culling
 		
 		// Less accurate method that doesn't use cone apex
@@ -69,19 +102,45 @@ void main() {
 		// 	dot(boundingSphereCenter - u_cameraPosition, normalConeAxis) >=
 		// 	meshlet.normalConeAngle * length(boundingSphereCenter - u_cameraPosition) + boundingSphereRadius;
 		
-		bool backfacing =
-			dot(normalize(normalConeApex - u_cameraPos), normalConeAxis) >= meshlet.normalConeAngle;
+		visible = visible &&
+			dot(normalize(normalConeApex - u_cameraPos), normalConeAxis) < meshlet.normalConeAngle;
 		
 		// Frustum culling
 		
 		vec3 viewCenter = vec3(u_view * vec4(boundingSphereCenter, 1.0));
-		bool frustumCulled =
-			(viewCenter.z * u_frustum[1] - abs(viewCenter.x) * u_frustum[0] <= -boundingSphereRadius) ||
-			(viewCenter.z * u_frustum[3] - abs(viewCenter.y) * u_frustum[2] <= -boundingSphereRadius);
+		visible = visible && (
+			(viewCenter.z * u_frustum[1] - abs(viewCenter.x) * u_frustum[0] > -boundingSphereRadius) &&
+			(viewCenter.z * u_frustum[3] - abs(viewCenter.y) * u_frustum[2] > -boundingSphereRadius));
+		
+		// Occlusion culling
+		
+		if (visible) { // Avoid a texture lookup if not needed
+			
+			viewCenter.y *= -1;
+			
+			vec4 aabb;
+			if (projectSphere(viewCenter, boundingSphereRadius, ZNear, u_P00, u_P11, aabb))
+			{
+				float width = (aabb.z - aabb.x) * HiZInner.x;
+				float height = (aabb.w - aabb.y) * HiZInner.y;
+				
+				float level = floor(log2(max(width, height)));
+				vec2 offset = vec2(HiZSize - HiZInner) / 2.0 / vec2(HiZSize);
+				vec2 scale = vec2(HiZInner) / vec2(HiZSize);
+				
+				// Sampler is set up to do min reduction, so this computes the minimum depth of a 2x2 texel quad
+				vec2 depthUv = (aabb.xy + aabb.zw) * 0.5 * scale + offset;
+				float depth = textureLod(s_hiz, depthUv, level).x;
+				float depthSphere = ZNear / (viewCenter.z - boundingSphereRadius);
+				
+				visible = (depthSphere > depth);
+			}
+			
+		}
 		
 		// Write the instance
 		
-		if (!backfacing && !frustumCulled) {
+		if (visible) {
 			
 			uint outIdx = atomicAdd(b_outInstanceCount.w, 1);
 			b_outInstances[outIdx] = instance;

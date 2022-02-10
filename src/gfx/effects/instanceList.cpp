@@ -5,6 +5,7 @@
 #include "Tracy.hpp"
 #include "base/containers/vector.hpp"
 #include "base/util.hpp"
+#include "gfx/samplers.hpp"
 #include "gfx/util.hpp"
 #include "tools/modelSchema.hpp"
 
@@ -143,7 +144,7 @@ void TriangleList::compile(vuk::PerThreadContext& _ptc) {
 }
 
 auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _frame, vuk::Name _name,
-	mat4 _view, mat4 _projection) -> TriangleList {
+	Texture2D _hiZ, uvec2 _hiZInnerSize, mat4 _view, mat4 _projection) -> TriangleList {
 	
 	auto result = TriangleList();
 	result.colors = _instances.colors;
@@ -175,16 +176,19 @@ auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _f
 		.resources = {
 			_instances.instances.resource(vuk::eComputeRead),
 			_instances.transforms.resource(vuk::eComputeRead),
+			_hiZ.resource(vuk::eComputeSampled),
 			result.instanceCount.resource(vuk::eComputeRW),
 			result.instances.resource(vuk::eComputeWrite) },
-		.execute = [&_frame, _instances, result, groupCounter, _view, _projection, cameraPos](vuk::CommandBuffer& cmd) {
+		.execute = [&_frame, _instances, result, groupCounter, _view,
+			_hiZ, _hiZInnerSize, _projection, cameraPos](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_storage_buffer(0, 1, _frame.models.meshlets)
 			   .bind_storage_buffer(0, 2, _instances.instances)
 			   .bind_storage_buffer(0, 3, _instances.transforms)
-			   .bind_storage_buffer(0, 4, result.instanceCount)
-			   .bind_storage_buffer(0, 5, result.instances)
-			   .bind_storage_buffer(0, 6, groupCounter)
+			   .bind_sampled_image(0, 4, _hiZ, MinClamp)
+			   .bind_storage_buffer(0, 5, result.instanceCount)
+			   .bind_storage_buffer(0, 6, result.instances)
+			   .bind_storage_buffer(0, 7, groupCounter)
 			   .bind_compute_pipeline("instanceList/cullMeshlets");
 			
 			struct CullingData {
@@ -192,6 +196,8 @@ auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _f
 				vec3 cameraPos;
 				u32 pad0;
 				vec4 frustum;
+				f32 P00;
+				f32 P11;
 			};
 			*cmd.map_scratch_uniform_binding<CullingData>(0, 0) = CullingData{
 				.view = _view,
@@ -205,9 +211,14 @@ auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _f
 					frustumY /= length(vec3(frustumY));
 					return vec4{frustumX.x(), frustumX.z(), frustumY.y(), frustumY.z()};
 					
-				}() };
+				}(),
+				.P00 = _projection[0][0],
+				.P11 = _projection[1][1] };
 			
 			cmd.specialize_constants(0, tools::MeshletMaxTris);
+			cmd.specialize_constants(1, _projection[3][2]);
+			cmd.specialize_constants(2, u32Fromu16(_hiZ.size()));
+			cmd.specialize_constants(3, u32Fromu16(_hiZInnerSize));
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, u32(_instances.size()));
 			
 			cmd.dispatch_invocations(_instances.size());

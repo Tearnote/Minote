@@ -90,7 +90,7 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, bool _flush) {
 	
 	// Instance list processing
 	auto screenTriangles = TriangleList::fromInstances(instances, framePool, *this, "screenTriangles",
-		cpu_world.view, cpu_world.projection);
+		hiz, depth.size(), cpu_world.view, cpu_world.projection);
 	
 	// Sky generation
 	auto cameraSky = Sky::createView(permPool, *this, "cameraSky", cpu_world.cameraPos, atmosphere);
