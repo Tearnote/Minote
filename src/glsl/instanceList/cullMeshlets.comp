@@ -8,8 +8,6 @@ layout(local_size_x = 64) in;
 
 layout(binding = 0) uniform CullingData {
 	mat4 u_view;
-	vec3 u_cameraPos;
-	uint pad0;
 	vec4 u_frustum;
 	float u_P00;
 	float u_P11;
@@ -83,9 +81,6 @@ void main() {
 		
 		// Transform meshlet data
 		
-		vec3 normalConeAxis = normalize(vec3(transform * vec4(meshlet.normalConeAxis, 0.0)));
-		vec3 normalConeApex = vec3(transform * vec4(meshlet.normalConeApex, 1.0));
-		
 		float scale = max(
 			length(transform[0].xyz), max(
 			length(transform[1].xyz),
@@ -94,16 +89,6 @@ void main() {
 		float boundingSphereRadius = meshlet.boundingSphereRadius * scale;
 		
 		bool visible = true;
-		
-		// Backface culling
-		
-		// Less accurate method that doesn't use cone apex
-		// bool backfacing = 
-		// 	dot(boundingSphereCenter - u_cameraPosition, normalConeAxis) >=
-		// 	meshlet.normalConeAngle * length(boundingSphereCenter - u_cameraPosition) + boundingSphereRadius;
-		
-		visible = visible &&
-			dot(normalize(normalConeApex - u_cameraPos), normalConeAxis) < meshlet.normalConeAngle;
 		
 		// Frustum culling
 		

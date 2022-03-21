@@ -51,10 +51,6 @@ struct Meshlet {
 	vec3 boundingSphereCenter;
 	f32 boundingSphereRadius;
 	
-	vec3 normalConeAxis;
-	f32 normalConeAngle;
-	vec3 normalConeApex;
-	
 	struct AABB {
 		vec3 min;
 		vec3 max;
@@ -439,10 +435,6 @@ int main(int argc, char const* argv[]) {
 			meshlet.boundingSphereCenter = vec3{bound.center[0], bound.center[1], bound.center[2]};
 			meshlet.boundingSphereRadius = bound.radius;
 			
-			meshlet.normalConeAxis = vec3{bound.cone_axis[0], bound.cone_axis[1], bound.cone_axis[2]};
-			meshlet.normalConeAngle = bound.cone_cutoff;
-			meshlet.normalConeApex = vec3{bound.cone_apex[0], bound.cone_apex[1], bound.cone_apex[2]};
-			
 			meshlet.aabb = aabbs[mIdx];
 			
 		}
@@ -498,7 +490,7 @@ int main(int argc, char const* argv[]) {
 		mpack_start_array(&out, model.meshlets.size());
 		for (auto& meshlet: model.meshlets) {
 			
-			mpack_start_map(&out, 11);
+			mpack_start_map(&out, 8);
 				
 				mpack_write_cstr(&out, "materialIdx");
 				mpack_write_u32(&out, meshlet.materialIdx);
@@ -516,20 +508,6 @@ int main(int argc, char const* argv[]) {
 				mpack_finish_array(&out);
 				mpack_write_cstr(&out, "boundingSphereRadius");
 				mpack_write_float(&out, meshlet.boundingSphereRadius);
-				mpack_write_cstr(&out, "normalConeAxis");
-				mpack_start_array(&out, 3);
-					mpack_write_float(&out, meshlet.normalConeAxis.x());
-					mpack_write_float(&out, meshlet.normalConeAxis.y());
-					mpack_write_float(&out, meshlet.normalConeAxis.z());
-				mpack_finish_array(&out);
-				mpack_write_cstr(&out, "normalConeAngle");
-				mpack_write_float(&out, meshlet.normalConeAngle);
-				mpack_write_cstr(&out, "normalConeApex");
-				mpack_start_array(&out, 3);
-					mpack_write_float(&out, meshlet.normalConeApex.x());
-					mpack_write_float(&out, meshlet.normalConeApex.y());
-					mpack_write_float(&out, meshlet.normalConeApex.z());
-				mpack_finish_array(&out);
 				mpack_write_cstr(&out, "aabbMin");
 				mpack_start_array(&out, 3);
 					mpack_write_float(&out, meshlet.aabb.min.x());

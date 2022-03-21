@@ -180,7 +180,7 @@ auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _f
 			result.instanceCount.resource(vuk::eComputeRW),
 			result.instances.resource(vuk::eComputeWrite) },
 		.execute = [&_frame, _instances, result, groupCounter, _view,
-			_hiZ, _hiZInnerSize, _projection, cameraPos](vuk::CommandBuffer& cmd) {
+			_hiZ, _hiZInnerSize, _projection](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_storage_buffer(0, 1, _frame.models.meshlets)
 			   .bind_storage_buffer(0, 2, _instances.instances)
@@ -193,15 +193,12 @@ auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _f
 			
 			struct CullingData {
 				mat4 view;
-				vec3 cameraPos;
-				u32 pad0;
 				vec4 frustum;
 				f32 P00;
 				f32 P11;
 			};
 			*cmd.map_scratch_uniform_binding<CullingData>(0, 0) = CullingData{
 				.view = _view,
-				.cameraPos = cameraPos,
 				.frustum = [_projection] {
 					
 					auto projectionT = transpose(_projection);
