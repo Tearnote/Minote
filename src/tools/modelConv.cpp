@@ -54,6 +54,11 @@ struct Meshlet {
 	vec3 normalConeAxis;
 	f32 normalConeAngle;
 	vec3 normalConeApex;
+	
+	struct AABB {
+		vec3 min;
+		vec3 max;
+	} aabb;
 };
 
 struct Model {
@@ -366,6 +371,8 @@ int main(int argc, char const* argv[]) {
 		meshletVertices.resize(lastMeshlet.vertex_offset + lastMeshlet.vertex_count);
 		meshletTriangles.resize(lastMeshlet.triangle_offset + ((lastMeshlet.triangle_count * 3 + 3) & ~3));
 		
+		// Generate meshlet bounds
+		
 		auto bounds = pvector<meshopt_Bounds>();
 		bounds.reserve(meshletCount);
 		for (auto& m: rawMeshlets) {
@@ -374,6 +381,38 @@ int main(int argc, char const* argv[]) {
 				&meshletVertices[m.vertex_offset],
 				&meshletTriangles[m.triangle_offset], m.triangle_count,
 				&vertices[0].x(), vertices.size(), sizeof(VertexType)));
+			
+		}
+		
+		// Generate meshlet AABBs
+		
+		auto aabbs = pvector<Meshlet::AABB>();
+		aabbs.reserve(meshletCount);
+		for (auto& m: rawMeshlets) {
+			
+			auto& aabb = aabbs.emplace_back();
+			aabb.min = aabb.max = vertices[m.vertex_offset];
+			
+			for (auto i: iota(1_zu, m.vertex_count)) {
+				
+				aabb.min = min(aabb.min, vertices[m.vertex_offset + i]),
+				aabb.max = max(aabb.max, vertices[m.vertex_offset + i]);
+				
+			}
+			
+			// Expand bounds by a small amount to avoid numerical issues
+			
+			for (auto i: iota(0, 8)) {
+				
+				aabb.min.x() = std::nextafterf(aabb.min.x(), -std::numeric_limits<f32>::max());
+				aabb.min.y() = std::nextafterf(aabb.min.y(), -std::numeric_limits<f32>::max());
+				aabb.min.z() = std::nextafterf(aabb.min.z(), -std::numeric_limits<f32>::max());
+				
+				aabb.max.x() = std::nextafterf(aabb.max.x(), std::numeric_limits<f32>::max());
+				aabb.max.y() = std::nextafterf(aabb.max.y(), std::numeric_limits<f32>::max());
+				aabb.max.z() = std::nextafterf(aabb.max.z(), std::numeric_limits<f32>::max());
+				
+			}
 			
 		}
 		
@@ -403,6 +442,8 @@ int main(int argc, char const* argv[]) {
 			meshlet.normalConeAxis = vec3{bound.cone_axis[0], bound.cone_axis[1], bound.cone_axis[2]};
 			meshlet.normalConeAngle = bound.cone_cutoff;
 			meshlet.normalConeApex = vec3{bound.cone_apex[0], bound.cone_apex[1], bound.cone_apex[2]};
+			
+			meshlet.aabb = aabbs[mIdx];
 			
 		}
 		
@@ -457,7 +498,7 @@ int main(int argc, char const* argv[]) {
 		mpack_start_array(&out, model.meshlets.size());
 		for (auto& meshlet: model.meshlets) {
 			
-			mpack_start_map(&out, 9);
+			mpack_start_map(&out, 11);
 				
 				mpack_write_cstr(&out, "materialIdx");
 				mpack_write_u32(&out, meshlet.materialIdx);
@@ -488,6 +529,18 @@ int main(int argc, char const* argv[]) {
 					mpack_write_float(&out, meshlet.normalConeApex.x());
 					mpack_write_float(&out, meshlet.normalConeApex.y());
 					mpack_write_float(&out, meshlet.normalConeApex.z());
+				mpack_finish_array(&out);
+				mpack_write_cstr(&out, "aabbMin");
+				mpack_start_array(&out, 3);
+					mpack_write_float(&out, meshlet.aabb.min.x());
+					mpack_write_float(&out, meshlet.aabb.min.y());
+					mpack_write_float(&out, meshlet.aabb.min.z());
+				mpack_finish_array(&out);
+				mpack_write_cstr(&out, "aabbMax");
+				mpack_start_array(&out, 3);
+					mpack_write_float(&out, meshlet.aabb.max.x());
+					mpack_write_float(&out, meshlet.aabb.max.y());
+					mpack_write_float(&out, meshlet.aabb.max.z());
 				mpack_finish_array(&out);
 			mpack_finish_map(&out);
 			

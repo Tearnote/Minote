@@ -94,7 +94,7 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 	model.meshletCount += meshletCount;
 	for (auto i: iota(0u, meshletCount)) {
 		
-		mpack_expect_map_match(&in, 9);
+		mpack_expect_map_match(&in, 11);
 		
 		auto& meshlet = m_meshlets.emplace_back();
 		
@@ -136,6 +136,18 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 		mpack_expect_array_match(&in, 3);
 		for (auto i: iota(0, 3))
 			meshlet.normalConeApex[i] = mpack_expect_float(&in);
+		mpack_done_array(&in);
+		
+		mpack_expect_cstr_match(&in, "aabbMin");
+		mpack_expect_array_match(&in, 3);
+		for (auto i: iota(0, 3))
+			mpack_expect_float(&in);
+		mpack_done_array(&in);
+		
+		mpack_expect_cstr_match(&in, "aabbMax");
+		mpack_expect_array_match(&in, 3);
+		for (auto i: iota(0, 3))
+			mpack_expect_float(&in);
 		mpack_done_array(&in);
 		
 		mpack_done_map(&in);

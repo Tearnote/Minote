@@ -258,6 +258,12 @@ FetchContent_Declare(meshoptimizer
 	GIT_TAG 70b6cc38a64eeb549567599418bc4ed3ebd607da)
 FetchContent_MakeAvailable(meshoptimizer)
 
+FetchContent_Declare(bvh
+	GIT_REPOSITORY https://github.com/madmann91/bvh
+	GIT_TAG 02749bca616260d2df1a8de69e76075b2c8a526b)
+FetchContent_MakeAvailable(bvh)
+target_link_libraries(Minote PRIVATE bvh)
+
 # Shader compilation
 
 set(SHADER_DIR_PREFIX src/glsl)
