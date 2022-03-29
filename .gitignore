@@ -1,7 +1,6 @@
 # Output files
 build*/*
-cmake-build-debug*/*
-cmake-build-release*/*
+cmake-*/*
 doc/*
 
 # Required libraries
@@ -13,3 +12,7 @@ doc/*
 
 # Internal notes
 reference/*
+
+# Debug output
+*.il
+*.isa

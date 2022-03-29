@@ -1,0 +1,6 @@
+#ifndef INDICES_GLSL
+#define INDICES_GLSL
+
+#define INSTANCE_ID_BITS 6u
+
+#endif //INDICES_GLSL

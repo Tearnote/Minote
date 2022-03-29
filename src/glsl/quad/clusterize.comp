@@ -1,0 +1,213 @@
+#version 460
+#pragma shader_stage(compute)
+
+layout(local_size_x = 8, local_size_y = 8) in;
+
+#include "../types.glsl"
+#include "../util.glsl"
+#include "quad.glsl"
+
+layout(binding = 0) uniform WorldConstants {
+	World u_world;
+};
+layout(binding = 1) uniform usampler2DMS s_visbuf;
+layout(binding = 2) restrict writeonly uniform uimage2D i_visbuf;
+layout(binding = 3) restrict writeonly uniform uimage2D i_subsamples;
+layout(binding = 4) restrict writeonly uniform uimage2D i_jitterMap;
+
+shared uvec4 sh_jitter;
+
+const vec2 InitialCentroids[4] = {
+	{0.5, 0.5},
+	{1.5, 0.5},
+	{0.5, 1.5},
+	{1.5, 1.5}};
+
+void main() {
+	
+	uvec2 gid = gl_GlobalInvocationID.xy * 2;
+	
+	// Init shared memory
+	
+	if (gl_LocalInvocationIndex == 0)
+		sh_jitter = uvec4(0);
+	
+	barrier();
+	
+	// Read vis samples
+	
+	uint visSamples[QUAD_SAMPLE_COUNT];
+	for (uint i = 0; i < QUAD_SAMPLE_COUNT; i += 1) {
+		
+		uvec2 pos = gid + uvec2(QuadPixelOffsets[i / SUBSAMPLE_COUNT]);
+		if (any(greaterThanEqual(pos, textureSize(s_visbuf))))
+			visSamples[i] = -2u;
+		else
+			visSamples[i] = texelFetch(s_visbuf, ivec2(pos), int(i % SUBSAMPLE_COUNT)).x;
+		
+	}
+	
+	// Count unique samples and their frequency
+	
+	uint clusterValues[4] = {-2u, -2u, -2u, -2u};
+	uint clusterValueFreqs[4] = {0u, 0u, 0u, 0u};
+	uint uniqueValues = 0;
+	for (uint i = 0; i < QUAD_SAMPLE_COUNT; i += 1) {
+		
+		// If repeat, increment frequency
+		// Check if value is unique
+		
+		bool unique = true;
+		for (uint j = 0; j < 4; j += 1) {
+			
+			if (visSamples[i] == clusterValues[j]) {
+				
+				clusterValueFreqs[j] += 1;
+				unique = false;
+				
+			}
+			
+		}
+		
+		// If unique, add to list
+		
+		if (unique) {
+			
+			// Check if too many unique values
+			
+			if (uniqueValues < 4) {
+				
+				clusterValues[uniqueValues] = visSamples[i];
+				clusterValueFreqs[uniqueValues] = 1;
+				
+			}
+			
+			uniqueValues += 1;
+			
+			
+		}
+		
+	}
+	
+	// Assign initial cluster values
+	
+	if (uniqueValues >= 4) {
+		
+		for (uint i = 0; i < 4; i += 1) {
+			
+			uint initialSubsample = (u_world.frameCounter + gid.x + gid.y * 5 + i) % SUBSAMPLE_COUNT;
+			clusterValues[i] = visSamples[i * SUBSAMPLE_COUNT + initialSubsample];
+			
+		}
+		
+		// Mark the quad as jittered
+		
+		uvec2 jitterSampleOffset = gl_LocalInvocationID.xy / 4;
+		uint jitterSampleIndex = jitterSampleOffset.x + jitterSampleOffset.y * 2;
+		uvec2 jitterQuadOffset = gl_GlobalInvocationID.xy % 4;
+		uint jitterQuadIndex = jitterQuadOffset.x + jitterQuadOffset.y * 4;
+		uint jitterSampleBit = 1u << jitterQuadIndex;
+		atomicOr(sh_jitter[jitterSampleIndex], jitterSampleBit);
+		
+	} else {
+		
+		// Find highest frequency cluster
+		
+		uint highestFreq = 0;
+		uint highestFreqIdx = 0;
+		for (uint i = 0; i < 4; i += 1) {
+			
+			if (clusterValueFreqs[i] > highestFreq) {
+				
+				highestFreq = clusterValueFreqs[i];
+				highestFreqIdx = i;
+				
+			}
+			
+		}
+		
+		// Duplicate samples to any unassigned clusters
+		
+		for (uint i = 0; i < 4; i += 1) {
+			
+			if (clusterValues[i] == -2u)
+				clusterValues[i] = clusterValues[highestFreqIdx];
+			
+		}
+		
+	}
+	
+	// Compute cluster centroids with one pass of K-means clustering
+	
+	uint clusterSubsamples[4] = {0, 0, 0, 0};
+	// Centroids aren't written to the cluster output at the moment, so they're not saved
+	// vec2 clusterCentroids[4] = {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}};
+	
+	for (uint subIdx = 0; subIdx < QUAD_SAMPLE_COUNT; subIdx += 1) {
+		
+		uint quadPx = subIdx / SUBSAMPLE_COUNT;
+		vec2 subsamplePosition = vec2(QuadPixelOffsets[quadPx]) + QuadSubsampleLocations[subIdx % SUBSAMPLE_COUNT];
+		uint subsampleValue = visSamples[subIdx];
+		
+		// Compute distance from each cluster
+		
+		float distances[4];
+		for (uint i = 0; i < 4; i += 1) {
+			
+			float distSq = distanceSq(subsamplePosition, InitialCentroids[i]);
+			float primitiveBias = (clusterValues[i] != subsampleValue? 4.0 : 0.0);
+			distances[i] = distSq + primitiveBias;
+			
+		}
+		
+		// Find closest cluster
+		
+		uint closestClusterIdx = 0;
+		float closestClusterDist = distances[0];
+		for (uint i = 1; i < 4; i += 1) {
+			
+			if (distances[i] < closestClusterDist) {
+				
+				closestClusterIdx = i;
+				closestClusterDist = distances[i];
+				
+			}
+			
+		}
+		
+		// Add subsample to closest cluster
+		
+		// clusterCentroids[closestClusterIdx] += subsamplePosition;
+		clusterSubsamples[closestClusterIdx] |= 1 << subIdx;
+		
+	}
+	
+	// for (uint i = 0; i < 4; i += 1)
+	// 	clusterCentroids[i] /= float(bitCount(clusterSubsamples[i]));
+	
+	// Clear out empty clusters
+	
+	for (uint i = 1; i < 4; i += 1) {
+		
+		if (clusterSubsamples[i] == 0)
+			clusterValues[i] = -1u;
+		
+	}
+	
+	barrier();
+	
+	// Write out the results
+	
+	for (uint i = 0; i < 4; i += 1) {
+		
+		uvec2 pos = gid + uvec2(QuadPixelOffsets[i]);
+		imageStore(i_visbuf, ivec2(pos), uvec4(clusterValues[i], 0, 0, 0));
+		imageStore(i_subsamples, ivec2(pos), uvec4(clusterSubsamples[i], 0, 0, 0));
+		
+	}
+	
+	if (gl_LocalInvocationIndex < 4)
+		imageStore(i_jitterMap, ivec2(gid / 8 + QuadPixelOffsets[gl_LocalInvocationIndex]), uvec4(sh_jitter[gl_LocalInvocationIndex], 0, 0, 0));
+	
+	
+}

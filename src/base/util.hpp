@@ -1,100 +1,93 @@
-// Minote - base/util.hpp
-// Basic and universally useful C++ utilities
-
 #pragma once
 
 #include <type_traits>
-#include <functional>
-#include <stdexcept>
-#include <optional>
-#include <utility>
-#include <cstdint>
-#include <cstdlib> // Provide free()
-#include <cstring>
-#include <cstdio>
-#include "scope_guard/scope_guard.hpp"
-#include "xassert/xassert.h" // Provide ASSERT(), ASSERT(), XASSERT(), set_assert_handler()
-#include "base/concept.hpp"
+#include <concepts>
+#include <ranges>
+#include <tuple>
+#include "base/concepts.hpp"
+#include "base/types.hpp"
 
-namespace minote {
+namespace minote::base {
 
-// *** Standard imports ***
+// Simple SemVer type
+using Version = std::tuple<u32, u32, u32>;
 
-// Basic types
-using u8 = std::uint8_t;
-using u16 = std::uint16_t;
-using u32 = std::uint32_t;
-using u64 = std::uint64_t;
-using i8 = std::int8_t;
-using i16 = std::int16_t;
-using i32 = std::int32_t;
-using i64 = std::int64_t;
-using f32 = float;
-using f64 = double;
+// Selective imports of ranges library
 
-// Used every time the size of a container is stored. Should be a keyword really
-using std::size_t;
-
-// Reference wrapper. Required to use references in thread constructor, containers, etc
-using std::ref;
-using std::cref;
-
-// Used for returning by value when lack of value is possible
-using std::optional;
-using std::nullopt;
-
-// Convert to rvalue reference. Used often for ownership transfer and insertion into containers
-using std::move;
-
-// Standard exception types
-using std::exception; // Any exception, for catch-all access to what()
-using std::logic_error; // Assertion violated
-using std::runtime_error; // Unexpected failure
-
-// *** Language features ***
-
-// Make the DEFER feature from scope_guard more keyword-like
-#define defer DEFER
+using std::ranges::views::iota;
+using std::ranges::views::reverse;
 
 // Template replacement for the C offsetof() macro. Unfortunately, it cannot be constexpr within
 // the current rules of the language.
-// Example: offset_of(&Point::x)
+// Example: offset_of(&Point::y)
 // See: https://gist.github.com/graphitemaster/494f21190bb2c63c5516
-template<typename T1, default_initializable T2>
-inline auto offset_of(T1 T2::*member) -> size_t {
-	static T2 obj;
-	return reinterpret_cast<size_t>(&(obj.*member)) - reinterpret_cast<size_t>(&obj);
+template<typename T1, std::default_initializable T2>
+inline auto offset_of(T1 T2::*member) -> usize {
+	
+	static auto obj = T2();
+	return usize(&(obj.*member)) - usize(&obj);
+	
 }
+
+// Align a size to a given power-of-two boundary.
+constexpr auto alignPOT(usize size, usize boundary) -> usize {
+	
+	if (boundary == 0) return size;
+	return (size + boundary - 1) & ~(boundary - 1);
+	
+}
+
+constexpr auto nextPOT(u32 n) -> u32 {
+	
+	n -= 1;
+	n |= n >> 1;
+	n |= n >> 2;
+	n |= n >> 4;
+	n |= n >> 8;
+	n |= n >> 16;
+	n += 1;
+	return n;
+	
+}
+
+// Execute n times.
+template<typename F>
+requires std::invocable<F>
+constexpr void repeat(usize times, F func) {
+	
+	for (auto i = usize(0); i < times; i += 1)
+		func();
+	
+}
+
+// defer pseudo-keyword for executing code at scope exit
+// https://stackoverflow.com/a/42060129
+#ifndef defer
+struct defer_dummy {};
+template <class F> struct deferrer { F f; ~deferrer() { f(); } };
+template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
+#define DEFER_(LINE) zz_defer##LINE
+#define DEFER(LINE) DEFER_(LINE)
+#define defer auto DEFER(__LINE__) = defer_dummy{} *[&]()
+#endif // defer
+
+namespace literals {
 
 // Conversion of scoped enum to the underlying type, using the unary + operator
 template<enum_type T>
-constexpr auto operator+(T e) {
-	return static_cast<std::underlying_type_t<T>>(e);
-}
+constexpr auto operator+(T e) { return std::underlying_type_t<T>(e); }
 
-// *** Deprecated ***
+// usize integer literal
+consteval auto operator ""_zu(unsigned long long val) -> usize { return val; }
 
-//TODO remove
-// Clear an array, setting all bytes to 0.
-#define arrayClear(arr) \
-    std::memset((arr), 0, sizeof((arr)))
+// Storage space literals
 
-//TODO remove
-// Copy the contents of one array into another array of the same or bigger size.
-#define arrayCopy(dst, src) \
-    std::memcpy((dst), (src), sizeof((dst)))
+consteval auto operator ""_kb(unsigned long long val) { return val * 1024; }
 
-// Error-checking and type-safe malloc() wrapper. Clears all allocated memory
-// to zero.
-template<typename T>
-auto allocate(size_t const count = 1) -> T* {
-	ASSERT(count);
-	auto* const result = static_cast<T*>(std::calloc(count, sizeof(T)));
-	if (!result) {
-		std::perror("Could not allocate memory");
-		std::exit(EXIT_FAILURE);
-	}
-	return result;
+consteval auto operator ""_mb(unsigned long long val) { return val * 1024 * 1024; }
+
+consteval auto operator ""_gb(unsigned long long val) { return val * 1024 * 1024 * 1024; }
+
 }
 
 }

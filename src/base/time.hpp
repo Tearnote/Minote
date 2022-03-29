@@ -1,53 +1,36 @@
-// Minote - base/time.hpp
-// Types and utilities for handling time values
-
 #pragma once
 
-#include <chrono>
-#include <ctime>
-#include "base/concept.hpp"
+#include <concepts>
+#include "base/concepts.hpp"
+#include "base/types.hpp"
 
-namespace minote {
+namespace minote::base {
 
-// Importing standard time functions and types
-using std::time;
-using std::localtime;
-using std::time_t;
-using std::tm;
-
-// Main timestamp/duration type
-using nsec = std::chrono::nanoseconds;
+// Main timestamp/duration type. Has enough resolution to largely ignore
+// rounding error, and wraps after >100 years.
+using nsec = i64;
 
 // Create nsec from a count of seconds
-constexpr auto seconds(arithmetic auto val) {
-	return nsec{static_cast<nsec::rep>(val * 1'000'000'000)};
-}
+template<arithmetic T>
+constexpr auto seconds(T val) -> nsec { return val * 1'000'000'000LL; }
 
 // Create nsec from a count of milliseconds
-constexpr auto milliseconds(arithmetic auto val) {
-	return nsec{static_cast<nsec::rep>(val * 1'000'000)};
-}
+template<arithmetic T>
+constexpr auto milliseconds(T val) { return val * 1'000'000LL; }
 
-// Create nsec from second/millisecond literal
+// Get an accurate floating-point ratio between two nsecs
+template<std::floating_point T = f32>
+constexpr auto ratio(nsec left, nsec right) -> T { return f64(left) / f64(right); }
+
+namespace literals {
+
+// Create nsec from second/millisecond literals
+
 constexpr auto operator""_s(unsigned long long val) { return seconds(val); }
 constexpr auto operator""_s(long double val) { return seconds(val); }
 constexpr auto operator""_ms(unsigned long long val) { return milliseconds(val); }
 constexpr auto operator""_ms(long double val) { return milliseconds(val); }
 
-// If you use nsec's operators with floating-point numbers, the resulting value will
-// be represented with a temporary higher precision type. use round() on the result to bring
-// it back to nsec.
-template<typename Rep, typename Period>
-constexpr auto round(std::chrono::duration<Rep, Period> val) {
-	return std::chrono::round<nsec>(val);
-}
-
-// Compute (left / right) with floating-point instead of integer division.
-template<floating_point T = float>
-constexpr auto ratio(nsec const left, nsec const right) {
-	return static_cast<T>(
-		static_cast<double>(left.count()) / static_cast<double>(right.count())
-	);
 }
 
 }

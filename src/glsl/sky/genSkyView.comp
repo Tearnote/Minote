@@ -1,0 +1,83 @@
+#version 460
+#pragma shader_stage(compute)
+
+layout(local_size_x = 8, local_size_y = 8) in;
+
+#include "skyTypes.glsl"
+#include "../types.glsl"
+#include "../util.glsl"
+
+#define U_ATMO u_atmo
+#define S_TRANSMITTANCE s_transmittance
+#define S_MULTISCATTERING s_multiscattering
+
+layout(binding = 0) uniform WorldConstants {
+	World u_world;
+};
+layout(binding = 1) uniform Atmosphere {
+	AtmosphereParams U_ATMO;
+};
+layout(binding = 2) uniform sampler2D S_TRANSMITTANCE;
+layout(binding = 3) uniform sampler2D S_MULTISCATTERING;
+layout(binding = 4) restrict writeonly uniform image2D i_skyView;
+
+layout(push_constant) uniform PushConstants {
+	vec3 u_probePosition;
+};
+
+layout(constant_id = 0) const int SkyViewSizePacked = 0;
+
+const uvec2 SkyViewSize = U16FROMU32(SkyViewSizePacked);
+
+#include "sky.glsl"
+
+void main() {
+	
+	uvec2 gid = gl_GlobalInvocationID.xy;
+	
+	if (any(greaterThanEqual(gid, SkyViewSize)))
+		return;
+	
+	//TODO which?
+	// vec2 pixPos = vec2(gid) + vec2(0.5);
+	vec2 pixPos = vec2(gid);
+	vec3 worldPos = u_probePosition + vec3(0, 0, u_atmo.bottomRadius);
+	vec2 uv = pixPos / vec2(SkyViewSize);
+	
+	float viewHeight = length(worldPos);
+	
+	float viewZenithCosAngle;
+	float lightViewCosAngle;
+	uvToSkyViewLutParams(viewZenithCosAngle, lightViewCosAngle, SkyViewSize, viewHeight, uv, u_atmo.bottomRadius);
+	
+	vec3 upVector = worldPos / viewHeight;
+	float sunZenithCosAngle = dot(upVector, u_world.sunDirection);
+	vec3 sunDir = normalize(vec3(sqrt(1.0 - sunZenithCosAngle * sunZenithCosAngle), 0.0, sunZenithCosAngle));
+	
+	worldPos = vec3(0.0, 0.0, viewHeight);
+	
+	float viewZenithSinAngle = sqrt(1 - viewZenithCosAngle * viewZenithCosAngle);
+	vec3 worldDir = vec3(
+		viewZenithSinAngle * lightViewCosAngle,
+		viewZenithSinAngle * sqrt(1.0 - lightViewCosAngle * lightViewCosAngle),
+		viewZenithCosAngle);
+	
+	if (!moveToTopAtmosphere(worldPos, worldDir, u_atmo.topRadius)) {
+		
+		// Ray is not intersecting the atmosphere
+		imageStore(i_skyView, ivec2(gid), vec4(0.0, 0.0, 0.0, 1.0));
+		return;
+		
+	}
+	
+	bool ground = false;
+	float sampleCountIni = 30;
+	bool variableSampleCount = true;
+	bool mieRayPhase = true;
+	SingleScatteringResult ss = integrateScatteredLuminance(worldPos, worldDir, sunDir,
+		ground, sampleCountIni, variableSampleCount, mieRayPhase, 9000000.0, u_world.sunIlluminance);
+	
+	vec3 L = ss.L;
+	imageStore(i_skyView, ivec2(gid), vec4(L, 1.0));
+	
+}

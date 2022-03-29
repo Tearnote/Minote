@@ -1,202 +1,94 @@
 #include "window.hpp"
 
-#include <GLFW/glfw3.h>
-#include "base/math_io.hpp"
-#include "base/util.hpp"
+#include <optional>
+#include <cassert>
+#include <mutex>
+#include "SDL_vulkan.h"
+#include "SDL_video.h"
+#include "quill/Fmt.h"
+#include "backends/imgui_impl_sdl.h"
+#include "base/error.hpp"
+#include "base/math.hpp"
 #include "base/log.hpp"
 
-namespace minote {
+namespace minote::sys {
 
-// The window with its OpenGL context active on current thread
-static thread_local Window const* activeContext{nullptr};
-
-// Retrieve the Window from raw GLFW handle by user pointer.
-static auto getWindow(GLFWwindow* handle) -> Window& {
-	ASSERT(handle);
-	return *reinterpret_cast<Window*>(glfwGetWindowUserPointer(handle));
+using namespace base;
+/*
+void Window::framebufferResizeCallback(GLFWwindow* _handle, int _width, int _height) {
+	
+	assert(_handle);
+	assert(_width >= 0);
+	assert(_height >= 0);
+	auto& window = getWindow(_handle);
+	
+	auto newSize = ivec2{_width, _height};
+	window.m_size = uvec2(newSize);
+	
+	L_INFO(R"(Window "{}" resized to {}x{})", window.title(), newSize.x(), newSize.y());
+	
 }
 
-void Window::keyCallback(GLFWwindow* const handle,
-	int const rawKeycode, int const rawScancode, int const rawState, int) {
-	ASSERT(handle);
-	if (rawState == GLFW_REPEAT) return; // Key repeat is not used
-	auto& window{getWindow(handle)};
-	using State = KeyInput::State;
-
-	Keycode const keycode{rawKeycode};
-	Scancode const scancode{rawScancode};
-	auto const name{window.glfw.getKeyName(keycode, scancode)};
-	State const state{rawState == GLFW_PRESS? State::Pressed : State::Released};
-	KeyInput const input{
-		.keycode = keycode,
-		.scancode = scancode,
-		.name = name,
-		.state = state,
-		.timestamp = Glfw::getTime()
-	};
-
-	scoped_lock const lock{window.inputsMutex};
-	try {
-		window.inputs.push_back(input);
-	} catch (...) {
-		L.warn(R"(Window "{}" input queue full, key "{}" {} event dropped)",
-			window.title(), name, state == State::Pressed? "press" : "release");
-	}
-}
-
-void Window::framebufferResizeCallback(GLFWwindow* const handle, int const width, int const height) {
-	ASSERT(handle);
-	ASSERT(width);
-	ASSERT(height);
-	auto& window{getWindow(handle)};
-
-	uvec2 const newSize{width, height};
-	window.m_size = newSize;
-	L.info(R"(Window "{}" resized to {})", window.title(), newSize);
-}
-
-// Function to run when the window is rescaled. This might happen when dragging
-// it to a display with different DPI scaling, or at startup. The new scale
-// is saved for later retrieval.
-void Window::windowScaleCallback(GLFWwindow* const handle, float const xScale, float) {
-	ASSERT(handle);
-	ASSERT(xScale);
+void Window::windowScaleCallback(GLFWwindow* _handle, float _xScale, float) {
+	
+	assert(_handle);
+	assert(_xScale);
 	// yScale seems to sometimes be 0.0, so it is not reliable
-	auto& window{getWindow(handle)};
-
-	window.m_scale = xScale;
-	L.info(R"(Window "{}" DPI scaling changed to {})", window.title(), xScale);
+	auto& window = getWindow(_handle);
+	
+	window.m_scale = _xScale;
+	
+	L_INFO(R"(Window "{}" DPI scaling changed to {})", window.title(), _xScale);
+	
 }
-
-Window::Window(Glfw const& _glfw, string_view _title, bool const fullscreen, uvec2 _size):
-	glfw{_glfw}, m_title{_title}, isContextActive{false} {
-	ASSERT(_size.x > 0 && _size.y > 0);
-
-	// *** Set up context params ***
-
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#ifdef __APPLE__
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif // __APPLE__
-	glfwWindowHint(GLFW_RED_BITS, 8);
-	glfwWindowHint(GLFW_GREEN_BITS, 8);
-	glfwWindowHint(GLFW_BLUE_BITS, 8);
-	glfwWindowHint(GLFW_ALPHA_BITS, 0);
-	glfwWindowHint(GLFW_DEPTH_BITS, 0); // Handled by an internal FB
-	glfwWindowHint(GLFW_STENCIL_BITS, 0); // As above
-	glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE); // Declare DPI awareness
-
-	// *** Create the window handle ***
-
-	auto* monitor{glfwGetPrimaryMonitor()};
-	if (!monitor)
-		throw runtime_error{format("Failed to query primary monitor: {}", Glfw::getError())};
-	auto const* const mode{glfwGetVideoMode(monitor)};
-	if (!mode)
-		throw runtime_error{format("Failed to query video mode: {}", Glfw::getError())};
-	if (fullscreen)
-		_size = {mode->width, mode->height};
-	else
-		monitor = nullptr;
-
-	handle = glfwCreateWindow(_size.x, _size.y, m_title.c_str(), monitor, nullptr);
-	if (!handle)
-		throw runtime_error{format(R"(Failed to create window "{}": {})", title(), Glfw::getError())};
-
-	// *** Set window properties ***
-
+*/
+Window::Window(System const& _system, string_view _title, bool _fullscreen, uvec2 _size):
+	m_system(_system), m_title(_title) {
+	
+	assert(_size.x() > 0 && _size.y() > 0);
+	
+	// Create window
+	
+	m_handle = SDL_CreateWindow(m_title.c_str(),
+		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+		_size.x(), _size.y(),
+		SDL_WINDOW_RESIZABLE |
+		SDL_WINDOW_ALLOW_HIGHDPI |
+		SDL_WINDOW_VULKAN |
+		(_fullscreen? SDL_WINDOW_FULLSCREEN_DESKTOP : 0));
+	if(!m_handle)
+		throw runtime_error_fmt("Failed to create window {}: {}", m_title, SDL_GetError());
+	
+	// Set window properties
+	
 	// Real size might be different from requested size because of DPI scaling
-	ivec2 realSize;
-	glfwGetFramebufferSize(handle, &realSize.x, &realSize.y);
-	if (realSize == ivec2{0, 0})
-		throw runtime_error{format(R"(Failed to retrieve window "{}" framebuffer size: {})", _title, Glfw::getError())};
-	m_size = realSize;
-
-	float realScale;
-	glfwGetWindowContentScale(handle, &realScale, nullptr);
-	m_scale = realScale;
-
-	// *** Set up window callbacks ***
-
-	glfwSetWindowUserPointer(handle, this);
-#ifndef MINOTE_DEBUG
-	//glfwSetInputMode(handle, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-#endif //MINOTE_DEBUG
-	glfwSetKeyCallback(handle, keyCallback);
-	glfwSetFramebufferSizeCallback(handle, framebufferResizeCallback);
-	glfwSetWindowContentScaleCallback(handle, windowScaleCallback);
-
-	L.info(R"(Window "{}" created at {} *{}{})",
-		title(), size(), scale(), fullscreen ? " fullscreen" : "");
+	auto realSize = ivec2();
+	SDL_Vulkan_GetDrawableSize(m_handle, &realSize.x(), &realSize.y());
+	m_size = uvec2(realSize);
+	
+	auto dpi = 0.0f;
+	SDL_GetDisplayDPI(SDL_GetWindowDisplayIndex(m_handle), nullptr, nullptr, &dpi);
+	m_dpi = dpi;
+	
+	// Initialize imgui input
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGui::StyleColorsDark();
+	ImGui_ImplSDL2_InitForVulkan(m_handle);
+	
+	L_INFO("Window {} created at {}x{}, {} DPI{}",
+		m_title, realSize.x(), realSize.y(), dpi, _fullscreen? ", fullscreen" : "");
+	
 }
 
 Window::~Window() {
-	ASSERT(!isContextActive);
-
-	glfwDestroyWindow(handle);
-
-	L.info(R"(Window "{}" closed)", title());
-}
-
-auto Window::isClosing() const -> bool {
-	scoped_lock const lock{handleMutex};
-	return glfwWindowShouldClose(handle);
-}
-
-void Window::requestClose() {
-	scoped_lock const lock{handleMutex};
-	if (glfwWindowShouldClose(handle)) return;
-
-	glfwSetWindowShouldClose(handle, true);
-
-	L.info(R"(Window "{}" close requested)", title());
-}
-
-void Window::flip() {
-	glfwSwapBuffers(handle);
-}
-
-void Window::activateContext() {
-	ASSERT(!isContextActive);
-	ASSERT(!activeContext);
-
-	glfwMakeContextCurrent(handle);
-	isContextActive = true;
-	activeContext = this;
-
-	L.debug(R"(Window "{}" OpenGL context activated)", title());
-}
-
-void Window::deactivateContext() {
-	ASSERT(isContextActive);
-	ASSERT(activeContext == this);
-
-	glfwMakeContextCurrent(nullptr);
-	isContextActive = false;
-	activeContext = nullptr;
-
-	L.debug(R"(Window "{}" OpenGL context deactivated)", title());
-}
-
-void Window::popInput() {
-	scoped_lock const lock{inputsMutex};
-	if (!inputs.empty())
-		inputs.pop_front();
-}
-
-auto Window::getInput() const -> optional<KeyInput> {
-	scoped_lock const lock{inputsMutex};
-	if (inputs.empty()) return nullopt;
-
-	return inputs.front();
-}
-
-void Window::clearInput() {
-	scoped_lock const lock{inputsMutex};
-
-	inputs.clear();
+	
+	ImGui_ImplSDL2_Shutdown();
+	
+	SDL_DestroyWindow(m_handle);
+	
+	L_INFO("Window {} closed", title());
+	
 }
 
 }

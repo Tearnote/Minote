@@ -1,19 +1,35 @@
-#include "log.hpp"
+#include "base/log.hpp"
 
-#include "base/io.hpp"
+#include <string> // std::string needed by quill API
+#include "quill/Quill.h"
+#include "base/containers/string.hpp"
+#include "base/containers/array.hpp"
+#include "base/util.hpp"
 
-namespace minote {
+namespace minote::base {
 
-void Log::enableFile(file&& _logfile) {
-	if (logfile) disableFile();
+using namespace literals;
 
-	logfile = move(_logfile);
-}
-
-void Log::disableFile() try {
-	logfile.close();
-} catch (system_error const& e) {
-	print(cerr, R"(Could not close logfile "{}": {})", logfile.where(), e.what());
+void Log::init(string_view _filename, quill::LogLevel _level) {
+	
+	quill::enable_console_colours();
+	quill::start(true);
+	
+	auto file = quill::file_handler(std::string(_filename), "w");
+	auto console = quill::stdout_handler();
+	
+	file->set_pattern(
+		QUILL_STRING("%(ascii_time) [%(level_name)] %(message)"),
+		"%H:%M:%S.%Qns",
+		quill::Timezone::LocalTime);
+	console->set_pattern(
+		QUILL_STRING("%(ascii_time) %(message)"),
+		"%H:%M:%S",
+		quill::Timezone::LocalTime);
+	
+	m_logger = quill::create_logger("main", {file, console});
+	m_logger->set_log_level(_level);
+	
 }
 
 }

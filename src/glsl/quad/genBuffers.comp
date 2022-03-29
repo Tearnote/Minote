@@ -1,0 +1,208 @@
+#version 460
+#pragma shader_stage(compute)
+#extension GL_KHR_shader_subgroup_clustered: enable
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 64) in;
+
+#include "../instanceList/indices.glsl"
+#include "../visibility/visbuf.glsl"
+#include "../types.glsl"
+#include "../util.glsl"
+#include "quad.glsl"
+
+#define B_VERTICES b_vertices
+#define B_NORMALS b_normals
+
+layout(binding = 0) uniform WorldConstants {
+	World u_world;
+};
+
+layout(binding = 1, std430) restrict readonly buffer Meshlets {
+	Meshlet b_meshlets[];
+};
+layout(binding = 2, std430) restrict readonly buffer Instances {
+	Instance b_instances[];
+};
+layout(binding = 3, std430) restrict readonly buffer Transforms {
+	mat3x4 b_transforms[];
+};
+layout(binding = 4, std430) restrict readonly buffer PrevTransforms {
+	mat3x4 b_prevTransforms[];
+};
+
+layout(binding = 5, std430) restrict readonly buffer Indices {
+	uint b_indices[];
+};
+layout(binding = 6, std430) restrict readonly buffer VertIndices {
+	uint b_vertIndices[];
+};
+layout(binding = 7, std430) restrict readonly buffer Vertices {
+	float B_VERTICES[];
+};
+layout(binding = 8, std430) restrict readonly buffer Normals {
+	uint B_NORMALS[];
+};
+
+layout(binding = 9) uniform usampler2D s_visbuf;
+layout(binding = 10) uniform usampler2D s_subsamples;
+layout(binding = 11) restrict writeonly uniform image2D i_offset;
+layout(binding = 12) restrict writeonly uniform image2D i_depth;
+layout(binding = 13) restrict writeonly uniform image2D i_quadDepth;
+layout(binding = 14) restrict writeonly uniform image2D i_quadDepthRepro;
+layout(binding = 15) restrict writeonly uniform uimage2D i_normal;
+layout(set = 1, binding = 0) restrict writeonly uniform image2D i_velocity;
+
+layout(constant_id = 0) const uint QuadbufSizePacked = 0;
+const uvec2 QuadbufSize = uvec2(U16FROMU32(QuadbufSizePacked));
+
+#define USE_ACCURATE_NORMAL_INTERPOLATION 0
+
+#include "../typesAccess.glsl"
+
+float quadMedian(float _n) {
+	
+	float nmin = subgroupClusteredMin(_n, 4);
+	float nmax = subgroupClusteredMax(_n, 4);
+	float nsum = subgroupClusteredAdd(_n, 4);
+	return (nsum - nmin - nmax) / 2.0;
+	
+}
+
+void main() {
+	
+	uvec2 lid = mortonOrder(gl_LocalInvocationID.z);
+	uvec2 gid = gl_GlobalInvocationID.xy * 8 + lid;
+	// if (any(greaterThanEqual(gid, QuadbufSize)))
+	// 	return;
+	
+	uint visbuf = texelFetch(s_visbuf, ivec2(gid), 0).x;
+	uint subsamples = texelFetch(s_subsamples, ivec2(gid), 0).x;
+	vec2 offset = subsamplePosAverage(subsamples);
+	
+	float depth;
+	float reproDepth;
+	uint normalOct;
+	vec2 velocity;
+	if (visbuf != -1u) { // Valid triangle cluster
+		
+		visbuf *= 3;
+		uvec3 indices = {
+			b_indices[visbuf + 0],
+			b_indices[visbuf + 1],
+			b_indices[visbuf + 2]};
+		uint instanceIdx = indices[0] >> INSTANCE_ID_BITS;
+		
+		Instance instance = b_instances[instanceIdx];
+		uint meshletIdx = instance.meshletIdx;
+		Meshlet meshlet = b_meshlets[meshletIdx];
+		
+		indices &= bitmask(6);
+		indices += uvec3(meshlet.vertexOffset);
+		uvec3 vertIndices = {
+			b_vertIndices[indices[0]],
+			b_vertIndices[indices[1]],
+			b_vertIndices[indices[2]] };
+		
+		uint transformIdx = instance.objectIdx;
+		mat4 transform = getTransform(b_transforms[transformIdx]);
+		mat4 prevTransform = getTransform(b_prevTransforms[transformIdx]);
+		
+		mat3 vertices = {
+			fetchVertex(vertIndices.x),
+			fetchVertex(vertIndices.y),
+			fetchVertex(vertIndices.z) };
+		
+		mat3 normals = {
+			fetchNormal(vertIndices.x),
+			fetchNormal(vertIndices.y),
+			fetchNormal(vertIndices.z) };
+		
+		mat4 ndcTransform = u_world.viewProjection * transform;
+		mat3x4 verticesNDC = {
+			ndcTransform * vec4(vertices[0], 1.0),
+			ndcTransform * vec4(vertices[1], 1.0),
+			ndcTransform * vec4(vertices[2], 1.0) };
+		
+		vec2 uv = vec2(gid & ~1u) + offset;
+		uv /= QuadbufSize;
+		vec3 barycentrics = calculateBarycentrics(verticesNDC, uv * 2.0 - 1.0);
+		// barycentrics = clampBarycentrics(barycentrics);
+		
+		vec3 modelVertex =
+			vertices[0] * barycentrics.x +
+			vertices[1] * barycentrics.y +
+			vertices[2] * barycentrics.z;
+		vec4 vertexW = transform * vec4(modelVertex, 1.0);
+		vec4 prevVertexW = prevTransform * vec4(modelVertex, 1.0);
+		
+#if USE_ACCURATE_NORMAL_INTERPOLATION
+		
+		vec3 normal = normalInterp(normals, barycentrics);
+		
+#else //USE_ACCURATE_NORMAL_INTERPOLATION
+		
+		vec3 normal =
+			normals[0] * barycentrics.x +
+			normals[1] * barycentrics.y +
+			normals[2] * barycentrics.z;
+		
+#endif //USE_ACCURATE_NORMAL_INTERPOLATION
+		
+		vec3 normalScale = {
+			dot(transform[0], transform[0]),
+			dot(transform[1], transform[1]),
+			dot(transform[2], transform[2]) };
+		normalScale = rcp(normalScale);
+		normal *= normalScale;
+		normal = normalize(mat3(transform) * normal);
+		normalOct = octEncode(normal);
+		
+		vec4 clipVertexW = u_world.viewProjection * vertexW;
+		vec3 clipVertex = clipVertexW.xyz / clipVertexW.w;
+		
+		vec4 prevClipVertexW = u_world.prevViewProjection * prevVertexW;
+		vec3 prevClipVertex = prevClipVertexW.xyz / prevClipVertexW.w;
+		
+		depth = clipVertex.z;
+		reproDepth = prevClipVertex.z;
+		
+		velocity = clipVertex.xy * vec2(QuadbufSize) - prevClipVertex.xy * vec2(QuadbufSize);
+		velocity /= 2.0;
+		
+	} else { // Invalid / sky cluster
+	
+		vec2 uv = gid / vec2(QuadbufSize);
+		vec3 clipSpace = vec3(uv * 2.0 - 1.0, 0.0);
+		vec4 hPos = u_world.viewProjectionInverse * vec4(clipSpace, 1.0);
+		
+		vec4 prevClipVertexW = u_world.prevViewProjection * hPos;
+		vec3 prevClipVertex = prevClipVertexW.xyz / prevClipVertexW.w;
+		
+		normalOct = 0;
+		
+		depth = 0.0;
+		reproDepth = 0.0;
+		
+		velocity = clipSpace.xy * vec2(QuadbufSize) - prevClipVertex.xy * vec2(QuadbufSize);
+		velocity /= 2.0;
+		
+	}
+	
+	// float medianDepth = quadMedian(depth);
+	// float medianReproDepth = quadMedian(reproDepth);
+	float medianDepth = subgroupClusteredMax(depth, 4);
+	float medianReproDepth = subgroupClusteredMax(reproDepth, 4);
+	
+	imageStore(i_offset, ivec2(gid), vec4(offset * 0.5, 0, 0));
+	imageStore(i_depth, ivec2(gid), vec4(depth, 0, 0, 0));
+	imageStore(i_normal, ivec2(gid), uvec4(normalOct, 0, 0, 0));
+	imageStore(i_velocity, ivec2(gid), vec4(velocity, 0.0, 0.0));
+	
+	if (gl_SubgroupInvocationID % 4 == 0) {
+		
+		imageStore(i_quadDepth, ivec2(gid / 2), vec4(medianDepth, 0, 0, 0));
+		imageStore(i_quadDepthRepro, ivec2(gid / 2), vec4(medianReproDepth, 0, 0, 0));
+		
+	}
+	
+}

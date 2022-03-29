@@ -1,5 +1,11 @@
 #include "main.hpp"
 
+#include "config.hpp"
+
+#include <exception>
+#include <utility>
+#include <thread>
+#include <chrono>
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN 1
@@ -8,83 +14,118 @@
 #define NOMINMAX 1
 #endif //NOMINMAX
 #include <windows.h>
+#include <fcntl.h>
+#include <io.h>
 #endif //_WIN32
-#include "base/thread.hpp"
-#include "base/string.hpp"
-#include "base/util.hpp"
-#include "base/time.hpp"
+#include "base/math.hpp"
 #include "base/log.hpp"
-#include "base/io.hpp"
 #include "sys/window.hpp"
-#include "sys/glfw.hpp"
-#include "debug.hpp"
+#include "sys/vulkan.hpp"
+#include "gfx/engine.hpp"
+#include "mapper.hpp"
 #include "game.hpp"
 
 using namespace minote; // Because we can't namespace main()
+using namespace base;
+using namespace base::literals;
 
-// Assert handler that throws critical conditions to top level.
-auto assertHandler(char const* expr, char const* file, int line, char const* msg) -> int {
-	auto const str{format(R"(Assertion "{}" triggered on line {} in {}{}{})",
-		expr, line, file, msg? ": " : "", msg?: "")};
-	L.crit(str);
-	throw logic_error{str};
+// Callback for window resize events.
+static auto windowResize(void* _engine, SDL_Event* _e) -> int {
+	
+	// Filter for resize events only
+	if (_e->type != SDL_WINDOWEVENT) return 0;
+	if (_e->window.event != SDL_WINDOWEVENT_RESIZED) return 0;
+	
+	// Recreate swapchain and redraw
+	auto newSize = uvec2{u32(_e->window.data1), u32(_e->window.data2)};
+	if (newSize.x() == 0 || newSize.y() == 0) return 0; // Minimized
+	auto& engine = *static_cast<gfx::Engine*>(_engine);
+	engine.refreshSwapchain(newSize);
+	engine.render();
+	
+	L_INFO("Window resized to {}x{}", newSize.x(), newSize.y());
+	
+	return 0;
+	
 }
 
-// Entry point function. Initializes systems and spawns other threads. Itself
-// becomes the input handling thread. Returns EXIT_SUCCESS on successful
-// execution, EXIT_FAILURE on a handled critical error, other values
-// on unhandled error
 auto main(int, char*[]) -> int try {
-	// *** Initialization ***
-
-	set_assert_handler(assertHandler);
-
-	// Unicode support
+	
+	// Initialize logging
+	
 #ifdef _WIN32
-	SetConsoleOutputCP(65001); // Set Windows cmd encoding to UTF-8
+	
+	// Create console and attach standard input/output
+	// https://github.com/ocaml/ocaml/issues/9252#issuecomment-576383814
+	AllocConsole();
+	
+	int fdOut = _open_osfhandle(reinterpret_cast<intptr_t>(GetStdHandle(STD_OUTPUT_HANDLE)), _O_WRONLY | _O_BINARY);
+	int fdErr = _open_osfhandle(reinterpret_cast<intptr_t>(GetStdHandle(STD_ERROR_HANDLE)),  _O_WRONLY | _O_BINARY);
+	
+	if (fdOut) {
+		
+		_dup2(fdOut, STDOUT_FILENO);
+		_close(fdOut);
+		SetStdHandle(STD_OUTPUT_HANDLE, reinterpret_cast<HANDLE>(_get_osfhandle(STDOUT_FILENO)));
+		
+	}
+	if (fdErr) {
+		
+		_dup2(fdErr, STDERR_FILENO);
+		_close(fdErr);
+		SetStdHandle(STD_ERROR_HANDLE, reinterpret_cast<HANDLE>(_get_osfhandle(STDERR_FILENO)));
+		
+	}
+	
+	*stdout = *fdopen(STDOUT_FILENO, "wb");
+	*stderr = *fdopen(STDERR_FILENO, "wb");
+	
+	setvbuf(stdout, nullptr, _IONBF, 0);
+	setvbuf(stderr, nullptr, _IONBF, 0);
+	
+	// Set console encoding to UTF-8
+	SetConsoleOutputCP(65001);
+	
 #endif //_WIN32
-
-	// Global logging
-#ifndef NDEBUG
-	L.level = Log::Level::Trace;
-	constexpr auto Logpath = "minote-debug.log"sv;
-#else //NDEBUG
-	L.level = Log::Level::Info;
-	constexpr auto Logpath = "minote.log"sv;
-#endif //NDEBUG
-	L.console = true;
-	try {
-		file logfile{Logpath, "w"};
-		L.enableFile(move(logfile));
-	} catch (system_error const& e) {
-		L.warn("{}", Logpath, e.what());
-	}
-	auto const title = format("{} {}", AppName, AppVersion);
-	L.info("Starting up {}", title);
-
-	// Window creation
-	Glfw glfw;
-	Window window{glfw, title};
-
-//#ifdef MINOTE_DEBUG
-	debugInputSetup(window);
-//#endif //MINOTE_DEBUG
-
-	// Thread startup
-	thread gameThread(game, ref(window));
-
-	// Signal other threads to quit if input thread terminates first
-	defer { window.requestClose(); };
-
+	Log::init(Log_p, LOG_LEVEL);
+	L_INFO("Starting up {} {}.{}.{}",
+		AppTitle, std::get<0>(AppVersion), std::get<1>(AppVersion), std::get<2>(AppVersion));
+	
+	// Initialize systems
+	auto system = sys::System();
+	auto window = sys::Window(system, AppTitle, false, {960, 504});
+	auto vulkan = sys::Vulkan(window);
+	
+	// Create graphics engine
+	auto engine = gfx::Engine(vulkan);
+	
+	// Initialize helpers
+	auto mapper = Mapper();
+	
+	// Start the game thread
+	auto gameThread = std::jthread(game, GameParams{
+		.window = window,
+		.engine = engine,
+		.mapper = mapper});
+	
+	// Add window resize handler
+	SDL_AddEventWatch(&windowResize, &engine);
+	defer { SDL_DelEventWatch(&windowResize, &engine); };
+	
 	// Input thread loop
-	while (!window.isClosing()) {
-		glfw.poll();
-		sleepFor(1_ms);
+	while (!sys::System::isQuitting()) {
+		
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		system.poll();
+		
 	}
-
+	
 	return EXIT_SUCCESS;
-} catch (exception const& e) {
-	L.crit("Unhandled exception on main thread: {}", e.what());
-	L.crit("Cannot recover, shutting down. Please report this error to the developer");
+	
+} catch (std::exception const& e) {
+	
+	L_CRIT("Unhandled exception on main thread: {}", e.what());
+	L_CRIT("Cannot recover, shutting down. Please report this error to the developer");
 	return EXIT_FAILURE;
+	
 }

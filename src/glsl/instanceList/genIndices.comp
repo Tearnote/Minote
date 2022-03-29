@@ -1,0 +1,119 @@
+#version 460
+#pragma shader_stage(compute)
+
+layout(local_size_x = 256) in;
+
+#include "indices.glsl"
+#include "../types.glsl"
+
+#define B_VERTICES b_vertices
+
+layout(binding = 0, std430) restrict readonly buffer Meshlets {
+	Meshlet b_meshlets[];
+};
+layout(binding = 1, std430) restrict readonly buffer Instances {
+	Instance b_instances[];
+};
+layout(binding = 2, std430) restrict buffer InstanceCount {
+	uvec4 b_outInstanceCount;
+};
+layout(binding = 3, std430) restrict readonly buffer Transforms {
+	mat3x4 b_transforms[];
+};
+layout(binding = 4, std430) restrict readonly buffer TriIndices {
+	uint b_triIndices[];
+};
+layout(binding = 5, std430) restrict readonly buffer VertIndices {
+	uint b_vertIndices[];
+};
+layout(binding = 6, std430) restrict readonly buffer Vertices {
+	float B_VERTICES[];
+};
+layout(binding = 7, std430) restrict buffer DrawCommand {
+	Command b_command;
+};
+layout(binding = 8, std430) restrict writeonly buffer Indices {
+	uint b_indices[];
+};
+
+#include "../typesAccess.glsl"
+
+#define TRI_BACKFACE_CULLING 1
+
+layout(push_constant) uniform Constants {
+	vec3 u_cameraPosition;
+};
+
+layout(constant_id = 0) const uint MaxTrisPerMeshlet = 0;
+
+void main() {
+	
+	// Retrieve data global to entire meshlet instance
+	
+	uint gid = gl_GlobalInvocationID.x * 4;
+	uint instanceIdx = gid / MaxTrisPerMeshlet;
+	if (instanceIdx >= b_outInstanceCount.w)
+		return;
+	uint triIdx = gid % MaxTrisPerMeshlet;
+	Instance instance = b_instances[instanceIdx];
+	Meshlet meshlet = b_meshlets[instance.meshletIdx];
+#if TRI_BACKFACE_CULLING
+	uint transformIdx = instance.objectIdx;
+	mat4 transform = getTransform(b_transforms[transformIdx]);
+#endif //TRI_BACKFACE_CULLING
+	
+	// Process 4 triangles
+	
+	for (uint i = 0; i < 4; i += 1) {
+		
+		// Read indices
+		
+		uint idx = (triIdx + i) * 3;
+		if (idx + 2 >= meshlet.indexCount)
+			continue;
+		
+		idx += meshlet.indexOffset;
+		uvec3 indices = {
+			b_triIndices[idx + 0],
+			b_triIndices[idx + 1],
+			b_triIndices[idx + 2]};
+		
+#if TRI_BACKFACE_CULLING
+		
+		// Read vertices
+		
+		uvec3 triIndices = indices + meshlet.vertexOffset;
+		uvec3 vertIndices = {
+			b_vertIndices[triIndices[0]],
+			b_vertIndices[triIndices[1]],
+			b_vertIndices[triIndices[2]] };
+		
+		mat3 vertices = {
+			fetchVertex(vertIndices.x),
+			fetchVertex(vertIndices.y),
+			fetchVertex(vertIndices.z) };
+		
+		for (uint i = 0; i < 3; i += 1)
+			vertices[i] = vec3(transform * vec4(vertices[i], 1.0));
+		
+		// Backface check
+		
+		vec3 viewDirection = vertices[0] - u_cameraPosition;
+		vec3 normal = cross(vertices[1] - vertices[0], vertices[2] - vertices[0]);
+		if (dot(normal, viewDirection) > 0)
+			continue;
+		
+#endif // TRI_BACKFACE_CULLING
+		
+		// Write indices
+		
+		uint outOffset = atomicAdd(b_command.indexCount, 3);
+		uint shiftedInstance = instanceIdx << INSTANCE_ID_BITS;
+		indices |= shiftedInstance;
+		b_indices[outOffset + 0] = indices[0];
+		b_indices[outOffset + 1] = indices[1];
+		b_indices[outOffset + 2] = indices[2];
+		
+	}
+	
+}

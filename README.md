@@ -1,46 +1,43 @@
 # Minote
-An upcoming puzzle action game, written in C++20.
+A work-in-progress experimental hobbyist renderer for personal videogame and
+digital art projects.
+
+More details about current state and future plans on
+[Trello](https://trello.com/b/LsFEM6Vw/minote)!
+
+## Goals
+- Performant rendering of models with high instance counts
+- Artifact-free shading and post-processing, approaching path-tracing quality
+when possible
+- Flexibility to rapidly iterate on interesting rendering techniques
+- Compatibility with most of the modern gaming-grade hardware
+- Portable code, open-source libraries and toolchain
+
+## Non-goals
+- Texture mapping
+- Vertex animation
+- Being an engine
 
 ## Building
-Continuously tested on Windows (MSYS2 MinGW), but should be portable to any
-platform with OpenGL 3.3 core profile and a recent standards-compliant compiler.
+Developed on Windows in a MSYS2 UCRT environment. Requires CMake and the Vulkan
+SDK installed; no other external dependencies. Standard CMake build process,
+the Ninja Multi-Config generator is recommended.
 
-Standard CMake build process:
-```
-mkdir build
-cd build
-cmake ..
-cmake --build .
-```
-
-### External libraries
-Requires:
-- [`GLFW`](https://www.glfw.org/) 3.3
-- [`HarfBuzz`](http://harfbuzz.org/)
-- [`glm`](https://glm.g-truc.net/)
-- [`fmt`](https://fmt.dev/)
-
-### Included libraries
-- [`glad`](https://glad.dav1d.de/) loader generated on 2020-10-10,
-in Public Domain.
-- [`PCG PRNG`](https://www.pcg-random.org/) Minimal C 0.9, used under Apache
-license.
-- [`SMAA (OpenGL port)`](https://github.com/turol/smaaDemo) retrieved
-on 2020-02-29, used under MIT license.
-[Original version.](https://www.iryoku.com/smaa/)
-- [`Nuklear`](https://github.com/Immediate-Mode-UI/Nuklear) retrieved
-on 2020-08-13, used under dual MIT license / Public Domain.
-- [`Cephes Mathematical Library`](https://www.netlib.org/cephes) retrieved
-on 2020-09-02, used under permissive terms.
-- [`msdf-atlas-gen`](https://github.com/Chlumsky/msdf-atlas-gen) retrieved
-on 2020-09-12, used under MIT license.
-- [`stb_image.h`](https://github.com/nothings/stb/blob/master/stb_image.h)
-retrieved on 2020-09-13, in Public Domain.
-- [`scope_guard`](https://github.com/Neargye/scope_guard) retrieved
-on 2020-10-05, used under MIT license.
-- [`itlib`](https://github.com/iboB/itlib) retrieved on 2020-12-01, used under
-MIT license.
-- [`xassert`](https://github.com/rg3/xassert) retrieved on 2020-12-06, used
-under CC0 license.
-- [`robin-hood-hashing`](https://github.com/martinus/robin-hood-hashing)
-retrieved on 2020-12-07, used under MIT license.
+## Libraries used
+- [`volk`](https://github.com/zeux/volk) (MIT)
+- [`vuk`](https://github.com/martty/vuk) (MIT)
+- [`vk-bootstrap`](https://github.com/charles-lunarg/vk-bootstrap) (MIT)
+- [`PCG`](https://github.com/imneme/pcg-c-basic) (Apache-2.0)
+- [`SDL`](https://github.com/libsdl-org/SDL) (Zlib)
+- [`Dear ImGui`](https://github.com/ocornut/imgui) (MIT)
+- [`SQLite`](https://www.sqlite.org/) (Public Domain)
+- [`cgltf`](https://github.com/jkuhlmann/cgltf) (MIT)
+- [`robin_hood`](https://github.com/martinus/robin-hood-hashing) (MIT)
+- [`itlib`](https://github.com/iboB/itlib) (MIT)
+- [`{fmt}`](https://github.com/fmtlib/fmt) (MIT)
+- [`Quill`](https://github.com/odygrd/quill) (MIT)
+- [`GCE-Math`](https://github.com/kthohr/gcem) (Apache-2.0)
+- [`MPack`](https://github.com/ludocode/mpack) (MIT)
+- [`meshoptimizer`](https://github.com/zeux/meshoptimizer) (MIT)
+- [`bvh`](https://github.com/madmann91/bvh) (MIT)
+- Smaller code snippets are attributed inline
