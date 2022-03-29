@@ -1,6 +1,6 @@
 #pragma once
 
-#include "quill/Fmt.h"
+#include "fmt/core.h"
 
 namespace minote::base {
 

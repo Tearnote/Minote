@@ -2,7 +2,6 @@
 
 #include <optional>
 #include <mutex>
-#include "Tracy.hpp"
 #include "base/math.hpp"
 #include "base/time.hpp"
 #include "sys/vulkan.hpp"
@@ -64,7 +63,7 @@ private:
 	
 	sys::Vulkan& m_vk;
 	
-	TracyLockable(std::mutex, m_renderLock);
+	std::mutex m_renderLock;
 	bool m_swapchainDirty;
 	bool m_flushTemporalResources;
 	

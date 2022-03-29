@@ -5,6 +5,7 @@
 #include "vuk/Context.hpp"
 #include "gfx/resources/buffer.hpp"
 #include "gfx/resources/pool.hpp"
+#include "gfx/util.hpp"
 #include "base/containers/hashmap.hpp"
 #include "base/containers/string.hpp"
 #include "base/containers/vector.hpp"
@@ -66,6 +67,7 @@ struct ModelBuffer {
 	Buffer<Model> models;
 	
 	ivector<Meshlet> cpu_meshlets;
+	ivector<AABB> cpu_meshletAABBs;
 	ivector<Model> cpu_models;
 	hashmap<ID, u32> cpu_modelIndices;
 	
@@ -91,6 +93,7 @@ private:
 	pvector<tools::NormalType> m_normals;
 	
 	ivector<Meshlet> m_meshlets; // Meshlet descriptors, for access to index buffers
+	ivector<AABB> m_meshletAABBs;
 	ivector<Model> m_models; // Model descriptors, for access to m_modelMeshes
 	hashmap<ID, u32> m_modelIndices; // Mapping of model IDs to their index in m_models
 	

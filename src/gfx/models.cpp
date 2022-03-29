@@ -3,7 +3,6 @@
 #include <utility>
 #include <cassert>
 #include <cstring>
-#include "Tracy.hpp"
 #include "mpack/mpack.h"
 #include "gfx/util.hpp"
 #include "base/error.hpp"
@@ -17,8 +16,6 @@ using namespace base::literals;
 using namespace tools;
 
 void ModelList::addModel(string_view _name, std::span<char const> _model) {
-	
-	ZoneScoped;
 	
 	// Load in data
 	
@@ -97,6 +94,7 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 		mpack_expect_map_match(&in, 8);
 		
 		auto& meshlet = m_meshlets.emplace_back();
+		auto& aabb = m_meshletAABBs.emplace_back();
 		
 		mpack_expect_cstr_match(&in, "materialIdx");
 		auto materialIdx = mpack_expect_u32(&in);
@@ -126,13 +124,13 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 		mpack_expect_cstr_match(&in, "aabbMin");
 		mpack_expect_array_match(&in, 3);
 		for (auto i: iota(0, 3))
-			mpack_expect_float(&in);
+			aabb.min[i] = mpack_expect_float(&in);
 		mpack_done_array(&in);
 		
 		mpack_expect_cstr_match(&in, "aabbMax");
 		mpack_expect_array_match(&in, 3);
 		for (auto i: iota(0, 3))
-			mpack_expect_float(&in);
+			aabb.max[i] = mpack_expect_float(&in);
 		mpack_done_array(&in);
 		
 		mpack_done_map(&in);
@@ -181,8 +179,6 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 
 auto ModelList::upload(Pool& _pool, vuk::Name _name) && -> ModelBuffer {
 	
-	ZoneScoped;
-	
 	auto result = ModelBuffer{
 		.materials = Buffer<Material>::make(_pool, nameAppend(_name, "materials"),
 			vuk::BufferUsageFlagBits::eStorageBuffer,
@@ -207,6 +203,7 @@ auto ModelList::upload(Pool& _pool, vuk::Name _name) && -> ModelBuffer {
 			m_models),
 		.cpu_modelIndices = std::move(m_modelIndices) };
 	result.cpu_meshlets = std::move(m_meshlets); // Must still exist for .meshlets creation
+	result.cpu_meshletAABBs = std::move(m_meshletAABBs);
 	result.cpu_models = std::move(m_models);
 	
 	// Clean up in case this isn't a temporary

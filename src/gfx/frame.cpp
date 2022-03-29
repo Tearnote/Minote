@@ -7,6 +7,7 @@
 #include "gfx/effects/tonemap.hpp"
 #include "gfx/effects/bloom.hpp"
 #include "gfx/effects/clear.hpp"
+#include "gfx/effects/bvh.hpp"
 #include "gfx/effects/pbr.hpp"
 #include "gfx/effects/sky.hpp"
 #include "gfx/effects/hiz.hpp"
@@ -55,6 +56,7 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, bool _flush) {
 		viewport, vuk::Format::eR16G16B16A16Sfloat,
 		vuk::ImageUsageFlagBits::eSampled |
 		vuk::ImageUsageFlagBits::eStorage |
+		vuk::ImageUsageFlagBits::eColorAttachment |
 		vuk::ImageUsageFlagBits::eTransferDst);
 	color.attach(rg, vuk::eNone, vuk::eNone);
 	
@@ -116,6 +118,7 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, bool _flush) {
 	// Postprocessing
 	Bloom::apply(*this, swapchainPool, color);
 	Tonemap::apply(*this, color, _target);
+	// BVH::debugDrawAABBs(*this, _target, instances);
 	
 	// Next-frame tasks
 	HiZ::fill(*this, hiz, depth);

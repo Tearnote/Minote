@@ -14,8 +14,9 @@
 #define NOMINMAX 1
 #endif //NOMINMAX
 #include <windows.h>
+#include <fcntl.h>
+#include <io.h>
 #endif //_WIN32
-#include "Tracy.hpp"
 #include "base/math.hpp"
 #include "base/log.hpp"
 #include "sys/window.hpp"
@@ -50,11 +51,41 @@ static auto windowResize(void* _engine, SDL_Event* _e) -> int {
 
 auto main(int, char*[]) -> int try {
 	
-	tracy::SetThreadName("Input");
-	
 	// Initialize logging
+	
 #ifdef _WIN32
-	SetConsoleOutputCP(65001); // Set Windows terminal encoding to UTF-8
+	
+	// Create console and attach standard input/output
+	// https://github.com/ocaml/ocaml/issues/9252#issuecomment-576383814
+	AllocConsole();
+	
+	int fdOut = _open_osfhandle(reinterpret_cast<intptr_t>(GetStdHandle(STD_OUTPUT_HANDLE)), _O_WRONLY | _O_BINARY);
+	int fdErr = _open_osfhandle(reinterpret_cast<intptr_t>(GetStdHandle(STD_ERROR_HANDLE)),  _O_WRONLY | _O_BINARY);
+	
+	if (fdOut) {
+		
+		_dup2(fdOut, STDOUT_FILENO);
+		_close(fdOut);
+		SetStdHandle(STD_OUTPUT_HANDLE, reinterpret_cast<HANDLE>(_get_osfhandle(STDOUT_FILENO)));
+		
+	}
+	if (fdErr) {
+		
+		_dup2(fdErr, STDERR_FILENO);
+		_close(fdErr);
+		SetStdHandle(STD_ERROR_HANDLE, reinterpret_cast<HANDLE>(_get_osfhandle(STDERR_FILENO)));
+		
+	}
+	
+	*stdout = *fdopen(STDOUT_FILENO, "wb");
+	*stderr = *fdopen(STDERR_FILENO, "wb");
+	
+	setvbuf(stdout, nullptr, _IONBF, 0);
+	setvbuf(stderr, nullptr, _IONBF, 0);
+	
+	// Set console encoding to UTF-8
+	SetConsoleOutputCP(65001);
+	
 #endif //_WIN32
 	Log::init(Log_p, LOG_LEVEL);
 	L_INFO("Starting up {} {}.{}.{}",
@@ -85,10 +116,7 @@ auto main(int, char*[]) -> int try {
 	while (!sys::System::isQuitting()) {
 		
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
-		
-		FrameMarkStart("Input");
 		system.poll();
-		FrameMarkEnd("Input");
 		
 	}
 	

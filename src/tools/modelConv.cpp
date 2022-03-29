@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cstring>
+#include <cmath>
 #include "meshoptimizer.h"
 #include "mpack/mpack.h"
 #define CGLTF_IMPLEMENTATION
@@ -66,10 +67,9 @@ struct Model {
 	pvector<NormalType> normals;
 };
 
-int main(int argc, char const* argv[]) {
-	
+int main(int argc, char const* argv[]) try {
 	if (argc != 3)
-		throw runtime_error_fmt(R"(Invalid number of arguments: found {}, expected 2)", argc);
+		throw runtime_error_fmt("Invalid number of arguments: found {}, expected 2", argc - 1);
 	
 	auto model = Model();
 	
@@ -78,6 +78,7 @@ int main(int argc, char const* argv[]) {
 	auto const* inputPath = argv[1];
 	auto options = cgltf_options{ .type = cgltf_file_type_glb };
 	auto* gltf = static_cast<cgltf_data*>(nullptr);
+	
 	if (auto result = cgltf_parse_file(&options, inputPath, &gltf); result != cgltf_result_success)
 		throw runtime_error_fmt(R"(Failed to parse input mesh "{}": error code {})", inputPath, result);
 	defer { cgltf_free(gltf); };
@@ -360,7 +361,7 @@ int main(int argc, char const* argv[]) {
 		auto meshletTriangles = pvector<unsigned char>(maxMeshletCount * MeshletMaxTris * 3);
 		auto meshletCount = meshopt_buildMeshlets(rawMeshlets.data(), meshletVertices.data(), meshletTriangles.data(),
 			mesh.indices.data(), mesh.indices.size(), &vertices[0].x(), vertices.size(), sizeof(VertexType),
-			MeshletMaxVerts, MeshletMaxTris, MeshletConeWeight);
+			MeshletMaxVerts, MeshletMaxTris, 0.0f);
 		rawMeshlets.resize(meshletCount);
 		
 		auto& lastMeshlet = rawMeshlets.back();
@@ -387,12 +388,14 @@ int main(int argc, char const* argv[]) {
 		for (auto& m: rawMeshlets) {
 			
 			auto& aabb = aabbs.emplace_back();
-			aabb.min = aabb.max = vertices[m.vertex_offset];
+			auto vertexIdx = meshletVertices[m.vertex_offset];
+			aabb.min = aabb.max = vertices[vertexIdx];
 			
 			for (auto i: iota(1_zu, m.vertex_count)) {
 				
-				aabb.min = min(aabb.min, vertices[m.vertex_offset + i]),
-				aabb.max = max(aabb.max, vertices[m.vertex_offset + i]);
+				auto vertexIdx = meshletVertices[m.vertex_offset + i];
+				aabb.min = min(aabb.min, vertices[vertexIdx]),
+				aabb.max = max(aabb.max, vertices[vertexIdx]);
 				
 			}
 			
@@ -547,5 +550,10 @@ int main(int argc, char const* argv[]) {
 		throw runtime_error_fmt(R"(Failed to write output file "{}": error code {})", outputPath, error);
 	
 	return 0;
+	
+} catch (std::exception const& e) {
+	
+	printf("Runtime error: %s\n", e.what());
+	return 1;
 	
 }

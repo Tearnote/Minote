@@ -18,12 +18,14 @@ inline auto typed_error_fmt(std::string_view fmt, Args&&... args) -> Err {
 	
 }
 
-auto const runtime_error_fmt = []<typename... Args>(Args&&... args) {
-	return typed_error_fmt<runtime_error>(std::forward<Args>(args)...);
+template<typename... Args>
+inline auto runtime_error_fmt(std::string_view fmt, Args&&... args) {
+	return typed_error_fmt<runtime_error>(fmt, std::forward<Args>(args)...);
 };
 
-auto const logic_error_fmt = []<typename... Args>(Args&&... args) {
-	return typed_error_fmt<logic_error>(std::forward<Args>(args)...);
+template<typename... Args>
+inline auto logic_error_fmt(std::string_view fmt, Args&&... args) {
+	return typed_error_fmt<logic_error>(fmt, std::forward<Args>(args)...);
 };
 
 }

@@ -2,7 +2,6 @@
 
 #include <cassert>
 #include <span>
-#include "Tracy.hpp"
 #include "base/containers/vector.hpp"
 #include "base/util.hpp"
 #include "gfx/samplers.hpp"
@@ -38,8 +37,6 @@ constexpr auto encodeTransform(ObjectPool::Transform _in) -> InstanceList::Trans
 
 auto InstanceList::upload(Pool& _pool, Frame& _frame, vuk::Name _name,
 	ObjectPool const& _objects) -> InstanceList {
-	
-	ZoneScoped;
 	
 	auto result = InstanceList();
 	

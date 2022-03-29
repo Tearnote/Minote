@@ -1,4 +1,3 @@
-#include "Tracy.hpp"
 #include "base/error.hpp"
 #include "base/util.hpp"
 #include "base/log.hpp"
@@ -10,8 +9,6 @@ using namespace base;
 template<typename F>
 requires std::invocable<F, string_view, std::span<char const>>
 void Assets::loadModels(F _func) {
-	
-	ZoneScoped;
 	
 	auto modelsQueryStr = fmt::format("SELECT * FROM {}", Models_n);
 	

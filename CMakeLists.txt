@@ -17,27 +17,20 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Build settings
 
-if(NOT CMAKE_BUILD_TYPE)
-	set(CMAKE_BUILD_TYPE "Release")
-endif()
+add_compile_options("-march=x86-64;-mmmx;-msse;-msse2;-msse3;-mssse3;-msse4.1;-msse4.2;-mavx;-ffast-math")
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:AVX2 /fp:fast /GR- /GF")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX2 /fp:fast /GR- /GF")
+add_compile_options("$<$<CONFIG:Debug,RelWithDebInfo>:-g;-Og>")
 
-if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Gw /Gy")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gw /Gy")
-endif()
+add_compile_options("$<$<CONFIG:RelWithDebInfo,Release>:-O3;-ffunction-sections;-Wl,--gc-sections>")
+add_compile_options("$<$<CONFIG:Release>:-s>")
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION "$<CONFIG:Release>")
 
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
-	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
-	set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
-else()
-	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDebug")
+if(WIN32)
+	add_compile_options("-mwindows")
 endif()
 
 set(BUILD_SHARED_LIBS OFF)
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc -static-libstdc++")
 
 # Main executable
 
@@ -76,6 +69,7 @@ add_executable(Minote
 	src/gfx/effects/tonemap.hpp src/gfx/effects/tonemap.cpp
 	src/gfx/effects/bloom.hpp src/gfx/effects/bloom.cpp
 	src/gfx/effects/clear.hpp src/gfx/effects/clear.cpp
+	src/gfx/effects/bvh.hpp src/gfx/effects/bvh.cpp
 	src/gfx/effects/pbr.hpp src/gfx/effects/pbr.cpp
 	src/gfx/effects/sky.hpp src/gfx/effects/sky.cpp
 	src/gfx/effects/hiz.hpp src/gfx/effects/hiz.cpp
@@ -135,9 +129,6 @@ target_link_libraries(Minote PRIVATE volk)
 
 set(VUK_LINK_TO_LOADER OFF CACHE BOOL "")
 set(VUK_USE_SHADERC OFF CACHE BOOL "")
-if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
-	set(VUK_USE_TRACY OFF CACHE BOOL "")
-endif()
 FetchContent_Declare(vuk
 	GIT_REPOSITORY https://github.com/martty/vuk
 	GIT_TAG 4b842a633e3ccf1fea8af887991c96c62d2b4525)
@@ -161,6 +152,15 @@ target_include_directories(pcg PUBLIC ${pcg_SOURCE_DIR})
 target_link_libraries(Minote PRIVATE pcg)
 
 set(OPT_DEF_LIBC ON CACHE BOOL "")
+set(VIDEO_OPENGLES OFF CACHE BOOL "")
+set(VIDEO_OPENGL OFF CACHE BOOL "")
+set(SDL_DLOPEN OFF CACHE BOOL "")
+set(RENDER_D3D OFF CACHE BOOL "")
+set(DUMMYAUDIO OFF CACHE BOOL "")
+set(DUMMYAUDIO OFF CACHE BOOL "")
+set(DISKAUDIO OFF CACHE BOOL "")
+set(DIRECTX OFF CACHE BOOL "")
+set(WASAPI OFF CACHE BOOL "")
 FetchContent_Declare(sdl
 	GIT_REPOSITORY https://github.com/libsdl-org/SDL
 	GIT_TAG release-2.0.14)
@@ -201,22 +201,6 @@ FetchContent_MakeAvailable(cgltf)
 add_library(cgltf INTERFACE ${cgltf_SOURCE_DIR}/cgltf.h ${cgltf_SOURCE_DIR}/cgltf_write.h)
 target_include_directories(cgltf INTERFACE ${cgltf_SOURCE_DIR})
 
-if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
-	set(TRACY_ENABLE OFF CACHE BOOL "")
-	set(TRACY_NO_FRAME_IMAGE ON CACHE BOOL "")
-	set(TRACY_ONLY_LOCALHOST ON CACHE BOOL "")
-	set(TRACY_NO_BROADCAST ON CACHE BOOL "")
-else()
-	set(TRACY_ENABLE OFF CACHE BOOL "")
-endif()
-FetchContent_Declare(tracy
-	GIT_REPOSITORY https://github.com/wolfpld/tracy
-	GIT_TAG d011d65b3c4cd80465030e3cf816d258d4a0eea1)
-FetchContent_MakeAvailable(tracy)
-target_link_libraries(TracyClient PRIVATE volk)
-target_link_libraries(vuk PRIVATE TracyClient)
-target_link_libraries(Minote PRIVATE TracyClient)
-
 if(NOT TARGET robin_hood) # vuk already includes this
 	FetchContent_Declare(robin_hood
 		GIT_REPOSITORY https://github.com/martinus/robin-hood-hashing/
@@ -233,10 +217,18 @@ target_compile_definitions(itlib INTERFACE ITLIB_STATIC_VECTOR_ERROR_HANDLING=IT
 target_compile_definitions(itlib INTERFACE ITLIB_SMALL_VECTOR_ERROR_HANDLING=ITLIB_SMALL_VECTOR_ERROR_HANDLING_THROW)
 target_link_libraries(Minote PRIVATE itlib)
 
+FetchContent_Declare(fmt
+	GIT_REPOSITORY https://github.com/fmtlib/fmt
+	GIT_TAG 7.1.3) # 8.0.0 changes to compile-time format string checking - breaking change!
+FetchContent_MakeAvailable(fmt)
+target_link_libraries(Minote PRIVATE fmt::fmt)
+
+set(QUILL_FMT_EXTERNAL ON CACHE BOOL "")
 FetchContent_Declare(quill
 	GIT_REPOSITORY https://github.com/odygrd/quill
-	GIT_TAG fa9b53f49732765ed242b7372ec4197e89f381ee)
+	GIT_TAG v1.6.3)
 FetchContent_MakeAvailable(quill)
+target_link_libraries(quill PRIVATE fmt::fmt)
 target_link_libraries(Minote PRIVATE quill::quill)
 
 FetchContent_Declare(gcem
@@ -251,6 +243,7 @@ FetchContent_MakeAvailable(mpack)
 add_library(mpack
 	${mpack_SOURCE_DIR}/src/mpack/mpack.h ${mpack_SOURCE_DIR}/src/mpack/mpack.c)
 target_include_directories(mpack PUBLIC ${mpack_SOURCE_DIR}/src)
+target_compile_options(mpack PRIVATE -x c++) # Force C++-style handling of inline functions
 target_link_libraries(Minote PRIVATE mpack)
 
 FetchContent_Declare(meshoptimizer
@@ -280,6 +273,8 @@ set(SHADER_SOURCES
 	quad/genBuffers.comp
 	quad/clusterize.comp
 	quad/resolve.comp
+	bvh/debugAABB.vert
+	bvh/debugAABB.frag
 	sky/genAerialPerspective.comp
 	sky/genMultiScattering.comp
 	sky/genTransmittance.comp
@@ -295,11 +290,11 @@ set(SHADER_SOURCES
 
 foreach(SHADER_PATH ${SHADER_SOURCES})
 	get_filename_component(SHADER_DIR ${SHADER_PATH} DIRECTORY)
-	set(SHADER_OUTPUT ${PROJECT_BINARY_DIR}/generated/spv/${SHADER_PATH}.spv)
+	set(SHADER_OUTPUT ${PROJECT_BINARY_DIR}/$<CONFIG>/generated/spv/${SHADER_PATH}.spv)
 	add_custom_command(
 		OUTPUT ${SHADER_OUTPUT}
-		COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/generated/spv/${SHADER_DIR}
-		COMMAND $ENV{VULKAN_SDK}/Bin/glslc.exe --target-env=vulkan1.2 -mfmt=num $<$<NOT:$<CONFIG:Release>>:-g> -MD -MF ${SHADER_OUTPUT}.d -o ${SHADER_OUTPUT} ${PROJECT_SOURCE_DIR}/${SHADER_DIR_PREFIX}/${SHADER_PATH}
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/$<CONFIG>/generated/spv/${SHADER_DIR}
+		COMMAND $ENV{VULKAN_SDK}/Bin/glslc.exe --target-env=vulkan1.2 -mfmt=num $<$<CONFIG:Debug,RelWithDebInfo>:-g> -MD -MF ${SHADER_OUTPUT}.d -o ${SHADER_OUTPUT} ${PROJECT_SOURCE_DIR}/${SHADER_DIR_PREFIX}/${SHADER_PATH}
 		DEPENDS ${SHADER_DIR_PREFIX}/${SHADER_PATH}
 		DEPFILE ${SHADER_OUTPUT}.d
 		VERBATIM COMMAND_EXPAND_LISTS)
@@ -307,7 +302,7 @@ foreach(SHADER_PATH ${SHADER_SOURCES})
 endforeach()
 
 add_custom_target(Compile_shaders DEPENDS ${SHADER_OUTPUTS})
-target_include_directories(Minote PRIVATE ${PROJECT_BINARY_DIR}/generated)
+target_include_directories(Minote PRIVATE ${PROJECT_BINARY_DIR}/$<CONFIG>/generated)
 add_dependencies(Minote Compile_shaders)
 
 # Asset pipeline
@@ -323,7 +318,7 @@ target_link_libraries(Model_conv PRIVATE cgltf)
 target_link_libraries(Model_conv PRIVATE mpack)
 target_link_libraries(Model_conv PRIVATE gcem)
 
-set(ASSET_OUTPUT ${PROJECT_BINARY_DIR}/assets.db)
+set(ASSET_OUTPUT ${PROJECT_BINARY_DIR}/$<CONFIG>/assets.db)
 add_custom_command(
 	OUTPUT ${ASSET_OUTPUT}
 	COMMAND sqlite-shell ${ASSET_OUTPUT} "VACUUM"
@@ -340,15 +335,15 @@ add_custom_command(
 foreach(MODEL_PATH ${MODELS})
 	get_filename_component(MODEL_NAME ${MODEL_PATH} NAME_WLE)
 	add_custom_command(
-		OUTPUT ${PROJECT_BINARY_DIR}/models/${MODEL_NAME}.model
-		COMMAND Model_conv ${PROJECT_SOURCE_DIR}/${MODEL_PATH} ${PROJECT_BINARY_DIR}/models/${MODEL_NAME}.model
+		OUTPUT ${PROJECT_BINARY_DIR}/$<CONFIG>/models/${MODEL_NAME}.model
+		COMMAND Model_conv ${PROJECT_SOURCE_DIR}/${MODEL_PATH} ${PROJECT_BINARY_DIR}/$<CONFIG>/models/${MODEL_NAME}.model
 		DEPENDS ${PROJECT_SOURCE_DIR}/${MODEL_PATH}
 		DEPENDS Model_conv
 		VERBATIM COMMAND_EXPAND_LISTS)
 	add_custom_command(
 		OUTPUT ${ASSET_OUTPUT} APPEND
-		COMMAND sqlite-shell ${ASSET_OUTPUT} "INSERT OR REPLACE INTO models(name, data) VALUES('${MODEL_NAME}', readfile('${PROJECT_BINARY_DIR}/models/${MODEL_NAME}.model'))"
-		DEPENDS ${PROJECT_BINARY_DIR}/models/${MODEL_NAME}.model
+		COMMAND sqlite-shell ${ASSET_OUTPUT} "INSERT OR REPLACE INTO models(name, data) VALUES('${MODEL_NAME}', readfile('${PROJECT_BINARY_DIR}/$<CONFIG>/models/${MODEL_NAME}.model'))"
+		DEPENDS ${PROJECT_BINARY_DIR}/$<CONFIG>/models/${MODEL_NAME}.model
 		DEPENDS sqlite-shell
 		VERBATIM COMMAND_EXPAND_LISTS)
 endforeach()

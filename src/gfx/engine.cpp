@@ -4,8 +4,6 @@
 
 #include <cassert>
 #include "volk.h"
-#include "Tracy.hpp"
-#include "TracyVulkan.hpp"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
 #include "base/error.hpp"
@@ -19,6 +17,7 @@
 #include "gfx/effects/visibility.hpp"
 #include "gfx/effects/tonemap.hpp"
 #include "gfx/effects/bloom.hpp"
+#include "gfx/effects/bvh.hpp"
 #include "gfx/effects/pbr.hpp"
 #include "gfx/effects/sky.hpp"
 #include "gfx/effects/hiz.hpp"
@@ -34,13 +33,11 @@ using namespace std::string_literals;
 static constexpr auto compileOpts = vuk::RenderGraph::CompileOptions{
 	.reorder_passes = false,
 #if VK_VALIDATION
-	.check_pass_ordering = true,
+	// .check_pass_ordering = true, // Temporarily disabled
 #endif //VK_VALIDATION
 };
 
 Engine::~Engine() {
-	
-	ZoneScoped;
 	
 	m_vk.context->wait_idle();
 	
@@ -52,8 +49,6 @@ Engine::~Engine() {
 }
 
 void Engine::init(ModelList&& _modelList) {
-	
-	ZoneScoped;
 	
 	auto ifc = m_vk.context->begin();
 	auto ptc = ifc.begin();
@@ -67,6 +62,7 @@ void Engine::init(ModelList&& _modelList) {
 	Worklist::compile(ptc);
 	Tonemap::compile(ptc);
 	Bloom::compile(ptc);
+	BVH::compile(ptc);
 	PBR::compile(ptc);
 	HiZ::compile(ptc);
 	Sky::compile(ptc);
@@ -92,8 +88,6 @@ void Engine::init(ModelList&& _modelList) {
 }
 
 void Engine::render() {
-	
-	ZoneScoped;
 	
 	// Quit if repaint needed
 	if (m_swapchainDirty) return;
@@ -197,17 +191,11 @@ void Engine::render() {
 			
 		}});
 	
-#ifdef TRACY_ENABLE
-	rg.add_tracy_collection();
-#endif //TRACY_ENABLE
-	
 	// Acquire swapchain image
 	
 	auto presentSem = ptc.acquire_semaphore();
 	auto swapchainImageIndex = u32(0);
 	{
-		
-		ZoneScopedN("Acquire");
 		
 		auto error = vkAcquireNextImageKHR(m_vk.device.device, m_vk.swapchain->swapchain,
 			UINT64_MAX, presentSem, VK_NULL_HANDLE, &swapchainImageIndex);
@@ -244,8 +232,6 @@ void Engine::render() {
 	
 	{
 		
-		ZoneScopedN("Present");
-		
 		auto presentInfo = VkPresentInfoKHR{
 			.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 			.waitSemaphoreCount = 1,
@@ -267,7 +253,6 @@ void Engine::render() {
 	ImGui::NewFrame();
 	m_framePool.reset();
 	m_objects.copyTransforms();
-	FrameMark;
 	
 }
 

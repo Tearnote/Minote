@@ -3,7 +3,6 @@
 #include "config.hpp"
 
 #include <exception>
-#include "Tracy.hpp"
 #include "backends/imgui_impl_sdl.h"
 #include "imgui.h"
 #include "base/containers/vector.hpp"
@@ -24,9 +23,6 @@ static constexpr auto LogicRate = 120;
 static constexpr auto LogicTick = 1_s / LogicRate;
 
 void game(GameParams const& _params) try {
-	
-	ZoneScoped;
-	tracy::SetThreadName("Game");
 	
 	auto& window = _params.window;
 	auto& engine = _params.engine;
@@ -184,8 +180,6 @@ void game(GameParams const& _params) try {
 		
 		while (nextUpdate <= sys::System::getTime()) {
 			
-			FrameMarkStart("Logic");
-			
 			// Iterate over all events
 			
 			sys::System::forEachEvent([&] (const sys::System::Event& e) -> bool {
@@ -241,8 +235,6 @@ void game(GameParams const& _params) try {
 			
 			nextUpdate += LogicTick;
 			
-			FrameMarkEnd("Logic");
-			
 		}
 		
 		// Logic
@@ -265,7 +257,6 @@ void game(GameParams const& _params) try {
 		
 		{
 			
-			ZoneScopedN("Rotating blocks");
 			auto rotateAnim = quat::angleAxis(radians(ratio(sys::System::getTime(), 20_ms)), {0.0f, 0.0f, 1.0f});
 			for (auto& obj: dynamicObjects)
 				engine.objects().get(obj).transform.rotation = rotateAnim;

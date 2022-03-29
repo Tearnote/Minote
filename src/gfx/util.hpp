@@ -12,20 +12,25 @@ namespace minote::gfx {
 
 using namespace base;
 
+struct AABB {
+	vec3 min;
+	vec3 max;
+};
+
 // Return the number a mipmaps that a square texture of the given size would have.
 constexpr auto mipmapCount(u32 size) {
 	return u32(floor(log2(size))) + 1;
 }
 
 // Rounded up division
-template<u32 N, integral T>
+template<usize N, integral T>
 constexpr auto divRoundUp(vec<N, T> _v, vec<N, T> _div) -> vec<N, T> {
 	
 	return (_v - T(1)) / _div + T(1);
 	
 }
 
-template<u32 N, integral T>
+template<usize N, integral T>
 constexpr auto divRoundUp(vec<N, T> _v, T _div) -> vec<N, T> {
 	
 	return (_v - vec<N, T>(1)) / _div + vec<N, T>(1);

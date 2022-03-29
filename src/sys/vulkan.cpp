@@ -4,7 +4,6 @@
 
 #include <cassert>
 #include "SDL_vulkan.h"
-#include "Tracy.hpp"
 #include "base/error.hpp"
 #include "base/log.hpp"
 #include "main.hpp"
@@ -49,8 +48,6 @@ VKAPI_ATTR auto VKAPI_CALL debugCallback(
 #endif //VK_VALIDATION
 
 Vulkan::Vulkan(Window& _window) {
-	
-	ZoneScoped;
 	
 	// Create instance
 	
@@ -117,9 +114,6 @@ Vulkan::Vulkan(Window& _window) {
 			.robustBufferAccess2 = VK_TRUE,
 			.robustImageAccess2 = VK_TRUE })
 #endif //VK_VALIDATION
-#ifdef TRACY_ENABLE
-		.add_required_extension("VK_EXT_calibrated_timestamps")
-#endif //TRACY_ENABLE
 		.select();
 	if (!physicalDeviceSelectorResult)
 		throw runtime_error_fmt("Failed to find a suitable GPU for Vulkan: {}",
@@ -171,8 +165,6 @@ Vulkan::Vulkan(Window& _window) {
 }
 
 Vulkan::~Vulkan() {
-	
-	ZoneScoped;
 	
 	// Await GPU idle
 	
