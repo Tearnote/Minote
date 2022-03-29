@@ -203,7 +203,7 @@ target_include_directories(cgltf INTERFACE ${cgltf_SOURCE_DIR})
 
 if(NOT TARGET robin_hood) # vuk already includes this
 	FetchContent_Declare(robin_hood
-		GIT_REPOSITORY https://github.com/martinus/robin-hood-hashing/
+		GIT_REPOSITORY https://github.com/martinus/robin-hood-hashing
 		GIT_TAG 3.11.3)
 	FetchContent_MakeAvailable(robin_hood)
 endif()
