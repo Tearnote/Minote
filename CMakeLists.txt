@@ -242,8 +242,9 @@ FetchContent_Declare(mpack
 FetchContent_MakeAvailable(mpack)
 add_library(mpack
 	${mpack_SOURCE_DIR}/src/mpack/mpack.h ${mpack_SOURCE_DIR}/src/mpack/mpack.c)
+# Force C++-style handling of inline functions. Fixes link-time error with GCC
+set_property(SOURCE ${mpack_SOURCE_DIR}/src/mpack/mpack.c PROPERTY LANGUAGE CXX)
 target_include_directories(mpack PUBLIC ${mpack_SOURCE_DIR}/src)
-target_compile_options(mpack PRIVATE -x c++) # Force C++-style handling of inline functions
 target_link_libraries(Minote PRIVATE mpack)
 
 FetchContent_Declare(meshoptimizer
