@@ -10,18 +10,17 @@
 #include "base/math.hpp"
 #include "base/log.hpp"
 #include "sys/system.hpp"
-#include "gfx/resources/texture2d.hpp"
-#include "gfx/effects/instanceList.hpp"
-#include "gfx/effects/quadbuffer.hpp"
-#include "gfx/effects/cubeFilter.hpp"
-#include "gfx/effects/visibility.hpp"
-#include "gfx/effects/tonemap.hpp"
-#include "gfx/effects/bloom.hpp"
-#include "gfx/effects/bvh.hpp"
-#include "gfx/effects/pbr.hpp"
-#include "gfx/effects/sky.hpp"
-#include "gfx/effects/hiz.hpp"
-#include "gfx/frame.hpp"
+// #include "gfx/effects/instanceList.hpp"
+// #include "gfx/effects/quadbuffer.hpp"
+// #include "gfx/effects/cubeFilter.hpp"
+// #include "gfx/effects/visibility.hpp"
+// #include "gfx/effects/tonemap.hpp"
+// #include "gfx/effects/bloom.hpp"
+// #include "gfx/effects/bvh.hpp"
+// #include "gfx/effects/pbr.hpp"
+// #include "gfx/effects/sky.hpp"
+// #include "gfx/effects/hiz.hpp"
+// #include "gfx/frame.hpp"
 #include "gfx/util.hpp"
 #include "main.hpp"
 
@@ -29,13 +28,6 @@ namespace minote::gfx {
 
 using namespace base;
 using namespace std::string_literals;
-
-static constexpr auto compileOpts = vuk::RenderGraph::CompileOptions{
-	.reorder_passes = false,
-#if VK_VALIDATION
-	// .check_pass_ordering = true, // Temporarily disabled
-#endif //VK_VALIDATION
-};
 
 Engine::~Engine() {
 	
@@ -50,38 +42,34 @@ Engine::~Engine() {
 
 void Engine::init(ModelList&& _modelList) {
 	
-	auto ifc = m_vk.context->begin();
-	auto ptc = ifc.begin();
-	m_permPool.setPtc(ptc);
-	
-	TriangleList::compile(ptc);
-	QuadBuffer::compile(ptc);
-	CubeFilter::compile(ptc);
-	Atmosphere::compile(ptc);
-	Visibility::compile(ptc);
-	Worklist::compile(ptc);
-	Tonemap::compile(ptc);
-	Bloom::compile(ptc);
-	BVH::compile(ptc);
-	PBR::compile(ptc);
-	HiZ::compile(ptc);
-	Sky::compile(ptc);
+	// TriangleList::compile(ptc);
+	// QuadBuffer::compile(ptc);
+	// CubeFilter::compile(ptc);
+	// Atmosphere::compile(ptc);
+	// Visibility::compile(ptc);
+	// Worklist::compile(ptc);
+	// Tonemap::compile(ptc);
+	// Bloom::compile(ptc);
+	// BVH::compile(ptc);
+	// PBR::compile(ptc);
+	// HiZ::compile(ptc);
+	// Sky::compile(ptc);
 	
 	m_swapchainDirty = false;
 	m_flushTemporalResources = true;
 	
-	m_imguiData = ImGui_ImplVuk_Init(ptc);
+	m_imguiData = ImGui_ImplVuk_Init(m_globalAllocator);
 	ImGui::GetIO().DisplaySize = ImVec2(
 		f32(m_vk.swapchain->extent.width),
 		f32(m_vk.swapchain->extent.height));
 	// Begin imgui frame so that first-frame calls succeed
 	ImGui::NewFrame();
 	
-	m_models = std::move(_modelList).upload(m_permPool, "models");
+	// m_models = std::move(_modelList).upload(m_permPool, "models");
 	
 	// Finalize
 	
-	ptc.wait_all_transfers();
+	// ptc.wait_all_transfers();
 	
 	L_INFO("Graphics engine initialized");
 	
@@ -92,9 +80,16 @@ void Engine::render() {
 	// Quit if repaint needed
 	if (m_swapchainDirty) return;
 	
-	// Lock the renderer
-	m_renderLock.lock();
-	defer { m_renderLock.unlock(); };
+	auto lock = std::lock_guard(m_renderLock);
+	renderFrame();
+
+}
+
+void Engine::renderFrame() {
+
+	m_vk.context->next_frame();
+	auto& frameResource = m_deviceResource.get_next_frame();
+	auto frameAllocator = vuk::Allocator(frameResource);
 	
 	// Framerate calculation
 	
@@ -127,7 +122,7 @@ void Engine::render() {
 	m_world.viewportSize = viewport;
 	m_world.nearPlane = NearPlane;
 	m_world.cameraPos = m_camera.position;
-	m_world.frameCounter = m_vk.context->frame_counter.load();
+	m_world.frameCounter = m_vk.context->get_frame_count();
 	
 	if (m_flushTemporalResources)
 		m_world.prevViewProjection = m_world.viewProjection;
@@ -148,102 +143,53 @@ void Engine::render() {
 	
 	// Prepare frame
 	
-	auto ifc = m_vk.context->begin();
-	auto ptc = ifc.begin();
-	m_permPool.setPtc(ptc);
-	m_framePool.setPtc(ptc);
-	m_swapchainPool.setPtc(ptc);
 	auto rg = vuk::RenderGraph();
-	
-	// Create main rendering destination
-	
-	auto screen = Texture2D::make(m_swapchainPool, "screen",
-		viewport, vuk::Format::eR8G8B8A8Unorm,
-		vuk::ImageUsageFlagBits::eTransferSrc |
-		vuk::ImageUsageFlagBits::eColorAttachment |
-		vuk::ImageUsageFlagBits::eStorage);
-	screen.attach(rg, vuk::eNone, vuk::eNone);
+	rg.attach_swapchain("swapchain", m_vk.swapchain);
+	rg.attach_and_clear_image("screen", { .format = vuk::Format::eR8G8B8A8Unorm, .sample_count = vuk::Samples::e1 }, vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.0f));
+	rg.inference_rule("screen", vuk::same_extent_as("swapchain"));
 	
 	// Draw frame
-	
+	/*
 	auto frame = Frame(*this, rg);
 	frame.draw(screen, m_objects, m_flushTemporalResources);
-	
+	*/
 	ImGui::Render();
-	ImGui_ImplVuk_Render(m_framePool, ptc, rg, screen.name, m_imguiData, ImGui::GetDrawData());
+	ImGui_ImplVuk_Render(frameAllocator, rg, "screen", "screen_imgui", m_imguiData, ImGui::GetDrawData(), {});
 	
 	// Blit frame to swapchain
 	
-	rg.attach_swapchain("swapchain", m_vk.swapchain, vuk::ClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 	rg.add_pass({
 		.name = "swapchain copy",
 		.resources = {
-			screen.resource(vuk::eTransferSrc),
-			"swapchain"_image(vuk::eTransferDst) },
-		.execute = [screen](vuk::CommandBuffer& cmd) {
+			"screen_imgui"_image >> vuk::eTransferRead,
+			"swapchain"_image >> vuk::eTransferWrite },
+		.execute = [](vuk::CommandBuffer& cmd) {
 			
-			cmd.blit_image(screen.name, "swapchain", vuk::ImageBlit{
+			auto src = *cmd.get_resource_image_attachment("screen_imgui");
+			auto dst = *cmd.get_resource_image_attachment("swapchain");
+			
+			cmd.blit_image("screen_imgui", "swapchain", vuk::ImageBlit{
 				.srcSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
-				.srcOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(screen.size().x()), i32(screen.size().y()), 1}},
+				.srcOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(src.extent.extent.width), i32(src.extent.extent.height), 1}},
 				.dstSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
-				.dstOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(screen.size().x()), i32(screen.size().y()), 1}} },
+				.dstOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(dst.extent.extent.width), i32(dst.extent.extent.height), 1}} },
 				vuk::Filter::eNearest);
 			
 		}});
 	
-	// Acquire swapchain image
-	
-	auto presentSem = ptc.acquire_semaphore();
-	auto swapchainImageIndex = u32(0);
-	{
-		
-		auto error = vkAcquireNextImageKHR(m_vk.device.device, m_vk.swapchain->swapchain,
-			UINT64_MAX, presentSem, VK_NULL_HANDLE, &swapchainImageIndex);
-		if (error == VK_ERROR_OUT_OF_DATE_KHR) {
-			
-			m_swapchainDirty = true;
-			return; // Requires repaint
-			
-		}
-		if (error != VK_SUCCESS && error != VK_SUBOPTIMAL_KHR) // Unknown result
-			throw runtime_error_fmt("Unable to acquire swapchain image: error {}", error);
-		
-	}
-	
 	// Build and submit the rendergraph
 	
-	auto erg = std::move(rg).link(ptc, compileOpts);
-	auto commandBuffer = erg.execute(ptc, {{m_vk.swapchain, swapchainImageIndex}});
-	
-	auto renderSem = ptc.acquire_semaphore();
-	auto waitStage = VkPipelineStageFlags(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
-	auto submitInfo = VkSubmitInfo{
-		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		.waitSemaphoreCount = 1,
-		.pWaitSemaphores = &presentSem,
-		.pWaitDstStageMask = &waitStage,
-		.commandBufferCount = 1,
-		.pCommandBuffers = &commandBuffer,
-		.signalSemaphoreCount = 1,
-		.pSignalSemaphores = &renderSem};
-	m_vk.context->submit_graphics(submitInfo, ptc.acquire_fence());
-	
-	// Present to screen
-	
-	{
+	try {
 		
-		auto presentInfo = VkPresentInfoKHR{
-			.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-			.waitSemaphoreCount = 1,
-			.pWaitSemaphores = &renderSem,
-			.swapchainCount = 1,
-			.pSwapchains = &m_vk.swapchain->swapchain,
-			.pImageIndices = &swapchainImageIndex};
-		auto result = vkQueuePresentKHR(m_vk.context->graphics_queue, &presentInfo);
-		if (result == VK_ERROR_OUT_OF_DATE_KHR)
+		execute_submit_and_present_to_one(frameAllocator, std::move(rg).link({}), m_vk.swapchain);
+
+	} catch (vuk::PresentException& e) {
+
+		auto error = e.code();
+		if (error == VK_ERROR_OUT_OF_DATE_KHR)
 			m_swapchainDirty = true; // No need to return, only cleanup is left
-		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-			throw runtime_error_fmt("Unable to present to the screen: error {}", result);
+		else if (error != VK_SUBOPTIMAL_KHR)
+			throw runtime_error_fmt("Unable to present to the screen: error {}", error);
 		
 	}
 	
@@ -251,8 +197,7 @@ void Engine::render() {
 	
 	m_flushTemporalResources = false;
 	ImGui::NewFrame();
-	m_framePool.reset();
-	m_objects.copyTransforms();
+	// m_objects.copyTransforms();
 	
 }
 
@@ -260,21 +205,19 @@ void Engine::refreshSwapchain(uvec2 _newSize) {
 	
 	auto lock = std::lock_guard(m_renderLock);
 	
-	for (auto iv: m_vk.swapchain->image_views)
-		m_vk.context->enqueue_destroy(iv);
-	
 	auto newSwapchain = m_vk.context->add_swapchain(m_vk.createSwapchain(_newSize, m_vk.swapchain->swapchain));
-	m_vk.context->enqueue_destroy(m_vk.swapchain->swapchain);
+	m_deviceResource.deallocate_image_views(m_vk.swapchain->image_views);
+	m_deviceResource.deallocate_swapchains({&m_vk.swapchain->swapchain, 1});
 	m_vk.context->remove_swapchain(m_vk.swapchain);
 	m_vk.swapchain = newSwapchain;
 	m_swapchainDirty = false;
-	
-	m_swapchainPool.reset();
 	m_flushTemporalResources = true;
 	
 	ImGui::GetIO().DisplaySize = ImVec2(
 		f32(m_vk.swapchain->extent.width),
 		f32(m_vk.swapchain->extent.height));
+	
+	renderFrame();
 	
 }
 

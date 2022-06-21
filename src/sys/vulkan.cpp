@@ -59,8 +59,8 @@ Vulkan::Vulkan(Window& _window) {
 		.set_debug_callback(debugCallback)
 		.set_debug_messenger_severity(
 			VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT |
-			VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-			VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
+			VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT/* |
+			VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT*/)
 		.set_debug_messenger_type(
 			VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
 			VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
@@ -68,7 +68,7 @@ Vulkan::Vulkan(Window& _window) {
 #endif //VK_VALIDATION
 		.set_app_name(AppTitle)
 		.set_engine_name("vuk")
-		.require_api_version(1, 2, 0)
+		.require_api_version(1, 3, 0)
 		.set_app_version(std::get<0>(AppVersion), std::get<1>(AppVersion), std::get<2>(AppVersion))
 		.build();
 	if (!instanceResult)
@@ -90,24 +90,30 @@ Vulkan::Vulkan(Window& _window) {
 #if VK_VALIDATION
 		.robustBufferAccess = VK_TRUE,
 #endif //VK_VALIDATION
-		.geometryShader = VK_TRUE,
+		.geometryShader = VK_TRUE, // gl_PrimitiveID requirement
 		.shaderStorageImageWriteWithoutFormat = VK_TRUE };
 	auto physicalDeviceVulkan11Features = VkPhysicalDeviceVulkan11Features{
 		.shaderDrawParameters = VK_TRUE };
 	auto physicalDeviceVulkan12Features = VkPhysicalDeviceVulkan12Features{
 		.samplerFilterMinmax = VK_TRUE,
-		.hostQueryReset = VK_TRUE,
-		.vulkanMemoryModel = VK_TRUE,
-		.vulkanMemoryModelDeviceScope = VK_TRUE };
+		.hostQueryReset = VK_TRUE, // vuk requirement
+		.timelineSemaphore = VK_TRUE, // vuk requirement
+		.vulkanMemoryModel = VK_TRUE, // general performance improvement
+		.vulkanMemoryModelDeviceScope = VK_TRUE }; // general performance improvement
+	auto physicalDeviceVulkan13Features = VkPhysicalDeviceVulkan13Features{
+		.computeFullSubgroups = VK_TRUE,
+		.synchronization2 = VK_TRUE // pending vuk bugfix
+		};
 	
 	auto physicalDeviceSelectorResult = vkb::PhysicalDeviceSelector(instance)
 		.set_surface(surface)
-		.set_minimum_version(1, 2)
+		.set_minimum_version(1, 3)
 		.set_required_features(physicalDeviceFeatures)
 		.set_required_features_11(physicalDeviceVulkan11Features)
 		.set_required_features_12(physicalDeviceVulkan12Features)
+		.set_required_features_13(physicalDeviceVulkan13Features)
+		.add_required_extension("VK_KHR_synchronization2")
 #if VK_VALIDATION
-		.add_required_extension("VK_KHR_shader_non_semantic_info")
 		.add_required_extension("VK_EXT_robustness2")
 		.add_required_extension_features(VkPhysicalDeviceRobustness2FeaturesEXT{
 			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT,
@@ -141,20 +147,38 @@ Vulkan::Vulkan(Window& _window) {
 	
 	auto graphicsQueue = device.get_queue(vkb::QueueType::graphics).value();
 	auto graphicsQueueFamilyIndex = device.get_queue_index(vkb::QueueType::graphics).value();
-	auto transferQueuePresent = device.get_dedicated_queue(vkb::QueueType::present).has_value();
+	
+	auto transferQueuePresent = device.get_dedicated_queue(vkb::QueueType::transfer).has_value();
 	auto transferQueue = transferQueuePresent?
-		device.get_dedicated_queue(vkb::QueueType::present).value() :
+		device.get_dedicated_queue(vkb::QueueType::transfer).value() :
 		VK_NULL_HANDLE;
 	auto transferQueueFamilyIndex = transferQueuePresent?
-		device.get_dedicated_queue_index(vkb::QueueType::present).value() :
+		device.get_dedicated_queue_index(vkb::QueueType::transfer).value() :
 		VK_QUEUE_FAMILY_IGNORED;
+	
+	auto computeQueuePresent = device.get_dedicated_queue(vkb::QueueType::compute).has_value();
+	auto computeQueue = computeQueuePresent?
+		device.get_dedicated_queue(vkb::QueueType::compute).value() :
+		VK_NULL_HANDLE;
+	auto computeQueueFamilyIndex = computeQueuePresent?
+		device.get_dedicated_queue_index(vkb::QueueType::compute).value() :
+		VK_QUEUE_FAMILY_IGNORED;
+
+	VkPhysicalDeviceProperties props;
+	vkGetPhysicalDeviceProperties(physicalDevice.physical_device, &props);
 	
 	// Create vuk context
 	
 	context.emplace(vuk::ContextCreateParameters{
-		instance.instance, device.device, physicalDevice.physical_device,
-		graphicsQueue, graphicsQueueFamilyIndex,
-		transferQueue, transferQueueFamilyIndex});
+		.instance =                    instance.instance,
+		.device =                      device.device,
+		.physical_device =             physicalDevice.physical_device,
+		.graphics_queue =              graphicsQueue,
+		.graphics_queue_family_index = graphicsQueueFamilyIndex,
+		.compute_queue =               computeQueue,
+		.compute_queue_family_index =  computeQueueFamilyIndex,
+		.transfer_queue =              transferQueue,
+		.transfer_queue_family_index = transferQueueFamilyIndex});
 	
 	// Create swapchain
 	
@@ -173,9 +197,9 @@ Vulkan::~Vulkan() {
 	// Cleanup vuk
 	
 	// This performs cleanup for all inflight frames
-	repeat(vuk::Context::FC, [this] {
-		context->begin();
-	});
+	// repeat(vuk::Context::FC, [this] {
+	// 	context->begin();
+	// });
 	context.reset();
 	
 	// Shut down Vulkan

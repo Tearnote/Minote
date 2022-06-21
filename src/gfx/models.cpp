@@ -176,7 +176,7 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 	L_DEBUG("Loaded model {}: {} materials, {} meshlets", _name, materialCount, model.meshletCount);
 	
 }
-
+/*
 auto ModelList::upload(Pool& _pool, vuk::Name _name) && -> ModelBuffer {
 	
 	auto result = ModelBuffer{
@@ -224,5 +224,5 @@ auto ModelList::upload(Pool& _pool, vuk::Name _name) && -> ModelBuffer {
 	L_DEBUG("Uploaded all models to GPU");
 	
 }
-
+*/
 }

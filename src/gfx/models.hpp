@@ -3,8 +3,6 @@
 #include <type_traits>
 #include <span>
 #include "vuk/Context.hpp"
-#include "gfx/resources/buffer.hpp"
-#include "gfx/resources/pool.hpp"
 #include "gfx/util.hpp"
 #include "base/containers/hashmap.hpp"
 #include "base/containers/string.hpp"
@@ -57,14 +55,14 @@ struct Model {
 // model within the buffer.
 struct ModelBuffer {
 	
-	Buffer<Material> materials;
-	Buffer<u32> triIndices;
-	Buffer<tools::VertIndexType> vertIndices;
-	Buffer<tools::VertexType> vertices;
-	Buffer<tools::NormalType> normals;
+	// Buffer<Material> materials;
+	// Buffer<u32> triIndices;
+	// Buffer<tools::VertIndexType> vertIndices;
+	// Buffer<tools::VertexType> vertices;
+	// Buffer<tools::NormalType> normals;
 	
-	Buffer<Meshlet> meshlets;
-	Buffer<Model> models;
+	// Buffer<Meshlet> meshlets;
+	// Buffer<Model> models;
 	
 	ivector<Meshlet> cpu_meshlets;
 	ivector<AABB> cpu_meshletAABBs;
@@ -82,7 +80,7 @@ struct ModelList {
 	
 	// Convert into a ModelBuffer. The instance must be moved in,
 	// so all CPU-side resources are freed.
-	auto upload(Pool&, vuk::Name) && -> ModelBuffer;
+	// auto upload(Pool&, vuk::Name) && -> ModelBuffer;
 	
 private:
 	

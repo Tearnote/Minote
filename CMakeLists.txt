@@ -19,7 +19,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_compile_options("-march=x86-64;-mmmx;-msse;-msse2;-msse3;-mssse3;-msse4.1;-msse4.2;-mavx;-ffast-math")
 
-add_compile_options("$<$<CONFIG:Debug,RelWithDebInfo>:-g;-Og>")
+add_compile_options("$<$<CONFIG:Debug,RelWithDebInfo>:-g>")
 
 add_compile_options("$<$<CONFIG:RelWithDebInfo,Release>:-O3;-ffunction-sections;-Wl,--gc-sections>")
 add_compile_options("$<$<CONFIG:Release>:-s>")
@@ -30,7 +30,8 @@ if(WIN32)
 endif()
 
 set(BUILD_SHARED_LIBS OFF)
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc -static-libstdc++")
+add_link_options("-static;-static-libgcc;-static-libstdc++")
+add_link_options("$<$<CONFIG:Debug,RelWithDebInfo>:-fuse-ld=lld>")
 
 # Main executable
 
@@ -55,32 +56,26 @@ add_executable(Minote
 	src/sys/window.hpp src/sys/window.cpp
 	src/sys/vulkan.hpp src/sys/vulkan.cpp
 	src/sys/system.hpp src/sys/system.cpp
-	src/gfx/resources/texture2dms.hpp src/gfx/resources/texture2dms.cpp
-	src/gfx/resources/texture3d.hpp src/gfx/resources/texture3d.cpp
-	src/gfx/resources/texture2d.hpp src/gfx/resources/texture2d.cpp
-	src/gfx/resources/cubemap.hpp src/gfx/resources/cubemap.cpp
-	src/gfx/resources/buffer.hpp src/gfx/resources/buffer.tpp
-	src/gfx/resources/pool.hpp
-	src/gfx/effects/cubeFilterCoeffs.hpp
-	src/gfx/effects/instanceList.hpp src/gfx/effects/instanceList.cpp
-	src/gfx/effects/quadBuffer.hpp src/gfx/effects/quadBuffer.cpp
-	src/gfx/effects/cubeFilter.hpp src/gfx/effects/cubeFilter.cpp
-	src/gfx/effects/visibility.hpp src/gfx/effects/visibility.cpp
-	src/gfx/effects/tonemap.hpp src/gfx/effects/tonemap.cpp
-	src/gfx/effects/bloom.hpp src/gfx/effects/bloom.cpp
-	src/gfx/effects/clear.hpp src/gfx/effects/clear.cpp
-	src/gfx/effects/bvh.hpp src/gfx/effects/bvh.cpp
-	src/gfx/effects/pbr.hpp src/gfx/effects/pbr.cpp
-	src/gfx/effects/sky.hpp src/gfx/effects/sky.cpp
-	src/gfx/effects/hiz.hpp src/gfx/effects/hiz.cpp
-	src/gfx/samplers.hpp
+	# src/gfx/effects/cubeFilterCoeffs.hpp
+	# src/gfx/effects/instanceList.hpp src/gfx/effects/instanceList.cpp
+	# src/gfx/effects/quadBuffer.hpp src/gfx/effects/quadBuffer.cpp
+	# src/gfx/effects/cubeFilter.hpp src/gfx/effects/cubeFilter.cpp
+	# src/gfx/effects/visibility.hpp src/gfx/effects/visibility.cpp
+	# src/gfx/effects/tonemap.hpp src/gfx/effects/tonemap.cpp
+	# src/gfx/effects/bloom.hpp src/gfx/effects/bloom.cpp
+	# src/gfx/effects/clear.hpp src/gfx/effects/clear.cpp
+	# src/gfx/effects/bvh.hpp src/gfx/effects/bvh.cpp
+	# src/gfx/effects/pbr.hpp src/gfx/effects/pbr.cpp
+	# src/gfx/effects/sky.hpp src/gfx/effects/sky.cpp
+	# src/gfx/effects/hiz.hpp src/gfx/effects/hiz.cpp
+	# src/gfx/samplers.hpp
 	src/gfx/objects.hpp src/gfx/objects.cpp
 	src/gfx/models.hpp src/gfx/models.cpp
 	src/gfx/engine.hpp src/gfx/engine.cpp
 	src/gfx/camera.hpp src/gfx/camera.cpp
 	src/gfx/imgui.hpp src/gfx/imgui.cpp
 	src/gfx/world.hpp src/gfx/world.cpp
-	src/gfx/frame.hpp src/gfx/frame.cpp
+	# src/gfx/frame.hpp src/gfx/frame.cpp
 	src/gfx/util.hpp
 	#src/playstate.hpp src/playstate.cpp
 	src/assets.hpp src/assets.tpp src/assets.cpp
@@ -121,7 +116,7 @@ endif()
 set(VOLK_PULL_IN_VULKAN OFF CACHE BOOL "")
 FetchContent_Declare(volk
 	GIT_REPOSITORY https://github.com/zeux/volk
-	GIT_TAG 66169849935bd85f329c513dd01c28b0a02bfe33)
+	GIT_TAG 5d7c78443c0b435556b16f63ebac8f25b5f5ba6e)
 FetchContent_MakeAvailable(volk)
 target_compile_definitions(volk PUBLIC VK_NO_PROTOTYPES)
 target_include_directories(volk PUBLIC ${Vulkan_INCLUDE_DIRS})
@@ -129,9 +124,10 @@ target_link_libraries(Minote PRIVATE volk)
 
 set(VUK_LINK_TO_LOADER OFF CACHE BOOL "")
 set(VUK_USE_SHADERC OFF CACHE BOOL "")
+set(VUK_USE_DXC OFF CACHE BOOL "")
 FetchContent_Declare(vuk
 	GIT_REPOSITORY https://github.com/martty/vuk
-	GIT_TAG 4b842a633e3ccf1fea8af887991c96c62d2b4525)
+	GIT_TAG 3ed377a5a02399fd44fa28ca4e2b3caeee8305de)
 FetchContent_MakeAvailable(vuk)
 target_compile_definitions(vuk PUBLIC VUK_CUSTOM_VULKAN_HEADER="volk.h")
 target_link_libraries(vuk PRIVATE volk)
@@ -139,7 +135,7 @@ target_link_libraries(Minote PRIVATE vuk)
 
 FetchContent_Declare(vk-bootstrap
 	GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap
-	GIT_TAG 36eff8fa4222b2225e349a44dde0402f0f4a277b)
+	GIT_TAG f847ab8566a81da84aa38afe7c19f3abf6210b98)
 FetchContent_MakeAvailable(vk-bootstrap)
 target_link_libraries(Minote PRIVATE vk-bootstrap)
 

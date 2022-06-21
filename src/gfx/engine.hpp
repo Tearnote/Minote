@@ -2,11 +2,10 @@
 
 #include <optional>
 #include <mutex>
+#include "vuk/resources/DeviceFrameResource.hpp"
 #include "base/math.hpp"
 #include "base/time.hpp"
 #include "sys/vulkan.hpp"
-#include "gfx/resources/cubemap.hpp"
-#include "gfx/resources/pool.hpp"
 #include "gfx/objects.hpp"
 #include "gfx/models.hpp"
 #include "gfx/camera.hpp"
@@ -21,23 +20,22 @@ using namespace base::literals;
 // Graphics engine. Feed with models and objects, enjoy pretty pictures.
 struct Engine {
 	
+	static constexpr auto InflightFrames = 3u;
 	static constexpr auto VerticalFov = 50_deg;
 	static constexpr auto NearPlane = 0.1_m;
 	
 	// Create the engine in uninitialized state.
 	Engine(sys::Vulkan& vk):
 		m_vk(vk),
+		m_deviceResource(*vk.context, InflightFrames),
 		m_framerate(60.0f),
 		m_lastFramerateCheck(0),
-		m_framesSinceLastCheck(0) {}
+		m_framesSinceLastCheck(0),
+		m_globalAllocator(m_deviceResource) {}
 	~Engine();
 	
 	void init(ModelList&&);
 	
-	// Render all objects to the screen. If repaint is false, the function will
-	// only render it no other thread is currently rendering. Otherwise it will
-	// block until a frame can be successfully renderered. To avoid deadlock,
-	// only ever use repaint=true on one thread.
 	void render();
 	
 	// Use this function when the surface is resized to recreate the swapchain.
@@ -63,6 +61,9 @@ private:
 	
 	sys::Vulkan& m_vk;
 	
+	vuk::DeviceSuperFrameResource m_deviceResource;
+	vuk::Allocator m_globalAllocator;
+	
 	std::mutex m_renderLock;
 	bool m_swapchainDirty;
 	bool m_flushTemporalResources;
@@ -77,9 +78,7 @@ private:
 	World m_world;
 	Camera m_camera;
 	
-	Pool m_permPool;
-	Pool m_framePool;
-	Pool m_swapchainPool;
+	void renderFrame();
 	
 	friend struct Frame;
 	

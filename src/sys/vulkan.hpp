@@ -15,7 +15,7 @@ struct Vulkan {
 	vkb::Instance instance;
 	VkSurfaceKHR surface;
 	vkb::Device device;
-	vuk::SwapChainRef swapchain;
+	vuk::SwapchainRef swapchain;
 	std::optional<vuk::Context> context;
 	
 	explicit Vulkan(Window&);

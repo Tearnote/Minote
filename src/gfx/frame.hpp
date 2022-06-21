@@ -2,9 +2,6 @@
 
 #include "vuk/RenderGraph.hpp"
 #include "vuk/Context.hpp"
-#include "gfx/resources/texture2d.hpp"
-#include "gfx/resources/buffer.hpp"
-#include "gfx/resources/pool.hpp"
 #include "gfx/objects.hpp"
 #include "gfx/engine.hpp"
 #include "gfx/models.hpp"
