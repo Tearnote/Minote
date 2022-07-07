@@ -8,7 +8,7 @@
 #include "gfx/util.hpp"
 #include "tools/modelSchema.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 constexpr auto encodeTransform(ObjectPool::Transform _in) -> InstanceList::Transform {
 	
@@ -207,7 +207,7 @@ auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _f
 				.P00 = _projection[0][0],
 				.P11 = _projection[1][1] };
 			
-			cmd.specialize_constants(0, tools::MeshletMaxTris);
+			cmd.specialize_constants(0, MeshletMaxTris);
 			cmd.specialize_constants(1, _projection[3][2]);
 			cmd.specialize_constants(2, u32Fromu16(_hiZ.size()));
 			cmd.specialize_constants(3, u32Fromu16(_hiZInnerSize));
@@ -256,7 +256,7 @@ auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _f
 			   .bind_storage_buffer(0, 8, result.indices)
 			   .bind_compute_pipeline("instanceList/genIndices");
 			
-			cmd.specialize_constants(0, tools::MeshletMaxTris);
+			cmd.specialize_constants(0, MeshletMaxTris);
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, cameraPos);
 			
 			cmd.dispatch_indirect(result.instanceCount);

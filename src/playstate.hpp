@@ -16,7 +16,7 @@ struct PlayState {
 
 	PlayState();
 	void tick(std::span<Action const> actions);
-	void draw(gfx::Engine& engine);
+	void draw(Engine& engine);
 
 private:
 

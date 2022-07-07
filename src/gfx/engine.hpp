@@ -12,7 +12,7 @@
 #include "gfx/world.hpp"
 #include "gfx/imgui.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 // Graphics engine. Feed with models and objects, enjoy pretty pictures.
 struct Engine {
@@ -22,7 +22,7 @@ struct Engine {
 	static constexpr auto NearPlane = 0.1_m;
 	
 	// Create the engine in uninitialized state.
-	Engine(sys::Vulkan& vk):
+	Engine(Vulkan& vk):
 		m_vk(vk),
 		m_deviceResource(*vk.context, InflightFrames),
 		m_framerate(60.0f),
@@ -56,7 +56,7 @@ struct Engine {
 	
 private:
 	
-	sys::Vulkan& m_vk;
+	Vulkan& m_vk;
 	
 	vuk::DeviceSuperFrameResource m_deviceResource;
 	vuk::Allocator m_globalAllocator;

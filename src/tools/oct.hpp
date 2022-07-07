@@ -4,7 +4,7 @@
 #include "util/math.hpp"
 #include "tools/modelSchema.hpp"
 
-namespace minote::tools {
+namespace minote {
 
 auto octEncode(vec3 _norm) -> u32 {
 	

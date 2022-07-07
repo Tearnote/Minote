@@ -1,6 +1,6 @@
 #include "gfx/camera.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 auto Camera::direction() const -> vec3 {
 	

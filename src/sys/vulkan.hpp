@@ -7,7 +7,7 @@
 #include "util/math.hpp"
 #include "sys/window.hpp"
 
-namespace minote::sys {
+namespace minote {
 
 // Initialization and cleanup of the basic Vulkan objects.
 struct Vulkan {

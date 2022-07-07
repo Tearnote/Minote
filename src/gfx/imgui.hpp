@@ -5,7 +5,7 @@
 #include "vuk/RenderGraph.hpp"
 #include "util/vector.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 // GPU resources used by Imgui
 struct ImguiData {

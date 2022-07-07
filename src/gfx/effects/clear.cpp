@@ -2,7 +2,7 @@
 
 #include "gfx/util.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 void Clear::apply(Frame& _frame, Texture2D _target, vuk::ClearColor _color) {
 	

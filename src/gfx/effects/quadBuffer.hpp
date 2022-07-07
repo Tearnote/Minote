@@ -8,7 +8,7 @@
 #include "gfx/effects/instanceList.hpp"
 #include "gfx/frame.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 struct QuadBuffer {
 	

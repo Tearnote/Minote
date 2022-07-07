@@ -7,7 +7,7 @@
 #include "gfx/resources/pool.hpp"
 #include "gfx/frame.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 struct HiZ {
 	

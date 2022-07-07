@@ -11,7 +11,7 @@
 #include "util/math.hpp"
 #include "util/log.hpp"
 
-namespace minote::sys {
+namespace minote {
 /*
 void Window::framebufferResizeCallback(GLFWwindow* _handle, int _width, int _height) {
 	

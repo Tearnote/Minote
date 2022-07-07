@@ -9,7 +9,7 @@
 #include "util/types.hpp"
 #include "util/math.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 struct Frame {
 	

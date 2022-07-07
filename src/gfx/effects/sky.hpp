@@ -12,7 +12,7 @@
 #include "gfx/camera.hpp"
 #include "gfx/frame.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 // Precalculated representation of a planet's atmosphere. Once created, it can
 // be used repeatedly to sample the sky at any elevation and sun position.

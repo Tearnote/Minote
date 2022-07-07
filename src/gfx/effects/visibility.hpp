@@ -12,7 +12,7 @@
 #include "gfx/frame.hpp"
 #include "gfx/util.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 struct Visibility {
 	

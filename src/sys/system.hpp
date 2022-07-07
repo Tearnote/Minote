@@ -5,7 +5,7 @@
 #include "util/string.hpp"
 #include "util/time.hpp"
 
-namespace minote::sys {
+namespace minote {
 
 struct System {
 	

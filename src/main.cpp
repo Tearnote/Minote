@@ -28,7 +28,7 @@ static auto windowResize(void* _engine, SDL_Event* _e) -> int {
 	// Recreate swapchain and redraw
 	auto newSize = uvec2{u32(_e->window.data1), u32(_e->window.data2)};
 	if (newSize.x() == 0 || newSize.y() == 0) return 0; // Minimized
-	auto& engine = *static_cast<gfx::Engine*>(_engine);
+	auto& engine = *static_cast<Engine*>(_engine);
 	engine.refreshSwapchain(newSize);
 	
 	L_INFO("Window resized to {}x{}", newSize.x(), newSize.y());
@@ -41,16 +41,16 @@ auto main(int, char*[]) -> int try {
 	
 	// Initialize logging
 #if SPAWN_CONSOLE
-	sys::initConsole();
+	initConsole();
 #endif
 	Log::init(Log_p, LOG_LEVEL);
 	L_INFO("Starting up {} {}.{}.{}", AppTitle, AppVersion[0], AppVersion[1], AppVersion[2]);
 	
 	// Initialize systems
-	auto system = sys::System();
-	auto window = sys::Window(system, AppTitle, false, {960, 504});
-	auto vulkan = sys::Vulkan(window);
-	auto engine = gfx::Engine(vulkan);
+	auto system = System();
+	auto window = Window(system, AppTitle, false, {960, 504});
+	auto vulkan = Vulkan(window);
+	auto engine = Engine(vulkan);
 	auto mapper = Mapper();
 	
 	// Start the game thread
@@ -64,7 +64,7 @@ auto main(int, char*[]) -> int try {
 	defer { SDL_DelEventWatch(&windowResize, &engine); };
 	
 	// Input thread loop
-	while (!sys::System::isQuitting()) {
+	while (!System::isQuitting()) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Forfeit thread timeslice
 		system.poll();
 	}

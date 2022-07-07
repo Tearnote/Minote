@@ -1,6 +1,6 @@
 #include "gfx/effects/bvh.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 void BVH::compile(vuk::PerThreadContext& _ptc) {
 	

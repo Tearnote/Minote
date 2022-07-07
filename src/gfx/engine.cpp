@@ -24,7 +24,7 @@
 #include "gfx/util.hpp"
 #include "main.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 using namespace std::string_literals;
 
@@ -93,7 +93,7 @@ void Engine::renderFrame() {
 	// Framerate calculation
 	
 	m_framesSinceLastCheck += 1;
-	auto currentTime = sys::System::getTime();
+	auto currentTime = System::getTime();
 	auto timeElapsed = currentTime - m_lastFramerateCheck;
 	if (timeElapsed >= 1_s) {
 		

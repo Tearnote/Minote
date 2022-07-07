@@ -5,7 +5,7 @@
 #include "util/types.hpp"
 #include "util/math.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 // Struct of global data, commonly used by shaders.
 struct World {

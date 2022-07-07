@@ -32,37 +32,37 @@ void PlayState::tick(std::span<Action const> actions) {
 	updateDeadline();
 }
 
-void PlayState::draw(gfx::Engine& engine) {
+void PlayState::draw(Engine& engine) {
 	// Scene
 	auto stackHeight = grid.stackHeight();
 	auto baseline = f32(DeadlineDepth - stackHeight);
 
 	engine.enqueueDraw("scene_top"_id, "transparent"_id, std::array{
-		gfx::Instance{
+		Instance{
 			.transform = make_translate({0.0f, DeadlineDepth, 0.0f}) * make_scale({1.0f, 5.1f, 1.0f}),
 		},
-	}, gfx::Material::Flat);
+	}, Material::Flat);
 	engine.enqueueDraw("scene_body"_id, "transparent"_id, std::array{
-		gfx::Instance{
+		Instance{
 			.transform = make_translate({0.0f, baseline - 0.1f, 0.0f}) * make_scale({1.0f, 0.1f + stackHeight, 1.0f}),
 			.tint = {1.2f, 1.2f, 1.2f, 1.0f},
 		},
-	}, gfx::Material::Flat);
+	}, Material::Flat);
 	engine.enqueueDraw("scene_guide"_id, "transparent"_id, std::array{
-		gfx::Instance{
+		Instance{
 			.transform = make_translate({0.0f, baseline - 0.1f, 0.0f}) * make_scale({1.0f, 5.1f + stackHeight, 1.0f}),
 			.tint = {1.0f, 1.0f, 1.0f, 0.02f},
 		},
-	}, gfx::Material::Flat);
+	}, Material::Flat);
 	engine.enqueueDraw("scene_base"_id, "transparent"_id, std::array{
-		gfx::Instance{
+		Instance{
 			.transform = make_translate({0.0f, baseline, 0.0f}),
 			.tint = {1.2f, 1.2f, 1.2f, 1.0f},
 		},
-	}, gfx::Material::Flat);
+	}, Material::Flat);
 
 	// Grid
-	auto blockInstances = svector<gfx::Instance, 512>();
+	auto blockInstances = svector<Instance, 512>();
 	for (auto x: nrange(0_zu, grid.Width))
 		for (auto y: nrange(0_zu, grid.Height)) {
 			auto minoOpt = grid.get({x, y});
@@ -74,7 +74,7 @@ void PlayState::draw(gfx::Engine& engine) {
 				baseline + y,
 				-1.0f,
 			});
-			blockInstances.emplace_back(gfx::Instance{
+			blockInstances.emplace_back(Instance{
 				.transform = translation,
 				.tint = minoColor(mino),
 			});
@@ -94,7 +94,7 @@ void PlayState::draw(gfx::Engine& engine) {
 
 		for (auto block: minoPiece(p1.pieceType)) {
 			auto blockTransform = make_translate({block.x, block.y, 0.0f});
-			blockInstances.emplace_back(gfx::Instance{
+			blockInstances.emplace_back(Instance{
 				.transform = pieceTransform * blockTransform,
 				.tint = minoColor(p1.pieceType),
 			});
@@ -110,7 +110,7 @@ void PlayState::draw(gfx::Engine& engine) {
 
 	for (auto block: minoPiece(p1.preview)) {
 		auto blockTransform = make_translate({block.x, block.y, 0.0f});
-		blockInstances.emplace_back(gfx::Instance{
+		blockInstances.emplace_back(Instance{
 			.transform = previewTransform * blockTransform,
 			.tint = minoColor(p1.preview),
 		});
@@ -118,7 +118,7 @@ void PlayState::draw(gfx::Engine& engine) {
 
 	// Submit
 	engine.enqueueDraw("block"_id, "opaque"_id, blockInstances,
-		gfx::Material::Phong, gfx::MaterialData{.phong = {
+		Material::Phong, MaterialData{.phong = {
 			.ambient = 0.2f,
 			.diffuse = 0.9f,
 			.specular = 0.4f,

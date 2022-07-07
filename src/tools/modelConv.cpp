@@ -13,7 +13,6 @@
 #include "tools/oct.hpp"
 
 using namespace minote;
-using namespace tools;
 
 struct Worknode {
 	cgltf_node* node;

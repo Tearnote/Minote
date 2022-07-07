@@ -1,6 +1,6 @@
 #include "gfx/world.hpp"
 
-namespace minote::gfx {
+namespace minote {
 /*
 auto World::upload(Pool& _pool, vuk::Name _name) const -> Buffer<World> {
 	

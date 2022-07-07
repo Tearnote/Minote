@@ -8,7 +8,7 @@
 #include "util/log.hpp"
 #include "main.hpp"
 
-namespace minote::sys {
+namespace minote {
 
 #if VK_VALIDATION
 VKAPI_ATTR auto VKAPI_CALL debugCallback(

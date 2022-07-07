@@ -9,7 +9,7 @@
 // Forward declaration
 struct SDL_Window;
 
-namespace minote::sys {
+namespace minote {
 
 struct Window {
 	

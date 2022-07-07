@@ -8,7 +8,7 @@
 #include "gfx/models.hpp"
 #include "gfx/util.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 auto Atmosphere::Params::earth() -> Params {
 	

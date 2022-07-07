@@ -5,7 +5,7 @@
 #include "gfx/resources/pool.hpp"
 #include "gfx/frame.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 // Bloom effect. Blends an image with a blurred version of itself.
 // This implementation has no thresholding to better mimic naked-eye glare,

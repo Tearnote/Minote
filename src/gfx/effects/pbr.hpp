@@ -10,7 +10,7 @@
 #include "gfx/frame.hpp"
 #include "util/math.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 struct PBR {
 	

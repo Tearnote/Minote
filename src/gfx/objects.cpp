@@ -2,7 +2,7 @@
 
 #include "util/util.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 auto ObjectPool::create() -> ObjectID {
 	

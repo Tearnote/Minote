@@ -3,7 +3,7 @@
 #include "gfx/resources/texture2d.hpp"
 #include "gfx/frame.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 struct Clear {
 	

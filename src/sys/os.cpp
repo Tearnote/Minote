@@ -14,7 +14,7 @@
 #include <io.h>
 #endif //_WIN32
 
-namespace minote::sys {
+namespace minote {
 
 void initConsole() {
 	

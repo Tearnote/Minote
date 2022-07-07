@@ -13,7 +13,7 @@
 #include "gfx/effects/hiz.hpp"
 #include "util/math.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 Frame::Frame(Engine& _engine, vuk::RenderGraph& _rg):
 	ptc(_engine.m_framePool.ptc()),

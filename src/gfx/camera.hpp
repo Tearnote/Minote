@@ -2,7 +2,7 @@
 
 #include "util/math.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 // A user-controllable camera. Easy to manipulate with intuitive functions,
 // and can be converted into a world->view transform matrix.

@@ -18,7 +18,7 @@
 #include "util/time.hpp"
 #include "util/log.hpp"
 
-namespace minote::sys {
+namespace minote {
 
 System::System() {
 	

@@ -6,7 +6,7 @@
 #include "gfx/samplers.hpp"
 #include "gfx/util.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 void Visibility::compile(vuk::PerThreadContext& _ptc) {
 	

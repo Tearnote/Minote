@@ -11,7 +11,7 @@
 #include "util/log.hpp"
 #include "gfx/samplers.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 auto ImGui_ImplVuk_Init(vuk::Allocator& _allocator) -> ImguiData {
 	

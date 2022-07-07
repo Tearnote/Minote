@@ -12,7 +12,7 @@
 #include "util/id.hpp"
 #include "tools/modelSchema.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 struct Material {
 	
@@ -55,9 +55,9 @@ struct ModelBuffer {
 	
 	// Buffer<Material> materials;
 	// Buffer<u32> triIndices;
-	// Buffer<tools::VertIndexType> vertIndices;
-	// Buffer<tools::VertexType> vertices;
-	// Buffer<tools::NormalType> normals;
+	// Buffer<VertIndexType> vertIndices;
+	// Buffer<VertexType> vertices;
+	// Buffer<NormalType> normals;
 	
 	// Buffer<Meshlet> meshlets;
 	// Buffer<Model> models;
@@ -84,9 +84,9 @@ private:
 	
 	pvector<Material> m_materials;
 	pvector<u32> m_triIndices;
-	pvector<tools::VertIndexType> m_vertIndices;
-	pvector<tools::VertexType> m_vertices;
-	pvector<tools::NormalType> m_normals;
+	pvector<VertIndexType> m_vertIndices;
+	pvector<VertexType> m_vertices;
+	pvector<NormalType> m_normals;
 	
 	ivector<Meshlet> m_meshlets; // Meshlet descriptors, for access to index buffers
 	ivector<AABB> m_meshletAABBs;

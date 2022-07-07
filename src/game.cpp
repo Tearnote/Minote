@@ -27,7 +27,7 @@ void game(GameParams const& _params) try {
 	
 	// Load assets
 	
-	auto modelList = gfx::ModelList();
+	auto modelList = ModelList();
 	auto assets = Assets(Assets_p);
 	assets.loadModels([&modelList](auto name, auto data) {
 		
@@ -39,7 +39,7 @@ void game(GameParams const& _params) try {
 	
 	engine.init(std::move(modelList));
 	
-	engine.camera() = gfx::Camera{
+	engine.camera() = Camera{
 		.position = {8.57_m, -16.07_m, 69.20_m},
 		.yaw = 2.41412449f,
 		.pitch = 0.113862038f,
@@ -58,7 +58,7 @@ void game(GameParams const& _params) try {
 	// Create test scene
 	
 	// Keep track of the spinning cubes so that we can rotate them each frame
-	auto dynamicObjects = ivector<gfx::ObjectID>();
+	auto dynamicObjects = ivector<ObjectID>();
 	defer {
 		for (auto id: dynamicObjects)
 			engine.objects().destroy(id);
@@ -164,9 +164,9 @@ void game(GameParams const& _params) try {
 	
 	// Main loop
 	
-	auto nextUpdate = sys::System::getTime();
+	auto nextUpdate = System::getTime();
 	
-	while (!sys::System::isQuitting()) {
+	while (!System::isQuitting()) {
 		
 		auto framerateScale = min(144.0f / engine.fps(), 8.0f);
 		engine.camera().moveSpeed = 1_m / 16.0f * framerateScale;
@@ -175,11 +175,11 @@ void game(GameParams const& _params) try {
 		
 		ImGui_ImplSDL2_NewFrame(window.handle());
 		
-		while (nextUpdate <= sys::System::getTime()) {
+		while (nextUpdate <= System::getTime()) {
 			
 			// Iterate over all events
 			
-			sys::System::forEachEvent([&] (const sys::System::Event& e) -> bool {
+			System::forEachEvent([&] (const System::Event& e) -> bool {
 				
 				// Don't handle events from the future
 				if (milliseconds(e.common.timestamp) > nextUpdate) return false;
@@ -209,7 +209,7 @@ void game(GameParams const& _params) try {
 					
 					// Quit event
 					if (action->type == Action::Type::Back)
-						sys::System::postQuitEvent();
+						System::postQuitEvent();
 					
 					// Placeholder camera input
 					auto state = (action->state == Mapper::Action::State::Pressed);
@@ -254,7 +254,7 @@ void game(GameParams const& _params) try {
 		
 		{
 			
-			auto rotateAnim = quat::angleAxis(radians(ratio(sys::System::getTime(), 20_ms)), {0.0f, 0.0f, 1.0f});
+			auto rotateAnim = quat::angleAxis(radians(ratio(System::getTime(), 20_ms)), {0.0f, 0.0f, 1.0f});
 			for (auto& obj: dynamicObjects)
 				engine.objects().get(obj).transform.rotation = rotateAnim;
 			
@@ -268,7 +268,7 @@ void game(GameParams const& _params) try {
 	
 	L_CRIT("Unhandled exception on game thread: {}", e.what());
 	L_CRIT("Cannot recover, shutting down. Please report this error to the developer");
-	sys::System::postQuitEvent();
+	System::postQuitEvent();
 	
 }
 

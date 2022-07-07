@@ -7,7 +7,7 @@
 #include "gfx/objects.hpp"
 #include "gfx/frame.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 struct InstanceList {
 	

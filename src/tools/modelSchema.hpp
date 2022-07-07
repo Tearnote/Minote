@@ -2,7 +2,7 @@
 
 #include "util/math.hpp"
 
-namespace minote::tools {
+namespace minote {
 
 using TriIndexType = u8;
 using VertIndexType = u32;

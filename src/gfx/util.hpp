@@ -8,7 +8,7 @@
 #include "util/types.hpp"
 #include "util/math.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 struct AABB {
 	vec3 min;

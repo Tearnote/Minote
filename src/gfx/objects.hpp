@@ -6,7 +6,7 @@
 #include "util/math.hpp"
 #include "util/id.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 // Pool of renderable objects.
 struct ObjectPool {

@@ -8,8 +8,8 @@ namespace minote {
 
 struct GameParams {
 	
-	sys::Window& window;
-	gfx::Engine& engine;
+	Window& window;
+	Engine& engine;
 	Mapper& mapper;
 	
 };

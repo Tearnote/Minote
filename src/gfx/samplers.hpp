@@ -2,7 +2,7 @@
 
 #include "vuk/Image.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 // Commonly used sampler presets.
 

@@ -9,9 +9,7 @@
 #include "util/util.hpp"
 #include "util/log.hpp"
 
-namespace minote::gfx {
-
-using namespace tools;
+namespace minote {
 
 void ModelList::addModel(string_view _name, std::span<char const> _model) {
 	

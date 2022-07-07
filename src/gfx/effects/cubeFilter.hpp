@@ -4,7 +4,7 @@
 #include "gfx/resources/cubemap.hpp"
 #include "gfx/frame.hpp"
 
-namespace minote::gfx {
+namespace minote {
 
 // Performs filtering of a cubemap, generating increasingly blurred versions
 // of each mipmap. Useful for IBL with a range of roughness values.
