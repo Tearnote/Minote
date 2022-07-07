@@ -1,32 +1,33 @@
 #pragma once
 
-#include <concepts>
-#include <span>
-#include "sqlite3.h"
+#include "util/concepts.hpp"
 #include "util/string.hpp"
+#include "util/span.hpp"
+
+// Forward declaration
+struct sqlite3;
 
 namespace minote {
 
 struct Assets {
 	
 	// Open the sqlite database containing game assets. File remains open
-	// until this object is destroyed.
+	// until this object is destroyed
 	explicit Assets(string_view path);
 	~Assets();
 	
-	// Iterate over all rows in the models table, and call the provided function
-	// on each model's data.
+	// Iterate over the models table, and call the provided function on each row
+	// Function arguments:
+	// - name of the model
+	// - raw bytestream as char array
 	template<typename F>
-	requires std::invocable<F, string_view, std::span<char const>>
+	requires invocable<F, string_view, span<char const>>
 	void loadModels(F func);
 	
-	// Not moveable, not copyable
 	Assets(Assets const&) = delete;
 	auto operator=(Assets const&) -> Assets& = delete;
 	
 private:
-	
-	static constexpr auto Models_n = "models";
 	
 	sqlite3* m_db = nullptr;
 	string m_path;

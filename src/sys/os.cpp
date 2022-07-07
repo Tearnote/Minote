@@ -16,7 +16,7 @@
 
 namespace minote {
 
-void initConsole() {
+void OS::initConsole() {
 	
 #ifdef _WIN32 // Only Windows is supported right now
 	

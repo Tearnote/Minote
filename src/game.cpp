@@ -208,20 +208,20 @@ void game(GameParams const& _params) try {
 				if (auto action = mapper.convert(e)) {
 					
 					// Quit event
-					if (action->type == Action::Type::Back)
+					if (action->type == Mapper::Action::Type::Back)
 						System::postQuitEvent();
 					
 					// Placeholder camera input
 					auto state = (action->state == Mapper::Action::State::Pressed);
-					if (action->type == Action::Type::Drop)
+					if (action->type == Mapper::Action::Type::Drop)
 						camUp = state;
-					if (action->type == Action::Type::Lock)
+					if (action->type == Mapper::Action::Type::Lock)
 						camDown = state;
-					if (action->type == Action::Type::Left)
+					if (action->type == Mapper::Action::Type::Left)
 						camLeft = state;
-					if (action->type == Action::Type::Right)
+					if (action->type == Mapper::Action::Type::Right)
 						camRight = state;
-					if (action->type == Action::Type::Skip)
+					if (action->type == Mapper::Action::Type::Skip)
 						camFloat = state;
 					
 				}

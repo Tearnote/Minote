@@ -37,6 +37,7 @@ add_link_options("$<$<CONFIG:Debug,RelWithDebInfo>:-fuse-ld=lld>")
 
 add_executable(Minote
 	src/util/concepts.hpp
+	src/util/optional.hpp
 	src/util/hashmap.hpp
 	src/util/vector.hpp
 	src/util/string.hpp
@@ -46,6 +47,7 @@ add_executable(Minote
 	src/util/tween.hpp
 	src/util/types.hpp
 	src/util/math.hpp src/util/math.tpp
+	src/util/span.hpp
 	src/util/util.hpp
 	src/util/time.hpp
 	src/util/ease.hpp
@@ -87,6 +89,7 @@ add_executable(Minote
 	src/mino.hpp src/mino.tpp)
 target_precompile_headers(Minote PRIVATE
 	src/util/concepts.hpp
+	src/util/optional.hpp
 	src/util/hashmap.hpp
 	src/util/vector.hpp
 	src/util/string.hpp
@@ -94,6 +97,7 @@ target_precompile_headers(Minote PRIVATE
 	src/util/array.hpp
 	src/util/error.hpp
 	src/util/types.hpp
+	src/util/span.hpp
 	src/util/math.hpp
 	src/util/util.hpp
 	src/util/time.hpp
@@ -329,13 +333,15 @@ add_custom_command(
 	COMMAND sqlite-shell ${ASSET_OUTPUT} "VACUUM"
 	VERBATIM)
 
+set(MODELS_TABLE "models")
+target_compile_definitions(Minote PRIVATE MODELS_TABLE="${MODELS_TABLE}")
 set(MODELS
 	models/block.glb
 	models/sphere.glb
 	models/testscene.glb)
 add_custom_command(
 	OUTPUT ${ASSET_OUTPUT} APPEND
-	COMMAND sqlite-shell ${ASSET_OUTPUT} "CREATE TABLE IF NOT EXISTS models(name TEXT UNIQUE, data BLOB)"
+	COMMAND sqlite-shell ${ASSET_OUTPUT} "CREATE TABLE IF NOT EXISTS ${MODELS_TABLE}(name TEXT UNIQUE, data BLOB)"
 	VERBATIM)
 foreach(MODEL_PATH ${MODELS})
 	get_filename_component(MODEL_NAME ${MODEL_PATH} NAME_WLE)
@@ -347,7 +353,7 @@ foreach(MODEL_PATH ${MODELS})
 		VERBATIM COMMAND_EXPAND_LISTS)
 	add_custom_command(
 		OUTPUT ${ASSET_OUTPUT} APPEND
-		COMMAND sqlite-shell ${ASSET_OUTPUT} "INSERT OR REPLACE INTO models(name, data) VALUES('${MODEL_NAME}', readfile('${PROJECT_BINARY_DIR}/$<CONFIG>/models/${MODEL_NAME}.model'))"
+		COMMAND sqlite-shell ${ASSET_OUTPUT} "INSERT OR REPLACE INTO ${MODELS_TABLE}(name, data) VALUES('${MODEL_NAME}', readfile('${PROJECT_BINARY_DIR}/$<CONFIG>/models/${MODEL_NAME}.model'))"
 		DEPENDS ${PROJECT_BINARY_DIR}/$<CONFIG>/models/${MODEL_NAME}.model
 		DEPENDS sqlite-shell
 		VERBATIM COMMAND_EXPAND_LISTS)

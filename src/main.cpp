@@ -3,9 +3,10 @@
 #include "config.hpp"
 
 #include <exception>
-#include <utility>
+#include <cstdlib>
 #include <thread>
 #include <chrono>
+#include "SDL_events.h"
 #include "util/types.hpp"
 #include "util/math.hpp"
 #include "util/log.hpp"
@@ -41,7 +42,7 @@ auto main(int, char*[]) -> int try {
 	
 	// Initialize logging
 #if SPAWN_CONSOLE
-	initConsole();
+	OS::initConsole();
 #endif
 	Log::init(Log_p, LOG_LEVEL);
 	L_INFO("Starting up {} {}.{}.{}", AppTitle, AppVersion[0], AppVersion[1], AppVersion[2]);
@@ -57,7 +58,8 @@ auto main(int, char*[]) -> int try {
 	auto gameThread = std::jthread(game, GameParams{
 		.window = window,
 		.engine = engine,
-		.mapper = mapper});
+		.mapper = mapper,
+	});
 	
 	// Add window resize handler
 	SDL_AddEventWatch(&windowResize, &engine);
