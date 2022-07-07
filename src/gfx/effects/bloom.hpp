@@ -7,8 +7,6 @@
 
 namespace minote::gfx {
 
-using namespace base;
-
 // Bloom effect. Blends an image with a blurred version of itself.
 // This implementation has no thresholding to better mimic naked-eye glare,
 // and uses a low-pass filter to avoid fireflies that are common in HDR source

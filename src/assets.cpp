@@ -1,11 +1,9 @@
 #include "assets.hpp"
 
-#include "base/error.hpp"
-#include "base/log.hpp"
+#include "util/error.hpp"
+#include "util/log.hpp"
 
 namespace minote {
-
-using namespace base;
 
 Assets::Assets(string_view _path) {
 	

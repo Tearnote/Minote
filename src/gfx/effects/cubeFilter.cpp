@@ -2,16 +2,14 @@
 
 #include <cassert>
 #include "vuk/CommandBuffer.hpp"
-#include "base/types.hpp"
-#include "base/math.hpp"
-#include "base/util.hpp"
+#include "util/types.hpp"
+#include "util/math.hpp"
+#include "util/util.hpp"
 #include "gfx/effects/cubeFilterCoeffs.hpp"
 #include "gfx/samplers.hpp"
 #include "gfx/util.hpp"
 
 namespace minote::gfx {
-
-using namespace base;
 
 void CubeFilter::compile(vuk::PerThreadContext& _ptc) {
 	

@@ -2,12 +2,10 @@
 
 #include "vuk/Context.hpp"
 #include "vuk/Name.hpp"
-#include "base/types.hpp"
-#include "base/math.hpp"
+#include "util/types.hpp"
+#include "util/math.hpp"
 
 namespace minote::gfx {
-
-using namespace base;
 
 // Struct of global data, commonly used by shaders.
 struct World {

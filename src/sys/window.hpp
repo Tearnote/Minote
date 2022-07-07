@@ -1,17 +1,15 @@
 #pragma once
 
 #include <atomic>
-#include "base/containers/string.hpp"
-#include "base/types.hpp"
-#include "base/math.hpp"
+#include "util/string.hpp"
+#include "util/types.hpp"
+#include "util/math.hpp"
 #include "sys/system.hpp"
 
 // Forward declaration
 struct SDL_Window;
 
 namespace minote::sys {
-
-using namespace base;
 
 struct Window {
 	

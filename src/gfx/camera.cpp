@@ -2,8 +2,6 @@
 
 namespace minote::gfx {
 
-using namespace base::literals;
-
 auto Camera::direction() const -> vec3 {
 	
 	return vec3{

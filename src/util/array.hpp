@@ -1,9 +1,9 @@
 #pragma once
 
 #include <array>
-#include "base/types.hpp"
+#include "util/types.hpp"
 
-namespace minote::base {
+namespace minote {
 
 // Static array. Stored entirely on stack, with size provided at runtime.
 // Elements are not initialized if value-initializable.

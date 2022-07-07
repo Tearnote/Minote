@@ -1,17 +1,14 @@
 #include "gfx/effects/sky.hpp"
 
 #include "vuk/CommandBuffer.hpp"
-#include "base/containers/array.hpp"
-#include "base/types.hpp"
-#include "base/util.hpp"
+#include "util/array.hpp"
+#include "util/types.hpp"
+#include "util/util.hpp"
 #include "gfx/samplers.hpp"
 #include "gfx/models.hpp"
 #include "gfx/util.hpp"
 
 namespace minote::gfx {
-
-using namespace base;
-using namespace base::literals;
 
 auto Atmosphere::Params::earth() -> Params {
 	

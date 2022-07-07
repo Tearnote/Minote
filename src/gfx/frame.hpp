@@ -6,12 +6,10 @@
 #include "gfx/engine.hpp"
 #include "gfx/models.hpp"
 #include "gfx/world.hpp"
-#include "base/types.hpp"
-#include "base/math.hpp"
+#include "util/types.hpp"
+#include "util/math.hpp"
 
 namespace minote::gfx {
-
-using namespace base;
 
 struct Frame {
 	

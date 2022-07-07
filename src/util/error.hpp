@@ -1,12 +1,12 @@
 #pragma once
 
-#include <string_view> // base/containers/string.hpp would cause a circular dependency
+#include <string_view> // util/string.hpp would cause a circular dependency
 #include <functional>
 #include <stdexcept>
 #include <utility>
-#include "base/format.hpp"
+#include "util/format.hpp"
 
-namespace minote::base {
+namespace minote {
 
 using std::runtime_error;
 using std::logic_error;

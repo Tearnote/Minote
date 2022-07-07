@@ -2,12 +2,10 @@
 
 #include <concepts>
 #include "SDL_events.h"
-#include "base/containers/string.hpp"
-#include "base/time.hpp"
+#include "util/string.hpp"
+#include "util/time.hpp"
 
 namespace minote::sys {
-
-using namespace base;
 
 struct System {
 	

@@ -2,7 +2,7 @@
 
 #include <array>
 #include <span>
-#include "base/rng.hpp"
+#include "util/rng.hpp"
 #include "gfx/engine.hpp"
 #include "mapper.hpp"
 #include "mino.hpp"

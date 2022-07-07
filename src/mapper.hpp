@@ -5,8 +5,6 @@
 
 namespace minote {
 
-using namespace base;
-
 // Converter of events from user input devices into logical game events.
 struct Mapper {
 	

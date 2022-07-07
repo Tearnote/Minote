@@ -4,7 +4,7 @@
 #include "volk.h"
 #include "VkBootstrap.h"
 #include "vuk/Context.hpp"
-#include "base/math.hpp"
+#include "util/math.hpp"
 #include "sys/window.hpp"
 
 namespace minote::sys {

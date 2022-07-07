@@ -1,12 +1,10 @@
 #pragma once
 
-#include "base/util.hpp"
+#include "util/array.hpp"
 
 namespace minote {
 
-using namespace base;
-
 inline constexpr auto AppTitle = "Minote";
-inline constexpr auto AppVersion = Version(0, 0, 0);
+inline constexpr auto AppVersion = array{0u, 0u, 0u};
 
 }

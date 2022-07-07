@@ -3,11 +3,9 @@
 #include <concepts>
 #include <span>
 #include "sqlite3.h"
-#include "base/containers/string.hpp"
+#include "util/string.hpp"
 
 namespace minote {
-
-using namespace base;
 
 struct Assets {
 	

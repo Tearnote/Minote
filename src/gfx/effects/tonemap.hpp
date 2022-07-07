@@ -6,8 +6,6 @@
 
 namespace minote::gfx {
 
-using namespace base;
-
 struct Tonemap {
 	
 	// Build the shader.

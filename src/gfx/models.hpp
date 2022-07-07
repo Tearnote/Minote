@@ -4,17 +4,15 @@
 #include <span>
 #include "vuk/Context.hpp"
 #include "gfx/util.hpp"
-#include "base/containers/hashmap.hpp"
-#include "base/containers/string.hpp"
-#include "base/containers/vector.hpp"
-#include "base/types.hpp"
-#include "base/math.hpp"
-#include "base/id.hpp"
+#include "util/hashmap.hpp"
+#include "util/string.hpp"
+#include "util/vector.hpp"
+#include "util/types.hpp"
+#include "util/math.hpp"
+#include "util/id.hpp"
 #include "tools/modelSchema.hpp"
 
 namespace minote::gfx {
-
-using namespace base;
 
 struct Material {
 	

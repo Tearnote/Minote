@@ -1,14 +1,12 @@
 #pragma once
 
 #include <type_traits>
-#include "base/containers/vector.hpp"
-#include "base/types.hpp"
-#include "base/math.hpp"
-#include "base/id.hpp"
+#include "util/vector.hpp"
+#include "util/types.hpp"
+#include "util/math.hpp"
+#include "util/id.hpp"
 
 namespace minote::gfx {
-
-using namespace base;
 
 // Pool of renderable objects.
 struct ObjectPool {

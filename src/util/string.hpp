@@ -3,7 +3,7 @@
 #include <string_view>
 #include <string>
 
-namespace minote::base {
+namespace minote {
 
 // Standard string, stored on stack by default and relocated to heap if large.
 using std::string;
@@ -14,11 +14,7 @@ using std::string_view;
 
 using std::to_string;
 
-namespace literals {
-
 // Import sv literal
 using namespace std::string_view_literals;
-
-}
 
 }

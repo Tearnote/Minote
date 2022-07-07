@@ -1,8 +1,6 @@
-#include "base/util.hpp"
+#include "util/util.hpp"
 
 namespace minote {
-
-using namespace base;
 
 template<size_t W, size_t H>
 auto Grid<W, H>::get(ivec2 position) const -> std::optional<Mino4> {

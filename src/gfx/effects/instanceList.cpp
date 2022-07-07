@@ -2,15 +2,13 @@
 
 #include <cassert>
 #include <span>
-#include "base/containers/vector.hpp"
-#include "base/util.hpp"
+#include "util/vector.hpp"
+#include "util/util.hpp"
 #include "gfx/samplers.hpp"
 #include "gfx/util.hpp"
 #include "tools/modelSchema.hpp"
 
 namespace minote::gfx {
-
-using namespace base;
 
 constexpr auto encodeTransform(ObjectPool::Transform _in) -> InstanceList::Transform {
 	

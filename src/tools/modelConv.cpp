@@ -5,16 +5,14 @@
 #include "mpack/mpack.h"
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
-#include "base/containers/vector.hpp"
-#include "base/error.hpp"
-#include "base/math.hpp"
-#include "base/util.hpp"
+#include "util/vector.hpp"
+#include "util/error.hpp"
+#include "util/math.hpp"
+#include "util/util.hpp"
 #include "tools/modelSchema.hpp"
 #include "tools/oct.hpp"
 
 using namespace minote;
-using namespace base;
-using namespace base::literals;
 using namespace tools;
 
 struct Worknode {

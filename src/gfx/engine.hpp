@@ -3,8 +3,8 @@
 #include <optional>
 #include <mutex>
 #include "vuk/resources/DeviceFrameResource.hpp"
-#include "base/math.hpp"
-#include "base/time.hpp"
+#include "util/math.hpp"
+#include "util/time.hpp"
 #include "sys/vulkan.hpp"
 #include "gfx/objects.hpp"
 #include "gfx/models.hpp"
@@ -13,9 +13,6 @@
 #include "gfx/imgui.hpp"
 
 namespace minote::gfx {
-
-using namespace base;
-using namespace base::literals;
 
 // Graphics engine. Feed with models and objects, enjoy pretty pictures.
 struct Engine {

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "vuk/Context.hpp"
-#include "base/math.hpp"
+#include "util/math.hpp"
 #include "gfx/resources/texture3d.hpp"
 #include "gfx/resources/texture2d.hpp"
 #include "gfx/resources/cubemap.hpp"
@@ -13,9 +13,6 @@
 #include "gfx/frame.hpp"
 
 namespace minote::gfx {
-
-using namespace base;
-using namespace base::literals;
 
 // Precalculated representation of a planet's atmosphere. Once created, it can
 // be used repeatedly to sample the sky at any elevation and sun position.

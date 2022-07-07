@@ -7,8 +7,6 @@
 
 namespace minote::gfx {
 
-using namespace base;
-
 struct BVH {
 	
 	static void compile(vuk::PerThreadContext&);

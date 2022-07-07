@@ -3,15 +3,14 @@
 #include <algorithm>
 #include <numeric>
 #include <ctime>
-#include "base/assert.hpp"
-#include "base/util.hpp"
-#include "base/math.hpp"
+#include "util/assert.hpp"
+#include "util/util.hpp"
+#include "util/math.hpp"
 
-#include "base/log.hpp"
+#include "util/log.hpp"
 
 namespace minote {
 
-using namespace base;
 namespace ranges = std::ranges;
 
 PlayState::PlayState():

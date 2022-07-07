@@ -6,9 +6,9 @@
 #include "volk.h"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
-#include "base/error.hpp"
-#include "base/math.hpp"
-#include "base/log.hpp"
+#include "util/error.hpp"
+#include "util/math.hpp"
+#include "util/log.hpp"
 #include "sys/system.hpp"
 // #include "gfx/effects/instanceList.hpp"
 // #include "gfx/effects/quadbuffer.hpp"
@@ -26,7 +26,6 @@
 
 namespace minote::gfx {
 
-using namespace base;
 using namespace std::string_literals;
 
 Engine::~Engine() {

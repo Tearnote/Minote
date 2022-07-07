@@ -10,8 +10,6 @@
 
 namespace minote::gfx {
 
-using namespace base;
-
 struct QuadBuffer {
 	
 	Texture2D quadDepth;

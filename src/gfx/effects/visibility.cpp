@@ -1,15 +1,12 @@
 #include "gfx/effects/visibility.hpp"
 
 #include "vuk/CommandBuffer.hpp"
-#include "base/containers/string.hpp"
-#include "base/util.hpp"
+#include "util/string.hpp"
+#include "util/util.hpp"
 #include "gfx/samplers.hpp"
 #include "gfx/util.hpp"
 
 namespace minote::gfx {
-
-using namespace base;
-using namespace base::literals;
 
 void Visibility::compile(vuk::PerThreadContext& _ptc) {
 	

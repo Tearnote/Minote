@@ -1,13 +1,11 @@
 #include "gfx/effects/hiz.hpp"
 
 #include "vuk/CommandBuffer.hpp"
-#include "base/types.hpp"
+#include "util/types.hpp"
 #include "gfx/samplers.hpp"
 #include "gfx/util.hpp"
 
 namespace minote::gfx {
-
-using namespace base;
 
 void HiZ::compile(vuk::PerThreadContext& _ptc) {
 	

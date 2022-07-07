@@ -1,10 +1,8 @@
-#include "base/error.hpp"
-#include "base/util.hpp"
-#include "base/log.hpp"
+#include "util/error.hpp"
+#include "util/util.hpp"
+#include "util/log.hpp"
 
 namespace minote {
-
-using namespace base;
 
 template<typename F>
 requires std::invocable<F, string_view, std::span<char const>>

@@ -4,17 +4,14 @@
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/Pipeline.hpp"
 #include "vuk/Partials.hpp"
-#include "base/containers/array.hpp"
-#include "base/types.hpp"
-#include "base/util.hpp"
-#include "base/math.hpp"
-#include "base/log.hpp"
+#include "util/array.hpp"
+#include "util/types.hpp"
+#include "util/util.hpp"
+#include "util/math.hpp"
+#include "util/log.hpp"
 #include "gfx/samplers.hpp"
 
 namespace minote::gfx {
-
-using namespace base;
-using namespace base::literals;
 
 auto ImGui_ImplVuk_Init(vuk::Allocator& _allocator) -> ImguiData {
 	

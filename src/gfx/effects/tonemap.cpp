@@ -1,13 +1,11 @@
 #include "gfx/effects/tonemap.hpp"
 
 #include "vuk/CommandBuffer.hpp"
-#include "base/types.hpp"
+#include "util/types.hpp"
 #include "gfx/samplers.hpp"
 #include "gfx/util.hpp"
 
 namespace minote::gfx {
-
-using namespace base;
 
 void Tonemap::compile(vuk::PerThreadContext& _ptc) {
 	

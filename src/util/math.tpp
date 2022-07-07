@@ -3,11 +3,9 @@
 
 #include <algorithm>
 #include <cassert>
-#include "base/util.hpp"
+#include "util/util.hpp"
 
-namespace minote::base {
-
-using namespace base::literals;
+namespace minote {
 
 template<usize Dim, arithmetic T>
 constexpr vec<Dim, T>::vec(std::initializer_list<T> _list) {

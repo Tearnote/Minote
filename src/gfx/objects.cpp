@@ -1,10 +1,8 @@
 #include "gfx/objects.hpp"
 
-#include "base/util.hpp"
+#include "util/util.hpp"
 
 namespace minote::gfx {
-
-using namespace base::literals;
 
 auto ObjectPool::create() -> ObjectID {
 	

@@ -11,11 +11,9 @@
 #include "gfx/effects/pbr.hpp"
 #include "gfx/effects/sky.hpp"
 #include "gfx/effects/hiz.hpp"
-#include "base/math.hpp"
+#include "util/math.hpp"
 
 namespace minote::gfx {
-
-using namespace base;
 
 Frame::Frame(Engine& _engine, vuk::RenderGraph& _rg):
 	ptc(_engine.m_framePool.ptc()),

@@ -5,18 +5,15 @@
 #include <exception>
 #include "backends/imgui_impl_sdl.h"
 #include "imgui.h"
-#include "base/containers/vector.hpp"
-#include "base/math.hpp"
-#include "base/util.hpp"
-#include "base/log.hpp"
+#include "util/vector.hpp"
+#include "util/math.hpp"
+#include "util/util.hpp"
+#include "util/log.hpp"
 #include "gfx/models.hpp"
 #include "assets.hpp"
 #include "main.hpp"
 
 namespace minote {
-
-using namespace base;
-using namespace base::literals;
 
 // Rate of the logic update clock. Can be higher than display refresh rate.
 static constexpr auto LogicRate = 120;

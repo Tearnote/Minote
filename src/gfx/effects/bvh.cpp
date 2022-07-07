@@ -2,8 +2,6 @@
 
 namespace minote::gfx {
 
-using namespace base;
-
 void BVH::compile(vuk::PerThreadContext& _ptc) {
 	
 	auto debugAABBPci = vuk::PipelineBaseCreateInfo();

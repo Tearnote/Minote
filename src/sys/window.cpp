@@ -7,13 +7,11 @@
 #include "SDL_video.h"
 #include "quill/Fmt.h"
 #include "backends/imgui_impl_sdl.h"
-#include "base/error.hpp"
-#include "base/math.hpp"
-#include "base/log.hpp"
+#include "util/error.hpp"
+#include "util/math.hpp"
+#include "util/log.hpp"
 
 namespace minote::sys {
-
-using namespace base;
 /*
 void Window::framebufferResizeCallback(GLFWwindow* _handle, int _width, int _height) {
 	

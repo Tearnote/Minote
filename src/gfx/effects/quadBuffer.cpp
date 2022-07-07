@@ -1,6 +1,6 @@
 #include "gfx/effects/quadBuffer.hpp"
 
-#include "base/containers/array.hpp"
+#include "util/array.hpp"
 #include "gfx/effects/clear.hpp"
 #include "gfx/samplers.hpp"
 #include "gfx/util.hpp"

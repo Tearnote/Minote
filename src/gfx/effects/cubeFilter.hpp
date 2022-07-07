@@ -6,8 +6,6 @@
 
 namespace minote::gfx {
 
-using namespace base;
-
 // Performs filtering of a cubemap, generating increasingly blurred versions
 // of each mipmap. Useful for IBL with a range of roughness values.
 struct CubeFilter {

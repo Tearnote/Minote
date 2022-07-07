@@ -13,15 +13,12 @@
 #include "SDL_events.h"
 #include "SDL_timer.h"
 #include "SDL.h"
-#include "base/error.hpp"
-#include "base/util.hpp"
-#include "base/time.hpp"
-#include "base/log.hpp"
+#include "util/error.hpp"
+#include "util/util.hpp"
+#include "util/time.hpp"
+#include "util/log.hpp"
 
 namespace minote::sys {
-
-using namespace base;
-using namespace base::literals;
 
 System::System() {
 	

@@ -1,8 +1,8 @@
 #pragma once
 
 #include "vuk/Context.hpp"
-#include "base/types.hpp"
-#include "base/math.hpp"
+#include "util/types.hpp"
+#include "util/math.hpp"
 #include "gfx/resources/texture2dms.hpp"
 #include "gfx/resources/texture2d.hpp"
 #include "gfx/resources/buffer.hpp"
@@ -13,9 +13,6 @@
 #include "gfx/util.hpp"
 
 namespace minote::gfx {
-
-using namespace base;
-using namespace base::literals;
 
 struct Visibility {
 	

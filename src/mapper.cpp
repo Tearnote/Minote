@@ -1,15 +1,12 @@
 #include "mapper.hpp"
 
 #include "SDL_events.h"
-#include "base/containers/vector.hpp"
-#include "base/error.hpp"
-#include "base/util.hpp"
+#include "util/vector.hpp"
+#include "util/error.hpp"
+#include "util/util.hpp"
 #include "sys/system.hpp"
 
 namespace minote {
-
-using namespace base;
-using namespace base::literals;
 
 auto Mapper::convert(SDL_Event const& _e) -> std::optional<Action> {
 	

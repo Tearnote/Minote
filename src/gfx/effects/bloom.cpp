@@ -2,15 +2,13 @@
 
 #include <cassert>
 #include "vuk/CommandBuffer.hpp"
-#include "base/containers/string.hpp"
-#include "base/types.hpp"
-#include "base/util.hpp"
+#include "util/string.hpp"
+#include "util/types.hpp"
+#include "util/util.hpp"
 #include "gfx/samplers.hpp"
 #include "gfx/util.hpp"
 
 namespace minote::gfx {
-
-using namespace base;
 
 void Bloom::compile(vuk::PerThreadContext& _ptc) {
 	

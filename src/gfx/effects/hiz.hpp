@@ -9,8 +9,6 @@
 
 namespace minote::gfx {
 
-using namespace base;
-
 struct HiZ {
 	
 	static void compile(vuk::PerThreadContext&);

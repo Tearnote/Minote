@@ -5,14 +5,12 @@
 #include <cstring>
 #include "mpack/mpack.h"
 #include "gfx/util.hpp"
-#include "base/error.hpp"
-#include "base/util.hpp"
-#include "base/log.hpp"
+#include "util/error.hpp"
+#include "util/util.hpp"
+#include "util/log.hpp"
 
 namespace minote::gfx {
 
-using namespace base;
-using namespace base::literals;
 using namespace tools;
 
 void ModelList::addModel(string_view _name, std::span<char const> _model) {

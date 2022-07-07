@@ -8,11 +8,9 @@
 #include "gfx/effects/quadBuffer.hpp"
 #include "gfx/effects/visibility.hpp"
 #include "gfx/frame.hpp"
-#include "base/math.hpp"
+#include "util/math.hpp"
 
 namespace minote::gfx {
-
-using namespace base;
 
 struct PBR {
 	

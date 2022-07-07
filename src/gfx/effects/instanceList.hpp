@@ -1,16 +1,13 @@
 #pragma once
 
-#include "base/containers/array.hpp"
-#include "base/types.hpp"
-#include "base/math.hpp"
+#include "util/array.hpp"
+#include "util/types.hpp"
+#include "util/math.hpp"
 #include "gfx/resources/buffer.hpp"
 #include "gfx/objects.hpp"
 #include "gfx/frame.hpp"
 
 namespace minote::gfx {
-
-using namespace base;
-using namespace base::literals;
 
 struct InstanceList {
 	

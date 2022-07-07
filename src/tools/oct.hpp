@@ -1,12 +1,10 @@
 #pragma once
 
-#include "base/types.hpp"
-#include "base/math.hpp"
+#include "util/types.hpp"
+#include "util/math.hpp"
 #include "tools/modelSchema.hpp"
 
 namespace minote::tools {
-
-using namespace base;
 
 auto octEncode(vec3 _norm) -> u32 {
 	

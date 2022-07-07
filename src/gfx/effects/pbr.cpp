@@ -6,8 +6,6 @@
 
 namespace minote::gfx {
 
-using namespace base::literals;
-
 void PBR::compile(vuk::PerThreadContext& _ptc) {
 	
 	auto pbrPci = vuk::ComputePipelineBaseCreateInfo();

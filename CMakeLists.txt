@@ -36,26 +36,27 @@ add_link_options("$<$<CONFIG:Debug,RelWithDebInfo>:-fuse-ld=lld>")
 # Main executable
 
 add_executable(Minote
-	src/base/containers/hashmap.hpp
-	src/base/containers/vector.hpp
-	src/base/containers/string.hpp
-	src/base/containers/array.hpp
-	src/base/concepts.hpp
-	src/base/format.hpp
-	src/base/error.hpp
-	src/base/tween.hpp
-	src/base/types.hpp
-	src/base/math.hpp src/base/math.tpp
-	src/base/util.hpp
-	src/base/time.hpp
-	src/base/ease.hpp
-	src/base/log.hpp src/base/log.cpp
-	src/base/rng.hpp
-	src/base/id.hpp
+	src/util/concepts.hpp
+	src/util/hashmap.hpp
+	src/util/vector.hpp
+	src/util/string.hpp
+	src/util/format.hpp
+	src/util/array.hpp
+	src/util/error.hpp
+	src/util/tween.hpp
+	src/util/types.hpp
+	src/util/math.hpp src/util/math.tpp
+	src/util/util.hpp
+	src/util/time.hpp
+	src/util/ease.hpp
+	src/util/log.hpp src/util/log.cpp
+	src/util/rng.hpp
+	src/util/id.hpp
 	src/tools/modelSchema.hpp
 	src/sys/window.hpp src/sys/window.cpp
 	src/sys/vulkan.hpp src/sys/vulkan.cpp
 	src/sys/system.hpp src/sys/system.cpp
+	src/sys/os.hpp src/sys/os.cpp
 	# src/gfx/effects/cubeFilterCoeffs.hpp
 	# src/gfx/effects/instanceList.hpp src/gfx/effects/instanceList.cpp
 	# src/gfx/effects/quadBuffer.hpp src/gfx/effects/quadBuffer.cpp
@@ -85,18 +86,23 @@ add_executable(Minote
 	src/main.hpp src/main.cpp
 	src/mino.hpp src/mino.tpp)
 target_precompile_headers(Minote PRIVATE
-	src/base/containers/hashmap.hpp
-	src/base/containers/vector.hpp
-	src/base/containers/string.hpp
-	src/base/containers/array.hpp
-	src/base/concepts.hpp
-	src/base/format.hpp
-	src/base/error.hpp
-	src/base/types.hpp
-	src/base/math.hpp
-	src/base/util.hpp
-	src/base/log.hpp
+	src/util/concepts.hpp
+	src/util/hashmap.hpp
+	src/util/vector.hpp
+	src/util/string.hpp
+	src/util/format.hpp
+	src/util/array.hpp
+	src/util/error.hpp
+	src/util/types.hpp
+	src/util/math.hpp
+	src/util/util.hpp
+	src/util/time.hpp
+	src/util/log.hpp
 	src/config.hpp)
+
+target_compile_definitions(Minote PRIVATE
+	"BUILD_TYPE=$<$<CONFIG:Debug>:BUILD_DEBUG>$<$<CONFIG:RelWithDebInfo>:BUILD_RELDEB>$<$<CONFIG:Release>:BUILD_RELEASE>")
+
 target_include_directories(Minote PRIVATE src)
 target_link_libraries(Minote PRIVATE winmm)
 
@@ -315,7 +321,9 @@ target_link_libraries(Model_conv PRIVATE cgltf)
 target_link_libraries(Model_conv PRIVATE mpack)
 target_link_libraries(Model_conv PRIVATE gcem)
 
-set(ASSET_OUTPUT ${PROJECT_BINARY_DIR}/$<CONFIG>/assets.db)
+set(ASSET_FILENAME assets.db)
+target_compile_definitions(Minote PRIVATE ASSETS_P="${ASSET_FILENAME}")
+set(ASSET_OUTPUT ${PROJECT_BINARY_DIR}/$<CONFIG>/${ASSET_FILENAME})
 add_custom_command(
 	OUTPUT ${ASSET_OUTPUT}
 	COMMAND sqlite-shell ${ASSET_OUTPUT} "VACUUM"

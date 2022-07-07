@@ -3,14 +3,12 @@
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/Types.hpp"
 #include "vuk/Name.hpp"
-#include "base/containers/string.hpp"
-#include "base/concepts.hpp"
-#include "base/types.hpp"
-#include "base/math.hpp"
+#include "util/concepts.hpp"
+#include "util/string.hpp"
+#include "util/types.hpp"
+#include "util/math.hpp"
 
 namespace minote::gfx {
-
-using namespace base;
 
 struct AABB {
 	vec3 min;

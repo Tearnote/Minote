@@ -1,10 +1,8 @@
 #pragma once
 
-#include "base/math.hpp"
+#include "util/math.hpp"
 
 namespace minote::gfx {
-
-using namespace base;
 
 // A user-controllable camera. Easy to manipulate with intuitive functions,
 // and can be converted into a world->view transform matrix.

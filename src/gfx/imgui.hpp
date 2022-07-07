@@ -3,11 +3,9 @@
 #include "imgui.h"
 #include "vuk/SampledImage.hpp"
 #include "vuk/RenderGraph.hpp"
-#include "base/containers/vector.hpp"
+#include "util/vector.hpp"
 
 namespace minote::gfx {
-
-using namespace minote::base;
 
 // GPU resources used by Imgui
 struct ImguiData {

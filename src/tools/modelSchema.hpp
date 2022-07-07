@@ -1,10 +1,8 @@
 #pragma once
 
-#include "base/math.hpp"
+#include "util/math.hpp"
 
 namespace minote::tools {
-
-using namespace base;
 
 using TriIndexType = u8;
 using VertIndexType = u32;

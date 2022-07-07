@@ -2,7 +2,7 @@
 
 #include "fmt/core.h"
 
-namespace minote::base {
+namespace minote {
 
 using fmt::format;
 

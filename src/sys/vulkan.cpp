@@ -4,8 +4,8 @@
 
 #include <cassert>
 #include "SDL_vulkan.h"
-#include "base/error.hpp"
-#include "base/log.hpp"
+#include "util/error.hpp"
+#include "util/log.hpp"
 #include "main.hpp"
 
 namespace minote::sys {

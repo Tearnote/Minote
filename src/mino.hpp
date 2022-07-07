@@ -3,15 +3,12 @@
 #include <stdexcept>
 #include <optional>
 #include <array>
-#include "base/zip_view.hpp"
-#include "base/types.hpp"
-#include "base/math.hpp"
-#include "base/util.hpp"
+#include "util/zip_view.hpp"
+#include "util/types.hpp"
+#include "util/math.hpp"
+#include "util/util.hpp"
 
 namespace minote {
-
-using namespace base;
-using namespace base::literals;
 
 enum struct Mino4: int {
 	I,
