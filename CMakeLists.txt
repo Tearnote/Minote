@@ -38,6 +38,7 @@ add_link_options("$<$<CONFIG:Debug,RelWithDebInfo>:-fuse-ld=lld>")
 add_executable(Minote
 	src/util/concepts.hpp
 	src/util/optional.hpp
+	src/util/service.hpp
 	src/util/hashmap.hpp
 	src/util/vector.hpp
 	src/util/string.hpp
@@ -90,6 +91,7 @@ add_executable(Minote
 target_precompile_headers(Minote PRIVATE
 	src/util/concepts.hpp
 	src/util/optional.hpp
+	src/util/service.hpp
 	src/util/hashmap.hpp
 	src/util/vector.hpp
 	src/util/string.hpp
