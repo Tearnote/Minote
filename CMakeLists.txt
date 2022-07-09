@@ -81,15 +81,13 @@ add_executable(Minote
 	src/gfx/world.hpp src/gfx/world.cpp
 	# src/gfx/frame.hpp src/gfx/frame.cpp
 	src/gfx/util.hpp
-	#src/playstate.hpp src/playstate.cpp
 	src/freecam.hpp src/freecam.cpp
 	src/assets.hpp src/assets.tpp src/assets.cpp
 	src/mapper.hpp src/mapper.cpp
 	src/scenes.hpp src/scenes.cpp
 	src/config.hpp
 	src/game.hpp src/game.cpp
-	src/main.hpp src/main.cpp
-	src/mino.hpp src/mino.tpp)
+	src/main.hpp src/main.cpp)
 target_precompile_headers(Minote PRIVATE
 	src/util/concepts.hpp
 	src/util/optional.hpp
