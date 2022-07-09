@@ -7,13 +7,11 @@
 namespace minote {
 
 struct GameParams {
-	
 	Window& window;
-	Engine& engine;
 	Mapper& mapper;
-	
 };
 
+// Entry point for the rendering + logic thread
 void game(GameParams const&);
 
 }

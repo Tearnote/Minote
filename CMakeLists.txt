@@ -84,6 +84,7 @@ add_executable(Minote
 	#src/playstate.hpp src/playstate.cpp
 	src/assets.hpp src/assets.tpp src/assets.cpp
 	src/mapper.hpp src/mapper.cpp
+	src/scenes.hpp src/scenes.cpp
 	src/config.hpp
 	src/game.hpp src/game.cpp
 	src/main.hpp src/main.cpp

@@ -51,13 +51,12 @@ auto main(int, char*[]) -> int try {
 	auto system = System();
 	auto window = Window(system, AppTitle, false, {960, 504});
 	auto vulkan = Vulkan(window);
-	auto engine = Engine(vulkan);
+	auto engine = s_engine.provide(vulkan);
 	auto mapper = Mapper();
 	
 	// Start the game thread
 	auto gameThread = std::jthread(game, GameParams{
 		.window = window,
-		.engine = engine,
 		.mapper = mapper,
 	});
 	

@@ -96,5 +96,6 @@ private:
 };
 
 using ObjectID = ObjectPool::ObjectID;
+using Transform = ObjectPool::Transform;
 
 }
