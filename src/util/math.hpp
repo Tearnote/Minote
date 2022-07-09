@@ -2,7 +2,6 @@
 
 #include <initializer_list>
 #include <type_traits>
-#include <concepts>
 #include <numbers>
 #include "gcem.hpp"
 #include "util/concepts.hpp"
@@ -13,11 +12,11 @@ namespace minote {
 
 //=== Constants
 
-template<std::floating_point T>
+template<floating_point T>
 constexpr auto Pi_v = std::numbers::pi_v<T>;
 constexpr auto Pi = Pi_v<f32>;
 
-template<std::floating_point T>
+template<floating_point T>
 constexpr auto Tau_v = Pi_v<T> * T(2.0);
 constexpr auto Tau = Tau_v<f32>;
 
@@ -40,7 +39,7 @@ using gcem::cos;
 using gcem::tan;
 
 // Degrees to radians conversion
-template<arithmetic T, std::floating_point Prec = f32>
+template<arithmetic T, floating_point Prec = f32>
 constexpr auto radians(T deg) -> Prec { return Prec(deg) * Tau_v<Prec> / Prec(360); }
 
 // True modulo operation (as opposed to remainder, which is operator% in C++.)
@@ -57,10 +56,10 @@ constexpr auto radians(T deg) -> Prec { return Prec(deg) * Tau_v<Prec> / Prec(36
 // -3 mod 4 = 1
 // -4 mod 4 = 0
 // -5 mod 4 = 3
-template<std::integral T>
+template<integral T>
 constexpr auto tmod(T num, T div) { return num % div + (num % div < 0) * div; }
 
-// Classic GLSL-style scalar clamp
+// GLSL-style scalar clamp
 template<arithmetic T>
 constexpr auto clamp(T val, T vmin, T vmax) -> T { return max(vmin, min(val, vmax)); }
 
@@ -87,7 +86,7 @@ struct vec {
 	
 	// Type cast
 	template<arithmetic U>
-	requires (!std::same_as<T, U>)
+	requires (!same_as<T, U>)
 	explicit constexpr vec(vec<Dim, U> const&);
 	
 	// Dimension downcast
@@ -243,28 +242,23 @@ constexpr auto operator>>(vec<Dim, T> const&, T) -> vec<Dim, T>;
 // Unary vector operations
 
 // Component-wise absolute value
-template<usize Dim, std::floating_point T>
+template<usize Dim, floating_point T>
 constexpr auto abs(vec<Dim, T> const&) -> vec<Dim, T>;
 
 // Vector length as Euclidean distance
-template<usize Dim, std::floating_point T>
-constexpr auto length(vec<Dim, T> const& v) -> T {
-	
-	static_assert(std::is_floating_point_v<T>);
-	return sqrt(length2(v));
-	
-}
+template<usize Dim, floating_point T>
+constexpr auto length(vec<Dim, T> const& v) -> T { return sqrt(length2(v)); }
 
 // Square of vector length (faster to compute than length)
-template<usize Dim, std::floating_point T>
+template<usize Dim, arithmetic T>
 constexpr auto length2(vec<Dim, T> const& v) -> T { return dot(v, v); }
 
 // true if vector has the length of 1 (within reasonable epsilon)
-template<usize Dim, std::floating_point T>
+template<usize Dim, floating_point T>
 constexpr auto isUnit(vec<Dim, T> const& v) -> bool { return (abs(length2(v) - 1) < (1.0 / 16.0)); }
 
 // Constructs a vector in the same direction but length 1
-template<usize Dim, std::floating_point T>
+template<usize Dim, floating_point T>
 constexpr auto normalize(vec<Dim, T> const&) -> vec<Dim, T>;
 
 //=== GLSL-like vector aliases
@@ -302,7 +296,7 @@ static_assert(std::is_trivially_constructible_v<u16vec3>);
 
 // Quaternion, equivalent to a vec4 but with unique operations available.
 // Main purpose is representing rotations. Data layout is {w, x, y, z}.
-template<std::floating_point Prec = f32>
+template<floating_point Prec = f32>
 struct qua {
 	
 	//=== Creation
@@ -328,7 +322,7 @@ struct qua {
 	
 	// Type cast
 	template<arithmetic U>
-	requires (!std::same_as<Prec, U>)
+	requires (!same_as<Prec, U>)
 	explicit constexpr qua(qua<U> const&);
 	
 	//=== Member access
@@ -356,7 +350,7 @@ private:
 
 // Binary quaternion operations
 
-template<std::floating_point Prec>
+template<floating_point Prec>
 constexpr auto operator*(qua<Prec> const&, qua<Prec> const&) -> qua<Prec>;
 
 //=== Quaternion alias
@@ -366,7 +360,7 @@ using quat = qua<f32>;
 static_assert(std::is_trivially_constructible_v<u16vec4>);
 
 // Generic matrix type, of order 3 or 4, and any floating-point precision
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 struct mat {
 	
 	using col_t = vec<Dim, Prec>;
@@ -399,7 +393,7 @@ struct mat {
 	
 	// Type cast
 	template<arithmetic U>
-	requires (!std::same_as<Prec, U>)
+	requires (!same_as<Prec, U>)
 	explicit constexpr mat(mat<Dim, U> const&);
 	
 	// Dimension cast
@@ -432,40 +426,40 @@ private:
 
 // Binary matrix operations
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto operator*(mat<Dim, Prec> const&, mat<Dim, Prec> const&) -> mat<Dim, Prec>;
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto operator*(mat<Dim, Prec> const&, vec<Dim, Prec> const&) -> vec<Dim, Prec>;
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto operator*(mat<Dim, Prec> const&, Prec) -> mat<Dim, Prec>; // Component-wise
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto operator*(Prec left, mat<Dim, Prec> const& right) -> mat<Dim, Prec> { return right * left; } // Component-wise
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto operator/(mat<Dim, Prec> const&, Prec) -> mat<Dim, Prec>; // Component-wise
 
 // Unary matrix operations
 
 // Creates a matrix with rows transposed with columns
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto transpose(mat<Dim, Prec> const&) -> mat<Dim, Prec>;
 
 // Creates a matrix that results in identity when multiplied with the original (slow!)
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto inverse(mat<Dim, Prec> const&) -> mat<Dim, Prec>;
 
 // Specialized matrix generators
 
 // Variant of lookAt matrix. Dir is a unit vector of the camera direction.
 // Dir and Up are both required to be unit vectors
-template<std::floating_point Prec = f32>
+template<floating_point Prec = f32>
 constexpr auto look(vec<3, Prec> pos, vec<3, Prec> dir, vec<3, Prec> up) -> mat<4, Prec>;
 
 // Creates a perspective matrix. The matrix uses inverted infinite depth:
 // 1.0 at zNear, 0.0 at infinity.
-template<std::floating_point Prec = f32>
+template<floating_point Prec = f32>
 constexpr auto perspective(Prec vFov, Prec aspectRatio, Prec zNear) -> mat<4, Prec>;
 
 //=== GLSL-like matrix aliases

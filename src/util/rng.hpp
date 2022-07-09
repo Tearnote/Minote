@@ -18,10 +18,8 @@ struct Rng {
 	// Return a random positive integer, up to a bound (exclusive). RNG state
 	// is advanced by one step.
 	auto randInt(u32 bound) -> u32 {
-		
 		assert(bound >= 1);
 		return pcg32_boundedrand_r(&m_state, bound);
-		
 	}
 	
 	// Return a random floating-point value between 0.0 (inclusive) and 1.0

@@ -17,7 +17,7 @@ constexpr vec<Dim, T>::vec(std::initializer_list<T> _list) {
 
 template<usize Dim, arithmetic T>
 template<arithmetic U>
-requires (!std::same_as<T, U>)
+requires (!same_as<T, U>)
 constexpr vec<Dim, T>::vec(vec<Dim, U> const& _other) {
 	
 	for (auto i: iota(0_zu, Dim))
@@ -51,7 +51,6 @@ constexpr auto vec<Dim, T>::operator+=(vec<Dim, T> const& _other) -> vec<Dim, T>
 	
 	for (auto i: iota(0_zu, Dim))
 		m_arr[i] += _other[i];
-	
 	return *this;
 	
 }
@@ -61,7 +60,6 @@ constexpr auto vec<Dim, T>::operator-=(vec<Dim, T> const& _other) -> vec<Dim, T>
 	
 	for (auto i: iota(0_zu, Dim))
 		m_arr[i] -= _other[i];
-	
 	return *this;
 	
 }
@@ -71,7 +69,6 @@ constexpr auto vec<Dim, T>::operator*=(vec<Dim, T> const& _other) -> vec<Dim, T>
 	
 	for (auto i: iota(0_zu, Dim))
 		m_arr[i] *= _other[i];
-	
 	return *this;
 	
 }
@@ -81,7 +78,6 @@ constexpr auto vec<Dim, T>::operator/=(vec<Dim, T> const& _other) -> vec<Dim, T>
 	
 	for (auto i: iota(0_zu, Dim))
 		m_arr[i] /= _other[i];
-	
 	return *this;
 	
 }
@@ -93,7 +89,6 @@ constexpr auto vec<Dim, T>::operator%=(vec<Dim, T> const& _other) -> vec<Dim, T>
 	
 	for (auto i: iota(0_zu, Dim))
 		m_arr[i] /= _other[i];
-	
 	return *this;
 	
 }
@@ -103,7 +98,6 @@ constexpr auto vec<Dim, T>::operator*=(T _other) -> vec<Dim, T>& {
 	
 	for (auto i: iota(0_zu, Dim))
 		m_arr[i] *= _other;
-	
 	return *this;
 	
 }
@@ -113,7 +107,6 @@ constexpr auto vec<Dim, T>::operator/=(T _other) -> vec<Dim, T>& {
 	
 	for (auto i: iota(0_zu, Dim))
 		m_arr[i] /= _other;
-	
 	return *this;
 	
 }
@@ -125,7 +118,6 @@ constexpr auto vec<Dim, T>::operator%=(T _other) -> vec<Dim, T>& {
 	
 	for (auto i: iota(0_zu, Dim))
 		m_arr[i] %= _other;
-	
 	return *this;
 	
 }
@@ -137,7 +129,6 @@ constexpr auto vec<Dim, T>::operator<<=(T _other) -> vec<Dim, T>& {
 	
 	for (auto i: iota(0_zu, Dim))
 		m_arr[i] <<= _other;
-	
 	return *this;
 	
 }
@@ -149,7 +140,6 @@ constexpr auto vec<Dim, T>::operator>>=(T _other) -> vec<Dim, T>& {
 	
 	for (auto i: iota(0_zu, Dim))
 		m_arr[i] >>= _other;
-	
 	return *this;
 	
 }
@@ -205,7 +195,6 @@ constexpr auto operator==(vec<Dim, T> const& _left, vec<Dim, T> const& _right) -
 	for (auto i: iota(0_zu, Dim))
 		if (_left[i] != _right[i])
 			return false;
-	
 	return true;
 	
 }
@@ -214,10 +203,8 @@ template<usize Dim, arithmetic T>
 constexpr auto min(vec<Dim, T> const& _left, vec<Dim, T> const& _right) -> vec<Dim, T> {
 	
 	auto result = vec<Dim, T>();
-	
 	for (auto i: iota(0_zu, Dim))
 		result[i] = min(_left[i], _right[i]);
-	
 	return result;
 	
 }
@@ -226,10 +213,8 @@ template<usize Dim, arithmetic T>
 constexpr auto max(vec<Dim, T> const& _left, vec<Dim, T> const& _right) -> vec<Dim, T> {
 	
 	auto result = vec<Dim, T>();
-	
 	for (auto i: iota(0_zu, Dim))
 		result[i] = max(_left[i], _right[i]);
-	
 	return result;
 	
 }
@@ -238,10 +223,8 @@ template<usize Dim, arithmetic T>
 constexpr auto dot(vec<Dim, T> const& _left, vec<Dim, T> const& _right) -> T {
 	
 	auto result = T(0);
-	
 	for (auto i: iota(0_zu, Dim))
 		result += _left[i] * _right[i];
-	
 	return result;
 	
 }
@@ -252,7 +235,8 @@ constexpr auto cross(vec<3, T> const& _left, vec<3, T> const& _right) -> vec<3, 
 	return vec<3, T>{
 		_left[1]*_right[2] - _right[1]*_left[2],
 		_left[2]*_right[0] - _right[2]*_left[0],
-		_left[0]*_right[1] - _right[0]*_left[1]};
+		_left[0]*_right[1] - _right[0]*_left[1],
+	};
 	
 }
 
@@ -301,33 +285,28 @@ constexpr auto operator>>(vec<Dim, T> const& _left, T _right) -> vec<Dim, T> {
 	
 }
 
-template<usize Dim, std::floating_point T>
+template<usize Dim, floating_point T>
 constexpr auto abs(vec<Dim, T> const& _vec) -> vec<Dim, T> {
 	
 	auto result = vec<Dim, T>();
-	
 	for (auto i: iota(0_zu, Dim))
 		result[i] = abs(_vec[i]);
-	
 	return result;
 	
 }
 
-template<usize Dim, std::floating_point T>
+template<usize Dim, floating_point T>
 constexpr auto normalize(vec<Dim, T> const& _vec) -> vec<Dim, T> {
 	
 	if constexpr (Dim == 4) {
-		
 		auto norm = normalize(vec<3, T>(_vec));
 		return vec<Dim, T>(norm, _vec[3]);
-		
 	}
-	
 	return _vec / length(_vec);
 	
 }
 
-template<std::floating_point Prec>
+template<floating_point Prec>
 constexpr qua<Prec>::qua(std::initializer_list<Prec> _list) {
 	
 	assert(_list.size() == m_arr.size());
@@ -335,7 +314,7 @@ constexpr qua<Prec>::qua(std::initializer_list<Prec> _list) {
 	
 }
 
-template<std::floating_point Prec>
+template<floating_point Prec>
 template<usize N>
 requires (N == 3 || N == 4)
 constexpr qua<Prec>::qua(vec<N, Prec> const& _other) {
@@ -347,25 +326,25 @@ constexpr qua<Prec>::qua(vec<N, Prec> const& _other) {
 	
 }
 
-template<std::floating_point Prec>
+template<floating_point Prec>
 constexpr auto qua<Prec>::angleAxis(Prec _angle, vec<3, Prec> _axis) -> qua<Prec> {
 	
 	assert(isUnit(_axis));
 	
 	auto halfAngle = _angle / Prec(2);
 	auto sinHalfAngle = sin(halfAngle);
-	
 	return qua<Prec>{
 		cos(halfAngle),
 		sinHalfAngle * _axis[0],
 		sinHalfAngle * _axis[1],
-		sinHalfAngle * _axis[2]};
+		sinHalfAngle * _axis[2],
+	};
 	
 }
 
-template<std::floating_point Prec>
+template<floating_point Prec>
 template<arithmetic U>
-requires (!std::same_as<Prec, U>)
+requires (!same_as<Prec, U>)
 constexpr qua<Prec>::qua(qua<U> const& _other) {
 	
 	for (auto i: iota(0_zu, m_arr.size()))
@@ -373,47 +352,44 @@ constexpr qua<Prec>::qua(qua<U> const& _other) {
 	
 }
 
-template<std::floating_point Prec>
+template<floating_point Prec>
 constexpr auto operator*(qua<Prec> const& _l, qua<Prec> const& _r) -> qua<Prec> {
 	
 	return qua<Prec>{
 		-_l.x() * _r.x() - _l.y() * _r.y() - _l.z() * _r.z() + _l.w() * _r.w(),
 		 _l.x() * _r.w() + _l.y() * _r.z() - _l.z() * _r.y() + _l.w() * _r.x(),
 		-_l.x() * _r.z() + _l.y() * _r.w() + _l.z() * _r.x() + _l.w() * _r.y(),
-		 _l.x() * _r.y() - _l.y() * _r.x() + _l.z() * _r.w() + _l.w() * _r.z()};
+		 _l.x() * _r.y() - _l.y() * _r.x() + _l.z() * _r.w() + _l.w() * _r.z(),
+	};
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr mat<Dim, Prec>::mat(std::initializer_list<Prec> _list) {
 	
 	assert(_list.size() == Dim * Dim);
 	
 	auto it = _list.begin();
 	for (auto x: iota(0_zu, Dim))
-		for (auto y: iota(0_zu, Dim)) {
-			
-			m_arr[x][y] = *it;
-			it += 1;
-			
-		}
+	for (auto y: iota(0_zu, Dim)) {
+		m_arr[x][y] = *it;
+		it += 1;
+	}
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto mat<Dim, Prec>::identity() -> mat<Dim, Prec> {
 	
 	auto result = mat<Dim, Prec>();
 	result.fill(0);
-	
 	for (auto i: iota(0_zu, Dim))
 		result[i][i] = 1;
-	
 	return result;
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto mat<Dim, Prec>::translate(vec<3, Prec> _shift) -> mat<Dim, Prec> {
 	
 	static_assert(Dim == 4, "Translation matrix requires order of 4");
@@ -426,7 +402,7 @@ constexpr auto mat<Dim, Prec>::translate(vec<3, Prec> _shift) -> mat<Dim, Prec> 
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto mat<Dim, Prec>::rotate(vec<3, Prec> _axis, Prec _angle) -> mat<Dim, Prec> {
 	
 	assert(isUnit(_axis));
@@ -453,7 +429,7 @@ constexpr auto mat<Dim, Prec>::rotate(vec<3, Prec> _axis, Prec _angle) -> mat<Di
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto mat<Dim, Prec>::rotate(qua<Prec> _quat) -> mat<Dim, Prec> {
 	
 	auto result = mat<Dim, Prec>::identity();
@@ -474,42 +450,38 @@ constexpr auto mat<Dim, Prec>::rotate(qua<Prec> _quat) -> mat<Dim, Prec> {
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto mat<Dim, Prec>::scale(vec<3, Prec> _scale) -> mat<Dim, Prec> {
 	
 	auto result = mat<Dim, Prec>::identity();
-	
 	for (auto i: iota(0_zu, 3_zu))
 		result[i][i] = _scale[i];
-	
 	return result;
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto mat<Dim, Prec>::scale(Prec _scale) -> mat<Dim, Prec> {
 	
 	auto result = mat<Dim, Prec>::identity();
-	
 	for (auto i: iota(0_zu, 3_zu))
 		result[i][i] = _scale;
-	
 	return result;
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 template<arithmetic U>
-requires (!std::same_as<Prec, U>)
+requires (!same_as<Prec, U>)
 constexpr mat<Dim, Prec>::mat(mat<Dim, U> const& _other) {
 	
 	for (auto x: iota(0_zu, Dim))
-		for (auto y: iota(0_zu, Dim))
-			m_arr[x][y] = _other[x][y];
+	for (auto y: iota(0_zu, Dim))
+		m_arr[x][y] = _other[x][y];
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 template<usize N>
 requires (N != Dim)
 constexpr mat<Dim, Prec>::mat(mat<N, Prec> const& _other) {
@@ -517,36 +489,34 @@ constexpr mat<Dim, Prec>::mat(mat<N, Prec> const& _other) {
 	if constexpr (Dim > N)
 		*this = identity();
 	
-	constexpr auto Smaller = std::min(Dim, N);
+	constexpr auto Smaller = min(Dim, N);
 	for (auto x: iota(0_zu, Smaller))
-		for (auto y: iota(0_zu, Smaller))
-			m_arr[x][y] = _other[x][y];
+	for (auto y: iota(0_zu, Smaller))
+		m_arr[x][y] = _other[x][y];
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto mat<Dim, Prec>::operator*=(Prec _other) -> mat<Dim, Prec>& {
 	
 	for (auto x: iota(0_zu, Dim))
-		for (auto y: iota(0_zu, Dim))
-			m_arr[x][y] *= _other;
-	
+	for (auto y: iota(0_zu, Dim))
+		m_arr[x][y] *= _other;
 	return *this;
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto mat<Dim, Prec>::operator/=(Prec _other) -> mat<Dim, Prec>& {
 	
 	for (auto x: iota(0_zu, Dim))
-		for (auto y: iota(0_zu, Dim))
-			m_arr[x][y] /= _other;
-	
+	for (auto y: iota(0_zu, Dim))
+		m_arr[x][y] /= _other;
 	return *this;
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto operator*(mat<Dim, Prec> const& _left, mat<Dim, Prec> const& _right) -> mat<Dim, Prec> {
 	
 	static_assert(Dim == 3 || Dim == 4, "Unsupported matrix order for multiplication");
@@ -554,39 +524,32 @@ constexpr auto operator*(mat<Dim, Prec> const& _left, mat<Dim, Prec> const& _rig
 	auto result = mat<Dim, Prec>();
 	
 	if constexpr (Dim == 3) {
-		
 		result[0] = _left[0]*_right[0][0] + _left[1]*_right[0][1] + _left[2]*_right[0][2];
 		result[1] = _left[0]*_right[1][0] + _left[1]*_right[1][1] + _left[2]*_right[1][2];
 		result[2] = _left[0]*_right[2][0] + _left[1]*_right[2][1] + _left[2]*_right[2][2];
-		
 	} else if constexpr (Dim == 4) {
-		
 		result[0] = _left[0]*_right[0][0] + _left[1]*_right[0][1] + _left[2]*_right[0][2] + _left[3]*_right[0][3];
 		result[1] = _left[0]*_right[1][0] + _left[1]*_right[1][1] + _left[2]*_right[1][2] + _left[3]*_right[1][3];
 		result[2] = _left[0]*_right[2][0] + _left[1]*_right[2][1] + _left[2]*_right[2][2] + _left[3]*_right[2][3];
 		result[3] = _left[0]*_right[3][0] + _left[1]*_right[3][1] + _left[2]*_right[3][2] + _left[3]*_right[3][3];
-		
 	}
-	
 	return result;
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto operator*(mat<Dim, Prec> const& _left, vec<Dim, Prec> const& _right) -> vec<Dim, Prec> {
-	
-	auto leftT = transpose(_left);
 	
 	auto result = vec<Dim, Prec>();
 	
+	auto leftT = transpose(_left);
 	for (auto i: iota(0_zu, Dim))
 		result[i] = dot(leftT[i], _right);
-	
 	return result;
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto operator*(mat<Dim, Prec> const& _left, Prec _right) -> mat<Dim, Prec> {
 	
 	auto result = _left;
@@ -595,7 +558,7 @@ constexpr auto operator*(mat<Dim, Prec> const& _left, Prec _right) -> mat<Dim, P
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto operator/(mat<Dim, Prec> const& _left, Prec _right) -> mat<Dim, Prec> {
 	
 	auto result = _left;
@@ -604,20 +567,19 @@ constexpr auto operator/(mat<Dim, Prec> const& _left, Prec _right) -> mat<Dim, P
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto transpose(mat<Dim, Prec> const& _mat) -> mat<Dim, Prec> {
 	
 	auto result = mat<Dim, Prec>();
 	
 	for (auto x: iota(0_zu, Dim))
-		for (auto y: iota(0_zu, Dim))
-			result[x][y] = _mat[y][x];
-	
+	for (auto y: iota(0_zu, Dim))
+		result[x][y] = _mat[y][x];
 	return result;
 	
 }
 
-template<usize Dim, std::floating_point Prec>
+template<usize Dim, floating_point Prec>
 constexpr auto inverse(mat<Dim, Prec> const& _mat) -> mat<Dim, Prec> {
 	
 	static_assert(Dim == 3 || Dim == 4, "Unsupported matrix order for inversion");
@@ -630,7 +592,6 @@ constexpr auto inverse(mat<Dim, Prec> const& _mat) -> mat<Dim, Prec> {
 			+ _mat[2][0] * (_mat[0][1]*_mat[1][2] - _mat[1][1]*_mat[0][2]));
 		
 		auto result = mat<3, Prec>();
-		
 		result[0][0] = + (_mat[1][1]*_mat[2][2] - _mat[2][1]*_mat[1][2]) * oneOverDeterminant;
 		result[1][0] = - (_mat[1][0]*_mat[2][2] - _mat[2][0]*_mat[1][2]) * oneOverDeterminant;
 		result[2][0] = + (_mat[1][0]*_mat[2][1] - _mat[2][0]*_mat[1][1]) * oneOverDeterminant;
@@ -640,7 +601,6 @@ constexpr auto inverse(mat<Dim, Prec> const& _mat) -> mat<Dim, Prec> {
 		result[0][2] = + (_mat[0][1]*_mat[1][2] - _mat[1][1]*_mat[0][2]) * oneOverDeterminant;
 		result[1][2] = - (_mat[0][0]*_mat[1][2] - _mat[1][0]*_mat[0][2]) * oneOverDeterminant;
 		result[2][2] = + (_mat[0][0]*_mat[1][1] - _mat[1][0]*_mat[0][1]) * oneOverDeterminant;
-		
 		return result;
 		
 	} else if constexpr (Dim == 4) {
@@ -703,7 +663,7 @@ constexpr auto inverse(mat<Dim, Prec> const& _mat) -> mat<Dim, Prec> {
 	
 }
 
-template<std::floating_point Prec>
+template<floating_point Prec>
 constexpr auto look(vec<3, Prec> _pos, vec<3, Prec> _dir, vec<3, Prec> _up) -> mat<4, Prec> {
 	
 	assert(isUnit(_dir));
@@ -713,7 +673,6 @@ constexpr auto look(vec<3, Prec> _pos, vec<3, Prec> _dir, vec<3, Prec> _up) -> m
 	
 	auto s = normalize(cross(_up, _dir));
 	auto u = cross(_dir, s);
-	
 	result[0][0] = s[0];
 	result[1][0] = s[1];
 	result[2][0] = s[2];
@@ -726,12 +685,11 @@ constexpr auto look(vec<3, Prec> _pos, vec<3, Prec> _dir, vec<3, Prec> _up) -> m
 	result[3][0] = -dot(s, _pos);
 	result[3][1] = -dot(u, _pos);
 	result[3][2] = -dot(_dir, _pos);
-	
 	return result;
 	
 }
 
-template<std::floating_point Prec>
+template<floating_point Prec>
 constexpr auto perspective(Prec _vFov, Prec _aspectRatio, Prec _zNear) -> mat<4, Prec> {
 	
 	auto range = tan(_vFov / Prec(2)) * _zNear;
@@ -742,12 +700,10 @@ constexpr auto perspective(Prec _vFov, Prec _aspectRatio, Prec _zNear) -> mat<4,
 	
 	auto result = mat<4, Prec>();
 	result.fill(0);
-	
 	result[0][0] = (Prec(2) * _zNear) / (right - left);
 	result[1][1] = (Prec(2) * _zNear) / (top - bottom);
 	result[2][3] = Prec(1);
 	result[3][2] = Prec(2) * _zNear;
-	
 	return result;
 	
 }

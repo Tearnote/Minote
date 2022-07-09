@@ -1,15 +1,12 @@
 #pragma once
 
 #include <array>
-#include "util/types.hpp"
 
 namespace minote {
 
-// Static array. Stored entirely on stack, with size provided at runtime.
-// Elements are not initialized if value-initializable.
-template<typename T, usize N>
-using array = std::array<T, N>;
-
+// Static array. Stored entirely on stack, with size provided at runtime
+// Elements are not initialized if value-initializable
+using std::array;
 using std::to_array;
 
 }

@@ -6,7 +6,7 @@
 
 namespace minote {
 
-// Resource ID. Created from a string, hashed at compile-time if possible.
+// Resource ID. Created from a string, hashed at compile-time if possible
 struct ID {
 	
 	// Trivial default constructor
@@ -16,10 +16,8 @@ struct ID {
 	explicit constexpr ID(string_view str): m_id(Basis) {
 		
 		for (auto ch: str) {
-			
 			m_id ^= ch;
 			m_id *= Prime;
-			
 		}
 		
 	}

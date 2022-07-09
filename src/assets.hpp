@@ -17,9 +17,7 @@ struct Assets {
 	~Assets();
 	
 	// Iterate over the models table, and call the provided function on each row
-	// Function arguments:
-	// - name of the model
-	// - raw bytestream as char array
+	// Function arguments are name of the model, and raw bytestream as char array
 	template<typename F>
 	requires invocable<F, string_view, span<char const>>
 	void loadModels(F func);

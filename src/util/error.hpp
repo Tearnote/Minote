@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string_view> // util/string.hpp would cause a circular dependency
-#include <functional>
 #include <stdexcept>
 #include <utility>
 #include "util/format.hpp"
