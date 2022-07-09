@@ -82,6 +82,7 @@ add_executable(Minote
 	# src/gfx/frame.hpp src/gfx/frame.cpp
 	src/gfx/util.hpp
 	#src/playstate.hpp src/playstate.cpp
+	src/freecam.hpp src/freecam.cpp
 	src/assets.hpp src/assets.tpp src/assets.cpp
 	src/mapper.hpp src/mapper.cpp
 	src/scenes.hpp src/scenes.cpp

@@ -55,10 +55,11 @@ auto main(int, char*[]) -> int try {
 	auto mapper = Mapper();
 	
 	// Start the game thread
-	auto gameThread = std::jthread(game, GameParams{
+	auto game = Game({
 		.window = window,
 		.mapper = mapper,
 	});
+	auto gameThread = std::jthread([&] { game.run(); });
 	
 	// Add window resize handler
 	SDL_AddEventWatch(&windowResize, &engine);

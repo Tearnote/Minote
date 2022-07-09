@@ -1,17 +1,29 @@
 #pragma once
 
+#include <memory>
 #include "sys/window.hpp"
-#include "gfx/engine.hpp"
 #include "mapper.hpp"
 
 namespace minote {
 
-struct GameParams {
-	Window& window;
-	Mapper& mapper;
+// Game main loop, rendering and logic
+struct Game {
+	
+	struct Params {
+		Window& window;
+		Mapper& mapper;
+	};
+	
+	Game(Params const&);
+	~Game();
+	
+	void run(); // Blocking; run on new thread
+	
+private:
+	
+	struct Impl;
+	std::unique_ptr<Impl> impl;
+	
 };
-
-// Entry point for the rendering + logic thread
-void game(GameParams const&);
 
 }
