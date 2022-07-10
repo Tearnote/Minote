@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <utility>
 
 namespace minote {
@@ -33,8 +34,8 @@ struct Service {
 	template<typename... Args>
 	auto provide(Args&&... args) -> Stub { return Stub(*this, std::forward<Args>(args)...); }
 	
-	auto operator*() -> T& { return *m_handle; }
-	auto operator->() -> T* { return m_handle; }
+	auto operator*() -> T& { assert(m_handle); return *m_handle; }
+	auto operator->() -> T* { assert(m_handle); return m_handle; }
 	
 private:
 	

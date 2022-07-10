@@ -1,7 +1,7 @@
 #pragma once
 
 #include <memory>
-#include "sys/window.hpp"
+#include "sys/system.hpp"
 #include "mapper.hpp"
 
 namespace minote {

@@ -1,5 +1,7 @@
 #include "sys/system.hpp"
 
+#include <cassert>
+
 #ifdef _WIN32
 #ifndef NOMINMAX
 #define NOMINMAX 1
@@ -14,12 +16,15 @@
 #include <io.h>
 #endif
 
+#include "SDL_vulkan.h"
 #include "SDL_events.h"
 #include "SDL_timer.h"
 #include "SDL.h"
+#include "backends/imgui_impl_sdl.h"
+#include "imgui.h"
 #include "util/error.hpp"
-#include "util/util.hpp"
 #include "util/time.hpp"
+#include "util/math.hpp"
 #include "util/log.hpp"
 
 namespace minote {
@@ -116,6 +121,54 @@ void System::initConsole() {
 	SetConsoleOutputCP(65001);
 	
 #endif
+	
+}
+
+Window::Window(string_view _title, bool _fullscreen, uvec2 _size):
+	m_title(_title) {
+	
+	assert(_size.x() > 0 && _size.y() > 0);
+	
+	// Create window
+	
+	m_handle = SDL_CreateWindow(m_title.c_str(),
+		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+		_size.x(), _size.y(),
+		SDL_WINDOW_RESIZABLE |
+		SDL_WINDOW_ALLOW_HIGHDPI |
+		SDL_WINDOW_VULKAN |
+		(_fullscreen? SDL_WINDOW_FULLSCREEN_DESKTOP : 0));
+	if(!m_handle)
+		throw runtime_error_fmt("Failed to create window {}: {}", m_title, SDL_GetError());
+	
+	// Set window properties
+	
+	// Real size might be different from requested size because of DPI scaling
+	auto realSize = ivec2();
+	SDL_Vulkan_GetDrawableSize(m_handle, &realSize.x(), &realSize.y());
+	m_size = uvec2(realSize);
+	
+	auto dpi = 0.0f;
+	SDL_GetDisplayDPI(SDL_GetWindowDisplayIndex(m_handle), nullptr, nullptr, &dpi);
+	m_dpi = dpi;
+	
+	// Initialize imgui input
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGui::StyleColorsDark();
+	ImGui_ImplSDL2_InitForVulkan(m_handle);
+	
+	L_INFO("Window {} created at {}x{}, {} DPI{}",
+		m_title, realSize.x(), realSize.y(), dpi, _fullscreen? ", fullscreen" : "");
+	
+}
+
+Window::~Window() {
+	
+	ImGui_ImplSDL2_Shutdown();
+	SDL_DestroyWindow(m_handle);
+	
+	L_INFO("Window {} closed", title());
 	
 }
 

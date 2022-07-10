@@ -1,15 +1,54 @@
 #pragma once
 
+#include <atomic>
 #include "util/concepts.hpp"
 #include "SDL_events.h"
+#include "SDL_video.h"
 #include "util/service.hpp"
 #include "util/string.hpp"
+#include "util/types.hpp"
+#include "util/math.hpp"
 #include "util/time.hpp"
 
 namespace minote {
 
 // OS-specific functionality - windowing, event queue etc.
 struct System {
+	
+	struct Window {
+		
+		~Window();
+		
+		[[nodiscard]]
+		auto size() -> uvec2 { return m_size; }
+		[[nodiscard]]
+		auto dpi() -> f32 { return m_dpi; }
+		[[nodiscard]]
+		auto title() const -> string_view { return m_title; }
+		
+		// Provide the raw GLFW window handle for tasks like Vulkan surface creation
+		[[nodiscard]]
+		auto handle() -> SDL_Window* { return m_handle; }
+		
+		// Not movable, not copyable
+		Window(Window const&) = delete;
+		auto operator=(Window const&) -> Window& = delete;
+		
+	private:
+		
+		friend struct System;
+		Window(string_view title, bool fullscreen, uvec2 size);
+		
+		// Raw window handle
+		SDL_Window* m_handle;
+		// Text displayed on the window's title bar
+		string m_title;
+		// Size in physical pixels
+		std::atomic<uvec2> m_size;
+		// DPI of the display the window is on
+		std::atomic<f32> m_dpi;
+		
+	};
 	
 	// Collect pending events for all open windows and keep them responsive.
 	// Call this as often as your target resolution of user input
@@ -45,6 +84,12 @@ struct System {
 	// Create a console window and bind to standard input and output
 	static void initConsole();
 	
+	// Open a window with specified parameters on the screen. Size of the window
+	// is in logical units. If fullscreen is true, size is ignored and the window
+	// is created at desktop resolution
+	auto openWindow(string_view title, bool fullscreen = false, uvec2 size = {1280, 720}) -> Window
+	 { return Window(title, fullscreen, size); }
+	
 	System(System const&) = delete;
 	auto operator=(System const&) -> System& = delete;
 	
@@ -62,6 +107,8 @@ private:
 	~System();
 	
 };
+
+using Window = System::Window;
 
 inline Service<System> s_system;
 

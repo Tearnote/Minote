@@ -10,7 +10,6 @@
 #include "util/types.hpp"
 #include "util/math.hpp"
 #include "util/log.hpp"
-#include "sys/window.hpp"
 #include "sys/system.hpp"
 #include "sys/vulkan.hpp"
 #include "gfx/engine.hpp"
@@ -49,7 +48,7 @@ auto main(int, char*[]) -> int try {
 	
 	// Initialize systems
 	auto system = s_system.provide();
-	auto window = Window(AppTitle, false, {960, 504});
+	auto window = s_system->openWindow(AppTitle, false, {960, 504});
 	auto vulkan = Vulkan(window);
 	auto engine = s_engine.provide(vulkan);
 	auto mapper = Mapper();

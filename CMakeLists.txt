@@ -56,7 +56,6 @@ add_executable(Minote
 	src/util/rng.hpp
 	src/util/id.hpp
 	src/tools/modelSchema.hpp
-	src/sys/window.hpp src/sys/window.cpp
 	src/sys/vulkan.hpp src/sys/vulkan.cpp
 	src/sys/system.hpp src/sys/system.cpp
 	# src/gfx/effects/cubeFilterCoeffs.hpp

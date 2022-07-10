@@ -5,7 +5,7 @@
 #include "VkBootstrap.h"
 #include "vuk/Context.hpp"
 #include "util/math.hpp"
-#include "sys/window.hpp"
+#include "sys/system.hpp"
 
 namespace minote {
 
