@@ -11,8 +11,8 @@
 #include "util/math.hpp"
 #include "util/log.hpp"
 #include "sys/window.hpp"
+#include "sys/system.hpp"
 #include "sys/vulkan.hpp"
-#include "sys/os.hpp"
 #include "gfx/engine.hpp"
 #include "mapper.hpp"
 #include "game.hpp"
@@ -42,7 +42,7 @@ auto main(int, char*[]) -> int try {
 	
 	// Initialize logging
 #if SPAWN_CONSOLE
-	OS::initConsole();
+	System::initConsole();
 #endif
 	Log::init(Log_p, LOG_LEVEL);
 	L_INFO("Starting up {} {}.{}.{}", AppTitle, AppVersion[0], AppVersion[1], AppVersion[2]);

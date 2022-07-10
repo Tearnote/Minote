@@ -24,5 +24,6 @@ concept trivially_copyable = std::is_trivially_copyable_v<T>;
 using std::default_initializable;
 
 using std::invocable;
+using std::predicate;
 
 }

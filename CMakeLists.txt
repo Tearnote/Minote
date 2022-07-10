@@ -59,7 +59,6 @@ add_executable(Minote
 	src/sys/window.hpp src/sys/window.cpp
 	src/sys/vulkan.hpp src/sys/vulkan.cpp
 	src/sys/system.hpp src/sys/system.cpp
-	src/sys/os.hpp src/sys/os.cpp
 	# src/gfx/effects/cubeFilterCoeffs.hpp
 	# src/gfx/effects/instanceList.hpp src/gfx/effects/instanceList.cpp
 	# src/gfx/effects/quadBuffer.hpp src/gfx/effects/quadBuffer.cpp
