@@ -23,9 +23,8 @@ struct Engine {
 	static constexpr auto NearPlane = 0.1_m;
 	
 	// Create the engine in uninitialized state.
-	Engine(Vulkan& vk):
-		m_vk(vk),
-		m_deviceResource(*vk.context, InflightFrames),
+	Engine():
+		m_deviceResource(*s_vulkan->context, InflightFrames),
 		m_framerate(60.0f),
 		m_lastFramerateCheck(0),
 		m_framesSinceLastCheck(0),
@@ -56,8 +55,6 @@ struct Engine {
 	auto operator=(Engine&&) -> Engine& = delete;
 	
 private:
-	
-	Vulkan& m_vk;
 	
 	vuk::DeviceSuperFrameResource m_deviceResource;
 	vuk::Allocator m_globalAllocator;

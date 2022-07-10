@@ -30,7 +30,7 @@ using namespace std::string_literals;
 
 Engine::~Engine() {
 	
-	m_vk.context->wait_idle();
+	s_vulkan->context->wait_idle();
 	
 	m_imguiData.fontTex.view.reset();
 	m_imguiData.fontTex.image.reset();
@@ -59,8 +59,8 @@ void Engine::init(ModelList&& _modelList) {
 	
 	m_imguiData = ImGui_ImplVuk_Init(m_globalAllocator);
 	ImGui::GetIO().DisplaySize = ImVec2(
-		f32(m_vk.swapchain->extent.width),
-		f32(m_vk.swapchain->extent.height));
+		f32(s_vulkan->swapchain->extent.width),
+		f32(s_vulkan->swapchain->extent.height));
 	// Begin imgui frame so that first-frame calls succeed
 	ImGui::NewFrame();
 	
@@ -86,7 +86,7 @@ void Engine::render() {
 
 void Engine::renderFrame() {
 
-	m_vk.context->next_frame();
+	s_vulkan->context->next_frame();
 	auto& frameResource = m_deviceResource.get_next_frame();
 	auto frameAllocator = vuk::Allocator(frameResource);
 	
@@ -113,7 +113,7 @@ void Engine::renderFrame() {
 	if (!m_flushTemporalResources)
 		m_world.prevViewProjection = m_world.viewProjection;
 	
-	auto viewport = uvec2{m_vk.swapchain->extent.width, m_vk.swapchain->extent.height};
+	auto viewport = uvec2{s_vulkan->swapchain->extent.width, s_vulkan->swapchain->extent.height};
 	m_world.projection = perspective(VerticalFov, f32(viewport.x()) / f32(viewport.y()), NearPlane);
 	m_world.view = m_camera.transform();
 	m_world.viewProjection = m_world.projection * m_world.view;
@@ -121,7 +121,7 @@ void Engine::renderFrame() {
 	m_world.viewportSize = viewport;
 	m_world.nearPlane = NearPlane;
 	m_world.cameraPos = m_camera.position;
-	m_world.frameCounter = m_vk.context->get_frame_count();
+	m_world.frameCounter = s_vulkan->context->get_frame_count();
 	
 	if (m_flushTemporalResources)
 		m_world.prevViewProjection = m_world.viewProjection;
@@ -143,7 +143,7 @@ void Engine::renderFrame() {
 	// Prepare frame
 	
 	auto rg = vuk::RenderGraph();
-	rg.attach_swapchain("swapchain", m_vk.swapchain);
+	rg.attach_swapchain("swapchain", s_vulkan->swapchain);
 	rg.attach_and_clear_image("screen", { .format = vuk::Format::eR8G8B8A8Unorm, .sample_count = vuk::Samples::e1 }, vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.0f));
 	rg.inference_rule("screen", vuk::same_extent_as("swapchain"));
 	
@@ -180,7 +180,7 @@ void Engine::renderFrame() {
 	
 	try {
 		
-		execute_submit_and_present_to_one(frameAllocator, std::move(rg).link({}), m_vk.swapchain);
+		execute_submit_and_present_to_one(frameAllocator, std::move(rg).link({}), s_vulkan->swapchain);
 
 	} catch (vuk::PresentException& e) {
 
@@ -204,17 +204,17 @@ void Engine::refreshSwapchain(uvec2 _newSize) {
 	
 	auto lock = std::lock_guard(m_renderLock);
 	
-	auto newSwapchain = m_vk.context->add_swapchain(m_vk.createSwapchain(_newSize, m_vk.swapchain->swapchain));
-	m_deviceResource.deallocate_image_views(m_vk.swapchain->image_views);
-	m_deviceResource.deallocate_swapchains({&m_vk.swapchain->swapchain, 1});
-	m_vk.context->remove_swapchain(m_vk.swapchain);
-	m_vk.swapchain = newSwapchain;
+	auto newSwapchain = s_vulkan->context->add_swapchain(s_vulkan->createSwapchain(_newSize, s_vulkan->swapchain->swapchain));
+	m_deviceResource.deallocate_image_views(s_vulkan->swapchain->image_views);
+	m_deviceResource.deallocate_swapchains({&s_vulkan->swapchain->swapchain, 1});
+	s_vulkan->context->remove_swapchain(s_vulkan->swapchain);
+	s_vulkan->swapchain = newSwapchain;
 	m_swapchainDirty = false;
 	m_flushTemporalResources = true;
 	
 	ImGui::GetIO().DisplaySize = ImVec2(
-		f32(m_vk.swapchain->extent.width),
-		f32(m_vk.swapchain->extent.height));
+		f32(s_vulkan->swapchain->extent.width),
+		f32(s_vulkan->swapchain->extent.height));
 	
 	renderFrame();
 	

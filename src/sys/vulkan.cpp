@@ -3,6 +3,7 @@
 #include "config.hpp"
 
 #include <cassert>
+#include "volk.h"
 #include "SDL_vulkan.h"
 #include "util/error.hpp"
 #include "util/log.hpp"
@@ -20,7 +21,6 @@ VKAPI_ATTR auto VKAPI_CALL debugCallback(
 	assert(_data);
 	
 	auto type = [_typeCode]() {
-		
 		if (_typeCode & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
 			return "[VulkanPerf]";
 		if (_typeCode & VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)
@@ -28,7 +28,6 @@ VKAPI_ATTR auto VKAPI_CALL debugCallback(
 		if (_typeCode & VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT)
 			return "[Vulkan]";
 		throw logic_error_fmt("Unknown Vulkan diagnostic message type: #{}", _typeCode);
-		
 	}();
 	
 	     if (_severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
@@ -45,143 +44,16 @@ VKAPI_ATTR auto VKAPI_CALL debugCallback(
 	return VK_FALSE;
 	
 }
-#endif //VK_VALIDATION
+#endif
 
 Vulkan::Vulkan(Window& _window) {
 	
-	// Create instance
-	
-	auto instanceResult = vkb::InstanceBuilder()
-#if VK_VALIDATION
-		.enable_layer("VK_LAYER_KHRONOS_validation")
-		.add_validation_feature_enable(VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT)
-		.add_validation_feature_enable(VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT)
-		.set_debug_callback(debugCallback)
-		.set_debug_messenger_severity(
-			VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT |
-			VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT/* |
-			VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT*/)
-		.set_debug_messenger_type(
-			VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-			VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-			VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
-#endif //VK_VALIDATION
-		.set_app_name(AppTitle)
-		.set_engine_name("vuk")
-		.require_api_version(1, 3, 0)
-		.set_app_version(std::get<0>(AppVersion), std::get<1>(AppVersion), std::get<2>(AppVersion))
-		.build();
-	if (!instanceResult)
-		throw runtime_error_fmt("Failed to create a Vulkan instance: {}", instanceResult.error().message());
-	instance = instanceResult.value();
-	
-	volkInitializeCustom(instance.fp_vkGetInstanceProcAddr);
-	volkLoadInstanceOnly(instance.instance);
-	
-	L_DEBUG("Vulkan instance created");
-	
-	// Create surface
-	
-	SDL_Vulkan_CreateSurface(_window.handle(), instance.instance, &surface);
-	
-	// Select physical device
-	
-	auto physicalDeviceFeatures = VkPhysicalDeviceFeatures{
-#if VK_VALIDATION
-		.robustBufferAccess = VK_TRUE,
-#endif //VK_VALIDATION
-		.geometryShader = VK_TRUE, // gl_PrimitiveID requirement
-		.shaderStorageImageWriteWithoutFormat = VK_TRUE };
-	auto physicalDeviceVulkan11Features = VkPhysicalDeviceVulkan11Features{
-		.shaderDrawParameters = VK_TRUE };
-	auto physicalDeviceVulkan12Features = VkPhysicalDeviceVulkan12Features{
-		.samplerFilterMinmax = VK_TRUE,
-		.hostQueryReset = VK_TRUE, // vuk requirement
-		.timelineSemaphore = VK_TRUE, // vuk requirement
-		.vulkanMemoryModel = VK_TRUE, // general performance improvement
-		.vulkanMemoryModelDeviceScope = VK_TRUE }; // general performance improvement
-	auto physicalDeviceVulkan13Features = VkPhysicalDeviceVulkan13Features{
-		.computeFullSubgroups = VK_TRUE,
-		.synchronization2 = VK_TRUE // pending vuk bugfix
-		};
-	
-	auto physicalDeviceSelectorResult = vkb::PhysicalDeviceSelector(instance)
-		.set_surface(surface)
-		.set_minimum_version(1, 3)
-		.set_required_features(physicalDeviceFeatures)
-		.set_required_features_11(physicalDeviceVulkan11Features)
-		.set_required_features_12(physicalDeviceVulkan12Features)
-		.set_required_features_13(physicalDeviceVulkan13Features)
-		.add_required_extension("VK_KHR_synchronization2")
-#if VK_VALIDATION
-		.add_required_extension("VK_EXT_robustness2")
-		.add_required_extension_features(VkPhysicalDeviceRobustness2FeaturesEXT{
-			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT,
-			.robustBufferAccess2 = VK_TRUE,
-			.robustImageAccess2 = VK_TRUE })
-#endif //VK_VALIDATION
-		.select();
-	if (!physicalDeviceSelectorResult)
-		throw runtime_error_fmt("Failed to find a suitable GPU for Vulkan: {}",
-			physicalDeviceSelectorResult.error().message());
-	auto physicalDevice = physicalDeviceSelectorResult.value();
-	
-	L_INFO("GPU selected: {}", physicalDevice.properties.deviceName);
-	L_DEBUG("Vulkan driver version {}.{}.{}",
-		VK_API_VERSION_MAJOR(physicalDevice.properties.driverVersion),
-		VK_API_VERSION_MINOR(physicalDevice.properties.driverVersion),
-		VK_API_VERSION_PATCH(physicalDevice.properties.driverVersion));
-	
-	// Create device
-	
-	auto deviceResult = vkb::DeviceBuilder(physicalDevice).build();
-	if (!deviceResult)
-		throw runtime_error_fmt("Failed to create Vulkan device: {}", deviceResult.error().message());
-	device = deviceResult.value();
-	
-	volkLoadDevice(device.device);
-	
-	L_DEBUG("Vulkan device created");
-	
-	// Get queues
-	
-	auto graphicsQueue = device.get_queue(vkb::QueueType::graphics).value();
-	auto graphicsQueueFamilyIndex = device.get_queue_index(vkb::QueueType::graphics).value();
-	
-	auto transferQueuePresent = device.get_dedicated_queue(vkb::QueueType::transfer).has_value();
-	auto transferQueue = transferQueuePresent?
-		device.get_dedicated_queue(vkb::QueueType::transfer).value() :
-		VK_NULL_HANDLE;
-	auto transferQueueFamilyIndex = transferQueuePresent?
-		device.get_dedicated_queue_index(vkb::QueueType::transfer).value() :
-		VK_QUEUE_FAMILY_IGNORED;
-	
-	auto computeQueuePresent = device.get_dedicated_queue(vkb::QueueType::compute).has_value();
-	auto computeQueue = computeQueuePresent?
-		device.get_dedicated_queue(vkb::QueueType::compute).value() :
-		VK_NULL_HANDLE;
-	auto computeQueueFamilyIndex = computeQueuePresent?
-		device.get_dedicated_queue_index(vkb::QueueType::compute).value() :
-		VK_QUEUE_FAMILY_IGNORED;
-
-	VkPhysicalDeviceProperties props;
-	vkGetPhysicalDeviceProperties(physicalDevice.physical_device, &props);
-	
-	// Create vuk context
-	
-	context.emplace(vuk::ContextCreateParameters{
-		.instance =                    instance.instance,
-		.device =                      device.device,
-		.physical_device =             physicalDevice.physical_device,
-		.graphics_queue =              graphicsQueue,
-		.graphics_queue_family_index = graphicsQueueFamilyIndex,
-		.compute_queue =               computeQueue,
-		.compute_queue_family_index =  computeQueueFamilyIndex,
-		.transfer_queue =              transferQueue,
-		.transfer_queue_family_index = transferQueueFamilyIndex});
-	
-	// Create swapchain
-	
+	instance = createInstance();
+	surface = createSurface(instance, _window);
+	physicalDevice = selectPhysicalDevice(instance, surface);
+	device = createDevice(physicalDevice);
+	auto queues = retrieveQueues(device);
+	context.emplace(std::move(createContext(instance, device, physicalDevice, queues)));
 	swapchain = context->add_swapchain(createSwapchain(_window.size()));
 	
 	L_INFO("Vulkan initialized");
@@ -190,20 +62,8 @@ Vulkan::Vulkan(Window& _window) {
 
 Vulkan::~Vulkan() {
 	
-	// Await GPU idle
-	
 	context->wait_idle();
-	
-	// Cleanup vuk
-	
-	// This performs cleanup for all inflight frames
-	// repeat(vuk::Context::FC, [this] {
-	// 	context->begin();
-	// });
 	context.reset();
-	
-	// Shut down Vulkan
-	
 	vkb::destroy_device(device);
 	vkDestroySurfaceKHR(instance.instance, surface, nullptr);
 	vkb::destroy_instance(instance);
@@ -242,6 +102,161 @@ auto Vulkan::createSwapchain(uvec2 _size, VkSwapchainKHR _old) -> vuk::Swapchain
 	for (auto& iv: *ivs)
 		vuksw.image_views.emplace_back().payload = iv;
 	return vuksw;
+	
+}
+
+auto Vulkan::createInstance() -> vkb::Instance {
+	
+	auto instanceResult = vkb::InstanceBuilder()
+#if VK_VALIDATION
+		.enable_layer("VK_LAYER_KHRONOS_validation")
+		.add_validation_feature_enable(VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT)
+		.add_validation_feature_enable(VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT)
+		.set_debug_callback(debugCallback)
+		.set_debug_messenger_severity(
+			VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT |
+			VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT/* |
+			VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT*/)
+		.set_debug_messenger_type(
+			VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+			VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+			VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
+#endif //VK_VALIDATION
+		.set_app_name(AppTitle)
+		.set_engine_name("vuk")
+		.require_api_version(1, 3, 0)
+		.set_app_version(AppVersion[0], AppVersion[1], AppVersion[2])
+		.build();
+	if (!instanceResult)
+		throw runtime_error_fmt("Failed to create a Vulkan instance: {}", instanceResult.error().message());
+	auto instance = instanceResult.value();
+	
+	volkInitializeCustom(instance.fp_vkGetInstanceProcAddr);
+	volkLoadInstanceOnly(instance.instance);
+	
+	L_DEBUG("Vulkan instance created");
+	return instance;
+	
+}
+
+auto Vulkan::createSurface(vkb::Instance& _instance, Window& _window) -> VkSurfaceKHR {
+	
+	auto result = VkSurfaceKHR();
+	SDL_Vulkan_CreateSurface(_window.handle(), _instance.instance, &result);
+	return result;
+	
+}
+
+auto Vulkan::selectPhysicalDevice(vkb::Instance& _instance, VkSurfaceKHR _surface) -> vkb::PhysicalDevice {
+	
+		auto physicalDeviceFeatures = VkPhysicalDeviceFeatures{
+#if VK_VALIDATION
+		.robustBufferAccess = VK_TRUE,
+#endif //VK_VALIDATION
+		.geometryShader = VK_TRUE, // gl_PrimitiveID requirement
+		.shaderStorageImageWriteWithoutFormat = VK_TRUE,
+	};
+	auto physicalDeviceVulkan11Features = VkPhysicalDeviceVulkan11Features{
+		.shaderDrawParameters = VK_TRUE,
+	};
+	auto physicalDeviceVulkan12Features = VkPhysicalDeviceVulkan12Features{
+		.samplerFilterMinmax = VK_TRUE,
+		.hostQueryReset = VK_TRUE, // vuk requirement
+		.timelineSemaphore = VK_TRUE, // vuk requirement
+		.vulkanMemoryModel = VK_TRUE, // general performance improvement
+		.vulkanMemoryModelDeviceScope = VK_TRUE, // general performance improvement
+	};
+	auto physicalDeviceVulkan13Features = VkPhysicalDeviceVulkan13Features{
+		.computeFullSubgroups = VK_TRUE,
+		.synchronization2 = VK_TRUE, // pending vuk bugfix
+	};
+	
+	auto physicalDeviceSelectorResult = vkb::PhysicalDeviceSelector(_instance)
+		.set_surface(_surface)
+		.set_minimum_version(1, 3)
+		.set_required_features(physicalDeviceFeatures)
+		.set_required_features_11(physicalDeviceVulkan11Features)
+		.set_required_features_12(physicalDeviceVulkan12Features)
+		.set_required_features_13(physicalDeviceVulkan13Features)
+		.add_required_extension("VK_KHR_synchronization2")
+#if VK_VALIDATION
+		.add_required_extension("VK_EXT_robustness2")
+		.add_required_extension_features(VkPhysicalDeviceRobustness2FeaturesEXT{
+			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT,
+			.robustBufferAccess2 = VK_TRUE,
+			.robustImageAccess2 = VK_TRUE
+		})
+#endif //VK_VALIDATION
+		.select();
+	if (!physicalDeviceSelectorResult)
+		throw runtime_error_fmt("Failed to find a suitable GPU for Vulkan: {}",
+			physicalDeviceSelectorResult.error().message());
+	auto physicalDevice = physicalDeviceSelectorResult.value();
+	
+	L_INFO("GPU selected: {}", physicalDevice.properties.deviceName);
+	L_DEBUG("Vulkan driver version {}.{}.{}",
+		VK_API_VERSION_MAJOR(physicalDevice.properties.driverVersion),
+		VK_API_VERSION_MINOR(physicalDevice.properties.driverVersion),
+		VK_API_VERSION_PATCH(physicalDevice.properties.driverVersion));
+	return physicalDevice;
+	
+}
+
+auto Vulkan::createDevice(vkb::PhysicalDevice& _physicalDevice) -> vkb::Device {
+	
+	auto deviceResult = vkb::DeviceBuilder(_physicalDevice).build();
+	if (!deviceResult)
+		throw runtime_error_fmt("Failed to create Vulkan device: {}", deviceResult.error().message());
+	auto device = deviceResult.value();
+	
+	volkLoadDevice(device.device);
+	
+	L_DEBUG("Vulkan device created");
+	return device;
+	
+}
+
+auto Vulkan::retrieveQueues(vkb::Device& _device) -> Queues {
+	
+	auto result = Queues();
+	
+	result.graphics = _device.get_queue(vkb::QueueType::graphics).value();
+	result.graphicsFamilyIndex = _device.get_queue_index(vkb::QueueType::graphics).value();
+	
+	auto transferQueuePresent = _device.get_dedicated_queue(vkb::QueueType::transfer).has_value();
+	result.transfer = transferQueuePresent?
+		_device.get_dedicated_queue(vkb::QueueType::transfer).value() :
+		VK_NULL_HANDLE;
+	result.transferFamilyIndex = transferQueuePresent?
+		_device.get_dedicated_queue_index(vkb::QueueType::transfer).value() :
+		VK_QUEUE_FAMILY_IGNORED;
+	
+	auto computeQueuePresent = _device.get_dedicated_queue(vkb::QueueType::compute).has_value();
+	result.compute = computeQueuePresent?
+		_device.get_dedicated_queue(vkb::QueueType::compute).value() :
+		VK_NULL_HANDLE;
+	result.computeFamilyIndex = computeQueuePresent?
+		_device.get_dedicated_queue_index(vkb::QueueType::compute).value() :
+		VK_QUEUE_FAMILY_IGNORED;
+	
+	return result;
+	
+}
+
+auto Vulkan::createContext(vkb::Instance& _instance, vkb::Device& _device,
+	vkb::PhysicalDevice& _physicalDevice, Queues const& _queues) -> vuk::Context {
+	
+	return vuk::Context(vuk::ContextCreateParameters{
+		.instance =                    _instance.instance,
+		.device =                      _device.device,
+		.physical_device =             _physicalDevice.physical_device,
+		.graphics_queue =              _queues.graphics,
+		.graphics_queue_family_index = _queues.graphicsFamilyIndex,
+		.compute_queue =               _queues.compute,
+		.compute_queue_family_index =  _queues.computeFamilyIndex,
+		.transfer_queue =              _queues.transfer,
+		.transfer_queue_family_index = _queues.transferFamilyIndex,
+	});
 	
 }
 

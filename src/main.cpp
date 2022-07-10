@@ -49,8 +49,8 @@ auto main(int, char*[]) -> int try {
 	// Initialize systems
 	auto system = s_system.provide();
 	auto window = s_system->openWindow(AppTitle, false, {960, 504});
-	auto vulkan = Vulkan(window);
-	auto engine = s_engine.provide(vulkan);
+	auto vulkan = s_vulkan.provide(window);
+	auto engine = s_engine.provide();
 	auto mapper = Mapper();
 	
 	// Start the game thread
