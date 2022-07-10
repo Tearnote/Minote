@@ -93,7 +93,7 @@ void Engine::renderFrame() {
 	// Framerate calculation
 	
 	m_framesSinceLastCheck += 1;
-	auto currentTime = System::getTime();
+	auto currentTime = s_system->getTime();
 	auto timeElapsed = currentTime - m_lastFramerateCheck;
 	if (timeElapsed >= 1_s) {
 		

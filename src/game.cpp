@@ -95,11 +95,11 @@ void Game::Impl::createScene() {
 
 void Game::Impl::gameLoop() {
 	
-	auto nextUpdate = System::getTime();
-	while (!System::isQuitting()) {
+	auto nextUpdate = s_system->getTime();
+	while (!s_system->isQuitting()) {
 		
 		ImGui_ImplSDL2_NewFrame(window.handle());
-		while (nextUpdate <= System::getTime()) {
+		while (nextUpdate <= s_system->getTime()) {
 			tick(nextUpdate);
 			nextUpdate += LogicTick;
 		}
@@ -113,7 +113,7 @@ void Game::Impl::gameLoop() {
 void Game::Impl::tick(nsec _until) {
 	
 	// Handle all relevant inputs
-	System::forEachEvent([&] (const System::Event& e) -> bool {
+	s_system->forEachEvent([&] (const SDL_Event& e) -> bool {
 		
 		// Don't handle events from the future
 		if (milliseconds(e.common.timestamp) > _until) return false;
@@ -132,7 +132,7 @@ void Game::Impl::tick(nsec _until) {
 		// Game logic events
 		if (auto action = mapper.convert(e)) {
 			if (action->type == Mapper::Action::Type::Back)
-				System::postQuitEvent();
+				s_system->postQuitEvent();
 			freecam.handleAction(*action);
 		}
 		
@@ -157,7 +157,7 @@ void Game::run() try {
 	
 	L_CRIT("Unhandled exception on game thread: {}", e.what());
 	L_CRIT("Cannot recover, shutting down. Please report this error to the developer");
-	System::postQuitEvent();
+	s_system->postQuitEvent();
 	
 }
 

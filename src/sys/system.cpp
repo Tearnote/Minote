@@ -1,7 +1,5 @@
 #include "sys/system.hpp"
 
-#include <cassert>
-
 #ifdef _WIN32
 #ifndef NOMINMAX
 #define NOMINMAX 1
@@ -28,8 +26,6 @@ namespace minote {
 
 System::System() {
 	
-	assert(!m_exists);
-	
 	if (SDL_Init(
 		SDL_INIT_TIMER |
 		SDL_INIT_VIDEO |
@@ -45,10 +41,9 @@ System::System() {
 	// Increase sleep timer resolution
 #ifdef _WIN32
 	if (timeBeginPeriod(1) != TIMERR_NOERROR)
-		throw std::runtime_error("Failed to initialize Windows timer");
-#endif //_WIN32
+		throw runtime_error("Failed to initialize Windows timer");
+#endif
 	
-	m_exists = true;
 	L_DEBUG("System initialized");
 	
 }
@@ -57,11 +52,10 @@ System::~System() {
 	
 #ifdef _WIN32
 	timeEndPeriod(1);
-#endif //_WIN32
+#endif
 	
 	SDL_Quit();
 	
-	m_exists = false;
 	L_DEBUG("System cleaned up");
 	
 }

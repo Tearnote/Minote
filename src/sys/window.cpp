@@ -40,8 +40,8 @@ void Window::windowScaleCallback(GLFWwindow* _handle, float _xScale, float) {
 	
 }
 */
-Window::Window(System const& _system, string_view _title, bool _fullscreen, uvec2 _size):
-	m_system(_system), m_title(_title) {
+Window::Window(string_view _title, bool _fullscreen, uvec2 _size):
+	m_title(_title) {
 	
 	assert(_size.x() > 0 && _size.y() > 0);
 	

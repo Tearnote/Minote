@@ -107,7 +107,7 @@ SimpleScene::~SimpleScene() {
 
 void SimpleScene::update() {
 	
-	auto rotateAnim = quat::angleAxis(radians(ratio(System::getTime(), 20_ms)), {0.0f, 0.0f, 1.0f});
+	auto rotateAnim = quat::angleAxis(radians(ratio(s_system->getTime(), 20_ms)), {0.0f, 0.0f, 1.0f});
 	s_engine->objects().get(m_spinny).transform.rotation = rotateAnim;
 	
 }

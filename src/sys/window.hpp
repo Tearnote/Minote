@@ -16,7 +16,7 @@ struct Window {
 	// Open a window with specified parameters on the screen. Size of the window
 	// is in logical units. If fullscreen is true, size is ignored and the window
 	// is created at desktop resolution.
-	Window(System const&, string_view title, bool fullscreen = false, uvec2 size = {1280, 720});
+	Window(string_view title, bool fullscreen = false, uvec2 size = {1280, 720});
 	
 	// Close the window. Make sure everything using the window is cleaned up.
 	~Window();
@@ -42,9 +42,6 @@ private:
 	
 	// Raw window handle
 	SDL_Window* m_handle;
-	
-	// Parent system instance
-	System const& m_system;
 	
 	// Text displayed on the window's title bar
 	string m_title;

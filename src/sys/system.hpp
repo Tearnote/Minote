@@ -2,6 +2,7 @@
 
 #include "util/concepts.hpp"
 #include "SDL_events.h"
+#include "util/service.hpp"
 #include "util/string.hpp"
 #include "util/time.hpp"
 
@@ -9,9 +10,6 @@ namespace minote {
 
 // OS-specific functionality - windowing, event queue etc.
 struct System {
-	
-	System();
-	~System();
 	
 	// Collect pending events for all open windows and keep them responsive.
 	// Call this as often as your target resolution of user input
@@ -42,7 +40,7 @@ struct System {
 	void postQuitEvent();
 	
 	// Return true if there is a quit event in the queue
-	static auto isQuitting() -> bool;
+	auto isQuitting() -> bool;
 	
 	// Create a console window and bind to standard input and output
 	static void initConsole();
@@ -58,6 +56,13 @@ private:
 	// Timestamp of initialization
 	u64 m_timerStart;
 	
+	// Only usable from the service
+	friend struct Service<System>;
+	System();
+	~System();
+	
 };
+
+inline Service<System> s_system;
 
 }

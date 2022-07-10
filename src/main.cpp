@@ -48,8 +48,8 @@ auto main(int, char*[]) -> int try {
 	L_INFO("Starting up {} {}.{}.{}", AppTitle, AppVersion[0], AppVersion[1], AppVersion[2]);
 	
 	// Initialize systems
-	auto system = System();
-	auto window = Window(system, AppTitle, false, {960, 504});
+	auto system = s_system.provide();
+	auto window = Window(AppTitle, false, {960, 504});
 	auto vulkan = Vulkan(window);
 	auto engine = s_engine.provide(vulkan);
 	auto mapper = Mapper();
@@ -66,9 +66,9 @@ auto main(int, char*[]) -> int try {
 	defer { SDL_DelEventWatch(&windowResize, &engine); };
 	
 	// Input thread loop
-	while (!System::isQuitting()) {
+	while (!s_system->isQuitting()) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Forfeit thread timeslice
-		system.poll();
+		s_system->poll();
 	}
 	
 	return EXIT_SUCCESS;
