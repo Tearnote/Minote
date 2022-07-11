@@ -16,6 +16,14 @@
 
 // Build configuration variables
 
+// Whether to disable assertions
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
+#if BUILD_TYPE == BUILD_RELEASE
+#define NDEBUG
+#endif
+
 // Level of logging to file and/or console
 #if BUILD_TYPE != BUILD_RELEASE
 #define LOG_LEVEL quill::LogLevel::TraceL3

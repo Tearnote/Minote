@@ -40,6 +40,7 @@ add_executable(Minote
 	src/util/optional.hpp
 	src/util/service.hpp
 	src/util/hashmap.hpp
+	src/util/assert.hpp
 	src/util/vector.hpp
 	src/util/string.hpp
 	src/util/format.hpp
@@ -91,6 +92,7 @@ target_precompile_headers(Minote PRIVATE
 	src/util/optional.hpp
 	src/util/service.hpp
 	src/util/hashmap.hpp
+	src/util/assert.hpp
 	src/util/vector.hpp
 	src/util/string.hpp
 	src/util/format.hpp
@@ -156,6 +158,13 @@ FetchContent_MakeAvailable(pcg)
 add_library(pcg ${pcg_SOURCE_DIR}/pcg_basic.h ${pcg_SOURCE_DIR}/pcg_basic.c)
 target_include_directories(pcg PUBLIC ${pcg_SOURCE_DIR})
 target_link_libraries(Minote PRIVATE pcg)
+
+FetchContent_Declare(assert
+	GIT_REPOSITORY https://github.com/jeremy-rifkin/libassert
+	GIT_TAG 599a885a57050cd100ed771a189649ad7a603d4f)
+FetchContent_MakeAvailable(assert)
+target_link_libraries(assert PRIVATE dbghelp) # library incorrectly assumes only MSVC needs it
+target_link_libraries(Minote PRIVATE assert)
 
 set(OPT_DEF_LIBC ON CACHE BOOL "")
 set(VIDEO_OPENGLES OFF CACHE BOOL "")
