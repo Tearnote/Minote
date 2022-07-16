@@ -1,7 +1,7 @@
 #include "gfx/effects/bloom.hpp"
 
-#include <cassert>
 #include "vuk/CommandBuffer.hpp"
+#include "util/verify.hpp"
 #include "util/string.hpp"
 #include "util/types.hpp"
 #include "util/util.hpp"
@@ -34,8 +34,8 @@ void Bloom::compile(vuk::PerThreadContext& _ptc) {
 
 void Bloom::apply(Frame& _frame, Pool& _pool, Texture2D _target) {
 	
-	assert(_target.size().x() >= (1u << BloomPasses));
-	assert(_target.size().y() >= (1u << BloomPasses));
+	ASSUME(_target.size().x() >= (1u << BloomPasses));
+	ASSUME(_target.size().y() >= (1u << BloomPasses));
 	
 	// Create temporary resources
 	

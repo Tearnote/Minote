@@ -1,7 +1,7 @@
 #include "gfx/effects/cubeFilter.hpp"
 
-#include <cassert>
 #include "vuk/CommandBuffer.hpp"
+#include "util/verify.hpp"
 #include "util/types.hpp"
 #include "util/math.hpp"
 #include "util/util.hpp"
@@ -29,8 +29,8 @@ void CubeFilter::compile(vuk::PerThreadContext& _ptc) {
 
 void CubeFilter::apply(Frame& _frame, Cubemap _src, Cubemap _dst) {
 	
-	assert(_src.size() == uvec2(BaseSize));
-	assert(_dst.size() == uvec2(BaseSize));
+	ASSUME(_src.size() == uvec2(BaseSize));
+	ASSUME(_dst.size() == uvec2(BaseSize));
 	
 	_frame.rg.add_pass({
 		.name = nameAppend(_src.name, "cubeFilter/pre"),

@@ -9,10 +9,10 @@ set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 set(CMAKE_POLICY_DEFAULT_CMP0117 NEW)
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Build settings
@@ -30,8 +30,11 @@ if(WIN32)
 endif()
 
 set(BUILD_SHARED_LIBS OFF)
-add_link_options("-static;-static-libgcc;-static-libstdc++")
+# add_link_options("-static;-static-libgcc;-static-libstdc++")
+add_link_options("-static-libgcc") # https://github.com/msys2/MINGW-packages/issues/12050
 add_link_options("$<$<CONFIG:Debug,RelWithDebInfo>:-fuse-ld=lld>")
+
+add_compile_definitions("BUILD_TYPE=$<$<CONFIG:Debug>:BUILD_DEBUG>$<$<CONFIG:RelWithDebInfo>:BUILD_RELDEB>$<$<CONFIG:Release>:BUILD_RELEASE>")
 
 # Main executable
 
@@ -40,7 +43,7 @@ add_executable(Minote
 	src/util/optional.hpp
 	src/util/service.hpp
 	src/util/hashmap.hpp
-	src/util/assert.hpp
+	src/util/verify.hpp
 	src/util/vector.hpp
 	src/util/string.hpp
 	src/util/format.hpp
@@ -92,7 +95,7 @@ target_precompile_headers(Minote PRIVATE
 	src/util/optional.hpp
 	src/util/service.hpp
 	src/util/hashmap.hpp
-	src/util/assert.hpp
+	src/util/verify.hpp
 	src/util/vector.hpp
 	src/util/string.hpp
 	src/util/format.hpp
@@ -105,9 +108,6 @@ target_precompile_headers(Minote PRIVATE
 	src/util/time.hpp
 	src/util/log.hpp
 	src/config.hpp)
-
-target_compile_definitions(Minote PRIVATE
-	"BUILD_TYPE=$<$<CONFIG:Debug>:BUILD_DEBUG>$<$<CONFIG:RelWithDebInfo>:BUILD_RELDEB>$<$<CONFIG:Release>:BUILD_RELEASE>")
 
 target_include_directories(Minote PRIVATE src)
 target_link_libraries(Minote PRIVATE winmm)
@@ -234,14 +234,14 @@ target_link_libraries(Minote PRIVATE itlib)
 
 FetchContent_Declare(fmt
 	GIT_REPOSITORY https://github.com/fmtlib/fmt
-	GIT_TAG 8.1.1)
+	GIT_TAG 9.0.0)
 FetchContent_MakeAvailable(fmt)
 target_link_libraries(Minote PRIVATE fmt::fmt)
 
 set(QUILL_FMT_EXTERNAL ON CACHE BOOL "")
 FetchContent_Declare(quill
-	GIT_REPOSITORY https://github.com/Tearnote/quill
-	GIT_TAG 98b09cf8b824ea3f6c8d7ea93e9c37bb94709f9c)
+	GIT_REPOSITORY https://github.com/odygrd/quill
+	GIT_TAG v2.1.0)
 FetchContent_MakeAvailable(quill)
 target_link_libraries(quill PRIVATE fmt::fmt)
 target_link_libraries(Minote PRIVATE quill::quill)
@@ -329,13 +329,14 @@ add_executable(Model_conv
 target_include_directories(Model_conv PRIVATE src)
 target_link_libraries(Model_conv PRIVATE meshoptimizer)
 target_link_libraries(Model_conv PRIVATE quill::quill)
+target_link_libraries(Model_conv PRIVATE assert)
 target_link_libraries(Model_conv PRIVATE itlib)
 target_link_libraries(Model_conv PRIVATE cgltf)
 target_link_libraries(Model_conv PRIVATE mpack)
 target_link_libraries(Model_conv PRIVATE gcem)
 
 set(ASSET_FILENAME assets.db)
-target_compile_definitions(Minote PRIVATE ASSETS_P="${ASSET_FILENAME}")
+add_compile_definitions(ASSETS_P="${ASSET_FILENAME}")
 set(ASSET_OUTPUT ${PROJECT_BINARY_DIR}/$<CONFIG>/${ASSET_FILENAME})
 add_custom_command(
 	OUTPUT ${ASSET_OUTPUT}
@@ -343,7 +344,7 @@ add_custom_command(
 	VERBATIM)
 
 set(MODELS_TABLE "models")
-target_compile_definitions(Minote PRIVATE MODELS_TABLE="${MODELS_TABLE}")
+add_compile_definitions(MODELS_TABLE="${MODELS_TABLE}")
 set(MODELS
 	models/block.glb
 	models/sphere.glb

@@ -2,9 +2,9 @@
 
 #include "config.hpp"
 
-#include <cassert>
 #include "volk.h"
 #include "SDL_vulkan.h"
+#include "util/verify.hpp"
 #include "util/error.hpp"
 #include "util/log.hpp"
 #include "main.hpp"
@@ -18,7 +18,7 @@ VKAPI_ATTR auto VKAPI_CALL debugCallback(
 	VkDebugUtilsMessengerCallbackDataEXT const* _data,
 	void*) -> VkBool32 {
 	
-	assert(_data);
+	ASSUME(_data);
 	
 	auto type = [_typeCode]() {
 		if (_typeCode & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)

@@ -2,7 +2,7 @@
 // https://github.com/g-truc/glm
 
 #include <algorithm>
-#include <cassert>
+#include "util/verify.hpp"
 #include "util/util.hpp"
 
 namespace minote {
@@ -10,7 +10,7 @@ namespace minote {
 template<usize Dim, arithmetic T>
 constexpr vec<Dim, T>::vec(std::initializer_list<T> _list) {
 	
-	assert(_list.size() == m_arr.size());
+	ASSUME(_list.size() == m_arr.size());
 	std::copy(_list.begin(), _list.end(), m_arr.begin());
 	
 }
@@ -309,7 +309,7 @@ constexpr auto normalize(vec<Dim, T> const& _vec) -> vec<Dim, T> {
 template<floating_point Prec>
 constexpr qua<Prec>::qua(std::initializer_list<Prec> _list) {
 	
-	assert(_list.size() == m_arr.size());
+	ASSUME(_list.size() == m_arr.size());
 	std::copy(_list.begin(), _list.end(), m_arr.begin());
 	
 }
@@ -329,7 +329,7 @@ constexpr qua<Prec>::qua(vec<N, Prec> const& _other) {
 template<floating_point Prec>
 constexpr auto qua<Prec>::angleAxis(Prec _angle, vec<3, Prec> _axis) -> qua<Prec> {
 	
-	assert(isUnit(_axis));
+	ASSUME(isUnit(_axis));
 	
 	auto halfAngle = _angle / Prec(2);
 	auto sinHalfAngle = sin(halfAngle);
@@ -367,7 +367,7 @@ constexpr auto operator*(qua<Prec> const& _l, qua<Prec> const& _r) -> qua<Prec> 
 template<usize Dim, floating_point Prec>
 constexpr mat<Dim, Prec>::mat(std::initializer_list<Prec> _list) {
 	
-	assert(_list.size() == Dim * Dim);
+	ASSUME(_list.size() == Dim * Dim);
 	
 	auto it = _list.begin();
 	for (auto x: iota(0_zu, Dim))
@@ -405,7 +405,7 @@ constexpr auto mat<Dim, Prec>::translate(vec<3, Prec> _shift) -> mat<Dim, Prec> 
 template<usize Dim, floating_point Prec>
 constexpr auto mat<Dim, Prec>::rotate(vec<3, Prec> _axis, Prec _angle) -> mat<Dim, Prec> {
 	
-	assert(isUnit(_axis));
+	ASSUME(isUnit(_axis));
 	
 	auto sinT = sin(_angle);
 	auto cosT = cos(_angle);
@@ -666,8 +666,8 @@ constexpr auto inverse(mat<Dim, Prec> const& _mat) -> mat<Dim, Prec> {
 template<floating_point Prec>
 constexpr auto look(vec<3, Prec> _pos, vec<3, Prec> _dir, vec<3, Prec> _up) -> mat<4, Prec> {
 	
-	assert(isUnit(_dir));
-	assert(isUnit(_up));
+	ASSUME(isUnit(_dir));
+	ASSUME(isUnit(_up));
 	
 	auto result = mat<4, Prec>::identity();
 	

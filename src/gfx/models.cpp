@@ -1,7 +1,6 @@
 #include "gfx/models.hpp"
 
 #include <utility>
-#include <cassert>
 #include <cstring>
 #include "mpack/mpack.h"
 #include "gfx/util.hpp"

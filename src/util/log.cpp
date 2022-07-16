@@ -10,22 +10,27 @@ namespace minote {
 
 void Log::init(string_view _filename, quill::LogLevel _level) {
 	
-	quill::enable_console_colours();
-	quill::start(true);
-	
 	auto file = quill::file_handler(std::string(_filename), "w");
 	auto console = quill::stdout_handler();
+	static_cast<quill::ConsoleHandler*>(console)->enable_console_colours();
 	
 	file->set_pattern(
-		QUILL_STRING("%(ascii_time) [%(level_name)] %(message)"),
+		"%(ascii_time) [%(level_name)] %(message)",
 		"%H:%M:%S.%Qns",
 		quill::Timezone::LocalTime);
 	console->set_pattern(
-		QUILL_STRING("%(ascii_time) %(message)"),
+		"%(ascii_time) %(message)",
 		"%H:%M:%S",
 		quill::Timezone::LocalTime);
 	
-	m_logger = quill::create_logger("main", {file, console});
+	
+	auto cfg = quill::Config();
+	cfg.default_handlers.emplace_back(file);
+	cfg.default_handlers.emplace_back(console);
+	quill::configure(cfg);
+	quill::start(true);
+	
+	m_logger = quill::get_logger();
 	m_logger->set_log_level(_level);
 	
 }

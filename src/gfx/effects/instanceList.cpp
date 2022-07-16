@@ -1,6 +1,5 @@
 #include "gfx/effects/instanceList.hpp"
 
-#include <cassert>
 #include <span>
 #include "util/vector.hpp"
 #include "util/util.hpp"

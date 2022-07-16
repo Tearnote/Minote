@@ -1,6 +1,5 @@
 #include "gfx/effects/pbr.hpp"
 
-#include <cassert>
 #include "gfx/samplers.hpp"
 #include "gfx/util.hpp"
 

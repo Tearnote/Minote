@@ -2,7 +2,6 @@
 
 #include "config.hpp"
 
-#include <cassert>
 #include "volk.h"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"

@@ -1,4 +1,3 @@
-#include <cassert>
 #include <cstring>
 #include <cmath>
 #include "meshoptimizer.h"
@@ -6,6 +5,7 @@
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
 #include "util/vector.hpp"
+#include "util/verify.hpp"
 #include "util/error.hpp"
 #include "util/math.hpp"
 #include "util/util.hpp"
@@ -108,7 +108,7 @@ int main(int argc, char const* argv[]) try {
 	// Queue up the base nodes
 	
 	auto worknodes = ivector<Worknode>();
-	assert(gltf->scenes_count == 1);
+	VERIFY(gltf->scenes_count == 1);
 	auto& scene = gltf->scenes[0];
 	for (auto i: iota(0u, scene.nodes_count)) {
 		
@@ -158,7 +158,7 @@ int main(int argc, char const* argv[]) try {
 		if (!node.mesh)
 			continue;
 		auto& nodeMesh = *node.mesh;
-		assert(nodeMesh.primitives_count == 1);
+		VERIFY(nodeMesh.primitives_count == 1);
 		auto& primitive = nodeMesh.primitives[0];
 		auto& mesh = meshes.emplace_back();
 		mesh.transform = transform;
@@ -169,16 +169,16 @@ int main(int argc, char const* argv[]) try {
 		
 		// Fetch index data
 		
-		assert(primitive.indices);
+		VERIFY(primitive.indices);
 		auto& indexAccessor = *primitive.indices;
 		auto* indexBuffer = static_cast<char const*>(indexAccessor.buffer_view->buffer->data);
-		assert(indexBuffer);
+		VERIFY(indexBuffer);
 		indexBuffer += indexAccessor.buffer_view->offset;
 		auto indexCount = indexAccessor.count;
 		
-		assert(indexAccessor.component_type == cgltf_component_type_r_16u ||
+		VERIFY(indexAccessor.component_type == cgltf_component_type_r_16u ||
 			indexAccessor.component_type == cgltf_component_type_r_32u);
-		assert(indexAccessor.type == cgltf_type_scalar);
+		VERIFY(indexAccessor.type == cgltf_type_scalar);
 		if (indexAccessor.component_type == cgltf_component_type_r_16u) {
 			
 			auto* indexTypedBuffer = reinterpret_cast<u16 const*>(indexBuffer);
@@ -197,15 +197,15 @@ int main(int argc, char const* argv[]) try {
 			
 			auto& accessor = *primitive.attributes[attrIdx].data;
 			auto* buffer = static_cast<char const*>(accessor.buffer_view->buffer->data);
-			assert(buffer);
+			VERIFY(buffer);
 			buffer += accessor.buffer_view->offset;
 			
 			// Vertex positions
 			
 			if (std::strcmp(primitive.attributes[attrIdx].name, "POSITION") == 0) {
 				
-				assert(accessor.component_type == cgltf_component_type_r_32f);
-				assert(accessor.type == cgltf_type_vec3);
+				VERIFY(accessor.component_type == cgltf_component_type_r_32f);
+				VERIFY(accessor.type == cgltf_type_vec3);
 				
 				auto vertexCount = accessor.count;
 				mesh.vertices.resize(vertexCount);
@@ -218,8 +218,8 @@ int main(int argc, char const* argv[]) try {
 			
 			if (std::strcmp(primitive.attributes[attrIdx].name, "NORMAL") == 0) {
 				
-				assert(accessor.component_type == cgltf_component_type_r_32f);
-				assert(accessor.type == cgltf_type_vec3);
+				VERIFY(accessor.component_type == cgltf_component_type_r_32f);
+				VERIFY(accessor.type == cgltf_type_vec3);
 				
 				auto vertexCount = accessor.count;
 				mesh.normals.resize(vertexCount);
@@ -233,10 +233,10 @@ int main(int argc, char const* argv[]) try {
 			
 		}
 		
-		assert(mesh.indices.size());
-		assert(mesh.vertices.size());
-		assert(mesh.normals.size());
-		assert(mesh.vertices.size() == mesh.normals.size());
+		ASSERT(mesh.indices.size());
+		ASSERT(mesh.vertices.size());
+		ASSERT(mesh.normals.size());
+		ASSERT(mesh.vertices.size() == mesh.normals.size());
 		
 	}
 	
@@ -262,7 +262,7 @@ int main(int argc, char const* argv[]) try {
 			mesh.indices.data(), mesh.indices.size(), mesh.vertices.size(),
 			streams.data(), streams.size());
 		
-		assert(uniqueVertexCount);
+		ASSERT(uniqueVertexCount);
 		
 		// Apply remap
 		
@@ -283,8 +283,8 @@ int main(int argc, char const* argv[]) try {
 		mesh.normals = std::move(normalsRemapped);
 		mesh.indices = std::move(indicesRemapped);
 		
-		assert(mesh.vertices.size() == uniqueVertexCount);
-		assert(mesh.normals.size() == uniqueVertexCount);
+		ASSERT(mesh.vertices.size() == uniqueVertexCount);
+		ASSERT(mesh.normals.size() == uniqueVertexCount);
 		
 		// Optimize for memory efficiency
 		
@@ -296,7 +296,7 @@ int main(int argc, char const* argv[]) try {
 		remapTemp.resize(mesh.vertices.size());
 		uniqueVertexCount = meshopt_optimizeVertexFetchRemap(remapTemp.data(),
 			mesh.indices.data(), mesh.indices.size(), mesh.vertices.size());
-		assert(uniqueVertexCount);
+		ASSERT(uniqueVertexCount);
 		
 		verticesRemapped = pvector<GltfVertexType>(uniqueVertexCount);
 		normalsRemapped = pvector<GltfNormalType>(uniqueVertexCount);
@@ -315,8 +315,8 @@ int main(int argc, char const* argv[]) try {
 		mesh.normals = std::move(normalsRemapped);
 		mesh.indices = std::move(indicesRemapped);
 		
-		assert(mesh.vertices.size() == uniqueVertexCount);
-		assert(mesh.normals.size() == uniqueVertexCount);
+		ASSERT(mesh.vertices.size() == uniqueVertexCount);
+		ASSERT(mesh.normals.size() == uniqueVertexCount);
 		
 	}
 	

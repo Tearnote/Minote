@@ -1,7 +1,5 @@
 #include "sys/system.hpp"
 
-#include <cassert>
-
 #ifdef _WIN32
 #ifndef NOMINMAX
 #define NOMINMAX 1
@@ -22,6 +20,7 @@
 #include "SDL.h"
 #include "backends/imgui_impl_sdl.h"
 #include "imgui.h"
+#include "util/verify.hpp"
 #include "util/error.hpp"
 #include "util/time.hpp"
 #include "util/math.hpp"
@@ -97,6 +96,9 @@ void System::initConsole() {
 	// https://github.com/ocaml/ocaml/issues/9252#issuecomment-576383814
 	AllocConsole();
 	
+	freopen("CONOUT$", "w", stdout);
+	freopen("CONOUT$", "w", stderr);
+	
 	int fdOut = _open_osfhandle(reinterpret_cast<intptr_t>(GetStdHandle(STD_OUTPUT_HANDLE)), _O_WRONLY | _O_BINARY);
 	int fdErr = _open_osfhandle(reinterpret_cast<intptr_t>(GetStdHandle(STD_ERROR_HANDLE)),  _O_WRONLY | _O_BINARY);
 	
@@ -111,8 +113,8 @@ void System::initConsole() {
 		SetStdHandle(STD_ERROR_HANDLE, reinterpret_cast<HANDLE>(_get_osfhandle(STDERR_FILENO)));
 	}
 	
-	*stdout = *fdopen(STDOUT_FILENO, "wb");
-	*stderr = *fdopen(STDERR_FILENO, "wb");
+	_dup2(_fileno(fdopen(STDOUT_FILENO, "wb")), _fileno(stdout));
+	_dup2(_fileno(fdopen(STDERR_FILENO, "wb")), _fileno(stderr));
 	
 	setvbuf(stdout, nullptr, _IONBF, 0);
 	setvbuf(stderr, nullptr, _IONBF, 0);
@@ -127,7 +129,7 @@ void System::initConsole() {
 Window::Window(string_view _title, bool _fullscreen, uvec2 _size):
 	m_title(_title) {
 	
-	assert(_size.x() > 0 && _size.y() > 0);
+	ASSUME(_size.x() > 0 && _size.y() > 0);
 	
 	// Create window
 	

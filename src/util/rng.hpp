@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cassert>
 #include <cmath>
 #include "pcg_basic.h"
 #include "util/concepts.hpp"
+#include "util/verify.hpp"
 #include "util/types.hpp"
 
 namespace minote {
@@ -18,7 +18,7 @@ struct Rng {
 	// Return a random positive integer, up to a bound (exclusive). RNG state
 	// is advanced by one step.
 	auto randInt(u32 bound) -> u32 {
-		assert(bound >= 1);
+		ASSUME(bound >= 1);
 		return pcg32_boundedrand_r(&m_state, bound);
 	}
 	
