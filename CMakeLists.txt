@@ -29,10 +29,12 @@ if(WIN32)
 	add_compile_options("-mwindows")
 endif()
 
+# Dynamic+lld for dev builds, static+ld for release
+# https://github.com/msys2/MINGW-packages/issues/12050
 set(BUILD_SHARED_LIBS OFF)
-# add_link_options("-static;-static-libgcc;-static-libstdc++")
-add_link_options("-static-libgcc") # https://github.com/msys2/MINGW-packages/issues/12050
+add_link_options("-static-libgcc")
 add_link_options("$<$<CONFIG:Debug,RelWithDebInfo>:-fuse-ld=lld>")
+add_link_options("$<$<CONFIG:Release>:-static;-static-libstdc++>")
 
 add_compile_definitions("BUILD_TYPE=$<$<CONFIG:Debug>:BUILD_DEBUG>$<$<CONFIG:RelWithDebInfo>:BUILD_RELDEB>$<$<CONFIG:Release>:BUILD_RELEASE>")
 
