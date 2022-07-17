@@ -34,8 +34,8 @@ struct Service {
 	template<typename... Args>
 	auto provide(Args&&... args) -> Stub { return Stub(*this, std::forward<Args>(args)...); }
 	
-	auto operator*() -> T& { ASSUME(m_handle); return *m_handle; }
-	auto operator->() -> T* { ASSUME(m_handle); return m_handle; }
+	auto operator*() -> T& { return *ASSUME(m_handle); }
+	auto operator->() -> T* { return ASSUME(m_handle); }
 	
 private:
 	

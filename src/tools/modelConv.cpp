@@ -169,10 +169,8 @@ int main(int argc, char const* argv[]) try {
 		
 		// Fetch index data
 		
-		VERIFY(primitive.indices);
-		auto& indexAccessor = *primitive.indices;
-		auto* indexBuffer = static_cast<char const*>(indexAccessor.buffer_view->buffer->data);
-		VERIFY(indexBuffer);
+		auto& indexAccessor = *VERIFY(primitive.indices);
+		auto* indexBuffer = VERIFY(static_cast<char const*>(indexAccessor.buffer_view->buffer->data));
 		indexBuffer += indexAccessor.buffer_view->offset;
 		auto indexCount = indexAccessor.count;
 		
@@ -196,8 +194,7 @@ int main(int argc, char const* argv[]) try {
 		for (auto attrIdx: iota(0_zu, primitive.attributes_count)) {
 			
 			auto& accessor = *primitive.attributes[attrIdx].data;
-			auto* buffer = static_cast<char const*>(accessor.buffer_view->buffer->data);
-			VERIFY(buffer);
+			auto* buffer = VERIFY(static_cast<char const*>(accessor.buffer_view->buffer->data));
 			buffer += accessor.buffer_view->offset;
 			
 			// Vertex positions
@@ -258,11 +255,9 @@ int main(int argc, char const* argv[]) try {
 		// Generate remap table
 		
 		auto remapTemp = pvector<unsigned int>(mesh.vertices.size());
-		auto uniqueVertexCount = meshopt_generateVertexRemapMulti(remapTemp.data(),
+		auto uniqueVertexCount = ASSERT(meshopt_generateVertexRemapMulti(remapTemp.data(),
 			mesh.indices.data(), mesh.indices.size(), mesh.vertices.size(),
-			streams.data(), streams.size());
-		
-		ASSERT(uniqueVertexCount);
+			streams.data(), streams.size()));
 		
 		// Apply remap
 		
@@ -294,9 +289,8 @@ int main(int argc, char const* argv[]) try {
 			1.05f);
 		
 		remapTemp.resize(mesh.vertices.size());
-		uniqueVertexCount = meshopt_optimizeVertexFetchRemap(remapTemp.data(),
-			mesh.indices.data(), mesh.indices.size(), mesh.vertices.size());
-		ASSERT(uniqueVertexCount);
+		uniqueVertexCount = ASSERT(meshopt_optimizeVertexFetchRemap(remapTemp.data(),
+			mesh.indices.data(), mesh.indices.size(), mesh.vertices.size()));
 		
 		verticesRemapped = pvector<GltfVertexType>(uniqueVertexCount);
 		normalsRemapped = pvector<GltfNormalType>(uniqueVertexCount);

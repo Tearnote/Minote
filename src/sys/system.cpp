@@ -37,7 +37,7 @@ System::System() {
 		SDL_INIT_HAPTIC |
 		SDL_INIT_GAMECONTROLLER |
 		SDL_INIT_EVENTS) != 0)
-		throw runtime_error_fmt("Failed to initialize GLFW: {}", SDL_GetError());
+		throw runtime_error_fmt("Failed to initialize SDL: {}", SDL_GetError());
 	
 	m_timerFrequency = SDL_GetPerformanceFrequency();
 	m_timerStart = SDL_GetPerformanceCounter();
