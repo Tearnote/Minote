@@ -11,6 +11,9 @@
 #include "util/log.hpp"
 #include "gfx/samplers.hpp"
 
+#include "spv/imgui.vs.hpp"
+#include "spv/imgui.ps.hpp"
+
 namespace minote {
 
 auto ImGui_ImplVuk_Init(vuk::Allocator& _allocator) -> ImguiData {
@@ -103,12 +106,12 @@ auto ImGui_ImplVuk_Init(vuk::Allocator& _allocator) -> ImguiData {
 	// Create the ImGui pipeline
 	
 	auto imguiPci = vuk::PipelineBaseCreateInfo();
-	imguiPci.add_spirv(std::vector<u32>{
-#include "spv/imgui.vert.spv"
-	}, "imgui.vert");
-	imguiPci.add_spirv(std::vector<u32>{
-#include "spv/imgui.frag.spv"
-	}, "imgui.frag");
+	auto imgui_vs_span = span<u32 const>(reinterpret_cast<u32 const*>(imgui_vs), sizeof(imgui_vs) / sizeof(u32));
+	auto imgui_vs_vec = std::vector<u32>(imgui_vs_span.begin(), imgui_vs_span.end());
+	imguiPci.add_spirv(std::move(imgui_vs_vec), "imgui.vs.hlsl");
+	auto imgui_ps_span = span<u32 const>(reinterpret_cast<u32 const*>(imgui_ps), sizeof(imgui_ps) / sizeof(u32));
+	auto imgui_ps_vec = std::vector<u32>(imgui_ps_span.begin(), imgui_ps_span.end());
+	imguiPci.add_spirv(std::move(imgui_ps_vec), "imgui.ps.hlsl");
 	ctx.create_named_pipeline("imgui", imguiPci);
 	
 	L_DEBUG("ImGui initialized");

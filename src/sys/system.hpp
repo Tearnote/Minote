@@ -26,7 +26,7 @@ struct System {
 		[[nodiscard]]
 		auto title() const -> string_view { return m_title; }
 		
-		// Provide the raw GLFW window handle for tasks like Vulkan surface creation
+		// Provide the raw SDL window handle for tasks like Vulkan surface creation
 		[[nodiscard]]
 		auto handle() -> SDL_Window* { return m_handle; }
 		

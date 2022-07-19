@@ -277,43 +277,36 @@ target_link_libraries(Minote PRIVATE bvh)
 
 # Shader compilation
 
-set(SHADER_DIR_PREFIX src/glsl)
+set(SHADER_MODEL "6_3")
+set(SHADER_PREFIX src/gpu)
 set(SHADER_SOURCES
-	instanceList/cullMeshlets.comp
-	instanceList/genIndices.comp
-	cubeFilter/post.comp
-	cubeFilter/pre.comp
-	visibility/worklist.comp
-	visibility/visbuf.vert visibility/visbuf.frag
-	bloom/downKaris.comp
-	bloom/down.comp
-	bloom/up.comp
-	quad/genBuffers.comp
-	quad/clusterize.comp
-	quad/resolve.comp
-	bvh/debugAABB.vert
-	bvh/debugAABB.frag
-	sky/genAerialPerspective.comp
-	sky/genMultiScattering.comp
-	sky/genTransmittance.comp
-	sky/genSunLuminance.comp
-	sky/drawCubemap.comp
-	sky/genSkyView.comp
-	sky/draw.comp
-	hiz/first.comp
-	hiz/mip.comp
-	tonemap.comp
-	imgui.vert imgui.frag
-	pbr.comp)
+	imgui.vs.hlsl
+	imgui.ps.hlsl)
 
-foreach(SHADER_PATH ${SHADER_SOURCES})
-	get_filename_component(SHADER_DIR ${SHADER_PATH} DIRECTORY)
-	set(SHADER_OUTPUT ${PROJECT_BINARY_DIR}/$<CONFIG>/generated/spv/${SHADER_PATH}.spv)
+foreach(SHADER_SOURCE ${SHADER_SOURCES})
+	
+	set(SHADER_INPUT ${PROJECT_SOURCE_DIR}/${SHADER_PREFIX}/${SHADER_SOURCE})
+	string(REGEX REPLACE [[.hlsl$]] "" SHADER_SOURCE_WLE ${SHADER_SOURCE})
+	set(SHADER_OUTPUT ${PROJECT_BINARY_DIR}/$<CONFIG>/generated/spv/${SHADER_SOURCE_WLE}.hpp)
+	get_filename_component(SHADER_OUTPUT_DIR ${SHADER_OUTPUT} DIRECTORY)
+	
+	get_filename_component(SHADER_TYPE ${SHADER_SOURCE_WLE} LAST_EXT)
+	string(SUBSTRING ${SHADER_TYPE} 1 -1 SHADER_TYPE)
+	set(SHADER_PROFILE ${SHADER_TYPE}_${SHADER_MODEL})
+	string(REGEX REPLACE [[\.|/]] "_" SHADER_IDENT ${SHADER_SOURCE_WLE})
+	
 	add_custom_command(
 		OUTPUT ${SHADER_OUTPUT}
-		COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/$<CONFIG>/generated/spv/${SHADER_DIR}
-		COMMAND $ENV{VULKAN_SDK}/Bin/glslc.exe --target-env=vulkan1.2 -mfmt=num $<$<CONFIG:Debug,RelWithDebInfo>:-g> -MD -MF ${SHADER_OUTPUT}.d -o ${SHADER_OUTPUT} ${PROJECT_SOURCE_DIR}/${SHADER_DIR_PREFIX}/${SHADER_PATH}
-		DEPENDS ${SHADER_DIR_PREFIX}/${SHADER_PATH}
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${SHADER_OUTPUT_DIR}
+		COMMAND $ENV{VULKAN_SDK}/Bin/dxc.exe
+			-HV 2021 -T ${SHADER_PROFILE}
+			-MF ${SHADER_OUTPUT}.d
+			${SHADER_INPUT}
+		COMMAND $ENV{VULKAN_SDK}/Bin/dxc.exe
+			-HV 2021 -T ${SHADER_PROFILE} -spirv $<$<CONFIG:Debug,RelWithDebInfo>:-Zi>
+			-Fh ${SHADER_OUTPUT} -Vn ${SHADER_IDENT}
+			${SHADER_INPUT}
+		DEPENDS ${SHADER_PREFIX}/${SHADER_PATH}
 		DEPFILE ${SHADER_OUTPUT}.d
 		VERBATIM COMMAND_EXPAND_LISTS)
 	list(APPEND SHADER_OUTPUTS ${SHADER_OUTPUT})
