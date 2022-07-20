@@ -186,7 +186,7 @@ target_link_libraries(Minote PRIVATE SDL2-static)
 
 FetchContent_Declare(imgui
 	GIT_REPOSITORY https://github.com/ocornut/imgui
-	GIT_TAG 00d570e280533bca9cf6e5652d0f2eb131d032e7)
+	GIT_TAG 6ab5fd1da9600a8f17f8469691a105663511678b)
 FetchContent_MakeAvailable(imgui)
 add_library(imgui
 	${imgui_SOURCE_DIR}/imgui.h ${imgui_SOURCE_DIR}/imgui.cpp
@@ -194,7 +194,9 @@ add_library(imgui
 	${imgui_SOURCE_DIR}/imgui_draw.cpp ${imgui_SOURCE_DIR}/imgui_tables.cpp
 	${imgui_SOURCE_DIR}/imgui_widgets.cpp ${imgui_SOURCE_DIR}/imgui_demo.cpp
 	${imgui_SOURCE_DIR}/backends/imgui_impl_sdl.h ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl.cpp)
-target_compile_definitions(imgui PRIVATE IMGUI_DISABLE_WIN32_FUNCTIONS)
+target_compile_definitions(imgui PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
+target_compile_definitions(imgui PUBLIC IMGUI_DISABLE_OBSOLETE_KEYIO)
+target_compile_definitions(imgui PUBLIC IMGUI_DISABLE_WIN32_FUNCTIONS)
 target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR})
 target_link_libraries(imgui PRIVATE SDL2-static)
 target_link_libraries(Minote PRIVATE imgui)

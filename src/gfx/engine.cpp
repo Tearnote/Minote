@@ -9,23 +9,25 @@
 #include "util/math.hpp"
 #include "util/log.hpp"
 #include "sys/system.hpp"
-// #include "gfx/effects/instanceList.hpp"
-// #include "gfx/effects/quadbuffer.hpp"
-// #include "gfx/effects/cubeFilter.hpp"
-// #include "gfx/effects/visibility.hpp"
-// #include "gfx/effects/tonemap.hpp"
-// #include "gfx/effects/bloom.hpp"
-// #include "gfx/effects/bvh.hpp"
-// #include "gfx/effects/pbr.hpp"
-// #include "gfx/effects/sky.hpp"
-// #include "gfx/effects/hiz.hpp"
-// #include "gfx/frame.hpp"
 #include "gfx/util.hpp"
 #include "main.hpp"
 
 namespace minote {
 
 using namespace std::string_literals;
+
+Engine::Engine():
+	m_deviceResource(*s_vulkan->context, InflightFrames),
+	m_swapchainDirty(false),
+	m_flushTemporalResources(true),
+	m_framerate(60.0f),
+	m_lastFramerateCheck(0),
+	m_framesSinceLastCheck(0),
+	m_globalAllocator(m_deviceResource) {
+	
+	
+	
+}
 
 Engine::~Engine() {
 	
@@ -39,22 +41,6 @@ Engine::~Engine() {
 }
 
 void Engine::init(ModelList&& _modelList) {
-	
-	// TriangleList::compile(ptc);
-	// QuadBuffer::compile(ptc);
-	// CubeFilter::compile(ptc);
-	// Atmosphere::compile(ptc);
-	// Visibility::compile(ptc);
-	// Worklist::compile(ptc);
-	// Tonemap::compile(ptc);
-	// Bloom::compile(ptc);
-	// BVH::compile(ptc);
-	// PBR::compile(ptc);
-	// HiZ::compile(ptc);
-	// Sky::compile(ptc);
-	
-	m_swapchainDirty = false;
-	m_flushTemporalResources = true;
 	
 	m_imguiData = ImGui_ImplVuk_Init(m_globalAllocator);
 	ImGui::GetIO().DisplaySize = ImVec2(

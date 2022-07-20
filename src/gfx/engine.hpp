@@ -22,13 +22,7 @@ struct Engine {
 	static constexpr auto VerticalFov = 50_deg;
 	static constexpr auto NearPlane = 0.1_m;
 	
-	// Create the engine in uninitialized state.
-	Engine():
-		m_deviceResource(*s_vulkan->context, InflightFrames),
-		m_framerate(60.0f),
-		m_lastFramerateCheck(0),
-		m_framesSinceLastCheck(0),
-		m_globalAllocator(m_deviceResource) {}
+	Engine();
 	~Engine();
 	
 	void init(ModelList&&);

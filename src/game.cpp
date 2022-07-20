@@ -98,7 +98,7 @@ void Game::Impl::gameLoop() {
 	auto nextUpdate = s_system->getTime();
 	while (!s_system->isQuitting()) {
 		
-		ImGui_ImplSDL2_NewFrame(window.handle());
+		ImGui_ImplSDL2_NewFrame();
 		while (nextUpdate <= s_system->getTime()) {
 			tick(nextUpdate);
 			nextUpdate += LogicTick;

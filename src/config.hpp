@@ -59,3 +59,6 @@ inline constexpr auto Assets_p = ASSETS_P;
 
 // Name of the models table in assets
 static constexpr auto Models_table = MODELS_TABLE;
+
+// Whether Imgui debug windows are enabled
+
