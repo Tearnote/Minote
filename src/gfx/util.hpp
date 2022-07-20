@@ -6,6 +6,7 @@
 #include "util/concepts.hpp"
 #include "util/string.hpp"
 #include "util/types.hpp"
+#include "util/span.hpp"
 #include "util/math.hpp"
 
 namespace minote {
@@ -15,7 +16,7 @@ struct AABB {
 	vec3 max;
 };
 
-// Return the number a mipmaps that a square texture of the given size would have.
+// Return the number a mipmaps that a square texture of the given size would have
 constexpr auto mipmapCount(u32 size) {
 	return u32(floor(log2(size))) + 1;
 }
@@ -42,27 +43,19 @@ constexpr auto divRoundUp(T _val, T _div) -> T {
 	
 }
 
-// Conversion from vec[n] to vuk::Extent[n]D
-
-template<arithmetic T>
-constexpr auto vukExtent(vec<2, T> v) -> vuk::Extent2D { return {v[0], v[1]}; }
-
-template<arithmetic T>
-constexpr auto vukExtent(vec<3, T> v) -> vuk::Extent3D { return {v[0], v[1], v[2]}; }
-
 // Pack two values in a u32. x is in lower bits, y in upper
-
 constexpr auto u32Fromu16(uvec2 _v) -> u32 {
 	
 	return (_v.y() << 16) | _v.x();
 	
 }
 
-// Shorthand for setting rendering area
-inline void cmdSetViewportScissor(vuk::CommandBuffer cmd, uvec2 area) {
+// Shorthand for adding DXC-generated SPIR-V source to a vuk::PipelineBaseCreateInfo
+inline void addSpirv(vuk::PipelineBaseCreateInfo& pipelineCI, span<unsigned char const> source, string_view path) {
 	
-	cmd.set_viewport(0, vuk::Rect2D{ .extent = vukExtent(area) })
-	   .set_scissor(0, vuk::Rect2D{ .extent = vukExtent(area) });
+	auto imNotAfraidToViolateStrictAliasing = span<u32 const>(reinterpret_cast<u32 const*>(source.data()), source.size() / sizeof(u32));
+	auto vec = std::vector<u32>(imNotAfraidToViolateStrictAliasing.begin(), imNotAfraidToViolateStrictAliasing.end());
+	pipelineCI.add_spirv(std::move(vec), "imgui.vs.hlsl");
 	
 }
 
