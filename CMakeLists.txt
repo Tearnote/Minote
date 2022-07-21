@@ -279,7 +279,7 @@ target_link_libraries(Minote PRIVATE bvh)
 
 # Shader compilation
 
-set(SHADER_MODEL "6_3")
+set(SHADER_MODEL "6_7")
 set(SHADER_PREFIX src/gpu)
 set(SHADER_SOURCES
 	imgui.vs.hlsl

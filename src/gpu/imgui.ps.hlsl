@@ -1,7 +1,7 @@
 struct VSOutput {
 	float4 position: SV_POSITION;
-	[[vk::location(0)]] float4 color: COLOR;
-	[[vk::location(1)]] float2 uv: TEXCOORD;
+	float4 color: COLOR;
+	float2 uv: TEXCOORD;
 };
 
 [[vk::combinedImageSampler]][[vk::binding(0)]] Texture2D texture;

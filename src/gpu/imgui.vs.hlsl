@@ -1,13 +1,13 @@
 struct VSInput {
-	[[vk::location(0)]] float2 position: POSITION;
-	[[vk::location(1)]] float2 uv: TEXCOORD;
-	[[vk::location(2)]] float4 color: COLOR;
+	float2 position: POSITION;
+	float2 uv: TEXCOORD;
+	float4 color: COLOR;
 };
 
 struct VSOutput {
 	float4 position: SV_POSITION;
-	[[vk::location(0)]] float4 color: COLOR;
-	[[vk::location(1)]] float2 uv: TEXCOORD;
+	float4 color: COLOR;
+	float2 uv: TEXCOORD;
 };
 
 struct Constants {
