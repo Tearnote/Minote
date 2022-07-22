@@ -25,7 +25,7 @@ Engine::Engine():
 	m_lastFramerateCheck(0),
 	m_framesSinceLastCheck(0),
 	m_globalAllocator(m_deviceResource),
-	m_imgui(m_globalAllocator) {
+	m_imgui(m_globalAllocator, {s_vulkan->swapchain->extent.width, s_vulkan->swapchain->extent.height}) {
 	
 	L_INFO("Graphics engine initialized");
 	
@@ -39,12 +39,6 @@ Engine::~Engine() {
 }
 
 void Engine::init(ModelList&& _modelList) {
-	
-	ImGui::GetIO().DisplaySize = ImVec2(
-		f32(s_vulkan->swapchain->extent.width),
-		f32(s_vulkan->swapchain->extent.height));
-	// Begin imgui frame so that first-frame calls succeed
-	ImGui::NewFrame();
 	
 	// m_models = std::move(_modelList).upload(m_permPool, "models");
 	
@@ -134,7 +128,6 @@ void Engine::renderFrame() {
 	auto frame = Frame(*this, rg);
 	frame.draw(screen, m_objects, m_flushTemporalResources);
 	*/
-	ImGui::Render();
 	m_imgui.render(frameAllocator, rg, "screen", "screen_imgui", {});
 	
 	// Blit frame to swapchain
@@ -177,7 +170,6 @@ void Engine::renderFrame() {
 	// Clean up
 	
 	m_flushTemporalResources = false;
-	ImGui::NewFrame();
 	// m_objects.copyTransforms();
 	
 }

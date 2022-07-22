@@ -1,5 +1,6 @@
 #include "gfx/imgui.hpp"
 
+#include "backends/imgui_impl_sdl.h"
 #include "imgui.h"
 #include "vuk/AllocatorHelpers.hpp"
 #include "vuk/CommandBuffer.hpp"
@@ -19,7 +20,19 @@
 
 namespace minote {
 
-Imgui::Imgui(vuk::Allocator& _allocator) {
+bool Imgui::InputReader::process(SDL_Event const& _e) {
+	
+	ImGui_ImplSDL2_ProcessEvent(&_e);
+	
+	if (_e.type == SDL_KEYDOWN)
+		if (ImGui::GetIO().WantCaptureKeyboard) return true;
+	if (_e.type == SDL_MOUSEBUTTONDOWN || _e.type == SDL_MOUSEMOTION)
+		if (ImGui::GetIO().WantCaptureMouse) return true;
+	return false;
+	
+}
+
+Imgui::Imgui(vuk::Allocator& _allocator, uvec2 _viewport) {
 	
 	ASSUME(!m_exists);
 	m_exists = true;
@@ -30,6 +43,10 @@ Imgui::Imgui(vuk::Allocator& _allocator) {
 	io.BackendRendererName = "imgui_impl_vuk";
 	// We can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
 	io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
+	io.DisplaySize = ImVec2{
+		f32(_viewport.x()),
+		f32(_viewport.y()),
+	};
 	
 	setTheme();
 	uploadFont(_allocator);
@@ -38,6 +55,9 @@ Imgui::Imgui(vuk::Allocator& _allocator) {
 	addSpirv(imguiPci, imgui_vs, "imgui.vs.hlsl");
 	addSpirv(imguiPci, imgui_ps, "imgui.ps.hlsl");
 	ctx.create_named_pipeline("imgui", imguiPci);
+	
+	// Begin frame so that first-frame calls succeed
+	ImGui::NewFrame();
 	
 	L_DEBUG("ImGui initialized");
 	
@@ -49,16 +69,30 @@ Imgui::~Imgui() {
 	
 }
 
+auto Imgui::getInputReader() -> InputReader {
+	
+	ImGui_ImplSDL2_NewFrame();
+	return InputReader();
+	
+}
+
+void Imgui::begin() {
+	
+	ImGui::NewFrame();
+	
+}
+
 void Imgui::render(vuk::Allocator& _allocator, vuk::RenderGraph& _rg,
 	vuk::Name _targetFrom, vuk::Name _targetTo,
 	ivector<vuk::SampledImage> const& _sampledImages) {
 	
+	ImGui::Render();
 	auto* drawdata = ImGui::GetDrawData();
 	
 	auto resetRenderState = [this, drawdata](vuk::CommandBuffer& cmd,
 		vuk::Buffer vertex, vuk::Buffer index) {
 		
-		cmd.bind_image(0, 0, *m_fontTex.view).bind_sampler(0, 0, TrilinearRepeat);
+		cmd.bind_image(0, 0, *m_font.view).bind_sampler(0, 0, TrilinearRepeat);
 		if (index.size > 0)
 			cmd.bind_index_buffer(index, sizeof(ImDrawIdx) == 2?
 				vuk::IndexType::eUint16 :
@@ -285,15 +319,15 @@ void Imgui::uploadFont(vuk::Allocator& _allocator) {
 	io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 	
 	// Upload the font to GPU
-	auto [tex, stub] = vuk::create_texture(_allocator,
+	auto [font, stub] = vuk::create_texture(_allocator,
 		vuk::Format::eR8G8B8A8Srgb,
 		vuk::Extent3D{u32(width), u32(height), 1u},
 		pixels, false);
-	m_fontTex = std::move(tex);
+	m_font = std::move(font);
 	stub.wait(_allocator);
-	ctx.debug.set_name(m_fontTex, "imgui/font");
+	ctx.debug.set_name(m_font, "imgui/font");
 	
-	m_fontSI = std::make_unique<vuk::SampledImage>(vuk::SampledImage::Global{ *m_fontTex.view, TrilinearRepeat, vuk::ImageLayout::eShaderReadOnlyOptimal });
+	m_fontSI = std::make_unique<vuk::SampledImage>(vuk::SampledImage::Global{ *m_font.view, TrilinearRepeat, vuk::ImageLayout::eShaderReadOnlyOptimal });
 	io.Fonts->TexID = ImTextureID(m_fontSI.get());
 	
 }

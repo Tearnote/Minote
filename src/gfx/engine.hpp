@@ -15,7 +15,7 @@
 
 namespace minote {
 
-// Graphics engine. Feed with models and objects, enjoy pretty pictures.
+// Graphics engine. Feed with models and objects, enjoy pretty pictures
 struct Engine {
 	
 	static constexpr auto InflightFrames = 3u;
@@ -34,19 +34,19 @@ struct Engine {
 	
 	// Subcomponent access
 	
-	// Use freely to add/remove/modify objects for drawing
+	// Return the Imgui instance for debug input handling
+	auto imgui() -> Imgui& { return m_imgui; }
+	
+	// Return the ObjectPool to add/remove/modify objects for drawing
 	auto objects() -> ObjectPool& { return m_objects; }
 	
-	// Use freely to modify the rendering camera
+	// Return the Camera to modify the viewport
 	auto camera() -> Camera& { return m_camera; }
 	
 	auto fps() const -> f32 { return m_framerate; }
 	
-	// Not copyable, not movable
 	Engine(Engine const&) = delete;
 	auto operator=(Engine const&) -> Engine& = delete;
-	Engine(Engine&&) = delete;
-	auto operator=(Engine&&) -> Engine& = delete;
 	
 private:
 	

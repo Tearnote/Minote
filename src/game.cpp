@@ -3,8 +3,6 @@
 #include "config.hpp"
 
 #include <exception>
-#include "backends/imgui_impl_sdl.h"
-#include "imgui.h"
 #include "util/vector.hpp"
 #include "util/math.hpp"
 #include "util/util.hpp"
@@ -43,7 +41,7 @@ struct Game::Impl {
 	void gameLoop();
 	// Run a single tick of input handling and logic simulation
 	// Simulation time advances to "until" timestamp
-	void tick(nsec until);
+	void tick(nsec until, Imgui::InputReader&);
 	
 	Window& window;
 	Mapper& mapper;
@@ -98,11 +96,12 @@ void Game::Impl::gameLoop() {
 	auto nextUpdate = s_system->getTime();
 	while (!s_system->isQuitting()) {
 		
-		ImGui_ImplSDL2_NewFrame();
+		auto imguiInput = s_engine->imgui().getInputReader();
 		while (nextUpdate <= s_system->getTime()) {
-			tick(nextUpdate);
+			tick(nextUpdate, imguiInput);
 			nextUpdate += LogicTick;
 		}
+		s_engine->imgui().begin();
 		freecam.updateCamera();
 		s_engine->render();
 		
@@ -110,7 +109,7 @@ void Game::Impl::gameLoop() {
 	
 }
 
-void Game::Impl::tick(nsec _until) {
+void Game::Impl::tick(nsec _until, Imgui::InputReader& _imguiInput) {
 	
 	// Handle all relevant inputs
 	s_system->forEachEvent([&] (const SDL_Event& e) -> bool {
@@ -120,12 +119,7 @@ void Game::Impl::tick(nsec _until) {
 		// Leave quit events alone
 		if (e.type == SDL_QUIT) return false;
 		// Let ImGui handle all events it uses
-		ImGui_ImplSDL2_ProcessEvent(&e);
-		// If ImGui wants exclusive control, leave now
-		if (e.type == SDL_KEYDOWN)
-			if (ImGui::GetIO().WantCaptureKeyboard) return true;
-		if (e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEMOTION)
-			if (ImGui::GetIO().WantCaptureMouse) return true;
+		if (_imguiInput.process(e)) return true;
 		
 		freecam.handleMouse(e);
 		
