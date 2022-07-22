@@ -2,6 +2,7 @@
 
 #include "config.hpp"
 
+#include "imgui.h"
 #include "volk.h"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
@@ -23,26 +24,22 @@ Engine::Engine():
 	m_framerate(60.0f),
 	m_lastFramerateCheck(0),
 	m_framesSinceLastCheck(0),
-	m_globalAllocator(m_deviceResource) {
+	m_globalAllocator(m_deviceResource),
+	m_imgui(m_globalAllocator) {
 	
-	
+	L_INFO("Graphics engine initialized");
 	
 }
 
 Engine::~Engine() {
 	
 	s_vulkan->context->wait_idle();
-	
-	m_imguiData.fontTex.view.reset();
-	m_imguiData.fontTex.image.reset();
-	
 	L_INFO("Graphics engine cleaned up");
 	
 }
 
 void Engine::init(ModelList&& _modelList) {
 	
-	m_imguiData = ImGui_ImplVuk_Init(m_globalAllocator);
 	ImGui::GetIO().DisplaySize = ImVec2(
 		f32(s_vulkan->swapchain->extent.width),
 		f32(s_vulkan->swapchain->extent.height));
@@ -55,7 +52,7 @@ void Engine::init(ModelList&& _modelList) {
 	
 	// ptc.wait_all_transfers();
 	
-	L_INFO("Graphics engine initialized");
+	// L_INFO("Graphics engine initialized");
 	
 }
 
@@ -138,7 +135,7 @@ void Engine::renderFrame() {
 	frame.draw(screen, m_objects, m_flushTemporalResources);
 	*/
 	ImGui::Render();
-	ImGui_ImplVuk_Render(frameAllocator, rg, "screen", "screen_imgui", m_imguiData, ImGui::GetDrawData(), {});
+	m_imgui.render(frameAllocator, rg, "screen", "screen_imgui", {});
 	
 	// Blit frame to swapchain
 	

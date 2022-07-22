@@ -61,7 +61,7 @@ private:
 	nsec m_lastFramerateCheck;
 	u32 m_framesSinceLastCheck;
 	
-	ImguiData m_imguiData;
+	Imgui m_imgui;
 	ModelBuffer m_models;
 	ObjectPool m_objects;
 	World m_world;

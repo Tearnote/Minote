@@ -1,28 +1,34 @@
 #pragma once
 
-#include "imgui.h"
+#include <memory>
 #include "vuk/SampledImage.hpp"
 #include "vuk/RenderGraph.hpp"
 #include "util/vector.hpp"
 
 namespace minote {
 
-// GPU resources used by Imgui
-struct ImguiData {
+// Imgui wrapper to simplify the invocations
+struct Imgui {
 	
-	vuk::Texture fontTex;
-	std::unique_ptr<vuk::SampledImage> fontSI;
+	explicit Imgui(vuk::Allocator&);
+	~Imgui();
+	
+	void render(vuk::Allocator&, vuk::RenderGraph&,
+		vuk::Name targetFrom, vuk::Name targetTo,
+		ivector<vuk::SampledImage> const& sampledImages);
+	
+	Imgui(Imgui const&) = delete;
+	auto operator=(Imgui const&) -> Imgui& = delete;
+	
+private:
+	
+	static inline bool m_exists = false;
+	vuk::Texture m_fontTex;
+	std::unique_ptr<vuk::SampledImage> m_fontSI;
+	
+	void setTheme();
+	void uploadFont(vuk::Allocator&); // Initialize m_fontTex, m_fontSI
 	
 };
-
-// Initialize Imgui. Run once after Vulkan is initialized, and keep the result
-// struct around as long as Imgui is being used.
-auto ImGui_ImplVuk_Init(vuk::Allocator&) -> ImguiData;
-
-// Draw all GUI elements that were queued up for this frame.
-void ImGui_ImplVuk_Render(vuk::Allocator&, vuk::RenderGraph&,
-	vuk::Name targetFrom, vuk::Name targetTo,
-	ImguiData&, ImDrawData*,
-	ivector<vuk::SampledImage> const& sampledImages);
 
 }
