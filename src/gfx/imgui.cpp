@@ -1,5 +1,6 @@
 #include "gfx/imgui.hpp"
 
+#include <cstdlib>
 #include "backends/imgui_impl_sdl.h"
 #include "imgui.h"
 #include "vuk/AllocatorHelpers.hpp"
@@ -34,13 +35,11 @@ bool Imgui::InputReader::process(SDL_Event const& _e) {
 	
 }
 
-Imgui::Imgui(vuk::Allocator& _allocator, uvec2 _viewport):
+Imgui::Imgui(vuk::Allocator& _allocator):
 	m_insideFrame(false) {
 	
 	ASSUME(!m_exists);
 	m_exists = true;
-	
-	auto& ctx = _allocator.get_context();
 	
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -50,14 +49,11 @@ Imgui::Imgui(vuk::Allocator& _allocator, uvec2 _viewport):
 	io.BackendRendererName = "imgui_impl_vuk";
 	// We can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
 	io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
-	io.DisplaySize = ImVec2{
-		f32(_viewport.x()),
-		f32(_viewport.y()),
-	};
 	
 	setTheme();
-	uploadFont(_allocator);
+	uploadFont(_allocator); // s_engine might not be initialized at this point
 	
+	auto& ctx = *s_vulkan->context;
 	auto imguiPci = vuk::PipelineBaseCreateInfo();
 	addSpirv(imguiPci, imgui_vs, "imgui.vs.hlsl");
 	addSpirv(imguiPci, imgui_ps, "imgui.ps.hlsl");
@@ -99,9 +95,11 @@ void Imgui::render(vuk::RenderGraph& _rg,
 	auto lock = std::lock_guard(m_stateLock);
 	if (!m_insideFrame) begin();
 	
+	// Finalize the frame
 	ImGui::Render();
 	auto* drawdata = ImGui::GetDrawData();
 	
+	// Fill up the vertex and index buffers
 	auto vertexSize = drawdata->TotalVtxCount * sizeof(ImDrawVert);
 	auto  indexSize = drawdata->TotalIdxCount * sizeof(ImDrawIdx);
 	auto imvert = *allocate_buffer_cross_device(s_engine->frameAllocator(), { vuk::MemoryUsage::eCPUtoGPU, vertexSize });
@@ -110,17 +108,12 @@ void Imgui::render(vuk::RenderGraph& _rg,
 	auto vtxDst = 0_zu;
 	auto idxDst = 0_zu;
 	for (auto* list: span(drawdata->CmdLists, drawdata->CmdListsCount)) {
-		
 		auto imverto = imvert->add_offset(vtxDst * sizeof(ImDrawVert));
 		auto  imindo =  imind->add_offset(idxDst * sizeof(ImDrawIdx));
-		vuk::host_data_to_buffer(s_engine->frameAllocator(), vuk::DomainFlagBits{}, imverto,
-			std::span(list->VtxBuffer.Data, list->VtxBuffer.Size)).wait(s_engine->frameAllocator());
-		vuk::host_data_to_buffer(s_engine->frameAllocator(), vuk::DomainFlagBits{}, imindo,
-			std::span(list->IdxBuffer.Data, list->IdxBuffer.Size)).wait(s_engine->frameAllocator());
-		
+		std::memcpy(imverto.mapped_ptr, list->VtxBuffer.Data, list->VtxBuffer.Size * sizeof(ImDrawVert));
+		std::memcpy( imindo.mapped_ptr, list->IdxBuffer.Data, list->IdxBuffer.Size * sizeof(ImWchar));
 		vtxDst += list->VtxBuffer.Size;
 		idxDst += list->IdxBuffer.Size;
-		
 	}
 	
 	auto resources = std::vector<vuk::Resource>();

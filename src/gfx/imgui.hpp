@@ -20,7 +20,7 @@ struct Imgui {
 		
 	};
 	
-	Imgui(vuk::Allocator&, uvec2 viewport);
+	Imgui(vuk::Allocator&);
 	~Imgui();
 	
 	// Obtain the input reader to process user input events

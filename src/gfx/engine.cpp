@@ -26,7 +26,7 @@ Engine::Engine():
 	m_framesSinceLastCheck(0),
 	m_globalAllocator(m_deviceResource),
 	m_frameAllocator(m_deviceResource.get_next_frame()),
-	m_imgui(m_globalAllocator, {s_vulkan->swapchain->extent.width, s_vulkan->swapchain->extent.height}) {
+	m_imgui(m_globalAllocator) {
 	
 	L_INFO("Graphics engine initialized");
 	
