@@ -63,6 +63,7 @@ void Engine::render() {
 void Engine::renderFrame() {
 
 	s_vulkan->context->next_frame();
+	m_imgui.begin(); // Ensure that imgui calls inside this function work; usually a no-op
 	auto& frameResource = m_deviceResource.get_next_frame();
 	auto frameAllocator = vuk::Allocator(frameResource);
 	
@@ -181,10 +182,6 @@ void Engine::refreshSwapchain(uvec2 _newSize) {
 	s_vulkan->swapchain = newSwapchain;
 	m_swapchainDirty = false;
 	m_flushTemporalResources = true;
-	
-	ImGui::GetIO().DisplaySize = ImVec2(
-		f32(s_vulkan->swapchain->extent.width),
-		f32(s_vulkan->swapchain->extent.height));
 	
 	renderFrame();
 	

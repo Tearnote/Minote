@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <mutex>
 #include "SDL_events.h"
 #include "vuk/SampledImage.hpp"
 #include "vuk/RenderGraph.hpp"
@@ -39,6 +40,9 @@ struct Imgui {
 private:
 	
 	static inline bool m_exists = false;
+	std::recursive_mutex m_stateLock;
+	bool m_insideFrame;
+	
 	vuk::Texture m_font;
 	std::unique_ptr<vuk::SampledImage> m_fontSI;
 	

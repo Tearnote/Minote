@@ -33,7 +33,8 @@ bool Imgui::InputReader::process(SDL_Event const& _e) {
 	
 }
 
-Imgui::Imgui(vuk::Allocator& _allocator, uvec2 _viewport) {
+Imgui::Imgui(vuk::Allocator& _allocator, uvec2 _viewport):
+	m_insideFrame(false) {
 	
 	ASSUME(!m_exists);
 	m_exists = true;
@@ -74,6 +75,7 @@ Imgui::~Imgui() {
 
 auto Imgui::getInputReader() -> InputReader {
 	
+	auto lock = std::lock_guard(m_stateLock);
 	ImGui_ImplSDL2_NewFrame();
 	return InputReader();
 	
@@ -81,13 +83,20 @@ auto Imgui::getInputReader() -> InputReader {
 
 void Imgui::begin() {
 	
+	auto lock = std::lock_guard(m_stateLock);
+	if (m_insideFrame) return;
+	
 	ImGui::NewFrame();
+	m_insideFrame = true;
 	
 }
 
 void Imgui::render(vuk::Allocator& _allocator, vuk::RenderGraph& _rg,
 	vuk::Name _targetFrom, vuk::Name _targetTo,
 	ivector<vuk::SampledImage> const& _sampledImages) {
+	
+	auto lock = std::lock_guard(m_stateLock);
+	if (!m_insideFrame) begin();
 	
 	ImGui::Render();
 	auto* drawdata = ImGui::GetDrawData();
@@ -250,6 +259,8 @@ void Imgui::render(vuk::Allocator& _allocator, vuk::RenderGraph& _rg,
 	};
 	
 	_rg.add_pass(std::move(pass));
+	
+	m_insideFrame = false;
 	
 }
 
