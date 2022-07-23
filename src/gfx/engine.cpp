@@ -130,7 +130,7 @@ void Engine::renderFrame() {
 	auto frame = Frame(*this, rg);
 	frame.draw(screen, m_objects, m_flushTemporalResources);
 	*/
-	m_imgui.render(m_frameAllocator, rg, "screen", "screen_imgui", {});
+	m_imgui.render(rg, "screen", "screen_imgui", {});
 	
 	// Blit frame to swapchain
 	

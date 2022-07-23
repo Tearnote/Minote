@@ -13,6 +13,7 @@
 #include "util/math.hpp"
 #include "util/log.hpp"
 #include "gfx/samplers.hpp"
+#include "gfx/engine.hpp"
 #include "gfx/util.hpp"
 #include "sys/vulkan.hpp"
 
@@ -91,7 +92,7 @@ void Imgui::begin() {
 	
 }
 
-void Imgui::render(vuk::Allocator& _allocator, vuk::RenderGraph& _rg,
+void Imgui::render(vuk::RenderGraph& _rg,
 	vuk::Name _targetFrom, vuk::Name _targetTo,
 	ivector<vuk::SampledImage> const& _sampledImages) {
 	
@@ -103,8 +104,8 @@ void Imgui::render(vuk::Allocator& _allocator, vuk::RenderGraph& _rg,
 	
 	auto vertexSize = drawdata->TotalVtxCount * sizeof(ImDrawVert);
 	auto  indexSize = drawdata->TotalIdxCount * sizeof(ImDrawIdx);
-	auto imvert = *allocate_buffer_cross_device(_allocator, { vuk::MemoryUsage::eCPUtoGPU, vertexSize });
-	auto  imind = *allocate_buffer_cross_device(_allocator, { vuk::MemoryUsage::eCPUtoGPU, indexSize });
+	auto imvert = *allocate_buffer_cross_device(s_engine->frameAllocator(), { vuk::MemoryUsage::eCPUtoGPU, vertexSize });
+	auto  imind = *allocate_buffer_cross_device(s_engine->frameAllocator(), { vuk::MemoryUsage::eCPUtoGPU, indexSize });
 	
 	auto vtxDst = 0_zu;
 	auto idxDst = 0_zu;
@@ -112,10 +113,10 @@ void Imgui::render(vuk::Allocator& _allocator, vuk::RenderGraph& _rg,
 		
 		auto imverto = imvert->add_offset(vtxDst * sizeof(ImDrawVert));
 		auto  imindo =  imind->add_offset(idxDst * sizeof(ImDrawIdx));
-		vuk::host_data_to_buffer(_allocator, vuk::DomainFlagBits{}, imverto,
-			std::span(list->VtxBuffer.Data, list->VtxBuffer.Size)).wait(_allocator);
-		vuk::host_data_to_buffer(_allocator, vuk::DomainFlagBits{}, imindo,
-			std::span(list->IdxBuffer.Data, list->IdxBuffer.Size)).wait(_allocator);
+		vuk::host_data_to_buffer(s_engine->frameAllocator(), vuk::DomainFlagBits{}, imverto,
+			std::span(list->VtxBuffer.Data, list->VtxBuffer.Size)).wait(s_engine->frameAllocator());
+		vuk::host_data_to_buffer(s_engine->frameAllocator(), vuk::DomainFlagBits{}, imindo,
+			std::span(list->IdxBuffer.Data, list->IdxBuffer.Size)).wait(s_engine->frameAllocator());
 		
 		vtxDst += list->VtxBuffer.Size;
 		idxDst += list->IdxBuffer.Size;
@@ -131,8 +132,8 @@ void Imgui::render(vuk::Allocator& _allocator, vuk::RenderGraph& _rg,
 	auto pass = vuk::Pass{
 		.name = "Imgui",
 		.resources = std::move(resources),
-		.execute = [this, &_allocator, imvert=imvert.get(), imind=imind.get(),
-			drawdata, _targetFrom](vuk::CommandBuffer& cmd) {
+		.execute = [this, imvert=imvert.get(), imind=imind.get(), drawdata,
+			_targetFrom](vuk::CommandBuffer& cmd) {
 			
 			cmd.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor);
 			cmd.set_rasterization(vuk::PipelineRasterizationStateCreateInfo{});
@@ -193,10 +194,8 @@ void Imgui::render(vuk::Allocator& _allocator, vuk::RenderGraph& _rg,
 						clipRect.z >=   0.0f && clipRect.w >= 0.0f) {
 						
 						// Negative offsets are illegal for vkCmdSetScissor
-						if (clipRect.x < 0.0f)
-							clipRect.x = 0.0f;
-						if (clipRect.y < 0.0f)
-							clipRect.y = 0.0f;
+						clipRect.x = max(clipRect.x, 0.0f);
+						clipRect.y = max(clipRect.y, 0.0f);
 						
 						// Apply scissor/clipping rectangle
 						auto scissor = vuk::Rect2D{
@@ -215,7 +214,7 @@ void Imgui::render(vuk::Allocator& _allocator, vuk::RenderGraph& _rg,
 									auto ivci = *si.rg_attachment.ivci;
 									auto resImg = cmd.get_resource_image(si.rg_attachment.attachment_name);
 									ivci.image = *resImg;
-									auto iv = vuk::allocate_image_view(_allocator, ivci);
+									auto iv = vuk::allocate_image_view(s_engine->frameAllocator(), ivci);
 									cmd.bind_image(0, 0, **iv).bind_sampler(0, 0, si.rg_attachment.sci);
 								} else {
 									cmd.bind_image(0, 0, si.rg_attachment.attachment_name).bind_sampler(0, 0, si.rg_attachment.sci);

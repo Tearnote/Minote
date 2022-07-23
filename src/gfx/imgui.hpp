@@ -30,8 +30,7 @@ struct Imgui {
 	void begin();
 	
 	// After all controls are drawn, draw Imgui to the provided texture
-	void render(vuk::Allocator&, vuk::RenderGraph&,
-		vuk::Name targetFrom, vuk::Name targetTo,
+	void render(vuk::RenderGraph&, vuk::Name targetFrom, vuk::Name targetTo,
 		ivector<vuk::SampledImage> const& sampledImages);
 	
 	Imgui(Imgui const&) = delete;
