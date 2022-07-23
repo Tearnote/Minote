@@ -101,40 +101,6 @@ void Imgui::render(vuk::Allocator& _allocator, vuk::RenderGraph& _rg,
 	ImGui::Render();
 	auto* drawdata = ImGui::GetDrawData();
 	
-	auto resetRenderState = [this, drawdata](vuk::CommandBuffer& cmd,
-		vuk::Buffer vertex, vuk::Buffer index) {
-		
-		cmd.bind_image(0, 0, *m_font.view).bind_sampler(0, 0, TrilinearRepeat);
-		if (index.size > 0)
-			cmd.bind_index_buffer(index, sizeof(ImDrawIdx) == 2?
-				vuk::IndexType::eUint16 :
-				vuk::IndexType::eUint32);
-		cmd.bind_vertex_buffer(0, vertex, 0, vuk::Packed{
-			vuk::Format::eR32G32Sfloat,
-			vuk::Format::eR32G32Sfloat,
-			vuk::Format::eR8G8B8A8Unorm,
-		});
-		cmd.bind_graphics_pipeline("imgui");
-		cmd.set_viewport(0, vuk::Rect2D::framebuffer());
-		
-		struct Constants {
-			vec2 scale;
-			vec2 translate;
-		};
-		auto constants = Constants{
-			.scale = {
-				2.0f / drawdata->DisplaySize.x,
-				2.0f / drawdata->DisplaySize.y,
-			}
-		};
-		constants.translate = {
-			-1.0f - drawdata->DisplayPos.x * constants.scale[0],
-			-1.0f - drawdata->DisplayPos.y * constants.scale[1],
-		};
-		cmd.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, constants);
-		
-	};
-	
 	auto vertexSize = drawdata->TotalVtxCount * sizeof(ImDrawVert);
 	auto  indexSize = drawdata->TotalIdxCount * sizeof(ImDrawIdx);
 	auto imvert = *allocate_buffer_cross_device(_allocator, { vuk::MemoryUsage::eCPUtoGPU, vertexSize });
@@ -166,12 +132,39 @@ void Imgui::render(vuk::Allocator& _allocator, vuk::RenderGraph& _rg,
 		.name = "Imgui",
 		.resources = std::move(resources),
 		.execute = [this, &_allocator, imvert=imvert.get(), imind=imind.get(),
-			drawdata, resetRenderState, _targetFrom](vuk::CommandBuffer& cmd) {
+			drawdata, _targetFrom](vuk::CommandBuffer& cmd) {
 			
 			cmd.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor);
 			cmd.set_rasterization(vuk::PipelineRasterizationStateCreateInfo{});
 			cmd.set_color_blend(_targetFrom, vuk::BlendPreset::eAlphaBlend);
-			resetRenderState(cmd, imvert, imind);
+			cmd.bind_image(0, 0, *m_font.view).bind_sampler(0, 0, TrilinearRepeat);
+			if (imind.size > 0)
+				cmd.bind_index_buffer(imind, sizeof(ImDrawIdx) == 2?
+					vuk::IndexType::eUint16 :
+					vuk::IndexType::eUint32);
+			cmd.bind_vertex_buffer(0, imvert, 0, vuk::Packed{
+				vuk::Format::eR32G32Sfloat,
+				vuk::Format::eR32G32Sfloat,
+				vuk::Format::eR8G8B8A8Unorm,
+			});
+			cmd.bind_graphics_pipeline("imgui");
+			cmd.set_viewport(0, vuk::Rect2D::framebuffer());
+			
+			struct Constants {
+				vec2 scale;
+				vec2 translate;
+			};
+			auto constants = Constants{
+				.scale = {
+					2.0f / drawdata->DisplaySize.x,
+					2.0f / drawdata->DisplaySize.y,
+				}
+			};
+			constants.translate = {
+				-1.0f - drawdata->DisplayPos.x * constants.scale[0],
+				-1.0f - drawdata->DisplayPos.y * constants.scale[1],
+			};
+			cmd.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, constants);
 			
 			// Will project scissor/clipping rectangles into framebuffer space
 			auto clipOff = drawdata->DisplayPos;         // (0,0) unless using multi-viewports
@@ -185,66 +178,53 @@ void Imgui::render(vuk::Allocator& _allocator, vuk::RenderGraph& _rg,
 				for (auto cmd_i: iota(0, list->CmdBuffer.Size)) {
 					
 					auto* pcmd = &list->CmdBuffer[cmd_i];
-					if (pcmd->UserCallback) {
+					
+					// Project scissor/clipping rectangles into framebuffer space
+					auto clipRect = ImVec4{
+						(pcmd->ClipRect.x - clipOff.x) * clipScale.x,
+						(pcmd->ClipRect.y - clipOff.y) * clipScale.y,
+						(pcmd->ClipRect.z - clipOff.x) * clipScale.x,
+						(pcmd->ClipRect.w - clipOff.y) * clipScale.y,
+					};
+					
+					auto fbWidth = cmd.get_ongoing_renderpass().extent.width;
+					auto fbHeight = cmd.get_ongoing_renderpass().extent.height;
+					if (clipRect.x < fbWidth && clipRect.y < fbHeight &&
+						clipRect.z >=   0.0f && clipRect.w >= 0.0f) {
 						
-						// User callback, registered via ImDrawList::AddCallback()
-						// (ImDrawCallback_ResetRenderState is a special callback value
-						// used by the user to request the renderer to reset render state.)
-						if (pcmd->UserCallback == ImDrawCallback_ResetRenderState)
-							resetRenderState(cmd, imvert, imind);
-						else
-							pcmd->UserCallback(list, pcmd);
-							
-					} else {
+						// Negative offsets are illegal for vkCmdSetScissor
+						if (clipRect.x < 0.0f)
+							clipRect.x = 0.0f;
+						if (clipRect.y < 0.0f)
+							clipRect.y = 0.0f;
 						
-						// Project scissor/clipping rectangles into framebuffer space
-						auto clipRect = ImVec4{
-							(pcmd->ClipRect.x - clipOff.x) * clipScale.x,
-							(pcmd->ClipRect.y - clipOff.y) * clipScale.y,
-							(pcmd->ClipRect.z - clipOff.x) * clipScale.x,
-							(pcmd->ClipRect.w - clipOff.y) * clipScale.y,
+						// Apply scissor/clipping rectangle
+						auto scissor = vuk::Rect2D{
+							.offset = {i32(clipRect.x), i32(clipRect.y)},
+							.extent = {u32(clipRect.z - clipRect.x), u32(clipRect.w - clipRect.y)},
 						};
+						cmd.set_scissor(0, scissor);
 						
-						auto fbWidth = cmd.get_ongoing_renderpass().extent.width;
-						auto fbHeight = cmd.get_ongoing_renderpass().extent.height;
-						if (clipRect.x < fbWidth && clipRect.y < fbHeight &&
-							clipRect.z >=   0.0f && clipRect.w >= 0.0f) {
-							
-							// Negative offsets are illegal for vkCmdSetScissor
-							if (clipRect.x < 0.0f)
-								clipRect.x = 0.0f;
-							if (clipRect.y < 0.0f)
-								clipRect.y = 0.0f;
-							
-							// Apply scissor/clipping rectangle
-							auto scissor = vuk::Rect2D{
-								.offset = {i32(clipRect.x), i32(clipRect.y)},
-								.extent = {u32(clipRect.z - clipRect.x), u32(clipRect.w - clipRect.y)},
-							};
-							cmd.set_scissor(0, scissor);
-							
-							// Bind texture
-							if (pcmd->TextureId) {
-								auto& si = *reinterpret_cast<vuk::SampledImage*>(pcmd->TextureId);
-								if (si.is_global) {
-									cmd.bind_image(0, 0, si.global.iv).bind_sampler(0, 0, si.global.sci);
+						// Bind texture
+						if (pcmd->TextureId) {
+							auto& si = *reinterpret_cast<vuk::SampledImage*>(pcmd->TextureId);
+							if (si.is_global) {
+								cmd.bind_image(0, 0, si.global.iv).bind_sampler(0, 0, si.global.sci);
+							} else {
+								if (si.rg_attachment.ivci) {
+									auto ivci = *si.rg_attachment.ivci;
+									auto resImg = cmd.get_resource_image(si.rg_attachment.attachment_name);
+									ivci.image = *resImg;
+									auto iv = vuk::allocate_image_view(_allocator, ivci);
+									cmd.bind_image(0, 0, **iv).bind_sampler(0, 0, si.rg_attachment.sci);
 								} else {
-									if (si.rg_attachment.ivci) {
-										auto ivci = *si.rg_attachment.ivci;
-										auto resImg = cmd.get_resource_image(si.rg_attachment.attachment_name);
-										ivci.image = *resImg;
-										auto iv = vuk::allocate_image_view(_allocator, ivci);
-										cmd.bind_image(0, 0, **iv).bind_sampler(0, 0, si.rg_attachment.sci);
-									} else {
-										cmd.bind_image(0, 0, si.rg_attachment.attachment_name).bind_sampler(0, 0, si.rg_attachment.sci);
-									}
+									cmd.bind_image(0, 0, si.rg_attachment.attachment_name).bind_sampler(0, 0, si.rg_attachment.sci);
 								}
 							}
-							
-							// Draw
-							cmd.draw_indexed(pcmd->ElemCount, 1, pcmd->IdxOffset + globalIdxOffset, pcmd->VtxOffset + globalVtxOffset, 0);
-							
 						}
+						
+						// Draw
+						cmd.draw_indexed(pcmd->ElemCount, 1, pcmd->IdxOffset + globalIdxOffset, pcmd->VtxOffset + globalVtxOffset, 0);
 						
 					}
 					
