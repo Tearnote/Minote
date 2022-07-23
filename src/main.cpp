@@ -19,7 +19,7 @@
 using namespace minote; // Can't namespace main()
 
 // Window resize event handler
-static auto windowResize(void* _engine, SDL_Event* _e) -> int {
+static auto windowResize(void*, SDL_Event* _e) -> int {
 	
 	// Resize events only
 	if (_e->type != SDL_WINDOWEVENT) return 0;
@@ -28,8 +28,7 @@ static auto windowResize(void* _engine, SDL_Event* _e) -> int {
 	// Recreate swapchain and redraw
 	auto newSize = uvec2{u32(_e->window.data1), u32(_e->window.data2)};
 	if (newSize.x() == 0 || newSize.y() == 0) return 0; // Minimized
-	auto& engine = *static_cast<Engine*>(_engine);
-	engine.refreshSwapchain(newSize);
+	s_engine->refreshSwapchain(newSize);
 	
 	L_INFO("Window resized to {}x{}", newSize.x(), newSize.y());
 	

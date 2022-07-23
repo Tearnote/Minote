@@ -154,17 +154,13 @@ void Engine::renderFrame() {
 	// Build and submit the rendergraph
 	
 	try {
-		
 		execute_submit_and_present_to_one(frameAllocator, std::move(rg).link({}), s_vulkan->swapchain);
-
 	} catch (vuk::PresentException& e) {
-
 		auto error = e.code();
 		if (error == VK_ERROR_OUT_OF_DATE_KHR)
 			m_swapchainDirty = true; // No need to return, only cleanup is left
 		else if (error != VK_SUBOPTIMAL_KHR)
 			throw runtime_error_fmt("Unable to present to the screen: error {}", error);
-		
 	}
 	
 	// Clean up

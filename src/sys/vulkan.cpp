@@ -46,7 +46,7 @@ VKAPI_ATTR auto VKAPI_CALL debugCallback(
 }
 #endif
 
-Vulkan::Vulkan(Window& _window) {
+Vulkan::Vulkan(Window& _window): m_window(_window) {
 	
 	instance = createInstance();
 	surface = createSurface(instance, _window);

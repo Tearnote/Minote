@@ -25,6 +25,9 @@ struct Vulkan {
 	// Create a swapchain object, optionally reusing resources from an existing one.
 	auto createSwapchain(uvec2 size, VkSwapchainKHR old = VK_NULL_HANDLE) -> vuk::Swapchain;
 	
+	// Return the window instance that Vulkan was initialized on
+	auto window() -> Window& { return m_window; }
+	
 	Vulkan(Vulkan const&) = delete;
 	auto operator=(Vulkan const&) -> Vulkan& = delete;
 	
@@ -42,6 +45,8 @@ private:
 	friend struct Service<Vulkan>;
 	explicit Vulkan(Window&);
 	~Vulkan();
+	
+	Window& m_window;
 	
 	static auto createInstance() -> vkb::Instance;
 	static auto createSurface(vkb::Instance&, Window&) -> VkSurfaceKHR;

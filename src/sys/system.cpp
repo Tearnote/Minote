@@ -18,8 +18,6 @@
 #include "SDL_events.h"
 #include "SDL_timer.h"
 #include "SDL.h"
-#include "backends/imgui_impl_sdl.h"
-#include "imgui.h"
 #include "util/verify.hpp"
 #include "util/error.hpp"
 #include "util/time.hpp"
@@ -57,9 +55,7 @@ System::~System() {
 #ifdef _WIN32
 	timeEndPeriod(1);
 #endif
-	
 	SDL_Quit();
-	
 	L_DEBUG("System cleaned up");
 	
 }
@@ -154,12 +150,6 @@ Window::Window(string_view _title, bool _fullscreen, uvec2 _size):
 	SDL_GetDisplayDPI(SDL_GetWindowDisplayIndex(m_handle), nullptr, nullptr, &dpi);
 	m_dpi = dpi;
 	
-	// Initialize imgui input
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGui::StyleColorsDark();
-	ImGui_ImplSDL2_InitForVulkan(m_handle);
-	
 	L_INFO("Window {} created at {}x{}, {} DPI{}",
 		m_title, realSize.x(), realSize.y(), dpi, _fullscreen? ", fullscreen" : "");
 	
@@ -167,9 +157,7 @@ Window::Window(string_view _title, bool _fullscreen, uvec2 _size):
 
 Window::~Window() {
 	
-	ImGui_ImplSDL2_Shutdown();
 	SDL_DestroyWindow(m_handle);
-	
 	L_INFO("Window {} closed", title());
 	
 }

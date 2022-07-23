@@ -14,6 +14,7 @@
 #include "util/log.hpp"
 #include "gfx/samplers.hpp"
 #include "gfx/util.hpp"
+#include "sys/vulkan.hpp"
 
 #include "spv/imgui.vs.hpp"
 #include "spv/imgui.ps.hpp"
@@ -39,6 +40,10 @@ Imgui::Imgui(vuk::Allocator& _allocator, uvec2 _viewport) {
 	
 	auto& ctx = _allocator.get_context();
 	
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGui_ImplSDL2_InitForVulkan(s_vulkan->window().handle());
+	
 	auto& io = ImGui::GetIO();
 	io.BackendRendererName = "imgui_impl_vuk";
 	// We can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
@@ -56,15 +61,13 @@ Imgui::Imgui(vuk::Allocator& _allocator, uvec2 _viewport) {
 	addSpirv(imguiPci, imgui_ps, "imgui.ps.hlsl");
 	ctx.create_named_pipeline("imgui", imguiPci);
 	
-	// Begin frame so that first-frame calls succeed
-	ImGui::NewFrame();
-	
 	L_DEBUG("ImGui initialized");
 	
 }
 
 Imgui::~Imgui() {
 	
+	ImGui_ImplSDL2_Shutdown();
 	m_exists = false;
 	
 }
