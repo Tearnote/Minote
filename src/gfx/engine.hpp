@@ -45,6 +45,10 @@ struct Engine {
 	
 	auto fps() const -> f32 { return m_framerate; }
 	
+	// Return allocators, for effects that need permanent or temporary internal allocations
+	auto globalAllocator() -> vuk::Allocator& { return m_globalAllocator; }
+	auto frameAllocator() -> vuk::Allocator& { return m_frameAllocator; }
+	
 	Engine(Engine const&) = delete;
 	auto operator=(Engine const&) -> Engine& = delete;
 	
@@ -52,6 +56,7 @@ private:
 	
 	vuk::DeviceSuperFrameResource m_deviceResource;
 	vuk::Allocator m_globalAllocator;
+	vuk::Allocator m_frameAllocator;
 	
 	std::mutex m_renderLock;
 	bool m_swapchainDirty;
@@ -68,8 +73,6 @@ private:
 	Camera m_camera;
 	
 	void renderFrame();
-	
-	friend struct Frame;
 	
 };
 

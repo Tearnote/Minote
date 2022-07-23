@@ -25,6 +25,7 @@ Engine::Engine():
 	m_lastFramerateCheck(0),
 	m_framesSinceLastCheck(0),
 	m_globalAllocator(m_deviceResource),
+	m_frameAllocator(m_deviceResource.get_next_frame()),
 	m_imgui(m_globalAllocator, {s_vulkan->swapchain->extent.width, s_vulkan->swapchain->extent.height}) {
 	
 	L_INFO("Graphics engine initialized");
@@ -65,7 +66,7 @@ void Engine::renderFrame() {
 	s_vulkan->context->next_frame();
 	m_imgui.begin(); // Ensure that imgui calls inside this function work; usually a no-op
 	auto& frameResource = m_deviceResource.get_next_frame();
-	auto frameAllocator = vuk::Allocator(frameResource);
+	m_frameAllocator = vuk::Allocator(frameResource);
 	
 	// Framerate calculation
 	
@@ -129,7 +130,7 @@ void Engine::renderFrame() {
 	auto frame = Frame(*this, rg);
 	frame.draw(screen, m_objects, m_flushTemporalResources);
 	*/
-	m_imgui.render(frameAllocator, rg, "screen", "screen_imgui", {});
+	m_imgui.render(m_frameAllocator, rg, "screen", "screen_imgui", {});
 	
 	// Blit frame to swapchain
 	
@@ -155,7 +156,7 @@ void Engine::renderFrame() {
 	// Build and submit the rendergraph
 	
 	try {
-		execute_submit_and_present_to_one(frameAllocator, std::move(rg).link({}), s_vulkan->swapchain);
+		execute_submit_and_present_to_one(m_frameAllocator, std::move(rg).link({}), s_vulkan->swapchain);
 	} catch (vuk::PresentException& e) {
 		auto error = e.code();
 		if (error == VK_ERROR_OUT_OF_DATE_KHR)
