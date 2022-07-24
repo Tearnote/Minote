@@ -120,21 +120,26 @@ void Engine::renderFrame() {
 	
 	// Prepare frame
 	
-	auto rg = vuk::RenderGraph();
-	rg.attach_swapchain("swapchain", s_vulkan->swapchain);
-	rg.attach_and_clear_image("screen", { .format = vuk::Format::eR8G8B8A8Unorm, .sample_count = vuk::Samples::e1 }, vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.0f));
-	rg.inference_rule("screen", vuk::same_extent_as("swapchain"));
+	auto rg = std::make_shared<vuk::RenderGraph>();
+	rg->attach_swapchain("swapchain", s_vulkan->swapchain);
+	rg->attach_and_clear_image("screen", { .format = vuk::Format::eR8G8B8A8Unorm, .sample_count = vuk::Samples::e1 }, vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.0f));
+	rg->inference_rule("screen", vuk::same_extent_as("swapchain"));
 	
 	// Draw frame
 	/*
 	auto frame = Frame(*this, rg);
 	frame.draw(screen, m_objects, m_flushTemporalResources);
 	*/
-	m_imgui.render(rg, "screen", "screen_imgui", {});
+	auto screenImguiFut = m_imgui.render(rg, vuk::Future(rg, "screen"));
+	auto futures = rg->split();
+	rg = std::make_shared<vuk::RenderGraph>();
+	rg->attach_in(futures);
+	rg->attach_swapchain("swapchain", s_vulkan->swapchain);
+	rg->attach_in("screen_imgui", screenImguiFut);
 	
 	// Blit frame to swapchain
 	
-	rg.add_pass({
+	rg->add_pass({
 		.name = "swapchain copy",
 		.resources = {
 			"screen_imgui"_image >> vuk::eTransferRead,
@@ -156,7 +161,7 @@ void Engine::renderFrame() {
 	// Build and submit the rendergraph
 	
 	try {
-		execute_submit_and_present_to_one(m_frameAllocator, std::move(rg).link({}), s_vulkan->swapchain);
+		execute_submit_and_present_to_one(m_frameAllocator, std::move(*rg).link({}), s_vulkan->swapchain);
 	} catch (vuk::PresentException& e) {
 		auto error = e.code();
 		if (error == VK_ERROR_OUT_OF_DATE_KHR)

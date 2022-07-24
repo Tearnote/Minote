@@ -30,8 +30,7 @@ struct Imgui {
 	void begin();
 	
 	// After all controls are drawn, draw Imgui to the provided texture
-	void render(vuk::RenderGraph&, vuk::Name targetFrom, vuk::Name targetTo,
-		ivector<vuk::SampledImage> const& sampledImages);
+	auto render(std::shared_ptr<vuk::RenderGraph>, vuk::Future target) -> vuk::Future;
 	
 	Imgui(Imgui const&) = delete;
 	auto operator=(Imgui const&) -> Imgui& = delete;

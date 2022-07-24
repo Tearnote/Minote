@@ -163,6 +163,7 @@ auto Vulkan::selectPhysicalDevice(vkb::Instance& _instance, VkSurfaceKHR _surfac
 		.samplerFilterMinmax = VK_TRUE,
 		.hostQueryReset = VK_TRUE, // vuk requirement
 		.timelineSemaphore = VK_TRUE, // vuk requirement
+		.bufferDeviceAddress = VK_TRUE, // vuk requirement
 		.vulkanMemoryModel = VK_TRUE, // general performance improvement
 		.vulkanMemoryModelDeviceScope = VK_TRUE, // general performance improvement
 	};

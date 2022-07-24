@@ -88,9 +88,7 @@ void Imgui::begin() {
 	
 }
 
-void Imgui::render(vuk::RenderGraph& _rg,
-	vuk::Name _targetFrom, vuk::Name _targetTo,
-	ivector<vuk::SampledImage> const& _sampledImages) {
+auto Imgui::render(std::shared_ptr<vuk::RenderGraph> _rg, vuk::Future _target) -> vuk::Future {
 	
 	auto lock = std::lock_guard(m_stateLock);
 	if (!m_insideFrame) begin();
@@ -116,21 +114,19 @@ void Imgui::render(vuk::RenderGraph& _rg,
 		idxDst += list->IdxBuffer.Size;
 	}
 	
-	auto resources = std::vector<vuk::Resource>();
-	resources.emplace_back(vuk::Resource{ _targetFrom, vuk::Resource::Type::eImage, vuk::eColorRW, _targetTo });
-	for (auto& si: _sampledImages)
-		if (!si.is_global)
-			resources.emplace_back(vuk::Resource{ si.rg_attachment.attachment_name, vuk::Resource::Type::eImage, vuk::Access::eFragmentSampled });
+	auto rg = std::make_shared<vuk::RenderGraph>();
+	rg->attach_in("input", _target);
 	
-	auto pass = vuk::Pass{
-		.name = "Imgui",
-		.resources = std::move(resources),
-		.execute = [this, imvert=imvert.get(), imind=imind.get(), drawdata,
-			_targetFrom](vuk::CommandBuffer& cmd) {
+	rg->add_pass(vuk::Pass{
+		.name = "imgui",
+		.resources = {
+			"input"_image >> vuk::eColorRW >> "output",
+		},
+		.execute = [this, imvert=imvert.get(), imind=imind.get(), drawdata](vuk::CommandBuffer& cmd) {
 			
 			cmd.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor);
 			cmd.set_rasterization(vuk::PipelineRasterizationStateCreateInfo{});
-			cmd.set_color_blend(_targetFrom, vuk::BlendPreset::eAlphaBlend);
+			cmd.broadcast_color_blend(vuk::BlendPreset::eAlphaBlend);
 			cmd.bind_image(0, 0, *m_font.view).bind_sampler(0, 0, TrilinearRepeat);
 			if (imind.size > 0)
 				cmd.bind_index_buffer(imind, sizeof(ImDrawIdx) == 2?
@@ -228,11 +224,11 @@ void Imgui::render(vuk::RenderGraph& _rg,
 			
 		}
 		
-	};
-	
-	_rg.add_pass(std::move(pass));
+	});
 	
 	m_insideFrame = false;
+	return vuk::Future(rg, "output");
+	
 	
 }
 
