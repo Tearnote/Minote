@@ -134,7 +134,6 @@ void Engine::renderFrame() {
 	auto futures = rg->split();
 	rg = std::make_shared<vuk::RenderGraph>();
 	rg->attach_in(futures);
-	rg->attach_swapchain("swapchain", s_vulkan->swapchain);
 	rg->attach_in("screen_imgui", screenImguiFut);
 	
 	// Blit frame to swapchain
