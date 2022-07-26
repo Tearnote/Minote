@@ -130,7 +130,7 @@ void Engine::renderFrame() {
 	auto frame = Frame(*this, rg);
 	frame.draw(screen, m_objects, m_flushTemporalResources);
 	*/
-	auto screenImguiFut = m_imgui.render(rg, vuk::Future(rg, "screen"));
+	auto screenImguiFut = m_imgui.render(vuk::Future(rg, "screen"));
 	auto futures = rg->split();
 	rg = std::make_shared<vuk::RenderGraph>();
 	rg->attach_in(futures);

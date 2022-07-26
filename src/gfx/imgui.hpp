@@ -29,8 +29,8 @@ struct Imgui {
 	// After all user input is provided, begin the frame. ImGui:: calls are now allowed
 	void begin();
 	
-	// After all controls are drawn, draw Imgui to the provided texture
-	auto render(std::shared_ptr<vuk::RenderGraph>, vuk::Future target) -> vuk::Future;
+	// After all controls are created, draw Imgui to the provided texture
+	auto render(vuk::Future target) -> vuk::Future;
 	
 	Imgui(Imgui const&) = delete;
 	auto operator=(Imgui const&) -> Imgui& = delete;
@@ -42,10 +42,9 @@ private:
 	bool m_insideFrame;
 	
 	vuk::Texture m_font;
-	std::unique_ptr<vuk::SampledImage> m_fontSI;
 	
 	void setTheme();
-	void uploadFont(vuk::Allocator&); // Initialize m_fontTex, m_fontSI
+	void uploadFont(vuk::Allocator&); // Initialize m_font
 	
 };
 

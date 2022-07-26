@@ -88,7 +88,7 @@ void Imgui::begin() {
 	
 }
 
-auto Imgui::render(std::shared_ptr<vuk::RenderGraph> _rg, vuk::Future _target) -> vuk::Future {
+auto Imgui::render(vuk::Future _target) -> vuk::Future {
 	
 	auto lock = std::lock_guard(m_stateLock);
 	if (!m_insideFrame) begin();
@@ -100,8 +100,10 @@ auto Imgui::render(std::shared_ptr<vuk::RenderGraph> _rg, vuk::Future _target) -
 	// Fill up the vertex and index buffers
 	auto vertexSize = drawdata->TotalVtxCount * sizeof(ImDrawVert);
 	auto  indexSize = drawdata->TotalIdxCount * sizeof(ImDrawIdx);
-	auto imvert = *allocate_buffer_cross_device(s_engine->frameAllocator(), { vuk::MemoryUsage::eCPUtoGPU, vertexSize });
-	auto  imind = *allocate_buffer_cross_device(s_engine->frameAllocator(), { vuk::MemoryUsage::eCPUtoGPU, indexSize });
+	auto imvert = *vuk::allocate_buffer_cross_device(s_engine->frameAllocator(),
+		{vuk::MemoryUsage::eCPUtoGPU, vertexSize});
+	auto  imind = *vuk::allocate_buffer_cross_device(s_engine->frameAllocator(),
+		{vuk::MemoryUsage::eCPUtoGPU, indexSize});
 	
 	auto vtxDst = 0_zu;
 	auto idxDst = 0_zu;
@@ -109,7 +111,7 @@ auto Imgui::render(std::shared_ptr<vuk::RenderGraph> _rg, vuk::Future _target) -
 		auto imverto = imvert->add_offset(vtxDst * sizeof(ImDrawVert));
 		auto  imindo =  imind->add_offset(idxDst * sizeof(ImDrawIdx));
 		std::memcpy(imverto.mapped_ptr, list->VtxBuffer.Data, list->VtxBuffer.Size * sizeof(ImDrawVert));
-		std::memcpy( imindo.mapped_ptr, list->IdxBuffer.Data, list->IdxBuffer.Size * sizeof(ImWchar));
+		std::memcpy( imindo.mapped_ptr, list->IdxBuffer.Data, list->IdxBuffer.Size * sizeof(ImDrawIdx));
 		vtxDst += list->VtxBuffer.Size;
 		idxDst += list->IdxBuffer.Size;
 	}
@@ -117,6 +119,7 @@ auto Imgui::render(std::shared_ptr<vuk::RenderGraph> _rg, vuk::Future _target) -
 	auto rg = std::make_shared<vuk::RenderGraph>();
 	rg->attach_in("input", _target);
 	
+	// Execute all imgui draws in this pass
 	rg->add_pass(vuk::Pass{
 		.name = "imgui",
 		.resources = {
@@ -124,35 +127,36 @@ auto Imgui::render(std::shared_ptr<vuk::RenderGraph> _rg, vuk::Future _target) -
 		},
 		.execute = [this, imvert=imvert.get(), imind=imind.get(), drawdata](vuk::CommandBuffer& cmd) {
 			
-			cmd.set_dynamic_state(vuk::DynamicStateFlagBits::eScissor);
-			cmd.set_rasterization(vuk::PipelineRasterizationStateCreateInfo{});
-			cmd.broadcast_color_blend(vuk::BlendPreset::eAlphaBlend);
+			cmd.bind_graphics_pipeline("imgui")
+			   .set_dynamic_state(vuk::DynamicStateFlagBits::eViewport | vuk::DynamicStateFlagBits::eScissor)
+			   .set_viewport(0, vuk::Rect2D::framebuffer())
+			   .set_rasterization({})
+			   .broadcast_color_blend(vuk::BlendPreset::eAlphaBlend);
+			
 			cmd.bind_image(0, 0, *m_font.view).bind_sampler(0, 0, TrilinearRepeat);
-			if (imind.size > 0)
-				cmd.bind_index_buffer(imind, sizeof(ImDrawIdx) == 2?
+			constexpr auto ImguiIndexSize = 
+				sizeof(ImDrawIdx) == 2?
 					vuk::IndexType::eUint16 :
-					vuk::IndexType::eUint32);
+					vuk::IndexType::eUint32;
+			if (imind.size > 0)
+				cmd.bind_index_buffer(imind, ImguiIndexSize);
 			cmd.bind_vertex_buffer(0, imvert, 0, vuk::Packed{
 				vuk::Format::eR32G32Sfloat,
 				vuk::Format::eR32G32Sfloat,
 				vuk::Format::eR8G8B8A8Unorm,
 			});
-			cmd.bind_graphics_pipeline("imgui");
-			cmd.set_viewport(0, vuk::Rect2D::framebuffer());
 			
 			struct Constants {
 				vec2 scale;
 				vec2 translate;
 			};
-			auto constants = Constants{
-				.scale = {
-					2.0f / drawdata->DisplaySize.x,
-					2.0f / drawdata->DisplaySize.y,
-				}
+			auto scale = vec2{
+				2.0f / drawdata->DisplaySize.x,
+				2.0f / drawdata->DisplaySize.y,
 			};
-			constants.translate = {
-				-1.0f - drawdata->DisplayPos.x * constants.scale[0],
-				-1.0f - drawdata->DisplayPos.y * constants.scale[1],
+			auto constants = Constants{
+				.scale = scale,
+				.translate = vec2(-1.0f) - vec2{drawdata->DisplayPos.x, drawdata->DisplayPos.y} * scale,
 			};
 			cmd.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, constants);
 			
@@ -165,65 +169,43 @@ auto Imgui::render(std::shared_ptr<vuk::RenderGraph> _rg, vuk::Future _target) -
 			auto globalVtxOffset = 0;
 			auto globalIdxOffset = 0;
 			for (auto* list: span(drawdata->CmdLists, drawdata->CmdListsCount)) {
-				for (auto cmd_i: iota(0, list->CmdBuffer.Size)) {
-					
-					auto* pcmd = &list->CmdBuffer[cmd_i];
+				for (auto& pcmd: list->CmdBuffer) {
 					
 					// Project scissor/clipping rectangles into framebuffer space
-					auto clipRect = ImVec4{
-						(pcmd->ClipRect.x - clipOff.x) * clipScale.x,
-						(pcmd->ClipRect.y - clipOff.y) * clipScale.y,
-						(pcmd->ClipRect.z - clipOff.x) * clipScale.x,
-						(pcmd->ClipRect.w - clipOff.y) * clipScale.y,
+					auto clipRect = vec4{
+						(pcmd.ClipRect.x - clipOff.x) * clipScale.x,
+						(pcmd.ClipRect.y - clipOff.y) * clipScale.y,
+						(pcmd.ClipRect.z - clipOff.x) * clipScale.x,
+						(pcmd.ClipRect.w - clipOff.y) * clipScale.y,
 					};
-					
 					auto fbWidth = cmd.get_ongoing_renderpass().extent.width;
 					auto fbHeight = cmd.get_ongoing_renderpass().extent.height;
-					if (clipRect.x < fbWidth && clipRect.y < fbHeight &&
-						clipRect.z >=   0.0f && clipRect.w >= 0.0f) {
-						
-						// Negative offsets are illegal for vkCmdSetScissor
-						clipRect.x = max(clipRect.x, 0.0f);
-						clipRect.y = max(clipRect.y, 0.0f);
-						
-						// Apply scissor/clipping rectangle
-						auto scissor = vuk::Rect2D{
-							.offset = {i32(clipRect.x), i32(clipRect.y)},
-							.extent = {u32(clipRect.z - clipRect.x), u32(clipRect.w - clipRect.y)},
-						};
-						cmd.set_scissor(0, scissor);
-						
-						// Bind texture
-						if (pcmd->TextureId) {
-							auto& si = *reinterpret_cast<vuk::SampledImage*>(pcmd->TextureId);
-							if (si.is_global) {
-								cmd.bind_image(0, 0, si.global.iv).bind_sampler(0, 0, si.global.sci);
-							} else {
-								if (si.rg_attachment.ivci) {
-									auto ivci = *si.rg_attachment.ivci;
-									auto resImg = cmd.get_resource_image(si.rg_attachment.attachment_name);
-									ivci.image = *resImg;
-									auto iv = vuk::allocate_image_view(s_engine->frameAllocator(), ivci);
-									cmd.bind_image(0, 0, **iv).bind_sampler(0, 0, si.rg_attachment.sci);
-								} else {
-									cmd.bind_image(0, 0, si.rg_attachment.attachment_name).bind_sampler(0, 0, si.rg_attachment.sci);
-								}
-							}
-						}
-						
-						// Draw
-						cmd.draw_indexed(pcmd->ElemCount, 1, pcmd->IdxOffset + globalIdxOffset, pcmd->VtxOffset + globalVtxOffset, 0);
-						
+					if (clipRect.x() >= fbWidth || clipRect.y() >= fbHeight ||
+						clipRect.z() <     0.0f || clipRect.w() <  0.0f) continue;
+					
+					// Negative offsets are illegal for vkCmdSetScissor
+					clipRect.x() = max(clipRect.x(), 0.0f);
+					clipRect.y() = max(clipRect.y(), 0.0f);
+					cmd.set_scissor(0, vuk::Rect2D{
+						.offset = {i32(clipRect.x()), i32(clipRect.y())},
+						.extent = {u32(clipRect.z() - clipRect.x()), u32(clipRect.w() - clipRect.y())},
+					});
+					
+					// Bind texture
+					if (pcmd.TextureId) {
+						auto& view = *reinterpret_cast<vuk::ImageView*>(pcmd.TextureId);
+						cmd.bind_image(0, 0, view, vuk::ImageLayout::eShaderReadOnlyOptimal).bind_sampler(0, 0, TrilinearClamp);
 					}
+					
+					// Draw
+					cmd.draw_indexed(pcmd.ElemCount, 1, pcmd.IdxOffset + globalIdxOffset, pcmd.VtxOffset + globalVtxOffset, 0);
 					
 				}
 				globalIdxOffset += list->IdxBuffer.Size;
 				globalVtxOffset += list->VtxBuffer.Size;
 				
 			}
-			
 		}
-		
 	});
 	
 	m_insideFrame = false;
@@ -308,9 +290,7 @@ void Imgui::uploadFont(vuk::Allocator& _allocator) {
 	m_font = std::move(font);
 	stub.wait(_allocator);
 	ctx.debug.set_name(m_font, "imgui/font");
-	
-	m_fontSI = std::make_unique<vuk::SampledImage>(vuk::SampledImage::Global{ *m_font.view, TrilinearRepeat, vuk::ImageLayout::eShaderReadOnlyOptimal });
-	io.Fonts->TexID = ImTextureID(m_fontSI.get());
+	io.Fonts->TexID = ImTextureID(&m_font.view.get());
 	
 }
 
