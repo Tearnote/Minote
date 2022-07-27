@@ -8,6 +8,6 @@ You are allowed to init and distribute derivative work under the following condi
 
 This work contains both original code and code taken from other sources. Any code that is not original has its origin stated in a comment that precedes the code, and all licensing obligations of the original code are carried out to the best of the author's knowledge and ability. The terms of this license apply only to entirely original code; no attempt is made to re-license the derivative code.
 
-An additional exception is made for snippets of code that are not comparable to the scope of the project as a whole. This, for example, would include code that implements a single rendering technique, or allocation scheme. Such snippets, taken verbatim or derived from, can be used under a permissive MIT license. The spirit of this clause is to encourage mutual knowledge sharing in the computer graphics and game development communities.
+An additional exception is made for snippets of code minor enough so that they cannot be reasonably mistaken for the project or part of the project. This, for example, would include code that implements a single rendering technique, or allocation scheme. Such snippets, taken verbatim or derived from, can be used under a permissive MIT license. The spirit of this clause is to encourage mutual knowledge sharing in the computer graphics and game development communities.
 
 Except as stated in this license, the work is provided "AS IS". No other guarantees are provided or implied.

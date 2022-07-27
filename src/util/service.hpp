@@ -7,6 +7,11 @@ namespace minote {
 
 // Wrapper for providing globally available scoped access to a class instance
 // Singleton on steroids
+//
+// The list of services currently provided within the project:
+// s_system (sys/system.hpp): OS-level functionality
+// s_vulkan (sys/vulkan.hpp): Vulkan instance and device properties
+// s_renderer (gfx/renderer.hpp): World properties, camera, object list
 template<typename T>
 struct Service {
 	
