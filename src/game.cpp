@@ -29,13 +29,11 @@ struct Game::Impl {
 	
 	static constexpr auto BattleSceneCount = BattleScenes * BattleScenes;
 	static constexpr auto SimpleSceneCount = SimpleScenes * SimpleScenes;
-	svector<BattleScene, BattleSceneCount> battleScenes;
-	svector<SimpleScene, SimpleSceneCount> testScenes;
 	
-	Impl(Game::Params const& p): window(p.window), mapper(p.mapper) {}
+	Impl(Game::Params const& p): m_window(p.window), m_mapper(p.mapper) {}
 	// Load all assets from the store, upload to GPU when neccessary
 	void loadAssets(string_view path);
-	// Create game world objects
+	// Create game world objects, initialize camera
 	void createScene();
 	// Run the game logic and rendering until user quits
 	void gameLoop();
@@ -43,10 +41,13 @@ struct Game::Impl {
 	// Simulation time advances to "until" timestamp
 	void tick(nsec until, Imgui::InputReader&);
 	
-	Window& window;
-	Mapper& mapper;
+	Window& m_window;
+	Mapper& m_mapper;
 	
-	Freecam freecam;
+	Freecam m_freecam;
+	
+	svector<BattleScene, BattleSceneCount> m_battleScenes;
+	svector<SimpleScene, SimpleSceneCount> m_testScenes;
 	
 };
 
@@ -57,7 +58,7 @@ void Game::Impl::loadAssets(string_view _path) {
 	assets.loadModels([&modelList](auto name, auto data) {
 		modelList.addModel(name, data);
 	});
-	// s_renderer->init(std::move(modelList));
+	// s_renderer->uploadModels(std::move(modelList));
 	
 }
 
@@ -73,17 +74,19 @@ void Game::Impl::createScene() {
 	
 	constexpr auto Prescale = vec3{1_m, 1_m, 1_m};
 	
+	m_battleScenes.clear();
 	for (auto x: iota(0u, BattleScenes))
 	for (auto y: iota(0u, BattleScenes)) {
-		battleScenes.emplace_back(Transform{
+		m_battleScenes.emplace_back(Transform{
 			.position = vec3{x * BattleSpacing, y * BattleSpacing, 64_m},
 			.scale = Prescale,
 		});
 	}
 	
+	m_testScenes.clear();
 	for (auto x: iota(0u, SimpleScenes))
 	for (auto y: iota(0u, SimpleScenes)) {
-		testScenes.emplace_back(Transform{
+		m_testScenes.emplace_back(Transform{
 			.position = vec3{x * SimpleSpacing, y * SimpleSpacing, 32_m},
 			.scale = Prescale,
 		});
@@ -102,7 +105,7 @@ void Game::Impl::gameLoop() {
 			nextUpdate += LogicTick;
 		}
 		s_renderer->imgui().begin();
-		freecam.updateCamera();
+		m_freecam.updateCamera();
 		s_renderer->render();
 		
 	}
@@ -121,13 +124,13 @@ void Game::Impl::tick(nsec _until, Imgui::InputReader& _imguiInput) {
 		// Let ImGui handle all events it uses
 		if (_imguiInput.process(e)) return true;
 		
-		freecam.handleMouse(e);
+		m_freecam.handleMouse(e);
 		
 		// Game logic events
-		if (auto action = mapper.convert(e)) {
+		if (auto action = m_mapper.convert(e)) {
 			if (action->type == Mapper::Action::Type::Back)
 				s_system->postQuitEvent();
-			freecam.handleAction(*action);
+			m_freecam.handleAction(*action);
 		}
 		
 		return true;

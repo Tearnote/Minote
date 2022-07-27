@@ -27,7 +27,7 @@ static auto windowResize(void*, SDL_Event* _e) -> int {
 	
 	// Recreate swapchain and redraw
 	auto newSize = uvec2{u32(_e->window.data1), u32(_e->window.data2)};
-	if (newSize.x() == 0 || newSize.y() == 0) return 0; // Minimized
+	if (newSize.x() == 0 || newSize.y() == 0) return 0; // Minimized, skip drawing entirely
 	s_renderer->refreshSwapchain(newSize);
 	
 	L_INFO("Window resized to {}x{}", newSize.x(), newSize.y());

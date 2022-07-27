@@ -46,8 +46,7 @@ constexpr auto nextPOT(u32 n) -> u32 {
 }
 
 // Execute n times.
-template<typename F>
-requires invocable<F>
+template<invocable F>
 constexpr void repeat(usize times, F func) {
 	
 	for (auto i = usize(0); i < times; i += 1)
