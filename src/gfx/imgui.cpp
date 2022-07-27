@@ -14,7 +14,7 @@
 #include "util/math.hpp"
 #include "util/log.hpp"
 #include "gfx/samplers.hpp"
-#include "gfx/engine.hpp"
+#include "gfx/renderer.hpp"
 #include "gfx/util.hpp"
 #include "sys/vulkan.hpp"
 
@@ -51,7 +51,7 @@ Imgui::Imgui(vuk::Allocator& _allocator):
 	io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
 	
 	setTheme();
-	uploadFont(_allocator); // s_engine might not be initialized at this point
+	uploadFont(_allocator); // s_renderer might not be initialized at this point
 	
 	auto& ctx = *s_vulkan->context;
 	auto imguiPci = vuk::PipelineBaseCreateInfo();
@@ -100,9 +100,9 @@ auto Imgui::render(vuk::Future _target) -> vuk::Future {
 	// Fill up the vertex and index buffers
 	auto vertexSize = drawdata->TotalVtxCount * sizeof(ImDrawVert);
 	auto  indexSize = drawdata->TotalIdxCount * sizeof(ImDrawIdx);
-	auto imvert = *vuk::allocate_buffer_cross_device(s_engine->frameAllocator(),
+	auto imvert = *vuk::allocate_buffer_cross_device(s_renderer->frameAllocator(),
 		{vuk::MemoryUsage::eCPUtoGPU, vertexSize});
-	auto  imind = *vuk::allocate_buffer_cross_device(s_engine->frameAllocator(),
+	auto  imind = *vuk::allocate_buffer_cross_device(s_renderer->frameAllocator(),
 		{vuk::MemoryUsage::eCPUtoGPU, indexSize});
 	
 	auto vtxDst = 0_zu;

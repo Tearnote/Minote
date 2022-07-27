@@ -7,7 +7,7 @@
 #include "util/math.hpp"
 #include "util/util.hpp"
 #include "util/log.hpp"
-#include "gfx/engine.hpp"
+#include "gfx/renderer.hpp"
 #include "gfx/models.hpp"
 #include "freecam.hpp"
 #include "assets.hpp"
@@ -57,13 +57,13 @@ void Game::Impl::loadAssets(string_view _path) {
 	assets.loadModels([&modelList](auto name, auto data) {
 		modelList.addModel(name, data);
 	});
-	s_engine->init(std::move(modelList));
+	// s_renderer->init(std::move(modelList));
 	
 }
 
 void Game::Impl::createScene() {
 	
-	s_engine->camera() = Camera{
+	s_renderer->camera() = Camera{
 		.position = {8.57_m, -16.07_m, 69.20_m},
 		.yaw = 2.41412449f,
 		.pitch = 0.113862038f,
@@ -96,14 +96,14 @@ void Game::Impl::gameLoop() {
 	auto nextUpdate = s_system->getTime();
 	while (!s_system->isQuitting()) {
 		
-		auto imguiInput = s_engine->imgui().getInputReader();
+		auto imguiInput = s_renderer->imgui().getInputReader();
 		while (nextUpdate <= s_system->getTime()) {
 			tick(nextUpdate, imguiInput);
 			nextUpdate += LogicTick;
 		}
-		s_engine->imgui().begin();
+		s_renderer->imgui().begin();
 		freecam.updateCamera();
-		s_engine->render();
+		s_renderer->render();
 		
 	}
 	

@@ -15,29 +15,28 @@
 
 namespace minote {
 
-// Graphics engine. Feed with models and objects, enjoy pretty pictures
-struct Engine {
+// Feed with models and objects, enjoy pretty pictures
+struct Renderer {
 	
 	static constexpr auto InflightFrames = 3u;
 	static constexpr auto VerticalFov = 50_deg;
 	static constexpr auto NearPlane = 0.1_m;
+	static constexpr auto FramerateUpdate = 1_s;
 	
-	Engine();
-	~Engine();
-	
-	void init(ModelList&&);
+	Renderer();
+	~Renderer();
 	
 	void render();
 	
-	// Use this function when the surface is resized to recreate the swapchain.
+	// Use this function when the surface is resized to recreate the swapchain
 	void refreshSwapchain(uvec2 newSize);
 	
 	// Subcomponent access
 	
-	// Return the Imgui instance for debug input handling
+	// Return Imgui to provide it with user inputs
 	auto imgui() -> Imgui& { return m_imgui; }
 	
-	// Return the ObjectPool to add/remove/modify objects for drawing
+	// Return ObjectPool to add/remove/modify objects for drawing
 	auto objects() -> ObjectPool& { return m_objects; }
 	
 	// Return the Camera to modify the viewport
@@ -49,8 +48,8 @@ struct Engine {
 	auto globalAllocator() -> vuk::Allocator& { return m_globalAllocator; }
 	auto frameAllocator() -> vuk::Allocator& { return m_frameAllocator; }
 	
-	Engine(Engine const&) = delete;
-	auto operator=(Engine const&) -> Engine& = delete;
+	Renderer(Renderer const&) = delete;
+	auto operator=(Renderer const&) -> Renderer& = delete;
 	
 private:
 	
@@ -58,8 +57,11 @@ private:
 	vuk::Allocator m_globalAllocator;
 	vuk::Allocator m_frameAllocator;
 	
+	// Thread-safety for situations like window resize
 	std::mutex m_renderLock;
+	// Swapchain is out of date, rendering is skipped and refreshSwapchain() must be called
 	bool m_swapchainDirty;
+	// All temporal resources were invalidated by a cut or swapchain resize
 	bool m_flushTemporalResources;
 	
 	f32 m_framerate;
@@ -72,10 +74,11 @@ private:
 	World m_world;
 	Camera m_camera;
 	
-	void renderFrame();
+	void renderFrame(); // Common code of render() and refreshSwapchain()
+	void calcFramerate();
 	
 };
 
-inline Service<Engine> s_engine;
+inline Service<Renderer> s_renderer;
 
 }

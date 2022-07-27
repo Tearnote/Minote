@@ -79,7 +79,7 @@ add_executable(Minote
 	# src/gfx/samplers.hpp
 	src/gfx/objects.hpp src/gfx/objects.cpp
 	src/gfx/models.hpp src/gfx/models.cpp
-	src/gfx/engine.hpp src/gfx/engine.cpp
+	src/gfx/renderer.hpp src/gfx/renderer.cpp
 	src/gfx/camera.hpp src/gfx/camera.cpp
 	src/gfx/imgui.hpp src/gfx/imgui.cpp
 	src/gfx/world.hpp src/gfx/world.cpp

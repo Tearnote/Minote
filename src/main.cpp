@@ -12,7 +12,7 @@
 #include "util/log.hpp"
 #include "sys/system.hpp"
 #include "sys/vulkan.hpp"
-#include "gfx/engine.hpp"
+#include "gfx/renderer.hpp"
 #include "mapper.hpp"
 #include "game.hpp"
 
@@ -28,7 +28,7 @@ static auto windowResize(void*, SDL_Event* _e) -> int {
 	// Recreate swapchain and redraw
 	auto newSize = uvec2{u32(_e->window.data1), u32(_e->window.data2)};
 	if (newSize.x() == 0 || newSize.y() == 0) return 0; // Minimized
-	s_engine->refreshSwapchain(newSize);
+	s_renderer->refreshSwapchain(newSize);
 	
 	L_INFO("Window resized to {}x{}", newSize.x(), newSize.y());
 	
@@ -49,7 +49,7 @@ auto main(int, char*[]) -> int try {
 	auto system = s_system.provide();
 	auto window = s_system->openWindow(AppTitle, false, {960, 504});
 	auto vulkan = s_vulkan.provide(window);
-	auto engine = s_engine.provide();
+	auto engine = s_renderer.provide();
 	auto mapper = Mapper();
 	
 	// Start the game thread

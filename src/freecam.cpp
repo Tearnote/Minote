@@ -1,6 +1,6 @@
 #include "freecam.hpp"
 
-#include "gfx/engine.hpp"
+#include "gfx/renderer.hpp"
 
 namespace minote {
 
@@ -34,20 +34,20 @@ void Freecam::handleAction(Mapper::Action _action) {
 void Freecam::updateCamera() {
 	
 	// Get framerate independence multiplier
-	auto framerateScale = min(144.0f / s_engine->fps(), 8.0f);
-	s_engine->camera().moveSpeed = 1_m / 16.0f * framerateScale;
+	auto framerateScale = min(144.0f / s_renderer->fps(), 8.0f);
+	s_renderer->camera().moveSpeed = 1_m / 16.0f * framerateScale;
 	
 	offset.y() = -offset.y();
 	
 	if (moving)
-		s_engine->camera().rotate(offset.x(), offset.y());
+		s_renderer->camera().rotate(offset.x(), offset.y());
 	offset = vec2(0.0f); // Lateral movement applied, reset
 	
-	s_engine->camera().roam({
+	s_renderer->camera().roam({
 		float(right) - float(left),
 		0.0f,
 		float(up) - float(down)});
-	s_engine->camera().shift({0.0f, 0.0f, float(floating)});
+	s_renderer->camera().shift({0.0f, 0.0f, float(floating)});
 	
 }
 
