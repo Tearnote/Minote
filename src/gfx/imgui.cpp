@@ -51,13 +51,8 @@ Imgui::Imgui(vuk::Allocator& _allocator):
 	io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
 	
 	setTheme();
+	compile();
 	uploadFont(_allocator); // s_renderer might not be initialized at this point
-	
-	auto& ctx = *s_vulkan->context;
-	auto imguiPci = vuk::PipelineBaseCreateInfo();
-	addSpirv(imguiPci, imgui_vs, "imgui.vs.hlsl");
-	addSpirv(imguiPci, imgui_ps, "imgui.ps.hlsl");
-	ctx.create_named_pipeline("imgui", imguiPci);
 	
 	L_DEBUG("ImGui initialized");
 	
@@ -67,6 +62,20 @@ Imgui::~Imgui() {
 	
 	ImGui_ImplSDL2_Shutdown();
 	m_exists = false;
+	
+}
+
+void Imgui::compile() {
+	
+	if (m_compiled) return;
+	
+	auto& ctx = *s_vulkan->context;
+	auto imguiPci = vuk::PipelineBaseCreateInfo();
+	addSpirv(imguiPci, imgui_vs, "imgui.vs.hlsl");
+	addSpirv(imguiPci, imgui_ps, "imgui.ps.hlsl");
+	ctx.create_named_pipeline("imgui", imguiPci);
+	
+	m_compiled = true;
 	
 }
 
@@ -90,6 +99,7 @@ void Imgui::begin() {
 
 auto Imgui::render(vuk::Future _target) -> vuk::Future {
 	
+	ASSUME(m_compiled);
 	auto lock = std::lock_guard(m_stateLock);
 	if (!m_insideFrame) begin();
 	
@@ -275,6 +285,7 @@ void Imgui::uploadFont(vuk::Allocator& _allocator) {
 	
 	auto& ctx = _allocator.get_context();
 	auto& io = ImGui::GetIO();
+	auto compiler = vuk::Compiler();
 	
 	// Retrieve font bitmap
 	auto* pixels = static_cast<unsigned char*>(nullptr);
@@ -288,7 +299,7 @@ void Imgui::uploadFont(vuk::Allocator& _allocator) {
 		vuk::Extent3D{u32(width), u32(height), 1u},
 		pixels, false);
 	m_font = std::move(font);
-	stub.wait(_allocator);
+	stub.wait(_allocator, compiler);
 	ctx.debug.set_name(m_font, "imgui/font");
 	io.Fonts->TexID = ImTextureID(&m_font.view.get());
 	

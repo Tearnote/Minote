@@ -23,6 +23,9 @@ struct Imgui {
 	Imgui(vuk::Allocator&);
 	~Imgui();
 	
+	// Compile required shaders; optional
+	static void compile();
+	
 	// Obtain the input reader to process user input events
 	auto getInputReader() -> InputReader;
 	
@@ -38,6 +41,7 @@ struct Imgui {
 private:
 	
 	static inline bool m_exists = false;
+	static inline bool m_compiled = false;
 	std::recursive_mutex m_stateLock;
 	bool m_insideFrame;
 	
