@@ -308,7 +308,7 @@ foreach(SHADER_SOURCE ${SHADER_SOURCES})
 			-MF ${SHADER_OUTPUT}.d
 			${SHADER_INPUT}
 		COMMAND $ENV{VULKAN_SDK}/Bin/dxc.exe
-			-HV 2021 -T ${SHADER_PROFILE} -spirv $<$<CONFIG:Debug,RelWithDebInfo>:-Zi>
+			-HV 2021 -T ${SHADER_PROFILE} -spirv "$<$<CONFIG:Debug,RelWithDebInfo>:-O0;-Zi>"
 			-Fh ${SHADER_OUTPUT} -Vn ${SHADER_IDENT}
 			${SHADER_INPUT}
 		DEPENDS ${SHADER_PREFIX}/${SHADER_PATH}

@@ -37,6 +37,6 @@ RWTexture2D<float4> transmittance;
 [numthreads(8, 8, 1)]
 void main(uint3 tid: SV_DispatchThreadID) {
 	
-	transmittance[tid.xy] = float4(1.0, 0.7, 0.3, params[0].pad0);
+	
 	
 }

@@ -110,11 +110,9 @@ void Renderer::renderFrame() {
 	
 	// Blit frame to swapchain
 	
-	rg->attach_in("multiScattering", atmosphere.multiScattering);
 	rg->add_pass({
 		.name = "swapchain copy",
 		.resources = {
-			"multiScattering"_image >> vuk::eTransferRead,
 			"screen_imgui"_image >> vuk::eTransferRead,
 			"swapchain"_image >> vuk::eTransferWrite },
 		.execute = [](vuk::CommandBuffer& cmd) {
@@ -127,13 +125,6 @@ void Renderer::renderFrame() {
 				.srcOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(src.extent.extent.width), i32(src.extent.extent.height), 1}},
 				.dstSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
 				.dstOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(dst.extent.extent.width), i32(dst.extent.extent.height), 1}} },
-				vuk::Filter::eNearest);
-			cmd.image_barrier("swapchain", vuk::eTransferWrite, vuk::eTransferWrite);
-			cmd.blit_image("multiScattering", "swapchain", vuk::ImageBlit{
-				.srcSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
-				.srcOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(Atmosphere::MultiScatteringSize.x()), i32(Atmosphere::MultiScatteringSize.y()), 1}},
-				.dstSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
-				.dstOffsets = {vuk::Offset3D{80, 40, 0}, vuk::Offset3D{80 + i32(Atmosphere::MultiScatteringSize.x()), 40 + i32(Atmosphere::MultiScatteringSize.y()), 1}} },
 				vuk::Filter::eNearest);
 			
 		}});

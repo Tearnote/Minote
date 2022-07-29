@@ -40,7 +40,6 @@ RWTexture2D<float4> multiScattering;
 [numthreads(8, 8, 1)]
 void main(uint3 tid: SV_DispatchThreadID) {
 	
-	float4 val = transmittance[tid.xy];
-	multiScattering[tid.xy] = float4(val.xyz, params[0].pad1);
+	
 	
 }
