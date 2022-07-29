@@ -3,6 +3,9 @@
 #include "config.hpp"
 
 #include <exception>
+#ifdef THREAD_DEBUG
+#include <pthread.h>
+#endif
 #include "util/vector.hpp"
 #include "util/math.hpp"
 #include "util/util.hpp"
@@ -117,12 +120,12 @@ void Game::Impl::tick(nsec _until, Imgui::InputReader& _imguiInput) {
 	// Handle all relevant inputs
 	s_system->forEachEvent([&] (const SDL_Event& e) -> bool {
 		
+		// Let ImGui handle all events ASAP
+		if (_imguiInput.process(e)) return true;
 		// Don't handle events from the future
 		if (milliseconds(e.common.timestamp) > _until) return false;
 		// Leave quit events alone
 		if (e.type == SDL_QUIT) return false;
-		// Let ImGui handle all events it uses
-		if (_imguiInput.process(e)) return true;
 		
 		m_freecam.handleMouse(e);
 		
@@ -143,6 +146,9 @@ Game::Game(Params const& _p): impl(new Impl(_p)) {}
 Game::~Game() = default;
 
 void Game::run() try {
+#ifdef THREAD_DEBUG
+	pthread_setname_np(pthread_self(), "game");
+#endif
 	
 	impl->loadAssets(Assets_p);
 	impl->createScene();

@@ -6,6 +6,9 @@
 #include <cstdlib>
 #include <thread>
 #include <chrono>
+#ifdef THREAD_DEBUG
+#include <pthread.h>
+#endif
 #include "SDL_events.h"
 #include "util/types.hpp"
 #include "util/math.hpp"
@@ -37,6 +40,9 @@ static auto windowResize(void*, SDL_Event* _e) -> int {
 }
 
 auto main(int, char*[]) -> int try {
+#ifdef THREAD_DEBUG
+	pthread_setname_np(pthread_self(), "main");
+#endif
 	
 	// Initialize logging
 #if SPAWN_CONSOLE

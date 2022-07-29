@@ -24,6 +24,11 @@
 #define NDEBUG
 #endif
 
+// Whether to name threads for debugging
+#if BUILD_TYPE != BUILD_RELEASE
+#define THREAD_DEBUG
+#endif
+
 // Level of logging to file and/or console
 #if BUILD_TYPE != BUILD_RELEASE
 #define LOG_LEVEL quill::LogLevel::TraceL3
