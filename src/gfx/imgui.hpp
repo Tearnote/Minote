@@ -3,9 +3,8 @@
 #include <memory>
 #include <mutex>
 #include "SDL_events.h"
-#include "vuk/SampledImage.hpp"
-#include "vuk/RenderGraph.hpp"
-#include "util/vector.hpp"
+#include "vuk/Future.hpp"
+#include "vuk/Image.hpp"
 
 namespace minote {
 

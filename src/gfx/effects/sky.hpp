@@ -1,21 +1,12 @@
 #pragma once
 
-#include "vuk/Context.hpp"
+#include "vuk/Future.hpp"
 #include "util/math.hpp"
-#include "gfx/resources/texture3d.hpp"
-#include "gfx/resources/texture2d.hpp"
-#include "gfx/resources/cubemap.hpp"
-#include "gfx/resources/buffer.hpp"
-#include "gfx/resources/pool.hpp"
-#include "gfx/effects/quadBuffer.hpp"
-#include "gfx/effects/visibility.hpp"
-#include "gfx/camera.hpp"
-#include "gfx/frame.hpp"
 
 namespace minote {
 
 // Precalculated representation of a planet's atmosphere. Once created, it can
-// be used repeatedly to sample the sky at any elevation and sun position.
+// be used repeatedly to sample the sky at any elevation and sun position
 struct Atmosphere {
 	
 	constexpr static auto TransmittanceFormat = vuk::Format::eR16G16B16A16Sfloat;
@@ -26,51 +17,56 @@ struct Atmosphere {
 	
 	struct Params {
 	
-		float BottomRadius; // Radius of the planet (center to ground)
-		float TopRadius; // Maximum considered atmosphere height (center to atmosphere top)
+		f32 bottomRadius; // Radius of the planet (center to ground)
+		f32 topRadius; // Maximum considered atmosphere height (center to atmosphere top)
 		
-		float RayleighDensityExpScale; // Rayleigh scattering exponential distribution scale in the atmosphere
-		float pad0;
-		vec3 RayleighScattering; // Rayleigh scattering coefficients
+		f32 rayleighDensityExpScale; // Rayleigh scattering exponential distribution scale in the atmosphere
+		f32 pad0;
+		vec3 rayleighScattering; // Rayleigh scattering coefficients
 		
-		float MieDensityExpScale; // Mie scattering exponential distribution scale in the atmosphere
-		vec3 MieScattering; // Mie scattering coefficients
-		float pad1;
-		vec3 MieExtinction; // Mie extinction coefficients
-		float pad2;
-		vec3 MieAbsorption; // Mie absorption coefficients
-		float MiePhaseG; // Mie phase function excentricity
+		f32 mieDensityExpScale; // Mie scattering exponential distribution scale in the atmosphere
+		vec3 mieScattering; // Mie scattering coefficients
+		f32 pad1;
+		vec3 mieExtinction; // Mie extinction coefficients
+		f32 pad2;
+		vec3 mieAbsorption; // Mie absorption coefficients
+		f32 miePhaseG; // Mie phase function excentricity
 		
 		// Another medium type in the atmosphere
-		float AbsorptionDensity0LayerWidth;
-		float AbsorptionDensity0ConstantTerm;
-		float AbsorptionDensity0LinearTerm;
-		float AbsorptionDensity1ConstantTerm;
-		float AbsorptionDensity1LinearTerm;
-		float pad3;
-		float pad4;
-		float pad5;
-		vec3 AbsorptionExtinction; // This other medium only absorb light, e.g. useful to represent ozone in the earth atmosphere
-		float pad6;
+		f32 absorptionDensity0LayerWidth;
+		f32 absorptionDensity0ConstantTerm;
+		f32 absorptionDensity0LinearTerm;
+		f32 absorptionDensity1ConstantTerm;
+		f32 absorptionDensity1LinearTerm;
+		f32 pad3;
+		f32 pad4;
+		f32 pad5;
+		vec3 absorptionExtinction; // This other medium only absorb light, e.g. useful to represent ozone in the earth atmosphere
+		f32 pad6;
 		
-		vec3 GroundAlbedo;
+		vec3 groundAlbedo;
 		
 		// Return params that model Earth's atmosphere
 		static auto earth() -> Params;
 		
 	};
 	
-	Texture2D transmittance;
-	Texture2D multiScattering;
-	Buffer<Params> params;
+	vuk::Future transmittance; // 2D texture
+	vuk::Future multiScattering; // 2D texture
+	vuk::Future params; // Buffer<Params>
 	
-	// Build required shaders.
-	static void compile(vuk::PerThreadContext&);
+	// Create and precalculate the atmosphere data
+	Atmosphere(vuk::Allocator&, Params const&);
 	
-	static auto create(Pool&, Frame&, vuk::Name, Params const&) -> Atmosphere;
+	// Build required shaders; optional
+	static void compile();
+	
+private:
+	
+	static inline bool m_compiled = false;
 	
 };
-
+/*
 // Effect for rendering sky backgrounds, IBL cubemaps and other position-dependent
 // lookup tables.
 struct Sky {
@@ -98,5 +94,5 @@ struct Sky {
 	static void draw(Frame&, Cubemap target, vec3 probePos, Texture2D skyView, Atmosphere);
 	
 };
-
+*/
 }

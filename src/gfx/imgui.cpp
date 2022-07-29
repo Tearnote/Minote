@@ -5,12 +5,12 @@
 #include "imgui.h"
 #include "vuk/AllocatorHelpers.hpp"
 #include "vuk/CommandBuffer.hpp"
+#include "vuk/RenderGraph.hpp"
 #include "vuk/Pipeline.hpp"
 #include "vuk/Partials.hpp"
 #include "util/verify.hpp"
-#include "util/array.hpp"
 #include "util/types.hpp"
-#include "util/util.hpp"
+#include "util/span.hpp"
 #include "util/math.hpp"
 #include "util/log.hpp"
 #include "gfx/samplers.hpp"
@@ -68,8 +68,8 @@ Imgui::~Imgui() {
 void Imgui::compile() {
 	
 	if (m_compiled) return;
-	
 	auto& ctx = *s_vulkan->context;
+	
 	auto imguiPci = vuk::PipelineBaseCreateInfo();
 	addSpirv(imguiPci, imgui_vs, "imgui.vs.hlsl");
 	addSpirv(imguiPci, imgui_ps, "imgui.ps.hlsl");

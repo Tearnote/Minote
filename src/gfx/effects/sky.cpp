@@ -1,12 +1,16 @@
 #include "gfx/effects/sky.hpp"
 
 #include "vuk/CommandBuffer.hpp"
-#include "util/array.hpp"
-#include "util/types.hpp"
-#include "util/util.hpp"
+#include "vuk/RenderGraph.hpp"
+#include "vuk/Partials.hpp"
+#include "util/span.hpp"
+#include "util/math.hpp"
 #include "gfx/samplers.hpp"
-#include "gfx/models.hpp"
 #include "gfx/util.hpp"
+#include "sys/vulkan.hpp"
+
+#include "spv/sky/genTransmittance.cs.hpp"
+#include "spv/sky/genMultiScattering.cs.hpp"
 
 namespace minote {
 
@@ -18,107 +22,116 @@ auto Atmosphere::Params::earth() -> Params {
 	constexpr auto MieExtinction = vec3{0.004440f, 0.004440f, 0.004440f};
 	
 	return Params{
-		.BottomRadius = 6360.0f,
-		.TopRadius = 6460.0f,
-		.RayleighDensityExpScale = -1.0f / EarthRayleighScaleHeight,
-		.RayleighScattering = {0.005802f, 0.013558f, 0.033100f},
-		.MieDensityExpScale = -1.0f / EarthMieScaleHeight,
-		.MieScattering = MieScattering,
-		.MieExtinction = MieExtinction,
-		.MieAbsorption = max(MieExtinction - MieScattering, vec3(0.0f)),
-		.MiePhaseG = 0.8f,
-		.AbsorptionDensity0LayerWidth = 25.0f,
-		.AbsorptionDensity0ConstantTerm = -2.0f / 3.0f,
-		.AbsorptionDensity0LinearTerm = 1.0f / 15.0f,
-		.AbsorptionDensity1ConstantTerm = 8.0f / 3.0f,
-		.AbsorptionDensity1LinearTerm = -1.0f / 15.0f,
-		.AbsorptionExtinction = {0.000650f, 0.001881f, 0.000085f},
-		.GroundAlbedo = {0.0f, 0.0f, 0.0f} };
+		.bottomRadius = 6360.0f,
+		.topRadius = 6460.0f,
+		.rayleighDensityExpScale = -1.0f / EarthRayleighScaleHeight,
+		.rayleighScattering = {0.005802f, 0.013558f, 0.033100f},
+		.mieDensityExpScale = -1.0f / EarthMieScaleHeight,
+		.mieScattering = MieScattering,
+		.mieExtinction = MieExtinction,
+		.mieAbsorption = max(MieExtinction - MieScattering, vec3(0.0f)),
+		.miePhaseG = 0.8f,
+		.absorptionDensity0LayerWidth = 25.0f,
+		.absorptionDensity0ConstantTerm = -2.0f / 3.0f,
+		.absorptionDensity0LinearTerm = 1.0f / 15.0f,
+		.absorptionDensity1ConstantTerm = 8.0f / 3.0f,
+		.absorptionDensity1LinearTerm = -1.0f / 15.0f,
+		.absorptionExtinction = {0.000650f, 0.001881f, 0.000085f},
+		.groundAlbedo = {0.0f, 0.0f, 0.0f},
+	};
 	
 }
 
-void Atmosphere::compile(vuk::PerThreadContext& _ptc) {
+void Atmosphere::compile() {
 	
-	auto skyGenTransmittancePci = vuk::ComputePipelineBaseCreateInfo();
-	skyGenTransmittancePci.add_spirv(std::vector<u32>{
-#include "spv/sky/genTransmittance.comp.spv"
-	}, "sky/genTransmittance.comp");
-	_ptc.ctx.create_named_pipeline("sky/genTransmittance", skyGenTransmittancePci);
+	if (m_compiled) return;
+	auto& ctx = *s_vulkan->context;
+	
+	auto skyGenTransmittancePci = vuk::PipelineBaseCreateInfo();
+	addSpirv(skyGenTransmittancePci, sky_genTransmittance_cs, "sky/genTransmittance.cs.hlsl");
+	ctx.create_named_pipeline("sky/genTransmittance", skyGenTransmittancePci);
 
-	auto skyGenMultiScatteringPci = vuk::ComputePipelineBaseCreateInfo();
-	skyGenMultiScatteringPci.add_spirv(std::vector<u32>{
-#include "spv/sky/genMultiScattering.comp.spv"
-	}, "sky/genMultiScattering.comp");
-	_ptc.ctx.create_named_pipeline("sky/genMultiScattering", skyGenMultiScatteringPci);
+	auto skyGenMultiScatteringPci = vuk::PipelineBaseCreateInfo();
+	addSpirv(skyGenMultiScatteringPci, sky_genMultiScattering_cs, "sky/genMultiScattering.cs.hlsl");
+	ctx.create_named_pipeline("sky/genMultiScattering", skyGenMultiScatteringPci);
+	
+	m_compiled = true;
 	
 }
 
-auto Atmosphere::create(Pool& _pool, Frame& _frame, vuk::Name _name,
-	Params const& _params) -> Atmosphere {
+Atmosphere::Atmosphere(vuk::Allocator& _allocator, Params const& _params) {
 	
-	auto result = Atmosphere();
+	compile();
 	
-	bool calculate = !_pool.contains(nameAppend(_name, "transmittance"));
+	auto rg = std::make_shared<vuk::RenderGraph>();
+	rg->attach_image("transmittance/uninit", vuk::ImageAttachment{
+		.extent = vuk::Dimension3D::absolute(TransmittanceSize.x(), TransmittanceSize.y()),
+		.format = TransmittanceFormat,
+		.sample_count = vuk::Samples::e1,
+		.level_count = 1,
+		.layer_count = 1,
+	});
+	rg->attach_image("multiScattering/uninit", vuk::ImageAttachment{
+		.extent = vuk::Dimension3D::absolute(MultiScatteringSize.x(), MultiScatteringSize.y()),
+		.format = MultiScatteringFormat,
+		.sample_count = vuk::Samples::e1,
+		.level_count = 1,
+		.layer_count = 1,
+	});
+	auto paramsFut = vuk::create_buffer_gpu(_allocator,
+		vuk::DomainFlagBits::eGraphicsQueue,
+		span(&_params, 1)).second;
+	rg->attach_in("params", paramsFut);
 	
-	result.transmittance = Texture2D::make(_pool, nameAppend(_name, "transmittance"),
-		TransmittanceSize, TransmittanceFormat,
-		vuk::ImageUsageFlagBits::eStorage |
-		vuk::ImageUsageFlagBits::eSampled);
+	rg->add_pass(vuk::Pass{
+		.name = "sky/genTransmittance",
+		.resources = {
+			"params"_buffer >> vuk::eComputeRead,
+			"transmittance/uninit"_image >> vuk::eComputeWrite >> "transmittance",
+		},
+		.execute = [](vuk::CommandBuffer& cmd) {
+			cmd.bind_compute_pipeline("sky/genTransmittance");
+			cmd.bind_buffer(0, 0, "params");
+			cmd.bind_image(0, 1, "transmittance/uninit");
+			
+			auto transmittance = *cmd.get_resource_image_attachment("transmittance/uninit");
+			auto transmittanceSize = transmittance.extent.extent;
+			cmd.specialize_constants(0, transmittanceSize.width);
+			cmd.specialize_constants(1, transmittanceSize.height);
+			
+			cmd.dispatch_invocations(transmittanceSize.width, transmittanceSize.height);
+			
+		},
+	});
 	
-	result.multiScattering = Texture2D::make(_pool, nameAppend(_name, "multiScattering"),
-		MultiScatteringSize, MultiScatteringFormat,
-		vuk::ImageUsageFlagBits::eStorage |
-		vuk::ImageUsageFlagBits::eSampled);
+	rg->add_pass({
+		.name = "sky/genMultiScattering",
+		.resources = {
+			"params"_buffer >> vuk::eComputeRead,
+			"transmittance"_image >> vuk::eComputeSampled,
+			"multiScattering/uninit"_image >> vuk::eComputeWrite >> "multiScattering",
+		},
+		.execute = [](vuk::CommandBuffer& cmd) {
+			cmd.bind_compute_pipeline("sky/genMultiScattering")
+			   .bind_buffer(0, 0, "params")
+			   .bind_image(0, 1, "transmittance").bind_sampler(0, 1, LinearClamp)
+			   .bind_image(0, 2, "multiScattering/uninit");
+			
+			auto multiScattering = *cmd.get_resource_image_attachment("multiScattering/uninit");
+			auto multiScatteringSize = multiScattering.extent.extent;
+			cmd.specialize_constants(0, multiScatteringSize.width);
+			cmd.specialize_constants(1, multiScatteringSize.height);
+			
+			cmd.dispatch_invocations(multiScatteringSize.width, multiScatteringSize.height);
+		},
+	});
 	
-	result.params = Buffer<Params>::make(_pool, nameAppend(_name, "params"),
-		vuk::BufferUsageFlagBits::eUniformBuffer,
-		std::span(&_params, 1));
-	
-	if (calculate) {
-		
-		result.transmittance.attach(_frame.rg, vuk::eNone, vuk::eComputeSampled);
-		result.multiScattering.attach(_frame.rg, vuk::eNone, vuk::eComputeSampled);
-		
-		_frame.rg.add_pass({
-			.name = nameAppend(result.transmittance.name, "sky/genTransmittance"),
-			.resources = {
-				result.transmittance.resource(vuk::eComputeWrite) },
-			.execute = [result](vuk::CommandBuffer& cmd) {
-				
-				cmd.bind_uniform_buffer(0, 0, result.params)
-				.bind_storage_image(0, 1, result.transmittance)
-				.bind_compute_pipeline("sky/genTransmittance");
-				
-				cmd.specialize_constants(0, u32Fromu16(result.transmittance.size()));
-				
-				cmd.dispatch_invocations(result.transmittance.size().x(), result.transmittance.size().y());
-				
-			}});
-		
-		_frame.rg.add_pass({
-			.name = nameAppend(result.multiScattering.name, "sky/genMultiScattering"),
-			.resources = {
-				result.transmittance.resource(vuk::eComputeSampled),
-				result.multiScattering.resource(vuk::eComputeWrite) },
-			.execute = [result](vuk::CommandBuffer& cmd) {
-				
-				cmd.bind_uniform_buffer(0, 0, result.params)
-				.bind_sampled_image(0, 1, result.transmittance, LinearClamp)
-				.bind_storage_image(0, 2, result.multiScattering)
-				.bind_compute_pipeline("sky/genMultiScattering");
-				
-				cmd.specialize_constants(0, u32Fromu16(result.multiScattering.size()));
-				
-				cmd.dispatch_invocations(result.multiScattering.size().x(), result.multiScattering.size().y(), 1);
-				
-			}});
-		
-	}
-	
-	return result;
+	params = vuk::Future(rg, "params");
+	transmittance = vuk::Future(rg, "transmittance");
+	multiScattering = vuk::Future(rg, "multiScattering");
 	
 }
-
+/*
 void Sky::compile(vuk::PerThreadContext& _ptc) {
 	
 	auto skyGenSkyViewPci = vuk::ComputePipelineBaseCreateInfo();
@@ -358,5 +371,5 @@ void Sky::draw(Frame& _frame, Cubemap _target, vec3 _probePos, Texture2D _skyVie
 		}});
 	
 }
-
+*/
 }

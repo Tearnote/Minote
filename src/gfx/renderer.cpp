@@ -3,15 +3,14 @@
 #include "config.hpp"
 
 #include "imgui.h"
-#include "volk.h"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
 #include "util/error.hpp"
 #include "util/math.hpp"
 #include "util/log.hpp"
 #include "sys/system.hpp"
+#include "gfx/effects/sky.hpp"
 #include "gfx/util.hpp"
-#include "main.hpp"
 
 namespace minote {
 
@@ -75,7 +74,7 @@ void Renderer::renderFrame() {
 	if (m_flushTemporalResources)
 		m_world.prevViewProjection = m_world.viewProjection;
 	
-	// Sun properties
+	// Atmospheric properties
 	static auto sunPitch = 16_deg;
 	static auto sunYaw = 8_deg;
 	ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 60.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
@@ -96,6 +95,8 @@ void Renderer::renderFrame() {
 	rg->attach_and_clear_image("screen", { .format = vuk::Format::eR8G8B8A8Unorm, .sample_count = vuk::Samples::e1 }, vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.0f));
 	rg->inference_rule("screen", vuk::same_extent_as("swapchain"));
 	
+	auto atmosphere = Atmosphere(m_frameAllocator, Atmosphere::Params::earth());
+	
 	// Draw frame
 	/*
 	auto frame = Frame(*this, rg);
@@ -109,9 +110,11 @@ void Renderer::renderFrame() {
 	
 	// Blit frame to swapchain
 	
+	rg->attach_in("multiScattering", atmosphere.multiScattering);
 	rg->add_pass({
 		.name = "swapchain copy",
 		.resources = {
+			"multiScattering"_image >> vuk::eTransferRead,
 			"screen_imgui"_image >> vuk::eTransferRead,
 			"swapchain"_image >> vuk::eTransferWrite },
 		.execute = [](vuk::CommandBuffer& cmd) {
@@ -125,13 +128,21 @@ void Renderer::renderFrame() {
 				.dstSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
 				.dstOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(dst.extent.extent.width), i32(dst.extent.extent.height), 1}} },
 				vuk::Filter::eNearest);
+			cmd.image_barrier("swapchain", vuk::eTransferWrite, vuk::eTransferWrite);
+			cmd.blit_image("multiScattering", "swapchain", vuk::ImageBlit{
+				.srcSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
+				.srcOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(Atmosphere::MultiScatteringSize.x()), i32(Atmosphere::MultiScatteringSize.y()), 1}},
+				.dstSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
+				.dstOffsets = {vuk::Offset3D{80, 40, 0}, vuk::Offset3D{80 + i32(Atmosphere::MultiScatteringSize.x()), 40 + i32(Atmosphere::MultiScatteringSize.y()), 1}} },
+				vuk::Filter::eNearest);
 			
 		}});
 	
 	// Build and submit the rendergraph
 	
 	try {
-		execute_submit_and_present_to_one(m_frameAllocator, std::move(*rg).link({}), s_vulkan->swapchain);
+		auto compiler = vuk::Compiler();
+		vuk::execute_submit_and_present_to_one(m_frameAllocator, compiler.link({&rg, 1}, {}), s_vulkan->swapchain);
 	} catch (vuk::PresentException& e) {
 		auto error = e.code();
 		if (error == VK_ERROR_OUT_OF_DATE_KHR)

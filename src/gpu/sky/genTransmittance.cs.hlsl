@@ -1,0 +1,42 @@
+struct Params {
+	float bottomRadius;
+	float topRadius;
+	
+	float rayleighDensityExpScale;
+	float pad0;
+	float3 rayleighScattering;
+	
+	float mieDensityExpScale;
+	float3 mieScattering;
+	float pad1;
+	float3 mieExtinction;
+	float pad2;
+	float3 mieAbsorption;
+	float miePhaseG;
+	
+	float absorptionDensity0LayerWidth;
+	float absorptionDensity0ConstantTerm;
+	float absorptionDensity0LinearTerm;
+	float absorptionDensity1ConstantTerm;
+	float absorptionDensity1LinearTerm;
+	float pad3;
+	float pad4;
+	float pad5;
+	float3 absorptionExtinction;
+	float pad6;
+	
+	float3 groundAlbedo;
+};
+
+[[vk::binding(0)]]
+StructuredBuffer<Params> params;
+
+[[vk::binding(1)]]
+RWTexture2D<float4> transmittance;
+
+[numthreads(8, 8, 1)]
+void main(uint3 tid: SV_DispatchThreadID) {
+	
+	transmittance[tid.xy] = float4(1.0, 0.7, 0.3, params[0].pad0);
+	
+}

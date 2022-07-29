@@ -74,7 +74,7 @@ add_executable(Minote
 	# src/gfx/effects/clear.hpp src/gfx/effects/clear.cpp
 	# src/gfx/effects/bvh.hpp src/gfx/effects/bvh.cpp
 	# src/gfx/effects/pbr.hpp src/gfx/effects/pbr.cpp
-	# src/gfx/effects/sky.hpp src/gfx/effects/sky.cpp
+	src/gfx/effects/sky.hpp src/gfx/effects/sky.cpp
 	# src/gfx/effects/hiz.hpp src/gfx/effects/hiz.cpp
 	# src/gfx/samplers.hpp
 	src/gfx/objects.hpp src/gfx/objects.cpp
@@ -141,7 +141,7 @@ set(VUK_USE_SHADERC OFF CACHE BOOL "")
 set(VUK_USE_DXC OFF CACHE BOOL "")
 FetchContent_Declare(vuk
 	GIT_REPOSITORY https://github.com/martty/vuk
-	GIT_TAG 74f98382b8d5218579dd281326f133be38ae7792)
+	GIT_TAG 99fbbeed7c1305bf3123ac20e68d49ed700e62ad)
 FetchContent_MakeAvailable(vuk)
 target_compile_definitions(vuk PUBLIC VUK_CUSTOM_VULKAN_HEADER="volk.h")
 target_link_libraries(vuk PRIVATE volk)
@@ -282,6 +282,8 @@ target_link_libraries(Minote PRIVATE bvh)
 set(SHADER_MODEL "6_7")
 set(SHADER_PREFIX src/gpu)
 set(SHADER_SOURCES
+	sky/genMultiScattering.cs.hlsl
+	sky/genTransmittance.cs.hlsl
 	imgui.vs.hlsl
 	imgui.ps.hlsl)
 
