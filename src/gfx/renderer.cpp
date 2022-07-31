@@ -98,10 +98,6 @@ void Renderer::renderFrame() {
 	auto atmosphere = Atmosphere(m_frameAllocator, Atmosphere::Params::earth());
 	
 	// Draw frame
-	/*
-	auto frame = Frame(*this, rg);
-	frame.draw(screen, m_objects, m_flushTemporalResources);
-	*/
 	auto screenImguiFut = m_imgui.render(vuk::Future(rg, "screen"));
 	auto futures = rg->split();
 	rg = std::make_shared<vuk::RenderGraph>();
@@ -109,7 +105,6 @@ void Renderer::renderFrame() {
 	rg->attach_in("screen_imgui", screenImguiFut);
 	
 	// Blit frame to swapchain
-	
 	rg->add_pass({
 		.name = "swapchain copy",
 		.resources = {
@@ -127,10 +122,10 @@ void Renderer::renderFrame() {
 				.dstOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(dst.extent.extent.width), i32(dst.extent.extent.height), 1}} },
 				vuk::Filter::eNearest);
 			
-		}});
+		},
+	});
 	
 	// Build and submit the rendergraph
-	
 	try {
 		auto compiler = vuk::Compiler();
 		vuk::execute_submit_and_present_to_one(m_frameAllocator, compiler.link({&rg, 1}, {}), s_vulkan->swapchain);

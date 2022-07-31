@@ -9,8 +9,9 @@
 #include "gfx/util.hpp"
 #include "sys/vulkan.hpp"
 
-#include "spv/sky/genTransmittance.cs.hpp"
-#include "spv/sky/genMultiScattering.cs.hpp"
+#include "incbin.h"
+INCBIN_EXTERN(sky_genTransmittance_cs);
+INCBIN_EXTERN(sky_genMultiScattering_cs);
 
 namespace minote {
 
@@ -48,11 +49,13 @@ void Atmosphere::compile() {
 	auto& ctx = *s_vulkan->context;
 	
 	auto skyGenTransmittancePci = vuk::PipelineBaseCreateInfo();
-	addSpirv(skyGenTransmittancePci, sky_genTransmittance_cs, "sky/genTransmittance.cs.hlsl");
+	auto sky_genTransmittance_cs = std::vector((uint32_t*)g_sky_genTransmittance_cs_data, (uint32_t*)(&g_sky_genTransmittance_cs_end));
+	skyGenTransmittancePci.add_spirv(std::move(sky_genTransmittance_cs), "sky/genTransmittance.cs.hlsl");
 	ctx.create_named_pipeline("sky/genTransmittance", skyGenTransmittancePci);
-
+	
 	auto skyGenMultiScatteringPci = vuk::PipelineBaseCreateInfo();
-	addSpirv(skyGenMultiScatteringPci, sky_genMultiScattering_cs, "sky/genMultiScattering.cs.hlsl");
+	auto sky_genMultiScattering_cs = std::vector((uint32_t*)g_sky_genMultiScattering_cs_data, (uint32_t*)(&g_sky_genMultiScattering_cs_end));
+	skyGenMultiScatteringPci.add_spirv(std::move(sky_genMultiScattering_cs), "sky/genMultiScattering.cs.hlsl");
 	ctx.create_named_pipeline("sky/genMultiScattering", skyGenMultiScatteringPci);
 	
 	m_compiled = true;

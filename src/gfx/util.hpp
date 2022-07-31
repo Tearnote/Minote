@@ -50,13 +50,4 @@ constexpr auto u32Fromu16(uvec2 _v) -> u32 {
 	
 }
 
-// Shorthand for adding DXC-generated SPIR-V source to a vuk::PipelineBaseCreateInfo
-inline void addSpirv(vuk::PipelineBaseCreateInfo& pipelineCI, span<unsigned char const> source, string_view path) {
-	
-	auto imNotAfraidToViolateStrictAliasing = span<u32 const>(reinterpret_cast<u32 const*>(source.data()), source.size() / sizeof(u32));
-	auto vec = std::vector<u32>(imNotAfraidToViolateStrictAliasing.begin(), imNotAfraidToViolateStrictAliasing.end());
-	pipelineCI.add_spirv(std::move(vec), "imgui.vs.hlsl");
-	
-}
-
 }

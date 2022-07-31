@@ -266,6 +266,17 @@ set_property(SOURCE ${mpack_SOURCE_DIR}/src/mpack/mpack.c PROPERTY LANGUAGE CXX)
 target_include_directories(mpack PUBLIC ${mpack_SOURCE_DIR}/src)
 target_link_libraries(Minote PRIVATE mpack)
 
+FetchContent_Declare(incbin
+	GIT_REPOSITORY https://github.com/graphitemaster/incbin
+	GIT_TAG 6e576cae5ab5810f25e2631f2e0b80cbe7dc8cbf)
+FetchContent_MakeAvailable(incbin)
+add_library(incbin
+	${incbin_SOURCE_DIR}/incbin.h ${incbin_SOURCE_DIR}/incbin.c)
+target_compile_definitions(incbin PUBLIC INCBIN_PREFIX=g_)
+target_compile_definitions(incbin PUBLIC INCBIN_STYLE=INCBIN_STYLE_SNAKE)
+target_include_directories(incbin PUBLIC ${incbin_SOURCE_DIR})
+target_link_libraries(Minote PRIVATE incbin)
+
 FetchContent_Declare(meshoptimizer
 	GIT_REPOSITORY https://github.com/zeux/meshoptimizer
 	GIT_TAG 70b6cc38a64eeb549567599418bc4ed3ebd607da)
@@ -291,8 +302,9 @@ foreach(SHADER_SOURCE ${SHADER_SOURCES})
 	
 	set(SHADER_INPUT ${PROJECT_SOURCE_DIR}/${SHADER_PREFIX}/${SHADER_SOURCE})
 	string(REGEX REPLACE [[.hlsl$]] "" SHADER_SOURCE_WLE ${SHADER_SOURCE})
-	set(SHADER_OUTPUT ${PROJECT_BINARY_DIR}/$<CONFIG>/generated/spv/${SHADER_SOURCE_WLE}.hpp)
-	get_filename_component(SHADER_OUTPUT_DIR ${SHADER_OUTPUT} DIRECTORY)
+	set(SHADER_OUTPUT_SPV ${PROJECT_BINARY_DIR}/$<CONFIG>/generated/spv/${SHADER_SOURCE_WLE}.spv)
+	set(SHADER_OUTPUT_C ${PROJECT_BINARY_DIR}/$<CONFIG>/generated/spv/${SHADER_SOURCE_WLE}.c)
+	get_filename_component(SHADER_OUTPUT_DIR ${SHADER_OUTPUT_SPV} DIRECTORY)
 	
 	get_filename_component(SHADER_TYPE ${SHADER_SOURCE_WLE} LAST_EXT)
 	string(SUBSTRING ${SHADER_TYPE} 1 -1 SHADER_TYPE)
@@ -300,26 +312,31 @@ foreach(SHADER_SOURCE ${SHADER_SOURCES})
 	string(REGEX REPLACE [[\.|/]] "_" SHADER_IDENT ${SHADER_SOURCE_WLE})
 	
 	add_custom_command(
-		OUTPUT ${SHADER_OUTPUT}
+		OUTPUT ${SHADER_OUTPUT_C}
 		COMMAND ${CMAKE_COMMAND} -E make_directory ${SHADER_OUTPUT_DIR}
-		COMMAND $ENV{VULKAN_SDK}/Bin/dxc.exe
+		# Create HLSL depfile
+		COMMAND $ENV{VULKAN_SDK}/Bin/dxc
 			-HV 2021 -T ${SHADER_PROFILE}
-			-Fo ${SHADER_OUTPUT}
-			-MF ${SHADER_OUTPUT}.d
+			-Fo ${SHADER_OUTPUT_SPV}
+			-MF ${SHADER_OUTPUT_SPV}.d
 			${SHADER_INPUT}
-		COMMAND $ENV{VULKAN_SDK}/Bin/dxc.exe
+		# Compile HLSL into SPIR-V
+		COMMAND $ENV{VULKAN_SDK}/Bin/dxc
 			-HV 2021 -T ${SHADER_PROFILE} -spirv "$<$<CONFIG:Debug,RelWithDebInfo>:-O0;-Zi>"
-			-Fh ${SHADER_OUTPUT} -Vn ${SHADER_IDENT}
+			-Fo ${SHADER_OUTPUT_SPV}
 			${SHADER_INPUT}
+		# Create accompanying source file
+		COMMAND ${CMAKE_COMMAND} -E echo "#include \"incbin.h\"" > ${SHADER_OUTPUT_C}
+		COMMAND ${CMAKE_COMMAND} -E echo "INCBIN(${SHADER_IDENT}, \"${SHADER_OUTPUT_SPV}\")\;" >> ${SHADER_OUTPUT_C}
 		DEPENDS ${SHADER_PREFIX}/${SHADER_PATH}
-		DEPFILE ${SHADER_OUTPUT}.d
+		DEPFILE ${SHADER_OUTPUT_SPV}.d
 		VERBATIM COMMAND_EXPAND_LISTS)
-	list(APPEND SHADER_OUTPUTS ${SHADER_OUTPUT})
+	list(APPEND SHADER_OUTPUTS ${SHADER_OUTPUT_C})
 endforeach()
 
-add_custom_target(Compile_shaders DEPENDS ${SHADER_OUTPUTS})
-target_include_directories(Minote PRIVATE ${PROJECT_BINARY_DIR}/$<CONFIG>/generated)
-add_dependencies(Minote Compile_shaders)
+add_library(MinoteShaders STATIC ${SHADER_OUTPUTS})
+target_link_libraries(MinoteShaders PRIVATE incbin)
+target_link_libraries(Minote PRIVATE MinoteShaders)
 
 # Asset pipeline
 

@@ -15,11 +15,11 @@
 #include "util/log.hpp"
 #include "gfx/samplers.hpp"
 #include "gfx/renderer.hpp"
-#include "gfx/util.hpp"
 #include "sys/vulkan.hpp"
 
-#include "spv/imgui.vs.hpp"
-#include "spv/imgui.ps.hpp"
+#include "incbin.h"
+INCBIN_EXTERN(imgui_vs);
+INCBIN_EXTERN(imgui_ps);
 
 namespace minote {
 
@@ -71,8 +71,10 @@ void Imgui::compile() {
 	auto& ctx = *s_vulkan->context;
 	
 	auto imguiPci = vuk::PipelineBaseCreateInfo();
-	addSpirv(imguiPci, imgui_vs, "imgui.vs.hlsl");
-	addSpirv(imguiPci, imgui_ps, "imgui.ps.hlsl");
+	auto imgui_vs = std::vector((uint32_t*)g_imgui_vs_data, (uint32_t*)&g_imgui_vs_end);
+	auto imgui_ps = std::vector((uint32_t*)g_imgui_ps_data, (uint32_t*)&g_imgui_ps_end);
+	imguiPci.add_spirv(std::move(imgui_vs), "imgui.vs.hlsl");
+	imguiPci.add_spirv(std::move(imgui_ps), "imgui.ps.hlsl");
 	ctx.create_named_pipeline("imgui", imguiPci);
 	
 	m_compiled = true;

@@ -1,42 +1,38 @@
-struct Params {
-	float bottomRadius;
-	float topRadius;
-	
-	float rayleighDensityExpScale;
-	float pad0;
-	float3 rayleighScattering;
-	
-	float mieDensityExpScale;
-	float3 mieScattering;
-	float pad1;
-	float3 mieExtinction;
-	float pad2;
-	float3 mieAbsorption;
-	float miePhaseG;
-	
-	float absorptionDensity0LayerWidth;
-	float absorptionDensity0ConstantTerm;
-	float absorptionDensity0LinearTerm;
-	float absorptionDensity1ConstantTerm;
-	float absorptionDensity1LinearTerm;
-	float pad3;
-	float pad4;
-	float pad5;
-	float3 absorptionExtinction;
-	float pad6;
-	
-	float3 groundAlbedo;
-};
+#include "access.hlsl"
+#include "types.hlsl"
+#include "func.hlsl"
 
-[[vk::binding(0)]]
-StructuredBuffer<Params> params;
+[[vk::binding(0)]] ConstantBuffer<AtmosphereParams> params;
+[[vk::binding(1)]] RWTexture2D<float4> transmittance;
 
-[[vk::binding(1)]]
-RWTexture2D<float4> transmittance;
+[[vk::constant_id(0)]] const uint TransmittanceWidth = 0;
+[[vk::constant_id(1)]] const uint TransmittanceHeight = 0;
+static const uint2 TransmittanceSize = {TransmittanceWidth, TransmittanceHeight};
 
 [numthreads(8, 8, 1)]
 void main(uint3 tid: SV_DispatchThreadID) {
 	
+	if (any(tid.xy >= TransmittanceSize))
+		return;
 	
+	// Compute camera position from LUT coords
+	float2 uv = (float2(tid.xy) + 0.5) / float2(TransmittanceSize);
+	float viewHeight;
+	float viewZenithCosAngle;
+	uvToLutTransmittanceParams(viewHeight, viewZenithCosAngle, params, uv);
+	
+	float3 worldPos = float3(0.0, 0.0, viewHeight);
+	float3 worldDir = float3(0.0, sqrt(1.0 - viewZenithCosAngle * viewZenithCosAngle), viewZenithCosAngle);
+	
+	bool ground = false;
+	float sampleCountIni = 40.0; // Can go as low as 10 sample but energy lost starts to be visible.
+	bool variableSampleCount = false;
+	bool mieRayPhase = false;
+	float3 result = exp(-integrateScatteredLuminance(params, worldPos, worldDir,
+		float3(1.0, 1.0, 1.0)/*unused*/, ground, sampleCountIni, variableSampleCount,
+		mieRayPhase, 9000000.0, float3(1.0, 1.0, 1.0)).opticalDepth);
+	
+	// Optical depth to transmittance
+	transmittance[tid.xy] = float4(result, 1.0);
 	
 }
