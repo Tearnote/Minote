@@ -1,6 +1,6 @@
-#include "access.hlsl"
-#include "types.hlsl"
-#include "func.hlsl"
+#include "sky/access.hlsl"
+#include "sky/types.hlsl"
+#include "sky/func.hlsl"
 
 [[vk::binding(0)]] ConstantBuffer<AtmosphereParams> params;
 [[vk::binding(1)]] RWTexture2D<float4> transmittance;
@@ -10,13 +10,13 @@
 static const uint2 TransmittanceSize = {TransmittanceWidth, TransmittanceHeight};
 
 [numthreads(8, 8, 1)]
-void main(uint3 tid: SV_DispatchThreadID) {
+void main(uint3 _tid: SV_DispatchThreadID) {
 	
-	if (any(tid.xy >= TransmittanceSize))
+	if (any(_tid.xy >= TransmittanceSize))
 		return;
 	
 	// Compute camera position from LUT coords
-	float2 uv = (float2(tid.xy) + 0.5) / float2(TransmittanceSize);
+	float2 uv = (float2(_tid.xy) + 0.5) / float2(TransmittanceSize);
 	float viewHeight;
 	float viewZenithCosAngle;
 	uvToLutTransmittanceParams(viewHeight, viewZenithCosAngle, params, uv);
@@ -33,6 +33,6 @@ void main(uint3 tid: SV_DispatchThreadID) {
 		mieRayPhase, 9000000.0, float3(1.0, 1.0, 1.0)).opticalDepth);
 	
 	// Optical depth to transmittance
-	transmittance[tid.xy] = float4(result, 1.0);
+	transmittance[_tid.xy] = float4(result, 1.0);
 	
 }

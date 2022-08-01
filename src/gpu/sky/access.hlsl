@@ -1,7 +1,7 @@
 #ifndef SKY_ACCESS_HLSL
 #define SKY_ACCESS_HLSL
 
-#include "types.hlsl"
+#include "sky/types.hlsl"
 
 void uvToLutTransmittanceParams(out float _viewHeight, out float _viewZenithCosAngle,
 	AtmosphereParams _params, float2 _uv) {

@@ -16,13 +16,13 @@ struct Constants {
 };
 [[vk::push_constant]] Constants constants;
 
-VSOutput main(VSInput input) {
+VSOutput main(VSInput _input) {
 	
 	VSOutput output;
 	
-	output.color = input.color;
-	output.uv = input.uv;
-	output.position = float4(input.position * constants.scale + constants.translate, 0.0, 1.0);
+	output.color = _input.color;
+	output.uv = _input.uv;
+	output.position = float4(_input.position * constants.scale + constants.translate, 0.0, 1.0);
 	
 	return output;
 	
