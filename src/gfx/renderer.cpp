@@ -9,7 +9,6 @@
 #include "util/math.hpp"
 #include "util/log.hpp"
 #include "sys/system.hpp"
-#include "gfx/effects/sky.hpp"
 #include "gfx/util.hpp"
 
 namespace minote {
@@ -95,14 +94,15 @@ void Renderer::renderFrame() {
 	rg->attach_and_clear_image("screen", { .format = vuk::Format::eR8G8B8A8Unorm, .sample_count = vuk::Samples::e1 }, vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.0f));
 	rg->inference_rule("screen", vuk::same_extent_as("swapchain"));
 	
-	auto atmosphere = Atmosphere(m_frameAllocator, Atmosphere::Params::earth());
+	if (!m_atmosphere.has_value())
+		m_atmosphere.emplace(m_globalAllocator, Atmosphere::Params::earth());
 	
 	// Draw frame
 	auto screenImguiFut = m_imgui.render(vuk::Future(rg, "screen"));
 	auto futures = rg->split();
 	rg = std::make_shared<vuk::RenderGraph>("final");
 	rg->attach_in(futures);
-	rg->attach_in("transmittance", atmosphere.transmittance); // For testing
+	rg->attach_in("transmittance", m_atmosphere->transmittance); // For testing
 	rg->attach_in("screen_imgui", screenImguiFut);
 	
 	// Blit frame to swapchain

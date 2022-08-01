@@ -40,4 +40,10 @@ void lutTransmittanceParamsToUv(out float2 _uv,
 	
 }
 
+float fromSubUvsToUnit(float _u, float _resolution) {
+	
+	return (_u - 0.5 / _resolution) * (_resolution / (_resolution - 1.0));
+	
+}
+
 #endif

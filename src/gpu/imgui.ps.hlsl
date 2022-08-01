@@ -4,8 +4,8 @@ struct VSOutput {
 	float2 uv: TEXCOORD;
 };
 
-[[vk::combinedImageSampler]][[vk::binding(0)]] Texture2D texture;
-[[vk::combinedImageSampler]][[vk::binding(0)]] SamplerState textureSampler;
+[[vk::binding(0)]][[vk::combinedImageSampler]] Texture2D texture;
+[[vk::binding(0)]][[vk::combinedImageSampler]] SamplerState textureSampler;
 
 float4 main(VSOutput input): SV_TARGET {
 	

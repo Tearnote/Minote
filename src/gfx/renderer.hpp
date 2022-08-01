@@ -7,6 +7,7 @@
 #include "util/math.hpp"
 #include "util/time.hpp"
 #include "sys/vulkan.hpp"
+#include "gfx/effects/sky.hpp"
 #include "gfx/objects.hpp"
 #include "gfx/models.hpp"
 #include "gfx/camera.hpp"
@@ -73,6 +74,8 @@ private:
 	ObjectPool m_objects;
 	World m_world;
 	Camera m_camera;
+	
+	optional<Atmosphere> m_atmosphere;
 	
 	void renderFrame(); // Common code of render() and refreshSwapchain()
 	void calcFramerate();

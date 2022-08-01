@@ -212,11 +212,11 @@ SingleScatteringResult integrateScatteredLuminance(AtmosphereParams _params,
 		float sunZenithCosAngle = dot(_sunDir, upVector);
 		float2 uv;
 		lutTransmittanceParamsToUv(uv, _params, pHeight, sunZenithCosAngle);
-#ifdef S_TRANSMITTANCE
-		float3 transmittanceToSun = textureLod(S_TRANSMITTANCE, uv, 0.0).rgb;
-#else //S_TRANSMITTANCE
+#ifdef TRANSMITTANCE_TEX
+		float3 transmittanceToSun = TRANSMITTANCE_TEX.SampleLevel(TRANSMITTANCE_SAMPLER, uv, 0).rgb;
+#else
 		float3 transmittanceToSun = {0.0, 0.0, 0.0};
-#endif //S_TRANSMITTANCE
+#endif
 		
 		float3 phaseTimesScattering;
 		if (_mieRayPhase)
@@ -277,11 +277,11 @@ SingleScatteringResult integrateScatteredLuminance(AtmosphereParams _params,
 		float sunZenithCosAngle = dot(_sunDir, upVector);
 		float2 uv;
 		lutTransmittanceParamsToUv(uv, _params, pHeight, sunZenithCosAngle);
-#ifdef S_TRANSMITTANCE
-		float3 transmittanceToSun = textureLod(S_TRANSMITTANCE, uv, 0.0).rgb;
-#else //S_TRANSMITTANCE
+#ifdef TRANSMITTANCE_TEX
+		float3 transmittanceToSun = TRANSMITTANCE_TEX.SampleLevel(TRANSMITTANCE_SAMPLER,  uv, 0).rgb;
+#else
 		float3 transmittanceToSun = {0.0, 0.0, 0.0};
-#endif //S_TRANSMITTANCE
+#endif
 		
 		float NdotL = saturate(dot(normalize(upVector), normalize(_sunDir)));
 		L += globalL * transmittanceToSun * throughput * NdotL * _params.groundAlbedo / PI;
