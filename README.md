@@ -40,4 +40,5 @@ the Ninja Multi-Config generator is recommended.
 - [`MPack`](https://github.com/ludocode/mpack) (MIT)
 - [`meshoptimizer`](https://github.com/zeux/meshoptimizer) (MIT)
 - [`bvh`](https://github.com/madmann91/bvh) (MIT)
+- [`ìncbin`](https://github.com/graphitemaster/incbin) (Unlicense)
 - Smaller code snippets attributed inline
