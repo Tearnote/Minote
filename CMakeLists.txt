@@ -299,44 +299,54 @@ set(SHADER_SOURCES
 	imgui.vs.hlsl
 	imgui.ps.hlsl)
 
+# Stage 1: Compile HLSL to SPIR-V
 foreach(SHADER_SOURCE ${SHADER_SOURCES})
-	
 	set(SHADER_INPUT ${PROJECT_SOURCE_DIR}/${SHADER_PREFIX}/${SHADER_SOURCE})
 	string(REGEX REPLACE [[.hlsl$]] "" SHADER_SOURCE_WLE ${SHADER_SOURCE})
-	set(SHADER_OUTPUT_SPV ${PROJECT_BINARY_DIR}/$<CONFIG>/generated/spv/${SHADER_SOURCE_WLE}.spv)
-	set(SHADER_OUTPUT_C ${PROJECT_BINARY_DIR}/$<CONFIG>/generated/spv/${SHADER_SOURCE_WLE}.c)
-	get_filename_component(SHADER_OUTPUT_DIR ${SHADER_OUTPUT_SPV} DIRECTORY)
+	set(SHADER_OUTPUT ${PROJECT_BINARY_DIR}/$<CONFIG>/generated/spv/${SHADER_SOURCE_WLE}.spv)
+	get_filename_component(SHADER_OUTPUT_DIR ${SHADER_OUTPUT} DIRECTORY)
 	
 	get_filename_component(SHADER_TYPE ${SHADER_SOURCE_WLE} LAST_EXT)
 	string(SUBSTRING ${SHADER_TYPE} 1 -1 SHADER_TYPE)
 	set(SHADER_PROFILE ${SHADER_TYPE}_${SHADER_MODEL})
-	string(REGEX REPLACE [[\.|/]] "_" SHADER_IDENT ${SHADER_SOURCE_WLE})
 	
 	add_custom_command(
-		OUTPUT ${SHADER_OUTPUT_C}
+		OUTPUT ${SHADER_OUTPUT}
 		COMMAND ${CMAKE_COMMAND} -E make_directory ${SHADER_OUTPUT_DIR}
 		# Create HLSL depfile
 		COMMAND $ENV{VULKAN_SDK}/Bin/dxc
 			-HV 2021 -T ${SHADER_PROFILE}
-			-Fo ${SHADER_OUTPUT_SPV}
-			-MF ${SHADER_OUTPUT_SPV}.d
+			-Fo ${SHADER_OUTPUT}
+			-MF ${SHADER_OUTPUT}.d
 			${SHADER_INPUT}
 		# Compile HLSL into SPIR-V
 		COMMAND $ENV{VULKAN_SDK}/Bin/dxc
 			-HV 2021 -T ${SHADER_PROFILE} -spirv "$<$<CONFIG:Debug,RelWithDebInfo>:-O0;-Zi>"
-			-Fo ${SHADER_OUTPUT_SPV}
+			-Fo ${SHADER_OUTPUT}
 			${SHADER_INPUT}
-		# Create accompanying source file
-		COMMAND ${CMAKE_COMMAND} -E echo "#include \"incbin.h\"" > ${SHADER_OUTPUT_C}
-		COMMAND ${CMAKE_COMMAND} -E echo "INCBIN(${SHADER_IDENT}, \"${SHADER_OUTPUT_SPV}\")\;" >> ${SHADER_OUTPUT_C}
-		DEPENDS ${SHADER_PREFIX}/${SHADER_PATH}
-		DEPFILE ${SHADER_OUTPUT_SPV}.d
+		DEPFILE ${SHADER_OUTPUT}.d
 		VERBATIM COMMAND_EXPAND_LISTS)
-	list(APPEND SHADER_OUTPUTS ${SHADER_OUTPUT_C})
 endforeach()
 
-add_library(MinoteShaders STATIC ${SHADER_OUTPUTS})
+# Stage 2: Generate wrapper .c files to inline the SPIR-V
+foreach(SHADER_SOURCE ${SHADER_SOURCES})
+	string(REGEX REPLACE [[.hlsl$]] "" SHADER_SOURCE_WLE ${SHADER_SOURCE})
+	set(SHADER_OUTPUT ${PROJECT_BINARY_DIR}/$<CONFIG>/generated/spv/${SHADER_SOURCE_WLE}.spv)
+	set(SHADER_WRAPPER ${SHADER_OUTPUT}.c)
+	string(REGEX REPLACE [[\.|/]] "_" SHADER_IDENT ${SHADER_SOURCE_WLE})
+	
+	add_custom_command(
+		OUTPUT ${SHADER_WRAPPER}
+		COMMAND ${CMAKE_COMMAND} -E echo "#include \"incbin.h\"" > ${SHADER_WRAPPER}
+		COMMAND ${CMAKE_COMMAND} -E echo "INCBIN(${SHADER_IDENT}, \"${SHADER_OUTPUT}\")\;" >> ${SHADER_WRAPPER}
+		DEPENDS ${SHADER_OUTPUT}
+		VERBATIM COMMAND_EXPAND_LISTS)
+	list(APPEND SHADER_WRAPPERS ${SHADER_WRAPPER})
+endforeach()
+
+add_library(MinoteShaders STATIC ${SHADER_WRAPPERS})
 target_link_libraries(MinoteShaders PRIVATE incbin)
+
 target_link_libraries(Minote PRIVATE MinoteShaders)
 
 # Asset pipeline
@@ -387,5 +397,5 @@ foreach(MODEL_PATH ${MODELS})
 		VERBATIM COMMAND_EXPAND_LISTS)
 endforeach()
 
-add_custom_target(Package_assets DEPENDS ${ASSET_OUTPUT})
-add_dependencies(Minote Package_assets)
+add_custom_target(MinoteAssets DEPENDS ${ASSET_OUTPUT})
+add_dependencies(Minote MinoteAssets)
