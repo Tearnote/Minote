@@ -66,9 +66,8 @@ private:
 	static inline bool m_compiled = false;
 	
 };
-/*
-// Effect for rendering sky backgrounds, IBL cubemaps and other position-dependent
-// lookup tables.
+
+// Rendering of the sky from atmosphere data. Sky views depend on camera position
 struct Sky {
 	
 	constexpr static auto ViewFormat = vuk::Format::eB10G11R11UfloatPack32;
@@ -77,11 +76,16 @@ struct Sky {
 	constexpr static auto AerialPerspectiveFormat = vuk::Format::eR16G16B16A16Sfloat;
 	constexpr static auto AerialPerspectiveSize = uvec3{32u, 32u, 32u};
 	
-	// Build the shader.
-	static void compile(vuk::PerThreadContext&);
+	// Create a 360-degree view of the sky at the specified world position
+	static auto createView(Atmosphere&, vuk::Future world, vec3 probePos) -> vuk::Future;
 	
-	static auto createView(Pool&, Frame&, vuk::Name, vec3 probePos, Atmosphere) -> Texture2D;
+	// Build required shaders; optional
+	static void compile();
 	
+private:
+	
+	static inline bool m_compiled = false;
+	/*
 	static auto createAerialPerspective(Pool&, Frame&, vuk::Name,
 		vec3 probePos, mat4 invViewProj, Atmosphere) -> Texture3D;
 	
@@ -92,7 +96,7 @@ struct Sky {
 	
 	// Draw the sky into an existing cubemap. Target is the mip 0 of provided image.
 	static void draw(Frame&, Cubemap target, vec3 probePos, Texture2D skyView, Atmosphere);
-	
+	*/
 };
-*/
+
 }

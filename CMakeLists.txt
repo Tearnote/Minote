@@ -296,6 +296,7 @@ set(SHADER_PREFIX src/gpu)
 set(SHADER_SOURCES
 	sky/genMultiScattering.cs.hlsl
 	sky/genTransmittance.cs.hlsl
+	sky/genView.cs.hlsl
 	imgui.vs.hlsl
 	imgui.ps.hlsl)
 
