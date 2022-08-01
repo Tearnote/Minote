@@ -77,10 +77,11 @@ add_executable(Minote
 	src/gfx/effects/sky.hpp src/gfx/effects/sky.cpp
 	# src/gfx/effects/hiz.hpp src/gfx/effects/hiz.cpp
 	# src/gfx/samplers.hpp
+	src/gfx/renderer.hpp src/gfx/renderer.cpp
 	src/gfx/objects.hpp src/gfx/objects.cpp
 	src/gfx/models.hpp src/gfx/models.cpp
-	src/gfx/renderer.hpp src/gfx/renderer.cpp
 	src/gfx/camera.hpp src/gfx/camera.cpp
+	src/gfx/shader.hpp
 	src/gfx/imgui.hpp src/gfx/imgui.cpp
 	src/gfx/world.hpp src/gfx/world.cpp
 	# src/gfx/frame.hpp src/gfx/frame.cpp

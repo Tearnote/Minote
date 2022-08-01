@@ -15,11 +15,8 @@
 #include "util/log.hpp"
 #include "gfx/samplers.hpp"
 #include "gfx/renderer.hpp"
+#include "gfx/shader.hpp"
 #include "sys/vulkan.hpp"
-
-#include "incbin.h"
-INCBIN_EXTERN(imgui_vs);
-INCBIN_EXTERN(imgui_ps);
 
 namespace minote {
 
@@ -65,16 +62,16 @@ Imgui::~Imgui() {
 	
 }
 
+GET_SHADER(imgui_vs);
+GET_SHADER(imgui_ps);
 void Imgui::compile() {
 	
 	if (m_compiled) return;
 	auto& ctx = *s_vulkan->context;
 	
 	auto imguiPci = vuk::PipelineBaseCreateInfo();
-	auto imgui_vs = std::vector((uint32_t*)g_imgui_vs_data, (uint32_t*)&g_imgui_vs_end);
-	auto imgui_ps = std::vector((uint32_t*)g_imgui_ps_data, (uint32_t*)&g_imgui_ps_end);
-	imguiPci.add_spirv(std::move(imgui_vs), "imgui.vs.hlsl");
-	imguiPci.add_spirv(std::move(imgui_ps), "imgui.ps.hlsl");
+	ADD_SHADER(imguiPci, imgui_vs, "imgui.vs.hlsl");
+	ADD_SHADER(imguiPci, imgui_ps, "imgui.ps.hlsl");
 	ctx.create_named_pipeline("imgui", imguiPci);
 	
 	m_compiled = true;
