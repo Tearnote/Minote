@@ -62,7 +62,7 @@ Atmosphere::Atmosphere(vuk::Allocator& _allocator, Params const& _params) {
 	
 	compile();
 	
-	auto rg = std::make_shared<vuk::RenderGraph>();
+	auto rg = std::make_shared<vuk::RenderGraph>("atmosphere");
 	rg->attach_image("transmittance/uninit", vuk::ImageAttachment{
 		.extent = vuk::Dimension3D::absolute(TransmittanceSize.x(), TransmittanceSize.y()),
 		.format = TransmittanceFormat,

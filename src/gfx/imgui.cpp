@@ -125,7 +125,7 @@ auto Imgui::render(vuk::Future _target) -> vuk::Future {
 		idxDst += list->IdxBuffer.Size;
 	}
 	
-	auto rg = std::make_shared<vuk::RenderGraph>();
+	auto rg = std::make_shared<vuk::RenderGraph>("imgui");
 	rg->attach_in("input", _target);
 	
 	// Execute all imgui draws in this pass

@@ -90,7 +90,7 @@ void Renderer::renderFrame() {
 	
 	// Prepare frame
 	
-	auto rg = std::make_shared<vuk::RenderGraph>();
+	auto rg = std::make_shared<vuk::RenderGraph>("initial");
 	rg->attach_swapchain("swapchain", s_vulkan->swapchain);
 	rg->attach_and_clear_image("screen", { .format = vuk::Format::eR8G8B8A8Unorm, .sample_count = vuk::Samples::e1 }, vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.0f));
 	rg->inference_rule("screen", vuk::same_extent_as("swapchain"));
@@ -100,8 +100,9 @@ void Renderer::renderFrame() {
 	// Draw frame
 	auto screenImguiFut = m_imgui.render(vuk::Future(rg, "screen"));
 	auto futures = rg->split();
-	rg = std::make_shared<vuk::RenderGraph>();
+	rg = std::make_shared<vuk::RenderGraph>("final");
 	rg->attach_in(futures);
+	rg->attach_in("transmittance", atmosphere.transmittance); // For testing
 	rg->attach_in("screen_imgui", screenImguiFut);
 	
 	// Blit frame to swapchain
