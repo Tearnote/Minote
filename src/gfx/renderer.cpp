@@ -3,12 +3,14 @@
 #include "config.hpp"
 
 #include "imgui.h"
+#include "vuk/AllocatorHelpers.hpp"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
 #include "util/error.hpp"
 #include "util/math.hpp"
 #include "util/log.hpp"
 #include "sys/system.hpp"
+#include "gfx/effects/sky.hpp"
 #include "gfx/util.hpp"
 
 namespace minote {
@@ -87,6 +89,11 @@ void Renderer::renderFrame() {
 	ImGui::SliderFloat("Sun illuminance", &sunIlluminance, 0.01f, 100.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
 	m_world.sunIlluminance = vec3(sunIlluminance);
 	
+	auto worldBuf = *vuk::allocate_buffer_cross_device(m_frameAllocator,
+		{vuk::MemoryUsage::eCPUtoGPU, sizeof(m_world)});
+	std::memcpy(worldBuf->mapped_ptr, &m_world, sizeof(m_world));
+	auto world = vuk::Future(*worldBuf);
+	
 	// Prepare frame
 	
 	auto rg = std::make_shared<vuk::RenderGraph>("initial");
@@ -96,13 +103,14 @@ void Renderer::renderFrame() {
 	
 	if (!m_atmosphere.has_value())
 		m_atmosphere.emplace(m_globalAllocator, Atmosphere::Params::earth());
+	auto skyView = Sky::createView(*m_atmosphere, world, m_world.cameraPos);
 	
 	// Draw frame
 	auto screenImguiFut = m_imgui.render(vuk::Future(rg, "screen"));
 	auto futures = rg->split();
-	rg = std::make_shared<vuk::RenderGraph>("final");
+	rg = std::make_shared<vuk::RenderGraph>("main");
 	rg->attach_in(futures);
-	rg->attach_in("transmittance", m_atmosphere->transmittance); // For testing
+	rg->attach_in("skyView", skyView); // For testing
 	rg->attach_in("screen_imgui", screenImguiFut);
 	
 	// Blit frame to swapchain

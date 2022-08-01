@@ -88,6 +88,25 @@ float3 getAlbedo(float3 _scattering, float3 _extinction) {
 	
 }
 
+bool moveToTopAtmosphere(inout float3 _worldPos, float3 _worldDir, float _atmosphereTopRadius) {
+	
+	float viewHeight = length(_worldPos);
+	if (viewHeight > _atmosphereTopRadius) {
+		float tTop = raySphereIntersectNearest(_worldPos, _worldDir, float3(0.0, 0.0, 0.0), _atmosphereTopRadius);
+		if (tTop >= 0.0) {
+			float3 upVector = _worldPos / viewHeight;
+			float3 upOffset = upVector * -PlanetRadiusOffset;
+			_worldPos = _worldPos + _worldDir * tTop + upOffset;
+		} else {
+			// Ray is not intersecting the atmosphere
+			return false;
+		}
+	}
+	
+	return true; // ok to start tracing
+	
+}
+
 MediumSampleRGB sampleMediumRGB(AtmosphereParams _params, float3 _worldPos) {
 	
 	float viewHeight = length(_worldPos) - _params.bottomRadius;
@@ -120,6 +139,24 @@ MediumSampleRGB sampleMediumRGB(AtmosphereParams _params, float3 _worldPos) {
 	return s;
 	
 }
+
+#ifdef MULTI_SCATTERING_TEX
+float3 getMultipleScattering(AtmosphereParams _params, float3 _worldPos, float _viewZenithCosAngle) {
+	
+	uint width;
+	uint height;
+	MULTI_SCATTERING_TEX.GetDimensions(width, height);
+	uint2 size = {width, height};
+	
+	float2 uv = saturate(float2(
+			_viewZenithCosAngle * 0.5 + 0.5,
+			(length(_worldPos) - _params.bottomRadius) / (_params.topRadius - _params.bottomRadius)));
+	uv = float2(fromUnitToSubUvs(uv.x, size.x), fromUnitToSubUvs(uv.y, size.y));
+	
+	return MULTI_SCATTERING_TEX.SampleLevel(MULTI_SCATTERING_SAMPLER, uv, 0).rgb;
+	
+}
+#endif
 
 SingleScatteringResult integrateScatteredLuminance(AtmosphereParams _params,
 	float3 _worldPos, float3 _worldDir, float3 _sunDir, bool _ground,
@@ -233,9 +270,9 @@ SingleScatteringResult integrateScatteredLuminance(AtmosphereParams _params,
 		// Dual scattering for multi scattering
 		
 		float3 multiScatteredLuminance = {0.0, 0.0, 0.0};
-#ifdef S_MULTISCATTERING
-		multiScatteredLuminance = getMultipleScattering(P, sunZenithCosAngle);
-#endif //S_MULTISCATTERING
+#ifdef MULTI_SCATTERING_TEX
+		multiScatteredLuminance = getMultipleScattering(_params, P, sunZenithCosAngle);
+#endif
 		
 		float3 S = globalL * (earthShadow * transmittanceToSun * phaseTimesScattering +
 			multiScatteredLuminance * medium.scattering);
