@@ -14,7 +14,7 @@ struct Constants {
 	float2 scale;
 	float2 translate;
 };
-[[vk::push_constant]] Constants constants;
+[[vk::push_constant]] Constants c_constants;
 
 VSOutput main(VSInput _input) {
 	
@@ -22,7 +22,7 @@ VSOutput main(VSInput _input) {
 	
 	output.color = _input.color;
 	output.uv = _input.uv;
-	output.position = float4(_input.position * constants.scale + constants.translate, 0.0, 1.0);
+	output.position = float4(_input.position * c_constants.scale + c_constants.translate, 0.0, 1.0);
 	
 	return output;
 	

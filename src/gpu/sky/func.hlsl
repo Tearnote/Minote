@@ -1,9 +1,9 @@
 #ifndef SKY_FUNC_HLSL
 #define SKY_FUNC_HLSL
 
-#include "constants.hlsl"
 #include "sky/access.hlsl"
 #include "sky/types.hlsl"
+#include "constants.hlsl"
 
 static const float PlanetRadiusOffset = 0.01;
 static const float RaymarchMinSPP = 4.0;

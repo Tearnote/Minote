@@ -1,13 +1,13 @@
 #include "sky/access.hlsl"
 #include "sky/types.hlsl"
 
-[[vk::binding(0)]] ConstantBuffer<AtmosphereParams> b_params;
-[[vk::binding(1)]][[vk::combinedImageSampler]] Texture2D<float4> t_transmittance;
-[[vk::binding(1)]][[vk::combinedImageSampler]] SamplerState t_transmittanceSampler;
+[[vk::binding(0)]] ConstantBuffer<AtmosphereParams> c_params;
+[[vk::binding(1)]][[vk::combinedImageSampler]] Texture2D<float4> s_transmittance;
+[[vk::binding(1)]][[vk::combinedImageSampler]] SamplerState s_transmittanceSampler;
 [[vk::binding(2)]] RWTexture2D<float4> t_multiScattering;
 
-#define TRANSMITTANCE_TEX t_transmittance
-#define TRANSMITTANCE_SAMPLER t_transmittanceSampler
+#define TRANSMITTANCE_TEX s_transmittance
+#define TRANSMITTANCE_SAMPLER s_transmittanceSampler
 #include "sky/func.hlsl"
 
 [[vk::constant_id(0)]] const uint MultiScatteringWidth = 0;
@@ -16,8 +16,8 @@ static const uint2 MultiScatteringSize = {MultiScatteringWidth, MultiScatteringH
 
 static const uint SqrtSampleCount = 8;
 
-groupshared float3 s_multiScatAs1[64];
-groupshared float3 s_L[64];
+groupshared float3 sh_multiScatAs1[64];
+groupshared float3 sh_L[64];
 
 [numthreads(1, 1, 64)]
 void main(uint3 _tid: SV_DispatchThreadID) {
@@ -32,8 +32,8 @@ void main(uint3 _tid: SV_DispatchThreadID) {
 	float cosSunZenithAngle = uv.x * 2.0 - 1.0;
 	float3 sunDir = {0.0, sqrt(saturate(1.0 - cosSunZenithAngle * cosSunZenithAngle)), cosSunZenithAngle};
 	// We adjust again viewHeight according to PlanetRadiusOffset to be in a valid range.
-	float viewHeight = b_params.bottomRadius +
-		saturate(uv.y + PlanetRadiusOffset) * (b_params.topRadius - b_params.bottomRadius - PlanetRadiusOffset);
+	float viewHeight = c_params.bottomRadius +
+		saturate(uv.y + PlanetRadiusOffset) * (c_params.topRadius - c_params.bottomRadius - PlanetRadiusOffset);
 	
 	float3 worldPos = {0.0, 0.0, viewHeight};
 	float3 worldDir = {0.0, 0.0, 1.0};
@@ -61,54 +61,54 @@ void main(uint3 _tid: SV_DispatchThreadID) {
 		float cosTheta = cos(theta);
 		float sinTheta = sin(theta);
 		worldDir = float3(cosTheta * sinPhi, sinTheta * sinPhi, cosPhi);
-		SingleScatteringResult result = integrateScatteredLuminance(b_params, worldPos, worldDir, sunDir,
+		SingleScatteringResult result = integrateScatteredLuminance(c_params, worldPos, worldDir, sunDir,
 			ground, sampleCountIni, variableSampleCount, mieRayPhase, 9000000.0, float3(1.0, 1.0, 1.0));
 		
-		s_multiScatAs1[_tid.z] = result.multiScatAs1 * sphereSolidAngle / (sqrtSample * sqrtSample);
-		s_L[_tid.z] = result.L * sphereSolidAngle / (sqrtSample * sqrtSample);
+		sh_multiScatAs1[_tid.z] = result.multiScatAs1 * sphereSolidAngle / (sqrtSample * sqrtSample);
+		sh_L[_tid.z] = result.L * sphereSolidAngle / (sqrtSample * sqrtSample);
 	}
 	
 	GroupMemoryBarrierWithGroupSync();
 	
 	// 64 to 32
 	if (_tid.z < 32) {
-		s_multiScatAs1[_tid.z] += s_multiScatAs1[_tid.z + 32];
-		s_L[_tid.z] += s_L[_tid.z + 32];
+		sh_multiScatAs1[_tid.z] += sh_multiScatAs1[_tid.z + 32];
+		sh_L[_tid.z] += sh_L[_tid.z + 32];
 	}
 	GroupMemoryBarrierWithGroupSync();
 	// 32 to 16
 	if (_tid.z < 16) {
-		s_multiScatAs1[_tid.z] += s_multiScatAs1[_tid.z + 16];
-		s_L[_tid.z] += s_L[_tid.z + 16];
+		sh_multiScatAs1[_tid.z] += sh_multiScatAs1[_tid.z + 16];
+		sh_L[_tid.z] += sh_L[_tid.z + 16];
 	}
 	GroupMemoryBarrierWithGroupSync();
 	// 16 to 8
 	if (_tid.z < 8) {
-		s_multiScatAs1[_tid.z] += s_multiScatAs1[_tid.z + 8];
-		s_L[_tid.z] += s_L[_tid.z + 8];
+		sh_multiScatAs1[_tid.z] += sh_multiScatAs1[_tid.z + 8];
+		sh_L[_tid.z] += sh_L[_tid.z + 8];
 	}
 	GroupMemoryBarrierWithGroupSync();
 	if (_tid.z < 4) {
-		s_multiScatAs1[_tid.z] += s_multiScatAs1[_tid.z + 4];
-		s_L[_tid.z] += s_L[_tid.z + 4];
+		sh_multiScatAs1[_tid.z] += sh_multiScatAs1[_tid.z + 4];
+		sh_L[_tid.z] += sh_L[_tid.z + 4];
 	}
 	GroupMemoryBarrierWithGroupSync();
 	if (_tid.z < 2) {
-		s_multiScatAs1[_tid.z] += s_multiScatAs1[_tid.z + 2];
-		s_L[_tid.z] += s_L[_tid.z + 2];
+		sh_multiScatAs1[_tid.z] += sh_multiScatAs1[_tid.z + 2];
+		sh_L[_tid.z] += sh_L[_tid.z + 2];
 	}
 	GroupMemoryBarrierWithGroupSync();
 	if (_tid.z < 1) {
-		s_multiScatAs1[_tid.z] += s_multiScatAs1[_tid.z + 1];
-		s_L[_tid.z] += s_L[_tid.z + 1];
+		sh_multiScatAs1[_tid.z] += sh_multiScatAs1[_tid.z + 1];
+		sh_L[_tid.z] += sh_L[_tid.z + 1];
 	}
 	GroupMemoryBarrierWithGroupSync();
 	
 	if (_tid.z > 0)
 		return;
 	
-	float3 multiScatAs1 = s_multiScatAs1[0] * isotropicPhase; // Equation 7 f_ms
-	float3 inScatteredLuminance = s_L[0] * isotropicPhase;    // Equation 5 L_2ndOrder
+	float3 multiScatAs1 = sh_multiScatAs1[0] * isotropicPhase; // Equation 7 f_ms
+	float3 inScatteredLuminance = sh_L[0] * isotropicPhase;    // Equation 5 L_2ndOrder
 	
 	// multiScatAs1 represents the amount of luminance scattered as if the integral
 	// of scattered luminance over the sphere would be 1.
