@@ -62,22 +62,7 @@ void Renderer::renderFrame() {
 	calcFramerate();
 	m_camera.viewport = uvec2{s_vulkan->swapchain->extent.width, s_vulkan->swapchain->extent.height};
 	
-	// Atmospheric properties
-	static auto sunPitch = 16_deg;
-	static auto sunYaw = 8_deg;
-	ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 60.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
-	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
-	m_world.sunDirection =
-		mat3::rotate({0.0f, 0.0f, 1.0f}, sunYaw) *
-		mat3::rotate({0.0f, -1.0f, 0.0f}, sunPitch) *
-		vec3{1.0f, 0.0f, 0.0f};
-	
-	static auto sunIlluminance = 4.0f;
-	ImGui::SliderFloat("Sun illuminance", &sunIlluminance, 0.01f, 100.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
-	m_world.sunIlluminance = vec3(sunIlluminance);
-	
-	// Prepare frame
-	
+	// Build rendergraph
 	auto rg = std::make_shared<vuk::RenderGraph>("initial");
 	rg->attach_swapchain("swapchain", s_vulkan->swapchain);
 	rg->attach_and_clear_image("screen", { .format = vuk::Format::eR8G8B8A8Unorm, .sample_count = vuk::Samples::e1 }, vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.0f));
@@ -88,14 +73,12 @@ void Renderer::renderFrame() {
 	auto skyView = Sky::createView(*m_impl->m_atmosphere, m_world, m_camera.position);
 	auto screenSky = Sky::draw(vuk::Future(rg, "screen"), *m_impl->m_atmosphere, skyView, m_world, m_camera);
 	
-	// Draw frame
 	auto screenImguiFut = m_imgui.render(screenSky);
 	auto futures = rg->split();
 	rg = std::make_shared<vuk::RenderGraph>("main");
 	rg->attach_in(futures);
 	rg->attach_in("screen_imgui", screenImguiFut);
 	
-	// Blit frame to swapchain
 	rg->add_pass({
 		.name = "swapchain copy",
 		.resources = {
@@ -116,7 +99,7 @@ void Renderer::renderFrame() {
 		},
 	});
 	
-	// Build and submit the rendergraph
+	// Build and submit rendergraph
 	try {
 		auto compiler = vuk::Compiler();
 		vuk::execute_submit_and_present_to_one(m_frameAllocator, compiler.link({&rg, 1}, {}), s_vulkan->swapchain);

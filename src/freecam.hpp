@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SDL_events.h"
+#include "gfx/camera.hpp"
 #include "util/math.hpp"
 #include "mapper.hpp"
 
@@ -21,8 +22,8 @@ struct Freecam {
 	void handleMouse(SDL_Event const&);
 	// Update freecam from a button/mousekey event
 	void handleAction(Mapper::Action);
-	// Apply freecam to the engine camera
-	void updateCamera();
+	// Apply freecam to a camera
+	void updateCamera(Camera&);
 	
 };
 

@@ -6,6 +6,7 @@
 #ifdef THREAD_DEBUG
 #include <pthread.h>
 #endif
+#include "imgui.h"
 #include "util/vector.hpp"
 #include "util/math.hpp"
 #include "util/util.hpp"
@@ -43,6 +44,8 @@ struct Game::Impl {
 	// Run a single tick of input handling and logic simulation
 	// Simulation time advances to "until" timestamp
 	void tick(nsec until, Imgui::InputReader&);
+	
+	void drawDebugControls();
 	
 	Window& m_window;
 	Mapper& m_mapper;
@@ -110,7 +113,8 @@ void Game::Impl::gameLoop() {
 			nextUpdate += LogicTick;
 		}
 		s_renderer->imgui().begin();
-		m_freecam.updateCamera();
+		drawDebugControls();
+		m_freecam.updateCamera(s_renderer->camera());
 		s_renderer->render();
 		
 	}
@@ -141,6 +145,23 @@ void Game::Impl::tick(nsec _until, Imgui::InputReader& _imguiInput) {
 		return true;
 		
 	});
+	
+}
+
+void Game::Impl::drawDebugControls() {
+	
+	static auto sunPitch = 16_deg;
+	static auto sunYaw = 118_deg;
+	ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 60.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
+	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
+	s_renderer->world().sunDirection =
+		mat3::rotate({0.0f, 0.0f, 1.0f}, sunYaw) *
+		mat3::rotate({0.0f, -1.0f, 0.0f}, sunPitch) *
+		vec3{1.0f, 0.0f, 0.0f};
+	
+	static auto sunIlluminance = 4.0f;
+	ImGui::SliderFloat("Sun illuminance", &sunIlluminance, 0.01f, 100.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
+	s_renderer->world().sunIlluminance = vec3(sunIlluminance);
 	
 }
 

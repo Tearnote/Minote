@@ -31,23 +31,23 @@ void Freecam::handleAction(Mapper::Action _action) {
 	
 }
 
-void Freecam::updateCamera() {
+void Freecam::updateCamera(Camera& _camera) {
 	
 	// Get framerate independence multiplier
 	auto framerateScale = min(144.0f / s_renderer->fps(), 8.0f);
-	s_renderer->camera().moveSpeed = 1_m / 16.0f * framerateScale;
+	_camera.moveSpeed = 1_m / 16.0f * framerateScale;
 	
 	offset.y() = -offset.y();
 	
 	if (moving)
-		s_renderer->camera().rotate(offset.x(), offset.y());
+		_camera.rotate(offset.x(), offset.y());
 	offset = vec2(0.0f); // Lateral movement applied, reset
 	
-	s_renderer->camera().roam({
+	_camera.roam({
 		float(right) - float(left),
 		0.0f,
 		float(up) - float(down)});
-	s_renderer->camera().shift({0.0f, 0.0f, float(floating)});
+	_camera.shift({0.0f, 0.0f, float(floating)});
 	
 }
 
