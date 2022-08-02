@@ -54,66 +54,20 @@ void Renderer::render() {
 
 void Renderer::renderFrame() {
 	
-	// Prepare next frame
+	beginFrame();
+	auto rg = buildRenderGraph();
+	submitAndPresent(rg);
+	
+}
+
+void Renderer::beginFrame() {
+	
 	s_vulkan->context->next_frame();
-	m_imgui.begin(); // Ensure that imgui calls inside this function work; usually a no-op
+	m_imgui.begin(); // Ensure that imgui calls work during rendering; usually a no-op
 	auto& frameResource = m_deviceResource.get_next_frame();
 	m_frameAllocator = vuk::Allocator(frameResource);
 	calcFramerate();
 	m_camera.viewport = uvec2{s_vulkan->swapchain->extent.width, s_vulkan->swapchain->extent.height};
-	
-	// Build rendergraph
-	auto rg = std::make_shared<vuk::RenderGraph>("initial");
-	rg->attach_swapchain("swapchain", s_vulkan->swapchain);
-	rg->attach_and_clear_image("screen", { .format = vuk::Format::eR8G8B8A8Unorm, .sample_count = vuk::Samples::e1 }, vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.0f));
-	rg->inference_rule("screen", vuk::same_extent_as("swapchain"));
-	
-	if (!m_impl->m_atmosphere.has_value())
-		m_impl->m_atmosphere.emplace(m_globalAllocator, Atmosphere::Params::earth());
-	auto skyView = Sky::createView(*m_impl->m_atmosphere, m_world, m_camera.position);
-	auto screenSky = Sky::draw(vuk::Future(rg, "screen"), *m_impl->m_atmosphere, skyView, m_world, m_camera);
-	
-	auto screenImguiFut = m_imgui.render(screenSky);
-	auto futures = rg->split();
-	rg = std::make_shared<vuk::RenderGraph>("main");
-	rg->attach_in(futures);
-	rg->attach_in("screen_imgui", screenImguiFut);
-	
-	rg->add_pass({
-		.name = "swapchain copy",
-		.resources = {
-			"screen_imgui"_image >> vuk::eTransferRead,
-			"swapchain"_image >> vuk::eTransferWrite },
-		.execute = [](vuk::CommandBuffer& cmd) {
-			
-			auto src = *cmd.get_resource_image_attachment("screen_imgui");
-			auto dst = *cmd.get_resource_image_attachment("swapchain");
-			
-			cmd.blit_image("screen_imgui", "swapchain", vuk::ImageBlit{
-				.srcSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
-				.srcOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(src.extent.extent.width), i32(src.extent.extent.height), 1}},
-				.dstSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
-				.dstOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(dst.extent.extent.width), i32(dst.extent.extent.height), 1}} },
-				vuk::Filter::eNearest);
-			
-		},
-	});
-	
-	// Build and submit rendergraph
-	try {
-		auto compiler = vuk::Compiler();
-		vuk::execute_submit_and_present_to_one(m_frameAllocator, compiler.link({&rg, 1}, {}), s_vulkan->swapchain);
-	} catch (vuk::PresentException& e) {
-		auto error = e.code();
-		if (error == VK_ERROR_OUT_OF_DATE_KHR)
-			m_swapchainDirty = true; // No need to return, only cleanup is left
-		else if (error != VK_SUBOPTIMAL_KHR)
-			throw runtime_error_fmt("Unable to present to the screen: error {}", error);
-	}
-	
-	// Clean up
-	
-	// m_objects.copyTransforms();
 	
 }
 
@@ -146,6 +100,65 @@ void Renderer::calcFramerate() {
 	}
 	
 	ImGui::Text("FPS: %.1f", m_framerate);
+	
+}
+
+auto Renderer::buildRenderGraph() -> std::shared_ptr<vuk::RenderGraph> {
+	
+	// Initial resources
+	auto rg = std::make_shared<vuk::RenderGraph>("init");
+	rg->attach_swapchain("swapchain", s_vulkan->swapchain);
+	rg->attach_and_clear_image("screen", { .format = vuk::Format::eR8G8B8A8Unorm, .sample_count = vuk::Samples::e1 }, vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.0f));
+	rg->inference_rule("screen", vuk::same_extent_as("swapchain"));
+	auto screen = vuk::Future(rg, "screen");
+	
+	// Sky rendering
+	if (!m_impl->m_atmosphere.has_value())
+		m_impl->m_atmosphere.emplace(m_globalAllocator, Atmosphere::Params::earth());
+	auto skyView = Sky::createView(*m_impl->m_atmosphere, m_world, m_camera.position);
+	auto screenSky = Sky::draw(screen, *m_impl->m_atmosphere, skyView, m_world, m_camera);
+	
+	// Imgui rendering
+	auto screenFinal = m_imgui.render(screenSky);
+	
+	// Copy to swapchain
+	auto futures = rg->split();
+	rg = std::make_shared<vuk::RenderGraph>("main");
+	rg->attach_in(futures);
+	rg->attach_in("screen/final", screenFinal);
+	rg->add_pass({
+		.name = "swapchain copy",
+		.resources = {
+			"screen/final"_image >> vuk::eTransferRead,
+			"swapchain"_image >> vuk::eTransferWrite },
+		.execute = [](vuk::CommandBuffer& cmd) {
+			auto srcSize = cmd.get_resource_image_attachment("screen/final").value().extent.extent;
+			auto dstSize = cmd.get_resource_image_attachment("swapchain").value().extent.extent;
+			cmd.blit_image("screen/final", "swapchain", vuk::ImageBlit{
+				.srcSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
+				.srcOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(srcSize.width), i32(srcSize.height), 1}},
+				.dstSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
+				.dstOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(dstSize.width), i32(dstSize.height), 1}} },
+				vuk::Filter::eNearest);
+		},
+	});
+	
+	return rg;
+	
+}
+
+void Renderer::submitAndPresent(std::shared_ptr<vuk::RenderGraph> _rg) try {
+	
+	auto compiler = vuk::Compiler();
+	vuk::execute_submit_and_present_to_one(m_frameAllocator, compiler.link({&_rg, 1}, {}), s_vulkan->swapchain);
+	
+} catch (vuk::PresentException& e) {
+	
+	auto error = e.code();
+	if (error == VK_ERROR_OUT_OF_DATE_KHR)
+		m_swapchainDirty = true; // No need to return, only cleanup is left
+	else if (error != VK_SUBOPTIMAL_KHR)
+		throw runtime_error_fmt("Unable to present to the screen: error {}", error);
 	
 }
 

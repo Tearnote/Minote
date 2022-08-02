@@ -29,9 +29,11 @@ struct Renderer {
 	Renderer();
 	~Renderer();
 	
+	// Draw the world and present to display
 	void render();
 	
 	// Use this function when the surface is resized to recreate the swapchain
+	// and re-enable normal drawing
 	void refreshSwapchain(uvec2 newSize);
 	
 	// Subcomponent access
@@ -42,15 +44,16 @@ struct Renderer {
 	// Return ObjectPool to add/remove/modify objects for drawing
 	auto objects() -> ObjectPool& { return m_objects; }
 	
-	// Return the world properties to adjust details like time of day
+	// Return the world properties to adjust global details like time of day
 	auto world() -> World& { return m_world; }
 	
-	// Return the Camera to modify the viewport
+	// Return the Camera to modify how the world is viewed
 	auto camera() -> Camera& { return m_camera; }
 	
+	// Current framerate, updated once a second
 	auto fps() const -> f32 { return m_framerate; }
 	
-	// Return allocators, for effects that need permanent or temporary internal allocations
+	// Allocators for effects that need permanent or temporary internal allocations
 	auto globalAllocator() -> vuk::Allocator& { return m_globalAllocator; }
 	auto frameAllocator() -> vuk::Allocator& { return m_frameAllocator; }
 	
@@ -79,7 +82,10 @@ private:
 	Camera m_camera;
 	
 	void renderFrame(); // Common code of render() and refreshSwapchain()
+	void beginFrame();
 	void calcFramerate();
+	auto buildRenderGraph() -> std::shared_ptr<vuk::RenderGraph>;
+	void submitAndPresent(std::shared_ptr<vuk::RenderGraph>);
 	
 	struct Impl;
 	std::unique_ptr<Impl> m_impl;
