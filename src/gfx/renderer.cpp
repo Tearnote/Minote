@@ -2,6 +2,7 @@
 
 #include "config.hpp"
 
+#include <optional>
 #include "imgui.h"
 #include "vuk/AllocatorHelpers.hpp"
 #include "vuk/CommandBuffer.hpp"
@@ -15,18 +16,20 @@
 
 namespace minote {
 
-using namespace std::string_literals;
+struct Renderer::Impl {
+	optional<Atmosphere> m_atmosphere;
+};
 
 Renderer::Renderer():
 	m_deviceResource(*s_vulkan->context, InflightFrames),
 	m_swapchainDirty(false),
-	m_flushTemporalResources(true),
 	m_framerate(60.0f),
 	m_lastFramerateCheck(0),
 	m_framesSinceLastCheck(0),
 	m_globalAllocator(m_deviceResource),
 	m_frameAllocator(m_deviceResource.get_next_frame()),
-	m_imgui(m_globalAllocator) {
+	m_imgui(m_globalAllocator),
+	m_impl(new Impl()) {
 	
 	L_INFO("Renderer initialized");
 	
@@ -57,23 +60,7 @@ void Renderer::renderFrame() {
 	auto& frameResource = m_deviceResource.get_next_frame();
 	m_frameAllocator = vuk::Allocator(frameResource);
 	calcFramerate();
-	
-	// Prepare and upload world properties
-	if (!m_flushTemporalResources)
-		m_world.prevViewProjection = m_world.viewProjection;
-	
-	auto viewport = uvec2{s_vulkan->swapchain->extent.width, s_vulkan->swapchain->extent.height};
-	m_world.projection = perspective(VerticalFov, f32(viewport.x()) / f32(viewport.y()), NearPlane);
-	m_world.view = m_camera.transform();
-	m_world.viewProjection = m_world.projection * m_world.view;
-	m_world.viewProjectionInverse = inverse(m_world.viewProjection);
-	m_world.viewportSize = viewport;
-	m_world.nearPlane = NearPlane;
-	m_world.cameraPos = m_camera.position;
-	m_world.frameCounter = s_vulkan->context->get_frame_count();
-	
-	if (m_flushTemporalResources)
-		m_world.prevViewProjection = m_world.viewProjection;
+	m_camera.viewport = uvec2{s_vulkan->swapchain->extent.width, s_vulkan->swapchain->extent.height};
 	
 	// Atmospheric properties
 	static auto sunPitch = 16_deg;
@@ -89,11 +76,6 @@ void Renderer::renderFrame() {
 	ImGui::SliderFloat("Sun illuminance", &sunIlluminance, 0.01f, 100.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
 	m_world.sunIlluminance = vec3(sunIlluminance);
 	
-	auto worldBuf = *vuk::allocate_buffer_cross_device(m_frameAllocator,
-		{vuk::MemoryUsage::eCPUtoGPU, sizeof(m_world)});
-	std::memcpy(worldBuf->mapped_ptr, &m_world, sizeof(m_world));
-	auto world = vuk::Future(*worldBuf);
-	
 	// Prepare frame
 	
 	auto rg = std::make_shared<vuk::RenderGraph>("initial");
@@ -101,16 +83,16 @@ void Renderer::renderFrame() {
 	rg->attach_and_clear_image("screen", { .format = vuk::Format::eR8G8B8A8Unorm, .sample_count = vuk::Samples::e1 }, vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.0f));
 	rg->inference_rule("screen", vuk::same_extent_as("swapchain"));
 	
-	if (!m_atmosphere.has_value())
-		m_atmosphere.emplace(m_globalAllocator, Atmosphere::Params::earth());
-	auto skyView = Sky::createView(*m_atmosphere, world, m_world.cameraPos);
+	if (!m_impl->m_atmosphere.has_value())
+		m_impl->m_atmosphere.emplace(m_globalAllocator, Atmosphere::Params::earth());
+	auto skyView = Sky::createView(*m_impl->m_atmosphere, m_world, m_camera.position);
+	auto screenSky = Sky::draw(vuk::Future(rg, "screen"), *m_impl->m_atmosphere, skyView, m_world, m_camera);
 	
 	// Draw frame
-	auto screenImguiFut = m_imgui.render(vuk::Future(rg, "screen"));
+	auto screenImguiFut = m_imgui.render(screenSky);
 	auto futures = rg->split();
 	rg = std::make_shared<vuk::RenderGraph>("main");
 	rg->attach_in(futures);
-	rg->attach_in("skyView", skyView); // For testing
 	rg->attach_in("screen_imgui", screenImguiFut);
 	
 	// Blit frame to swapchain
@@ -148,7 +130,6 @@ void Renderer::renderFrame() {
 	
 	// Clean up
 	
-	m_flushTemporalResources = false;
 	// m_objects.copyTransforms();
 	
 }
@@ -163,7 +144,6 @@ void Renderer::refreshSwapchain(uvec2 _newSize) {
 	s_vulkan->context->remove_swapchain(s_vulkan->swapchain);
 	s_vulkan->swapchain = newSwapchain;
 	m_swapchainDirty = false;
-	m_flushTemporalResources = true;
 	
 	renderFrame();
 	

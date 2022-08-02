@@ -1,6 +1,8 @@
 #pragma once
 
 #include "vuk/Future.hpp"
+#include "gfx/renderer.hpp"
+#include "gfx/camera.hpp"
 #include "util/math.hpp"
 
 namespace minote {
@@ -77,7 +79,11 @@ struct Sky {
 	constexpr static auto AerialPerspectiveSize = uvec3{32u, 32u, 32u};
 	
 	// Create a 360-degree view of the sky at the specified world position
-	static auto createView(Atmosphere&, vuk::Future world, vec3 probePos) -> vuk::Future;
+	static auto createView(Atmosphere&, World const&, vec3 probePos) -> vuk::Future;
+	
+	// Draw the sky into a texture at camera position
+	static auto draw(vuk::Future target, Atmosphere&, vuk::Future skyView,
+		World const&, Camera const&) -> vuk::Future;
 	
 	// Build required shaders; optional
 	static void compile();
@@ -91,8 +97,6 @@ private:
 	
 	static auto createSunLuminance(Pool&, Frame&, vuk::Name,
 		vec3 probePos, Atmosphere) -> Buffer<vec3>;
-	
-	static void draw(Frame&, QuadBuffer&, Worklist, Texture2D skyView, Atmosphere);
 	
 	// Draw the sky into an existing cubemap. Target is the mip 0 of provided image.
 	static void draw(Frame&, Cubemap target, vec3 probePos, Texture2D skyView, Atmosphere);

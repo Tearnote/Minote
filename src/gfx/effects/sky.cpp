@@ -46,13 +46,13 @@ void Atmosphere::compile() {
 	if (m_compiled) return;
 	auto& ctx = *s_vulkan->context;
 	
-	auto skyGenTransmittancePci = vuk::PipelineBaseCreateInfo();
-	ADD_SHADER(skyGenTransmittancePci, sky_genTransmittance_cs, "sky/genTransmittance.cs.hlsl");
-	ctx.create_named_pipeline("sky/genTransmittance", skyGenTransmittancePci);
+	auto genTransmittancePci = vuk::PipelineBaseCreateInfo();
+	ADD_SHADER(genTransmittancePci, sky_genTransmittance_cs, "sky/genTransmittance.cs.hlsl");
+	ctx.create_named_pipeline("sky/genTransmittance", genTransmittancePci);
 	
-	auto skyGenMultiScatteringPci = vuk::PipelineBaseCreateInfo();
-	ADD_SHADER(skyGenMultiScatteringPci, sky_genMultiScattering_cs, "sky/genMultiScattering.cs.hlsl");
-	ctx.create_named_pipeline("sky/genMultiScattering", skyGenMultiScatteringPci);
+	auto genMultiScatteringPci = vuk::PipelineBaseCreateInfo();
+	ADD_SHADER(genMultiScatteringPci, sky_genMultiScattering_cs, "sky/genMultiScattering.cs.hlsl");
+	ctx.create_named_pipeline("sky/genMultiScattering", genMultiScatteringPci);
 	
 	m_compiled = true;
 	
@@ -135,26 +135,25 @@ Atmosphere::Atmosphere(vuk::Allocator& _allocator, Params const& _params) {
 }
 
 GET_SHADER(sky_genView_cs);
+GET_SHADER(sky_draw_cs);
 void Sky::compile() {
 	
 	if (m_compiled) return;
 	auto& ctx = *s_vulkan->context;
 	
-	auto skyGenViewPci = vuk::PipelineBaseCreateInfo();
-	ADD_SHADER(skyGenViewPci, sky_genView_cs, "sky/genView.cs.hlsl");
-	ctx.create_named_pipeline("sky/genView", skyGenViewPci);
+	auto genViewPci = vuk::PipelineBaseCreateInfo();
+	ADD_SHADER(genViewPci, sky_genView_cs, "sky/genView.cs.hlsl");
+	ctx.create_named_pipeline("sky/genView", genViewPci);
+	
+	auto drawPci = vuk::PipelineBaseCreateInfo();
+	ADD_SHADER(drawPci, sky_draw_cs, "sky/draw.cs.hlsl");
+	ctx.create_named_pipeline("sky/draw", drawPci);
 	/*
 	auto skyGenSunLuminancePci = vuk::ComputePipelineBaseCreateInfo();
 	skyGenSunLuminancePci.add_spirv(std::vector<u32>{
 #include "spv/sky/genSunLuminance.comp.spv"
 	}, "sky/genSunLuminance.comp");
 	_ptc.ctx.create_named_pipeline("sky/genSunLuminance", skyGenSunLuminancePci);
-	
-	auto skyDrawPci = vuk::ComputePipelineBaseCreateInfo();
-	skyDrawPci.add_spirv(std::vector<u32>{
-#include "spv/sky/draw.comp.spv"
-	}, "sky/draw.comp");
-	_ptc.ctx.create_named_pipeline("sky/draw", skyDrawPci);
 	
 	auto skyDrawCubemapPci = vuk::ComputePipelineBaseCreateInfo();
 	skyDrawCubemapPci.add_spirv(std::vector<u32>{
@@ -172,7 +171,7 @@ void Sky::compile() {
 	
 }
 
-auto Sky::createView(Atmosphere& _atmo, vuk::Future _world, vec3 _probePos) -> vuk::Future {
+auto Sky::createView(Atmosphere& _atmo, World const& _world, vec3 _probePos) -> vuk::Future {
 	
 	compile();
 	
@@ -184,7 +183,6 @@ auto Sky::createView(Atmosphere& _atmo, vuk::Future _world, vec3 _probePos) -> v
 		.level_count = 1,
 		.layer_count = 1,
 	});
-	rg->attach_in("world", _world);
 	rg->attach_in("params", _atmo.params);
 	rg->attach_in("transmittance", _atmo.transmittance);
 	rg->attach_in("multiScattering", _atmo.multiScattering);
@@ -192,22 +190,31 @@ auto Sky::createView(Atmosphere& _atmo, vuk::Future _world, vec3 _probePos) -> v
 	rg->add_pass(vuk::Pass{
 		.name = "sky/genView",
 		.resources = {
-			"world"_buffer >> vuk::eComputeRead,
 			"params"_buffer >> vuk::eComputeRead,
 			"transmittance"_image >> vuk::eComputeSampled,
 			"multiScattering"_image >> vuk::eComputeSampled,
 			"view/uninit"_image >> vuk::eComputeWrite >> "view",
 		},
-		.execute = [_probePos](vuk::CommandBuffer& cmd) {
+		.execute = [&_world, _probePos](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_compute_pipeline("sky/genView")
-			   .bind_buffer(0, 0, "world")
-			   .bind_buffer(0, 1, "params")
-			   .bind_image(0, 2, "transmittance").bind_sampler(0, 2, LinearClamp)
-			   .bind_image(0, 3, "multiScattering").bind_sampler(0, 3, LinearClamp)
-			   .bind_image(0, 4, "view/uninit");
+			   .bind_buffer(0, 0, "params")
+			   .bind_image(0, 1, "transmittance").bind_sampler(0, 1, LinearClamp)
+			   .bind_image(0, 2, "multiScattering").bind_sampler(0, 2, LinearClamp)
+			   .bind_image(0, 3, "view/uninit");
 			
-			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, _probePos);
+			struct Constants {
+				vec3 probePos;
+				f32 pad0;
+				vec3 sunDirection;
+				f32 pad1;
+				vec3 sunIlluminance;
+			};
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, Constants{
+				.probePos = _probePos,
+				.sunDirection = _world.sunDirection,
+				.sunIlluminance = _world.sunIlluminance,
+			});
 			auto view = *cmd.get_resource_image_attachment("view/uninit");
 			auto viewSize = view.extent.extent;
 			cmd.specialize_constants(0, viewSize.width);
@@ -221,47 +228,67 @@ auto Sky::createView(Atmosphere& _atmo, vuk::Future _world, vec3 _probePos) -> v
 	return vuk::Future(rg, "view");
 	
 }
-/*
-auto Sky::createView(Pool& _pool, Frame& _frame, vuk::Name _name,
-	vec3 _probePos, Atmosphere _atmo) -> Texture2D {
+
+auto Sky::draw(vuk::Future _target, Atmosphere& _atmo, vuk::Future _skyView,
+	World const& _world, Camera const& _camera) -> vuk::Future {
 	
-	auto view = Texture2D::make(_pool, _name,
-		ViewSize, ViewFormat,
-		vuk::ImageUsageFlagBits::eStorage |
-		vuk::ImageUsageFlagBits::eSampled);
+	compile();
 	
-	view.attach(_frame.rg, vuk::eNone, vuk::eNone);
+	auto rg = std::make_shared<vuk::RenderGraph>("sky");
+	rg->attach_in("params", _atmo.params);
+	rg->attach_in("transmittance", _atmo.transmittance);
+	rg->attach_in("view", _skyView);
+	rg->attach_in("target", _target);
 	
-	_frame.rg.add_pass({
-		.name = nameAppend(_name, "sky/genSkyView"),
+	rg->add_pass(vuk::Pass{
+		.name = "sky/draw",
 		.resources = {
-			view.resource(vuk::eComputeWrite) },
-		.execute = [view, &_frame, _probePos, _atmo](vuk::CommandBuffer& cmd) {
+			"params"_buffer >> vuk::eComputeRead,
+			"transmittance"_image >> vuk::eComputeSampled,
+			"view"_image >> vuk::eComputeSampled,
+			"target"_image >> vuk::eComputeWrite >> "target/final",
+		},
+		.execute = [&_world, &_camera](vuk::CommandBuffer& cmd) {
 			
-			struct PushConstants {
-				vec3 probePosition;
-				f32 pad0;
-				uvec2 skyViewSize;
+			cmd.bind_compute_pipeline("sky/draw")
+			   .bind_buffer(0, 0, "params")
+			   .bind_image(0, 1, "transmittance").bind_sampler(0, 1, LinearClamp)
+			   .bind_image(0, 2, "view").bind_sampler(0, 2, LinearClamp)
+			   .bind_image(0, 3, "target");
+			
+			struct Constants {
+				mat4 viewProjectionInv;
+				vec3 cameraPos;
+				float pad0;
+				vec3 sunDirection;
+				float pad1;
+				vec3 sunIlluminance;
 			};
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, Constants{
+				.viewProjectionInv = inverse(_camera.viewProjection()),
+				.cameraPos = _camera.position,
+				.sunDirection = _world.sunDirection,
+				.sunIlluminance = _world.sunIlluminance,
+			});
 			
-			cmd.bind_uniform_buffer(0, 0, _frame.world)
-			   .bind_uniform_buffer(0, 1, _atmo.params)
-			   .bind_sampled_image(0, 2, _atmo.transmittance, LinearClamp)
-			   .bind_sampled_image(0, 3, _atmo.multiScattering, LinearClamp)
-			   .bind_storage_image(0, 4, view)
-			   .bind_compute_pipeline("sky/genSkyView");
+			auto view = *cmd.get_resource_image_attachment("view");
+			auto viewSize = view.extent.extent;
+			cmd.specialize_constants(0, viewSize.width);
+			cmd.specialize_constants(1, viewSize.height);
+			auto target = *cmd.get_resource_image_attachment("target");
+			auto targetSize = target.extent.extent;
+			cmd.specialize_constants(2, targetSize.width);
+			cmd.specialize_constants(3, targetSize.height);
 			
-			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, _probePos);
-			cmd.specialize_constants(0, u32Fromu16(view.size()));
+			cmd.dispatch_invocations(targetSize.width, targetSize.height);
 			
-			cmd.dispatch_invocations(view.size().x(), view.size().y(), 1);
-			
-		}});
+		},
+	});
 	
-	return view;
+	return vuk::Future(rg, "target/final");
 	
 }
-
+/*
 auto Sky::createAerialPerspective(Pool& _pool, Frame& _frame, vuk::Name _name,
 	vec3 _probePos, mat4 _invViewProj, Atmosphere _atmo) -> Texture3D {
 	
@@ -330,41 +357,6 @@ auto Sky::createSunLuminance(Pool& _pool, Frame& _frame, vuk::Name _name,
 		}});
 	
 	return sunLuminance;
-	
-}
-
-void Sky::draw(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
-	Texture2D _skyView, Atmosphere _atmo) {
-	
-	_frame.rg.add_pass({
-		.name = nameAppend(_quadbuf.name, "sky/draw"),
-		.resources = {
-			_skyView.resource(vuk::eComputeSampled),
-			_worklist.counts.resource(vuk::eIndirectRead),
-			_worklist.lists.resource(vuk::eComputeRead),
-			_quadbuf.visbuf.resource(vuk::eComputeSampled),
-			_quadbuf.offset.resource(vuk::eComputeSampled),
-			_quadbuf.clusterOut.resource(vuk::eComputeWrite) },
-		.execute = [_worklist, _skyView, _atmo, _quadbuf, &_frame,
-			tileCount=_worklist.counts.offsetView(+MaterialType::None)](vuk::CommandBuffer& cmd) {
-			
-			cmd.bind_uniform_buffer(0, 0, _frame.world)
-			   .bind_uniform_buffer(0, 1, _atmo.params)
-			   .bind_sampled_image(0, 2, _atmo.transmittance, LinearClamp)
-			   .bind_sampled_image(0, 3, _skyView, LinearClamp)
-			   .bind_storage_buffer(0, 4, _worklist.lists)
-			   .bind_sampled_image(0, 5, _quadbuf.visbuf, NearestClamp)
-			   .bind_sampled_image(0, 6, _quadbuf.offset, NearestClamp)
-			   .bind_storage_image(0, 7, _quadbuf.clusterOut)
-			   .bind_compute_pipeline("sky/draw");
-			
-			cmd.specialize_constants(0, u32Fromu16(_skyView.size()));
-			cmd.specialize_constants(1, u32Fromu16(_quadbuf.clusterOut.size()));
-			cmd.specialize_constants(2, _worklist.tileDimensions.x() * _worklist.tileDimensions.y() * +MaterialType::None);
-			
-			cmd.dispatch_indirect(tileCount);
-			
-		}});
 	
 }
 

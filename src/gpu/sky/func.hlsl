@@ -8,6 +8,7 @@
 static const float PlanetRadiusOffset = 0.01;
 static const float RaymarchMinSPP = 4.0;
 static const float RaymarchMaxSPP = 14.0;
+static const float SunRadius = 0.5 * 0.505 * (PI / 180.0);
 
 struct MediumSampleRGB {
 	float3 scattering;
@@ -140,6 +141,37 @@ MediumSampleRGB sampleMediumRGB(AtmosphereParams _params, float3 _worldPos) {
 	
 }
 
+#ifdef TRANSMITTANCE_TEX
+float3 getSunLuminance(AtmosphereParams _params, float3 _worldPos, float3 _worldDir,
+	float3 _sunDirection, float3 _sunIlluminance) {
+	
+	if (dot(_worldDir, _sunDirection) <= cos(SunRadius))
+		return float3(0.0, 0.0, 0.0);
+	
+	float t = raySphereIntersectNearest(_worldPos, _worldDir, float3(0.0, 0.0, 0.0), _params.bottomRadius);
+	if (t >= 0.0)
+		return float3(0.0, 0.0, 0.0); // no intersection
+	
+	float2 uvUp;
+	lutTransmittanceParamsToUv(uvUp, _params, _params.bottomRadius, 1.0);
+	
+	float pHeight = length(_worldPos);
+	float3 upVector = _worldPos / pHeight;
+	float sunZenithCosAngle = dot(_sunDirection, upVector);
+	float2 uvSun;
+	lutTransmittanceParamsToUv(uvSun, _params, pHeight, sunZenithCosAngle);
+	
+	float cosAngle = dot(_worldDir, _sunDirection);
+	float angle = acos(clamp(cosAngle, -1.0, 1.0));
+	float radiusRatio = angle / SunRadius;
+	float limbDarkening = sqrt(clamp(1.0 - radiusRatio*radiusRatio, 0.0001, 1.0));
+	
+	float3 sunLuminanceInSpace = _sunIlluminance / TRANSMITTANCE_TEX.SampleLevel(TRANSMITTANCE_SMP, uvUp, 0.0).rgb;
+	return sunLuminanceInSpace * TRANSMITTANCE_TEX.SampleLevel(TRANSMITTANCE_SMP, uvSun, 0.0).rgb * limbDarkening;
+	
+}
+#endif
+
 #ifdef MULTI_SCATTERING_TEX
 float3 getMultipleScattering(AtmosphereParams _params, float3 _worldPos, float _viewZenithCosAngle) {
 	
@@ -153,7 +185,7 @@ float3 getMultipleScattering(AtmosphereParams _params, float3 _worldPos, float _
 			(length(_worldPos) - _params.bottomRadius) / (_params.topRadius - _params.bottomRadius)));
 	uv = float2(fromUnitToSubUvs(uv.x, size.x), fromUnitToSubUvs(uv.y, size.y));
 	
-	return MULTI_SCATTERING_TEX.SampleLevel(MULTI_SCATTERING_SAMPLER, uv, 0).rgb;
+	return MULTI_SCATTERING_TEX.SampleLevel(MULTI_SCATTERING_SMP, uv, 0).rgb;
 	
 }
 #endif
@@ -250,7 +282,7 @@ SingleScatteringResult integrateScatteredLuminance(AtmosphereParams _params,
 		float2 uv;
 		lutTransmittanceParamsToUv(uv, _params, pHeight, sunZenithCosAngle);
 #ifdef TRANSMITTANCE_TEX
-		float3 transmittanceToSun = TRANSMITTANCE_TEX.SampleLevel(TRANSMITTANCE_SAMPLER, uv, 0).rgb;
+		float3 transmittanceToSun = TRANSMITTANCE_TEX.SampleLevel(TRANSMITTANCE_SMP, uv, 0).rgb;
 #else
 		float3 transmittanceToSun = {0.0, 0.0, 0.0};
 #endif
@@ -315,7 +347,7 @@ SingleScatteringResult integrateScatteredLuminance(AtmosphereParams _params,
 		float2 uv;
 		lutTransmittanceParamsToUv(uv, _params, pHeight, sunZenithCosAngle);
 #ifdef TRANSMITTANCE_TEX
-		float3 transmittanceToSun = TRANSMITTANCE_TEX.SampleLevel(TRANSMITTANCE_SAMPLER,  uv, 0).rgb;
+		float3 transmittanceToSun = TRANSMITTANCE_TEX.SampleLevel(TRANSMITTANCE_SMP,  uv, 0).rgb;
 #else
 		float3 transmittanceToSun = {0.0, 0.0, 0.0};
 #endif

@@ -68,6 +68,8 @@ void Game::Impl::loadAssets(string_view _path) {
 void Game::Impl::createScene() {
 	
 	s_renderer->camera() = Camera{
+		.verticalFov = 50_deg,
+		.nearPlane = 0.1_m,
 		.position = {8.57_m, -16.07_m, 69.20_m},
 		.yaw = 2.41412449f,
 		.pitch = 0.113862038f,
@@ -142,7 +144,7 @@ void Game::Impl::tick(nsec _until, Imgui::InputReader& _imguiInput) {
 	
 }
 
-Game::Game(Params const& _p): impl(new Impl(_p)) {}
+Game::Game(Params const& _p): m_impl(new Impl(_p)) {}
 Game::~Game() = default;
 
 void Game::run() try {
@@ -150,11 +152,11 @@ void Game::run() try {
 	pthread_setname_np(pthread_self(), "game");
 #endif
 	
-	impl->loadAssets(Assets_p);
-	impl->createScene();
+	m_impl->loadAssets(Assets_p);
+	m_impl->createScene();
 	L_INFO("Game initialized");
 	
-	impl->gameLoop();
+	m_impl->gameLoop();
 	
 } catch (std::exception const& e) {
 	

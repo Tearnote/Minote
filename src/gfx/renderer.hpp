@@ -1,17 +1,15 @@
 #pragma once
 
-#include <optional>
+#include <memory>
 #include <mutex>
 #include "vuk/resources/DeviceFrameResource.hpp"
 #include "util/service.hpp"
 #include "util/math.hpp"
 #include "util/time.hpp"
 #include "sys/vulkan.hpp"
-#include "gfx/effects/sky.hpp"
 #include "gfx/objects.hpp"
 #include "gfx/models.hpp"
 #include "gfx/camera.hpp"
-#include "gfx/world.hpp"
 #include "gfx/imgui.hpp"
 
 namespace minote {
@@ -19,9 +17,13 @@ namespace minote {
 // Feed with models and objects, enjoy pretty pictures
 struct Renderer {
 	
+	// Global details of the game world
+	struct World {
+		vec3 sunDirection;
+		vec3 sunIlluminance;
+	};
+	
 	static constexpr auto InflightFrames = 3u;
-	static constexpr auto VerticalFov = 50_deg;
-	static constexpr auto NearPlane = 0.1_m;
 	static constexpr auto FramerateUpdate = 1_s;
 	
 	Renderer();
@@ -39,6 +41,9 @@ struct Renderer {
 	
 	// Return ObjectPool to add/remove/modify objects for drawing
 	auto objects() -> ObjectPool& { return m_objects; }
+	
+	// Return the world properties to adjust details like time of day
+	auto world() -> World& { return m_world; }
 	
 	// Return the Camera to modify the viewport
 	auto camera() -> Camera& { return m_camera; }
@@ -62,8 +67,6 @@ private:
 	std::mutex m_renderLock;
 	// Swapchain is out of date, rendering is skipped and refreshSwapchain() must be called
 	bool m_swapchainDirty;
-	// All temporal resources were invalidated by a cut or swapchain resize
-	bool m_flushTemporalResources;
 	
 	f32 m_framerate;
 	nsec m_lastFramerateCheck;
@@ -75,12 +78,15 @@ private:
 	World m_world;
 	Camera m_camera;
 	
-	optional<Atmosphere> m_atmosphere;
-	
 	void renderFrame(); // Common code of render() and refreshSwapchain()
 	void calcFramerate();
 	
+	struct Impl;
+	std::unique_ptr<Impl> m_impl;
+	
 };
+
+using World = Renderer::World;
 
 inline Service<Renderer> s_renderer;
 

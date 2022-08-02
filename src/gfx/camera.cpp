@@ -11,9 +11,15 @@ auto Camera::direction() const -> vec3 {
 	
 }
 
-auto Camera::transform() const -> mat4 {
+auto Camera::view() const -> mat4 {
 	
 	return look(position, direction(), {0.0f, 0.0f, -1.0f});
+	
+}
+
+auto Camera::projection() const -> mat4 {
+	
+	return perspective(verticalFov, f32(viewport.x()) / f32(viewport.y()), nearPlane);
 	
 }
 

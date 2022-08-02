@@ -167,7 +167,7 @@ vec3 getSunLuminance(vec3 _worldPos, vec3 _worldDir, vec3 _sunDirection, vec3 _s
 			
 			float cosAngle = dot(_worldDir, _sunDirection);
 			float angle = acos(clamp(cosAngle, -1.0, 1.0));
-			float radiusRatio = angle / (SunRadius);
+			float radiusRatio = angle / SunRadius;
 			float limbDarkening = sqrt(clamp(1.0 - radiusRatio*radiusRatio, 0.0001, 1.0));
 			
 			vec3 sunLuminanceInSpace = _sunIlluminance / textureLod(S_TRANSMITTANCE, uvUp, 0.0).rgb;

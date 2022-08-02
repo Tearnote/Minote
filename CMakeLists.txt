@@ -83,7 +83,6 @@ add_executable(Minote
 	src/gfx/camera.hpp src/gfx/camera.cpp
 	src/gfx/shader.hpp
 	src/gfx/imgui.hpp src/gfx/imgui.cpp
-	src/gfx/world.hpp src/gfx/world.cpp
 	# src/gfx/frame.hpp src/gfx/frame.cpp
 	src/gfx/util.hpp
 	src/freecam.hpp src/freecam.cpp
@@ -297,6 +296,7 @@ set(SHADER_SOURCES
 	sky/genMultiScattering.cs.hlsl
 	sky/genTransmittance.cs.hlsl
 	sky/genView.cs.hlsl
+	sky/draw.cs.hlsl
 	imgui.vs.hlsl
 	imgui.ps.hlsl)
 

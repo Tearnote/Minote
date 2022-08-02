@@ -88,4 +88,37 @@ void uvToSkyViewLutParams(out float _viewZenithCosAngle, out float _lightViewCos
 	
 }
 
+void skyViewLutParamsToUv(out float2 _uv, bool _intersectGround, float _viewZenithCosAngle,
+	float _lightViewCosAngle, uint2 _viewSize, float _viewHeight, float _atmoBottom) {
+		
+	float vHorizon = sqrt(_viewHeight * _viewHeight - _atmoBottom * _atmoBottom);
+	float cosBeta = vHorizon / _viewHeight; // GroundToHorizonCos
+	float beta = acos(cosBeta);
+	float zenithHorizonAngle = PI - beta;
+
+	if (!_intersectGround) {
+		float coord = acos(_viewZenithCosAngle) / zenithHorizonAngle;
+#if NONLINEARSKYVIEWLUT
+		coord = 1.0 - coord;
+		coord = sqrt(coord);
+		coord = 1.0 - coord;
+#endif //NONLINEARSKYVIEWLUT
+		_uv.y = coord * 0.5;
+	} else {
+		float coord = (acos(_viewZenithCosAngle) - zenithHorizonAngle) / beta;
+#if NONLINEARSKYVIEWLUT
+		coord = sqrt(coord);
+#endif //NONLINEARSKYVIEWLUT
+		_uv.y = coord * 0.5 + 0.5;
+	}
+	
+	float coord = -_lightViewCosAngle * 0.5 + 0.5;
+	coord = sqrt(coord);
+	_uv.x = coord;
+	
+	// Constrain uvs to valid sub texel range (avoid zenith derivative issue making LUT usage visible)
+	_uv = float2(fromUnitToSubUvs(_uv.x, _viewSize.x), fromUnitToSubUvs(_uv.y, _viewSize.y));
+	
+}
+
 #endif

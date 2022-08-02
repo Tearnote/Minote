@@ -3,11 +3,11 @@
 
 [[vk::binding(0)]] ConstantBuffer<AtmosphereParams> c_params;
 [[vk::binding(1)]][[vk::combinedImageSampler]] Texture2D<float4> s_transmittance;
-[[vk::binding(1)]][[vk::combinedImageSampler]] SamplerState s_transmittanceSampler;
+[[vk::binding(1)]][[vk::combinedImageSampler]] SamplerState s_transmittanceSmp;
 [[vk::binding(2)]] RWTexture2D<float4> t_multiScattering;
 
 #define TRANSMITTANCE_TEX s_transmittance
-#define TRANSMITTANCE_SAMPLER s_transmittanceSampler
+#define TRANSMITTANCE_SMP s_transmittanceSmp
 #include "sky/func.hlsl"
 
 [[vk::constant_id(0)]] const uint MultiScatteringWidth = 0;
