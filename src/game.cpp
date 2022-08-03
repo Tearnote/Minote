@@ -159,7 +159,7 @@ void Game::Impl::drawDebugControls() {
 		mat3::rotate({0.0f, -1.0f, 0.0f}, sunPitch) *
 		vec3{1.0f, 0.0f, 0.0f};
 	
-	static auto sunIlluminance = 4.0f;
+	static auto sunIlluminance = 8.0f;
 	ImGui::SliderFloat("Sun illuminance", &sunIlluminance, 0.01f, 100.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
 	s_renderer->world().sunIlluminance = vec3(sunIlluminance);
 	

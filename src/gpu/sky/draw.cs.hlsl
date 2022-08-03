@@ -1,5 +1,5 @@
-#include "sky/access.hlsl"
-#include "sky/types.hlsl"
+#include "sky/access.hlsli"
+#include "sky/types.hlsli"
 
 [[vk::binding(0)]] ConstantBuffer<AtmosphereParams> c_params;
 [[vk::binding(1)]][[vk::combinedImageSampler]] Texture2D<float4> s_transmittance;
@@ -10,7 +10,7 @@
 
 #define TRANSMITTANCE_TEX s_transmittance
 #define TRANSMITTANCE_SMP s_transmittanceSmp
-#include "sky/func.hlsl"
+#include "sky/func.hlsli"
 
 struct Constants {
 	float4x4 viewProjectionInv;

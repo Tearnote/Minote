@@ -1,8 +1,8 @@
 #ifndef SKY_ACCESS_HLSL
 #define SKY_ACCESS_HLSL
 
-#include "sky/types.hlsl"
-#include "constants.hlsl"
+#include "sky/types.hlsli"
+#include "constants.hlsli"
 
 #define NONLINEARSKYVIEWLUT 1
 

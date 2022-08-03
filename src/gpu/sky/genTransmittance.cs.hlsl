@@ -1,6 +1,6 @@
-#include "sky/access.hlsl"
-#include "sky/types.hlsl"
-#include "sky/func.hlsl"
+#include "sky/access.hlsli"
+#include "sky/types.hlsli"
+#include "sky/func.hlsli"
 
 [[vk::binding(0)]] ConstantBuffer<AtmosphereParams> c_params;
 [[vk::binding(1)]] RWTexture2D<float4> t_transmittance;

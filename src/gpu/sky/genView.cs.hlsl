@@ -1,5 +1,5 @@
-#include "sky/types.hlsl"
-#include "world.hlsl"
+#include "sky/types.hlsli"
+#include "world.hlsli"
 
 [[vk::binding(0)]] ConstantBuffer<AtmosphereParams> c_params;
 [[vk::binding(1)]][[vk::combinedImageSampler]] Texture2D<float4> s_transmittance;
@@ -12,7 +12,7 @@
 #define TRANSMITTANCE_SMP s_transmittanceSmp
 #define MULTI_SCATTERING_TEX s_multiScattering
 #define MULTI_SCATTERING_SMP s_multiScatteringSmp
-#include "sky/func.hlsl"
+#include "sky/func.hlsli"
 
 struct Constants {
 	float3 probePos;

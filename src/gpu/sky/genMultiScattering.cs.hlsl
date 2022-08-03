@@ -1,5 +1,5 @@
-#include "sky/access.hlsl"
-#include "sky/types.hlsl"
+#include "sky/access.hlsli"
+#include "sky/types.hlsli"
 
 [[vk::binding(0)]] ConstantBuffer<AtmosphereParams> c_params;
 [[vk::binding(1)]][[vk::combinedImageSampler]] Texture2D<float4> s_transmittance;
@@ -8,7 +8,7 @@
 
 #define TRANSMITTANCE_TEX s_transmittance
 #define TRANSMITTANCE_SMP s_transmittanceSmp
-#include "sky/func.hlsl"
+#include "sky/func.hlsli"
 
 [[vk::constant_id(0)]] const uint MultiScatteringWidth = 0;
 [[vk::constant_id(1)]] const uint MultiScatteringHeight = 0;
