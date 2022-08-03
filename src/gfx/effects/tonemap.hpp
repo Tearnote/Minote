@@ -20,6 +20,8 @@ struct Tonemap {
 	vec3 crosstalk = vec3{64.0f, 32.0f, 128.0f};
 	vec3 crosstalkSaturation = vec3{4.0f, 1.0f, 16.0f};
 	
+	bool imguiDebug = true;
+	
 	// Tonemap and gamma-correct the HDR input into a new SDR output texture
 	auto apply(vuk::Future source) -> vuk::Future;
 	
@@ -31,6 +33,7 @@ private:
 	static inline bool m_compiled = false;
 	
 	auto genConstants() -> array<vec4, 4>;
+	void drawImguiDebug();
 	
 };
 
