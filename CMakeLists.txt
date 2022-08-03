@@ -70,7 +70,7 @@ add_executable(Minote
 	# src/gfx/effects/cubeFilter.hpp src/gfx/effects/cubeFilter.cpp
 	# src/gfx/effects/visibility.hpp src/gfx/effects/visibility.cpp
 	src/gfx/effects/tonemap.hpp src/gfx/effects/tonemap.cpp
-	# src/gfx/effects/bloom.hpp src/gfx/effects/bloom.cpp
+	src/gfx/effects/bloom.hpp src/gfx/effects/bloom.cpp
 	# src/gfx/effects/clear.hpp src/gfx/effects/clear.cpp
 	# src/gfx/effects/bvh.hpp src/gfx/effects/bvh.cpp
 	# src/gfx/effects/pbr.hpp src/gfx/effects/pbr.cpp
@@ -288,6 +288,8 @@ set(SHADER_MODEL "6_7")
 set(SHADER_PREFIX src/gpu)
 set(SHADER_SOURCES
 	tonemap/apply.cs.hlsl
+	bloom/down.cs.hlsl
+	bloom/up.cs.hlsl
 	sky/genMultiScattering.cs.hlsl
 	sky/genTransmittance.cs.hlsl
 	sky/genView.cs.hlsl

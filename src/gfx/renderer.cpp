@@ -12,6 +12,7 @@
 #include "util/log.hpp"
 #include "sys/system.hpp"
 #include "gfx/effects/tonemap.hpp"
+#include "gfx/effects/bloom.hpp"
 #include "gfx/effects/sky.hpp"
 #include "gfx/util.hpp"
 
@@ -19,6 +20,7 @@ namespace minote {
 
 struct Renderer::Impl {
 	optional<Atmosphere> m_atmosphere;
+	Bloom m_bloom;
 	Tonemap m_tonemap;
 };
 
@@ -124,8 +126,9 @@ auto Renderer::buildRenderGraph() -> std::shared_ptr<vuk::RenderGraph> {
 	auto skyView = Sky::createView(*m_impl->m_atmosphere, m_world, m_camera.position);
 	auto screenSky = Sky::draw(screen, *m_impl->m_atmosphere, skyView, m_world, m_camera);
 	
-	// Tonemap and convert to sRGB
-	auto screenSrgb = m_impl->m_tonemap.apply(screenSky);
+	// Postprocessing
+	auto screenBloom = m_impl->m_bloom.apply(screenSky);
+	auto screenSrgb = m_impl->m_tonemap.apply(screenBloom);
 	
 	// Imgui rendering
 	auto screenFinal = m_imgui.render(screenSrgb);

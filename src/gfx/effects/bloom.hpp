@@ -1,29 +1,30 @@
 #pragma once
 
-#include "vuk/Context.hpp"
-#include "gfx/resources/texture2d.hpp"
-#include "gfx/resources/pool.hpp"
-#include "gfx/frame.hpp"
+#include "vuk/Future.hpp"
+#include "util/types.hpp"
 
 namespace minote {
 
 // Bloom effect. Blends an image with a blurred version of itself.
 // This implementation has no thresholding to better mimic naked-eye glare,
 // and uses a low-pass filter to avoid fireflies that are common in HDR source
-// images. Relative blur width is resolution-independent.
+// images. Relative blur width is resolution-independent
 struct Bloom {
 	
-	static constexpr auto BloomFormat = vuk::Format::eB10G11R11UfloatPack32;
-	// More passes increases blur width at a small performance cost
-	static constexpr auto BloomPasses = 6u;
-	// Because the blending is additive, the strength multiplier needs to be very small
-	static constexpr auto BloomStrength = 1.0f / 64.0f;
+	static constexpr auto Format = vuk::Format::eB10G11R11UfloatPack32;
 	
-	// Build the shader.
-	static void compile(vuk::PerThreadContext&);
+	// Apply bloom to the specified image
+	auto apply(vuk::Future target) -> vuk::Future;
 	
-	// Create a pass that applies bloom to the specified image.
-	static void apply(Frame&, Pool&, Texture2D target);
+	// Build required shaders; optional
+	static void compile();
+	
+	u32 passes = 6u; // More passes increases blur width
+	f32 strength = 1.0f / 64.0f; // Output multiplier
+	
+private:
+	
+	static inline bool m_compiled = false;
 	
 };
 

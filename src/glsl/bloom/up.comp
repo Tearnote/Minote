@@ -21,7 +21,6 @@ layout(push_constant) uniform Constants {
 void main() {
 	
 	const uvec2 gid = gl_GlobalInvocationID.xy;
-	const uvec2 lid = gl_LocalInvocationID.xy;
 	
 	if (any(greaterThanEqual(gid, TargetSize)))
 		return;

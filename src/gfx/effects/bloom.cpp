@@ -1,136 +1,142 @@
 #include "gfx/effects/bloom.hpp"
 
 #include "vuk/CommandBuffer.hpp"
-#include "util/verify.hpp"
-#include "util/string.hpp"
-#include "util/types.hpp"
-#include "util/util.hpp"
+#include "vuk/RenderGraph.hpp"
+#include "vuk/Pipeline.hpp"
 #include "gfx/samplers.hpp"
-#include "gfx/util.hpp"
+#include "gfx/shader.hpp"
+#include "sys/vulkan.hpp"
+#include "util/string.hpp"
+#include "util/vector.hpp"
+#include "util/verify.hpp"
+#include "util/util.hpp"
 
 namespace minote {
 
-void Bloom::compile(vuk::PerThreadContext& _ptc) {
+GET_SHADER(bloom_down_cs);
+GET_SHADER(bloom_up_cs);
+void Bloom::compile() {
 	
-	auto bloomDownPci = vuk::ComputePipelineBaseCreateInfo();
-	bloomDownPci.add_spirv(std::vector<u32>{
-#include "spv/bloom/down.comp.spv"
-	}, "bloom/down.comp");
-	_ptc.ctx.create_named_pipeline("bloom/down", bloomDownPci);
+	if (m_compiled) return;
+	auto& ctx = *s_vulkan->context;
 	
-	auto bloomDownKarisPci = vuk::ComputePipelineBaseCreateInfo();
-	bloomDownKarisPci.add_spirv(std::vector<u32>{
-#include "spv/bloom/downKaris.comp.spv"
-	}, "bloom/downKaris.comp");
-	_ptc.ctx.create_named_pipeline("bloom/downKaris", bloomDownKarisPci);
+	auto downPci = vuk::PipelineBaseCreateInfo();
+	ADD_SHADER(downPci, bloom_down_cs, "bloom/down.cs.hlsl");
+	ctx.create_named_pipeline("bloom/down", downPci);
 	
-	auto bloomUpPci = vuk::ComputePipelineBaseCreateInfo();
-	bloomUpPci.add_spirv(std::vector<u32>{
-#include "spv/bloom/up.comp.spv"
-	}, "bloom/up.comp");
-	_ptc.ctx.create_named_pipeline("bloom/up", bloomUpPci);
+	auto upPci = vuk::PipelineBaseCreateInfo();
+	ADD_SHADER(upPci, bloom_up_cs, "bloom/up.cs.hlsl");
+	ctx.create_named_pipeline("bloom/up", upPci);
+	
+	m_compiled = true;
 	
 }
 
-void Bloom::apply(Frame& _frame, Pool& _pool, Texture2D _target) {
+auto Bloom::apply(vuk::Future _target) -> vuk::Future {
 	
-	ASSUME(_target.size().x() >= (1u << BloomPasses));
-	ASSUME(_target.size().y() >= (1u << BloomPasses));
+	compile();
 	
-	// Create temporary resources
+	auto rg = std::make_shared<vuk::RenderGraph>("bloom");
+	rg->attach_in("target", _target);
+	rg->attach_image("temp", vuk::ImageAttachment{
+		.format = Format,
+		.sample_count = vuk::Samples::e1,
+		.level_count = passes,
+		.layer_count = 1,
+	});
+	rg->inference_rule("temp", [](vuk::InferenceContext const& ctx, vuk::ImageAttachment& ia) {
+		auto extent = ctx.get_image_attachment("target").extent.extent;
+		ia.extent = vuk::Dimension3D::absolute(extent.width, extent.height);
+	});
 	
-	auto bloomTemp = Texture2D::make(_pool, nameAppend(_target.name, "bloomTemp"),
-		_target.size() / 2u, BloomFormat,
-		vuk::ImageUsageFlagBits::eStorage |
-		vuk::ImageUsageFlagBits::eSampled,
-		BloomPasses);
-	bloomTemp.attach(_frame.rg, vuk::eNone, vuk::eNone);
+	// Create a subresource for each temp mip
+	auto tempMips = ivector<vuk::Name>(passes);
+	for (auto i: iota(0u, passes)) {
+		tempMips[i] = vuk::Name("temp").append(to_string(i));
+		rg->diverge_image("temp", vuk::Subrange::Image{
+			.base_level = i,
+			.level_count = 1,
+		}, tempMips[i]);
+	}
 	
-	// Downsample pass: repeatedly draw the source image into increasingly smaller mips
-	_frame.rg.add_pass({
-		.name = nameAppend(_target.name, "bloom/down"),
-		.resources = {
-			_target.resource(vuk::eComputeSampled),
-			bloomTemp.resource(vuk::eComputeRW) },
-		.execute = [_target, temp=bloomTemp](vuk::CommandBuffer& cmd) {
-			
-			for (auto i: iota(0u, BloomPasses)) {
+	// Downsample phase: repeatedly draw the source image into increasingly smaller mips
+	for (auto i: iota(0u, passes)) {
+		auto source = i == 0?
+			vuk::Name("target") :
+			tempMips[i-1];
+		auto target = tempMips[i];
+		auto targetNew = tempMips[i].append("+");
+		rg->add_pass(vuk::Pass{
+			.name = "bloom/down",
+			.resources = {
+				vuk::Resource(source, vuk::Resource::Type::eImage, vuk::eComputeSampled),
+				vuk::Resource(target, vuk::Resource::Type::eImage, vuk::eComputeWrite, targetNew),
+			},
+			.execute = [i, source, target](vuk::CommandBuffer& cmd) {
 				
-				auto sourceSize = uvec2();
-				auto targetSize = _target.size() >> (i + 1);
+				cmd.bind_compute_pipeline("bloom/down")
+				   .bind_image(0, 0, source).bind_sampler(0, 0, LinearClamp)
+				   .bind_image(0, 1, target);
 				
-				if (i == 0) { // First pass, read from target with lowpass filter
-					
-					cmd.bind_sampled_image(0, 0, _target, LinearClamp);
-					sourceSize = _target.size();
-					
-					cmd.bind_compute_pipeline("bloom/downKaris");
-					
-				} else { // Read from intermediate mip
-					
-					cmd.image_barrier(temp.name, vuk::eComputeRW, vuk::eComputeSampled, i-1, 1);
-					cmd.bind_sampled_image(0, 0, *temp.mipView(i - 1), LinearClamp);
-					sourceSize = _target.size() >> i;
-					
-					cmd.bind_compute_pipeline("bloom/down");
-					
-				}
-				cmd.bind_storage_image(0, 1, *temp.mipView(i));
+				auto sourceIA = *cmd.get_resource_image_attachment(source);
+				auto sourceSize = sourceIA.extent.extent;
+				cmd.specialize_constants(0, sourceSize.width);
+				cmd.specialize_constants(1, sourceSize.height);
+				auto targetIA = *cmd.get_resource_image_attachment(target);
+				auto targetSize = targetIA.extent.extent;
+				cmd.specialize_constants(2, targetSize.width);
+				cmd.specialize_constants(3, targetSize.height);
+				cmd.specialize_constants(4, i == 0? 1u : 0u); // Use Karis average on first pass
 				
-				cmd.specialize_constants(0, u32Fromu16(sourceSize));
-				cmd.specialize_constants(1, u32Fromu16(targetSize));
+				cmd.dispatch_invocations(targetSize.width, targetSize.height);
 				
-				cmd.dispatch_invocations(_target.size().x() >> (i + 1), _target.size().y() >> (i + 1), 1);
-				
-			}
-			
-			// Mipmap usage requires manual barrier management
-			cmd.image_barrier(temp.name, vuk::eComputeSampled, vuk::eComputeRW, 0, BloomPasses - 1);
-			
-		}});
+			},
+		});
+		tempMips[i] = targetNew;
+	}
 	
-	// Upsample pass: same as downsample, but in reverse order
-	_frame.rg.add_pass({
-		.name = nameAppend(_target.name, "bloom/up"),
-		.resources = {
-			bloomTemp.resource(vuk::eComputeRW),
-			_target.resource(vuk::eComputeRW) },
-		.execute = [_target, temp=bloomTemp](vuk::CommandBuffer& cmd) {
-			
-			for (auto i: iota(0u, BloomPasses) | reverse) {
+	// Upsample phase: additively blend all mips by traversing back down the mip chain
+	for (auto i: iota(0u, passes) | reverse) {
+		auto source = tempMips[i];
+		auto target = i == 0?
+			vuk::Name("target") :
+			tempMips[i-1];
+		auto targetNew = i == 0?
+			vuk::Name("target/final") :
+			tempMips[i-1].append("+");
+		rg->add_pass(vuk::Pass{
+			.name = "bloom/up",
+			.resources = {
+				vuk::Resource(source, vuk::Resource::Type::eImage, vuk::eComputeSampled),
+				vuk::Resource(target, vuk::Resource::Type::eImage, vuk::eComputeRW, targetNew),
+			},
+			.execute = [this, i, source, target](vuk::CommandBuffer& cmd) {
 				
-				auto sourceSize = _target.size() >> (i + 1);
-				auto targetSize = uvec2();
-				auto power = 1.0f;
+				cmd.bind_compute_pipeline("bloom/up")
+				   .bind_image(0, 0, source).bind_sampler(0, 0, LinearClamp)
+				   .bind_image(0, 1, target);
 				
-				cmd.image_barrier(temp.name, vuk::eComputeRW, vuk::eComputeSampled, i, 1);
-				cmd.bind_sampled_image(0, 0, *temp.mipView(i), LinearClamp);
-				if (i == 0) { // Final pass, draw to target
-					
-					cmd.bind_sampled_image(0, 1, _target, NearestClamp, vuk::ImageLayout::eGeneral)
-					   .bind_storage_image(0, 2, _target);
-					targetSize = _target.size();
-					power = BloomStrength;
-					
-				} else { // Draw to intermediate mip
-					
-					cmd.bind_sampled_image(0, 1, *temp.mipView(i - 1), NearestClamp, vuk::ImageLayout::eGeneral)
-					   .bind_storage_image(0, 2, *temp.mipView(i - 1));
-					targetSize = _target.size() >> i;
-					
-				}
+				auto sourceIA = *cmd.get_resource_image_attachment(source);
+				auto sourceSize = sourceIA.extent.extent;
+				cmd.specialize_constants(0, sourceSize.width);
+				cmd.specialize_constants(1, sourceSize.height);
+				auto targetIA = *cmd.get_resource_image_attachment(target);
+				auto targetSize = targetIA.extent.extent;
+				cmd.specialize_constants(2, targetSize.width);
+				cmd.specialize_constants(3, targetSize.height);
 				
-				cmd.bind_compute_pipeline("bloom/up");
-				
-				cmd.specialize_constants(0, u32Fromu16(sourceSize));
-				cmd.specialize_constants(1, u32Fromu16(targetSize));
+				auto power = i == 0? strength : 1.0f;
 				cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, power);
 				
-				cmd.dispatch_invocations(_target.size().x() >> i, _target.size().y() >> i, 1);
+				cmd.dispatch_invocations(targetSize.width, targetSize.height);
 				
-			}
-			
-		}});
+			},
+		});
+		if (i != 0) tempMips[i-1] = targetNew;
+	}
+	
+	rg->converge_image("temp", "temp/final");
+	return vuk::Future(rg, "target/final");
 	
 }
 
