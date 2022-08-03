@@ -111,7 +111,7 @@ auto Renderer::buildRenderGraph() -> std::shared_ptr<vuk::RenderGraph> {
 	auto rg = std::make_shared<vuk::RenderGraph>("init");
 	rg->attach_and_clear_image("screen", vuk::ImageAttachment{
 		.extent = vuk::Dimension3D::absolute(m_camera.viewport.x(), m_camera.viewport.y()),
-		.format = vuk::Format::eR8G8B8A8Unorm,
+		.format = vuk::Format::eR16G16B16A16Sfloat,
 		.sample_count = vuk::Samples::e1,
 		.level_count = 1,
 		.layer_count = 1,

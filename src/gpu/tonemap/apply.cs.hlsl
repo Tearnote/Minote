@@ -38,7 +38,7 @@ float3 lottesTonemap(float3 _color) {
 
 float3 srgbEncode(float3 _color) {
 	
-	return lerp(12.92 * _color, 1.055 * pow(_color, 1.0 / 2.4) - 0.055, _color < 0.0031308);
+	return lerp(12.92 * _color, 1.055 * pow(_color, 1.0 / 2.4) - 0.055, _color >= 0.0031308);
 	
 }
 
