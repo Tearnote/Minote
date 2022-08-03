@@ -63,14 +63,14 @@ Atmosphere::Atmosphere(vuk::Allocator& _allocator, Params const& _params) {
 	compile();
 	
 	auto rg = std::make_shared<vuk::RenderGraph>("atmosphere");
-	rg->attach_image("transmittance/uninit", vuk::ImageAttachment{
+	rg->attach_image("transmittance", vuk::ImageAttachment{
 		.extent = vuk::Dimension3D::absolute(TransmittanceSize.x(), TransmittanceSize.y()),
 		.format = TransmittanceFormat,
 		.sample_count = vuk::Samples::e1,
 		.level_count = 1,
 		.layer_count = 1,
 	});
-	rg->attach_image("multiScattering/uninit", vuk::ImageAttachment{
+	rg->attach_image("multiScattering", vuk::ImageAttachment{
 		.extent = vuk::Dimension3D::absolute(MultiScatteringSize.x(), MultiScatteringSize.y()),
 		.format = MultiScatteringFormat,
 		.sample_count = vuk::Samples::e1,
@@ -86,15 +86,15 @@ Atmosphere::Atmosphere(vuk::Allocator& _allocator, Params const& _params) {
 		.name = "sky/genTransmittance",
 		.resources = {
 			"params"_buffer >> vuk::eComputeRead,
-			"transmittance/uninit"_image >> vuk::eComputeWrite >> "transmittance",
+			"transmittance"_image >> vuk::eComputeWrite >> "transmittance/final",
 		},
 		.execute = [](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_compute_pipeline("sky/genTransmittance");
 			cmd.bind_buffer(0, 0, "params");
-			cmd.bind_image(0, 1, "transmittance/uninit");
+			cmd.bind_image(0, 1, "transmittance");
 			
-			auto transmittance = *cmd.get_resource_image_attachment("transmittance/uninit");
+			auto transmittance = *cmd.get_resource_image_attachment("transmittance");
 			auto transmittanceSize = transmittance.extent.extent;
 			cmd.specialize_constants(0, transmittanceSize.width);
 			cmd.specialize_constants(1, transmittanceSize.height);
@@ -108,17 +108,17 @@ Atmosphere::Atmosphere(vuk::Allocator& _allocator, Params const& _params) {
 		.name = "sky/genMultiScattering",
 		.resources = {
 			"params"_buffer >> vuk::eComputeRead,
-			"transmittance"_image >> vuk::eComputeSampled,
-			"multiScattering/uninit"_image >> vuk::eComputeWrite >> "multiScattering",
+			"transmittance/final"_image >> vuk::eComputeSampled,
+			"multiScattering"_image >> vuk::eComputeWrite >> "multiScattering/final",
 		},
 		.execute = [](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_compute_pipeline("sky/genMultiScattering")
 			   .bind_buffer(0, 0, "params")
-			   .bind_image(0, 1, "transmittance").bind_sampler(0, 1, LinearClamp)
-			   .bind_image(0, 2, "multiScattering/uninit");
+			   .bind_image(0, 1, "transmittance/final").bind_sampler(0, 1, LinearClamp)
+			   .bind_image(0, 2, "multiScattering");
 			
-			auto multiScattering = *cmd.get_resource_image_attachment("multiScattering/uninit");
+			auto multiScattering = *cmd.get_resource_image_attachment("multiScattering");
 			auto multiScatteringSize = multiScattering.extent.extent;
 			cmd.specialize_constants(0, multiScatteringSize.width);
 			cmd.specialize_constants(1, multiScatteringSize.height);
@@ -129,8 +129,8 @@ Atmosphere::Atmosphere(vuk::Allocator& _allocator, Params const& _params) {
 	});
 	
 	params = vuk::Future(rg, "params");
-	transmittance = vuk::Future(rg, "transmittance");
-	multiScattering = vuk::Future(rg, "multiScattering");
+	transmittance = vuk::Future(rg, "transmittance/final");
+	multiScattering = vuk::Future(rg, "multiScattering/final");
 	
 }
 
@@ -176,7 +176,7 @@ auto Sky::createView(Atmosphere& _atmo, World const& _world, vec3 _probePos) -> 
 	compile();
 	
 	auto rg = std::make_shared<vuk::RenderGraph>("sky");
-	rg->attach_image("view/uninit", vuk::ImageAttachment{
+	rg->attach_image("view", vuk::ImageAttachment{
 		.extent = vuk::Dimension3D::absolute(ViewSize.x(), ViewSize.y()),
 		.format = ViewFormat,
 		.sample_count = vuk::Samples::e1,
@@ -193,7 +193,7 @@ auto Sky::createView(Atmosphere& _atmo, World const& _world, vec3 _probePos) -> 
 			"params"_buffer >> vuk::eComputeRead,
 			"transmittance"_image >> vuk::eComputeSampled,
 			"multiScattering"_image >> vuk::eComputeSampled,
-			"view/uninit"_image >> vuk::eComputeWrite >> "view",
+			"view"_image >> vuk::eComputeWrite >> "view/final",
 		},
 		.execute = [&_world, _probePos](vuk::CommandBuffer& cmd) {
 			
@@ -201,7 +201,7 @@ auto Sky::createView(Atmosphere& _atmo, World const& _world, vec3 _probePos) -> 
 			   .bind_buffer(0, 0, "params")
 			   .bind_image(0, 1, "transmittance").bind_sampler(0, 1, LinearClamp)
 			   .bind_image(0, 2, "multiScattering").bind_sampler(0, 2, LinearClamp)
-			   .bind_image(0, 3, "view/uninit");
+			   .bind_image(0, 3, "view");
 			
 			struct Constants {
 				vec3 probePos;
@@ -215,7 +215,8 @@ auto Sky::createView(Atmosphere& _atmo, World const& _world, vec3 _probePos) -> 
 				.sunDirection = _world.sunDirection,
 				.sunIlluminance = _world.sunIlluminance,
 			});
-			auto view = *cmd.get_resource_image_attachment("view/uninit");
+			
+			auto view = *cmd.get_resource_image_attachment("view");
 			auto viewSize = view.extent.extent;
 			cmd.specialize_constants(0, viewSize.width);
 			cmd.specialize_constants(1, viewSize.height);
