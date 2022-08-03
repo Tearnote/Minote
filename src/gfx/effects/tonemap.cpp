@@ -1,40 +1,96 @@
 #include "gfx/effects/tonemap.hpp"
 
 #include "vuk/CommandBuffer.hpp"
-#include "util/types.hpp"
+#include "vuk/RenderGraph.hpp"
+#include "vuk/Pipeline.hpp"
 #include "gfx/samplers.hpp"
-#include "gfx/util.hpp"
+#include "gfx/shader.hpp"
+#include "sys/vulkan.hpp"
 
 namespace minote {
 
-void Tonemap::compile(vuk::PerThreadContext& _ptc) {
+auto Tonemap::apply(vuk::Future _source) -> vuk::Future {
 	
-	auto tonemapPci = vuk::ComputePipelineBaseCreateInfo();
-	tonemapPci.add_spirv(std::vector<u32>{
-#include "spv/tonemap.comp.spv"
-	}, "tonemap.comp");
-	_ptc.ctx.create_named_pipeline("tonemap", tonemapPci);
+	compile();
+	
+	auto rg = std::make_shared<vuk::RenderGraph>("tonemap");
+	rg->attach_in("source", _source);
+	rg->attach_image("target", vuk::ImageAttachment{
+		.format = vuk::Format::eR8G8B8A8Unorm,
+		.sample_count = vuk::Samples::e1,
+		.level_count = 1,
+		.layer_count = 1,
+	});
+	rg->inference_rule("target", vuk::same_extent_as("source"));
+	
+	rg->add_pass(vuk::Pass{
+		.name = "tonemap/apply",
+		.resources = {
+			"source"_image >> vuk::eComputeSampled,
+			"target"_image >> vuk::eComputeWrite >> "target/final",
+		},
+		.execute = [this](vuk::CommandBuffer& cmd) {
+			
+			cmd.bind_compute_pipeline("tonemap/apply")
+			   .bind_image(0, 0, "source").bind_sampler(0, 0, NearestClamp)
+			   .bind_image(0, 1, "target");
+			
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, genConstants());
+			
+			auto target = *cmd.get_resource_image_attachment("target");
+			auto targetSize = target.extent.extent;
+			cmd.specialize_constants(0, targetSize.width);
+			cmd.specialize_constants(1, targetSize.height);
+			
+			cmd.dispatch_invocations(targetSize.width, targetSize.height);
+			
+		},
+	});
+	
+	return vuk::Future(rg, "target/final");
 	
 }
 
-void Tonemap::apply(Frame& _frame, Texture2D _source, Texture2D _target) {
+GET_SHADER(tonemap_apply_cs);
+void Tonemap::compile() {
 	
-	_frame.rg.add_pass({
-		.name = nameAppend(_source.name, "tonemapping"),
-		.resources = {
-			_source.resource(vuk::eComputeSampled),
-			_target.resource(vuk::eComputeWrite) },
-		.execute = [_source, _target](vuk::CommandBuffer& cmd) {
-			
-			cmd.bind_sampled_image(0, 0, _source, NearestClamp)
-			   .bind_storage_image(0, 1, _target)
-			   .bind_compute_pipeline("tonemap");
-			
-			cmd.specialize_constants(0, u32Fromu16(_target.size()));
-			
-			cmd.dispatch_invocations(_target.size().x(), _target.size().y());
-			
-		}});
+	if (m_compiled) return;
+	auto& ctx = *s_vulkan->context;
+	
+	auto applyPci = vuk::PipelineBaseCreateInfo();
+	ADD_SHADER(applyPci, tonemap_apply_cs, "tonemap/apply.cs.hlsl");
+	ctx.create_named_pipeline("tonemap/apply", applyPci);
+	
+	m_compiled = true;
+	
+}
+
+auto Tonemap::genConstants() -> array<vec4, 4> {
+	
+	auto result = array<vec4, 4>();
+	
+	result[0].x() = contrast;
+	result[0].y() = shoulder;
+	f32 cs = contrast * shoulder;
+	
+	f32 z0 = -pow(midIn,contrast);
+	f32 z1 = pow(hdrMax,cs)*pow(midIn,contrast);
+	f32 z2 = pow(hdrMax,contrast)*pow(midIn,cs)*midOut;
+	f32 z3 = pow(hdrMax,cs)*midOut;
+	f32 z4 = pow(midIn,cs)*midOut;
+	result[0].z() = -((z0+(midOut*(z1-z2))/(z3-z4))/z4);
+	
+	f32 w0 = pow(hdrMax,cs)*pow(midIn,contrast);
+	f32 w1 = pow(hdrMax,contrast)*pow(midIn,cs)*midOut;
+	f32 w2 = pow(hdrMax,cs)*midOut;
+	f32 w3 = pow(midIn,cs)*midOut;
+	result[0].w() = (w0-w1)/(w2-w3);
+	
+	result[1] = vec4((saturation+vec3(contrast))/crosstalkSaturation, 0.0f);
+	result[2] = vec4(crosstalk, 0.0f);
+	result[3] = vec4(crosstalkSaturation, 0.0f);
+	
+	return result;
 	
 }
 

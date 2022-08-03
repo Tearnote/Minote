@@ -11,6 +11,7 @@
 #include "util/math.hpp"
 #include "util/log.hpp"
 #include "sys/system.hpp"
+#include "gfx/effects/tonemap.hpp"
 #include "gfx/effects/sky.hpp"
 #include "gfx/util.hpp"
 
@@ -18,6 +19,7 @@ namespace minote {
 
 struct Renderer::Impl {
 	optional<Atmosphere> m_atmosphere;
+	Tonemap m_tonemap;
 };
 
 Renderer::Renderer():
@@ -107,9 +109,13 @@ auto Renderer::buildRenderGraph() -> std::shared_ptr<vuk::RenderGraph> {
 	
 	// Initial resources
 	auto rg = std::make_shared<vuk::RenderGraph>("init");
-	rg->attach_swapchain("swapchain", s_vulkan->swapchain);
-	rg->attach_and_clear_image("screen", { .format = vuk::Format::eR8G8B8A8Unorm, .sample_count = vuk::Samples::e1 }, vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.0f));
-	rg->inference_rule("screen", vuk::same_extent_as("swapchain"));
+	rg->attach_and_clear_image("screen", vuk::ImageAttachment{
+		.extent = vuk::Dimension3D::absolute(m_camera.viewport.x(), m_camera.viewport.y()),
+		.format = vuk::Format::eR8G8B8A8Unorm,
+		.sample_count = vuk::Samples::e1,
+		.level_count = 1,
+		.layer_count = 1,
+	}, vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.0f));
 	auto screen = vuk::Future(rg, "screen");
 	
 	// Sky rendering
@@ -118,14 +124,16 @@ auto Renderer::buildRenderGraph() -> std::shared_ptr<vuk::RenderGraph> {
 	auto skyView = Sky::createView(*m_impl->m_atmosphere, m_world, m_camera.position);
 	auto screenSky = Sky::draw(screen, *m_impl->m_atmosphere, skyView, m_world, m_camera);
 	
+	// Tonemap and convert to sRGB
+	auto screenSrgb = m_impl->m_tonemap.apply(screenSky);
+	
 	// Imgui rendering
-	auto screenFinal = m_imgui.render(screenSky);
+	auto screenFinal = m_imgui.render(screenSrgb);
 	
 	// Copy to swapchain
-	auto futures = rg->split();
 	rg = std::make_shared<vuk::RenderGraph>("main");
-	rg->attach_in(futures);
 	rg->attach_in("screen/final", screenFinal);
+	rg->attach_swapchain("swapchain", s_vulkan->swapchain);
 	rg->add_pass({
 		.name = "swapchain copy",
 		.resources = {
