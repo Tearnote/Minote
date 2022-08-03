@@ -20,8 +20,8 @@ auto Tonemap::apply(vuk::Future _source) -> vuk::Future {
 	ImGui::SliderFloat("Mid in", &midIn, 0.01f, 1.0f);
 	ImGui::SliderFloat("Mid out", &midOut, 0.01f, 0.99f);
 	ImGui::SliderFloat3("Saturation", &saturation[0], 0.0f, 10.0f);
-	ImGui::SliderFloat3("Crosstalk", &crosstalk[0], 0.0f, 256.0f);
-	ImGui::SliderFloat3("Crosstalk saturation", &crosstalkSaturation[0], 0.0f, 64.0f);
+	ImGui::SliderFloat3("Crosstalk", &crosstalk[0], 1.0f, 256.0f);
+	ImGui::SliderFloat3("Crosstalk saturation", &crosstalkSaturation[0], 1.0f, 64.0f);
 	ImGui::End();
 	
 	auto rg = std::make_shared<vuk::RenderGraph>("tonemap");

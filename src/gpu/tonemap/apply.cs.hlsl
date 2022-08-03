@@ -14,23 +14,23 @@ struct Constants {
 };
 [[vk::push_constant]] Constants c_push;
 
-float3 lottesTonemap(float3 _color) {
+float3 lottesTonemap(float3 _color, Constants _t) {
 	
 	float peak = max(_color.r, max(_color.g, _color.b));
 	peak = max(peak, rcp(256.0 * 65536.0)); // Protect against /0
 	float3 ratio = _color * rcp(peak);
 	
-	peak = pow(peak, c_push.term0.x); // Contrast adjustment
-	peak = peak / (pow(peak, c_push.term0.y) * c_push.term0.z + c_push.term0.w); // Highlight compression
+	peak = pow(peak, _t.term0.x); // Contrast adjustment
+	peak = peak / (pow(peak, _t.term0.y) * _t.term0.z + _t.term0.w); // Highlight compression
 	
 	// Convert to non-linear space and saturate
 	// Saturation is folded into first transform
-	ratio = pow(ratio, c_push.term1.xyz);
+	ratio = pow(ratio, _t.term1.xyz);
 	// Move towards white on overexposure
 	float3 white = {1.0, 1.0, 1.0};
-	ratio = lerp(ratio, white, pow(float3(peak, peak, peak), c_push.term2.xyz));
+	ratio = lerp(ratio, white, pow(float3(peak, peak, peak), _t.term2.xyz));
 	// Convert back to linear
-	ratio = pow(ratio, c_push.term3.xyz);
+	ratio = pow(ratio, _t.term3.xyz);
 	
 	return ratio * peak;
 	
@@ -49,7 +49,7 @@ void main(uint3 _tid: SV_DispatchThreadID) {
 		return;
 	
 	float3 input = t_source[_tid.xy].rgb;
-	float3 output = lottesTonemap(input);
+	float3 output = lottesTonemap(input, c_push);
 	output = srgbEncode(output);
 	t_target[_tid.xy] = float4(output, 1.0);
 	
