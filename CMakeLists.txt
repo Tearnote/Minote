@@ -141,7 +141,7 @@ set(VUK_USE_SHADERC OFF CACHE BOOL "")
 set(VUK_USE_DXC OFF CACHE BOOL "")
 FetchContent_Declare(vuk
 	GIT_REPOSITORY https://github.com/martty/vuk
-	GIT_TAG 8b68626b3ebd05e30c66a13ac7f31c8794c31897)
+	GIT_TAG 540a632f3edd974e3440bec372326f0768b830ab)
 FetchContent_MakeAvailable(vuk)
 target_compile_definitions(vuk PUBLIC VUK_CUSTOM_VULKAN_HEADER="volk.h")
 target_link_libraries(vuk PRIVATE volk)
