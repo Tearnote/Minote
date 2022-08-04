@@ -72,7 +72,8 @@ auto Bloom::apply(vuk::Future _target) -> vuk::Future {
 				vuk::Resource(source, vuk::Resource::Type::eImage, vuk::eComputeSampled),
 				vuk::Resource(target, vuk::Resource::Type::eImage, vuk::eComputeWrite, targetNew),
 			},
-			.execute = [i, source, target](vuk::CommandBuffer& cmd) {
+			.execute = [i, source, target, targetNew](vuk::CommandBuffer& cmd) {
+				L_TRACE("Source (sampled): {}, Target (write) {} -> {}", source.to_sv(), target.to_sv(), targetNew.to_sv());
 				
 				cmd.bind_compute_pipeline("bloom/down")
 				   .bind_image(0, 0, source).bind_sampler(0, 0, LinearClamp)
@@ -110,7 +111,8 @@ auto Bloom::apply(vuk::Future _target) -> vuk::Future {
 				vuk::Resource(source, vuk::Resource::Type::eImage, vuk::eComputeSampled),
 				vuk::Resource(target, vuk::Resource::Type::eImage, vuk::eComputeRW, targetNew),
 			},
-			.execute = [this, i, source, target](vuk::CommandBuffer& cmd) {
+			.execute = [this, i, source, target, targetNew](vuk::CommandBuffer& cmd) {
+				L_TRACE("Source (sampled): {}, Target (read-write) {} -> {}", source.to_sv(), target.to_sv(), targetNew.to_sv());
 				
 				cmd.bind_compute_pipeline("bloom/up")
 				   .bind_image(0, 0, source).bind_sampler(0, 0, LinearClamp)
