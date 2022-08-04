@@ -226,7 +226,7 @@ auto Sky::createView(Atmosphere& _atmo, World const& _world, vec3 _probePos) -> 
 		},
 	});
 	
-	return vuk::Future(rg, "view");
+	return vuk::Future(rg, "view/final");
 	
 }
 

@@ -46,7 +46,7 @@ auto Bloom::apply(vuk::Future _target) -> vuk::Future {
 	});
 	rg->inference_rule("temp", [](vuk::InferenceContext const& ctx, vuk::ImageAttachment& ia) {
 		auto extent = ctx.get_image_attachment("target").extent.extent;
-		ia.extent = vuk::Dimension3D::absolute(extent.width, extent.height);
+		ia.extent = vuk::Dimension3D::absolute(extent.width / 2, extent.height / 2);
 	});
 	
 	// Create a subresource for each temp mip
@@ -67,7 +67,7 @@ auto Bloom::apply(vuk::Future _target) -> vuk::Future {
 		auto target = tempMips[i];
 		auto targetNew = tempMips[i].append("+");
 		rg->add_pass(vuk::Pass{
-			.name = "bloom/down",
+			.name = vuk::Name("bloom/down").append(to_string(i)),
 			.resources = {
 				vuk::Resource(source, vuk::Resource::Type::eImage, vuk::eComputeSampled),
 				vuk::Resource(target, vuk::Resource::Type::eImage, vuk::eComputeWrite, targetNew),
@@ -106,7 +106,7 @@ auto Bloom::apply(vuk::Future _target) -> vuk::Future {
 			vuk::Name("target/final") :
 			tempMips[i-1].append("+");
 		rg->add_pass(vuk::Pass{
-			.name = "bloom/up",
+			.name = vuk::Name("bloom/up").append(to_string(i)),
 			.resources = {
 				vuk::Resource(source, vuk::Resource::Type::eImage, vuk::eComputeSampled),
 				vuk::Resource(target, vuk::Resource::Type::eImage, vuk::eComputeRW, targetNew),
@@ -137,7 +137,7 @@ auto Bloom::apply(vuk::Future _target) -> vuk::Future {
 		if (i != 0) tempMips[i-1] = targetNew;
 	}
 	
-	rg->converge_image("temp", "temp/final");
+	// rg->converge_image("temp", "temp/final"); // pending vuk bugfix
 	return vuk::Future(rg, "target/final");
 	
 }
