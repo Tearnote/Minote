@@ -20,7 +20,7 @@ struct Bloom {
 	static void compile();
 	
 	u32 passes = 6u; // More passes increases blur width
-	f32 strength = 1.0f / 64.0f; // Output multiplier
+	f32 strength = 0.0f / 64.0f; // Output multiplier
 	
 private:
 	

@@ -72,19 +72,21 @@ auto Bloom::apply(vuk::Future _target) -> vuk::Future {
 				vuk::Resource(source, vuk::Resource::Type::eImage, vuk::eComputeSampled),
 				vuk::Resource(target, vuk::Resource::Type::eImage, vuk::eComputeWrite, targetNew),
 			},
-			.execute = [i, source, target, targetNew](vuk::CommandBuffer& cmd) {
-				L_TRACE("Source (sampled): {}, Target (write) {} -> {}", source.to_sv(), target.to_sv(), targetNew.to_sv());
-				
+			.execute = [i, source, target](vuk::CommandBuffer& cmd) {
 				cmd.bind_compute_pipeline("bloom/down")
 				   .bind_image(0, 0, source).bind_sampler(0, 0, LinearClamp)
 				   .bind_image(0, 1, target);
 				
 				auto sourceIA = *cmd.get_resource_image_attachment(source);
 				auto sourceSize = sourceIA.extent.extent;
+				sourceSize.width /= 1u << sourceIA.base_level;
+				sourceSize.height /= 1u << sourceIA.base_level;
 				cmd.specialize_constants(0, sourceSize.width);
 				cmd.specialize_constants(1, sourceSize.height);
 				auto targetIA = *cmd.get_resource_image_attachment(target);
 				auto targetSize = targetIA.extent.extent;
+				targetSize.width /= 1u << targetIA.base_level;
+				targetSize.height /= 1u << targetIA.base_level;
 				cmd.specialize_constants(2, targetSize.width);
 				cmd.specialize_constants(3, targetSize.height);
 				cmd.specialize_constants(4, i == 0? 1u : 0u); // Use Karis average on first pass
@@ -111,19 +113,21 @@ auto Bloom::apply(vuk::Future _target) -> vuk::Future {
 				vuk::Resource(source, vuk::Resource::Type::eImage, vuk::eComputeSampled),
 				vuk::Resource(target, vuk::Resource::Type::eImage, vuk::eComputeRW, targetNew),
 			},
-			.execute = [this, i, source, target, targetNew](vuk::CommandBuffer& cmd) {
-				L_TRACE("Source (sampled): {}, Target (read-write) {} -> {}", source.to_sv(), target.to_sv(), targetNew.to_sv());
-				
+			.execute = [this, i, source, target](vuk::CommandBuffer& cmd) {
 				cmd.bind_compute_pipeline("bloom/up")
 				   .bind_image(0, 0, source).bind_sampler(0, 0, LinearClamp)
 				   .bind_image(0, 1, target);
 				
 				auto sourceIA = *cmd.get_resource_image_attachment(source);
 				auto sourceSize = sourceIA.extent.extent;
+				sourceSize.width /= 1u << sourceIA.base_level;
+				sourceSize.height /= 1u << sourceIA.base_level;
 				cmd.specialize_constants(0, sourceSize.width);
 				cmd.specialize_constants(1, sourceSize.height);
 				auto targetIA = *cmd.get_resource_image_attachment(target);
 				auto targetSize = targetIA.extent.extent;
+				targetSize.width /= 1u << targetIA.base_level;
+				targetSize.height /= 1u << targetIA.base_level;
 				cmd.specialize_constants(2, targetSize.width);
 				cmd.specialize_constants(3, targetSize.height);
 				

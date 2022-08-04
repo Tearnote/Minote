@@ -74,8 +74,8 @@ void Game::Impl::createScene() {
 		.verticalFov = 50_deg,
 		.nearPlane = 0.1_m,
 		.position = {8.57_m, -16.07_m, 69.20_m},
-		.yaw = 2.41412449f,
-		.pitch = 0.113862038f,
+		.yaw = 2.4f,
+		.pitch = 0.3f,
 		.lookSpeed = 1.0f / 256.0f,
 		.moveSpeed = 1_m / 16.0f,
 	};
@@ -150,7 +150,7 @@ void Game::Impl::tick(nsec _until, Imgui::InputReader& _imguiInput) {
 
 void Game::Impl::drawDebugControls() {
 	
-	static auto sunPitch = 16_deg;
+	static auto sunPitch = 22_deg;
 	static auto sunYaw = 118_deg;
 	ImGui::SliderAngle("Sun pitch", &sunPitch, -8.0f, 60.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
 	ImGui::SliderAngle("Sun yaw", &sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
