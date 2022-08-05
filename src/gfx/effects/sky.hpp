@@ -78,19 +78,31 @@ struct Sky {
 	constexpr static auto AerialPerspectiveFormat = vuk::Format::eR16G16B16A16Sfloat;
 	constexpr static auto AerialPerspectiveSize = uvec3{32u, 32u, 32u};
 	
+	vec3 sunDirection = {-0.435286462, 0.818654716, 0.374606609};
+	vec3 sunIlluminance = vec3(8.0f);
+	
 	// Create a 360-degree view of the sky at the specified world position
-	static auto createView(Atmosphere&, World const&, vec3 probePos) -> vuk::Future;
+	auto createView(Atmosphere&, vec3 probePos) -> vuk::Future;
 	
 	// Draw the sky into a texture at camera position
-	static auto draw(vuk::Future target, Atmosphere&, vuk::Future skyView,
-		World const&, Camera const&) -> vuk::Future;
+	auto draw(vuk::Future target, Atmosphere&, vuk::Future skyView, Camera const&) -> vuk::Future;
 	
 	// Build required shaders; optional
 	static void compile();
 	
+	// Draw debug controls for this instance
+	void drawImguiDebug(string_view name);
+	
+	// Compute direction from pitch and yaw
+	auto getSunDirection(f32 pitch, f32 yaw) -> vec3;
+	
 private:
 	
 	static inline bool m_compiled = false;
+	
+	// Imgui controls
+	f32 m_sunPitch = 22_deg;
+	f32 m_sunYaw = 118_deg;
 	/*
 	static auto createAerialPerspective(Pool&, Frame&, vuk::Name,
 		vec3 probePos, mat4 invViewProj, Atmosphere) -> Texture3D;

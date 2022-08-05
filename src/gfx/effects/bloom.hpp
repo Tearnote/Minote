@@ -5,10 +5,8 @@
 
 namespace minote {
 
-// Bloom effect. Blends an image with a blurred version of itself.
-// This implementation has no thresholding to better mimic naked-eye glare,
-// and uses a low-pass filter to avoid fireflies that are common in HDR source
-// images. Relative blur width is resolution-independent
+// Blend an image with a blurred version of itself.
+// For use on HDR source
 struct Bloom {
 	
 	static constexpr auto Format = vuk::Format::eB10G11R11UfloatPack32;
@@ -19,8 +17,11 @@ struct Bloom {
 	// Build required shaders; optional
 	static void compile();
 	
+	// Draw debug controls for this instance
+	void drawImguiDebug(string_view name);
+	
 	u32 passes = 6u; // More passes increases blur width
-	f32 strength = 0.0f / 64.0f; // Output multiplier
+	f32 strength = 1.0f / 64.0f; // Output multiplier
 	
 private:
 	

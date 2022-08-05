@@ -17,12 +17,6 @@ namespace minote {
 // Feed with models and objects, enjoy pretty pictures
 struct Renderer {
 	
-	// Global details of the game world
-	struct World {
-		vec3 sunDirection;
-		vec3 sunIlluminance;
-	};
-	
 	static constexpr auto InflightFrames = 3u;
 	static constexpr auto FramerateUpdate = 1_s;
 	
@@ -43,9 +37,6 @@ struct Renderer {
 	
 	// Return ObjectPool to add/remove/modify objects for drawing
 	auto objects() -> ObjectPool& { return m_objects; }
-	
-	// Return the world properties to adjust global details like time of day
-	auto world() -> World& { return m_world; }
 	
 	// Return the Camera to modify how the world is viewed
 	auto camera() -> Camera& { return m_camera; }
@@ -78,7 +69,6 @@ private:
 	Imgui m_imgui;
 	ModelBuffer m_models;
 	ObjectPool m_objects;
-	World m_world;
 	Camera m_camera;
 	
 	void renderFrame(); // Common code of render() and refreshSwapchain()
@@ -91,8 +81,6 @@ private:
 	std::unique_ptr<Impl> m_impl;
 	
 };
-
-using World = Renderer::World;
 
 inline Service<Renderer> s_renderer;
 

@@ -1,8 +1,10 @@
 #include "gfx/effects/sky.hpp"
 
+#include "imgui.h"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
 #include "vuk/Partials.hpp"
+#include "util/string.hpp"
 #include "util/span.hpp"
 #include "util/math.hpp"
 #include "gfx/samplers.hpp"
@@ -171,7 +173,7 @@ void Sky::compile() {
 	
 }
 
-auto Sky::createView(Atmosphere& _atmo, World const& _world, vec3 _probePos) -> vuk::Future {
+auto Sky::createView(Atmosphere& _atmo, vec3 _probePos) -> vuk::Future {
 	
 	compile();
 	
@@ -195,7 +197,7 @@ auto Sky::createView(Atmosphere& _atmo, World const& _world, vec3 _probePos) -> 
 			"multiScattering"_image >> vuk::eComputeSampled,
 			"view"_image >> vuk::eComputeWrite >> "view/final",
 		},
-		.execute = [&_world, _probePos](vuk::CommandBuffer& cmd) {
+		.execute = [this, _probePos](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_compute_pipeline("sky/genView")
 			   .bind_buffer(0, 0, "params")
@@ -212,8 +214,8 @@ auto Sky::createView(Atmosphere& _atmo, World const& _world, vec3 _probePos) -> 
 			};
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, Constants{
 				.probePos = _probePos,
-				.sunDirection = _world.sunDirection,
-				.sunIlluminance = _world.sunIlluminance,
+				.sunDirection = sunDirection,
+				.sunIlluminance = sunIlluminance,
 			});
 			
 			auto view = *cmd.get_resource_image_attachment("view");
@@ -230,8 +232,8 @@ auto Sky::createView(Atmosphere& _atmo, World const& _world, vec3 _probePos) -> 
 	
 }
 
-auto Sky::draw(vuk::Future _target, Atmosphere& _atmo, vuk::Future _skyView,
-	World const& _world, Camera const& _camera) -> vuk::Future {
+auto Sky::draw(vuk::Future _target, Atmosphere& _atmo,
+	vuk::Future _skyView, Camera const& _camera) -> vuk::Future {
 	
 	compile();
 	
@@ -249,7 +251,7 @@ auto Sky::draw(vuk::Future _target, Atmosphere& _atmo, vuk::Future _skyView,
 			"view"_image >> vuk::eComputeSampled,
 			"target"_image >> vuk::eComputeWrite >> "target/final",
 		},
-		.execute = [&_world, &_camera](vuk::CommandBuffer& cmd) {
+		.execute = [this, &_camera](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_compute_pipeline("sky/draw")
 			   .bind_buffer(0, 0, "params")
@@ -268,8 +270,8 @@ auto Sky::draw(vuk::Future _target, Atmosphere& _atmo, vuk::Future _skyView,
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, Constants{
 				.viewProjectionInv = inverse(_camera.viewProjection()),
 				.cameraPos = _camera.position,
-				.sunDirection = _world.sunDirection,
-				.sunIlluminance = _world.sunIlluminance,
+				.sunDirection = sunDirection,
+				.sunIlluminance = sunIlluminance,
 			});
 			
 			auto view = *cmd.get_resource_image_attachment("view");
@@ -287,6 +289,27 @@ auto Sky::draw(vuk::Future _target, Atmosphere& _atmo, vuk::Future _skyView,
 	});
 	
 	return vuk::Future(rg, "target/final");
+	
+}
+
+void Sky::drawImguiDebug(string_view _name) {
+	
+	ImGui::Begin(string(_name).c_str());
+	ImGui::SliderAngle("Sun pitch", &m_sunPitch, -8.0f, 60.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
+	ImGui::SliderAngle("Sun yaw", &m_sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
+	sunDirection = getSunDirection(m_sunPitch, m_sunYaw);
+	ImGui::SliderFloat("Sun illuminance", &sunIlluminance.x(), 0.01f, 100.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
+	sunIlluminance.y() = sunIlluminance.x();
+	sunIlluminance.z() = sunIlluminance.x();
+	ImGui::End();
+	
+}
+
+auto Sky::getSunDirection(f32 _pitch, f32 _yaw) -> vec3 {
+	
+	return mat3::rotate({0.0f, 0.0f, 1.0f}, _yaw) *
+		mat3::rotate({0.0f, -1.0f, 0.0f}, _pitch) *
+		vec3{1.0f, 0.0f, 0.0f};
 	
 }
 /*

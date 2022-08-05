@@ -1,5 +1,6 @@
 #include "gfx/effects/bloom.hpp"
 
+#include "imgui.h"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
 #include "vuk/Pipeline.hpp"
@@ -143,6 +144,15 @@ auto Bloom::apply(vuk::Future _target) -> vuk::Future {
 	
 	// rg->converge_image("temp", "temp/final"); // pending vuk bugfix
 	return vuk::Future(rg, "target/final");
+	
+}
+
+void Bloom::drawImguiDebug(string_view _name) {
+	
+	ImGui::Begin(string(_name).c_str());
+	ImGui::SliderInt("Passes", reinterpret_cast<int*>(&passes), 1u, 8u);
+	ImGui::SliderFloat("Strength", &strength, 0.0f, 1.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
+	ImGui::End();
 	
 }
 
