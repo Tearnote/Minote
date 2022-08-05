@@ -21,8 +21,11 @@ namespace minote {
 struct Renderer::Impl {
 	optional<Atmosphere> m_atmosphere;
 	Sky m_sky;
+	bool m_skyDebug;
 	Bloom m_bloom;
+	bool m_bloomDebug;
 	Tonemap m_tonemap;
+	bool m_tonemapDebug;
 };
 
 Renderer::Renderer():
@@ -125,14 +128,19 @@ auto Renderer::buildRenderGraph() -> std::shared_ptr<vuk::RenderGraph> {
 	if (!m_impl->m_atmosphere.has_value())
 		m_impl->m_atmosphere.emplace(m_globalAllocator, Atmosphere::Params::earth());
 	auto skyView = m_impl->m_sky.createView(*m_impl->m_atmosphere, m_camera.position);
+	
+	ImGui::Selectable("Sky", &m_impl->m_skyDebug);
+	if (m_impl->m_skyDebug) m_impl->m_sky.drawImguiDebug("Sky");
 	auto screenSky = m_impl->m_sky.draw(screen, *m_impl->m_atmosphere, skyView, m_camera);
-	// m_impl->m_sky.drawImguiDebug("Sky");
 	
 	// Postprocessing
+	ImGui::Selectable("Bloom", &m_impl->m_bloomDebug);
+	if (m_impl->m_bloomDebug) m_impl->m_bloom.drawImguiDebug("Bloom");
 	auto screenBloom = m_impl->m_bloom.apply(screenSky);
-	m_impl->m_bloom.drawImguiDebug("Bloom");
+	
+	ImGui::Selectable("Tonemap", &m_impl->m_tonemapDebug);
+	if (m_impl->m_tonemapDebug) m_impl->m_tonemap.drawImguiDebug("Tonemap");
 	auto screenSrgb = m_impl->m_tonemap.apply(screenBloom);
-	m_impl->m_tonemap.drawImguiDebug("Tonemap");
 	
 	// Imgui rendering
 	auto screenFinal = m_imgui.render(screenSrgb);
