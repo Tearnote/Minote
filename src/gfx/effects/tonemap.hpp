@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vuk/Future.hpp"
+#include "gfx/resource.hpp"
 #include "util/string.hpp"
 #include "util/array.hpp"
 #include "util/types.hpp"
@@ -22,7 +23,7 @@ struct Tonemap {
 	float3 crosstalkSaturation = float3{4.0f, 1.0f, 16.0f};
 	
 	// Tonemap and gamma-correct the HDR input into a new SDR output texture
-	auto apply(vuk::Future source) -> vuk::Future;
+	auto apply(Texture2D<float4> source) -> Texture2D<float4>;
 	
 	// Build required shaders; optional
 	static void compile();

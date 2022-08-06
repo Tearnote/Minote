@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vuk/Future.hpp"
+#include "gfx/resource.hpp"
 #include "gfx/renderer.hpp"
 #include "gfx/camera.hpp"
 #include "util/math.hpp"
@@ -53,9 +54,9 @@ struct Atmosphere {
 		
 	};
 	
-	vuk::Future transmittance; // 2D texture
-	vuk::Future multiScattering; // 2D texture
-	vuk::Future params; // Buffer<Params>
+	Texture2D<float4> transmittance;
+	Texture2D<float4> multiScattering;
+	Buffer<Params> params;
 	
 	// Create and precalculate the atmosphere data
 	Atmosphere(vuk::Allocator&, Params const&);
@@ -82,10 +83,10 @@ struct Sky {
 	float3 sunIlluminance = float3(8.0f);
 	
 	// Create a 360-degree view of the sky at the specified world position
-	auto createView(Atmosphere&, float3 probePos) -> vuk::Future;
+	auto createView(Atmosphere&, float3 probePos) -> Texture2D<float3>;
 	
 	// Draw the sky into a texture at camera position
-	auto draw(vuk::Future target, Atmosphere&, vuk::Future skyView, Camera const&) -> vuk::Future;
+	auto draw(Texture2D<float4> target, Atmosphere&, Texture2D<float3> skyView, Camera const&) -> Texture2D<float4>;
 	
 	// Build required shaders; optional
 	static void compile();

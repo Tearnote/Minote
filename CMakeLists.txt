@@ -78,6 +78,7 @@ add_executable(Minote
 	# src/gfx/effects/hiz.hpp src/gfx/effects/hiz.cpp
 	# src/gfx/samplers.hpp
 	src/gfx/renderer.hpp src/gfx/renderer.cpp
+	src/gfx/resource.hpp
 	src/gfx/objects.hpp src/gfx/objects.cpp
 	src/gfx/models.hpp src/gfx/models.cpp
 	src/gfx/camera.hpp src/gfx/camera.cpp

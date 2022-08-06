@@ -3,6 +3,7 @@
 #include <type_traits>
 #include <span>
 #include "vuk/Future.hpp"
+#include "gfx/resource.hpp"
 #include "util/hashmap.hpp"
 #include "util/vector.hpp"
 #include "util/types.hpp"
@@ -49,14 +50,14 @@ struct Model {
 // A set of buffers storing vertex data for all models, and how to access each
 // model within the buffer
 struct ModelBuffer {
-	vuk::Future materials; // Buffer<Material>
-	vuk::Future triIndices; // Buffer<uint>
-	vuk::Future vertIndices; // Buffer<VertIndexType>
-	vuk::Future vertices; // Buffer<VertexType>
-	vuk::Future normals; // Buffer<NormalType>
+	Buffer<Material> materials;
+	Buffer<uint> triIndices;
+	Buffer<VertIndexType> vertIndices;
+	Buffer<VertexType> vertices;
+	Buffer<NormalType> normals;
 	
-	vuk::Future meshlets; // Buffer<Meshlet>
-	vuk::Future models; // Buffer<Model>
+	Buffer<Meshlet> meshlets;
+	Buffer<Model> models;
 	
 	ivector<Meshlet> cpu_meshlets;
 	ivector<Model> cpu_models;

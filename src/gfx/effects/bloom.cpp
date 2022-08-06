@@ -33,7 +33,7 @@ void Bloom::compile() {
 	
 }
 
-auto Bloom::apply(vuk::Future _target) -> vuk::Future {
+auto Bloom::apply(Texture2D<float4> _target) -> Texture2D<float4> {
 	
 	compile();
 	

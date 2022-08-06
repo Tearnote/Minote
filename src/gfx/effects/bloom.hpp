@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vuk/Future.hpp"
+#include "gfx/resource.hpp"
 #include "util/types.hpp"
 
 namespace minote {
@@ -12,7 +13,7 @@ struct Bloom {
 	static constexpr auto Format = vuk::Format::eB10G11R11UfloatPack32;
 	
 	// Apply bloom to the specified image
-	auto apply(vuk::Future target) -> vuk::Future;
+	auto apply(Texture2D<float4> target) -> Texture2D<float4>;
 	
 	// Build required shaders; optional
 	static void compile();

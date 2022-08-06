@@ -173,7 +173,7 @@ void Sky::compile() {
 	
 }
 
-auto Sky::createView(Atmosphere& _atmo, float3 _probePos) -> vuk::Future {
+auto Sky::createView(Atmosphere& _atmo, float3 _probePos) -> Texture2D<float3> {
 	
 	compile();
 	
@@ -232,8 +232,8 @@ auto Sky::createView(Atmosphere& _atmo, float3 _probePos) -> vuk::Future {
 	
 }
 
-auto Sky::draw(vuk::Future _target, Atmosphere& _atmo,
-	vuk::Future _skyView, Camera const& _camera) -> vuk::Future {
+auto Sky::draw(Texture2D<float4> _target, Atmosphere& _atmo,
+	Texture2D<float3> _skyView, Camera const& _camera) -> Texture2D<float4> {
 	
 	compile();
 	

@@ -10,7 +10,7 @@
 
 namespace minote {
 
-auto Tonemap::apply(vuk::Future _source) -> vuk::Future {
+auto Tonemap::apply(Texture2D<float4> _source) -> Texture2D<float4> {
 	
 	compile();
 	

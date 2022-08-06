@@ -5,6 +5,7 @@
 #include "SDL_events.h"
 #include "vuk/Future.hpp"
 #include "vuk/Image.hpp"
+#include "gfx/resource.hpp"
 
 namespace minote {
 
@@ -32,7 +33,7 @@ struct Imgui {
 	void begin();
 	
 	// After all controls are created, draw Imgui to the provided texture
-	auto render(vuk::Future target) -> vuk::Future;
+	auto render(Texture2D<float4> target) -> Texture2D<float4>;
 	
 	Imgui(Imgui const&) = delete;
 	auto operator=(Imgui const&) -> Imgui& = delete;

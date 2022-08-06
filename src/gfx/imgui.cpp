@@ -96,7 +96,7 @@ void Imgui::begin() {
 	
 }
 
-auto Imgui::render(vuk::Future _target) -> vuk::Future {
+auto Imgui::render(Texture2D<float4> _target) -> Texture2D<float4> {
 	
 	ASSUME(m_compiled);
 	auto lock = std::lock_guard(m_stateLock);
@@ -220,7 +220,6 @@ auto Imgui::render(vuk::Future _target) -> vuk::Future {
 	
 	m_insideFrame = false;
 	return vuk::Future(rg, "output");
-	
 	
 }
 
