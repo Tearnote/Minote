@@ -50,6 +50,12 @@ Renderer::~Renderer() {
 	
 }
 
+void Renderer::uploadModels(ModelList&& _models) {
+	
+	m_models = std::move(_models).upload(m_globalAllocator);
+	
+}
+
 void Renderer::render() {
 	
 	// If repaint needed, only resizeSwapchain() can draw

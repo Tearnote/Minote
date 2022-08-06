@@ -3,6 +3,8 @@
 #include <utility>
 #include <cstring>
 #include "mpack/mpack.h"
+#include "vuk/RenderGraph.hpp"
+#include "vuk/Partials.hpp"
 #include "gfx/util.hpp"
 #include "util/error.hpp"
 #include "util/util.hpp"
@@ -10,10 +12,9 @@
 
 namespace minote {
 
-void ModelList::addModel(string_view _name, std::span<char const> _model) {
+void ModelList::addModel(string_view _name, span<char const> _model) {
 	
 	// Load in data
-	
 	auto in = mpack_reader_t();
 	mpack_reader_init_data(&in, _model.data(), _model.size_bytes());
 	
@@ -23,7 +24,6 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 	mpack_expect_map_match(&in, 6);
 	
 	// Load the materials
-	
 	auto materialOffset = m_materials.size();
 	
 	mpack_expect_cstr_match(&in, "materials");
@@ -63,7 +63,6 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 	
 	// Safety fallback
 	if (materialCount == 0) {
-		
 		auto& material = m_materials.emplace_back();
 		material.id = +MaterialType::PBR;
 		material.color = {1.0f, 1.0f, 1.0f, 1.0f};
@@ -71,11 +70,9 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 		material.metalness = 0.0f;
 		material.roughness = 0.0f;
 		L_WARN("Model {} has no materials, using defaults", _name);
-		
 	}
 	
 	// Load the meshlets
-	
 	m_modelIndices.emplace(_name, m_models.size());
 	auto& model = m_models.emplace_back(Model{
 		.meshletOffset = u32(m_meshlets.size()),
@@ -89,7 +86,6 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 		mpack_expect_map_match(&in, 8);
 		
 		auto& meshlet = m_meshlets.emplace_back();
-		auto& aabb = m_meshletAABBs.emplace_back();
 		
 		mpack_expect_cstr_match(&in, "materialIdx");
 		auto materialIdx = mpack_expect_u32(&in);
@@ -116,23 +112,12 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 		mpack_expect_cstr_match(&in, "boundingSphereRadius");
 		meshlet.boundingSphereRadius = mpack_expect_float(&in);
 		
-		mpack_expect_cstr_match(&in, "aabbMin");
-		mpack_expect_array_match(&in, 3);
-		for (auto i: iota(0, 3))
-			aabb.min[i] = mpack_expect_float(&in);
-		mpack_done_array(&in);
-		
-		mpack_expect_cstr_match(&in, "aabbMax");
-		mpack_expect_array_match(&in, 3);
-		for (auto i: iota(0, 3))
-			aabb.max[i] = mpack_expect_float(&in);
-		mpack_done_array(&in);
-		
 		mpack_done_map(&in);
 		
 	}
 	mpack_done_array(&in);
 	
+	// Load vertex data
 	mpack_expect_cstr_match(&in, "triIndices");
 	auto triIndexCount = mpack_expect_bin(&in) / sizeof(TriIndexType);
 	auto triIndices = pvector<TriIndexType>(triIndexCount);
@@ -171,38 +156,36 @@ void ModelList::addModel(string_view _name, std::span<char const> _model) {
 	L_DEBUG("Loaded model {}: {} materials, {} meshlets", _name, materialCount, model.meshletCount);
 	
 }
-/*
-auto ModelList::upload(Pool& _pool, vuk::Name _name) && -> ModelBuffer {
+
+auto ModelList::upload(vuk::Allocator& _allocator) && -> ModelBuffer {
 	
 	auto result = ModelBuffer{
-		.materials = Buffer<Material>::make(_pool, nameAppend(_name, "materials"),
-			vuk::BufferUsageFlagBits::eStorageBuffer,
-			m_materials),
-		.triIndices = Buffer<u32>::make(_pool, nameAppend(_name, "triIndices"),
-			vuk::BufferUsageFlagBits::eStorageBuffer,
-			m_triIndices),
-		.vertIndices = Buffer<VertIndexType>::make(_pool, nameAppend(_name, "vertIndices"),
-			vuk::BufferUsageFlagBits::eStorageBuffer,
-			m_vertIndices),
-		.vertices = Buffer<VertexType>::make(_pool, nameAppend(_name, "vertices"),
-			vuk::BufferUsageFlagBits::eStorageBuffer,
-			m_vertices),
-		.normals = Buffer<NormalType>::make(_pool, nameAppend(_name, "normals"),
-			vuk::BufferUsageFlagBits::eStorageBuffer,
-			m_normals),
-		.meshlets = Buffer<Meshlet>::make(_pool, nameAppend(_name, "meshlets"),
-			vuk::BufferUsageFlagBits::eStorageBuffer,
-			m_meshlets),
-		.models = Buffer<Model>::make(_pool, nameAppend(_name, "models"),
-			vuk::BufferUsageFlagBits::eStorageBuffer,
-			m_models),
+		.materials = vuk::create_buffer_gpu(_allocator,
+			vuk::DomainFlagBits::eTransferQueue,
+			span(m_materials)).second,
+		.triIndices = vuk::create_buffer_gpu(_allocator,
+			vuk::DomainFlagBits::eTransferQueue,
+			span(m_triIndices)).second,
+		.vertIndices = vuk::create_buffer_gpu(_allocator,
+			vuk::DomainFlagBits::eTransferQueue,
+			span(m_vertIndices)).second,
+		.vertices = vuk::create_buffer_gpu(_allocator,
+			vuk::DomainFlagBits::eTransferQueue,
+			span(m_vertices)).second,
+		.normals = vuk::create_buffer_gpu(_allocator,
+			vuk::DomainFlagBits::eTransferQueue,
+			span(m_normals)).second,
+		.meshlets = vuk::create_buffer_gpu(_allocator,
+			vuk::DomainFlagBits::eTransferQueue,
+			span(m_meshlets)).second,
+		.models = vuk::create_buffer_gpu(_allocator,
+			vuk::DomainFlagBits::eTransferQueue,
+			span(m_models)).second,
 		.cpu_modelIndices = std::move(m_modelIndices) };
 	result.cpu_meshlets = std::move(m_meshlets); // Must still exist for .meshlets creation
-	result.cpu_meshletAABBs = std::move(m_meshletAABBs);
 	result.cpu_models = std::move(m_models);
 	
 	// Clean up in case this isn't a temporary
-	
 	m_materials.clear();
 	m_materials.shrink_to_fit();
 	m_triIndices.clear();
@@ -219,5 +202,5 @@ auto ModelList::upload(Pool& _pool, vuk::Name _name) && -> ModelBuffer {
 	L_DEBUG("Uploaded all models to GPU");
 	
 }
-*/
+
 }

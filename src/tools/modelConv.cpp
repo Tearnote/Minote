@@ -48,11 +48,6 @@ struct Meshlet {
 	
 	vec3 boundingSphereCenter;
 	f32 boundingSphereRadius;
-	
-	struct AABB {
-		vec3 min;
-		vec3 max;
-	} aabb;
 };
 
 struct Model {
@@ -372,40 +367,6 @@ int main(int argc, char const* argv[]) try {
 			
 		}
 		
-		// Generate meshlet AABBs
-		
-		auto aabbs = pvector<Meshlet::AABB>();
-		aabbs.reserve(meshletCount);
-		for (auto& m: rawMeshlets) {
-			
-			auto& aabb = aabbs.emplace_back();
-			auto vertexIdx = meshletVertices[m.vertex_offset];
-			aabb.min = aabb.max = vertices[vertexIdx];
-			
-			for (auto i: iota(1_zu, m.vertex_count)) {
-				
-				auto vertexIdx = meshletVertices[m.vertex_offset + i];
-				aabb.min = min(aabb.min, vertices[vertexIdx]),
-				aabb.max = max(aabb.max, vertices[vertexIdx]);
-				
-			}
-			
-			// Expand bounds by a small amount to avoid numerical issues
-			
-			for (auto i: iota(0, 8)) {
-				
-				aabb.min.x() = std::nextafterf(aabb.min.x(), -std::numeric_limits<f32>::max());
-				aabb.min.y() = std::nextafterf(aabb.min.y(), -std::numeric_limits<f32>::max());
-				aabb.min.z() = std::nextafterf(aabb.min.z(), -std::numeric_limits<f32>::max());
-				
-				aabb.max.x() = std::nextafterf(aabb.max.x(), std::numeric_limits<f32>::max());
-				aabb.max.y() = std::nextafterf(aabb.max.y(), std::numeric_limits<f32>::max());
-				aabb.max.z() = std::nextafterf(aabb.max.z(), std::numeric_limits<f32>::max());
-				
-			}
-			
-		}
-		
 		// Offset the vertex indices
 		
 		for (auto& idx: meshletVertices)
@@ -428,8 +389,6 @@ int main(int argc, char const* argv[]) try {
 			
 			meshlet.boundingSphereCenter = vec3{bound.center[0], bound.center[1], bound.center[2]};
 			meshlet.boundingSphereRadius = bound.radius;
-			
-			meshlet.aabb = aabbs[mIdx];
 			
 		}
 		
@@ -502,18 +461,6 @@ int main(int argc, char const* argv[]) try {
 				mpack_finish_array(&out);
 				mpack_write_cstr(&out, "boundingSphereRadius");
 				mpack_write_float(&out, meshlet.boundingSphereRadius);
-				mpack_write_cstr(&out, "aabbMin");
-				mpack_start_array(&out, 3);
-					mpack_write_float(&out, meshlet.aabb.min.x());
-					mpack_write_float(&out, meshlet.aabb.min.y());
-					mpack_write_float(&out, meshlet.aabb.min.z());
-				mpack_finish_array(&out);
-				mpack_write_cstr(&out, "aabbMax");
-				mpack_start_array(&out, 3);
-					mpack_write_float(&out, meshlet.aabb.max.x());
-					mpack_write_float(&out, meshlet.aabb.max.y());
-					mpack_write_float(&out, meshlet.aabb.max.z());
-				mpack_finish_array(&out);
 			mpack_finish_map(&out);
 			
 		}

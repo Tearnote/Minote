@@ -11,11 +11,6 @@
 
 namespace minote {
 
-struct AABB {
-	vec3 min;
-	vec3 max;
-};
-
 // Return the number a mipmaps that a square texture of the given size would have
 constexpr auto mipmapCount(u32 size) {
 	return u32(floor(log2(size))) + 1;

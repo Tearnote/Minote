@@ -116,7 +116,6 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, bool _flush) {
 	// Postprocessing
 	Bloom::apply(*this, swapchainPool, color);
 	Tonemap::apply(*this, color, _target);
-	// BVH::debugDrawAABBs(*this, _target, instances);
 	
 	// Next-frame tasks
 	HiZ::fill(*this, hiz, depth);

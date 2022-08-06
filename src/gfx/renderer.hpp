@@ -23,6 +23,9 @@ struct Renderer {
 	Renderer();
 	~Renderer();
 	
+	// Push models to GPU so that they're ready to draw
+	void uploadModels(ModelList&&);
+	
 	// Draw the world and present to display
 	void render();
 	

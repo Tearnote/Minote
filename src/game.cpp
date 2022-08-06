@@ -61,7 +61,7 @@ void Game::Impl::loadAssets(string_view _path) {
 	assets.loadModels([&modelList](auto name, auto data) {
 		modelList.addModel(name, data);
 	});
-	// s_renderer->uploadModels(std::move(modelList));
+	s_renderer->uploadModels(std::move(modelList));
 	
 }
 

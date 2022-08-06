@@ -2,12 +2,11 @@
 
 #include <type_traits>
 #include <span>
-#include "vuk/Context.hpp"
-#include "gfx/util.hpp"
+#include "vuk/Future.hpp"
 #include "util/hashmap.hpp"
-#include "util/string.hpp"
 #include "util/vector.hpp"
 #include "util/types.hpp"
+#include "util/span.hpp"
 #include "util/math.hpp"
 #include "util/id.hpp"
 #include "tools/modelSchema.hpp"
@@ -15,7 +14,6 @@
 namespace minote {
 
 struct Material {
-	
 	enum struct Type: u32 {
 		None = 0, // Invalid
 		PBR = 1,
@@ -28,7 +26,6 @@ struct Material {
 	f32 metalness;
 	f32 roughness;
 	vec2 pad0;
-	
 };
 
 using MaterialType = Material::Type;
@@ -50,35 +47,32 @@ struct Model {
 };
 
 // A set of buffers storing vertex data for all models, and how to access each
-// model within the buffer.
+// model within the buffer
 struct ModelBuffer {
+	vuk::Future materials; // Buffer<Material>
+	vuk::Future triIndices; // Buffer<u32>
+	vuk::Future vertIndices; // Buffer<VertIndexType>
+	vuk::Future vertices; // Buffer<VertexType>
+	vuk::Future normals; // Buffer<NormalType>
 	
-	// Buffer<Material> materials;
-	// Buffer<u32> triIndices;
-	// Buffer<VertIndexType> vertIndices;
-	// Buffer<VertexType> vertices;
-	// Buffer<NormalType> normals;
-	
-	// Buffer<Meshlet> meshlets;
-	// Buffer<Model> models;
+	vuk::Future meshlets; // Buffer<Meshlet>
+	vuk::Future models; // Buffer<Model>
 	
 	ivector<Meshlet> cpu_meshlets;
-	ivector<AABB> cpu_meshletAABBs;
 	ivector<Model> cpu_models;
 	hashmap<ID, u32> cpu_modelIndices;
-	
 };
 
 // Structure storing model data as they're being loaded. After all models are
-// loaded in, it can be uploaded to GPU by converting it into a ModelBuffer.
+// loaded in, it can be uploaded to GPU by converting it into a ModelBuffer
 struct ModelList {
 	
-	// Parse a model file, and append it to the list.
-	void addModel(string_view name, std::span<char const> model);
+	// Parse a model file, and append it to the list
+	void addModel(string_view name, span<char const> model);
 	
 	// Convert into a ModelBuffer. The instance must be moved in,
-	// so all CPU-side resources are freed.
-	// auto upload(Pool&, vuk::Name) && -> ModelBuffer;
+	// so all CPU-side resources are freed
+	auto upload(vuk::Allocator&) && -> ModelBuffer;
 	
 private:
 	
@@ -89,10 +83,8 @@ private:
 	pvector<NormalType> m_normals;
 	
 	ivector<Meshlet> m_meshlets; // Meshlet descriptors, for access to index buffers
-	ivector<AABB> m_meshletAABBs;
 	ivector<Model> m_models; // Model descriptors, for access to m_modelMeshes
 	hashmap<ID, u32> m_modelIndices; // Mapping of model IDs to their index in m_models
-	
 	
 };
 
