@@ -11,10 +11,10 @@ namespace minote {
 void Visibility::compile(vuk::PerThreadContext& _ptc) {
 	
 	auto visibilityPci = vuk::PipelineBaseCreateInfo();
-	visibilityPci.add_spirv(std::vector<u32>{
+	visibilityPci.add_spirv(std::vector<uint>{
 #include "spv/visibility/visbuf.vert.spv"
 	}, "visibility/visbuf.vert");
-	visibilityPci.add_spirv(std::vector<u32>{
+	visibilityPci.add_spirv(std::vector<uint>{
 #include "spv/visibility/visbuf.frag.spv"
 	}, "visibility/visbuf.frag");
 	_ptc.ctx.create_named_pipeline("visibility/visbuf", visibilityPci);
@@ -64,7 +64,7 @@ void Visibility::apply(Frame& _frame, Texture2DMS _visbuf, Texture2DMS _depth,
 void Worklist::compile(vuk::PerThreadContext& _ptc) {
 	
 	auto worklistPci = vuk::ComputePipelineBaseCreateInfo();
-	worklistPci.add_spirv(std::vector<u32>{
+	worklistPci.add_spirv(std::vector<uint>{
 #include "spv/visibility/worklist.comp.spv"
 	}, "visibility/worklist.comp");
 	_ptc.ctx.create_named_pipeline("visibility/worklist", worklistPci);
@@ -76,22 +76,22 @@ auto Worklist::create(Pool& _pool, Frame& _frame, vuk::Name _name,
 	
 	auto result = Worklist();
 	
-	result.tileDimensions = uvec2{
-		u32(ceil(f32(_visbuf.size().x()) / f32(TileSize.x()))),
-		u32(ceil(f32(_visbuf.size().y()) / f32(TileSize.y()))) };
+	result.tileDimensions = uint2{
+		uint(ceil(float(_visbuf.size().x()) / float(TileSize.x()))),
+		uint(ceil(float(_visbuf.size().y()) / float(TileSize.y()))) };
 	
 	// Create buffers
 	
-	constexpr auto InitialCount = uvec4{0, 1, 1, 0};
-	auto initialCounts = array<uvec4, ListCount>();
+	constexpr auto InitialCount = uint4{0, 1, 1, 0};
+	auto initialCounts = array<uint4, ListCount>();
 	initialCounts.fill(InitialCount);
 	
-	result.counts = Buffer<uvec4>::make(_frame.framePool, nameAppend(_name, "counts"),
+	result.counts = Buffer<uint4>::make(_frame.framePool, nameAppend(_name, "counts"),
 		vuk::BufferUsageFlagBits::eStorageBuffer |
 		vuk::BufferUsageFlagBits::eIndirectBuffer,
 		initialCounts);
 	
-	result.lists = Buffer<u32>::make(_pool, nameAppend(_name, "tiles"),
+	result.lists = Buffer<uint>::make(_pool, nameAppend(_name, "tiles"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		usize(result.tileDimensions.x() * result.tileDimensions.y()) * ListCount);
 	
@@ -118,7 +118,7 @@ auto Worklist::create(Pool& _pool, Frame& _frame, vuk::Name _name,
 			   .bind_storage_buffer(0, 6, result.lists)
 			   .bind_compute_pipeline("visibility/worklist");
 			
-			cmd.specialize_constants(0, u32Fromu16(_visbuf.size()));
+			cmd.specialize_constants(0, uintFromuint16(_visbuf.size()));
 			cmd.specialize_constants(1, ListCount);
 			
 			cmd.dispatch_invocations(_visbuf.size().x(), _visbuf.size().y());

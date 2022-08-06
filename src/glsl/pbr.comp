@@ -27,14 +27,14 @@ layout(binding = 3, std430) restrict readonly buffer Instances {
 	Instance b_instances[];
 };
 layout(binding = 4, std430) restrict readonly buffer Colors {
-	vec4 b_colors[];
+	float4 b_colors[];
 };
 layout(binding = 5, std430) restrict readonly buffer Materials {
 	Material b_materials[];
 };
 
 layout(binding = 6) uniform SunLuminance {
-	vec3 u_sunLuminance;
+	float3 u_sunLuminance;
 };
 layout(binding = 7) uniform samplerCube s_cubemap;
 layout(binding = 8) uniform sampler3D s_aerialPerspective;
@@ -53,21 +53,21 @@ layout(constant_id = 1) const uint AerialPerspectiveSizeZ = 0;
 layout(constant_id = 2) const uint TargetSizePacked = 0;
 layout(constant_id = 3) const uint TileOffset = 0;
 
-const uvec3 AerialPerspectiveSize = uvec3(U16FROMU32(AerialPerspectiveSizeXYPacked), AerialPerspectiveSizeZ);
-const uvec2 TargetSize = uvec2(U16FROMU32(TargetSizePacked));
+const uint3 AerialPerspectiveSize = uint3(U16FROMU32(AerialPerspectiveSizeXYPacked), AerialPerspectiveSizeZ);
+const uint2 TargetSize = uint2(U16FROMU32(TargetSizePacked));
 
 #include "typesAccess.glsl"
 #include "visibility/worklist.glsl"
 
 #define IBL_MIP_COUNT 8.0
 
-vec3 envBRDFApprox(vec3 _f0, float _NoV, float _roughness) {
+float3 envBRDFApprox(float3 _f0, float _NoV, float _roughness) {
 	
-	vec4 c0 = vec4(-1.0, -0.0275, -0.572, 0.022);
-	vec4 c1 = vec4(1.0, 0.0425, 1.04, -0.04);
-	vec4 r = _roughness * c0 + c1;
+	float4 c0 = float4(-1.0, -0.0275, -0.572, 0.022);
+	float4 c1 = float4(1.0, 0.0425, 1.04, -0.04);
+	float4 r = _roughness * c0 + c1;
 	float a004 = min(r.x * r.x, exp2(-9.28 * _NoV)) * r.x + r.y;
-	vec2 ab = vec2(-1.04, 1.04) * a004 + r.zw;
+	float2 ab = float2(-1.04, 1.04) * a004 + r.zw;
 	return _f0 * ab.x + ab.y;
 	
 }
@@ -83,7 +83,7 @@ float dApprox(float _roughness, float _RoL) {
 	
 }
 
-vec3 shadeVisSamplePBR(uint _visValue, vec2 _uv, vec3 _clipVertex, vec3 _normal) {
+float3 shadeVisSamplePBR(uint _visValue, float2 _uv, float3 _clipVertex, float3 _normal) {
 	
 	uint index = b_indices[_visValue * 3];
 	uint instanceIdx = index >> INSTANCE_ID_BITS;
@@ -93,12 +93,12 @@ vec3 shadeVisSamplePBR(uint _visValue, vec2 _uv, vec3 _clipVertex, vec3 _normal)
 	uint materialIdx = meshlet.materialIdx;
 	Material material = b_materials[materialIdx];
 	
-	vec4 vertexW = u_world.viewProjectionInverse * vec4(_clipVertex, 1.0);
-	vec3 vertex = vertexW.xyz / vertexW.w;
+	float4 vertexW = u_world.viewProjectionInverse * float4(_clipVertex, 1.0);
+	float3 vertex = vertexW.xyz / vertexW.w;
 	
 	// Standard vectors
 	
-	vec3 viewDirection = normalize(u_world.cameraPos - vertex);
+	float3 viewDirection = normalize(u_world.cameraPos - vertex);
 	float NoV = dot(_normal, viewDirection);
 	
 	// Empirical sun visibility above the horizon
@@ -107,31 +107,31 @@ vec3 shadeVisSamplePBR(uint _visValue, vec2 _uv, vec3 _clipVertex, vec3 _normal)
 	const float sunsetStart = cos(radians(90.05) - sunAngularSize);
 	const float sunsetEnd = cos(radians(90.05) + sunAngularSize);
 	
-	float sunDot = dot(vec3(0.0, 0.0, 1.0), u_world.sunDirection);
+	float sunDot = dot(float3(0.0, 0.0, 1.0), u_world.sunDirection);
 	float sunset = (sunDot - sunsetEnd) / (sunsetStart - sunsetEnd);
 	sunset = clamp(sunset, 0.0, 1.0);
 	sunset = (1.0 - cos(sunset * 1.57079633)) / 2.0;
 	
-	vec3 sunColor = u_sunLuminance * sunset;
+	float3 sunColor = u_sunLuminance * sunset;
 	
 	// PBR calculation
 	
 	uint colorIdx = instance.objectIdx;
-	vec3 color = b_colors[colorIdx].rgb * material.color.rgb;
-	vec3 f0 = max(color * material.metalness, vec3(0.04));
+	float3 color = b_colors[colorIdx].rgb * material.color.rgb;
+	float3 f0 = max(color * material.metalness, float3(0.04));
 	
-	vec3 iblDiffuse = textureLod(s_cubemap, _normal, IBL_MIP_COUNT - 2.0).rgb;
-	vec3 sunDiffuse = sunColor * max(dot(_normal, u_world.sunDirection), 0.0);
-	vec3 diffuse = color * (iblDiffuse + sunDiffuse) * (1.0 - material.metalness);
+	float3 iblDiffuse = textureLod(s_cubemap, _normal, IBL_MIP_COUNT - 2.0).rgb;
+	float3 sunDiffuse = sunColor * max(dot(_normal, u_world.sunDirection), 0.0);
+	float3 diffuse = color * (iblDiffuse + sunDiffuse) * (1.0 - material.metalness);
 	
-	vec3 reflection = reflect(viewDirection, _normal);
+	float3 reflection = reflect(viewDirection, _normal);
 	float iblMip = max(7.0 - 0.480898 * log(2.0 / pow(material.roughness, 4.0) - 1.0), 0.0);
-	vec3 iblSpecular = vec3(textureLod(s_cubemap, -reflection, iblMip));
+	float3 iblSpecular = float3(textureLod(s_cubemap, -reflection, iblMip));
 	float SunMinRoughness = 1.0 / 16.0;
-	vec3 sunSpecular = sunColor * dApprox(max(material.roughness, SunMinRoughness), dot(-reflection, u_world.sunDirection));
-	vec3 specular = iblSpecular + sunSpecular;
+	float3 sunSpecular = sunColor * dApprox(max(material.roughness, SunMinRoughness), dot(-reflection, u_world.sunDirection));
+	float3 specular = iblSpecular + sunSpecular;
 	
-	vec3 surface = mix(diffuse, specular, envBRDFApprox(f0, NoV, material.roughness));
+	float3 surface = mix(diffuse, specular, envBRDFApprox(f0, NoV, material.roughness));
 	
 	// Aerial perspective
 	
@@ -146,11 +146,11 @@ vec3 shadeVisSamplePBR(uint _visValue, vec2 _uv, vec3 _clipVertex, vec3 _normal)
 	}
 	float w = sqrt(slice / AerialPerspectiveSize.z); // squared distribution
 	
-	vec3 ap = weight * textureLod(s_aerialPerspective, vec3(_uv, w), 0.0).xyz;
+	float3 ap = weight * textureLod(s_aerialPerspective, float3(_uv, w), 0.0).xyz;
 	
 	// Emissive lighting
 	
-	vec3 emissive = material.emissive * 8.0;
+	float3 emissive = material.emissive * 8.0;
 	
 	// Result write
 	
@@ -160,34 +160,34 @@ vec3 shadeVisSamplePBR(uint _visValue, vec2 _uv, vec3 _clipVertex, vec3 _normal)
 
 void main() {
 	
-	uvec2 lid = mortonOrder(gl_LocalInvocationID.y);
-	uvec2 gid = getTileGid(gl_WorkGroupID.x, TileOffset) + lid;
+	uint2 lid = mortonOrder(gl_LocalInvocationID.y);
+	uint2 gid = getTileGid(gl_WorkGroupID.x, TileOffset) + lid;
 	
 	// Retrieve cluster data
 	
 	uint visbuf;
 	if (all(lessThan(gid, TargetSize)))
-		visbuf = texelFetch(s_visbuf, ivec2(gid), 0).x;
+		visbuf = texelFetch(s_visbuf, int2(gid), 0).x;
 	else
 		visbuf = -1u;
 	
 	// Shade the cluster
 	
-	vec3 clusterResult;
+	float3 clusterResult;
 	if (visbuf != -1u) {
 		
-		vec2 clusterCentroid = texelFetch(s_offset, ivec2(gid), 0).xy * 2.0;
+		float2 clusterCentroid = texelFetch(s_offset, int2(gid), 0).xy * 2.0;
 		
-		float depth = texelFetch(s_depth, ivec2(gid), 0).x;
-		vec2 clusterPos = vec2(gid & ~1u) + clusterCentroid;
-		vec2 screenUv = clusterPos / vec2(TargetSize);
-		vec3 clipPos = vec3(screenUv * 2.0 - 1.0, depth);
+		float depth = texelFetch(s_depth, int2(gid), 0).x;
+		float2 clusterPos = float2(gid & ~1u) + clusterCentroid;
+		float2 screenUv = clusterPos / float2(TargetSize);
+		float3 clipPos = float3(screenUv * 2.0 - 1.0, depth);
 		
-		uint normalOct = texelFetch(s_normal, ivec2(gid), 0).x;
-		vec3 normal = octDecode(normalOct);
+		uint normalOct = texelFetch(s_normal, int2(gid), 0).x;
+		float3 normal = octDecode(normalOct);
 		
 		clusterResult = shadeVisSamplePBR(visbuf, screenUv, clipPos, normal);
-		imageStore(i_clusterOut, ivec2(gid), vec4(clusterResult, 1.0));
+		imageStore(i_clusterOut, int2(gid), float4(clusterResult, 1.0));
 		
 	}
 	

@@ -17,11 +17,11 @@ layout(binding = 1) uniform Atmosphere {
 };
 layout(binding = 2) uniform sampler2D S_TRANSMITTANCE;
 layout(binding = 3) restrict writeonly buffer SunLuminance {
-	vec3 b_sunLuminance;
+	float3 b_sunLuminance;
 };
 
 layout(push_constant) uniform Constants {
-	vec3 u_probePosition;
+	float3 u_probePosition;
 };
 
 #include "sky.glsl"
@@ -32,7 +32,7 @@ void main() {
 	if (gid > 0)
 		return;
 	
-	vec3 worldPos = u_probePosition + vec3(0.0, 0.0, u_atmo.bottomRadius);
+	float3 worldPos = u_probePosition + float3(0.0, 0.0, u_atmo.bottomRadius);
 	b_sunLuminance = getSunLuminance(worldPos, u_world.sunDirection, u_world.sunDirection, u_world.sunIlluminance);
 	
 }

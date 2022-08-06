@@ -3,13 +3,13 @@
 
 struct SingleScatteringResult {
 	
-	vec3 L; // Scattered light (luminance)
-	vec3 opticalDepth; // Optical depth (1/m)
-	vec3 transmittance; // Transmittance in [0,1] (unitless)
-	vec3 multiScatAs1;
+	float3 L; // Scattered light (luminance)
+	float3 opticalDepth; // Optical depth (1/m)
+	float3 transmittance; // Transmittance in [0,1] (unitless)
+	float3 multiScatAs1;
 	
-	vec3 newMultiScatStep0Out;
-	vec3 newMultiScatStep1Out;
+	float3 newMultiScatStep0Out;
+	float3 newMultiScatStep1Out;
 	
 };
 
@@ -20,14 +20,14 @@ struct AtmosphereParams {
 	
 	float rayleighDensityExpScale; // Rayleigh scattering exponential distribution scale in the atmosphere
 	float pad0;
-	vec3 rayleighScattering; // Rayleigh scattering coefficients
+	float3 rayleighScattering; // Rayleigh scattering coefficients
 	
 	float mieDensityExpScale; // Mie scattering exponential distribution scale in the atmosphere
-	vec3 mieScattering; // Mie scattering coefficients
+	float3 mieScattering; // Mie scattering coefficients
 	float pad1;
-	vec3 mieExtinction; // Mie extinction coefficients
+	float3 mieExtinction; // Mie extinction coefficients
 	float pad2;
-	vec3 mieAbsorption; // Mie absorption coefficients
+	float3 mieAbsorption; // Mie absorption coefficients
 	float miePhaseG; // Mie phase function excentricity
 
 // Another medium type in the atmosphere
@@ -39,10 +39,10 @@ struct AtmosphereParams {
 	float pad3;
 	float pad4;
 	float pad5;
-	vec3 absorptionExtinction; // This other medium only absorb light, e.g. useful to represent ozone in the earth atmosphere
+	float3 absorptionExtinction; // This other medium only absorb light, e.g. useful to represent ozone in the earth atmosphere
 	float pad6;
 	
-	vec3 groundAlbedo; // The albedo of the ground.
+	float3 groundAlbedo; // The albedo of the ground.
 	
 };
 

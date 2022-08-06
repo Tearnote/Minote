@@ -517,7 +517,7 @@ constexpr auto mat<Dim, Prec>::operator/=(Prec _other) -> mat<Dim, Prec>& {
 }
 
 template<usize Dim, floating_point Prec>
-constexpr auto operator*(mat<Dim, Prec> const& _left, mat<Dim, Prec> const& _right) -> mat<Dim, Prec> {
+constexpr auto mul(mat<Dim, Prec> const& _left, mat<Dim, Prec> const& _right) -> mat<Dim, Prec> {
 	
 	static_assert(Dim == 3 || Dim == 4, "Unsupported matrix order for multiplication");
 	
@@ -538,7 +538,7 @@ constexpr auto operator*(mat<Dim, Prec> const& _left, mat<Dim, Prec> const& _rig
 }
 
 template<usize Dim, floating_point Prec>
-constexpr auto operator*(mat<Dim, Prec> const& _left, vec<Dim, Prec> const& _right) -> vec<Dim, Prec> {
+constexpr auto mul(mat<Dim, Prec> const& _left, vec<Dim, Prec> const& _right) -> vec<Dim, Prec> {
 	
 	auto result = vec<Dim, Prec>();
 	

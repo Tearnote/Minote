@@ -32,7 +32,7 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, bool _flush) {
 	auto instances = InstanceList::upload(framePool, *this, "instances", _objects);
 	auto atmosphere = Atmosphere::create(permPool, *this, "earth", Atmosphere::Params::earth());
 	// Even size simplifies quad-based effects
-	auto viewport = uvec2{u32(alignPOT(_target.size().x(), 2u)), u32(alignPOT(_target.size().y(), 2u))};
+	auto viewport = uint2{uint(alignPOT(_target.size().x(), 2u)), uint(alignPOT(_target.size().y(), 2u))};
 	
 	// Create textures
 	
@@ -48,7 +48,7 @@ void Frame::draw(Texture2D _target, ObjectPool& _objects, bool _flush) {
 		vuk::ImageUsageFlagBits::eTransferDst);
 	iblUnfiltered.attach(rg, vuk::eNone, vuk::eNone);
 	iblFiltered.attach(rg, vuk::eNone, vuk::eNone);
-	constexpr auto IblProbePosition = vec3{0_m, 0_m, 64_m};
+	constexpr auto IblProbePosition = float3{0_m, 0_m, 64_m};
 	
 	auto color = Texture2D::make(swapchainPool, "color",
 		viewport, vuk::Format::eR16G16B16A16Sfloat,

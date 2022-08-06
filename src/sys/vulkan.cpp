@@ -72,7 +72,7 @@ Vulkan::~Vulkan() {
 	
 }
 
-auto Vulkan::createSwapchain(uvec2 _size, VkSwapchainKHR _old) -> vuk::Swapchain {
+auto Vulkan::createSwapchain(uint2 _size, VkSwapchainKHR _old) -> vuk::Swapchain {
 	
 	auto vkbswapchainResult = vkb::SwapchainBuilder(device)
 		.set_old_swapchain(_old)

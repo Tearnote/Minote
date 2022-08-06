@@ -16,7 +16,7 @@ constexpr auto encodeTransform(ObjectPool::Transform _in) -> InstanceList::Trans
 	auto ry = _in.rotation.y();
 	auto rz = _in.rotation.z();
 	
-	auto rotationMat = mat3{
+	auto rotationMat = float3x3{
 		1.0f - 2.0f * (ry * ry + rz * rz),        2.0f * (rx * ry - rw * rz),        2.0f * (rx * rz + rw * ry),
 		       2.0f * (rx * ry + rw * rz), 1.0f - 2.0f * (rx * rx + rz * rz),        2.0f * (ry * rz - rw * rx),
 		       2.0f * (rx * rz - rw * ry),        2.0f * (ry * rz + rw * rx), 1.0f - 2.0f * (rx * rx + ry * ry)};
@@ -26,9 +26,9 @@ constexpr auto encodeTransform(ObjectPool::Transform _in) -> InstanceList::Trans
 	rotationMat[2] *= _in.scale.z();
 	
 	return to_array({
-		vec4(rotationMat[0], _in.position.x()),
-		vec4(rotationMat[1], _in.position.y()),
-		vec4(rotationMat[2], _in.position.z())});
+		float4(rotationMat[0], _in.position.x()),
+		float4(rotationMat[1], _in.position.y()),
+		float4(rotationMat[2], _in.position.z())});
 	
 }
 
@@ -62,7 +62,7 @@ auto InstanceList::upload(Pool& _pool, Frame& _frame, vuk::Name _name,
 	transforms.reserve(modelCount);
 	auto prevTransforms = pvector<Transform>();
 	prevTransforms.reserve(modelCount);
-	auto colors = pvector<vec4>();
+	auto colors = pvector<float4>();
 	colors.reserve(modelCount);
 	
 	result.triangleCount = 0;
@@ -82,7 +82,7 @@ auto InstanceList::upload(Pool& _pool, Frame& _frame, vuk::Name _name,
 		for (auto i: iota(0u, model.meshletCount)) {
 			
 			instances.push_back(Instance{
-				.objectIdx = u32(transforms.size()),
+				.objectIdx = uint(transforms.size()),
 				.meshletIdx = model.meshletOffset + i });
 			
 			result.triangleCount += divRoundUp(_frame.models.cpu_meshlets[model.meshletOffset + i].indexCount, 3u);
@@ -99,7 +99,7 @@ auto InstanceList::upload(Pool& _pool, Frame& _frame, vuk::Name _name,
 	
 	// Upload data to GPU
 	
-	result.colors = Buffer<vec4>::make(_pool, nameAppend(_name, "colors"),
+	result.colors = Buffer<float4>::make(_pool, nameAppend(_name, "colors"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		colors);
 	result.transforms = Buffer<Transform>::make(_pool, nameAppend(_name, "transforms"),
@@ -124,13 +124,13 @@ auto InstanceList::upload(Pool& _pool, Frame& _frame, vuk::Name _name,
 void TriangleList::compile(vuk::PerThreadContext& _ptc) {
 	
 	auto genIndicesPci = vuk::ComputePipelineBaseCreateInfo();
-	genIndicesPci.add_spirv(std::vector<u32>{
+	genIndicesPci.add_spirv(std::vector<uint>{
 #include "spv/instanceList/genIndices.comp.spv"
 	}, "instanceList/genIndices.comp");
 	_ptc.ctx.create_named_pipeline("instanceList/genIndices", genIndicesPci);
 	
 	auto cullMeshletsPci = vuk::ComputePipelineBaseCreateInfo();
-	cullMeshletsPci.add_spirv(std::vector<u32>{
+	cullMeshletsPci.add_spirv(std::vector<uint>{
 #include "spv/instanceList/cullMeshlets.comp.spv"
 	}, "instanceList/cullMeshlets.comp");
 	_ptc.ctx.create_named_pipeline("instanceList/cullMeshlets", cullMeshletsPci);
@@ -138,7 +138,7 @@ void TriangleList::compile(vuk::PerThreadContext& _ptc) {
 }
 
 auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _frame, vuk::Name _name,
-	Texture2D _hiZ, uvec2 _hiZInnerSize, mat4 _view, mat4 _projection) -> TriangleList {
+	Texture2D _hiZ, uint2 _hiZInnerSize, float4x4 _view, float4x4 _projection) -> TriangleList {
 	
 	auto result = TriangleList();
 	result.colors = _instances.colors;
@@ -150,20 +150,20 @@ auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _f
 		_instances.size());
 	result.instances.attach(_frame.rg, vuk::eNone, vuk::eNone);
 	
-	auto instanceCountData = uvec4{0, 1, 1, 0};
-	result.instanceCount = Buffer<uvec4>::make(_frame.framePool, nameAppend(_name, "instanceCount"),
+	auto instanceCountData = uint4{0, 1, 1, 0};
+	result.instanceCount = Buffer<uint4>::make(_frame.framePool, nameAppend(_name, "instanceCount"),
 		vuk::BufferUsageFlagBits::eIndirectBuffer |
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		std::span(&instanceCountData, 1));
 	result.instanceCount.attach(_frame.rg, vuk::eHostWrite, vuk::eNone);
 	
 	auto groupCounterData = 0u;
-	auto groupCounter = Buffer<u32>::make(_frame.framePool, nameAppend(_name, "groupCounter"),
+	auto groupCounter = Buffer<uint>::make(_frame.framePool, nameAppend(_name, "groupCounter"),
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		std::span(&groupCounterData, 1));
 	
 	auto invView = inverse(_view);
-	auto cameraPos = vec3{invView[3][0], invView[3][1], invView[3][2]};
+	auto cameraPos = float3{invView[3][0], invView[3][1], invView[3][2]};
 	
 	_frame.rg.add_pass({
 		.name = nameAppend(_name, "instanceList/cullMeshlets"),
@@ -186,21 +186,21 @@ auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _f
 			   .bind_compute_pipeline("instanceList/cullMeshlets");
 			
 			struct CullingData {
-				mat4 view;
-				vec4 frustum;
-				f32 P00;
-				f32 P11;
+				float4x4 view;
+				float4 frustum;
+				float P00;
+				float P11;
 			};
 			*cmd.map_scratch_uniform_binding<CullingData>(0, 0) = CullingData{
 				.view = _view,
 				.frustum = [_projection] {
 					
 					auto projectionT = transpose(_projection);
-					vec4 frustumX = projectionT[3] + projectionT[0];
-					vec4 frustumY = projectionT[3] + projectionT[1];
-					frustumX /= length(vec3(frustumX));
-					frustumY /= length(vec3(frustumY));
-					return vec4{frustumX.x(), frustumX.z(), frustumY.y(), frustumY.z()};
+					float4 frustumX = projectionT[3] + projectionT[0];
+					float4 frustumY = projectionT[3] + projectionT[1];
+					frustumX /= length(float3(frustumX));
+					frustumY /= length(float3(frustumY));
+					return float4{frustumX.x(), frustumX.z(), frustumY.y(), frustumY.z()};
 					
 				}(),
 				.P00 = _projection[0][0],
@@ -208,9 +208,9 @@ auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _f
 			
 			cmd.specialize_constants(0, MeshletMaxTris);
 			cmd.specialize_constants(1, _projection[3][2]);
-			cmd.specialize_constants(2, u32Fromu16(_hiZ.size()));
-			cmd.specialize_constants(3, u32Fromu16(_hiZInnerSize));
-			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, u32(_instances.size()));
+			cmd.specialize_constants(2, uintFromuint16(_hiZ.size()));
+			cmd.specialize_constants(3, uintFromuint16(_hiZInnerSize));
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, uint(_instances.size()));
 			
 			cmd.dispatch_invocations(_instances.size());
 			
@@ -228,7 +228,7 @@ auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _f
 		std::span(&commandData, 1));
 	result.command.attach(_frame.rg, vuk::eHostWrite, vuk::eNone);
 	
-	result.indices = Buffer<u32>::make(_pool, _name,
+	result.indices = Buffer<uint>::make(_pool, _name,
 		vuk::BufferUsageFlagBits::eIndexBuffer |
 		vuk::BufferUsageFlagBits::eStorageBuffer,
 		_instances.triangleCount * 3);

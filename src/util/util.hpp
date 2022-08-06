@@ -32,7 +32,7 @@ constexpr auto alignPOT(usize size, usize boundary) -> usize {
 	
 }
 
-constexpr auto nextPOT(u32 n) -> u32 {
+constexpr auto nextPOT(uint n) -> uint {
 	
 	n -= 1;
 	n |= n >> 1;

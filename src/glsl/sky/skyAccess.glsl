@@ -21,7 +21,7 @@ float fromSubUvsToUnit(float _u, float _resolution) {
 }
 
 void uvToLutTransmittanceParams(out float _viewHeight, out float _viewZenithCosAngle,
-	vec2 _uv, float _atmoBottom, float _atmoTop) {
+	float2 _uv, float _atmoBottom, float _atmoTop) {
 	
 	float x_mu = _uv.x;
 	float x_r = _uv.y;
@@ -39,7 +39,7 @@ void uvToLutTransmittanceParams(out float _viewHeight, out float _viewZenithCosA
 }
 
 void lutTransmittanceParamsToUv(float _viewHeight, float _viewZenithCosAngle,
-	out vec2 _uv, float _atmoBottom, float _atmoTop) {
+	out float2 _uv, float _atmoBottom, float _atmoTop) {
 	
 	float H = sqrt(max(0.0, _atmoTop * _atmoTop - _atmoBottom * _atmoBottom));
 	float rho = sqrt(max(0.0, _viewHeight * _viewHeight - _atmoBottom * _atmoBottom));
@@ -53,15 +53,15 @@ void lutTransmittanceParamsToUv(float _viewHeight, float _viewZenithCosAngle,
 	float x_mu = (d - d_min) / (d_max - d_min);
 	float x_r = rho / H;
 	
-	_uv = vec2(x_mu, x_r);
+	_uv = float2(x_mu, x_r);
 	
 }
 
 void uvToSkyViewLutParams(out float _viewZenithCosAngle, out float _lightViewCosAngle,
-	uvec2 _viewSize, float _viewHeight, vec2 _uv, float _atmoBottom) {
+	uint2 _viewSize, float _viewHeight, float2 _uv, float _atmoBottom) {
 	
 	// Constrain uvs to valid sub texel range (avoid zenith derivative issue making LUT usage visible)
-	_uv = vec2(fromSubUvsToUnit(_uv.x, _viewSize.x), fromSubUvsToUnit(_uv.y, _viewSize.y));
+	_uv = float2(fromSubUvsToUnit(_uv.x, _viewSize.x), fromSubUvsToUnit(_uv.y, _viewSize.y));
 	
 	float vHorizon = sqrt(_viewHeight * _viewHeight - _atmoBottom * _atmoBottom);
 	float cosBeta = vHorizon / _viewHeight; // GroundToHorizonCos
@@ -95,7 +95,7 @@ void uvToSkyViewLutParams(out float _viewZenithCosAngle, out float _lightViewCos
 }
 
 void skyViewLutParamsToUv(bool _intersectGround, float _viewZenithCosAngle,
-	float _lightViewCosAngle, uvec2 _viewSize, float _viewHeight, out vec2 _uv, float _atmoBottom) {
+	float _lightViewCosAngle, uint2 _viewSize, float _viewHeight, out float2 _uv, float _atmoBottom) {
 		
 	float vHorizon = sqrt(_viewHeight * _viewHeight - _atmoBottom * _atmoBottom);
 	float cosBeta = vHorizon / _viewHeight; // GroundToHorizonCos
@@ -127,7 +127,7 @@ void skyViewLutParamsToUv(bool _intersectGround, float _viewZenithCosAngle,
 	_uv.x = coord;
 	
 	// Constrain uvs to valid sub texel range (avoid zenith derivative issue making LUT usage visible)
-	_uv = vec2(fromUnitToSubUvs(_uv.x, _viewSize.x), fromUnitToSubUvs(_uv.y, _viewSize.y));
+	_uv = float2(fromUnitToSubUvs(_uv.x, _viewSize.x), fromUnitToSubUvs(_uv.y, _viewSize.y));
 	
 }
 

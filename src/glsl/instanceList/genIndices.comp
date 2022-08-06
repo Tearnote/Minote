@@ -15,10 +15,10 @@ layout(binding = 1, std430) restrict readonly buffer Instances {
 	Instance b_instances[];
 };
 layout(binding = 2, std430) restrict buffer InstanceCount {
-	uvec4 b_outInstanceCount;
+	uint4 b_outInstanceCount;
 };
 layout(binding = 3, std430) restrict readonly buffer Transforms {
-	mat3x4 b_transforms[];
+	float3x3x4 b_transforms[];
 };
 layout(binding = 4, std430) restrict readonly buffer TriIndices {
 	uint b_triIndices[];
@@ -41,7 +41,7 @@ layout(binding = 8, std430) restrict writeonly buffer Indices {
 #define TRI_BACKFACE_CULLING 1
 
 layout(push_constant) uniform Constants {
-	vec3 u_cameraPosition;
+	float3 u_cameraPosition;
 };
 
 layout(constant_id = 0) const uint MaxTrisPerMeshlet = 0;
@@ -59,7 +59,7 @@ void main() {
 	Meshlet meshlet = b_meshlets[instance.meshletIdx];
 #if TRI_BACKFACE_CULLING
 	uint transformIdx = instance.objectIdx;
-	mat4 transform = getTransform(b_transforms[transformIdx]);
+	float4x4 transform = getTransform(b_transforms[transformIdx]);
 #endif //TRI_BACKFACE_CULLING
 	
 	// Process 4 triangles
@@ -73,7 +73,7 @@ void main() {
 			continue;
 		
 		idx += meshlet.indexOffset;
-		uvec3 indices = {
+		uint3 indices = {
 			b_triIndices[idx + 0],
 			b_triIndices[idx + 1],
 			b_triIndices[idx + 2]};
@@ -82,24 +82,24 @@ void main() {
 		
 		// Read vertices
 		
-		uvec3 triIndices = indices + meshlet.vertexOffset;
-		uvec3 vertIndices = {
+		uint3 triIndices = indices + meshlet.vertexOffset;
+		uint3 vertIndices = {
 			b_vertIndices[triIndices[0]],
 			b_vertIndices[triIndices[1]],
 			b_vertIndices[triIndices[2]] };
 		
-		mat3 vertices = {
+		float3x3 vertices = {
 			fetchVertex(vertIndices.x),
 			fetchVertex(vertIndices.y),
 			fetchVertex(vertIndices.z) };
 		
 		for (uint i = 0; i < 3; i += 1)
-			vertices[i] = vec3(transform * vec4(vertices[i], 1.0));
+			vertices[i] = float3(transform * float4(vertices[i], 1.0));
 		
 		// Backface check
 		
-		vec3 viewDirection = vertices[0] - u_cameraPosition;
-		vec3 normal = cross(vertices[1] - vertices[0], vertices[2] - vertices[0]);
+		float3 viewDirection = vertices[0] - u_cameraPosition;
+		float3 normal = cross(vertices[1] - vertices[0], vertices[2] - vertices[0]);
 		if (dot(normal, viewDirection) > 0)
 			continue;
 		

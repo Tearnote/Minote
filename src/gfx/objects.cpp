@@ -21,7 +21,7 @@ auto ObjectPool::create() -> ObjectID {
 		auto id = m_deletedIDs.back();
 		m_deletedIDs.pop_back();
 		metadata[id] = Metadata::make_default();
-		colors[id] = vec4(1.0f); // Fully opaque
+		colors[id] = float4(1.0f); // Fully opaque
 		transforms[id] = Transform::make_default();
 		prevTransforms[id] = Transform::make_default();
 		return id;

@@ -66,30 +66,30 @@ void Tonemap::compile() {
 	
 }
 
-auto Tonemap::genConstants() -> array<vec4, 4> {
+auto Tonemap::genConstants() -> array<float4, 4> {
 	
-	auto result = array<vec4, 4>();
+	auto result = array<float4, 4>();
 	
 	result[0].x() = contrast;
 	result[0].y() = shoulder;
-	f32 cs = contrast * shoulder;
+	float cs = contrast * shoulder;
 	
-	f32 z0 = -pow(midIn,contrast);
-	f32 z1 = pow(hdrMax,cs)*pow(midIn,contrast);
-	f32 z2 = pow(hdrMax,contrast)*pow(midIn,cs)*midOut;
-	f32 z3 = pow(hdrMax,cs)*midOut;
-	f32 z4 = pow(midIn,cs)*midOut;
+	float z0 = -pow(midIn,contrast);
+	float z1 = pow(hdrMax,cs)*pow(midIn,contrast);
+	float z2 = pow(hdrMax,contrast)*pow(midIn,cs)*midOut;
+	float z3 = pow(hdrMax,cs)*midOut;
+	float z4 = pow(midIn,cs)*midOut;
 	result[0].z() = -((z0+(midOut*(z1-z2))/(z3-z4))/z4);
 	
-	f32 w0 = pow(hdrMax,cs)*pow(midIn,contrast);
-	f32 w1 = pow(hdrMax,contrast)*pow(midIn,cs)*midOut;
-	f32 w2 = pow(hdrMax,cs)*midOut;
-	f32 w3 = pow(midIn,cs)*midOut;
+	float w0 = pow(hdrMax,cs)*pow(midIn,contrast);
+	float w1 = pow(hdrMax,contrast)*pow(midIn,cs)*midOut;
+	float w2 = pow(hdrMax,cs)*midOut;
+	float w3 = pow(midIn,cs)*midOut;
 	result[0].w() = (w0-w1)/(w2-w3);
 	
-	result[1] = vec4((saturation+vec3(contrast))/crosstalkSaturation, 0.0f);
-	result[2] = vec4(crosstalk, 0.0f);
-	result[3] = vec4(crosstalkSaturation, 0.0f);
+	result[1] = float4((saturation+float3(contrast))/crosstalkSaturation, 0.0f);
+	result[2] = float4(crosstalk, 0.0f);
+	result[3] = float4(crosstalkSaturation, 0.0f);
 	
 	return result;
 	

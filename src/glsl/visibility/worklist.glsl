@@ -7,10 +7,10 @@
 
 #ifdef B_LISTS
 
-uvec2 getTileGid(uint _tileIdx, uint _tileOffset) {
+uint2 getTileGid(uint _tileIdx, uint _tileOffset) {
 	
 	uint tilePacked = B_LISTS[_tileOffset + _tileIdx];
-	uvec2 tile = u16Fromu32(tilePacked);
+	uint2 tile = uint16Fromuint(tilePacked);
 	return tile * WORKLIST_TILESIZE;
 	
 }

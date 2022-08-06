@@ -16,21 +16,21 @@ layout(binding = 5) restrict writeonly uniform image2D i_hiz4;
 layout(binding = 6) restrict writeonly uniform image2D i_hiz5;
 
 layout(constant_id = 0) const uint DepthSizePacked = 0;
-const uvec2 DepthSize = uvec2(U16FROMU32(DepthSizePacked));
+const uint2 DepthSize = uint2(U16FROMU32(DepthSizePacked));
 layout(constant_id = 1) const uint HiZSizePacked = 0;
-const uvec2 HiZSize = uvec2(U16FROMU32(HiZSizePacked));
+const uint2 HiZSize = uint2(U16FROMU32(HiZSizePacked));
 layout(constant_id = 2) const uint MipCount = 0;
 
 // Tile buffer for cross-thread communication of results
 shared float sh_temp[gl_WorkGroupSize.x * gl_WorkGroupSize.y];
 
-void storeTemp(uvec2 pos, float val) {
+void storeTemp(uint2 pos, float val) {
 	
 	sh_temp[pos.x + pos.y * gl_WorkGroupSize.x] = val;
 	
 }
 
-float loadTemp(uvec2 pos) {
+float loadTemp(uint2 pos) {
 	
 	return sh_temp[pos.x + pos.y * gl_WorkGroupSize.x];
 	
@@ -38,28 +38,28 @@ float loadTemp(uvec2 pos) {
 
 void main() {
 	
-	uvec2 lid = mortonOrder(gl_LocalInvocationID.x + gl_LocalInvocationID.y * gl_WorkGroupSize.x);
-	uvec2 tileOffset = gl_WorkGroupID.xy * gl_WorkGroupSize.xy;
-	uvec2 gid = tileOffset + lid;
-	uvec2 depthAligned = (DepthSize + gl_WorkGroupSize.xy - 1) & ~(gl_WorkGroupSize.xy - 1);
-	ivec2 depthOffset = (ivec2(DepthSize) - ivec2(depthAligned)) / 2;
-	uvec2 hizOffset = (HiZSize - depthAligned) / 2;
+	uint2 lid = mortonOrder(gl_LocalInvocationID.x + gl_LocalInvocationID.y * gl_WorkGroupSize.x);
+	uint2 tileOffset = gl_WorkGroupID.xy * gl_WorkGroupSize.xy;
+	uint2 gid = tileOffset + lid;
+	uint2 depthAligned = (DepthSize + gl_WorkGroupSize.xy - 1) & ~(gl_WorkGroupSize.xy - 1);
+	int2 depthOffset = (int2(DepthSize) - int2(depthAligned)) / 2;
+	uint2 hizOffset = (HiZSize - depthAligned) / 2;
 	
 	float minSample = 1.0;
 	for (uint i = 0; i < 8; i += 1) {
 		
 		float newSample = 1.0;
-		ivec2 samplePos = ivec2(gid) + depthOffset;
-		if (all(greaterThanEqual(samplePos, ivec2(0))) && all(lessThan(samplePos, DepthSize)))
-			newSample = min(minSample, texelFetch(s_depth, ivec2(gid) + depthOffset, int(i)).x);
+		int2 samplePos = int2(gid) + depthOffset;
+		if (all(greaterThanEqual(samplePos, int2(0))) && all(lessThan(samplePos, DepthSize)))
+			newSample = min(minSample, texelFetch(s_depth, int2(gid) + depthOffset, int(i)).x);
 		minSample = min(minSample, newSample);
 		
 	}
 	
 	// Write resolved multisampled value
 	
-	uvec2 writePos = gid + hizOffset;
-	imageStore(i_hiz0, ivec2(writePos), vec4(minSample, 0.0, 0.0, 0.0));
+	uint2 writePos = gid + hizOffset;
+	imageStore(i_hiz0, int2(writePos), float4(minSample, 0.0, 0.0, 0.0));
 	
 	// Use subgroup ops as much as possible
 	
@@ -70,19 +70,19 @@ void main() {
 		
 		minSample = subgroupClusteredMin(minSample, 4);
 		if (gl_SubgroupInvocationID % 4 == 0)
-			imageStore(i_hiz1, ivec2(writePos / 2), vec4(minSample, 0.0, 0.0, 0.0));
+			imageStore(i_hiz1, int2(writePos / 2), float4(minSample, 0.0, 0.0, 0.0));
 		
 	} else {
 		
 		storeTemp(lid, minSample);
 		barrier();
 		
-		if (all(equal(lid % 2, uvec2(0)))) {
+		if (all(equal(lid % 2, uint2(0)))) {
 			
-			minSample = min(minSample, loadTemp(lid + uvec2(1, 0)));
-			minSample = min(minSample, loadTemp(lid + uvec2(0, 1)));
-			minSample = min(minSample, loadTemp(lid + uvec2(1, 1)));
-			imageStore(i_hiz1, ivec2(writePos / 2), vec4(minSample, 0.0, 0.0, 0.0));
+			minSample = min(minSample, loadTemp(lid + uint2(1, 0)));
+			minSample = min(minSample, loadTemp(lid + uint2(0, 1)));
+			minSample = min(minSample, loadTemp(lid + uint2(1, 1)));
+			imageStore(i_hiz1, int2(writePos / 2), float4(minSample, 0.0, 0.0, 0.0));
 			
 		}
 		
@@ -95,20 +95,20 @@ void main() {
 		
 		minSample = subgroupClusteredMin(minSample, 16);
 		if (gl_SubgroupInvocationID % 16 == 0)
-			imageStore(i_hiz2, ivec2(writePos / 4), vec4(minSample, 0.0, 0.0, 0.0));
+			imageStore(i_hiz2, int2(writePos / 4), float4(minSample, 0.0, 0.0, 0.0));
 		
 	} else {
 		
-		if (all(equal(lid % 2, uvec2(0))))
+		if (all(equal(lid % 2, uint2(0))))
 			storeTemp(lid, minSample);
 		barrier();
 		
-		if (all(equal(lid % 4, uvec2(0)))) {
+		if (all(equal(lid % 4, uint2(0)))) {
 			
-			minSample = min(minSample, loadTemp(lid + uvec2(2, 0)));
-			minSample = min(minSample, loadTemp(lid + uvec2(0, 2)));
-			minSample = min(minSample, loadTemp(lid + uvec2(2, 2)));
-			imageStore(i_hiz2, ivec2(writePos / 4), vec4(minSample, 0.0, 0.0, 0.0));
+			minSample = min(minSample, loadTemp(lid + uint2(2, 0)));
+			minSample = min(minSample, loadTemp(lid + uint2(0, 2)));
+			minSample = min(minSample, loadTemp(lid + uint2(2, 2)));
+			imageStore(i_hiz2, int2(writePos / 4), float4(minSample, 0.0, 0.0, 0.0));
 			
 		}
 		
@@ -121,20 +121,20 @@ void main() {
 		
 		minSample = subgroupClusteredMin(minSample, 64);
 		if (gl_SubgroupInvocationID % 64 == 0)
-			imageStore(i_hiz3, ivec2(writePos / 8), vec4(minSample, 0.0, 0.0, 0.0));
+			imageStore(i_hiz3, int2(writePos / 8), float4(minSample, 0.0, 0.0, 0.0));
 		
 	} else {
 		
-		if (all(equal(lid % 4, uvec2(0))))
+		if (all(equal(lid % 4, uint2(0))))
 			storeTemp(lid, minSample);
 		barrier();
 		
-		if (all(equal(lid % 8, uvec2(0)))) {
+		if (all(equal(lid % 8, uint2(0)))) {
 			
-			minSample = min(minSample, loadTemp(lid + uvec2(4, 0)));
-			minSample = min(minSample, loadTemp(lid + uvec2(0, 4)));
-			minSample = min(minSample, loadTemp(lid + uvec2(4, 4)));
-			imageStore(i_hiz3, ivec2(writePos / 8), vec4(minSample, 0.0, 0.0, 0.0));
+			minSample = min(minSample, loadTemp(lid + uint2(4, 0)));
+			minSample = min(minSample, loadTemp(lid + uint2(0, 4)));
+			minSample = min(minSample, loadTemp(lid + uint2(4, 4)));
+			imageStore(i_hiz3, int2(writePos / 8), float4(minSample, 0.0, 0.0, 0.0));
 			
 		}
 		
@@ -145,16 +145,16 @@ void main() {
 	if (MipCount < 5)
 		return;
 	
-	if (all(equal(lid % 8, uvec2(0))))
+	if (all(equal(lid % 8, uint2(0))))
 		storeTemp(lid, minSample);
 	barrier();
 	
-	if (all(equal(lid % 16, uvec2(0)))) {
+	if (all(equal(lid % 16, uint2(0)))) {
 		
-		minSample = min(minSample, loadTemp(lid + uvec2(8, 0)));
-		minSample = min(minSample, loadTemp(lid + uvec2(0, 8)));
-		minSample = min(minSample, loadTemp(lid + uvec2(8, 8)));
-		imageStore(i_hiz4, ivec2(writePos / 16), vec4(minSample, 0.0, 0.0, 0.0));
+		minSample = min(minSample, loadTemp(lid + uint2(8, 0)));
+		minSample = min(minSample, loadTemp(lid + uint2(0, 8)));
+		minSample = min(minSample, loadTemp(lid + uint2(8, 8)));
+		imageStore(i_hiz4, int2(writePos / 16), float4(minSample, 0.0, 0.0, 0.0));
 		
 	}
 	
@@ -163,16 +163,16 @@ void main() {
 	if (MipCount < 6)
 		return;
 	
-	if (all(equal(lid % 16, uvec2(0))))
+	if (all(equal(lid % 16, uint2(0))))
 		storeTemp(lid, minSample);
 	barrier();
 	
-	if (all(equal(lid /* % 32 */, uvec2(0)))) {
+	if (all(equal(lid /* % 32 */, uint2(0)))) {
 		
-		minSample = min(minSample, loadTemp(lid + uvec2(16, 0)));
-		minSample = min(minSample, loadTemp(lid + uvec2(0, 16)));
-		minSample = min(minSample, loadTemp(lid + uvec2(16, 16)));
-		imageStore(i_hiz5, ivec2(writePos / 32), vec4(minSample, 0.0, 0.0, 0.0));
+		minSample = min(minSample, loadTemp(lid + uint2(16, 0)));
+		minSample = min(minSample, loadTemp(lid + uint2(0, 16)));
+		minSample = min(minSample, loadTemp(lid + uint2(16, 16)));
+		imageStore(i_hiz5, int2(writePos / 32), float4(minSample, 0.0, 0.0, 0.0));
 		
 	}
 	

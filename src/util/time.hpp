@@ -7,7 +7,7 @@ namespace minote {
 
 // Main timestamp/duration type. Has enough resolution to largely ignore
 // rounding error, and wraps after >100 years.
-using nsec = i64;
+using nsec = int64;
 
 // Create nsec from a count of seconds
 template<arithmetic T>
@@ -18,8 +18,8 @@ template<arithmetic T>
 constexpr auto milliseconds(T val) { return val * 1'000'000LL; }
 
 // Get an accurate floating-point ratio between two nsecs
-template<floating_point T = f32>
-constexpr auto ratio(nsec left, nsec right) -> T { return f64(left) / f64(right); }
+template<floating_point T = float>
+constexpr auto ratio(nsec left, nsec right) -> T { return double(left) / double(right); }
 
 // Create nsec from second/millisecond literals
 

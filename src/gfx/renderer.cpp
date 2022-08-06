@@ -81,11 +81,11 @@ void Renderer::beginFrame() {
 	auto& frameResource = m_deviceResource.get_next_frame();
 	m_frameAllocator = vuk::Allocator(frameResource);
 	calcFramerate();
-	m_camera.viewport = uvec2{s_vulkan->swapchain->extent.width, s_vulkan->swapchain->extent.height};
+	m_camera.viewport = uint2{s_vulkan->swapchain->extent.width, s_vulkan->swapchain->extent.height};
 	
 }
 
-void Renderer::refreshSwapchain(uvec2 _newSize) {
+void Renderer::refreshSwapchain(uint2 _newSize) {
 	
 	auto lock = std::lock_guard(m_renderLock);
 	
@@ -107,7 +107,7 @@ void Renderer::calcFramerate() {
 	auto timeElapsed = currentTime - m_lastFramerateCheck;
 	if (timeElapsed >= FramerateUpdate) {
 		auto secondsElapsed = ratio(timeElapsed, 1_s);
-		m_framerate = f32(m_framesSinceLastCheck) / secondsElapsed;
+		m_framerate = float(m_framesSinceLastCheck) / secondsElapsed;
 		
 		m_lastFramerateCheck = currentTime;
 		m_framesSinceLastCheck = 0;
@@ -165,9 +165,9 @@ auto Renderer::buildRenderGraph() -> std::shared_ptr<vuk::RenderGraph> {
 			auto dstSize = cmd.get_resource_image_attachment("swapchain").value().extent.extent;
 			cmd.blit_image("screen/final", "swapchain", vuk::ImageBlit{
 				.srcSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
-				.srcOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(srcSize.width), i32(srcSize.height), 1}},
+				.srcOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{int(srcSize.width), int(srcSize.height), 1}},
 				.dstSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
-				.dstOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(dstSize.width), i32(dstSize.height), 1}} },
+				.dstOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{int(dstSize.width), int(dstSize.height), 1}} },
 				vuk::Filter::eNearest);
 		},
 	});

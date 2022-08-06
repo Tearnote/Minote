@@ -25,12 +25,12 @@ struct Visibility {
 
 struct Worklist {
 	
-	static constexpr auto TileSize = vec2{8, 8};
+	static constexpr auto TileSize = float2{8, 8};
 	static constexpr auto ListCount = +MaterialType::Count;
 	
-	Buffer<uvec4> counts; // x holds tile count, yz are 1 (for dispatch indirect)
-	Buffer<u32> lists;
-	uvec2 tileDimensions; // How many tiles fit in each dimension
+	Buffer<uint4> counts; // x holds tile count, yz are 1 (for dispatch indirect)
+	Buffer<uint> lists;
+	uint2 tileDimensions; // How many tiles fit in each dimension
 	
 	// Build the shader.
 	static void compile(vuk::PerThreadContext&);

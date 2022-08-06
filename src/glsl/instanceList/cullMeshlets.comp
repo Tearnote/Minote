@@ -7,8 +7,8 @@ layout(local_size_x = 64) in;
 #include "../util.glsl"
 
 layout(binding = 0) uniform CullingData {
-	mat4 u_view;
-	vec4 u_frustum;
+	float4x4 u_view;
+	float4 u_frustum;
 	float u_P00;
 	float u_P11;
 };
@@ -19,11 +19,11 @@ layout(binding = 2, std430) restrict readonly buffer Instances {
 	Instance b_instances[];
 };
 layout(binding = 3, std430) restrict readonly buffer Transforms {
-	mat3x4 b_transforms[];
+	float3x3x4 b_transforms[];
 };
 layout(binding = 4) uniform sampler2D s_hiz;
 layout(binding = 5, std430) restrict buffer OutInstanceCount {
-	uvec4 b_outInstanceCount;
+	uint4 b_outInstanceCount;
 };
 layout(binding = 6, std430) restrict writeonly buffer OutInstances {
 	Instance b_outInstances[];
@@ -39,28 +39,28 @@ layout(push_constant) uniform Constants {
 layout(constant_id = 0) const uint MaxTrisPerMeshlet = 0;
 layout(constant_id = 1) const float ZNear = 0.0;
 layout(constant_id = 2) const uint HiZSizePacked = 0;
-const uvec2 HiZSize = uvec2(U16FROMU32(HiZSizePacked));
+const uint2 HiZSize = uint2(U16FROMU32(HiZSizePacked));
 layout(constant_id = 3) const uint HiZInnerPacked = 0;
-const uvec2 HiZInner = uvec2(U16FROMU32(HiZInnerPacked));
+const uint2 HiZInner = uint2(U16FROMU32(HiZInnerPacked));
 
 // 2D Polyhedral Bounds of a Clipped, Perspective-Projected 3D Sphere. Michael Mara, Morgan McGuire. 2013
-bool projectSphere(vec3 C, float r, float znear, float P00, float P11, out vec4 aabb) {
+bool projectSphere(float3 C, float r, float znear, float P00, float P11, out float4 aabb) {
 	
 	if (C.z < r + znear)
 		return false;
 	
-	vec2 cx = -C.xz;
-	vec2 vx = vec2(sqrt(dot(cx, cx) - r * r), r);
-	vec2 minx = mat2(vx.x, vx.y, -vx.y, vx.x) * cx;
-	vec2 maxx = mat2(vx.x, -vx.y, vx.y, vx.x) * cx;
+	float2 cx = -C.xz;
+	float2 vx = float2(sqrt(dot(cx, cx) - r * r), r);
+	float2 minx = mat2(vx.x, vx.y, -vx.y, vx.x) * cx;
+	float2 maxx = mat2(vx.x, -vx.y, vx.y, vx.x) * cx;
 	
-	vec2 cy = -C.yz;
-	vec2 vy = vec2(sqrt(dot(cy, cy) - r * r), r);
-	vec2 miny = mat2(vy.x, vy.y, -vy.y, vy.x) * cy;
-	vec2 maxy = mat2(vy.x, -vy.y, vy.y, vy.x) * cy;
+	float2 cy = -C.yz;
+	float2 vy = float2(sqrt(dot(cy, cy) - r * r), r);
+	float2 miny = mat2(vy.x, vy.y, -vy.y, vy.x) * cy;
+	float2 maxy = mat2(vy.x, -vy.y, vy.y, vy.x) * cy;
 	
-	aabb = vec4(minx.x / minx.y * P00, miny.x / miny.y * P11, maxx.x / maxx.y * P00, maxy.x / maxy.y * P11);
-	aabb = aabb.xwzy * vec4(0.5f, -0.5f, 0.5f, -0.5f) + vec4(0.5f); // clip space -> uv space
+	aabb = float4(minx.x / minx.y * P00, miny.x / miny.y * P11, maxx.x / maxx.y * P00, maxy.x / maxy.y * P11);
+	aabb = aabb.xwzy * float4(0.5f, -0.5f, 0.5f, -0.5f) + float4(0.5f); // clip space -> uv space
 	
 	return true;
 	
@@ -77,7 +77,7 @@ void main() {
 		Instance instance = b_instances[gid];
 		Meshlet meshlet = b_meshlets[instance.meshletIdx];
 		uint transformIdx = instance.objectIdx;
-		mat4 transform = getTransform(b_transforms[transformIdx]);
+		float4x4 transform = getTransform(b_transforms[transformIdx]);
 		
 		// Transform meshlet data
 		
@@ -85,14 +85,14 @@ void main() {
 			length(transform[0].xyz), max(
 			length(transform[1].xyz),
 			length(transform[2].xyz)));
-		vec3 boundingSphereCenter = vec3(transform * vec4(meshlet.boundingSphereCenter, 1.0));
+		float3 boundingSphereCenter = float3(transform * float4(meshlet.boundingSphereCenter, 1.0));
 		float boundingSphereRadius = meshlet.boundingSphereRadius * scale;
 		
 		bool visible = true;
 		
 		// Frustum culling
 		
-		vec3 viewCenter = vec3(u_view * vec4(boundingSphereCenter, 1.0));
+		float3 viewCenter = float3(u_view * float4(boundingSphereCenter, 1.0));
 		visible = visible && (
 			(viewCenter.z * u_frustum[1] - abs(viewCenter.x) * u_frustum[0] > -boundingSphereRadius) &&
 			(viewCenter.z * u_frustum[3] - abs(viewCenter.y) * u_frustum[2] > -boundingSphereRadius));
@@ -103,18 +103,18 @@ void main() {
 			
 			viewCenter.y *= -1;
 			
-			vec4 aabb;
+			float4 aabb;
 			if (projectSphere(viewCenter, boundingSphereRadius, ZNear, u_P00, u_P11, aabb))
 			{
 				float width = (aabb.z - aabb.x) * HiZInner.x;
 				float height = (aabb.w - aabb.y) * HiZInner.y;
 				
 				float level = floor(log2(max(width, height)));
-				vec2 offset = vec2(HiZSize - HiZInner) / 2.0 / vec2(HiZSize);
-				vec2 scale = vec2(HiZInner) / vec2(HiZSize);
+				float2 offset = float2(HiZSize - HiZInner) / 2.0 / float2(HiZSize);
+				float2 scale = float2(HiZInner) / float2(HiZSize);
 				
 				// Sampler is set up to do min reduction, so this computes the minimum depth of a 2x2 texel quad
-				vec2 depthUv = saturate((aabb.xy + aabb.zw) * 0.5) * scale + offset;
+				float2 depthUv = saturate((aabb.xy + aabb.zw) * 0.5) * scale + offset;
 				float depth = textureLod(s_hiz, depthUv, level).x;
 				float depthSphere = ZNear / (viewCenter.z - boundingSphereRadius);
 				

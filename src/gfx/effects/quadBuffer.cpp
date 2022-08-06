@@ -10,19 +10,19 @@ namespace minote {
 void QuadBuffer::compile(vuk::PerThreadContext& _ptc) {
 	
 	auto quadClusterizePci = vuk::ComputePipelineBaseCreateInfo();
-	quadClusterizePci.add_spirv(std::vector<u32>{
+	quadClusterizePci.add_spirv(std::vector<uint>{
 #include "spv/quad/clusterize.comp.spv"
 	}, "quadClusterize.comp");
 	_ptc.ctx.create_named_pipeline("quad/clusterize", quadClusterizePci);
 	
 	auto quadGenBuffersPci = vuk::ComputePipelineBaseCreateInfo();
-	quadGenBuffersPci.add_spirv(std::vector<u32>{
+	quadGenBuffersPci.add_spirv(std::vector<uint>{
 #include "spv/quad/genBuffers.comp.spv"
 	}, "quad/genBuffers.comp");
 	_ptc.ctx.create_named_pipeline("quad/genBuffers", quadGenBuffersPci);
 	
 	auto quadResolvePci = vuk::ComputePipelineBaseCreateInfo();
-	quadResolvePci.add_spirv(std::vector<u32>{
+	quadResolvePci.add_spirv(std::vector<uint>{
 #include "spv/quad/resolve.comp.spv"
 	}, "quad/resolve.comp");
 	_ptc.ctx.create_named_pipeline("quad/resolve", quadResolvePci);
@@ -30,7 +30,7 @@ void QuadBuffer::compile(vuk::PerThreadContext& _ptc) {
 }
 
 auto QuadBuffer::create(Pool& _pool, Frame& _frame,
-	vuk::Name _name, uvec2 _size, bool _flushTemporal) -> QuadBuffer {
+	vuk::Name _name, uint2 _size, bool _flushTemporal) -> QuadBuffer {
 	
 	auto result = QuadBuffer();
 	result.name = _name;
@@ -213,7 +213,7 @@ void QuadBuffer::genBuffers(Frame& _frame, QuadBuffer& _quadbuf, TriangleList _t
 			   .bind_storage_image(1, 0, _quadbuf.velocity)
 			   .bind_compute_pipeline("quad/genBuffers");
 			
-			cmd.specialize_constants(0, u32Fromu16(_quadbuf.visbuf.size()));
+			cmd.specialize_constants(0, uintFromuint16(_quadbuf.visbuf.size()));
 			
 			cmd.dispatch_invocations(divRoundUp(_quadbuf.visbuf.size().x(), 8u), divRoundUp(_quadbuf.visbuf.size().y(), 8u));
 			
@@ -245,7 +245,7 @@ void QuadBuffer::resolve(Frame& _frame, QuadBuffer& _quadbuf, Texture2D _output)
 			   .bind_sampled_image(0, 6, _quadbuf.quadDepthRepro, LinearClamp)
 			   .bind_sampled_image(0, 7, _quadbuf.quadDepthPrev, LinearClamp)
 			   .bind_storage_image(0, 8, _quadbuf.output)
-			   .specialize_constants(0, u32Fromu16(_quadbuf.output.size()))
+			   .specialize_constants(0, uintFromuint16(_quadbuf.output.size()))
 			   .bind_compute_pipeline("quad/resolve");
 			
 			auto invocationCount = _quadbuf.output.size() / 2u + _quadbuf.output.size() % 2u;
@@ -262,9 +262,9 @@ void QuadBuffer::resolve(Frame& _frame, QuadBuffer& _quadbuf, Texture2D _output)
 			
 			cmd.blit_image(_quadbuf.output.name, _output.name, vuk::ImageBlit{
 				.srcSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
-				.srcOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(_output.size().x()), i32(_output.size().y()), 1}},
+				.srcOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{int(_output.size().x()), int(_output.size().y()), 1}},
 				.dstSubresource = vuk::ImageSubresourceLayers{ .aspectMask = vuk::ImageAspectFlagBits::eColor },
-				.dstOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{i32(_output.size().x()), i32(_output.size().y()), 1}} },
+				.dstOffsets = {vuk::Offset3D{0, 0, 0}, vuk::Offset3D{int(_output.size().x()), int(_output.size().y()), 1}} },
 				vuk::Filter::eNearest);
 			
 	}});

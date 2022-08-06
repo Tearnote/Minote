@@ -122,7 +122,7 @@ void System::initConsole() {
 	
 }
 
-Window::Window(string_view _title, bool _fullscreen, uvec2 _size):
+Window::Window(string_view _title, bool _fullscreen, uint2 _size):
 	m_title(_title) {
 	
 	ASSUME(_size.x() > 0 && _size.y() > 0);
@@ -142,9 +142,9 @@ Window::Window(string_view _title, bool _fullscreen, uvec2 _size):
 	// Set window properties
 	
 	// Real size might be different from requested size because of DPI scaling
-	auto realSize = ivec2();
+	auto realSize = int2();
 	SDL_Vulkan_GetDrawableSize(m_handle, &realSize.x(), &realSize.y());
-	m_size = uvec2(realSize);
+	m_size = uint2(realSize);
 	
 	auto dpi = 0.0f;
 	SDL_GetDisplayDPI(SDL_GetWindowDisplayIndex(m_handle), nullptr, nullptr, &dpi);

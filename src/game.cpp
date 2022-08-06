@@ -77,13 +77,13 @@ void Game::Impl::createScene() {
 		.moveSpeed = 1_m / 16.0f,
 	};
 	
-	constexpr auto Prescale = vec3{1_m, 1_m, 1_m};
+	constexpr auto Prescale = float3{1_m, 1_m, 1_m};
 	
 	m_battleScenes.clear();
 	for (auto x: iota(0u, BattleScenes))
 	for (auto y: iota(0u, BattleScenes)) {
 		m_battleScenes.emplace_back(Transform{
-			.position = vec3{x * BattleSpacing, y * BattleSpacing, 64_m},
+			.position = float3{x * BattleSpacing, y * BattleSpacing, 64_m},
 			.scale = Prescale,
 		});
 	}
@@ -92,7 +92,7 @@ void Game::Impl::createScene() {
 	for (auto x: iota(0u, SimpleScenes))
 	for (auto y: iota(0u, SimpleScenes)) {
 		m_testScenes.emplace_back(Transform{
-			.position = vec3{x * SimpleSpacing, y * SimpleSpacing, 32_m},
+			.position = float3{x * SimpleSpacing, y * SimpleSpacing, 32_m},
 			.scale = Prescale,
 		});
 	}

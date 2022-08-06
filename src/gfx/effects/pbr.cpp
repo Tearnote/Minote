@@ -8,7 +8,7 @@ namespace minote {
 void PBR::compile(vuk::PerThreadContext& _ptc) {
 	
 	auto pbrPci = vuk::ComputePipelineBaseCreateInfo();
-	pbrPci.add_spirv(std::vector<u32>{
+	pbrPci.add_spirv(std::vector<uint>{
 #include "spv/pbr.comp.spv"
 	}, "pbr.comp");
 	_ptc.ctx.create_named_pipeline("pbr", pbrPci);
@@ -17,7 +17,7 @@ void PBR::compile(vuk::PerThreadContext& _ptc) {
 
 void PBR::apply(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
 	TriangleList _triangles, Cubemap _ibl,
-	Buffer<vec3> _sunLuminance, Texture3D _aerialPerspective) {
+	Buffer<float3> _sunLuminance, Texture3D _aerialPerspective) {
 	
 	_frame.rg.add_pass({
 		.name = nameAppend(_quadbuf.name, "pbr"),
@@ -56,9 +56,9 @@ void PBR::apply(Frame& _frame, QuadBuffer& _quadbuf, Worklist _worklist,
 			   .bind_storage_buffer(0, 14, _worklist.lists)
 			   .bind_compute_pipeline("pbr");
 			
-			cmd.specialize_constants(0, u32Fromu16({_aerialPerspective.size().x(), _aerialPerspective.size().y()}));
+			cmd.specialize_constants(0, uintFromuint16({_aerialPerspective.size().x(), _aerialPerspective.size().y()}));
 			cmd.specialize_constants(1, _aerialPerspective.size().z());
-			cmd.specialize_constants(2, u32Fromu16(_quadbuf.clusterOut.size()));
+			cmd.specialize_constants(2, uintFromuint16(_quadbuf.clusterOut.size()));
 			cmd.specialize_constants(3, _worklist.tileDimensions.x() * _worklist.tileDimensions.y() * +MaterialType::PBR);
 			
 			cmd.dispatch_indirect(tileCount);

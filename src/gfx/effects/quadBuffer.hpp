@@ -32,7 +32,7 @@ struct QuadBuffer {
 	
 	static void compile(vuk::PerThreadContext&);
 	
-	static auto create(Pool&, Frame&, vuk::Name, uvec2 size, bool flushTemporal = false) -> QuadBuffer;
+	static auto create(Pool&, Frame&, vuk::Name, uint2 size, bool flushTemporal = false) -> QuadBuffer;
 	
 	static void clusterize(Frame&, QuadBuffer&, Texture2DMS visbuf);
 	

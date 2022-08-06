@@ -31,7 +31,7 @@ struct Renderer {
 	
 	// Use this function when the surface is resized to recreate the swapchain
 	// and re-enable normal drawing
-	void refreshSwapchain(uvec2 newSize);
+	void refreshSwapchain(uint2 newSize);
 	
 	// Subcomponent access
 	
@@ -45,7 +45,7 @@ struct Renderer {
 	auto camera() -> Camera& { return m_camera; }
 	
 	// Current framerate, updated once a second
-	auto fps() const -> f32 { return m_framerate; }
+	auto fps() const -> float { return m_framerate; }
 	
 	// Allocators for effects that need permanent or temporary internal allocations
 	auto globalAllocator() -> vuk::Allocator& { return m_globalAllocator; }
@@ -65,9 +65,9 @@ private:
 	// Swapchain is out of date, rendering is skipped and refreshSwapchain() must be called
 	bool m_swapchainDirty;
 	
-	f32 m_framerate;
+	float m_framerate;
 	nsec m_lastFramerateCheck;
-	u32 m_framesSinceLastCheck;
+	uint m_framesSinceLastCheck;
 	
 	Imgui m_imgui;
 	ModelBuffer m_models;

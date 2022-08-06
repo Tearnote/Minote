@@ -30,7 +30,7 @@ layout(binding = 1) restrict writeonly uniform image2DArray i_target;
 
 layout(constant_id = 0) const uint TargetSize = 0;
 
-void get_dir_0(out vec3 _dir, float _u, float _v) {
+void get_dir_0(out float3 _dir, float _u, float _v) {
 	
 	_dir[0] = 1;
 	_dir[1] = _v;
@@ -38,7 +38,7 @@ void get_dir_0(out vec3 _dir, float _u, float _v) {
 	
 }
 
-void get_dir_1(out vec3 _dir, in float _u, in float _v) {
+void get_dir_1(out float3 _dir, in float _u, in float _v) {
 	
 	_dir[0] = -1;
 	_dir[1] = _v;
@@ -46,7 +46,7 @@ void get_dir_1(out vec3 _dir, in float _u, in float _v) {
 	
 }
 
-void get_dir_2(out vec3 _dir, float _u, float _v) {
+void get_dir_2(out float3 _dir, float _u, float _v) {
 	
 	_dir[0] = _u;
 	_dir[1] = 1;
@@ -54,7 +54,7 @@ void get_dir_2(out vec3 _dir, float _u, float _v) {
 	
 }
 
-void get_dir_3(out vec3 _dir, float _u, float _v) {
+void get_dir_3(out float3 _dir, float _u, float _v) {
 	
 	_dir[0] = _u;
 	_dir[1] = -1;
@@ -62,7 +62,7 @@ void get_dir_3(out vec3 _dir, float _u, float _v) {
 	
 }
 
-void get_dir_4(out vec3 _dir, float _u, float _v) {
+void get_dir_4(out float3 _dir, float _u, float _v) {
 	
 	_dir[0] = _u;
 	_dir[1] = _v;
@@ -70,7 +70,7 @@ void get_dir_4(out vec3 _dir, float _u, float _v) {
 	
 }
 
-void get_dir_5(out vec3 _dir, float _u, float _v) {
+void get_dir_5(out float3 _dir, float _u, float _v) {
 	
 	_dir[0] = -_u;
 	_dir[1] = _v;
@@ -87,7 +87,7 @@ float calcWeight(float _u, float _v) {
 
 void main() {
 	
-	uvec3 gid = gl_GlobalInvocationID;
+	uint3 gid = gl_GlobalInvocationID;
 	float inv_res_lo = 1.0 / float(TargetSize);
 	
 	float u0 = (float(gid.x) * 2.0 + 1.0 - 0.75) * inv_res_lo - 1.0;
@@ -106,8 +106,8 @@ void main() {
 	for (uint i = 0; i < 4; i += 1)
 		weights[i] = weights[i] * wsum + 0.125;
 	
-	vec3 dir;
-	vec4 color;
+	float3 dir;
+	float4 color;
 	switch (gid.z) {
 		
 	case 0:
@@ -196,6 +196,6 @@ void main() {
 		
 	}
 	
-	imageStore(i_target, ivec3(gid), color);
+	imageStore(i_target, int3(gid), color);
 	
 }

@@ -156,16 +156,16 @@ auto Imgui::render(vuk::Future _target) -> vuk::Future {
 			});
 			
 			struct Constants {
-				vec2 scale;
-				vec2 translate;
+				float2 scale;
+				float2 translate;
 			};
-			auto scale = vec2{
+			auto scale = float2{
 				2.0f / drawdata->DisplaySize.x,
 				2.0f / drawdata->DisplaySize.y,
 			};
 			auto constants = Constants{
 				.scale = scale,
-				.translate = vec2(-1.0f) - vec2{drawdata->DisplayPos.x, drawdata->DisplayPos.y} * scale,
+				.translate = float2(-1.0f) - float2{drawdata->DisplayPos.x, drawdata->DisplayPos.y} * scale,
 			};
 			cmd.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, constants);
 			
@@ -181,7 +181,7 @@ auto Imgui::render(vuk::Future _target) -> vuk::Future {
 				for (auto& pcmd: list->CmdBuffer) {
 					
 					// Project scissor/clipping rectangles into framebuffer space
-					auto clipRect = vec4{
+					auto clipRect = float4{
 						(pcmd.ClipRect.x - clipOff.x) * clipScale.x,
 						(pcmd.ClipRect.y - clipOff.y) * clipScale.y,
 						(pcmd.ClipRect.z - clipOff.x) * clipScale.x,
@@ -196,8 +196,8 @@ auto Imgui::render(vuk::Future _target) -> vuk::Future {
 					clipRect.x() = max(clipRect.x(), 0.0f);
 					clipRect.y() = max(clipRect.y(), 0.0f);
 					cmd.set_scissor(0, vuk::Rect2D{
-						.offset = {i32(clipRect.x()), i32(clipRect.y())},
-						.extent = {u32(clipRect.z() - clipRect.x()), u32(clipRect.w() - clipRect.y())},
+						.offset = {int(clipRect.x()), int(clipRect.y())},
+						.extent = {uint(clipRect.z() - clipRect.x()), uint(clipRect.w() - clipRect.y())},
 					});
 					
 					// Bind texture
@@ -296,7 +296,7 @@ void Imgui::uploadFont(vuk::Allocator& _allocator) {
 	// Upload the font to GPU
 	auto [font, stub] = vuk::create_texture(_allocator,
 		vuk::Format::eR8G8B8A8Srgb,
-		vuk::Extent3D{u32(width), u32(height), 1u},
+		vuk::Extent3D{uint(width), uint(height), 1u},
 		pixels, false);
 	m_font = std::move(font);
 	stub.wait(_allocator, compiler);

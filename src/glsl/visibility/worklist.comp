@@ -25,7 +25,7 @@ layout(binding = 4, std430) restrict readonly buffer Materials {
 	Material b_materials[];
 };
 layout(binding = 5, std430) restrict buffer TileCounts {
-	uvec4 b_counts[];
+	uint4 b_counts[];
 };
 layout(binding = 6, std430) restrict writeonly buffer TileLists {
 	uint b_lists[];
@@ -34,18 +34,18 @@ layout(binding = 6, std430) restrict writeonly buffer TileLists {
 layout(constant_id = 0) const uint VisbufSizePacked = 0;
 layout(constant_id = 1) const uint ListCount = 0;
 
-const uvec2 VisbufSize = U16FROMU32(VisbufSizePacked);
+const uint2 VisbufSize = U16FROMU32(VisbufSizePacked);
 
 shared uint sh_result;
 
 void main() {
 	
-	uvec2 gid = gl_GlobalInvocationID.xy;
-	uvec2 lid = gl_LocalInvocationID.xy;
+	uint2 gid = gl_GlobalInvocationID.xy;
+	uint2 lid = gl_LocalInvocationID.xy;
 	
 	// Initialize shared mem
 	
-	if (all(equal(lid, uvec2(0))))
+	if (all(equal(lid, uint2(0))))
 		sh_result = 0;
 	
 	barrier();
@@ -55,7 +55,7 @@ void main() {
 	uint materialID = -1u;
 	if (all(lessThan(gid, VisbufSize))) {
 		
-		uint visValue = texelFetch(s_visbuf, ivec2(gid), 0).x;
+		uint visValue = texelFetch(s_visbuf, int2(gid), 0).x;
 		if (visValue == -1u) { // Sky
 			
 			materialID = 0;
@@ -86,7 +86,7 @@ void main() {
 	
 	// Write tiles
 	
-	if (any(notEqual(lid, uvec2(0))))
+	if (any(notEqual(lid, uint2(0))))
 		return;
 	
 	uint flatGroupSize = gl_WorkGroupSize.x * gl_WorkGroupSize.y;
@@ -100,7 +100,7 @@ void main() {
 		uint tileOffset = tileCount * i;
 		uint tileIdx = atomicAdd(b_counts[i].x, 1);
 		
-		uint tile = u32Fromu16(gl_WorkGroupID.xy);
+		uint tile = uintFromuint16(gl_WorkGroupID.xy);
 		b_lists[tileOffset + tileIdx] = tile;
 		
 	}

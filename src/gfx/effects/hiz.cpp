@@ -10,13 +10,13 @@ namespace minote {
 void HiZ::compile(vuk::PerThreadContext& _ptc) {
 	
 	auto hizFirstPci = vuk::ComputePipelineBaseCreateInfo();
-	hizFirstPci.add_spirv(std::vector<u32>{
+	hizFirstPci.add_spirv(std::vector<uint>{
 #include "spv/hiz/first.comp.spv"
 	}, "hiz/first.comp");
 	_ptc.ctx.create_named_pipeline("hiz/first", hizFirstPci);
 	
 	auto hizMipPci = vuk::ComputePipelineBaseCreateInfo();
-	hizMipPci.add_spirv(std::vector<u32>{
+	hizMipPci.add_spirv(std::vector<uint>{
 #include "spv/hiz/mip.comp.spv"
 	}, "hiz/mip.comp");
 	_ptc.ctx.create_named_pipeline("hiz/mip", hizMipPci);
@@ -26,7 +26,7 @@ void HiZ::compile(vuk::PerThreadContext& _ptc) {
 auto HiZ::make(Pool& _pool, vuk::Name _name, Texture2DMS _depth) -> Texture2D {
 	
 	auto dim = max(nextPOT(_depth.size().x()), nextPOT(_depth.size().y()));
-	auto size = uvec2(dim);
+	auto size = uint2(dim);
 	return Texture2D::make(_pool, _name,
 		size, vuk::Format::eR32Sfloat,
 		vuk::ImageUsageFlagBits::eSampled |
@@ -59,8 +59,8 @@ void HiZ::fill(Frame& _frame, Texture2D _hiz, Texture2DMS _depth) {
 			   .bind_storage_image(0, 5, *_hiz.mipView(min(4u, mipCount - 1)))
 			   .bind_storage_image(0, 6, *_hiz.mipView(min(5u, mipCount - 1)));
 			
-			cmd.specialize_constants(0, u32Fromu16(_depth.size()));
-			cmd.specialize_constants(1, u32Fromu16(_hiz.size()));
+			cmd.specialize_constants(0, uintFromuint16(_depth.size()));
+			cmd.specialize_constants(1, uintFromuint16(_hiz.size()));
 			cmd.specialize_constants(2, min(mipCount, 6u));
 			
 			cmd.bind_compute_pipeline("hiz/first");
@@ -81,7 +81,7 @@ void HiZ::fill(Frame& _frame, Texture2D _hiz, Texture2DMS _depth) {
 				   .bind_storage_image(0, 6, *_hiz.mipView(min(mipsGenerated + 5, mipCount - 1)))
 				   .bind_storage_image(0, 7, *_hiz.mipView(min(mipsGenerated + 6, mipCount - 1)));
 				
-				cmd.specialize_constants(0, u32Fromu16(_hiz.size() >> (mipsGenerated - 1u)));
+				cmd.specialize_constants(0, uintFromuint16(_hiz.size() >> (mipsGenerated - 1u)));
 				cmd.specialize_constants(1, min(mipCount - mipsGenerated, 7u));
 				
 				cmd.bind_compute_pipeline("hiz/mip");

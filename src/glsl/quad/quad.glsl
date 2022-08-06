@@ -4,7 +4,7 @@
 #define SUBSAMPLE_COUNT 8
 #define QUAD_SAMPLE_COUNT (4 * SUBSAMPLE_COUNT)
 
-const vec2 QuadSubsampleLocations[SUBSAMPLE_COUNT] = {
+const float2 QuadSubsampleLocations[SUBSAMPLE_COUNT] = {
 	{0.5625, 0.3125},
 	{0.4375, 0.6875},
 	{0.8125, 0.5625},
@@ -14,15 +14,15 @@ const vec2 QuadSubsampleLocations[SUBSAMPLE_COUNT] = {
 	{0.6875, 0.9375},
 	{0.9375, 0.0625}};
 
-const vec2 QuadPixelOffsets[4] = {
+const float2 QuadPixelOffsets[4] = {
 	{0.0, 0.0},
 	{1.0, 0.0},
 	{0.0, 1.0},
 	{1.0, 1.0}};
 
-vec2 subsamplePosAverage(uint _subsamples) {
+float2 subsamplePosAverage(uint _subsamples) {
 	
-	vec2 sum = vec2(0.0);
+	float2 sum = float2(0.0);
 	for (uint i = 0; i < 32; i += 1) {
 		
 		if ((_subsamples & (1u << i)) != 0)

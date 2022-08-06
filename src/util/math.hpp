@@ -14,11 +14,11 @@ namespace minote {
 
 template<floating_point T>
 constexpr auto Pi_v = std::numbers::pi_v<T>;
-constexpr auto Pi = Pi_v<f32>;
+constexpr auto Pi = Pi_v<float>;
 
 template<floating_point T>
 constexpr auto Tau_v = Pi_v<T> * T(2.0);
-constexpr auto Tau = Tau_v<f32>;
+constexpr auto Tau = Tau_v<float>;
 
 //=== Scalar operations
 
@@ -39,7 +39,7 @@ using gcem::cos;
 using gcem::tan;
 
 // Degrees to radians conversion
-template<arithmetic T, floating_point Prec = f32>
+template<arithmetic T, floating_point Prec = float>
 constexpr auto radians(T deg) -> Prec { return Prec(deg) * Tau_v<Prec> / Prec(360); }
 
 // True modulo operation (as opposed to remainder, which is operator% in C++.)
@@ -261,42 +261,31 @@ constexpr auto isUnit(vec<Dim, T> const& v) -> bool { return (abs(length2(v) - 1
 template<usize Dim, floating_point T>
 constexpr auto normalize(vec<Dim, T> const&) -> vec<Dim, T>;
 
-//=== GLSL-like vector aliases
+//=== HLSL-like vector aliases
 
-using vec2 = vec<2, f32>;
-using vec3 = vec<3, f32>;
-using vec4 = vec<4, f32>;
-using ivec2 = vec<2, i32>;
-using ivec3 = vec<3, i32>;
-using ivec4 = vec<4, i32>;
-using uvec2 = vec<2, u32>;
-using uvec3 = vec<3, u32>;
-using uvec4 = vec<4, u32>;
-using u8vec2 = vec<2, u8>;
-using u8vec3 = vec<3, u8>;
-using u8vec4 = vec<4, u8>;
-using u16vec2 = vec<2, u16>;
-using u16vec3 = vec<3, u16>;
-using u16vec4 = vec<4, u16>;
+using float2 = vec<2, float>;
+using float3 = vec<3, float>;
+using float4 = vec<4, float>;
+using int2 = vec<2, int>;
+using int3 = vec<3, int>;
+using int4 = vec<4, int>;
+using uint2 = vec<2, uint>;
+using uint3 = vec<3, uint>;
+using uint4 = vec<4, uint>;
 
-static_assert(std::is_trivially_constructible_v<vec2>);
-static_assert(std::is_trivially_constructible_v<vec3>);
-static_assert(std::is_trivially_constructible_v<vec4>);
-static_assert(std::is_trivially_constructible_v<ivec2>);
-static_assert(std::is_trivially_constructible_v<ivec3>);
-static_assert(std::is_trivially_constructible_v<ivec4>);
-static_assert(std::is_trivially_constructible_v<uvec2>);
-static_assert(std::is_trivially_constructible_v<uvec3>);
-static_assert(std::is_trivially_constructible_v<uvec4>);
-static_assert(std::is_trivially_constructible_v<u8vec2>);
-static_assert(std::is_trivially_constructible_v<u8vec3>);
-static_assert(std::is_trivially_constructible_v<u8vec4>);
-static_assert(std::is_trivially_constructible_v<u16vec2>);
-static_assert(std::is_trivially_constructible_v<u16vec3>);
+static_assert(std::is_trivially_constructible_v<float2>);
+static_assert(std::is_trivially_constructible_v<float3>);
+static_assert(std::is_trivially_constructible_v<float4>);
+static_assert(std::is_trivially_constructible_v<int2>);
+static_assert(std::is_trivially_constructible_v<int3>);
+static_assert(std::is_trivially_constructible_v<int4>);
+static_assert(std::is_trivially_constructible_v<uint2>);
+static_assert(std::is_trivially_constructible_v<uint3>);
+static_assert(std::is_trivially_constructible_v<uint4>);
 
-// Quaternion, equivalent to a vec4 but with unique operations available.
+// Quaternion, equivalent to a float4 but with unique operations available.
 // Main purpose is representing rotations. Data layout is {w, x, y, z}.
-template<floating_point Prec = f32>
+template<floating_point Prec = float>
 struct qua {
 	
 	//=== Creation
@@ -355,9 +344,9 @@ constexpr auto operator*(qua<Prec> const&, qua<Prec> const&) -> qua<Prec>;
 
 //=== Quaternion alias
 
-using quat = qua<f32>;
+using quat = qua<float>;
 
-static_assert(std::is_trivially_constructible_v<u16vec4>);
+static_assert(std::is_trivially_constructible_v<quat>);
 
 // Generic matrix type, of order 3 or 4, and any floating-point precision
 template<usize Dim, floating_point Prec>
@@ -383,7 +372,7 @@ struct mat {
 	
 	// Classic translation, rotation and scale matrices for vector manipulation
 	
-	static constexpr auto translate(vec<3, Prec> shift) -> mat<Dim, Prec>; // Cannot be mat3
+	static constexpr auto translate(vec<3, Prec> shift) -> mat<Dim, Prec>; // Cannot be float3x3
 	static constexpr auto rotate(vec<3, Prec> axis, Prec angle) -> mat<Dim, Prec>;
 	static constexpr auto rotate(qua<Prec> quat) -> mat<Dim, Prec>;
 	static constexpr auto scale(vec<3, Prec> scale) -> mat<Dim, Prec>;
@@ -427,10 +416,10 @@ private:
 // Binary matrix operations
 
 template<usize Dim, floating_point Prec>
-constexpr auto operator*(mat<Dim, Prec> const&, mat<Dim, Prec> const&) -> mat<Dim, Prec>;
+constexpr auto mul(mat<Dim, Prec> const&, mat<Dim, Prec> const&) -> mat<Dim, Prec>;
 
 template<usize Dim, floating_point Prec>
-constexpr auto operator*(mat<Dim, Prec> const&, vec<Dim, Prec> const&) -> vec<Dim, Prec>;
+constexpr auto mul(mat<Dim, Prec> const&, vec<Dim, Prec> const&) -> vec<Dim, Prec>;
 
 template<usize Dim, floating_point Prec>
 constexpr auto operator*(mat<Dim, Prec> const&, Prec) -> mat<Dim, Prec>; // Component-wise
@@ -454,35 +443,35 @@ constexpr auto inverse(mat<Dim, Prec> const&) -> mat<Dim, Prec>;
 
 // Variant of lookAt matrix. Dir is a unit vector of the camera direction.
 // Dir and Up are both required to be unit vectors
-template<floating_point Prec = f32>
+template<floating_point Prec = float>
 constexpr auto look(vec<3, Prec> pos, vec<3, Prec> dir, vec<3, Prec> up) -> mat<4, Prec>;
 
 // Creates a perspective matrix. The matrix uses inverted infinite depth:
 // 1.0 at zNear, 0.0 at infinity.
-template<floating_point Prec = f32>
+template<floating_point Prec = float>
 constexpr auto perspective(Prec vFov, Prec aspectRatio, Prec zNear) -> mat<4, Prec>;
 
-//=== GLSL-like matrix aliases
+//=== HLSL-like matrix aliases
 
-using mat3 = mat<3, f32>;
-using mat4 = mat<4, f32>;
+using float3x3 = mat<3, float>;
+using float4x4 = mat<4, float>;
 
-static_assert(std::is_trivially_constructible_v<mat3>);
-static_assert(std::is_trivially_constructible_v<mat4>);
+static_assert(std::is_trivially_constructible_v<float3x3>);
+static_assert(std::is_trivially_constructible_v<float4x4>);
 
 //=== Conversion literals
 
-consteval auto operator""_cm(unsigned long long int val) -> f32 { return f64(val) * 0.000'001; }
-consteval auto operator""_cm(long double val) -> f32 { return f64(val) * 0.000'001; }
+consteval auto operator""_cm(unsigned long long int val) -> float { return double(val) * 0.000'001; }
+consteval auto operator""_cm(long double val) -> float { return double(val) * 0.000'001; }
 
-consteval auto operator""_m(unsigned long long int val) -> f32 { return f64(val) * 0.001; }
-consteval auto operator""_m(long double val) -> f32 { return f64(val) * 0.001; }
+consteval auto operator""_m(unsigned long long int val) -> float { return double(val) * 0.001; }
+consteval auto operator""_m(long double val) -> float { return double(val) * 0.001; }
 
-consteval auto operator""_km(unsigned long long int val) -> f32 { return val; }
-consteval auto operator""_km(long double val) -> f32 { return val; }
+consteval auto operator""_km(unsigned long long int val) -> float { return val; }
+consteval auto operator""_km(long double val) -> float { return val; }
 
-consteval auto operator""_deg(unsigned long long int val) -> f32 { return radians(f64(val)); }
-consteval auto operator""_deg(long double val) -> f32 { return radians(val); }
+consteval auto operator""_deg(unsigned long long int val) -> float { return radians(double(val)); }
+consteval auto operator""_deg(long double val) -> float { return radians(val); }
 
 }
 

@@ -23,7 +23,7 @@ struct Vulkan {
 	optional<vuk::Context> context;
 	
 	// Create a swapchain object, optionally reusing resources from an existing one.
-	auto createSwapchain(uvec2 size, VkSwapchainKHR old = VK_NULL_HANDLE) -> vuk::Swapchain;
+	auto createSwapchain(uint2 size, VkSwapchainKHR old = VK_NULL_HANDLE) -> vuk::Swapchain;
 	
 	// Return the window instance that Vulkan was initialized on
 	auto window() -> Window& { return m_window; }
@@ -35,11 +35,11 @@ private:
 	
 	struct Queues {
 		VkQueue graphics;
-		u32 graphicsFamilyIndex;
+		uint graphicsFamilyIndex;
 		VkQueue transfer;
-		u32 transferFamilyIndex;
+		uint transferFamilyIndex;
 		VkQueue compute;
-		u32 computeFamilyIndex;
+		uint computeFamilyIndex;
 	};
 	
 	friend struct Service<Vulkan>;

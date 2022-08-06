@@ -18,29 +18,29 @@
 
 struct MediumSampleRGB {
 	
-	vec3 scattering;
-	vec3 absorption;
-	vec3 extinction;
+	float3 scattering;
+	float3 absorption;
+	float3 extinction;
 	
-	vec3 scatteringMie;
-	vec3 absorptionMie;
-	vec3 extinctionMie;
+	float3 scatteringMie;
+	float3 absorptionMie;
+	float3 extinctionMie;
 	
-	vec3 scatteringRay;
-	vec3 absorptionRay;
-	vec3 extinctionRay;
+	float3 scatteringRay;
+	float3 absorptionRay;
+	float3 extinctionRay;
 	
-	vec3 scatteringOzo;
-	vec3 absorptionOzo;
-	vec3 extinctionOzo;
+	float3 scatteringOzo;
+	float3 absorptionOzo;
+	float3 extinctionOzo;
 	
-	vec3 albedo;
+	float3 albedo;
 	
 };
 
-vec3 getAlbedo(vec3 _scattering, vec3 _extinction) {
+float3 getAlbedo(float3 _scattering, float3 _extinction) {
 	
-	return _scattering / max(vec3(0.001), _extinction);
+	return _scattering / max(float3(0.001), _extinction);
 	
 }
 
@@ -64,10 +64,10 @@ float rayleighPhase(float _cosTheta) {
 // - sR: sphere radius
 // - Returns distance from r0 to first intersecion with sphere,
 //   or -1.0 if no intersection.
-float raySphereIntersectNearest(vec3 _r0, vec3 _rd, vec3 _s0, float _sR) {
+float raySphereIntersectNearest(float3 _r0, float3 _rd, float3 _s0, float _sR) {
 	
 	float a = dot(_rd, _rd);
-	vec3 s0_r0 = _r0 - _s0;
+	float3 s0_r0 = _r0 - _s0;
 	float b = 2.0 * dot(_rd, s0_r0);
 	float c = dot(s0_r0, s0_r0) - (_sR * _sR);
 	float delta = b * b - 4.0*a*c;
@@ -87,16 +87,16 @@ float raySphereIntersectNearest(vec3 _r0, vec3 _rd, vec3 _s0, float _sR) {
 	
 }
 
-bool moveToTopAtmosphere(inout vec3 _worldPos, vec3 _worldDir, float _atmosphereTopRadius) {
+bool moveToTopAtmosphere(inout float3 _worldPos, float3 _worldDir, float _atmosphereTopRadius) {
 	
 	float viewHeight = length(_worldPos);
 	if (viewHeight > _atmosphereTopRadius) {
 		
-		float tTop = raySphereIntersectNearest(_worldPos, _worldDir, vec3(0.0), _atmosphereTopRadius);
+		float tTop = raySphereIntersectNearest(_worldPos, _worldDir, float3(0.0), _atmosphereTopRadius);
 		if (tTop >= 0.0) {
 			
-			vec3 upVector = _worldPos / viewHeight;
-			vec3 upOffset = upVector * -PLANET_RADIUS_OFFSET;
+			float3 upVector = _worldPos / viewHeight;
+			float3 upOffset = upVector * -PLANET_RADIUS_OFFSET;
 			_worldPos = _worldPos + _worldDir * tTop + upOffset;
 			
 		} else {
@@ -112,7 +112,7 @@ bool moveToTopAtmosphere(inout vec3 _worldPos, vec3 _worldDir, float _atmosphere
 	
 }
 
-MediumSampleRGB sampleMediumRGB(vec3 _worldPos) {
+MediumSampleRGB sampleMediumRGB(float3 _worldPos) {
 	
 	float viewHeight = length(_worldPos) - U_ATMO.bottomRadius;
 	
@@ -129,10 +129,10 @@ MediumSampleRGB sampleMediumRGB(vec3 _worldPos) {
 	s.extinctionMie = densityMie * U_ATMO.mieExtinction;
 	
 	s.scatteringRay = densityRay * U_ATMO.rayleighScattering;
-	s.absorptionRay = vec3(0.0);
+	s.absorptionRay = float3(0.0);
 	s.extinctionRay = s.scatteringRay + s.absorptionRay;
 	
-	s.scatteringOzo = vec3(0.0);
+	s.scatteringOzo = float3(0.0);
 	s.absorptionOzo = densityOzo * U_ATMO.absorptionExtinction;
 	s.extinctionOzo = s.scatteringOzo + s.absorptionOzo;
 	
@@ -147,22 +147,22 @@ MediumSampleRGB sampleMediumRGB(vec3 _worldPos) {
 
 #ifdef S_TRANSMITTANCE
 
-vec3 getSunLuminance(vec3 _worldPos, vec3 _worldDir, vec3 _sunDirection, vec3 _sunIlluminance) {
+float3 getSunLuminance(float3 _worldPos, float3 _worldDir, float3 _sunDirection, float3 _sunIlluminance) {
 	
 	float SunRadius = 0.5 * 0.505 * 3.14159 / 180.0;
 	
 	if (dot(_worldDir, _sunDirection) > cos(SunRadius)) {
 		
-		float t = raySphereIntersectNearest(_worldPos, _worldDir, vec3(0.0), U_ATMO.bottomRadius);
+		float t = raySphereIntersectNearest(_worldPos, _worldDir, float3(0.0), U_ATMO.bottomRadius);
 		if (t < 0.0) { // no intersection
 			
-			vec2 uvUp;
+			float2 uvUp;
 			lutTransmittanceParamsToUv(U_ATMO.bottomRadius, 1.0, uvUp, U_ATMO.bottomRadius, U_ATMO.topRadius);
 			
 			float pHeight = length(_worldPos);
-			vec3 upVector = _worldPos / pHeight;
+			float3 upVector = _worldPos / pHeight;
 			float sunZenithCosAngle = dot(_sunDirection, upVector);
-			vec2 uvSun;
+			float2 uvSun;
 			lutTransmittanceParamsToUv(pHeight, sunZenithCosAngle, uvSun, U_ATMO.bottomRadius, U_ATMO.topRadius);
 			
 			float cosAngle = dot(_worldDir, _sunDirection);
@@ -170,14 +170,14 @@ vec3 getSunLuminance(vec3 _worldPos, vec3 _worldDir, vec3 _sunDirection, vec3 _s
 			float radiusRatio = angle / SunRadius;
 			float limbDarkening = sqrt(clamp(1.0 - radiusRatio*radiusRatio, 0.0001, 1.0));
 			
-			vec3 sunLuminanceInSpace = _sunIlluminance / textureLod(S_TRANSMITTANCE, uvUp, 0.0).rgb;
+			float3 sunLuminanceInSpace = _sunIlluminance / textureLod(S_TRANSMITTANCE, uvUp, 0.0).rgb;
 			return sunLuminanceInSpace * textureLod(S_TRANSMITTANCE, uvSun, 0.0).rgb * limbDarkening;
 			
 		}
 		
 	}
 	
-	return vec3(0.0);
+	return float3(0.0);
 	
 }
 
@@ -185,30 +185,30 @@ vec3 getSunLuminance(vec3 _worldPos, vec3 _worldDir, vec3 _sunDirection, vec3 _s
 
 #ifdef S_MULTISCATTERING
 
-vec3 getMultipleScattering(vec3 _worldPos, float _viewZenithCosAngle) {
+float3 getMultipleScattering(float3 _worldPos, float _viewZenithCosAngle) {
 	
-	uvec2 size = textureSize(S_MULTISCATTERING, 0).xy;
-	vec2 uv = clamp(vec2(
+	uint2 size = textureSize(S_MULTISCATTERING, 0).xy;
+	float2 uv = clamp(float2(
 			_viewZenithCosAngle * 0.5 + 0.5,
 			(length(_worldPos) - U_ATMO.bottomRadius) / (U_ATMO.topRadius - U_ATMO.bottomRadius)),
 		0.0, 1.0);
-	uv = vec2(fromUnitToSubUvs(uv.x, size.x), fromUnitToSubUvs(uv.y, size.y));
+	uv = float2(fromUnitToSubUvs(uv.x, size.x), fromUnitToSubUvs(uv.y, size.y));
 	
-	vec3 multiScatteredLuminance = textureLod(S_MULTISCATTERING, uv, 0.0).rgb;
+	float3 multiScatteredLuminance = textureLod(S_MULTISCATTERING, uv, 0.0).rgb;
 	return multiScatteredLuminance;
 	
 }
 
 #endif //S_MULTISCATTERING
 
-SingleScatteringResult integrateScatteredLuminance(vec3 _worldPos, vec3 _worldDir, vec3 _sunDir,
+SingleScatteringResult integrateScatteredLuminance(float3 _worldPos, float3 _worldDir, float3 _sunDir,
 	bool _ground, float _sampleCountIni, bool _variableSampleCount, bool _mieRayPhase, float _tMaxMax,
-	vec3 _sunIlluminance) {
+	float3 _sunIlluminance) {
 		
-	SingleScatteringResult result = {vec3(0), vec3(0), vec3(0), vec3(0), vec3(0), vec3(0)};
+	SingleScatteringResult result = {float3(0), float3(0), float3(0), float3(0), float3(0), float3(0)};
 	
 	// Compute next intersection with atmosphere or ground
-	vec3 earthO = vec3(0.0);
+	float3 earthO = float3(0.0);
 	float tBottom = raySphereIntersectNearest(_worldPos, _worldDir, earthO, U_ATMO.bottomRadius);
 	float tTop = raySphereIntersectNearest(_worldPos, _worldDir, earthO, U_ATMO.topRadius);
 	float tMax = 0.0;
@@ -247,20 +247,20 @@ SingleScatteringResult integrateScatteredLuminance(vec3 _worldPos, vec3 _worldDi
 	
 	// Phase functions
 	float uniformPhase = 1.0 / (4.0 * PI);
-	vec3 wi = _sunDir;
-	vec3 wo = _worldDir;
+	float3 wi = _sunDir;
+	float3 wo = _worldDir;
 	float cosTheta = dot(wi, wo);
 	float miePhaseValue = cornetteShanksMiePhaseFunction(U_ATMO.miePhaseG, -cosTheta); // negate cosTheta due to WorldDir being a "in" direction.
 	float rayleighPhaseValue = rayleighPhase(cosTheta);
 	
 	// When building the scattering factor, we assume light illuminance is 1 to compute a transfer function relative to identity illuminance of 1.
 	// This make the scattering factor independent of the light. It is now only linked to the atmosphere properties.
-	vec3 globalL = _sunIlluminance;
+	float3 globalL = _sunIlluminance;
 	
 	// Ray march the atmosphere to integrate optical depth
-	vec3 L = vec3(0.0);
-	vec3 throughput = vec3(1.0);
-	vec3 opticalDepth = vec3(0.0);
+	float3 L = float3(0.0);
+	float3 throughput = float3(1.0);
+	float3 opticalDepth = float3(0.0);
 	float t = 0.0;
 	float tPrev = 0.0;
 	float sampleSegmentT = 0.3;
@@ -296,25 +296,25 @@ SingleScatteringResult integrateScatteredLuminance(vec3 _worldPos, vec3 _worldDi
 			t = newT;
 			
 		}
-		vec3 P = _worldPos + t * _worldDir;
+		float3 P = _worldPos + t * _worldDir;
 		
 		MediumSampleRGB medium = sampleMediumRGB(P);
-		vec3 sampleOpticalDepth = medium.extinction * dt;
-		vec3 sampleTransmittance = exp(-sampleOpticalDepth);
+		float3 sampleOpticalDepth = medium.extinction * dt;
+		float3 sampleTransmittance = exp(-sampleOpticalDepth);
 		opticalDepth += sampleOpticalDepth;
 		
 		float pHeight = length(P);
-		vec3 upVector = P / pHeight;
+		float3 upVector = P / pHeight;
 		float sunZenithCosAngle = dot(_sunDir, upVector);
-		vec2 uv;
+		float2 uv;
 		lutTransmittanceParamsToUv(pHeight, sunZenithCosAngle, uv, U_ATMO.bottomRadius, U_ATMO.topRadius);
 #ifdef S_TRANSMITTANCE
-		vec3 transmittanceToSun = textureLod(S_TRANSMITTANCE, uv, 0.0).rgb;
+		float3 transmittanceToSun = textureLod(S_TRANSMITTANCE, uv, 0.0).rgb;
 #else //S_TRANSMITTANCE
-		vec3 transmittanceToSun = vec3(0.0);
+		float3 transmittanceToSun = float3(0.0);
 #endif //S_TRANSMITTANCE
 		
-		vec3 phaseTimesScattering;
+		float3 phaseTimesScattering;
 		if (_mieRayPhase)
 			phaseTimesScattering = medium.scatteringMie * miePhaseValue +
 				medium.scatteringRay * rayleighPhaseValue;
@@ -328,12 +328,12 @@ SingleScatteringResult integrateScatteredLuminance(vec3 _worldPos, vec3 _worldDi
 		
 		// Dual scattering for multi scattering
 		
-		vec3 multiScatteredLuminance = vec3(0.0);
+		float3 multiScatteredLuminance = float3(0.0);
 #ifdef S_MULTISCATTERING
 		multiScatteredLuminance = getMultipleScattering(P, sunZenithCosAngle);
 #endif //S_MULTISCATTERING
 		
-		vec3 S = globalL * (earthShadow * transmittanceToSun * phaseTimesScattering +
+		float3 S = globalL * (earthShadow * transmittanceToSun * phaseTimesScattering +
 			multiScatteredLuminance * medium.scattering);
 		
 		// When using the power serie to accumulate all scattering order, serie r must be <1 for a serie to converge.
@@ -341,12 +341,12 @@ SingleScatteringResult integrateScatteredLuminance(vec3 _worldPos, vec3 _worldDi
 		// The way to fix that is to use a proper analytical integration as proposed in slide 28 of http://www.frostbite.com/2015/08/physically-based-unified-volumetric-rendering-in-frostbite/
 		// However, it is possible to disable as it can also work using simple power serie sum unroll up to 5th order. The rest of the orders has a really low contribution.
 		
-		vec3 MS = medium.scattering * 1;
-		vec3 MSint = (MS - MS * sampleTransmittance) / medium.extinction;
+		float3 MS = medium.scattering * 1;
+		float3 MSint = (MS - MS * sampleTransmittance) / medium.extinction;
 		result.multiScatAs1 += throughput * MSint;
 		
 		// Evaluate input to multi scattering
-		vec3 newMS;
+		float3 newMS;
 		
 		newMS = earthShadow * transmittanceToSun * medium.scattering * uniformPhase * 1;
 		result.newMultiScatStep0Out += throughput * (newMS - newMS * sampleTransmittance) / medium.extinction;
@@ -355,7 +355,7 @@ SingleScatteringResult integrateScatteredLuminance(vec3 _worldPos, vec3 _worldDi
 		result.newMultiScatStep1Out += throughput * (newMS - newMS * sampleTransmittance) / medium.extinction;
 		
 		// See slide 28 at http://www.frostbite.com/2015/08/physically-based-unified-volumetric-rendering-in-frostbite/
-		vec3 Sint = (S - S * sampleTransmittance) / medium.extinction; // integrate along the current step segment
+		float3 Sint = (S - S * sampleTransmittance) / medium.extinction; // integrate along the current step segment
 		L += throughput * Sint; // accumulate and also take into account the transmittance from previous steps
 		throughput *= sampleTransmittance;
 		
@@ -366,17 +366,17 @@ SingleScatteringResult integrateScatteredLuminance(vec3 _worldPos, vec3 _worldDi
 	if (_ground && tMax == tBottom && tBottom > 0.0) {
 		
 		// Account for bounced light off the earth
-		vec3 P = _worldPos + tBottom * _worldDir;
+		float3 P = _worldPos + tBottom * _worldDir;
 		float pHeight = length(P);
 		
-		vec3 upVector = P / pHeight;
+		float3 upVector = P / pHeight;
 		float sunZenithCosAngle = dot(_sunDir, upVector);
-		vec2 uv;
+		float2 uv;
 		lutTransmittanceParamsToUv(pHeight, sunZenithCosAngle, uv, U_ATMO.bottomRadius, U_ATMO.topRadius);
 #ifdef S_TRANSMITTANCE
-		vec3 transmittanceToSun = textureLod(S_TRANSMITTANCE, uv, 0.0).rgb;
+		float3 transmittanceToSun = textureLod(S_TRANSMITTANCE, uv, 0.0).rgb;
 #else //S_TRANSMITTANCE
-		vec3 transmittanceToSun = vec3(0.0);
+		float3 transmittanceToSun = float3(0.0);
 #endif //S_TRANSMITTANCE
 		
 		float NdotL = clamp(dot(normalize(upVector), normalize(_sunDir)), 0.0, 1.0);

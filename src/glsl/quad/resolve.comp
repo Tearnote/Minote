@@ -20,14 +20,14 @@ layout(binding = 7) uniform sampler2D s_quadDepthPrev;
 layout(binding = 8) restrict writeonly uniform image2D i_output;
 
 layout(constant_id = 0) const uint u_sourceSizePacked = 0;
-const uvec2 u_sourceSize = U16FROMU32(u_sourceSizePacked);
+const uint2 u_sourceSize = U16FROMU32(u_sourceSizePacked);
 
 #define CONVERGE_FRAMES 16
 
-bool isQuadJittered(usampler2D _map, uvec2 _gid) {
+bool isQuadJittered(usampler2D _map, uint2 _gid) {
 	
-	uint jitterSample = texelFetch(_map, ivec2(_gid / 8), 0).r;
-	uvec2 quadOffset = (_gid / 2) % 4;
+	uint jitterSample = texelFetch(_map, int2(_gid / 8), 0).r;
+	uint2 quadOffset = (_gid / 2) % 4;
 	uint quadMask = 1u << (quadOffset.x + quadOffset.y * 4);
 	return (jitterSample & quadMask) != 0;
 	
@@ -35,51 +35,51 @@ bool isQuadJittered(usampler2D _map, uvec2 _gid) {
 
 // https://research.activision.com/publications/archives/filmic-smaasharp-morphological-and-temporal-antialiasing
 #define REPROJECTION_SHARPNESS 25.0
-vec4 sampleHistory(vec2 _uv) {
+float4 sampleHistory(float2 _uv) {
 	
-	const vec2 sourcePxPitch = vec2(1.0) / vec2(u_sourceSize);
+	const float2 sourcePxPitch = float2(1.0) / float2(u_sourceSize);
 	
-	vec2 centerPosition = floor(_uv - 0.5) + 0.5;
-	vec2 f = _uv - centerPosition;
-	vec2 f2 = f * f;
-	vec2 f3 = f * f2;
+	float2 centerPosition = floor(_uv - 0.5) + 0.5;
+	float2 f = _uv - centerPosition;
+	float2 f2 = f * f;
+	float2 f3 = f * f2;
 	
 	float c = REPROJECTION_SHARPNESS / 100.0;
-	vec2 w0 =        -c  * f3 +  2.0 * c         * f2 - c * f;
-	vec2 w1 =  (2.0 - c) * f3 - (3.0 - c)        * f2         + 1.0;
-	vec2 w2 = -(2.0 - c) * f3 + (3.0 -  2.0 * c) * f2 + c * f;
-	vec2 w3 =         c  * f3 -                c * f2;
+	float2 w0 =        -c  * f3 +  2.0 * c         * f2 - c * f;
+	float2 w1 =  (2.0 - c) * f3 - (3.0 - c)        * f2         + 1.0;
+	float2 w2 = -(2.0 - c) * f3 + (3.0 -  2.0 * c) * f2 + c * f;
+	float2 w3 =         c  * f3 -                c * f2;
 	
-	vec2 w12 = w1 + w2;
-	vec2 tc12 = sourcePxPitch * (centerPosition + w2 / w12);
-	vec4 centerColor = textureLod(s_outputPrev, vec2(tc12.x, tc12.y), 0.0);
+	float2 w12 = w1 + w2;
+	float2 tc12 = sourcePxPitch * (centerPosition + w2 / w12);
+	float4 centerColor = textureLod(s_outputPrev, float2(tc12.x, tc12.y), 0.0);
 	
-	vec2 tc0 = sourcePxPitch * (centerPosition - 1.0);
-	vec2 tc3 = sourcePxPitch * (centerPosition + 2.0);
-	vec3 color = textureLod(s_outputPrev, vec2(tc12.x, tc0.y ), 0.0).rgb * (w12.x * w0.y ) +
-	             textureLod(s_outputPrev, vec2(tc0.x,  tc12.y), 0.0).rgb * (w0.x  * w12.y) +
+	float2 tc0 = sourcePxPitch * (centerPosition - 1.0);
+	float2 tc3 = sourcePxPitch * (centerPosition + 2.0);
+	float3 color = textureLod(s_outputPrev, float2(tc12.x, tc0.y ), 0.0).rgb * (w12.x * w0.y ) +
+	             textureLod(s_outputPrev, float2(tc0.x,  tc12.y), 0.0).rgb * (w0.x  * w12.y) +
 	             centerColor.rgb                                         * (w12.x * w12.y) +
-	             textureLod(s_outputPrev, vec2(tc3.x,  tc12.y), 0.0).rgb * (w3.x  * w12.y) +
-	             textureLod(s_outputPrev, vec2(tc12.x, tc3.y ), 0.0).rgb * (w12.x * w3.y );
-	return vec4(color.rgb, centerColor.a);
+	             textureLod(s_outputPrev, float2(tc3.x,  tc12.y), 0.0).rgb * (w3.x  * w12.y) +
+	             textureLod(s_outputPrev, float2(tc12.x, tc3.y ), 0.0).rgb * (w12.x * w3.y );
+	return float4(color.rgb, centerColor.a);
 	
 }
 
 void main() {
 	
-	uvec2 gid = gl_GlobalInvocationID.xy * 2;
+	uint2 gid = gl_GlobalInvocationID.xy * 2;
 	
 	// Read quad and cluster output samples
 	
-	uvec4 clusterSubsamples;
-	mat4x3 clusterOuts;
-	mat4x2 clusterVelocities;
+	uint4 clusterSubsamples;
+	float4x4x3 clusterOuts;
+	float4x4x2 clusterVelocities;
 	for (uint i = 0; i < 4; i += 1) {
 		
-		uvec2 pos = gid + uvec2(QuadPixelOffsets[i]);
-		clusterSubsamples[i] = texelFetch(s_subsamples, ivec2(pos), 0).x;
-		clusterOuts[i] = texelFetch(s_clusterOut, ivec2(pos), 0).rgb;
-		clusterVelocities[i] = texelFetch(s_velocity, ivec2(pos), 0).xy;
+		uint2 pos = gid + uint2(QuadPixelOffsets[i]);
+		clusterSubsamples[i] = texelFetch(s_subsamples, int2(pos), 0).x;
+		clusterOuts[i] = texelFetch(s_clusterOut, int2(pos), 0).rgb;
+		clusterVelocities[i] = texelFetch(s_velocity, int2(pos), 0).xy;
 		
 	}
 	
@@ -91,65 +91,65 @@ void main() {
 		
 		const float WeightStep = 1.0 / float(SUBSAMPLE_COUNT);
 		uint mask = bitmask(SUBSAMPLE_COUNT) << (i * SUBSAMPLE_COUNT);
-		vec4 clusterWeights;
+		float4 clusterWeights;
 		for (uint j = 0; j < 4; j += 1)
 			clusterWeights[j] = float(bitCount(clusterSubsamples[j] & mask)) * WeightStep;
 		
 		// Blend together the cluster contributions to obtain current sample
 		
-		vec3 currentSample = vec3(0.0);
+		float3 currentSample = float3(0.0);
 		for (uint j = 0; j < 4; j += 1)
 			currentSample += tonemapWithWeight(clusterOuts[j], clusterWeights[j]);
 		currentSample = tonemapInvert(currentSample);
 		
 		// Reproject to get history position
 		
-		vec2 currentLocation = vec2(gid + QuadPixelOffsets[i]) + vec2(0.5);
-		vec2 historyLocation = currentLocation - clusterVelocities[i];
-		uvec2 historyQuad = uvec2(historyLocation) & ~1u;
+		float2 currentLocation = float2(gid + QuadPixelOffsets[i]) + float2(0.5);
+		float2 historyLocation = currentLocation - clusterVelocities[i];
+		uint2 historyQuad = uint2(historyLocation) & ~1u;
 		
 		// History rejection tests
 		
 		bool reject = true;
 		
 		// OOB test
-		if (all(greaterThanEqual(historyLocation, vec2(0.0))) && all(lessThan(historyLocation, vec2(u_sourceSize)))) {
+		if (all(greaterThanEqual(historyLocation, float2(0.0))) && all(lessThan(historyLocation, float2(u_sourceSize)))) {
 			
 			// Current jitter test
 			
-			bool doesJitter = isQuadJittered(s_jitterMap, uvec2(currentLocation));
+			bool doesJitter = isQuadJittered(s_jitterMap, uint2(currentLocation));
 			
-			float depthRepro = u_world.nearPlane / texelFetch(s_quadDepthRepro, ivec2(historyLocation) / 2, 0).x;
-			float depthPrev = u_world.nearPlane / texelFetch(s_quadDepthPrev, ivec2(historyLocation) / 2, 0).x;
+			float depthRepro = u_world.nearPlane / texelFetch(s_quadDepthRepro, int2(historyLocation) / 2, 0).x;
+			float depthPrev = u_world.nearPlane / texelFetch(s_quadDepthPrev, int2(historyLocation) / 2, 0).x;
 			float depthAbsError = abs(depthRepro - depthPrev);
 			bool depthPass = depthAbsError < 0.001;
-			bool movementPass = all(lessThan(abs(clusterVelocities[i]), vec2(0.1)));
+			bool movementPass = all(lessThan(abs(clusterVelocities[i]), float2(0.1)));
 			
 			if (doesJitter && (depthPass || movementPass))
 				reject = false;
 			
 		}
 		
-		vec4 result; // .a is age
+		float4 result; // .a is age
 		
 		// All clusters valid? Sample the history
 		
-		vec4 historySample = sampleHistory(historyLocation);
+		float4 historySample = sampleHistory(historyLocation);
 		uint historySampleAge = uint(historySample.a);
 		if (reject)
 			historySampleAge /= 4;
 		float blendRatio = (1.0 / float(CONVERGE_FRAMES)) * (CONVERGE_FRAMES - min(historySampleAge, CONVERGE_FRAMES - 1));
 		uint newAge = min(historySampleAge + 1, CONVERGE_FRAMES - 1);
-		result = vec4(mix(historySample.rgb, currentSample, blendRatio), float(newAge));
+		result = float4(mix(historySample.rgb, currentSample, blendRatio), float(newAge));
 		
 		// Dither and write out
 		
-		uvec2 pos = gid + uvec2(QuadPixelOffsets[i]);
+		uint2 pos = gid + uint2(QuadPixelOffsets[i]);
 		uint seed = u_sourceSize.x * u_sourceSize.y * u_world.frameCounter + pos.x * u_sourceSize.y + pos.y;
 		result += (randFloat(seed) * 2.0 - 1.0) * 0.0005;
 		result = max(result, 0.0);
 		
-		imageStore(i_output, ivec2(gid + QuadPixelOffsets[i]), result);
+		imageStore(i_output, int2(gid + QuadPixelOffsets[i]), result);
 		
 	}
 	

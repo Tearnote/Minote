@@ -22,7 +22,7 @@ layout(binding = 4, std430) restrict readonly buffer Instances {
 	Instance b_instances[];
 };
 layout(binding = 5, std430) restrict readonly buffer Transforms {
-	mat3x4 b_transforms[];
+	float3x3x4 b_transforms[];
 };
 
 #include "../typesAccess.glsl"
@@ -35,10 +35,10 @@ void main() {
 	uint triIdx = (gl_VertexIndex & bitmask(6)) + meshlet.vertexOffset;
 	
 	uint index = b_vertIndices[triIdx];
-	vec3 vertex = fetchVertex(index);
+	float3 vertex = fetchVertex(index);
 	
 	uint transformIdx = instance.objectIdx;
-	mat4 transform = getTransform(b_transforms[transformIdx]);
-	gl_Position = u_world.viewProjection * transform * vec4(vertex, 1.0);
+	float4x4 transform = getTransform(b_transforms[transformIdx]);
+	gl_Position = u_world.viewProjection * transform * float4(vertex, 1.0);
 	
 }

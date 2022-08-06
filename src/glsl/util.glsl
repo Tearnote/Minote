@@ -11,19 +11,19 @@ float rcp(float _v) {
 	
 }
 
-vec2 rcp(vec2 _v) {
+float2 rcp(float2 _v) {
 	
-	return vec2(1.0) / _v;
-	
-}
-
-vec3 rcp(vec3 _v) {
-	
-	return vec3(1.0) / _v;
+	return float2(1.0) / _v;
 	
 }
 
-vec2 saturate(vec2 _v) {
+float3 rcp(float3 _v) {
+	
+	return float3(1.0) / _v;
+	
+}
+
+float2 saturate(float2 _v) {
 	
 	return clamp(_v, 0.0, 1.0);
 	
@@ -60,45 +60,45 @@ float fastAtan(float _y, float _x) {
     return t;
 }
 
-float distanceSq(vec2 _a, vec2 _b) {
+float distanceSq(float2 _a, float2 _b) {
 	
-	vec2 d = _a - _b;
+	float2 d = _a - _b;
 	return dot(d, d);
 	
 }
 
 // Conversion from linear RGB to sRGB
 // http://www.java-gaming.org/topics/fast-srgb-conversion-glsl-snippet/37583/view.html
-vec3 srgbEncode(vec3 _color) {
+float3 srgbEncode(float3 _color) {
 	
 	float r = _color.r < 0.0031308 ? 12.92 * _color.r : 1.055 * pow(_color.r, 1.0/2.4) - 0.055;
 	float g = _color.g < 0.0031308 ? 12.92 * _color.g : 1.055 * pow(_color.g, 1.0/2.4) - 0.055;
 	float b = _color.b < 0.0031308 ? 12.92 * _color.b : 1.055 * pow(_color.b, 1.0/2.4) - 0.055;
-	return vec3(r, g, b);
+	return float3(r, g, b);
 	
 }
 
 // Conversion from sRGB to linear RGB
-vec3 srgbDecode(vec3 _color) {
+float3 srgbDecode(float3 _color) {
 	
 	float r = _color.r < 0.04045 ? (1.0 / 12.92) * _color.r : pow((_color.r + 0.055) * (1.0 / 1.055), 2.4);
 	float g = _color.g < 0.04045 ? (1.0 / 12.92) * _color.g : pow((_color.g + 0.055) * (1.0 / 1.055), 2.4);
 	float b = _color.b < 0.04045 ? (1.0 / 12.92) * _color.b : pow((_color.b + 0.055) * (1.0 / 1.055), 2.4);
-	return vec3(r, g, b);
+	return float3(r, g, b);
 	
 }
 
-float luminance(vec3 _color) {
+float luminance(float3 _color) {
 	
-	vec3 W = vec3(0.2125, 0.7154, 0.0721);
+	float3 W = float3(0.2125, 0.7154, 0.0721);
 	return dot(_color, W);
 	
 }
 
 // https://github.com/hughsk/glsl-luma/blob/master/index.glsl
-float luma(vec3 _color) {
+float luma(float3 _color) {
 	
-	vec3 W = vec3(0.299, 0.587, 0.114);
+	float3 W = float3(0.299, 0.587, 0.114);
 	return dot(_color, W);
 	
 }
@@ -113,36 +113,36 @@ uint bitmask(uint _n) {
 	
 }
 
-// Retrieve u16 halves of a u32
+// Retrieve uint16 halves of a uint
 
-uint u32Lower(uint _n) {
+uint uintLower(uint _n) {
 	
 	return _n & bitmask(16);
 	
 }
 
-uint u32Upper(uint _n) {
+uint uintUpper(uint _n) {
 	
 	return _n >> 16u;
 	
 }
 
-// Create a u32 out of two u16s
-uint u32Fromu16(uvec2 _val) {
+// Create a uint out of two uint16s
+uint uintFromuint16(uint2 _val) {
 	
 	return (_val[1] << 16u) | _val[0];
 	
 }
 
-// Create two u16s out of a u32
-uvec2 u16Fromu32(uint _val) {
+// Create two uint16s out of a uint
+uint2 uint16Fromuint(uint _val) {
 	
-	return uvec2(u32Lower(_val), u32Upper(_val));
+	return uint2(uintLower(_val), uintUpper(_val));
 	
 }
 
 #define U16FROMU32(_v) \
-	uvec2((_v) & 0xffffu, (_v) >> 16u)
+	uint2((_v) & 0xffffu, (_v) >> 16u)
 
 // https://fgiesen.wordpress.com/2009/12/13/decoding-morton-codes/
 uint mortonCompact1By1(uint _x) {
@@ -156,9 +156,9 @@ uint mortonCompact1By1(uint _x) {
 	
 }
 
-uvec2 mortonOrder(uint _id) {
+uint2 mortonOrder(uint _id) {
 	
-	return uvec2(mortonCompact1By1(_id), mortonCompact1By1(_id >> 1));
+	return uint2(mortonCompact1By1(_id), mortonCompact1By1(_id >> 1));
 	
 }
 
@@ -175,7 +175,7 @@ float randFloat(uint _v) {
 	
 }
 
-uvec2 randInt2d(uvec2 _v) {
+uint2 randInt2d(uint2 _v) {
 	
 	_v = _v * 1664525u + 1013904223u;
 	
@@ -194,18 +194,18 @@ uvec2 randInt2d(uvec2 _v) {
 }
 
 // https://graphics.pixar.com/library/OrthonormalB/paper.pdf
-void orthonormalBasis(vec3 _n, out vec3 _b1, out vec3 _b2) {
+void orthonormalBasis(float3 _n, out float3 _b1, out float3 _b2) {
 	
 	float sign = _n.z >= 0.0? 1.0 : -1.0;
 	float a = -1.0 / (sign + _n.z);
 	float b = _n.x * _n.y * a;
-	_b1 = vec3(1.0 + sign * _n.x * _n.x * a, sign * b, -sign * _n.x);
-	_b2 = vec3(b, sign + _n.y * _n.y * a, -_n.y);
+	_b1 = float3(1.0 + sign * _n.x * _n.x * a, sign * b, -sign * _n.x);
+	_b2 = float3(b, sign + _n.y * _n.y * a, -_n.y);
 	
 }
 
 // https://github.com/keijiro/KinoBloom/blob/master/Assets/Kino/Bloom/Shader/Bloom.cginc
-vec4 karisAverage(vec4 _s1, vec4 _s2, vec4 _s3, vec4 _s4) {
+float4 karisAverage(float4 _s1, float4 _s2, float4 _s3, float4 _s4) {
 	
 	float s1w = 1.0 / (luma(_s1.rgb) + 1.0);
 	float s2w = 1.0 / (luma(_s2.rgb) + 1.0);
@@ -219,19 +219,19 @@ vec4 karisAverage(vec4 _s1, vec4 _s2, vec4 _s3, vec4 _s4) {
 
 // Fast invertible tonemapper, useful for MSAA resolve
 
-vec3 tonemap(vec3 _c) {
+float3 tonemap(float3 _c) {
 	
 	return _c * rcp(max(_c.r, max(_c.g, _c.b)) + 1.0);
 	
 }
 
-vec3 tonemapWithWeight(vec3 _c, float _w) {
+float3 tonemapWithWeight(float3 _c, float _w) {
 	
 	return _c * (_w * rcp(max(_c.r, max(_c.g, _c.b)) + 1.0));
 	
 }
 
-vec3 tonemapInvert(vec3 _c) {
+float3 tonemapInvert(float3 _c) {
 	
 	return _c * rcp(1.0 - max(_c.r, max(_c.g, _c.b)));
 	
@@ -242,28 +242,28 @@ vec3 tonemapInvert(vec3 _c) {
 
 const uint NormalOctWidth = 16;
 
-uint octEncode(vec3 _vec) {
+uint octEncode(float3 _vec) {
 	
 	uint mu = (1u << NormalOctWidth) - 1u;
 	
 	_vec /= abs(_vec.x) + abs(_vec.y) + abs(_vec.z);
 	_vec.xy = (_vec.z >= 0.0)? _vec.xy : (1.0 - abs(_vec.yx)) * sign(_vec.xy);
-	vec2 v = 0.5 + 0.5 * _vec.xy;
+	float2 v = 0.5 + 0.5 * _vec.xy;
 	
-	uvec2 d = uvec2(floor(v * float(mu) + 0.5));
+	uint2 d = uint2(floor(v * float(mu) + 0.5));
 	return (d.y << NormalOctWidth) | d.x;
 	
 }
 
-vec3 octDecode(uint _oct) {
+float3 octDecode(uint _oct) {
 	
 	uint mu = (1u << NormalOctWidth) - 1u;
 	
-	uvec2 d = uvec2(_oct, _oct >> NormalOctWidth) & mu;
-	vec2 v = vec2(d) / float(mu);
+	uint2 d = uint2(_oct, _oct >> NormalOctWidth) & mu;
+	float2 v = float2(d) / float(mu);
 	
 	v = v * 2.0 - 1.0;
-	vec3 norm = vec3(v, 1.0 - abs(v.x) - abs(v.y));
+	float3 norm = float3(v, 1.0 - abs(v.x) - abs(v.y));
 	float t = max(-norm.z, 0.0);
 	norm.x += (norm.x > 0.0)? -t : t;
 	norm.y += (norm.y > 0.0)? -t : t;

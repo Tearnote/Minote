@@ -18,7 +18,7 @@ void ModelList::addModel(string_view _name, span<char const> _model) {
 	auto in = mpack_reader_t();
 	mpack_reader_init_data(&in, _model.data(), _model.size_bytes());
 	
-	if (auto magic = mpack_expect_u32(&in); magic != ModelMagic)
+	if (auto magic = mpack_expect_uint(&in); magic != ModelMagic)
 		throw runtime_error_fmt("Wrong magic number of model {}: got {}, expected {}", _name, magic, ModelMagic);
 	
 	mpack_expect_map_match(&in, 6);
@@ -75,7 +75,7 @@ void ModelList::addModel(string_view _name, span<char const> _model) {
 	// Load the meshlets
 	m_modelIndices.emplace(_name, m_models.size());
 	auto& model = m_models.emplace_back(Model{
-		.meshletOffset = u32(m_meshlets.size()),
+		.meshletOffset = uint(m_meshlets.size()),
 		.meshletCount = 0 });
 	
 	mpack_expect_cstr_match(&in, "meshlets");
@@ -88,19 +88,19 @@ void ModelList::addModel(string_view _name, span<char const> _model) {
 		auto& meshlet = m_meshlets.emplace_back();
 		
 		mpack_expect_cstr_match(&in, "materialIdx");
-		auto materialIdx = mpack_expect_u32(&in);
+		auto materialIdx = mpack_expect_uint(&in);
 		meshlet.materialIdx = materialOffset + materialIdx;
 		
 		mpack_expect_cstr_match(&in, "indexOffset");
-		auto indexOffset = mpack_expect_u32(&in);
+		auto indexOffset = mpack_expect_uint(&in);
 		meshlet.indexOffset = indexOffset + m_triIndices.size();
 		
 		mpack_expect_cstr_match(&in, "indexCount");
-		auto indexCount = mpack_expect_u32(&in);
+		auto indexCount = mpack_expect_uint(&in);
 		meshlet.indexCount = indexCount;
 		
 		mpack_expect_cstr_match(&in, "vertexOffset");
-		auto vertexOffset = mpack_expect_u32(&in);
+		auto vertexOffset = mpack_expect_uint(&in);
 		meshlet.vertexOffset = vertexOffset + m_vertIndices.size();
 		
 		mpack_expect_cstr_match(&in, "boundingSphereCenter");

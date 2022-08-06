@@ -20,8 +20,8 @@ struct Bloom {
 	// Draw debug controls for this instance
 	void drawImguiDebug(string_view name);
 	
-	u32 passes = 6u; // More passes increases blur width
-	f32 strength = 1.0f / 64.0f; // Output multiplier
+	uint passes = 6u; // More passes increases blur width
+	float strength = 1.0f / 64.0f; // Output multiplier
 	
 private:
 	

@@ -15,9 +15,9 @@ layout(binding = 2) restrict writeonly uniform uimage2D i_visbuf;
 layout(binding = 3) restrict writeonly uniform uimage2D i_subsamples;
 layout(binding = 4) restrict writeonly uniform uimage2D i_jitterMap;
 
-shared uvec4 sh_jitter;
+shared uint4 sh_jitter;
 
-const vec2 InitialCentroids[4] = {
+const float2 InitialCentroids[4] = {
 	{0.5, 0.5},
 	{1.5, 0.5},
 	{0.5, 1.5},
@@ -25,12 +25,12 @@ const vec2 InitialCentroids[4] = {
 
 void main() {
 	
-	uvec2 gid = gl_GlobalInvocationID.xy * 2;
+	uint2 gid = gl_GlobalInvocationID.xy * 2;
 	
 	// Init shared memory
 	
 	if (gl_LocalInvocationIndex == 0)
-		sh_jitter = uvec4(0);
+		sh_jitter = uint4(0);
 	
 	barrier();
 	
@@ -39,11 +39,11 @@ void main() {
 	uint visSamples[QUAD_SAMPLE_COUNT];
 	for (uint i = 0; i < QUAD_SAMPLE_COUNT; i += 1) {
 		
-		uvec2 pos = gid + uvec2(QuadPixelOffsets[i / SUBSAMPLE_COUNT]);
+		uint2 pos = gid + uint2(QuadPixelOffsets[i / SUBSAMPLE_COUNT]);
 		if (any(greaterThanEqual(pos, textureSize(s_visbuf))))
 			visSamples[i] = -2u;
 		else
-			visSamples[i] = texelFetch(s_visbuf, ivec2(pos), int(i % SUBSAMPLE_COUNT)).x;
+			visSamples[i] = texelFetch(s_visbuf, int2(pos), int(i % SUBSAMPLE_COUNT)).x;
 		
 	}
 	
@@ -102,9 +102,9 @@ void main() {
 		
 		// Mark the quad as jittered
 		
-		uvec2 jitterSampleOffset = gl_LocalInvocationID.xy / 4;
+		uint2 jitterSampleOffset = gl_LocalInvocationID.xy / 4;
 		uint jitterSampleIndex = jitterSampleOffset.x + jitterSampleOffset.y * 2;
-		uvec2 jitterQuadOffset = gl_GlobalInvocationID.xy % 4;
+		uint2 jitterQuadOffset = gl_GlobalInvocationID.xy % 4;
 		uint jitterQuadIndex = jitterQuadOffset.x + jitterQuadOffset.y * 4;
 		uint jitterSampleBit = 1u << jitterQuadIndex;
 		atomicOr(sh_jitter[jitterSampleIndex], jitterSampleBit);
@@ -141,12 +141,12 @@ void main() {
 	
 	uint clusterSubsamples[4] = {0, 0, 0, 0};
 	// Centroids aren't written to the cluster output at the moment, so they're not saved
-	// vec2 clusterCentroids[4] = {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}};
+	// float2 clusterCentroids[4] = {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}};
 	
 	for (uint subIdx = 0; subIdx < QUAD_SAMPLE_COUNT; subIdx += 1) {
 		
 		uint quadPx = subIdx / SUBSAMPLE_COUNT;
-		vec2 subsamplePosition = vec2(QuadPixelOffsets[quadPx]) + QuadSubsampleLocations[subIdx % SUBSAMPLE_COUNT];
+		float2 subsamplePosition = float2(QuadPixelOffsets[quadPx]) + QuadSubsampleLocations[subIdx % SUBSAMPLE_COUNT];
 		uint subsampleValue = visSamples[subIdx];
 		
 		// Compute distance from each cluster
@@ -200,14 +200,14 @@ void main() {
 	
 	for (uint i = 0; i < 4; i += 1) {
 		
-		uvec2 pos = gid + uvec2(QuadPixelOffsets[i]);
-		imageStore(i_visbuf, ivec2(pos), uvec4(clusterValues[i], 0, 0, 0));
-		imageStore(i_subsamples, ivec2(pos), uvec4(clusterSubsamples[i], 0, 0, 0));
+		uint2 pos = gid + uint2(QuadPixelOffsets[i]);
+		imageStore(i_visbuf, int2(pos), uint4(clusterValues[i], 0, 0, 0));
+		imageStore(i_subsamples, int2(pos), uint4(clusterSubsamples[i], 0, 0, 0));
 		
 	}
 	
 	if (gl_LocalInvocationIndex < 4)
-		imageStore(i_jitterMap, ivec2(gid / 8 + QuadPixelOffsets[gl_LocalInvocationIndex]), uvec4(sh_jitter[gl_LocalInvocationIndex], 0, 0, 0));
+		imageStore(i_jitterMap, int2(gid / 8 + QuadPixelOffsets[gl_LocalInvocationIndex]), uint4(sh_jitter[gl_LocalInvocationIndex], 0, 0, 0));
 	
 	
 }

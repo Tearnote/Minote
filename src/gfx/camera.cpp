@@ -2,28 +2,28 @@
 
 namespace minote {
 
-auto Camera::direction() const -> vec3 {
+auto Camera::direction() const -> float3 {
 	
-	return vec3{
+	return float3{
 		cos(pitch) * cos(yaw),
 		cos(pitch) * sin(yaw),
 		sin(pitch)};
 	
 }
 
-auto Camera::view() const -> mat4 {
+auto Camera::view() const -> float4x4 {
 	
 	return look(position, direction(), {0.0f, 0.0f, -1.0f});
 	
 }
 
-auto Camera::projection() const -> mat4 {
+auto Camera::projection() const -> float4x4 {
 	
-	return perspective(verticalFov, f32(viewport.x()) / f32(viewport.y()), nearPlane);
+	return perspective(verticalFov, float(viewport.x()) / float(viewport.y()), nearPlane);
 	
 }
 
-void Camera::rotate(f32 horz, f32 vert) {
+void Camera::rotate(float horz, float vert) {
 	
 	yaw -= horz * lookSpeed;
 	if (yaw <    0_deg) yaw += 360_deg;
@@ -34,17 +34,17 @@ void Camera::rotate(f32 horz, f32 vert) {
 	
 }
 
-void Camera::shift(vec3 distance) {
+void Camera::shift(float3 distance) {
 	
 	position += distance * moveSpeed;
 	
 }
 
-void Camera::roam(vec3 distance) {
+void Camera::roam(float3 distance) {
 	
 	auto fwd = direction();
-	auto right = vec3{fwd.y(), -fwd.x(), 0.0f};
-	auto up = vec3{-fwd.y(), fwd.z(), fwd.x()};
+	auto right = float3{fwd.y(), -fwd.x(), 0.0f};
+	auto up = float3{-fwd.y(), fwd.z(), fwd.x()};
 	
 	shift(
 		distance.x() * right +

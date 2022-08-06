@@ -11,7 +11,7 @@ void Freecam::handleMouse(SDL_Event const& _e) {
 	if (_e.type == SDL_MOUSEBUTTONUP && _e.button.button == SDL_BUTTON_LEFT)
 		moving = false;
 	if (_e.type == SDL_MOUSEMOTION)
-		offset += vec2{f32(_e.motion.xrel), f32(_e.motion.yrel)}; // Accumulate lateral movement
+		offset += float2{float(_e.motion.xrel), float(_e.motion.yrel)}; // Accumulate lateral movement
 	
 }
 
@@ -41,7 +41,7 @@ void Freecam::updateCamera(Camera& _camera) {
 	
 	if (moving)
 		_camera.rotate(offset.x(), offset.y());
-	offset = vec2(0.0f); // Lateral movement applied, reset
+	offset = float2(0.0f); // Lateral movement applied, reset
 	
 	_camera.roam({
 		float(right) - float(left),

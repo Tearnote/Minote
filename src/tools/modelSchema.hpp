@@ -4,10 +4,10 @@
 
 namespace minote {
 
-using TriIndexType = u8;
-using VertIndexType = u32;
-using VertexType = vec3;
-using NormalType = u32;
+using TriIndexType = uint8;
+using VertIndexType = uint;
+using VertexType = float3;
+using NormalType = uint;
 
 constexpr auto ModelMagic = 0x10EF02FDu;
 constexpr auto NormalOctBits = 16u;

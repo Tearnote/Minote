@@ -17,8 +17,8 @@ auto Atmosphere::Params::earth() -> Params {
 	
 	constexpr auto EarthRayleighScaleHeight = 8.0f;
 	constexpr auto EarthMieScaleHeight = 1.2f;
-	constexpr auto MieScattering = vec3{0.003996f, 0.003996f, 0.003996f};
-	constexpr auto MieExtinction = vec3{0.004440f, 0.004440f, 0.004440f};
+	constexpr auto MieScattering = float3{0.003996f, 0.003996f, 0.003996f};
+	constexpr auto MieExtinction = float3{0.004440f, 0.004440f, 0.004440f};
 	
 	return Params{
 		.bottomRadius = 6360.0f,
@@ -28,7 +28,7 @@ auto Atmosphere::Params::earth() -> Params {
 		.mieDensityExpScale = -1.0f / EarthMieScaleHeight,
 		.mieScattering = MieScattering,
 		.mieExtinction = MieExtinction,
-		.mieAbsorption = max(MieExtinction - MieScattering, vec3(0.0f)),
+		.mieAbsorption = max(MieExtinction - MieScattering, float3(0.0f)),
 		.miePhaseG = 0.8f,
 		.absorptionDensity0LayerWidth = 25.0f,
 		.absorptionDensity0ConstantTerm = -2.0f / 3.0f,
@@ -152,19 +152,19 @@ void Sky::compile() {
 	ctx.create_named_pipeline("sky/draw", drawPci);
 	/*
 	auto skyGenSunLuminancePci = vuk::ComputePipelineBaseCreateInfo();
-	skyGenSunLuminancePci.add_spirv(std::vector<u32>{
+	skyGenSunLuminancePci.add_spirv(std::vector<uint>{
 #include "spv/sky/genSunLuminance.comp.spv"
 	}, "sky/genSunLuminance.comp");
 	_ptc.ctx.create_named_pipeline("sky/genSunLuminance", skyGenSunLuminancePci);
 	
 	auto skyDrawCubemapPci = vuk::ComputePipelineBaseCreateInfo();
-	skyDrawCubemapPci.add_spirv(std::vector<u32>{
+	skyDrawCubemapPci.add_spirv(std::vector<uint>{
 #include "spv/sky/drawCubemap.comp.spv"
 	}, "sky/drawCubemap.comp");
 	_ptc.ctx.create_named_pipeline("sky/drawCubemap", skyDrawCubemapPci);
 	
 	auto skyAerialPerspectivePci = vuk::ComputePipelineBaseCreateInfo();
-	skyAerialPerspectivePci.add_spirv(std::vector<u32>{
+	skyAerialPerspectivePci.add_spirv(std::vector<uint>{
 #include "spv/sky/genAerialPerspective.comp.spv"
 	}, "sky/genAerialPerspective.comp");
 	_ptc.ctx.create_named_pipeline("sky/genAerialPerspective", skyAerialPerspectivePci);
@@ -173,7 +173,7 @@ void Sky::compile() {
 	
 }
 
-auto Sky::createView(Atmosphere& _atmo, vec3 _probePos) -> vuk::Future {
+auto Sky::createView(Atmosphere& _atmo, float3 _probePos) -> vuk::Future {
 	
 	compile();
 	
@@ -206,11 +206,11 @@ auto Sky::createView(Atmosphere& _atmo, vec3 _probePos) -> vuk::Future {
 			   .bind_image(0, 3, "view");
 			
 			struct Constants {
-				vec3 probePos;
-				f32 pad0;
-				vec3 sunDirection;
-				f32 pad1;
-				vec3 sunIlluminance;
+				float3 probePos;
+				float pad0;
+				float3 sunDirection;
+				float pad1;
+				float3 sunIlluminance;
 			};
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, Constants{
 				.probePos = _probePos,
@@ -260,12 +260,12 @@ auto Sky::draw(vuk::Future _target, Atmosphere& _atmo,
 			   .bind_image(0, 3, "target");
 			
 			struct Constants {
-				mat4 viewProjectionInv;
-				vec3 cameraPos;
+				float4x4 viewProjectionInv;
+				float3 cameraPos;
 				float pad0;
-				vec3 sunDirection;
+				float3 sunDirection;
 				float pad1;
-				vec3 sunIlluminance;
+				float3 sunIlluminance;
 			};
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, Constants{
 				.viewProjectionInv = inverse(_camera.viewProjection()),
@@ -305,16 +305,16 @@ void Sky::drawImguiDebug(string_view _name) {
 	
 }
 
-auto Sky::getSunDirection(f32 _pitch, f32 _yaw) -> vec3 {
+auto Sky::getSunDirection(float _pitch, float _yaw) -> float3 {
 	
-	return mat3::rotate({0.0f, 0.0f, 1.0f}, _yaw) *
-		mat3::rotate({0.0f, -1.0f, 0.0f}, _pitch) *
-		vec3{1.0f, 0.0f, 0.0f};
+	return mul(float3x3::rotate({0.0f, 0.0f, 1.0f}, _yaw),
+		mul(float3x3::rotate({0.0f, -1.0f, 0.0f}, _pitch),
+		float3{1.0f, 0.0f, 0.0f}));
 	
 }
 /*
 auto Sky::createAerialPerspective(Pool& _pool, Frame& _frame, vuk::Name _name,
-	vec3 _probePos, mat4 _invViewProj, Atmosphere _atmo) -> Texture3D {
+	float3 _probePos, float4x4 _invViewProj, Atmosphere _atmo) -> Texture3D {
 	
 	auto aerialPerspective = Texture3D::make(_pool, _name,
 		AerialPerspectiveSize, AerialPerspectiveFormat,
@@ -329,8 +329,8 @@ auto Sky::createAerialPerspective(Pool& _pool, Frame& _frame, vuk::Name _name,
 		.execute = [aerialPerspective, &_frame, _atmo, _invViewProj, _probePos](vuk::CommandBuffer& cmd) {
 			
 			struct PushConstants {
-				mat4 invViewProj;
-				vec3 probePosition;
+				float4x4 invViewProj;
+				float3 probePosition;
 			};
 			
 			cmd.bind_uniform_buffer(0, 0, _frame.world)
@@ -343,7 +343,7 @@ auto Sky::createAerialPerspective(Pool& _pool, Frame& _frame, vuk::Name _name,
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, PushConstants{
 				   .invViewProj = _invViewProj,
 				   .probePosition = _probePos });
-			cmd.specialize_constants(0, u32Fromu16({aerialPerspective.size().x(), aerialPerspective.size().y()}));
+			cmd.specialize_constants(0, uintFromuint16({aerialPerspective.size().x(), aerialPerspective.size().y()}));
 			cmd.specialize_constants(1, aerialPerspective.size().z());
 			
 			cmd.dispatch_invocations(aerialPerspective.size().x(), aerialPerspective.size().y(), aerialPerspective.size().z());
@@ -355,9 +355,9 @@ auto Sky::createAerialPerspective(Pool& _pool, Frame& _frame, vuk::Name _name,
 }
 
 auto Sky::createSunLuminance(Pool& _pool, Frame& _frame, vuk::Name _name,
-	vec3 _probePos, Atmosphere _atmo) -> Buffer<vec3> {
+	float3 _probePos, Atmosphere _atmo) -> Buffer<float3> {
 	
-	auto sunLuminance = Buffer<vec3>::make(_pool, _name,
+	auto sunLuminance = Buffer<float3>::make(_pool, _name,
 		vuk::BufferUsageFlagBits::eStorageBuffer | vuk::BufferUsageFlagBits::eUniformBuffer);
 	
 	sunLuminance.attach(_frame.rg, vuk::eNone, vuk::eNone);
@@ -384,7 +384,7 @@ auto Sky::createSunLuminance(Pool& _pool, Frame& _frame, vuk::Name _name,
 	
 }
 
-void Sky::draw(Frame& _frame, Cubemap _target, vec3 _probePos, Texture2D _skyView, Atmosphere _atmo) {
+void Sky::draw(Frame& _frame, Cubemap _target, float3 _probePos, Texture2D _skyView, Atmosphere _atmo) {
 	
 	_frame.rg.add_pass({
 		.name = nameAppend(_target.name, "sky/drawCubemap"),
@@ -394,9 +394,9 @@ void Sky::draw(Frame& _frame, Cubemap _target, vec3 _probePos, Texture2D _skyVie
 		.execute = [_target, _skyView, _atmo, &_frame, _probePos](vuk::CommandBuffer& cmd) {
 			
 			struct PushConstants {
-				vec3 probePosition;
-				u32 cubemapSize;
-				uvec2 skyViewSize;
+				float3 probePosition;
+				uint cubemapSize;
+				uint2 skyViewSize;
 			};
 			
 			cmd.bind_uniform_buffer(0, 0, _frame.world)
@@ -406,36 +406,36 @@ void Sky::draw(Frame& _frame, Cubemap _target, vec3 _probePos, Texture2D _skyVie
 			   .bind_storage_image(0, 4, _target)
 			   .bind_compute_pipeline("sky/drawCubemap");
 			
-			auto* sides = cmd.map_scratch_uniform_binding<array<mat4, 6>>(0, 5);
-			*sides = to_array<mat4>({
-				mat4(mat3{
+			auto* sides = cmd.map_scratch_uniform_binding<array<float4x4, 6>>(0, 5);
+			*sides = to_array<float4x4>({
+				float4x4(float3x3{
 					0.0f, 0.0f, -1.0f,
 					0.0f, -1.0f, 0.0f,
 					1.0f, 0.0f, 0.0f}),
-				mat4(mat3{
+				float4x4(float3x3{
 					0.0f, 0.0f, 1.0f,
 					0.0f, -1.0f, 0.0f,
 					-1.0f, 0.0f, 0.0f}),
-				mat4(mat3{
+				float4x4(float3x3{
 					1.0f, 0.0f, 0.0f,
 					0.0f, 0.0f, 1.0f,
 					0.0f, 1.0f, 0.0f}),
-				mat4(mat3{
+				float4x4(float3x3{
 					1.0f, 0.0f, 0.0f,
 					0.0f, 0.0f, -1.0f,
 					0.0f, -1.0f, 0.0f}),
-				mat4(mat3{
+				float4x4(float3x3{
 					1.0f, 0.0f, 0.0f,
 					0.0f, -1.0f, 0.0f,
 					0.0f, 0.0f, 1.0f}),
-				mat4(mat3{
+				float4x4(float3x3{
 					-1.0f, 0.0f, 0.0f,
 					0.0f, -1.0f, 0.0f,
 					0.0f, 0.0f, -1.0f})});
 			
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, _probePos);
 			
-			cmd.specialize_constants(0, u32Fromu16(_skyView.size()));
+			cmd.specialize_constants(0, uintFromuint16(_skyView.size()));
 			cmd.specialize_constants(1, _target.size().x());
 			
 			cmd.dispatch_invocations(_target.size().x(), _target.size().y(), 6);

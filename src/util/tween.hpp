@@ -9,7 +9,7 @@ namespace minote {
 
 // Description of a tween instance. most of the fields need to be filled in manually before use;
 // designated initializer syntax is convenient for this.
-template<floating_point Prec = f32>
+template<floating_point Prec = float>
 struct Tween {
 	
 	Prec from = 0.0; // Initial value

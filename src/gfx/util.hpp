@@ -12,8 +12,8 @@
 namespace minote {
 
 // Return the number a mipmaps that a square texture of the given size would have
-constexpr auto mipmapCount(u32 size) {
-	return u32(floor(log2(size))) + 1;
+constexpr auto mipmapCount(uint size) {
+	return uint(floor(log2(size))) + 1;
 }
 
 // Rounded up division
@@ -38,8 +38,8 @@ constexpr auto divRoundUp(T _val, T _div) -> T {
 	
 }
 
-// Pack two values in a u32. x is in lower bits, y in upper
-constexpr auto u32Fromu16(uvec2 _v) -> u32 {
+// Pack two values in a uint. x is in lower bits, y in upper
+constexpr auto uintFromuint16(uint2 _v) -> uint {
 	
 	return (_v.y() << 16) | _v.x();
 	

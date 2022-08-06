@@ -7,9 +7,9 @@
 #ifdef B_INDICES
 
 // Unpack and return indices of a given triangle.
-uvec3 fetchIndices(uint _n) {
+uint3 fetchIndices(uint _n) {
 	
-	return uvec3(
+	return uint3(
 		B_INDICES[_n + 0],
 		B_INDICES[_n + 1],
 		B_INDICES[_n + 2]);
@@ -20,11 +20,11 @@ uvec3 fetchIndices(uint _n) {
 
 #ifdef B_VERTICES
 
-vec3 fetchVertex(uint _n) {
+float3 fetchVertex(uint _n) {
 	
 	uint base = _n * 3;
 	
-	return vec3(
+	return float3(
 		B_VERTICES[base + 0],
 		B_VERTICES[base + 1],
 		B_VERTICES[base + 2]);
@@ -35,7 +35,7 @@ vec3 fetchVertex(uint _n) {
 
 #ifdef B_NORMALS
 
-vec3 fetchNormal(uint _n) {
+float3 fetchNormal(uint _n) {
 	
 	uint octNormal = B_NORMALS[_n];
 	return octDecode(octNormal);
@@ -46,17 +46,17 @@ vec3 fetchNormal(uint _n) {
 
 #ifdef B_COLORS
 
-vec4 fetchColor(uint _n) {
+float4 fetchColor(uint _n) {
 	
 	uint colorPacked = B_COLORS[_n];
-	uvec4 uresult = {
+	uint4 uresult = {
 		(colorPacked >>  0) & bitmask(8),
 		(colorPacked >>  8) & bitmask(8),
 		(colorPacked >> 16) & bitmask(8),
 		(colorPacked >> 24) };
-	vec4 result = vec4(uresult);
+	float4 result = float4(uresult);
 	result /= float(0xFF);
-	result.rgb = pow(result.rgb, vec3(2.2));
+	result.rgb = pow(result.rgb, float3(2.2));
 	
 	return result;
 	

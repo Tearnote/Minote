@@ -14,43 +14,43 @@
 namespace minote {
 
 struct Material {
-	enum struct Type: u32 {
+	enum struct Type: uint {
 		None = 0, // Invalid
 		PBR = 1,
 		Count
 	};
 	
-	vec4 color;
-	vec3 emissive;
-	u32 id;
-	f32 metalness;
-	f32 roughness;
-	vec2 pad0;
+	float4 color;
+	float3 emissive;
+	uint id;
+	float metalness;
+	float roughness;
+	float2 pad0;
 };
 
 using MaterialType = Material::Type;
 
 struct Meshlet {
-	u32 materialIdx;
+	uint materialIdx;
 	
-	u32 indexOffset;
-	u32 indexCount;
-	u32 vertexOffset;
+	uint indexOffset;
+	uint indexCount;
+	uint vertexOffset;
 	
-	vec3 boundingSphereCenter;
-	f32 boundingSphereRadius;
+	float3 boundingSphereCenter;
+	float boundingSphereRadius;
 };
 
 struct Model {
-	u32 meshletOffset;
-	u32 meshletCount;
+	uint meshletOffset;
+	uint meshletCount;
 };
 
 // A set of buffers storing vertex data for all models, and how to access each
 // model within the buffer
 struct ModelBuffer {
 	vuk::Future materials; // Buffer<Material>
-	vuk::Future triIndices; // Buffer<u32>
+	vuk::Future triIndices; // Buffer<uint>
 	vuk::Future vertIndices; // Buffer<VertIndexType>
 	vuk::Future vertices; // Buffer<VertexType>
 	vuk::Future normals; // Buffer<NormalType>
@@ -60,7 +60,7 @@ struct ModelBuffer {
 	
 	ivector<Meshlet> cpu_meshlets;
 	ivector<Model> cpu_models;
-	hashmap<ID, u32> cpu_modelIndices;
+	hashmap<ID, uint> cpu_modelIndices;
 };
 
 // Structure storing model data as they're being loaded. After all models are
@@ -77,14 +77,14 @@ struct ModelList {
 private:
 	
 	pvector<Material> m_materials;
-	pvector<u32> m_triIndices;
+	pvector<uint> m_triIndices;
 	pvector<VertIndexType> m_vertIndices;
 	pvector<VertexType> m_vertices;
 	pvector<NormalType> m_normals;
 	
 	ivector<Meshlet> m_meshlets; // Meshlet descriptors, for access to index buffers
 	ivector<Model> m_models; // Model descriptors, for access to m_modelMeshes
-	hashmap<ID, u32> m_modelIndices; // Mapping of model IDs to their index in m_models
+	hashmap<ID, uint> m_modelIndices; // Mapping of model IDs to their index in m_models
 	
 };
 

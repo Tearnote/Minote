@@ -9,42 +9,42 @@ namespace minote {
 struct Camera {
 	
 	// Projection
-	uvec2 viewport;
-	f32 verticalFov;
-	f32 nearPlane;
+	uint2 viewport;
+	float verticalFov;
+	float nearPlane;
 	
 	// View
-	vec3 position;
-	f32 yaw;
-	f32 pitch;
+	float3 position;
+	float yaw;
+	float pitch;
 	
 	// Movement
-	f32 lookSpeed;
-	f32 moveSpeed;
+	float lookSpeed;
+	float moveSpeed;
 	
 	// Return a unit vector of the direction the camera is pointing in
 	[[nodiscard]]
-	auto direction() const -> vec3;
+	auto direction() const -> float3;
 	
 	// Return a matrix that transforms from world space to view space
 	[[nodiscard]]
-	auto view() const -> mat4;
+	auto view() const -> float4x4;
 	
 	// Return a matrix that transforms from view space to NDC space
 	[[nodiscard]]
-	auto projection() const -> mat4;
+	auto projection() const -> float4x4;
 	
 	[[nodiscard]]
-	auto viewProjection() const -> mat4 { return projection() * view(); }
+	auto viewProjection() const -> float4x4 { return mul(projection(), view()); }
 	
 	// Change camera direction by the provided offsets, taking into account lookSpeed
-	void rotate(f32 horz, f32 vert);
+	void rotate(float horz, float vert);
 	
 	// Change the camera position directly, taking into account moveSpeed
-	void shift(vec3 distance);
+	void shift(float3 distance);
 	
 	// Change the camera position relatively to its direction, taking into account moveSpeed
-	void roam(vec3 distance);
+	void roam(float3 distance);
 	
 };
 

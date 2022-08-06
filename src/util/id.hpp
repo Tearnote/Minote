@@ -34,10 +34,10 @@ private:
 	static constexpr auto Prime = 16777619u;
 	static constexpr auto Basis = 2166136261u;
 	
-	u32 m_id;
+	uint m_id;
 	
 	// Construct with specified hash
-	explicit constexpr ID(u32 id): m_id(id) {}
+	explicit constexpr ID(uint id): m_id(id) {}
 	
 };
 static_assert(std::is_trivially_constructible_v<ID>);

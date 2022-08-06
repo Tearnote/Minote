@@ -14,13 +14,13 @@ namespace minote {
 void CubeFilter::compile(vuk::PerThreadContext& _ptc) {
 	
 	auto cubeFilterPrePci = vuk::ComputePipelineBaseCreateInfo();
-	cubeFilterPrePci.add_spirv(std::vector<u32>{
+	cubeFilterPrePci.add_spirv(std::vector<uint>{
 #include "spv/cubeFilter/pre.comp.spv"
 	}, "cubeFilter/pre.comp");
 	_ptc.ctx.create_named_pipeline("cubeFilter/pre", cubeFilterPrePci);
 	
 	auto cubeFilterPostPci = vuk::ComputePipelineBaseCreateInfo();
-	cubeFilterPostPci.add_spirv(std::vector<u32>{
+	cubeFilterPostPci.add_spirv(std::vector<uint>{
 #include "spv/cubeFilter/post.comp.spv"
 	}, "cubeFilter/post.comp");
 	_ptc.ctx.create_named_pipeline("cubeFilter/post", cubeFilterPostPci);
@@ -29,8 +29,8 @@ void CubeFilter::compile(vuk::PerThreadContext& _ptc) {
 
 void CubeFilter::apply(Frame& _frame, Cubemap _src, Cubemap _dst) {
 	
-	ASSUME(_src.size() == uvec2(BaseSize));
-	ASSUME(_dst.size() == uvec2(BaseSize));
+	ASSUME(_src.size() == uint2(BaseSize));
+	ASSUME(_dst.size() == uint2(BaseSize));
 	
 	_frame.rg.add_pass({
 		.name = nameAppend(_src.name, "cubeFilter/pre"),
@@ -73,7 +73,7 @@ void CubeFilter::apply(Frame& _frame, Cubemap _src, Cubemap _dst) {
 			   .bind_storage_image(0, 7, *_dst.mipArrayView(7))
 			   .bind_compute_pipeline("cubeFilter/post");
 			
-			auto* coeffs = cmd.map_scratch_uniform_binding<vec4[7][5][3][24]>(0, 8);
+			auto* coeffs = cmd.map_scratch_uniform_binding<float4[7][5][3][24]>(0, 8);
 			std::memcpy(coeffs, IBLCoefficients, sizeof(IBLCoefficients));
 			
 			cmd.dispatch_invocations(21840, 6);

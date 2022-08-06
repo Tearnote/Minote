@@ -16,16 +16,16 @@ using namespace minote;
 
 struct Worknode {
 	cgltf_node* node;
-	mat4 parentTransform;
+	float4x4 parentTransform;
 };
 
-using GltfIndexType = u32;
-using GltfVertexType = vec3;
-using GltfNormalType = vec3;
+using GltfIndexType = uint;
+using GltfVertexType = float3;
+using GltfNormalType = float3;
 
 struct GltfMesh {
-	mat4 transform;
-	u32 materialIdx;
+	float4x4 transform;
+	uint materialIdx;
 	
 	pvector<GltfIndexType> indices;
 	pvector<GltfVertexType> vertices;
@@ -33,21 +33,21 @@ struct GltfMesh {
 };
 
 struct Material {
-	vec4 color;
-	vec3 emissive;
-	f32 metalness;
-	f32 roughness;
+	float4 color;
+	float3 emissive;
+	float metalness;
+	float roughness;
 };
 
 struct Meshlet {
-	u32 materialIdx;
+	uint materialIdx;
 	
-	u32 indexOffset;
-	u32 indexCount;
-	u32 vertexOffset;
+	uint indexOffset;
+	uint indexCount;
+	uint vertexOffset;
 	
-	vec3 boundingSphereCenter;
-	f32 boundingSphereRadius;
+	float3 boundingSphereCenter;
+	float boundingSphereRadius;
 };
 
 struct Model {
@@ -84,12 +84,12 @@ int main(int argc, char const* argv[]) try {
 		auto& material = gltf->materials[i];
 		auto& pbr = material.pbr_metallic_roughness;
 		model.materials.emplace_back(Material{
-			.color = vec4{
+			.color = float4{
 				pbr.base_color_factor[0],
 				pbr.base_color_factor[1],
 				pbr.base_color_factor[2],
 				pbr.base_color_factor[3] },
-			.emissive = vec3{
+			.emissive = float3{
 				material.emissive_factor[0],
 				material.emissive_factor[1],
 				material.emissive_factor[2] },
@@ -110,7 +110,7 @@ int main(int argc, char const* argv[]) try {
 		auto node = scene.nodes[i];
 		worknodes.emplace_back(Worknode{
 			.node = node,
-			.parentTransform = mat4::identity() });
+			.parentTransform = float4x4::identity() });
 		
 	}
 	
@@ -127,15 +127,15 @@ int main(int argc, char const* argv[]) try {
 		// Compute the transform
 		
 		auto translation = node.has_translation?
-			mat4::translate(vec3{node.translation[0], node.translation[1], node.translation[2]}) :
-			mat4::identity();
+			float4x4::translate(float3{node.translation[0], node.translation[1], node.translation[2]}) :
+			float4x4::identity();
 		auto rotation = node.has_rotation?
-			mat4::rotate(quat{node.rotation[3], node.rotation[0], node.rotation[1], node.rotation[2]}) :
-			mat4::identity();
+			float4x4::rotate(quat{node.rotation[3], node.rotation[0], node.rotation[1], node.rotation[2]}) :
+			float4x4::identity();
 		auto scale = node.has_scale?
-			mat4::scale(vec3{node.scale[0], node.scale[1], node.scale[2]}) :
-			mat4::identity();
-		auto transform = worknode.parentTransform * translation * rotation * scale;
+			float4x4::scale(float3{node.scale[0], node.scale[1], node.scale[2]}) :
+			float4x4::identity();
+		auto transform = mul(worknode.parentTransform, mul(translation, mul(rotation, scale)));
 		
 		// Queue up all children nodes
 		
@@ -174,12 +174,12 @@ int main(int argc, char const* argv[]) try {
 		VERIFY(indexAccessor.type == cgltf_type_scalar);
 		if (indexAccessor.component_type == cgltf_component_type_r_16u) {
 			
-			auto* indexTypedBuffer = reinterpret_cast<u16 const*>(indexBuffer);
+			auto* indexTypedBuffer = reinterpret_cast<uint16 const*>(indexBuffer);
 			mesh.indices.insert(mesh.indices.end(), indexTypedBuffer, indexTypedBuffer + indexCount);
 			
 		} else {
 			
-			auto* indexTypedBuffer = reinterpret_cast<u32 const*>(indexBuffer);
+			auto* indexTypedBuffer = reinterpret_cast<uint const*>(indexBuffer);
 			mesh.indices.insert(mesh.indices.end(), indexTypedBuffer, indexTypedBuffer + indexCount);
 			
 		}
@@ -318,7 +318,7 @@ int main(int argc, char const* argv[]) try {
 		auto vertices = pvector<VertexType>();
 		vertices.reserve(mesh.vertices.size());
 		for (auto v: mesh.vertices)
-			vertices.push_back(vec3(mesh.transform * vec4(v, 1.0f)));
+			vertices.push_back(float3(mul(mesh.transform, float4(v, 1.0f))));
 		
 		// Pre-transform normals
 		
@@ -326,7 +326,7 @@ int main(int argc, char const* argv[]) try {
 		auto normals = pvector<GltfNormalType>();
 		normals.reserve(mesh.normals.size());
 		for (auto n: mesh.normals)
-			normals.push_back(normalize(vec3(normTransform * vec4(n, 0.0f))));
+			normals.push_back(normalize(float3(mul(normTransform, float4(n, 0.0f)))));
 		
 		// Convert normals to oct encoding
 		
@@ -387,7 +387,7 @@ int main(int argc, char const* argv[]) try {
 			meshlet.indexCount = (rawMeshlet.triangle_count * 3 + 3) & ~3;
 			meshlet.vertexOffset = rawMeshlet.vertex_offset + model.vertIndices.size();
 			
-			meshlet.boundingSphereCenter = vec3{bound.center[0], bound.center[1], bound.center[2]};
+			meshlet.boundingSphereCenter = float3{bound.center[0], bound.center[1], bound.center[2]};
 			meshlet.boundingSphereRadius = bound.radius;
 			
 		}
@@ -409,7 +409,7 @@ int main(int argc, char const* argv[]) try {
 	if (out.error != mpack_ok)
 		throw runtime_error_fmt(R"(Failed to open output file "{}" for writing: error code {})", outputPath, out.error);
 	
-	mpack_write_u32(&out, ModelMagic);
+	mpack_write_uint(&out, ModelMagic);
 	mpack_start_map(&out, 6);
 		
 		mpack_write_cstr(&out, "materials");
@@ -446,13 +446,13 @@ int main(int argc, char const* argv[]) try {
 			mpack_start_map(&out, 8);
 				
 				mpack_write_cstr(&out, "materialIdx");
-				mpack_write_u32(&out, meshlet.materialIdx);
+				mpack_write_uint(&out, meshlet.materialIdx);
 				mpack_write_cstr(&out, "indexOffset");
-				mpack_write_u32(&out, meshlet.indexOffset);
+				mpack_write_uint(&out, meshlet.indexOffset);
 				mpack_write_cstr(&out, "indexCount");
-				mpack_write_u32(&out, meshlet.indexCount);
+				mpack_write_uint(&out, meshlet.indexCount);
 				mpack_write_cstr(&out, "vertexOffset");
-				mpack_write_u32(&out, meshlet.vertexOffset);
+				mpack_write_uint(&out, meshlet.vertexOffset);
 				mpack_write_cstr(&out, "boundingSphereCenter");
 				mpack_start_array(&out, 3);
 					mpack_write_float(&out, meshlet.boundingSphereCenter.x());

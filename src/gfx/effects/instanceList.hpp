@@ -11,20 +11,20 @@ namespace minote {
 
 struct InstanceList {
 	
-	using Transform = array<vec4, 3>;
+	using Transform = array<float4, 3>;
 	
 	struct Instance {
-		u32 objectIdx;
-		u32 meshletIdx;
+		uint objectIdx;
+		uint meshletIdx;
 	};
 	
-	Buffer<vec4> colors;
+	Buffer<float4> colors;
 	Buffer<Transform> transforms;
 	Buffer<Transform> prevTransforms;
 	
 	Buffer<Instance> instances;
 	
-	u32 triangleCount;
+	uint triangleCount;
 	
 	static auto upload(Pool&, Frame&, vuk::Name, ObjectPool const&) -> InstanceList;
 	
@@ -38,20 +38,20 @@ struct TriangleList {
 	using Transform = InstanceList::Transform;
 	using Instance = InstanceList::Instance;
 	
-	Buffer<vec4> colors;
+	Buffer<float4> colors;
 	Buffer<Transform> transforms;
 	Buffer<Transform> prevTransforms;
 	
 	Buffer<Instance> instances;
-	Buffer<uvec4> instanceCount;
+	Buffer<uint4> instanceCount;
 	
 	Buffer<Command> command;
-	Buffer<u32> indices;
+	Buffer<uint> indices;
 	
 	static void compile(vuk::PerThreadContext&);
 	
 	static auto fromInstances(InstanceList, Pool&, Frame&, vuk::Name,
-		Texture2D hiZ, uvec2 hiZInnerSize, mat4 view, mat4 projection) -> TriangleList;
+		Texture2D hiZ, uint2 hiZInnerSize, float4x4 view, float4x4 projection) -> TriangleList;
 	
 };
 

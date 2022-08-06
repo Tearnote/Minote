@@ -20,9 +20,9 @@ struct System {
 		~Window();
 		
 		[[nodiscard]]
-		auto size() -> uvec2 { return m_size; }
+		auto size() -> uint2 { return m_size; }
 		[[nodiscard]]
-		auto dpi() -> f32 { return m_dpi; }
+		auto dpi() -> float { return m_dpi; }
 		[[nodiscard]]
 		auto title() const -> string_view { return m_title; }
 		
@@ -37,16 +37,16 @@ struct System {
 	private:
 		
 		friend struct System;
-		Window(string_view title, bool fullscreen, uvec2 size);
+		Window(string_view title, bool fullscreen, uint2 size);
 		
 		// Raw window handle
 		SDL_Window* m_handle;
 		// Text displayed on the window's title bar
 		string m_title;
 		// Size in physical pixels
-		std::atomic<uvec2> m_size;
+		std::atomic<uint2> m_size;
 		// DPI of the display the window is on
-		std::atomic<f32> m_dpi;
+		std::atomic<float> m_dpi;
 		
 	};
 	
@@ -87,7 +87,7 @@ struct System {
 	// Open a window with specified parameters on the screen. Size of the window
 	// is in logical units. If fullscreen is true, size is ignored and the window
 	// is created at desktop resolution
-	auto openWindow(string_view title, bool fullscreen = false, uvec2 size = {1280, 720}) -> Window
+	auto openWindow(string_view title, bool fullscreen = false, uint2 size = {1280, 720}) -> Window
 	 { return Window(title, fullscreen, size); }
 	
 	System(System const&) = delete;
@@ -96,10 +96,10 @@ struct System {
 private:
 	
 	// Frequency of the system performance counter
-	u64 m_timerFrequency;
+	uint64 m_timerFrequency;
 	
 	// Timestamp of initialization
-	u64 m_timerStart;
+	uint64 m_timerStart;
 	
 	// Only usable from the service
 	friend struct Service<System>;

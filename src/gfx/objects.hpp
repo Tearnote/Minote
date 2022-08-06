@@ -28,18 +28,18 @@ struct ObjectPool {
 	// Spatial properties
 	struct Transform {
 		
-		vec3 position;
-		f32 pad0;
-		vec3 scale;
-		f32 pad1;
+		float3 position;
+		float pad0;
+		float3 scale;
+		float pad1;
 		quat rotation;
 		
 		// Construct with default values
 		static constexpr auto make_default() -> Transform {
 			
 			return Transform{
-				.position = vec3(0.0f),
-				.scale = vec3(1.0f),
+				.position = float3(0.0f),
+				.scale = float3(1.0f),
 				.rotation = quat::identity()};
 			
 		}
@@ -51,7 +51,7 @@ struct ObjectPool {
 		
 		Metadata& metadata;
 		ID& modelID;
-		vec4& color;
+		float4& color;
 		Transform& transform;
 		
 	};
@@ -85,7 +85,7 @@ struct ObjectPool {
 	// container transfer.
 	ivector<Metadata> metadata;
 	ivector<ID> modelIDs;
-	ivector<vec4> colors;
+	ivector<float4> colors;
 	ivector<Transform> transforms;
 	ivector<Transform> prevTransforms;
 	
