@@ -73,11 +73,8 @@ struct vec {
 	
 	//=== Creation
 	
-	// Uninitialized init
+	// Uninitialized contents
 	constexpr vec() = default;
-	
-	// Fill the vector with copies of the value
-	explicit constexpr vec(T fillVal) { fill(fillVal); }
 	
 	// Create the vector with provided component values
 	constexpr vec(std::initializer_list<T>);

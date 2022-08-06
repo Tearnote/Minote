@@ -80,7 +80,7 @@ struct Sky {
 	constexpr static auto AerialPerspectiveSize = uint3{32u, 32u, 32u};
 	
 	float3 sunDirection = {-0.435286462, 0.818654716, 0.374606609};
-	float3 sunIlluminance = float3(8.0f);
+	float3 sunIlluminance = {8.0f, 8.0f, 8.0f};
 	
 	// Create a 360-degree view of the sky at the specified world position
 	auto createView(Atmosphere&, float3 probePos) -> Texture2D<float3>;

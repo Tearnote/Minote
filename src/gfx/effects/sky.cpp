@@ -28,7 +28,7 @@ auto Atmosphere::Params::earth() -> Params {
 		.mieDensityExpScale = -1.0f / EarthMieScaleHeight,
 		.mieScattering = MieScattering,
 		.mieExtinction = MieExtinction,
-		.mieAbsorption = max(MieExtinction - MieScattering, float3(0.0f)),
+		.mieAbsorption = max(MieExtinction - MieScattering, float3{0.0f, 0.0f, 0.0f}),
 		.miePhaseG = 0.8f,
 		.absorptionDensity0LayerWidth = 25.0f,
 		.absorptionDensity0ConstantTerm = -2.0f / 3.0f,

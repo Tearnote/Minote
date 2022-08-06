@@ -16,7 +16,7 @@ struct Freecam {
 	bool right = false;
 	bool floating = false;
 	bool moving = false;
-	float2 offset = float2(0.0f);
+	float2 offset = {0.0f, 0.0f};
 	
 	// Update freecam from a mouse move event (other event types ignored)
 	void handleMouse(SDL_Event const&);

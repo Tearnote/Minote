@@ -41,7 +41,7 @@ void Freecam::updateCamera(Camera& _camera) {
 	
 	if (moving)
 		_camera.rotate(offset.x(), offset.y());
-	offset = float2(0.0f); // Lateral movement applied, reset
+	offset = float2{0.0f, 0.0f}; // Lateral movement applied, reset
 	
 	_camera.roam({
 		float(right) - float(left),

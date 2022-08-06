@@ -38,8 +38,8 @@ struct ObjectPool {
 		static constexpr auto make_default() -> Transform {
 			
 			return Transform{
-				.position = float3(0.0f),
-				.scale = float3(1.0f),
+				.position = {0.0f, 0.0f, 0.0f},
+				.scale = {1.0f, 1.0f, 1.0f},
 				.rotation = quat::identity()};
 			
 		}

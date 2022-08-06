@@ -165,7 +165,7 @@ auto Imgui::render(Texture2D<float4> _target) -> Texture2D<float4> {
 			};
 			auto constants = Constants{
 				.scale = scale,
-				.translate = float2(-1.0f) - float2{drawdata->DisplayPos.x, drawdata->DisplayPos.y} * scale,
+				.translate = float2{-1.0f, -1.0f} - float2{drawdata->DisplayPos.x, drawdata->DisplayPos.y} * scale,
 			};
 			cmd.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, constants);
 			

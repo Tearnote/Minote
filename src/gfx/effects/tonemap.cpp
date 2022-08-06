@@ -87,7 +87,7 @@ auto Tonemap::genConstants() -> array<float4, 4> {
 	float w3 = pow(midIn,cs)*midOut;
 	result[0].w() = (w0-w1)/(w2-w3);
 	
-	result[1] = float4((saturation+float3(contrast))/crosstalkSaturation, 0.0f);
+	result[1] = float4((saturation+float3{contrast,contrast,contrast})/crosstalkSaturation, 0.0f);
 	result[2] = float4(crosstalk, 0.0f);
 	result[3] = float4(crosstalkSaturation, 0.0f);
 	

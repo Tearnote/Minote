@@ -10,7 +10,7 @@ auto ObjectPool::create() -> ObjectID {
 		
 		metadata.emplace_back(Metadata::make_default());
 		modelIDs.emplace_back();
-		colors.emplace_back(1.0f); // Fully opaque
+		colors.emplace_back(float4{1.0f, 1.0f, 1.0f, 1.0f}); // Fully opaque
 		transforms.emplace_back(Transform::make_default());
 		prevTransforms.emplace_back(Transform::make_default());
 		
@@ -21,7 +21,7 @@ auto ObjectPool::create() -> ObjectID {
 		auto id = m_deletedIDs.back();
 		m_deletedIDs.pop_back();
 		metadata[id] = Metadata::make_default();
-		colors[id] = float4(1.0f); // Fully opaque
+		colors[id] = float4{1.0f, 1.0f, 1.0f, 1.0f}; // Fully opaque
 		transforms[id] = Transform::make_default();
 		prevTransforms[id] = Transform::make_default();
 		return id;
