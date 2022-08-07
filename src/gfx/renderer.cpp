@@ -132,7 +132,7 @@ auto Renderer::buildRenderGraph() -> std::shared_ptr<vuk::RenderGraph> {
 	auto screen = vuk::Future(rg, "screen");
 	
 	// Instance processing
-	auto instances = InstanceList(m_frameAllocator, m_models, m_objects);
+	auto objects = m_objects.upload(m_frameAllocator, m_models);
 	
 	// Sky rendering
 	if (!m_impl->m_atmosphere.has_value())

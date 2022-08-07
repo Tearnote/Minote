@@ -1,12 +1,25 @@
 #pragma once
 
 #include <type_traits>
+#include "vuk/Allocator.hpp"
+#include "gfx/resource.hpp"
+#include "gfx/models.hpp"
 #include "util/vector.hpp"
 #include "util/types.hpp"
+#include "util/array.hpp"
 #include "util/math.hpp"
 #include "util/id.hpp"
 
 namespace minote {
+
+// A GPU upload of all drawable objects
+struct ObjectBuffer {
+	using Transform = array<float4, 3>; // Omitting useless row to save space
+	
+	Buffer<float4> colors;
+	Buffer<Transform> transforms;
+	Buffer<Transform> prevTransforms;
+};
 
 // Pool of renderable objects
 struct ObjectPool {
@@ -65,6 +78,10 @@ struct ObjectPool {
 	[[nodiscard]]
 	auto get(ObjectID) -> Proxy;
 	
+	// Upload the current list of objects to GPU
+	// Non-drawable objects are not included
+	auto upload(vuk::Allocator&, ModelBuffer const&) -> ObjectBuffer;
+	
 	// Call at the end of the frame to copy transforms to prevTransforms
 	void copyTransforms();
 	
@@ -73,7 +90,7 @@ struct ObjectPool {
 	auto size() const -> usize { return metadata.size(); }
 	
 	ivector<Metadata> metadata;
-	ivector<ID> modelIDs;
+	ivector<ID> modelIDs; // IDs into ModelBuffer::cpu_modelIndices
 	ivector<float4> colors;
 	ivector<Transform> transforms;
 	ivector<Transform> prevTransforms;
@@ -81,6 +98,12 @@ struct ObjectPool {
 private:
 	
 	ivector<ObjectID> m_deletedIDs;
+	
+	// Convert a transform from from the PSR triplet to a matrix
+	static auto encodeTransform(Transform) -> ObjectBuffer::Transform;
+	
+	// Count of drawable objects only
+	auto sizeDrawable() -> usize;
 	
 };
 

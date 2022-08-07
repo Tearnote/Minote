@@ -9,7 +9,7 @@
 #include "gfx/models.hpp"
 
 namespace minote {
-
+/*
 // A GPU-side list of meshlet instances, created by taking the list of scene
 // objects and splitting each one into its component meshlets
 struct InstanceList {
@@ -32,7 +32,7 @@ struct InstanceList {
 	InstanceList(vuk::Allocator&, ModelBuffer&, ObjectPool const&);
 	
 };
-/*
+
 struct TriangleList {
 	
 	using Command = VkDrawIndexedIndirectCommand;
