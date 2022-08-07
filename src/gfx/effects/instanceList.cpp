@@ -1,10 +1,11 @@
 #include "gfx/effects/instanceList.hpp"
 
-#include <span>
-#include "util/vector.hpp"
-#include "util/util.hpp"
+#include "vuk/Partials.hpp"
 #include "gfx/samplers.hpp"
 #include "gfx/util.hpp"
+#include "util/vector.hpp"
+#include "util/util.hpp"
+#include "util/span.hpp"
 #include "tools/modelSchema.hpp"
 
 namespace minote {
@@ -19,7 +20,8 @@ constexpr auto encodeTransform(ObjectPool::Transform _in) -> InstanceList::Trans
 	auto rotationMat = float3x3{
 		1.0f - 2.0f * (ry * ry + rz * rz),        2.0f * (rx * ry - rw * rz),        2.0f * (rx * rz + rw * ry),
 		       2.0f * (rx * ry + rw * rz), 1.0f - 2.0f * (rx * rx + rz * rz),        2.0f * (ry * rz - rw * rx),
-		       2.0f * (rx * rz - rw * ry),        2.0f * (ry * rz + rw * rx), 1.0f - 2.0f * (rx * rx + ry * ry)};
+		       2.0f * (rx * rz - rw * ry),        2.0f * (ry * rz + rw * rx), 1.0f - 2.0f * (rx * rx + ry * ry),
+	};
 	
 	rotationMat[0] *= _in.scale.x();
 	rotationMat[1] *= _in.scale.y();
@@ -28,99 +30,81 @@ constexpr auto encodeTransform(ObjectPool::Transform _in) -> InstanceList::Trans
 	return to_array({
 		float4(rotationMat[0], _in.position.x()),
 		float4(rotationMat[1], _in.position.y()),
-		float4(rotationMat[2], _in.position.z())});
+		float4(rotationMat[2], _in.position.z()),
+	});
 	
 }
 
-auto InstanceList::upload(Pool& _pool, Frame& _frame, vuk::Name _name,
-	ObjectPool const& _objects) -> InstanceList {
-	
-	auto result = InstanceList();
+InstanceList::InstanceList(vuk::Allocator& _allocator, ModelBuffer& _models, ObjectPool const& _objects) {
 	
 	// Precalculate instance count
-	
 	auto modelCount = 0u;
 	auto instanceCount = 0u;
 	for (auto idx: iota(ObjectID(0), _objects.size())) {
-		
+		// Skip non-drawables
 		auto& metadata = _objects.metadata[idx];
 		if (!metadata.exists || !metadata.visible)
 			continue;
 		
 		auto id = _objects.modelIDs[idx];
-		auto modelIdx = _frame.models.cpu_modelIndices.at(id);
+		auto modelIdx = _models.cpu_modelIndices.at(id);
 		modelCount += 1;
-		instanceCount += _frame.models.cpu_models[modelIdx].meshletCount;
-		
+		instanceCount += _models.cpu_models[modelIdx].meshletCount;
 	}
 	
+	// Prepare the space for data upload
+	auto cpu_instances = pvector<Instance>();
+	cpu_instances.reserve(instanceCount);
+	auto cpu_transforms = pvector<Transform>();
+	cpu_transforms.reserve(modelCount);
+	auto cpu_prevTransforms = pvector<Transform>();
+	cpu_prevTransforms.reserve(modelCount);
+	auto cpu_colors = pvector<float4>();
+	cpu_colors.reserve(modelCount);
+	
+	triangleCount = 0;
+	
 	// Queue up all valid objects
-	
-	auto instances = pvector<Instance>();
-	instances.reserve(instanceCount);
-	auto transforms = pvector<Transform>();
-	transforms.reserve(modelCount);
-	auto prevTransforms = pvector<Transform>();
-	prevTransforms.reserve(modelCount);
-	auto colors = pvector<float4>();
-	colors.reserve(modelCount);
-	
-	result.triangleCount = 0;
-	
 	for (auto idx: iota(ObjectID(0), _objects.size())) {
-		
 		auto& metadata = _objects.metadata[idx];
 		if (!metadata.exists || !metadata.visible)
 			continue;
 		
 		auto id = _objects.modelIDs[idx];
-		auto modelIdx = _frame.models.cpu_modelIndices.at(id);
-		auto& model = _frame.models.cpu_models[modelIdx];
+		auto modelIdx = _models.cpu_modelIndices.at(id);
+		auto& model = _models.cpu_models[modelIdx];
 		
 		// Add meshlet instances
-		
 		for (auto i: iota(0u, model.meshletCount)) {
-			
-			instances.push_back(Instance{
-				.objectIdx = uint(transforms.size()),
-				.meshletIdx = model.meshletOffset + i });
-			
-			result.triangleCount += divRoundUp(_frame.models.cpu_meshlets[model.meshletOffset + i].indexCount, 3u);
-			
+			cpu_instances.emplace_back(Instance{
+				.objectIdx = uint(cpu_transforms.size()),
+				.meshletIdx = model.meshletOffset + i,
+			});
+			triangleCount += divRoundUp(_models.cpu_meshlets[model.meshletOffset + i].indexCount, 3u);
 		}
 		
 		// Add model details
-		
-		transforms.emplace_back(encodeTransform(_objects.transforms[idx]));
-		prevTransforms.emplace_back(encodeTransform(_objects.prevTransforms[idx]));
-		colors.emplace_back(_objects.colors[idx]);
-		
+		cpu_transforms.emplace_back(encodeTransform(_objects.transforms[idx]));
+		cpu_prevTransforms.emplace_back(encodeTransform(_objects.prevTransforms[idx]));
+		cpu_colors.emplace_back(_objects.colors[idx]);
 	}
 	
-	// Upload data to GPU
-	
-	result.colors = Buffer<float4>::make(_pool, nameAppend(_name, "colors"),
-		vuk::BufferUsageFlagBits::eStorageBuffer,
-		colors);
-	result.transforms = Buffer<Transform>::make(_pool, nameAppend(_name, "transforms"),
-		vuk::BufferUsageFlagBits::eStorageBuffer,
-		transforms);
-	result.prevTransforms = Buffer<Transform>::make(_pool, nameAppend(_name, "prevTransforms"),
-		vuk::BufferUsageFlagBits::eStorageBuffer,
-		prevTransforms);
-	result.instances = Buffer<Instance>::make(_pool, nameAppend(_name, "instances"),
-		vuk::BufferUsageFlagBits::eStorageBuffer,
-		instances);
-	
-	result.colors.attach(_frame.rg, vuk::eHostWrite, vuk::eNone);
-	result.transforms.attach(_frame.rg, vuk::eHostWrite, vuk::eNone);
-	result.prevTransforms.attach(_frame.rg, vuk::eHostWrite, vuk::eNone);
-	result.instances.attach(_frame.rg, vuk::eHostWrite, vuk::eNone);
-	
-	return result;
+	// Upload to GPU
+	colors = vuk::create_buffer_cross_device(_allocator,
+		vuk::MemoryUsage::eCPUtoGPU,
+		span(cpu_colors)).second;
+	transforms = vuk::create_buffer_cross_device(_allocator,
+		vuk::MemoryUsage::eCPUtoGPU,
+		span(cpu_transforms)).second;
+	prevTransforms = vuk::create_buffer_cross_device(_allocator,
+		vuk::MemoryUsage::eCPUtoGPU,
+		span(cpu_prevTransforms)).second;
+	instances = vuk::create_buffer_cross_device(_allocator,
+		vuk::MemoryUsage::eCPUtoGPU,
+		span(cpu_instances)).second;
 	
 }
-
+/*
 void TriangleList::compile(vuk::PerThreadContext& _ptc) {
 	
 	auto genIndicesPci = vuk::ComputePipelineBaseCreateInfo();
@@ -265,5 +249,5 @@ auto TriangleList::fromInstances(InstanceList _instances, Pool& _pool, Frame& _f
 	return result;
 	
 }
-
+*/
 }

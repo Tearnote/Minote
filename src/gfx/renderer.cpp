@@ -11,6 +11,7 @@
 #include "util/math.hpp"
 #include "util/log.hpp"
 #include "sys/system.hpp"
+#include "gfx/effects/instanceList.hpp"
 #include "gfx/effects/tonemap.hpp"
 #include "gfx/effects/bloom.hpp"
 #include "gfx/effects/sky.hpp"
@@ -129,6 +130,9 @@ auto Renderer::buildRenderGraph() -> std::shared_ptr<vuk::RenderGraph> {
 		.layer_count = 1,
 	}, vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.0f));
 	auto screen = vuk::Future(rg, "screen");
+	
+	// Instance processing
+	auto instances = InstanceList(m_frameAllocator, m_models, m_objects);
 	
 	// Sky rendering
 	if (!m_impl->m_atmosphere.has_value())

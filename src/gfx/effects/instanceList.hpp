@@ -1,21 +1,24 @@
 #pragma once
 
+#include "vuk/Allocator.hpp"
 #include "util/array.hpp"
 #include "util/types.hpp"
 #include "util/math.hpp"
-#include "gfx/resources/buffer.hpp"
+#include "gfx/resource.hpp"
 #include "gfx/objects.hpp"
-#include "gfx/frame.hpp"
+#include "gfx/models.hpp"
 
 namespace minote {
 
+// A GPU-side list of meshlet instances, created by taking the list of scene
+// objects and splitting each one into its component meshlets
 struct InstanceList {
 	
 	using Transform = array<float4, 3>;
 	
 	struct Instance {
-		uint objectIdx;
-		uint meshletIdx;
+		uint objectIdx; // Index into colors, transforms, prevTransforms
+		uint meshletIdx; // Index into ModelBuffer::meshlets
 	};
 	
 	Buffer<float4> colors;
@@ -26,12 +29,10 @@ struct InstanceList {
 	
 	uint triangleCount;
 	
-	static auto upload(Pool&, Frame&, vuk::Name, ObjectPool const&) -> InstanceList;
-	
-	auto size() const -> usize { return instances.length(); }
+	InstanceList(vuk::Allocator&, ModelBuffer&, ObjectPool const&);
 	
 };
-
+/*
 struct TriangleList {
 	
 	using Command = VkDrawIndexedIndirectCommand;
@@ -48,11 +49,12 @@ struct TriangleList {
 	Buffer<Command> command;
 	Buffer<uint> indices;
 	
-	static void compile(vuk::PerThreadContext&);
-	
 	static auto fromInstances(InstanceList, Pool&, Frame&, vuk::Name,
 		Texture2D hiZ, uint2 hiZInnerSize, float4x4 view, float4x4 projection) -> TriangleList;
 	
+	// Compile required shaders; optional
+	static void compile();
+	
 };
-
+*/
 }
