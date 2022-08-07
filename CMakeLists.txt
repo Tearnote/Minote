@@ -71,7 +71,6 @@ add_executable(Minote
 	# src/gfx/effects/visibility.hpp src/gfx/effects/visibility.cpp
 	src/gfx/effects/tonemap.hpp src/gfx/effects/tonemap.cpp
 	src/gfx/effects/bloom.hpp src/gfx/effects/bloom.cpp
-	# src/gfx/effects/clear.hpp src/gfx/effects/clear.cpp
 	# src/gfx/effects/bvh.hpp src/gfx/effects/bvh.cpp
 	# src/gfx/effects/pbr.hpp src/gfx/effects/pbr.cpp
 	src/gfx/effects/sky.hpp src/gfx/effects/sky.cpp
