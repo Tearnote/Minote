@@ -6,14 +6,14 @@ struct AtmosphereParams {
 	float topRadius;
 	
 	float rayleighDensityExpScale;
-	float pad0;
+	float _pad0;
 	float3 rayleighScattering;
 	
 	float mieDensityExpScale;
 	float3 mieScattering;
-	float pad1;
+	float _pad1;
 	float3 mieExtinction;
-	float pad2;
+	float _pad2;
 	float3 mieAbsorption;
 	float miePhaseG;
 	
@@ -22,11 +22,11 @@ struct AtmosphereParams {
 	float absorptionDensity0LinearTerm;
 	float absorptionDensity1ConstantTerm;
 	float absorptionDensity1LinearTerm;
-	float pad3;
-	float pad4;
-	float pad5;
+	float _pad3;
+	float _pad4;
+	float _pad5;
 	float3 absorptionExtinction;
-	float pad6;
+	float _pad6;
 	
 	float3 groundAlbedo;
 };

@@ -15,9 +15,9 @@
 struct Constants {
 	float4x4 viewProjectionInv;
 	float3 cameraPos;
-	float pad0;
+	float _pad0;
 	float3 sunDirection;
-	float pad1;
+	float _pad1;
 	float3 sunIlluminance;
 };
 [[vk::push_constant]] Constants c_push;

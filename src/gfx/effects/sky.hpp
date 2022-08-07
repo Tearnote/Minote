@@ -24,14 +24,14 @@ struct Atmosphere {
 		float topRadius; // Maximum considered atmosphere height (center to atmosphere top)
 		
 		float rayleighDensityExpScale; // Rayleigh scattering exponential distribution scale in the atmosphere
-		float pad0;
+		float _pad0;
 		float3 rayleighScattering; // Rayleigh scattering coefficients
 		
 		float mieDensityExpScale; // Mie scattering exponential distribution scale in the atmosphere
 		float3 mieScattering; // Mie scattering coefficients
-		float pad1;
+		float _pad1;
 		float3 mieExtinction; // Mie extinction coefficients
-		float pad2;
+		float _pad2;
 		float3 mieAbsorption; // Mie absorption coefficients
 		float miePhaseG; // Mie phase function excentricity
 		
@@ -41,11 +41,11 @@ struct Atmosphere {
 		float absorptionDensity0LinearTerm;
 		float absorptionDensity1ConstantTerm;
 		float absorptionDensity1LinearTerm;
-		float pad3;
-		float pad4;
-		float pad5;
+		float _pad3;
+		float _pad4;
+		float _pad5;
 		float3 absorptionExtinction; // This other medium only absorb light, e.g. useful to represent ozone in the earth atmosphere
-		float pad6;
+		float _pad6;
 		
 		float3 groundAlbedo;
 		

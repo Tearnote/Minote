@@ -207,9 +207,9 @@ auto Sky::createView(Atmosphere& _atmo, float3 _probePos) -> Texture2D<float3> {
 			
 			struct Constants {
 				float3 probePos;
-				float pad0;
+				float _pad0;
 				float3 sunDirection;
-				float pad1;
+				float _pad1;
 				float3 sunIlluminance;
 			};
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, Constants{
@@ -262,9 +262,9 @@ auto Sky::draw(Texture2D<float4> _target, Atmosphere& _atmo,
 			struct Constants {
 				float4x4 viewProjectionInv;
 				float3 cameraPos;
-				float pad0;
+				float _pad0;
 				float3 sunDirection;
-				float pad1;
+				float _pad1;
 				float3 sunIlluminance;
 			};
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, Constants{

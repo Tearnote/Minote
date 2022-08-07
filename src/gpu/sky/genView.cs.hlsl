@@ -1,5 +1,4 @@
 #include "sky/types.hlsli"
-#include "world.hlsli"
 
 [[vk::binding(0)]] ConstantBuffer<AtmosphereParams> c_params;
 [[vk::binding(1)]][[vk::combinedImageSampler]] Texture2D<float4> s_transmittance;
@@ -16,9 +15,9 @@
 
 struct Constants {
 	float3 probePos;
-	float pad0;
+	float _pad0;
 	float3 sunDirection;
-	float pad1;
+	float _pad1;
 	float3 sunIlluminance;
 };
 [[vk::push_constant]] Constants c_push;

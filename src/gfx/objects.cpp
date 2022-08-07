@@ -7,17 +7,13 @@ namespace minote {
 auto ObjectPool::create() -> ObjectID {
 	
 	if (m_deletedIDs.empty()) {
-		
 		metadata.emplace_back(Metadata::make_default());
 		modelIDs.emplace_back();
 		colors.emplace_back(float4{1.0f, 1.0f, 1.0f, 1.0f}); // Fully opaque
 		transforms.emplace_back(Transform::make_default());
 		prevTransforms.emplace_back(Transform::make_default());
-		
 		return size() - 1;
-		
 	} else {
-		
 		auto id = m_deletedIDs.back();
 		m_deletedIDs.pop_back();
 		metadata[id] = Metadata::make_default();
@@ -25,7 +21,6 @@ auto ObjectPool::create() -> ObjectID {
 		transforms[id] = Transform::make_default();
 		prevTransforms[id] = Transform::make_default();
 		return id;
-		
 	}
 	
 }
@@ -43,7 +38,8 @@ auto ObjectPool::get(ObjectID _id) -> Proxy {
 		.metadata = metadata[_id],
 		.modelID = modelIDs[_id],
 		.color = colors[_id],
-		.transform = transforms[_id] };
+		.transform = transforms[_id],
+	};
 	
 }
 

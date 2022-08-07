@@ -23,25 +23,26 @@ struct Material {
 	
 	float4 color;
 	float3 emissive;
-	uint id;
+	Type type;
 	float metalness;
 	float roughness;
-	float2 pad0;
+	float2 _pad0;
 };
 
-using MaterialType = Material::Type;
-
 struct Meshlet {
-	uint materialIdx;
-	
+	// Index+size into ModelBuffer::triIndices
 	uint indexOffset;
 	uint indexCount;
+	// Offset to add to values retrieved from ModelBuffer::triIndices
 	uint vertexOffset;
+	
+	uint materialIdx; // Index into ModelBuffer::materials
 	
 	float3 boundingSphereCenter;
 	float boundingSphereRadius;
 };
 
+// Index+size into ModelBuffer::meshlets
 struct Model {
 	uint meshletOffset;
 	uint meshletCount;
@@ -51,8 +52,8 @@ struct Model {
 // model within the buffer
 struct ModelBuffer {
 	Buffer<Material> materials;
-	Buffer<uint> triIndices;
-	Buffer<VertIndexType> vertIndices;
+	Buffer<uint> triIndices; // Index into vertIndices (requires offset)
+	Buffer<VertIndexType> vertIndices; // Index into vertices
 	Buffer<VertexType> vertices;
 	Buffer<NormalType> normals;
 	
@@ -61,7 +62,7 @@ struct ModelBuffer {
 	
 	ivector<Meshlet> cpu_meshlets;
 	ivector<Model> cpu_models;
-	hashmap<ID, uint> cpu_modelIndices;
+	hashmap<ID, uint> cpu_modelIndices; // Mapping from ID to index into models
 };
 
 // Structure storing model data as they're being loaded. After all models are
