@@ -65,7 +65,7 @@ add_executable(Minote
 	src/sys/vulkan.hpp src/sys/vulkan.cpp
 	src/sys/system.hpp src/sys/system.cpp
 	# src/gfx/effects/cubeFilterCoeffs.hpp
-	# src/gfx/effects/instanceList.hpp src/gfx/effects/instanceList.cpp
+	src/gfx/effects/instanceList.hpp src/gfx/effects/instanceList.cpp
 	# src/gfx/effects/quadBuffer.hpp src/gfx/effects/quadBuffer.cpp
 	# src/gfx/effects/cubeFilter.hpp src/gfx/effects/cubeFilter.cpp
 	# src/gfx/effects/visibility.hpp src/gfx/effects/visibility.cpp
@@ -287,6 +287,7 @@ target_link_libraries(Minote PRIVATE incbin)
 set(SHADER_MODEL "6_7")
 set(SHADER_PREFIX src/gpu)
 set(SHADER_SOURCES
+	instanceList/expandObjects.cs.hlsl
 	tonemap/apply.cs.hlsl
 	bloom/down.cs.hlsl
 	bloom/up.cs.hlsl
@@ -313,14 +314,15 @@ foreach(SHADER_SOURCE ${SHADER_SOURCES})
 		COMMAND ${CMAKE_COMMAND} -E make_directory ${SHADER_OUTPUT_DIR}
 		# Create HLSL depfile
 		COMMAND $ENV{VULKAN_SDK}/Bin/dxc
-			-HV 2021 -T ${SHADER_PROFILE}
+			-HV 2021 -T ${SHADER_PROFILE} -spirv -fspv-target-env=vulkan1.3
 			-I ${PROJECT_SOURCE_DIR}/${SHADER_PREFIX}
 			-Fo ${SHADER_OUTPUT}
 			-MF ${SHADER_OUTPUT}.d
 			${SHADER_INPUT}
 		# Compile HLSL into SPIR-V
 		COMMAND $ENV{VULKAN_SDK}/Bin/dxc
-			-HV 2021 -T ${SHADER_PROFILE} -spirv "$<$<CONFIG:Debug,RelWithDebInfo>:-O0;-Zi>"
+			-HV 2021 -T ${SHADER_PROFILE} -spirv -fspv-target-env=vulkan1.3
+			-O0 "$<$<CONFIG:Debug,RelWithDebInfo>:-Zi>"
 			-I ${PROJECT_SOURCE_DIR}/${SHADER_PREFIX}
 			-Fo ${SHADER_OUTPUT}
 			${SHADER_INPUT}

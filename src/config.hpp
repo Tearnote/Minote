@@ -44,7 +44,7 @@
 #endif
 
 // Whether Vulkan validation layers are enabled
-#if BUILD_TYPE != BUILD_RELEASE
+#if BUILD_TYPE == BUILD_DEBUG
 #define VK_VALIDATION 1
 #else
 #define VK_VALIDATION 0

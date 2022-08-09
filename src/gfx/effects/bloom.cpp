@@ -14,25 +14,6 @@
 
 namespace minote {
 
-GET_SHADER(bloom_down_cs);
-GET_SHADER(bloom_up_cs);
-void Bloom::compile() {
-	
-	if (m_compiled) return;
-	auto& ctx = *s_vulkan->context;
-	
-	auto downPci = vuk::PipelineBaseCreateInfo();
-	ADD_SHADER(downPci, bloom_down_cs, "bloom/down.cs.hlsl");
-	ctx.create_named_pipeline("bloom/down", downPci);
-	
-	auto upPci = vuk::PipelineBaseCreateInfo();
-	ADD_SHADER(upPci, bloom_up_cs, "bloom/up.cs.hlsl");
-	ctx.create_named_pipeline("bloom/up", upPci);
-	
-	m_compiled = true;
-	
-}
-
 auto Bloom::apply(Texture2D<float4> _target) -> Texture2D<float4> {
 	
 	compile();
@@ -144,6 +125,25 @@ auto Bloom::apply(Texture2D<float4> _target) -> Texture2D<float4> {
 	
 	// rg->converge_image("temp", "temp/final"); // pending vuk bugfix
 	return vuk::Future(rg, "target/final");
+	
+}
+
+GET_SHADER(bloom_down_cs);
+GET_SHADER(bloom_up_cs);
+void Bloom::compile() {
+	
+	if (m_compiled) return;
+	auto& ctx = *s_vulkan->context;
+	
+	auto downPci = vuk::PipelineBaseCreateInfo();
+	ADD_SHADER(downPci, bloom_down_cs, "bloom/down.cs.hlsl");
+	ctx.create_named_pipeline("bloom/down", downPci);
+	
+	auto upPci = vuk::PipelineBaseCreateInfo();
+	ADD_SHADER(upPci, bloom_up_cs, "bloom/up.cs.hlsl");
+	ctx.create_named_pipeline("bloom/up", upPci);
+	
+	m_compiled = true;
 	
 }
 

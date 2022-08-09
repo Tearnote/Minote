@@ -47,22 +47,30 @@ auto ObjectPool::get(ObjectID _id) -> Proxy {
 
 auto ObjectPool::upload(vuk::Allocator& _allocator, ModelBuffer const& _models) -> ObjectBuffer {
 	
-	auto modelCount = sizeDrawable();
+	auto objectCount = sizeDrawable();
 	
 	// Prepare the space for data upload
+	auto cpu_modelIndices = pvector<uint>();
+	cpu_modelIndices.reserve(objectCount);
 	auto cpu_transforms = pvector<ObjectBuffer::Transform>();
-	cpu_transforms.reserve(modelCount);
+	cpu_transforms.reserve(objectCount);
 	auto cpu_prevTransforms = pvector<ObjectBuffer::Transform>();
-	cpu_prevTransforms.reserve(modelCount);
+	cpu_prevTransforms.reserve(objectCount);
 	auto cpu_colors = pvector<float4>();
-	cpu_colors.reserve(modelCount);
+	cpu_colors.reserve(objectCount);
 	
 	// Queue up all valid objects
+	auto meshletCount = 0u;
 	for (auto idx: iota(ObjectID(0), size())) {
 		auto& meta = metadata[idx];
 		if (!meta.exists || !meta.visible)
 			continue;
 		
+		auto modelID = modelIDs[idx];
+		auto modelIdx = _models.cpu_modelIndices.at(modelID);
+		meshletCount += _models.cpu_models[modelIdx].meshletCount;
+		
+		cpu_modelIndices.emplace_back(modelIdx);
 		cpu_transforms.emplace_back(encodeTransform(transforms[idx]));
 		cpu_prevTransforms.emplace_back(encodeTransform(prevTransforms[idx]));
 		cpu_colors.emplace_back(colors[idx]);
@@ -70,6 +78,9 @@ auto ObjectPool::upload(vuk::Allocator& _allocator, ModelBuffer const& _models) 
 	
 	// Upload to GPU
 	return ObjectBuffer {
+		.modelIndices = vuk::create_buffer_cross_device(_allocator,
+			vuk::MemoryUsage::eCPUtoGPU,
+			span(cpu_modelIndices)).second,
 		.colors = vuk::create_buffer_cross_device(_allocator,
 			vuk::MemoryUsage::eCPUtoGPU,
 			span(cpu_colors)).second,
@@ -79,6 +90,8 @@ auto ObjectPool::upload(vuk::Allocator& _allocator, ModelBuffer const& _models) 
 		.prevTransforms = vuk::create_buffer_cross_device(_allocator,
 			vuk::MemoryUsage::eCPUtoGPU,
 			span(cpu_prevTransforms)).second,
+		.objectCount = objectCount,
+		.meshletCount = meshletCount,
 	};
 	
 }
@@ -114,7 +127,7 @@ auto ObjectPool::encodeTransform(ObjectPool::Transform _in) -> ObjectBuffer::Tra
 	
 }
 
-auto ObjectPool::sizeDrawable() -> usize {
+auto ObjectPool::sizeDrawable() -> uint {
 	
 	auto result = 0u;
 	for (auto& meta: metadata)

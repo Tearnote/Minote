@@ -179,7 +179,7 @@ auto ModelList::upload(vuk::Allocator& _allocator) && -> ModelBuffer {
 			vuk::DomainFlagBits::eTransferQueue,
 			span(m_meshlets)).second,
 		.models = vuk::create_buffer_gpu(_allocator,
-			vuk::DomainFlagBits::eTransferQueue,
+			vuk::DomainFlagBits::eGraphicsQueue,
 			span(m_models)).second,
 		.cpu_modelIndices = std::move(m_modelIndices) };
 	result.cpu_meshlets = std::move(m_meshlets); // Must still exist for .meshlets creation

@@ -77,8 +77,7 @@ private:
 	void renderFrame(); // Common code of render() and refreshSwapchain()
 	void beginFrame();
 	void calcFramerate();
-	auto buildRenderGraph() -> std::shared_ptr<vuk::RenderGraph>;
-	void submitAndPresent(std::shared_ptr<vuk::RenderGraph>);
+	void executeRenderGraph();
 	
 	struct Impl;
 	std::unique_ptr<Impl> m_impl;

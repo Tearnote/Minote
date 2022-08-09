@@ -1,5 +1,5 @@
-#ifndef SKY_FUNC_HLSL
-#define SKY_FUNC_HLSL
+#ifndef SKY_FUNC_HLSLI
+#define SKY_FUNC_HLSLI
 
 #include "sky/access.hlsli"
 #include "sky/types.hlsli"

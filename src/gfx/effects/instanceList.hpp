@@ -1,38 +1,36 @@
 #pragma once
 
 #include "vuk/Allocator.hpp"
-#include "util/array.hpp"
 #include "util/types.hpp"
-#include "util/math.hpp"
 #include "gfx/resource.hpp"
 #include "gfx/objects.hpp"
 #include "gfx/models.hpp"
 
 namespace minote {
-/*
-// A GPU-side list of meshlet instances, created by taking the list of scene
+
+// A list of meshlet instances, created by taking the list of scene
 // objects and splitting each one into its component meshlets
 struct InstanceList {
 	
-	using Transform = array<float4, 3>;
-	
 	struct Instance {
-		uint objectIdx; // Index into colors, transforms, prevTransforms
+		uint objectIdx; // Index into every ObjectBuffer buffer
 		uint meshletIdx; // Index into ModelBuffer::meshlets
 	};
 	
-	Buffer<float4> colors;
-	Buffer<Transform> transforms;
-	Buffer<Transform> prevTransforms;
-	
 	Buffer<Instance> instances;
+	uint instanceCount; // Can be calculated CPU-side
 	
-	uint triangleCount;
+	InstanceList(vuk::Allocator&, ModelBuffer&, ObjectBuffer&);
 	
-	InstanceList(vuk::Allocator&, ModelBuffer&, ObjectPool const&);
+	// Build required shaders; optional
+	static void compile();
+	
+private:
+	
+	static inline bool m_compiled = false;
 	
 };
-
+/*
 struct TriangleList {
 	
 	using Command = VkDrawIndexedIndirectCommand;

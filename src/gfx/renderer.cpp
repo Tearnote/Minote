@@ -70,8 +70,7 @@ void Renderer::render() {
 void Renderer::renderFrame() {
 	
 	beginFrame();
-	auto rg = buildRenderGraph();
-	submitAndPresent(rg);
+	executeRenderGraph();
 	
 }
 
@@ -118,7 +117,7 @@ void Renderer::calcFramerate() {
 	
 }
 
-auto Renderer::buildRenderGraph() -> std::shared_ptr<vuk::RenderGraph> {
+void Renderer::executeRenderGraph() try {
 	
 	// Initial resources
 	auto rg = std::make_shared<vuk::RenderGraph>("init");
@@ -133,6 +132,7 @@ auto Renderer::buildRenderGraph() -> std::shared_ptr<vuk::RenderGraph> {
 	
 	// Instance processing
 	auto objects = m_objects.upload(m_frameAllocator, m_models);
+	auto instances = InstanceList(m_frameAllocator, m_models, objects);
 	
 	// Sky rendering
 	if (!m_impl->m_atmosphere.has_value())
@@ -157,6 +157,7 @@ auto Renderer::buildRenderGraph() -> std::shared_ptr<vuk::RenderGraph> {
 	
 	// Copy to swapchain
 	rg = std::make_shared<vuk::RenderGraph>("main");
+	rg->attach_in("instances", instances.instances); // For testing
 	rg->attach_in("screen/final", screenFinal);
 	rg->attach_swapchain("swapchain", s_vulkan->swapchain);
 	rg->add_pass({
@@ -176,14 +177,8 @@ auto Renderer::buildRenderGraph() -> std::shared_ptr<vuk::RenderGraph> {
 		},
 	});
 	
-	return rg;
-	
-}
-
-void Renderer::submitAndPresent(std::shared_ptr<vuk::RenderGraph> _rg) try {
-	
 	auto compiler = vuk::Compiler();
-	vuk::execute_submit_and_present_to_one(m_frameAllocator, compiler.link({&_rg, 1}, {}), s_vulkan->swapchain);
+	vuk::execute_submit_and_present_to_one(m_frameAllocator, compiler.link({&rg, 1}, {}), s_vulkan->swapchain);
 	
 } catch (vuk::PresentException& e) {
 	

@@ -1,5 +1,5 @@
-#ifndef SKY_TYPES_HLSL
-#define SKY_TYPES_HLSL
+#ifndef SKY_TYPES_HLSLI
+#define SKY_TYPES_HLSLI
 
 struct AtmosphereParams {
 	float bottomRadius;

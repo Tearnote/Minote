@@ -16,9 +16,12 @@ namespace minote {
 struct ObjectBuffer {
 	using Transform = array<float4, 3>; // Omitting useless row to save space
 	
+	Buffer<uint> modelIndices; // Index into ModelBuffer::models
 	Buffer<float4> colors;
 	Buffer<Transform> transforms;
 	Buffer<Transform> prevTransforms;
+	uint objectCount;
+	uint meshletCount; // How many meshlets are in the scene in total; useful in other stages
 };
 
 // Pool of renderable objects
@@ -103,7 +106,7 @@ private:
 	static auto encodeTransform(Transform) -> ObjectBuffer::Transform;
 	
 	// Count of drawable objects only
-	auto sizeDrawable() -> usize;
+	auto sizeDrawable() -> uint;
 	
 };
 
