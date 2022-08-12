@@ -21,7 +21,8 @@ when possible
 ## Building
 Developed on Windows in a MSYS2 UCRT environment. Requires CMake and the Vulkan
 SDK installed; no other external dependencies. Standard CMake build process,
-the Ninja Multi-Config generator is recommended.
+the Ninja Multi-Config generator is recommended. `Debug` and `Release` profiles
+are self-explanatory; `RelWithDebInfo` is designed for CPU and GPU profiling.
 
 ## Libraries used
 - [`volk`](https://github.com/zeux/volk) (MIT)
