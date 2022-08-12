@@ -1,9 +1,7 @@
-# Project information
-
 cmake_minimum_required(VERSION 3.20)
 project(Minote
 	VERSION 0.0
-	DESCRIPTION "Modern action puzzle game"
+	DESCRIPTION "A personal realtime renderer project"
 	LANGUAGES C CXX)
 set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
@@ -15,31 +13,25 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Build settings
-
+# Global build settings
 add_compile_options("-march=x86-64;-mmmx;-msse;-msse2;-msse3;-mssse3;-msse4.1;-msse4.2;-mavx;-ffast-math")
-
 add_compile_options("$<$<CONFIG:Debug,RelWithDebInfo>:-g>")
-
 add_compile_options("$<$<CONFIG:RelWithDebInfo,Release>:-O3;-ffunction-sections;-Wl,--gc-sections>")
 add_compile_options("$<$<CONFIG:Release>:-s>")
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION "$<CONFIG:Release>")
-
 if(WIN32)
 	add_compile_options("-mwindows")
 endif()
-
 # Dynamic+lld for dev builds, static+ld for release
 # https://github.com/msys2/MINGW-packages/issues/12050
 set(BUILD_SHARED_LIBS OFF)
 add_link_options("-static-libgcc")
 add_link_options("$<$<CONFIG:Debug,RelWithDebInfo>:-fuse-ld=lld>")
 add_link_options("$<$<CONFIG:Release>:-static;-static-libstdc++>")
-
+# Communicate build type to the project
 add_compile_definitions("BUILD_TYPE=$<$<CONFIG:Debug>:BUILD_DEBUG>$<$<CONFIG:RelWithDebInfo>:BUILD_RELDEB>$<$<CONFIG:Release>:BUILD_RELEASE>")
 
 # Main executable
-
 add_executable(Minote
 	src/util/concepts.hpp
 	src/util/optional.hpp
@@ -109,295 +101,34 @@ target_precompile_headers(Minote PRIVATE
 	src/util/util.hpp
 	src/util/time.hpp
 	src/util/log.hpp
+	src/util/id.hpp
 	src/config.hpp)
-
 target_include_directories(Minote PRIVATE src)
-target_link_libraries(Minote PRIVATE winmm)
 
 # Libraries
+include(cmake/Dependencies.cmake)
 
-find_package(Vulkan REQUIRED)
-
-include(FetchContent)
-
-target_compile_definitions(Minote PRIVATE VK_NO_PROTOTYPES)
-if(WIN32)
-	target_compile_definitions(Minote PRIVATE VK_USE_PLATFORM_WIN32_KHR)
-else()
-	target_compile_definitions(Minote PRIVATE VK_USE_PLATFORM_XCB_KHR)
-endif()
-
-set(VOLK_PULL_IN_VULKAN OFF CACHE BOOL "")
-FetchContent_Declare(volk
-	GIT_REPOSITORY https://github.com/zeux/volk
-	GIT_TAG 315929ebf428a0b924c1cff5803b69891f71bf5b)
-FetchContent_MakeAvailable(volk)
-target_compile_definitions(volk PUBLIC VK_NO_PROTOTYPES)
-target_include_directories(volk PUBLIC ${Vulkan_INCLUDE_DIRS})
-target_link_libraries(Minote PRIVATE volk)
-
-set(VUK_LINK_TO_LOADER OFF CACHE BOOL "")
-set(VUK_USE_SHADERC OFF CACHE BOOL "")
-set(VUK_USE_DXC OFF CACHE BOOL "")
-FetchContent_Declare(vuk
-	GIT_REPOSITORY https://github.com/martty/vuk
-	GIT_TAG 46b5ea6597015b360bffff57ffa6c9bcccf2f5a6)
-FetchContent_MakeAvailable(vuk)
-target_compile_definitions(vuk PUBLIC VUK_CUSTOM_VULKAN_HEADER="volk.h")
-target_link_libraries(vuk PRIVATE volk)
-target_link_libraries(Minote PRIVATE vuk)
-
-FetchContent_Declare(vk-bootstrap
-	GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap
-	GIT_TAG 00cf404e7b37fa5df41c1d7c369f1fa33efbe4d2)
-FetchContent_MakeAvailable(vk-bootstrap)
 target_link_libraries(Minote PRIVATE vk-bootstrap)
-
-FetchContent_Declare(pcg
-	GIT_REPOSITORY https://github.com/imneme/pcg-c-basic
-	GIT_TAG bc39cd76ac3d541e618606bcc6e1e5ba5e5e6aa3)
-FetchContent_MakeAvailable(pcg)
-add_library(pcg ${pcg_SOURCE_DIR}/pcg_basic.h ${pcg_SOURCE_DIR}/pcg_basic.c)
-target_include_directories(pcg PUBLIC ${pcg_SOURCE_DIR})
-target_link_libraries(Minote PRIVATE pcg)
-
-FetchContent_Declare(assert
-	GIT_REPOSITORY https://github.com/jeremy-rifkin/libassert
-	GIT_TAG 599a885a57050cd100ed771a189649ad7a603d4f)
-FetchContent_MakeAvailable(assert)
-target_link_libraries(assert PRIVATE dbghelp) # library incorrectly assumes only MSVC needs it
-target_link_libraries(Minote PRIVATE assert)
-
-set(OPT_DEF_LIBC ON CACHE BOOL "")
-set(VIDEO_OPENGLES OFF CACHE BOOL "")
-set(VIDEO_OPENGL OFF CACHE BOOL "")
-set(SDL_DLOPEN OFF CACHE BOOL "")
-set(RENDER_D3D OFF CACHE BOOL "")
-set(DUMMYAUDIO OFF CACHE BOOL "")
-set(DUMMYAUDIO OFF CACHE BOOL "")
-set(DISKAUDIO OFF CACHE BOOL "")
-set(DIRECTX OFF CACHE BOOL "")
-set(WASAPI OFF CACHE BOOL "")
-FetchContent_Declare(sdl
-	GIT_REPOSITORY https://github.com/libsdl-org/SDL
-	GIT_TAG release-2.0.16)
-FetchContent_MakeAvailable(sdl)
-target_link_libraries(Minote PRIVATE SDL2-static)
-
-FetchContent_Declare(imgui
-	GIT_REPOSITORY https://github.com/ocornut/imgui
-	GIT_TAG v1.88)
-FetchContent_MakeAvailable(imgui)
-add_library(imgui
-	${imgui_SOURCE_DIR}/imgui.h ${imgui_SOURCE_DIR}/imgui.cpp
-	${imgui_SOURCE_DIR}/imconfig.h ${imgui_SOURCE_DIR}/imgui_internal.h
-	${imgui_SOURCE_DIR}/imgui_draw.cpp ${imgui_SOURCE_DIR}/imgui_tables.cpp
-	${imgui_SOURCE_DIR}/imgui_widgets.cpp ${imgui_SOURCE_DIR}/imgui_demo.cpp
-	${imgui_SOURCE_DIR}/backends/imgui_impl_sdl.h ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl.cpp)
-target_compile_definitions(imgui PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
-target_compile_definitions(imgui PUBLIC IMGUI_DISABLE_OBSOLETE_KEYIO)
-target_compile_definitions(imgui PUBLIC IMGUI_DISABLE_WIN32_FUNCTIONS)
-target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR})
-target_link_libraries(imgui PRIVATE SDL2-static)
-target_link_libraries(Minote PRIVATE imgui)
-
-FetchContent_Declare(sqlite
-	URL https://www.sqlite.org/2022/sqlite-amalgamation-3390200.zip)
-FetchContent_MakeAvailable(sqlite)
-add_library(sqlite
-	${sqlite_SOURCE_DIR}/sqlite3.h ${sqlite_SOURCE_DIR}/sqlite3.c
-	${sqlite_SOURCE_DIR}/sqlite3ext.h)
-target_include_directories(sqlite PUBLIC ${sqlite_SOURCE_DIR})
-target_link_libraries(Minote PRIVATE sqlite)
-add_executable(sqlite-shell
-	${sqlite_SOURCE_DIR}/shell.c)
-target_link_libraries(sqlite-shell PRIVATE sqlite)
-
-FetchContent_Declare(cgltf
-	GIT_REPOSITORY https://github.com/jkuhlmann/cgltf
-	GIT_TAG cd37936659b448554f612a145d05e76ff27832a6)
-FetchContent_MakeAvailable(cgltf)
-add_library(cgltf INTERFACE ${cgltf_SOURCE_DIR}/cgltf.h ${cgltf_SOURCE_DIR}/cgltf_write.h)
-target_include_directories(cgltf INTERFACE ${cgltf_SOURCE_DIR})
-
-if(NOT TARGET robin_hood) # vuk already includes this
-	FetchContent_Declare(robin_hood
-		GIT_REPOSITORY https://github.com/martinus/robin-hood-hashing
-		GIT_TAG 3.11.5)
-	FetchContent_MakeAvailable(robin_hood)
-endif()
-target_link_libraries(Minote PRIVATE robin_hood)
-
-FetchContent_Declare(itlib
-	GIT_REPOSITORY https://github.com/iboB/itlib
-	GIT_TAG v1.5.2)
-FetchContent_MakeAvailable(itlib)
-target_compile_definitions(itlib INTERFACE ITLIB_STATIC_VECTOR_ERROR_HANDLING=ITLIB_STATIC_VECTOR_ERROR_HANDLING_THROW)
-target_compile_definitions(itlib INTERFACE ITLIB_SMALL_VECTOR_ERROR_HANDLING=ITLIB_SMALL_VECTOR_ERROR_HANDLING_THROW)
-target_link_libraries(Minote PRIVATE itlib)
-
-FetchContent_Declare(fmt
-	GIT_REPOSITORY https://github.com/fmtlib/fmt
-	GIT_TAG 9.0.0)
-FetchContent_MakeAvailable(fmt)
-target_link_libraries(Minote PRIVATE fmt::fmt)
-
-set(QUILL_FMT_EXTERNAL ON CACHE BOOL "")
-FetchContent_Declare(quill
-	GIT_REPOSITORY https://github.com/odygrd/quill
-	GIT_TAG v2.1.0)
-FetchContent_MakeAvailable(quill)
-target_link_libraries(quill PRIVATE fmt::fmt)
 target_link_libraries(Minote PRIVATE quill::quill)
-
-FetchContent_Declare(gcem
-	GIT_REPOSITORY https://github.com/kthohr/gcem
-	GIT_TAG v1.15.0)
-FetchContent_MakeAvailable(gcem)
-target_link_libraries(Minote PRIVATE gcem)
-
-FetchContent_Declare(mpack
-	URL https://github.com/ludocode/mpack/releases/download/v1.1/mpack-amalgamation-1.1.tar.gz)
-FetchContent_MakeAvailable(mpack)
-add_library(mpack
-	${mpack_SOURCE_DIR}/src/mpack/mpack.h ${mpack_SOURCE_DIR}/src/mpack/mpack.c)
-# Force C++-style handling of inline functions. Fixes link-time error with GCC
-set_property(SOURCE ${mpack_SOURCE_DIR}/src/mpack/mpack.c PROPERTY LANGUAGE CXX)
-target_include_directories(mpack PUBLIC ${mpack_SOURCE_DIR}/src)
-target_link_libraries(Minote PRIVATE mpack)
-
-FetchContent_Declare(meshoptimizer
-	GIT_REPOSITORY https://github.com/zeux/meshoptimizer
-	GIT_TAG v0.18)
-FetchContent_MakeAvailable(meshoptimizer)
-
-FetchContent_Declare(incbin
-	GIT_REPOSITORY https://github.com/graphitemaster/incbin
-	GIT_TAG 6e576cae5ab5810f25e2631f2e0b80cbe7dc8cbf)
-FetchContent_MakeAvailable(incbin)
-add_library(incbin
-	${incbin_SOURCE_DIR}/incbin.h ${incbin_SOURCE_DIR}/incbin.c)
-target_compile_definitions(incbin PUBLIC INCBIN_PREFIX=g_)
-target_compile_definitions(incbin PUBLIC INCBIN_STYLE=INCBIN_STYLE_SNAKE)
-target_include_directories(incbin PUBLIC ${incbin_SOURCE_DIR})
+target_link_libraries(Minote PRIVATE SDL2-static)
+target_link_libraries(Minote PRIVATE robin_hood)
+target_link_libraries(Minote PRIVATE fmt::fmt)
 target_link_libraries(Minote PRIVATE incbin)
+target_link_libraries(Minote PRIVATE assert)
+target_link_libraries(Minote PRIVATE sqlite)
+target_link_libraries(Minote PRIVATE imgui)
+target_link_libraries(Minote PRIVATE itlib)
+target_link_libraries(Minote PRIVATE mpack)
+target_link_libraries(Minote PRIVATE volk)
+target_link_libraries(Minote PRIVATE gcem)
+target_link_libraries(Minote PRIVATE pcg)
+target_link_libraries(Minote PRIVATE vuk)
+if(WIN32)
+	target_link_libraries(Minote PRIVATE winmm)
+endif()
 
-# Shader compilation
-
-set(SHADER_MODEL "6_7")
-set(SHADER_PREFIX src/gpu)
-set(SHADER_SOURCES
-	instanceList/expandObjects.cs.hlsl
-	tonemap/apply.cs.hlsl
-	bloom/down.cs.hlsl
-	bloom/up.cs.hlsl
-	sky/genMultiScattering.cs.hlsl
-	sky/genTransmittance.cs.hlsl
-	sky/genView.cs.hlsl
-	sky/draw.cs.hlsl
-	imgui.vs.hlsl
-	imgui.ps.hlsl)
-
-# Stage 1: Compile HLSL to SPIR-V
-foreach(SHADER_SOURCE ${SHADER_SOURCES})
-	set(SHADER_INPUT ${PROJECT_SOURCE_DIR}/${SHADER_PREFIX}/${SHADER_SOURCE})
-	string(REGEX REPLACE [[.hlsl$]] "" SHADER_SOURCE_WLE ${SHADER_SOURCE})
-	set(SHADER_OUTPUT ${PROJECT_BINARY_DIR}/$<CONFIG>/generated/spv/${SHADER_SOURCE_WLE}.spv)
-	get_filename_component(SHADER_OUTPUT_DIR ${SHADER_OUTPUT} DIRECTORY)
-	
-	get_filename_component(SHADER_TYPE ${SHADER_SOURCE_WLE} LAST_EXT)
-	string(SUBSTRING ${SHADER_TYPE} 1 -1 SHADER_TYPE)
-	set(SHADER_PROFILE ${SHADER_TYPE}_${SHADER_MODEL})
-	
-	add_custom_command(
-		OUTPUT ${SHADER_OUTPUT}
-		COMMAND ${CMAKE_COMMAND} -E make_directory ${SHADER_OUTPUT_DIR}
-		# Create HLSL depfile
-		COMMAND $ENV{VULKAN_SDK}/Bin/dxc
-			-HV 2021 -T ${SHADER_PROFILE} -spirv -fspv-target-env=vulkan1.3
-			-I ${PROJECT_SOURCE_DIR}/${SHADER_PREFIX}
-			-Fo ${SHADER_OUTPUT}
-			-MF ${SHADER_OUTPUT}.d
-			${SHADER_INPUT}
-		# Compile HLSL into SPIR-V
-		COMMAND $ENV{VULKAN_SDK}/Bin/dxc
-			-HV 2021 -T ${SHADER_PROFILE} -spirv -fspv-target-env=vulkan1.3
-			-O3 "$<$<CONFIG:Debug,RelWithDebInfo>:-Zi>"
-			-I ${PROJECT_SOURCE_DIR}/${SHADER_PREFIX}
-			-Fo ${SHADER_OUTPUT}
-			${SHADER_INPUT}
-		DEPFILE ${SHADER_OUTPUT}.d
-		VERBATIM COMMAND_EXPAND_LISTS)
-endforeach()
-
-# Stage 2: Generate wrapper .c files to inline the SPIR-V
-foreach(SHADER_SOURCE ${SHADER_SOURCES})
-	string(REGEX REPLACE [[.hlsl$]] "" SHADER_SOURCE_WLE ${SHADER_SOURCE})
-	set(SHADER_OUTPUT ${PROJECT_BINARY_DIR}/$<CONFIG>/generated/spv/${SHADER_SOURCE_WLE}.spv)
-	set(SHADER_WRAPPER ${SHADER_OUTPUT}.c)
-	string(REGEX REPLACE [[\.|/]] "_" SHADER_IDENT ${SHADER_SOURCE_WLE})
-	
-	add_custom_command(
-		OUTPUT ${SHADER_WRAPPER}
-		COMMAND ${CMAKE_COMMAND} -E echo "#include \"incbin.h\"" > ${SHADER_WRAPPER}
-		COMMAND ${CMAKE_COMMAND} -E echo "INCBIN(${SHADER_IDENT}, \"${SHADER_OUTPUT}\")\;" >> ${SHADER_WRAPPER}
-		DEPENDS ${SHADER_OUTPUT}
-		VERBATIM COMMAND_EXPAND_LISTS)
-	list(APPEND SHADER_WRAPPERS ${SHADER_WRAPPER})
-endforeach()
-
-add_library(MinoteShaders STATIC ${SHADER_WRAPPERS})
-target_link_libraries(MinoteShaders PRIVATE incbin)
-
+# Packaged content
+include(cmake/Shaders.cmake)
 target_link_libraries(Minote PRIVATE MinoteShaders)
-
-# Asset pipeline
-
-add_executable(Model_conv
-	src/tools/modelSchema.hpp
-	src/tools/modelConv.cpp)
-target_include_directories(Model_conv PRIVATE src)
-target_link_libraries(Model_conv PRIVATE meshoptimizer)
-target_link_libraries(Model_conv PRIVATE quill::quill)
-target_link_libraries(Model_conv PRIVATE assert)
-target_link_libraries(Model_conv PRIVATE itlib)
-target_link_libraries(Model_conv PRIVATE cgltf)
-target_link_libraries(Model_conv PRIVATE mpack)
-target_link_libraries(Model_conv PRIVATE gcem)
-
-set(ASSET_FILENAME assets.db)
-add_compile_definitions(ASSETS_P="${ASSET_FILENAME}")
-set(ASSET_OUTPUT ${PROJECT_BINARY_DIR}/$<CONFIG>/${ASSET_FILENAME})
-add_custom_command(
-	OUTPUT ${ASSET_OUTPUT}
-	COMMAND sqlite-shell ${ASSET_OUTPUT} "VACUUM"
-	VERBATIM)
-
-set(MODELS_TABLE "models")
-add_compile_definitions(MODELS_TABLE="${MODELS_TABLE}")
-set(MODELS
-	models/block.glb
-	models/sphere.glb
-	models/testscene.glb)
-add_custom_command(
-	OUTPUT ${ASSET_OUTPUT} APPEND
-	COMMAND sqlite-shell ${ASSET_OUTPUT} "CREATE TABLE IF NOT EXISTS ${MODELS_TABLE}(name TEXT UNIQUE, data BLOB)"
-	VERBATIM)
-foreach(MODEL_PATH ${MODELS})
-	get_filename_component(MODEL_NAME ${MODEL_PATH} NAME_WLE)
-	add_custom_command(
-		OUTPUT ${PROJECT_BINARY_DIR}/$<CONFIG>/models/${MODEL_NAME}.model
-		COMMAND Model_conv ${PROJECT_SOURCE_DIR}/${MODEL_PATH} ${PROJECT_BINARY_DIR}/$<CONFIG>/models/${MODEL_NAME}.model
-		DEPENDS ${PROJECT_SOURCE_DIR}/${MODEL_PATH}
-		DEPENDS Model_conv
-		VERBATIM COMMAND_EXPAND_LISTS)
-	add_custom_command(
-		OUTPUT ${ASSET_OUTPUT} APPEND
-		COMMAND sqlite-shell ${ASSET_OUTPUT} "INSERT OR REPLACE INTO ${MODELS_TABLE}(name, data) VALUES('${MODEL_NAME}', readfile('${PROJECT_BINARY_DIR}/$<CONFIG>/models/${MODEL_NAME}.model'))"
-		DEPENDS ${PROJECT_BINARY_DIR}/$<CONFIG>/models/${MODEL_NAME}.model
-		DEPENDS sqlite-shell
-		VERBATIM COMMAND_EXPAND_LISTS)
-endforeach()
-
-add_custom_target(MinoteAssets DEPENDS ${ASSET_OUTPUT})
+include(cmake/Assets.cmake)
 add_dependencies(Minote MinoteAssets)
