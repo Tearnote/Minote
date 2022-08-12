@@ -141,7 +141,7 @@ set(VUK_USE_SHADERC OFF CACHE BOOL "")
 set(VUK_USE_DXC OFF CACHE BOOL "")
 FetchContent_Declare(vuk
 	GIT_REPOSITORY https://github.com/martty/vuk
-	GIT_TAG 540a632f3edd974e3440bec372326f0768b830ab)
+	GIT_TAG 46b5ea6597015b360bffff57ffa6c9bcccf2f5a6)
 FetchContent_MakeAvailable(vuk)
 target_compile_definitions(vuk PUBLIC VUK_CUSTOM_VULKAN_HEADER="volk.h")
 target_link_libraries(vuk PRIVATE volk)
@@ -322,7 +322,7 @@ foreach(SHADER_SOURCE ${SHADER_SOURCES})
 		# Compile HLSL into SPIR-V
 		COMMAND $ENV{VULKAN_SDK}/Bin/dxc
 			-HV 2021 -T ${SHADER_PROFILE} -spirv -fspv-target-env=vulkan1.3
-			-O0 "$<$<CONFIG:Debug,RelWithDebInfo>:-Zi>"
+			-O3 "$<$<CONFIG:Debug,RelWithDebInfo>:-Zi>"
 			-I ${PROJECT_SOURCE_DIR}/${SHADER_PREFIX}
 			-Fo ${SHADER_OUTPUT}
 			${SHADER_INPUT}

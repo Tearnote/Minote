@@ -44,10 +44,6 @@ InstanceList::InstanceList(vuk::Allocator& _allocator, ModelBuffer& _models, Obj
 			   .bind_buffer(0, 2, "instances")
 			   .bind_buffer(0, 3, "instanceCount");
 			
-			// Workaround pending vuk fix
-			cmd.map_scratch_uniform_binding<uint>(0, 4);
-			cmd.map_scratch_uniform_binding<uint>(0, 5);
-			
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, _objects.objectCount);
 			
 			cmd.dispatch_invocations(_objects.objectCount);
