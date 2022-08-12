@@ -25,10 +25,9 @@ static const uint GroupSize = 1u << GroupSizeExp;
 
 groupshared uint sh_objectIndices[GroupSize];
 groupshared uint sh_meshletCountPrefixSum[GroupSize];
-groupshared uint sh_meshletCountAccum;
 
 // Fill out sh_objectIndices and sh_meshletCountPrefixSum
-// sh_meshletCountAccum ends up bitpacked:
+// sh_meshletCountPrefixSum[0] ends up bitpacked:
 //   participating thread count in high bits,
 //   thread group's total meshlet count in low bits
 void meshletCountPrefixSum(uint _objectIdx) {
@@ -37,12 +36,13 @@ void meshletCountPrefixSum(uint _objectIdx) {
 	const uint HighOne = 1u << (32u - GroupSizeExp); // We put a 1 in high bits to track atomic execution order
 	uint accumAdd = HighOne | meshletCount;
 	uint accum;
-	InterlockedAdd(sh_meshletCountAccum, accumAdd, accum);
+	InterlockedAdd(sh_meshletCountPrefixSum[0], accumAdd, accum);
 	uint atomicIdx = accum >> (32u - GroupSizeExp);
 	uint prefixSum = accum & ((1u << (32u - GroupSizeExp)) - 1u);
 	// Write out prefix summed and shuffled data
 	sh_objectIndices[atomicIdx] = _objectIdx;
-	sh_meshletCountPrefixSum[atomicIdx] = prefixSum;
+	if (atomicIdx != 0)
+		sh_meshletCountPrefixSum[atomicIdx] = prefixSum;
 	
 }
 
@@ -52,7 +52,7 @@ uint binarySearchSharedIdx(uint _target){
 	uint result = GroupSize / 2;
 	for (uint i = 0; i < GroupSizeExp - 1; i += 1) {
 		uint searchStride = 1u << (GroupSizeExp - 2u - i);
-		uint value = sh_meshletCountPrefixSum[result];
+		uint value = result == 0? 0 : sh_meshletCountPrefixSum[result];
 		if (_target >= value)
 			result += searchStride;
 		else
@@ -60,7 +60,7 @@ uint binarySearchSharedIdx(uint _target){
 	}
 	// Final step
 	{
-		uint value = sh_meshletCountPrefixSum[result];
+		uint value = result == 0? 0 : sh_meshletCountPrefixSum[result];
 		if (_target < value)
 			result -= 1;
 	}
@@ -97,10 +97,9 @@ void writeOutFromOffset(uint _sharedIdx, uint _meshletIdx, uint _count, uint _ou
 [numthreads(GroupSize, 1, 1)]
 void main(uint3 _tid: SV_DispatchThreadID, uint3 _lid: SV_GroupThreadID) {
 	
-	// Initialize memory
-	if (_lid.x == 0)
-		sh_meshletCountAccum = 0;
-	sh_meshletCountPrefixSum[_lid.x] = -1;
+	// Index 0 is used as a counter; the rest should be max uint
+	// to not participate in binary search
+	sh_meshletCountPrefixSum[_lid.x] = _lid.x == 0? 0 : -1;
 	
 	uint objectIdx = _tid.x < c_push.objectCount? _tid.x : -1;
 	
@@ -111,7 +110,7 @@ void main(uint3 _tid: SV_DispatchThreadID, uint3 _lid: SV_GroupThreadID) {
 	GroupMemoryBarrierWithGroupSync();
 	// Find starting point for this thread
 	const uint AccumLowBits = (1u << (32u - GroupSizeExp)) - 1u;
-	uint totalMeshletCount = sh_meshletCountAccum & AccumLowBits;
+	uint totalMeshletCount = sh_meshletCountPrefixSum[0] & AccumLowBits;
 	uint meshletStride = divRoundUp(totalMeshletCount, GroupSize);
 	uint startingMeshletIdx = meshletStride * _lid.x;
 	uint startingSharedIdx = binarySearchSharedIdx(startingMeshletIdx);
@@ -124,7 +123,7 @@ void main(uint3 _tid: SV_DispatchThreadID, uint3 _lid: SV_GroupThreadID) {
 	InterlockedAdd(b_instanceCount[0], threadWorkload, writeIndex);
 	
 	// Write out assigned workload
-	startingMeshletIdx -= sh_meshletCountPrefixSum[startingSharedIdx]; // From workload offset to object offset
+	startingMeshletIdx -= startingSharedIdx == 0? 0 : sh_meshletCountPrefixSum[startingSharedIdx]; // From workload offset to object offset
 	writeOutFromOffset(startingSharedIdx, startingMeshletIdx, threadWorkload, writeIndex);
 	
 }
