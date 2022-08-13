@@ -67,7 +67,7 @@ add_executable(Minote
 	# src/gfx/effects/pbr.hpp src/gfx/effects/pbr.cpp
 	src/gfx/effects/sky.hpp src/gfx/effects/sky.cpp
 	# src/gfx/effects/hiz.hpp src/gfx/effects/hiz.cpp
-	# src/gfx/samplers.hpp
+	src/gfx/samplers.hpp
 	src/gfx/renderer.hpp src/gfx/renderer.cpp
 	src/gfx/resource.hpp
 	src/gfx/objects.hpp src/gfx/objects.cpp
@@ -75,7 +75,6 @@ add_executable(Minote
 	src/gfx/camera.hpp src/gfx/camera.cpp
 	src/gfx/shader.hpp
 	src/gfx/imgui.hpp src/gfx/imgui.cpp
-	# src/gfx/frame.hpp src/gfx/frame.cpp
 	src/gfx/util.hpp
 	src/freecam.hpp src/freecam.cpp
 	src/assets.hpp src/assets.tpp src/assets.cpp

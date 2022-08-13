@@ -76,7 +76,8 @@ void ModelList::addModel(string_view _name, span<char const> _model) {
 	m_modelIndices.emplace(_name, m_models.size());
 	auto& model = m_models.emplace_back(Model{
 		.meshletOffset = uint(m_meshlets.size()),
-		.meshletCount = 0 });
+		.meshletCount = 0,
+	});
 	
 	mpack_expect_cstr_match(&in, "meshlets");
 	auto meshletCount = mpack_expect_array(&in);
@@ -182,7 +183,8 @@ auto ModelList::upload(vuk::Allocator& _allocator) && -> ModelBuffer {
 		.models = vuk::create_buffer_gpu(_allocator,
 			vuk::DomainFlagBits::eGraphicsQueue,
 			span(m_models)).second,
-		.cpu_modelIndices = std::move(m_modelIndices) };
+		.cpu_modelIndices = std::move(m_modelIndices),
+	};
 	result.cpu_meshlets = std::move(m_meshlets); // Must still exist for .meshlets creation
 	result.cpu_models = std::move(m_models);
 	

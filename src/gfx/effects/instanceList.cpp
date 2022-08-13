@@ -119,7 +119,8 @@ TriangleList::TriangleList(vuk::Allocator& _allocator,
 			
 			cmd.dispatch_invocations(instanceCount);
 			
-		}});
+		},
+	});
 	
 	command = vuk::Future(rg, "command/final");
 	indices = vuk::Future(rg, "indices/final");
