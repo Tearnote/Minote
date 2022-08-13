@@ -1,3 +1,7 @@
+struct Constants {
+	float power;
+};
+
 [[vk::binding(0)]][[vk::combinedImageSampler]] Texture2D<float4> s_source;
 [[vk::binding(0)]][[vk::combinedImageSampler]] SamplerState s_sourceSmp;
 [[vk::binding(1)]] RWTexture2D<float4> t_target;
@@ -9,9 +13,6 @@ static const uint2 SourceSize = {SourceWidth, SourceHeight};
 [[vk::constant_id(3)]] const uint TargetHeight = 0;
 static const uint2 TargetSize = {TargetWidth, TargetHeight};
 
-struct Constants {
-	float power;
-};
 [[vk::push_constant]] Constants c_push;
 
 [numthreads(8, 8, 1)]

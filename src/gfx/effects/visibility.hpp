@@ -1,28 +1,32 @@
 #pragma once
 
-#include "vuk/Context.hpp"
+#include "vuk/Allocator.hpp"
+#include "gfx/effects/instanceList.hpp"
+#include "gfx/resource.hpp"
+#include "gfx/objects.hpp"
+#include "gfx/models.hpp"
 #include "util/types.hpp"
 #include "util/math.hpp"
-#include "gfx/resources/texture2dms.hpp"
-#include "gfx/resources/texture2d.hpp"
-#include "gfx/resources/buffer.hpp"
-#include "gfx/resources/pool.hpp"
-#include "gfx/effects/instanceList.hpp"
-#include "gfx/models.hpp"
-#include "gfx/frame.hpp"
-#include "gfx/util.hpp"
 
 namespace minote {
 
 struct Visibility {
 	
-	// Build the shader.
-	static void compile(vuk::PerThreadContext&);
+	Texture2D<uint> visibility;
+	Texture2D<float> depth;
 	
-	static void apply(Frame&, Texture2DMS visbuf, Texture2DMS depth, TriangleList);
+	Visibility(vuk::Allocator&, ModelBuffer&, ObjectBuffer&,
+		InstanceList&, TriangleList&, uint2 extent, float4x4 viewProjection);
+	
+	// Build required shaders; potional
+	static void compile();
+	
+private:
+	
+	static inline bool m_compiled = false;
 	
 };
-
+/*
 struct Worklist {
 	
 	static constexpr auto TileSize = float2{8, 8};
@@ -38,5 +42,5 @@ struct Worklist {
 	static auto create(Pool&, Frame&, vuk::Name, Texture2D visbuf, TriangleList) -> Worklist;
 	
 };
-
+*/
 }

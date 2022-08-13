@@ -1,5 +1,5 @@
-// Some algorithms are adapted from GLM code:
-// https://github.com/g-truc/glm
+// Some algorithms adapted from GLM: https://github.com/g-truc/glm
+// They are licensed under The Happy Bunny License (licenses/HappyBunny.txt)
 
 #include <algorithm>
 #include "util/verify.hpp"
@@ -370,9 +370,23 @@ constexpr mat<Dim, Prec>::mat(std::initializer_list<Prec> _list) {
 	ASSUME(_list.size() == Dim * Dim);
 	
 	auto it = _list.begin();
-	for (auto x: iota(0_zu, Dim))
+	for (auto y: iota(0_zu, Dim))
+	for (auto x: iota(0_zu, Dim)) {
+		at(x, y) = *it;
+		it += 1;
+	}
+	
+}
+
+template<usize Dim, floating_point Prec>
+constexpr mat<Dim, Prec>::mat(std::initializer_list<vec<Dim, Prec>> _list) {
+	
+	ASSUME(_list.size() == Dim);
+	
+	auto it = _list.begin();
 	for (auto y: iota(0_zu, Dim)) {
-		m_arr[x][y] = *it;
+		for (auto x: iota(0_zu, Dim))
+			at(x, y) = it->at(x);
 		it += 1;
 	}
 	
@@ -384,7 +398,7 @@ constexpr auto mat<Dim, Prec>::identity() -> mat<Dim, Prec> {
 	auto result = mat<Dim, Prec>();
 	result.fill(0);
 	for (auto i: iota(0_zu, Dim))
-		result[i][i] = 1;
+		result.at(i, i) = 1;
 	return result;
 	
 }
@@ -395,9 +409,9 @@ constexpr auto mat<Dim, Prec>::translate(vec<3, Prec> _shift) -> mat<Dim, Prec> 
 	static_assert(Dim == 4, "Translation matrix requires order of 4");
 	
 	auto result = mat<Dim, Prec>::identity();
-	result[3][0] = _shift[0];
-	result[3][1] = _shift[1];
-	result[3][2] = _shift[2];
+	result.at(0, 3) = _shift[0];
+	result.at(1, 3) = _shift[1];
+	result.at(2, 3) = _shift[2];
 	return result;
 	
 }
@@ -413,17 +427,17 @@ constexpr auto mat<Dim, Prec>::rotate(vec<3, Prec> _axis, Prec _angle) -> mat<Di
 	
 	auto result = mat<Dim, Prec>::identity();
 	
-	result[0][0] = cosT + temp[0] * _axis[0];
-	result[0][1] = temp[0] * _axis[1] + sinT * _axis[2];
-	result[0][2] = temp[0] * _axis[2] - sinT * _axis[1];
+	result.at(0, 0) = cosT + temp[0] * _axis[0];
+	result.at(1, 0) = temp[0] * _axis[1] + sinT * _axis[2];
+	result.at(2, 0) = temp[0] * _axis[2] - sinT * _axis[1];
 	
-	result[1][0] = temp[1] * _axis[0] - sinT * _axis[2];
-	result[1][1] = cosT + temp[1] * _axis[1];
-	result[1][2] = temp[1] * _axis[2] + sinT * _axis[0];
+	result.at(0, 1) = temp[1] * _axis[0] - sinT * _axis[2];
+	result.at(1, 1) = cosT + temp[1] * _axis[1];
+	result.at(2, 1) = temp[1] * _axis[2] + sinT * _axis[0];
 	
-	result[2][0] = temp[2] * _axis[0] + sinT * _axis[1];
-	result[2][1] = temp[2] * _axis[1] - sinT * _axis[0];
-	result[2][2] = cosT + temp[2] * _axis[2];
+	result.at(0, 2) = temp[2] * _axis[0] + sinT * _axis[1];
+	result.at(1, 2) = temp[2] * _axis[1] - sinT * _axis[0];
+	result.at(2, 2) = cosT + temp[2] * _axis[2];
 	
 	return result;
 	
@@ -434,17 +448,17 @@ constexpr auto mat<Dim, Prec>::rotate(qua<Prec> _quat) -> mat<Dim, Prec> {
 	
 	auto result = mat<Dim, Prec>::identity();
 	
-	result[0][0] = 1.0f - 2.0f * (_quat.y() * _quat.y() + _quat.z() * _quat.z());
-	result[0][1] =        2.0f * (_quat.x() * _quat.y() + _quat.z() * _quat.w());
-	result[0][2] =        2.0f * (_quat.x() * _quat.z() - _quat.y() * _quat.w());
+	result.at(0, 0) = 1.0f - 2.0f * (_quat.y() * _quat.y() + _quat.z() * _quat.z());
+	result.at(1, 0) =        2.0f * (_quat.x() * _quat.y() + _quat.z() * _quat.w());
+	result.at(2, 0) =        2.0f * (_quat.x() * _quat.z() - _quat.y() * _quat.w());
 	
-	result[1][0] =        2.0f * (_quat.x() * _quat.y() - _quat.z() * _quat.w());
-	result[1][1] = 1.0f - 2.0f * (_quat.x() * _quat.x() + _quat.z() * _quat.z());
-	result[1][2] =        2.0f * (_quat.y() * _quat.z() + _quat.x() * _quat.w());
+	result.at(0, 1) =        2.0f * (_quat.x() * _quat.y() - _quat.z() * _quat.w());
+	result.at(1, 1) = 1.0f - 2.0f * (_quat.x() * _quat.x() + _quat.z() * _quat.z());
+	result.at(2, 1) =        2.0f * (_quat.y() * _quat.z() + _quat.x() * _quat.w());
 	
-	result[2][0] =        2.0f * (_quat.x() * _quat.z() + _quat.y() * _quat.w());
-	result[2][1] =        2.0f * (_quat.y() * _quat.z() - _quat.x() * _quat.w());
-	result[2][2] = 1.0f - 2.0f * (_quat.x() * _quat.x() + _quat.y() * _quat.y());
+	result.at(0, 2) =        2.0f * (_quat.x() * _quat.z() + _quat.y() * _quat.w());
+	result.at(1, 2) =        2.0f * (_quat.y() * _quat.z() - _quat.x() * _quat.w());
+	result.at(2, 2) = 1.0f - 2.0f * (_quat.x() * _quat.x() + _quat.y() * _quat.y());
 	
 	return result;
 	
@@ -455,7 +469,7 @@ constexpr auto mat<Dim, Prec>::scale(vec<3, Prec> _scale) -> mat<Dim, Prec> {
 	
 	auto result = mat<Dim, Prec>::identity();
 	for (auto i: iota(0_zu, 3_zu))
-		result[i][i] = _scale[i];
+		result.at(i, i) = _scale[i];
 	return result;
 	
 }
@@ -465,7 +479,7 @@ constexpr auto mat<Dim, Prec>::scale(Prec _scale) -> mat<Dim, Prec> {
 	
 	auto result = mat<Dim, Prec>::identity();
 	for (auto i: iota(0_zu, 3_zu))
-		result[i][i] = _scale;
+		result(i, i) = _scale;
 	return result;
 	
 }
@@ -477,7 +491,7 @@ constexpr mat<Dim, Prec>::mat(mat<Dim, U> const& _other) {
 	
 	for (auto x: iota(0_zu, Dim))
 	for (auto y: iota(0_zu, Dim))
-		m_arr[x][y] = _other[x][y];
+		at(x, y) = _other.at(x, y);
 	
 }
 
@@ -492,7 +506,7 @@ constexpr mat<Dim, Prec>::mat(mat<N, Prec> const& _other) {
 	constexpr auto Smaller = min(Dim, N);
 	for (auto x: iota(0_zu, Smaller))
 	for (auto y: iota(0_zu, Smaller))
-		m_arr[x][y] = _other[x][y];
+		at(x, y) = _other.at(x, y);
 	
 }
 
@@ -501,7 +515,7 @@ constexpr auto mat<Dim, Prec>::operator*=(Prec _other) -> mat<Dim, Prec>& {
 	
 	for (auto x: iota(0_zu, Dim))
 	for (auto y: iota(0_zu, Dim))
-		m_arr[x][y] *= _other;
+		at(x, y) *= _other;
 	return *this;
 	
 }
@@ -511,7 +525,7 @@ constexpr auto mat<Dim, Prec>::operator/=(Prec _other) -> mat<Dim, Prec>& {
 	
 	for (auto x: iota(0_zu, Dim))
 	for (auto y: iota(0_zu, Dim))
-		m_arr[x][y] /= _other;
+		at(x, y) /= _other;
 	return *this;
 	
 }
@@ -524,27 +538,26 @@ constexpr auto mul(mat<Dim, Prec> const& _left, mat<Dim, Prec> const& _right) ->
 	auto result = mat<Dim, Prec>();
 	
 	if constexpr (Dim == 3) {
-		result[0] = _left[0]*_right[0][0] + _left[1]*_right[0][1] + _left[2]*_right[0][2];
-		result[1] = _left[0]*_right[1][0] + _left[1]*_right[1][1] + _left[2]*_right[1][2];
-		result[2] = _left[0]*_right[2][0] + _left[1]*_right[2][1] + _left[2]*_right[2][2];
+		result[0] = _left[0]*_right.at(0, 0) + _left[1]*_right.at(0, 1) + _left[2]*_right.at(0, 2);
+		result[1] = _left[0]*_right.at(1, 0) + _left[1]*_right.at(1, 1) + _left[2]*_right.at(1, 2);
+		result[2] = _left[0]*_right.at(2, 0) + _left[1]*_right.at(2, 1) + _left[2]*_right.at(2, 2);
 	} else if constexpr (Dim == 4) {
-		result[0] = _left[0]*_right[0][0] + _left[1]*_right[0][1] + _left[2]*_right[0][2] + _left[3]*_right[0][3];
-		result[1] = _left[0]*_right[1][0] + _left[1]*_right[1][1] + _left[2]*_right[1][2] + _left[3]*_right[1][3];
-		result[2] = _left[0]*_right[2][0] + _left[1]*_right[2][1] + _left[2]*_right[2][2] + _left[3]*_right[2][3];
-		result[3] = _left[0]*_right[3][0] + _left[1]*_right[3][1] + _left[2]*_right[3][2] + _left[3]*_right[3][3];
+		result[0] = _left[0]*_right.at(0, 0) + _left[1]*_right.at(0, 1) + _left[2]*_right.at(0, 2) + _left[3]*_right.at(0, 3);
+		result[1] = _left[0]*_right.at(1, 0) + _left[1]*_right.at(1, 1) + _left[2]*_right.at(1, 2) + _left[3]*_right.at(1, 3);
+		result[2] = _left[0]*_right.at(2, 0) + _left[1]*_right.at(2, 1) + _left[2]*_right.at(2, 2) + _left[3]*_right.at(2, 3);
+		result[3] = _left[0]*_right.at(3, 0) + _left[1]*_right.at(3, 1) + _left[2]*_right.at(3, 2) + _left[3]*_right.at(3, 3);
 	}
 	return result;
 	
 }
 
 template<usize Dim, floating_point Prec>
-constexpr auto mul(mat<Dim, Prec> const& _left, vec<Dim, Prec> const& _right) -> vec<Dim, Prec> {
+constexpr auto mul(vec<Dim, Prec> const& _left, mat<Dim, Prec> const& _right) -> vec<Dim, Prec> {
 	
 	auto result = vec<Dim, Prec>();
 	
-	auto leftT = transpose(_left);
 	for (auto i: iota(0_zu, Dim))
-		result[i] = dot(leftT[i], _right);
+		result[i] = dot(_left, _right[i]);
 	return result;
 	
 }
@@ -574,7 +587,7 @@ constexpr auto transpose(mat<Dim, Prec> const& _mat) -> mat<Dim, Prec> {
 	
 	for (auto x: iota(0_zu, Dim))
 	for (auto y: iota(0_zu, Dim))
-		result[x][y] = _mat[y][x];
+		result.at(x, y) = _mat.at(y, x);
 	return result;
 	
 }
@@ -586,48 +599,48 @@ constexpr auto inverse(mat<Dim, Prec> const& _mat) -> mat<Dim, Prec> {
 	
 	if constexpr (Dim == 3) {
 		
-		auto oneOverDeterminant = Prec(1) / (
-			+ _mat[0][0] * (_mat[1][1]*_mat[2][2] - _mat[2][1]*_mat[1][2])
-			- _mat[1][0] * (_mat[0][1]*_mat[2][2] - _mat[2][1]*_mat[0][2])
-			+ _mat[2][0] * (_mat[0][1]*_mat[1][2] - _mat[1][1]*_mat[0][2]));
+		auto oneOverDet = Prec(1) / (
+			+ _mat[0][0] * (_mat[1][1] * _mat[2][2] - _mat[2][1] * _mat[1][2])
+			- _mat[1][0] * (_mat[0][1] * _mat[2][2] - _mat[2][1] * _mat[0][2])
+			+ _mat[2][0] * (_mat[0][1] * _mat[1][2] - _mat[1][1] * _mat[0][2]));
 		
 		auto result = mat<3, Prec>();
-		result[0][0] = + (_mat[1][1]*_mat[2][2] - _mat[2][1]*_mat[1][2]) * oneOverDeterminant;
-		result[1][0] = - (_mat[1][0]*_mat[2][2] - _mat[2][0]*_mat[1][2]) * oneOverDeterminant;
-		result[2][0] = + (_mat[1][0]*_mat[2][1] - _mat[2][0]*_mat[1][1]) * oneOverDeterminant;
-		result[0][1] = - (_mat[0][1]*_mat[2][2] - _mat[2][1]*_mat[0][2]) * oneOverDeterminant;
-		result[1][1] = + (_mat[0][0]*_mat[2][2] - _mat[2][0]*_mat[0][2]) * oneOverDeterminant;
-		result[2][1] = - (_mat[0][0]*_mat[2][1] - _mat[2][0]*_mat[0][1]) * oneOverDeterminant;
-		result[0][2] = + (_mat[0][1]*_mat[1][2] - _mat[1][1]*_mat[0][2]) * oneOverDeterminant;
-		result[1][2] = - (_mat[0][0]*_mat[1][2] - _mat[1][0]*_mat[0][2]) * oneOverDeterminant;
-		result[2][2] = + (_mat[0][0]*_mat[1][1] - _mat[1][0]*_mat[0][1]) * oneOverDeterminant;
+		result[0][0] = + (_mat[1][1] * _mat[2][2] - _mat[2][1] * _mat[1][2]) * oneOverDet;
+		result[1][0] = - (_mat[1][0] * _mat[2][2] - _mat[2][0] * _mat[1][2]) * oneOverDet;
+		result[2][0] = + (_mat[1][0] * _mat[2][1] - _mat[2][0] * _mat[1][1]) * oneOverDet;
+		result[0][1] = - (_mat[0][1] * _mat[2][2] - _mat[2][1] * _mat[0][2]) * oneOverDet;
+		result[1][1] = + (_mat[0][0] * _mat[2][2] - _mat[2][0] * _mat[0][2]) * oneOverDet;
+		result[2][1] = - (_mat[0][0] * _mat[2][1] - _mat[2][0] * _mat[0][1]) * oneOverDet;
+		result[0][2] = + (_mat[0][1] * _mat[1][2] - _mat[1][1] * _mat[0][2]) * oneOverDet;
+		result[1][2] = - (_mat[0][0] * _mat[1][2] - _mat[1][0] * _mat[0][2]) * oneOverDet;
+		result[2][2] = + (_mat[0][0] * _mat[1][1] - _mat[1][0] * _mat[0][1]) * oneOverDet;
 		return result;
 		
 	} else if constexpr (Dim == 4) {
 		
-		auto coef00 = _mat[2][2]*_mat[3][3] - _mat[3][2]*_mat[2][3];
-		auto coef02 = _mat[1][2]*_mat[3][3] - _mat[3][2]*_mat[1][3];
-		auto coef03 = _mat[1][2]*_mat[2][3] - _mat[2][2]*_mat[1][3];
+		auto coef00 = _mat[2][2] * _mat[3][3] - _mat[3][2] * _mat[2][3];
+		auto coef02 = _mat[1][2] * _mat[3][3] - _mat[3][2] * _mat[1][3];
+		auto coef03 = _mat[1][2] * _mat[2][3] - _mat[2][2] * _mat[1][3];
 		
-		auto coef04 = _mat[2][1]*_mat[3][3] - _mat[3][1]*_mat[2][3];
-		auto coef06 = _mat[1][1]*_mat[3][3] - _mat[3][1]*_mat[1][3];
-		auto coef07 = _mat[1][1]*_mat[2][3] - _mat[2][1]*_mat[1][3];
+		auto coef04 = _mat[2][1] * _mat[3][3] - _mat[3][1] * _mat[2][3];
+		auto coef06 = _mat[1][1] * _mat[3][3] - _mat[3][1] * _mat[1][3];
+		auto coef07 = _mat[1][1] * _mat[2][3] - _mat[2][1] * _mat[1][3];
 		
-		auto coef08 = _mat[2][1]*_mat[3][2] - _mat[3][1]*_mat[2][2];
-		auto coef10 = _mat[1][1]*_mat[3][2] - _mat[3][1]*_mat[1][2];
-		auto coef11 = _mat[1][1]*_mat[2][2] - _mat[2][1]*_mat[1][2];
+		auto coef08 = _mat[2][1] * _mat[3][2] - _mat[3][1] * _mat[2][2];
+		auto coef10 = _mat[1][1] * _mat[3][2] - _mat[3][1] * _mat[1][2];
+		auto coef11 = _mat[1][1] * _mat[2][2] - _mat[2][1] * _mat[1][2];
 		
-		auto coef12 = _mat[2][0]*_mat[3][3] - _mat[3][0]*_mat[2][3];
-		auto coef14 = _mat[1][0]*_mat[3][3] - _mat[3][0]*_mat[1][3];
-		auto coef15 = _mat[1][0]*_mat[2][3] - _mat[2][0]*_mat[1][3];
+		auto coef12 = _mat[2][0] * _mat[3][3] - _mat[3][0] * _mat[2][3];
+		auto coef14 = _mat[1][0] * _mat[3][3] - _mat[3][0] * _mat[1][3];
+		auto coef15 = _mat[1][0] * _mat[2][3] - _mat[2][0] * _mat[1][3];
 		
-		auto coef16 = _mat[2][0]*_mat[3][2] - _mat[3][0]*_mat[2][2];
-		auto coef18 = _mat[1][0]*_mat[3][2] - _mat[3][0]*_mat[1][2];
-		auto coef19 = _mat[1][0]*_mat[2][2] - _mat[2][0]*_mat[1][2];
+		auto coef16 = _mat[2][0] * _mat[3][2] - _mat[3][0] * _mat[2][2];
+		auto coef18 = _mat[1][0] * _mat[3][2] - _mat[3][0] * _mat[1][2];
+		auto coef19 = _mat[1][0] * _mat[2][2] - _mat[2][0] * _mat[1][2];
 		
-		auto coef20 = _mat[2][0]*_mat[3][1] - _mat[3][0]*_mat[2][1];
-		auto coef22 = _mat[1][0]*_mat[3][1] - _mat[3][0]*_mat[1][1];
-		auto coef23 = _mat[1][0]*_mat[2][1] - _mat[2][0]*_mat[1][1];
+		auto coef20 = _mat[2][0] * _mat[3][1] - _mat[3][0] * _mat[2][1];
+		auto coef22 = _mat[1][0] * _mat[3][1] - _mat[3][0] * _mat[1][1];
+		auto coef23 = _mat[1][0] * _mat[2][1] - _mat[2][0] * _mat[1][1];
 		
 		auto fac0 = vec<4, Prec>{coef00, coef00, coef02, coef03};
 		auto fac1 = vec<4, Prec>{coef04, coef04, coef06, coef07};
@@ -636,28 +649,28 @@ constexpr auto inverse(mat<Dim, Prec> const& _mat) -> mat<Dim, Prec> {
 		auto fac4 = vec<4, Prec>{coef16, coef16, coef18, coef19};
 		auto fac5 = vec<4, Prec>{coef20, coef20, coef22, coef23};
 		
-		auto v0 = vec<4, Prec>{_mat[1][0], _mat[0][0], _mat[0][0], _mat[0][0]};
-		auto v1 = vec<4, Prec>{_mat[1][1], _mat[0][1], _mat[0][1], _mat[0][1]};
-		auto v2 = vec<4, Prec>{_mat[1][2], _mat[0][2], _mat[0][2], _mat[0][2]};
-		auto v3 = vec<4, Prec>{_mat[1][3], _mat[0][3], _mat[0][3], _mat[0][3]};
+		auto vec0 = vec<4, Prec>{_mat[1][0], _mat[0][0], _mat[0][0], _mat[0][0]};
+		auto vec1 = vec<4, Prec>{_mat[1][1], _mat[0][1], _mat[0][1], _mat[0][1]};
+		auto vec2 = vec<4, Prec>{_mat[1][2], _mat[0][2], _mat[0][2], _mat[0][2]};
+		auto vec3 = vec<4, Prec>{_mat[1][3], _mat[0][3], _mat[0][3], _mat[0][3]};
 		
-		auto inv0 = vec<4, Prec>{v1*fac0 - v2*fac1 + v3*fac2};
-		auto inv1 = vec<4, Prec>{v0*fac0 - v2*fac3 + v3*fac4};
-		auto inv2 = vec<4, Prec>{v0*fac1 - v1*fac3 + v3*fac5};
-		auto inv3 = vec<4, Prec>{v0*fac2 - v1*fac4 + v2*fac5};
+		auto inv0 = vec1 * fac0 - vec2 * fac1 + vec3 * fac2;
+		auto inv1 = vec0 * fac0 - vec2 * fac3 + vec3 * fac4;
+		auto inv2 = vec0 * fac1 - vec1 * fac3 + vec3 * fac5;
+		auto inv3 = vec0 * fac2 - vec1 * fac4 + vec2 * fac5;
 		
-		auto signA = vec<4, Prec>{+1, -1, +1, -1};
-		auto signB = vec<4, Prec>{-1, +1, -1, +1};
-		auto inv = mat<4, Prec>{inv0*signA, inv1*signB, inv2*signA, inv3*signB};
+		auto signA = vec<4, Prec>{Prec( 1), Prec(-1), Prec( 1), Prec(-1)};
+		auto signB = vec<4, Prec>{Prec(-1), Prec( 1), Prec(-1), Prec( 1)};
+		auto inverse = transpose(mat<4, Prec>{inv0 * signA, inv1 * signB, inv2 * signA, inv3 * signB});
 		
-		auto row0 = vec<4, Prec>{inv[0][0], inv[1][0], inv[2][0], inv[3][0]};
+		auto row0 = vec<4, Prec>{inverse[0][0], inverse[1][0], inverse[2][0], inverse[3][0]};
 		
 		auto dot0 = _mat[0] * row0;
 		auto dot1 = (dot0.x() + dot0.y()) + (dot0.z() + dot0.w());
 		
-		auto oneOverDeterminant = Prec(1) / dot1;
+		auto oneOverDet = Prec(1) / dot1;
 		
-		return inv * oneOverDeterminant;
+		return inverse * oneOverDet;
 		
 	}
 	
@@ -673,18 +686,9 @@ constexpr auto look(vec<3, Prec> _pos, vec<3, Prec> _dir, vec<3, Prec> _up) -> m
 	
 	auto s = normalize(cross(_up, _dir));
 	auto u = cross(_dir, s);
-	result[0][0] = s[0];
-	result[1][0] = s[1];
-	result[2][0] = s[2];
-	result[0][1] = u[0];
-	result[1][1] = u[1];
-	result[2][1] = u[2];
-	result[0][2] = _dir[0];
-	result[1][2] = _dir[1];
-	result[2][2] = _dir[2];
-	result[3][0] = -dot(s, _pos);
-	result[3][1] = -dot(u, _pos);
-	result[3][2] = -dot(_dir, _pos);
+	result[0] = float4(s,    -dot(s,    _pos));
+	result[1] = float4(u,    -dot(u,    _pos));
+	result[2] = float4(_dir, -dot(_dir, _pos));
 	return result;
 	
 }
@@ -700,10 +704,10 @@ constexpr auto perspective(Prec _vFov, Prec _aspectRatio, Prec _zNear) -> mat<4,
 	
 	auto result = mat<4, Prec>();
 	result.fill(0);
-	result[0][0] = (Prec(2) * _zNear) / (right - left);
-	result[1][1] = (Prec(2) * _zNear) / (top - bottom);
-	result[2][3] = Prec(1);
-	result[3][2] = Prec(2) * _zNear;
+	result.at(0, 0) = (Prec(2) * _zNear) / (right - left);
+	result.at(1, 1) = (Prec(2) * _zNear) / (top - bottom);
+	result.at(2, 3) = Prec(2) * _zNear;
+	result.at(3, 2) = Prec(1);
 	return result;
 	
 }

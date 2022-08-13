@@ -5,11 +5,6 @@
 #include "sky/types.hlsli"
 #include "constants.hlsli"
 
-static const float PlanetRadiusOffset = 0.01;
-static const float RaymarchMinSPP = 4.0;
-static const float RaymarchMaxSPP = 14.0;
-static const float SunRadius = 0.5 * 0.505 * (PI / 180.0);
-
 struct MediumSampleRGB {
 	float3 scattering;
 	float3 absorption;
@@ -39,6 +34,11 @@ struct SingleScatteringResult {
 	float3 newMultiScatStep0Out;
 	float3 newMultiScatStep1Out;
 };
+
+static const float PlanetRadiusOffset = 0.01;
+static const float RaymarchMinSPP = 4.0;
+static const float RaymarchMaxSPP = 14.0;
+static const float SunRadius = 0.5 * 0.505 * (PI / 180.0);
 
 // - r0: ray origin
 // - rd: normalized ray direction

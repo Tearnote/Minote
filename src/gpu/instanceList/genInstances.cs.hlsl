@@ -1,18 +1,19 @@
 #include "types.hlsli"
 #include "util.hlsli"
 
+struct Constants {
+	uint objectCount;
+};
+
 [[vk::binding(0)]] StructuredBuffer<Model> b_models;
 [[vk::binding(1)]] StructuredBuffer<uint> b_modelIndices; // Index into b_models
 [[vk::binding(2)]] RWStructuredBuffer<Instance> b_instances;
 [[vk::binding(3)]] RWStructuredBuffer<uint> b_instanceCount;
 
-struct Constants {
-	uint objectCount;
-};
-[[vk::push_constant]] Constants c_push;
-
 static const uint GroupSizeExp = 6; // Group size as 2^n
 static const uint GroupSize = 1u << GroupSizeExp;
+
+[[vk::push_constant]] Constants c_push;
 
 groupshared uint sh_objectIndices[GroupSize];
 groupshared uint sh_meshletCountPrefixSum[GroupSize];
@@ -29,7 +30,7 @@ void meshletCountPrefixSum(uint _objectIdx) {
 	uint accum;
 	InterlockedAdd(sh_meshletCountPrefixSum[0], accumAdd, accum);
 	uint atomicIdx = accum >> (32u - GroupSizeExp);
-	uint prefixSum = accum & ((1u << (32u - GroupSizeExp)) - 1u);
+	uint prefixSum = accum & bitmask(32u - GroupSizeExp);
 	// Write out prefix summed and shuffled data
 	sh_objectIndices[atomicIdx] = _objectIdx;
 	if (atomicIdx != 0)
@@ -100,7 +101,7 @@ void main(uint3 _tid: SV_DispatchThreadID, uint3 _lid: SV_GroupThreadID) {
 	
 	GroupMemoryBarrierWithGroupSync();
 	// Find starting point for this thread
-	const uint AccumLowBits = (1u << (32u - GroupSizeExp)) - 1u;
+	const uint AccumLowBits = bitmask(32u - GroupSizeExp);
 	uint totalMeshletCount = sh_meshletCountPrefixSum[0] & AccumLowBits;
 	uint meshletStride = divRoundUp(totalMeshletCount, GroupSize);
 	uint startingMeshletIdx = meshletStride * _lid.x;

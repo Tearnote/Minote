@@ -135,7 +135,10 @@ int main(int argc, char const* argv[]) try {
 		auto scale = node.has_scale?
 			float4x4::scale(float3{node.scale[0], node.scale[1], node.scale[2]}) :
 			float4x4::identity();
-		auto transform = mul(worknode.parentTransform, mul(translation, mul(rotation, scale)));
+		auto transform = scale;
+		transform = mul(transform, rotation);
+		transform = mul(transform, translation);
+		transform = mul(transform, worknode.parentTransform);
 		
 		// Queue up all children nodes
 		
@@ -318,7 +321,7 @@ int main(int argc, char const* argv[]) try {
 		auto vertices = pvector<VertexType>();
 		vertices.reserve(mesh.vertices.size());
 		for (auto v: mesh.vertices)
-			vertices.push_back(float3(mul(mesh.transform, float4(v, 1.0f))));
+			vertices.push_back(float3(mul(float4(v, 1.0f), mesh.transform)));
 		
 		// Pre-transform normals
 		
@@ -326,7 +329,7 @@ int main(int argc, char const* argv[]) try {
 		auto normals = pvector<GltfNormalType>();
 		normals.reserve(mesh.normals.size());
 		for (auto n: mesh.normals)
-			normals.push_back(normalize(float3(mul(normTransform, float4(n, 0.0f)))));
+			normals.push_back(normalize(float3(mul(float4(n, 0.0f), normTransform))));
 		
 		// Convert normals to oct encoding
 		

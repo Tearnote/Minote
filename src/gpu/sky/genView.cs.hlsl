@@ -1,5 +1,13 @@
 #include "sky/types.hlsli"
 
+struct Constants {
+	float3 probePos;
+	float _pad0;
+	float3 sunDirection;
+	float _pad1;
+	float3 sunIlluminance;
+};
+
 [[vk::binding(0)]] ConstantBuffer<AtmosphereParams> c_params;
 [[vk::binding(1)]][[vk::combinedImageSampler]] Texture2D<float4> s_transmittance;
 [[vk::binding(1)]][[vk::combinedImageSampler]] SamplerState s_transmittanceSmp;
@@ -13,18 +21,11 @@
 #define MULTI_SCATTERING_SMP s_multiScatteringSmp
 #include "sky/func.hlsli"
 
-struct Constants {
-	float3 probePos;
-	float _pad0;
-	float3 sunDirection;
-	float _pad1;
-	float3 sunIlluminance;
-};
-[[vk::push_constant]] Constants c_push;
-
 [[vk::constant_id(0)]] const uint ViewWidth = 0;
 [[vk::constant_id(1)]] const uint ViewHeight = 0;
 static const uint2 ViewSize = {ViewWidth, ViewHeight};
+
+[[vk::push_constant]] Constants c_push;
 
 [numthreads(8, 8, 1)]
 void main(uint3 _tid: SV_DispatchThreadID) {

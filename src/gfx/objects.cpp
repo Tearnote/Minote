@@ -110,16 +110,7 @@ void ObjectPool::copyTransforms() {
 
 auto ObjectPool::encodeTransform(ObjectPool::Transform _in) -> ObjectBuffer::Transform {
 	
-	auto rw = _in.rotation.w();
-	auto rx = _in.rotation.x();
-	auto ry = _in.rotation.y();
-	auto rz = _in.rotation.z();
-	
-	auto rotationMat = float3x3{
-		1.0f - 2.0f * (ry * ry + rz * rz),        2.0f * (rx * ry - rw * rz),        2.0f * (rx * rz + rw * ry),
-		       2.0f * (rx * ry + rw * rz), 1.0f - 2.0f * (rx * rx + rz * rz),        2.0f * (ry * rz - rw * rx),
-		       2.0f * (rx * rz - rw * ry),        2.0f * (ry * rz + rw * rx), 1.0f - 2.0f * (rx * rx + ry * ry),
-	};
+	auto rotationMat = float3x3::rotate(_in.rotation);
 	
 	rotationMat[0] *= _in.scale.x();
 	rotationMat[1] *= _in.scale.y();

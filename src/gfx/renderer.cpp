@@ -12,6 +12,7 @@
 #include "util/log.hpp"
 #include "sys/system.hpp"
 #include "gfx/effects/instanceList.hpp"
+#include "gfx/effects/visibility.hpp"
 #include "gfx/effects/tonemap.hpp"
 #include "gfx/effects/bloom.hpp"
 #include "gfx/effects/sky.hpp"
@@ -136,6 +137,10 @@ void Renderer::executeRenderGraph() try {
 	auto instances = InstanceList(frameAllocator(), m_models, objects);
 	auto triangles = TriangleList(frameAllocator(), m_models, instances);
 	
+	// Visibility draw
+	auto visibility = Visibility(frameAllocator(), m_models, objects, instances, triangles,
+		m_camera.viewport, m_camera.viewProjection());
+	
 	// Sky rendering
 	if (!m_impl->m_atmosphere.has_value())
 		m_impl->m_atmosphere.emplace(m_multiFrameAllocator, Atmosphere::Params::earth());
@@ -159,7 +164,7 @@ void Renderer::executeRenderGraph() try {
 	
 	// Copy to swapchain
 	rg = std::make_shared<vuk::RenderGraph>("main");
-	rg->attach_in("triangles", triangles.indices); // Inlined for testing
+	rg->attach_in("visibility", visibility.visibility); // Inlined for testing
 	rg->attach_in("screen/final", screenFinal);
 	rg->attach_swapchain("swapchain", s_vulkan->swapchain);
 	rg->add_pass({

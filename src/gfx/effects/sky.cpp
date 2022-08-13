@@ -307,9 +307,10 @@ void Sky::drawImguiDebug(string_view _name) {
 
 auto Sky::getSunDirection(float _pitch, float _yaw) -> float3 {
 	
-	return mul(float3x3::rotate({0.0f, 0.0f, 1.0f}, _yaw),
-		mul(float3x3::rotate({0.0f, -1.0f, 0.0f}, _pitch),
-		float3{1.0f, 0.0f, 0.0f}));
+	float3 vec = {1.0f, 0.0f, 0.0f};
+	vec = mul(vec, float3x3::rotate({0.0f, -1.0f, 0.0f}, _pitch));
+	vec = mul(vec, float3x3::rotate({0.0f, 0.0f, 1.0f}, _yaw));
+	return vec;
 	
 }
 /*

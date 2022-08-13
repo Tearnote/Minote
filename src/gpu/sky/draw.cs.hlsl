@@ -1,6 +1,15 @@
 #include "sky/access.hlsli"
 #include "sky/types.hlsli"
 
+struct Constants {
+	float4x4 viewProjectionInv;
+	float3 cameraPos;
+	float _pad0;
+	float3 sunDirection;
+	float _pad1;
+	float3 sunIlluminance;
+};
+
 [[vk::binding(0)]] ConstantBuffer<AtmosphereParams> c_params;
 [[vk::binding(1)]][[vk::combinedImageSampler]] Texture2D<float4> s_transmittance;
 [[vk::binding(1)]][[vk::combinedImageSampler]] SamplerState s_transmittanceSmp;
@@ -12,22 +21,14 @@
 #define TRANSMITTANCE_SMP s_transmittanceSmp
 #include "sky/func.hlsli"
 
-struct Constants {
-	float4x4 viewProjectionInv;
-	float3 cameraPos;
-	float _pad0;
-	float3 sunDirection;
-	float _pad1;
-	float3 sunIlluminance;
-};
-[[vk::push_constant]] Constants c_push;
-
 [[vk::constant_id(0)]] const uint ViewWidth = 0;
 [[vk::constant_id(1)]] const uint ViewHeight = 0;
 static const uint2 ViewSize = {ViewWidth, ViewHeight};
 [[vk::constant_id(2)]] const uint TargetWidth = 0;
 [[vk::constant_id(3)]] const uint TargetHeight = 0;
 static const uint2 TargetSize = {TargetWidth, TargetHeight};
+
+[[vk::push_constant]] Constants c_push;
 
 [numthreads(8, 8, 1)]
 void main(uint3 _tid: SV_DispatchThreadID) {
@@ -37,7 +38,7 @@ void main(uint3 _tid: SV_DispatchThreadID) {
 	
 	float2 gUv = (float2(_tid.xy) + 0.5) / float2(TargetSize);
 	float3 clipSpace = {gUv * 2.0 - 1.0, 0.0};
-	float4 hPos = mul(c_push.viewProjectionInv, float4(clipSpace, 1.0));
+	float4 hPos = mul(float4(clipSpace, 1.0), c_push.viewProjectionInv); //TODO broken
 	
 	float3 worldDir = normalize(hPos.xyz);
 	float3 worldPos = c_push.cameraPos + float3(0.0, 0.0, c_params.bottomRadius);

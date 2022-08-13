@@ -1,3 +1,10 @@
+struct Constants {
+	float4 term0;
+	float4 term1;
+	float4 term2;
+	float4 term3;
+};
+
 [[vk::binding(0)]][[vk::combinedImageSampler]] Texture2D<float4> t_source;
 [[vk::binding(0)]][[vk::combinedImageSampler]] SamplerState t_sourceSmp;
 [[vk::binding(1)]] RWTexture2D<float4> t_target;
@@ -6,12 +13,6 @@
 [[vk::constant_id(1)]] const uint TargetHeight = 0;
 static const uint2 TargetSize = {TargetWidth, TargetHeight};
 
-struct Constants {
-	float4 term0;
-	float4 term1;
-	float4 term2;
-	float4 term3;
-};
 [[vk::push_constant]] Constants c_push;
 
 float3 lottesTonemap(float3 _color, Constants _t) {

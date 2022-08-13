@@ -25,7 +25,7 @@ struct Game::Impl {
 	static constexpr auto LogicRate = 120;
 	static constexpr auto LogicTick = 1_s / LogicRate;
 	
-	static constexpr auto BattleScenes = 0u;
+	static constexpr auto BattleScenes = 1u;
 	static constexpr auto BattleSpacing = 80_m;
 	static constexpr auto SimpleScenes = 1u;
 	static constexpr auto SimpleSpacing = 25_m;

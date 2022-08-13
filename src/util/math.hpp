@@ -358,11 +358,11 @@ struct mat {
 	// Uninitialized init
 	constexpr mat() = default;
 	
-	// Compose a matrix out of all component values, in column-major order
+	// Compose a matrix out of all component values, in row-major order
 	constexpr mat(std::initializer_list<Prec>);
 	
-	// Compose a matrix out of column vectors
-	constexpr mat(std::initializer_list<col_t> list) { std::copy(list.begin(), list.end(), m_arr.begin()); }
+	// Compose a matrix out of row vectors
+	constexpr mat(std::initializer_list<vec<Dim, Prec>> list);
 	
 	// Create a matrix that is a no-op on multiplication
 	static constexpr auto identity() -> mat<Dim, Prec>;
@@ -416,7 +416,7 @@ template<usize Dim, floating_point Prec>
 constexpr auto mul(mat<Dim, Prec> const&, mat<Dim, Prec> const&) -> mat<Dim, Prec>;
 
 template<usize Dim, floating_point Prec>
-constexpr auto mul(mat<Dim, Prec> const&, vec<Dim, Prec> const&) -> vec<Dim, Prec>;
+constexpr auto mul(vec<Dim, Prec> const&, mat<Dim, Prec> const&) -> vec<Dim, Prec>;
 
 template<usize Dim, floating_point Prec>
 constexpr auto operator*(mat<Dim, Prec> const&, Prec) -> mat<Dim, Prec>; // Component-wise

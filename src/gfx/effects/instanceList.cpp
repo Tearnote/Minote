@@ -83,7 +83,7 @@ TriangleList::TriangleList(vuk::Allocator& _allocator,
 		.vertexOffset = 0,
 		.firstInstance = 0,
 	};
-	auto command = vuk::create_buffer_cross_device(s_renderer->frameAllocator(),
+	auto commandBuf = vuk::create_buffer_cross_device(s_renderer->frameAllocator(),
 		vuk::MemoryUsage::eCPUtoGPU, span(&commandData, 1)).second;
 	
 	auto indicesBuf = *vuk::allocate_buffer_gpu(_allocator, vuk::BufferCreateInfo{
@@ -94,7 +94,7 @@ TriangleList::TriangleList(vuk::Allocator& _allocator,
 	rg->attach_in("meshlets", _models.meshlets);
 	rg->attach_in("triIndices", _models.triIndices);
 	rg->attach_in("instances", _instances.instances);
-	rg->attach_in("command", command);
+	rg->attach_in("command", commandBuf);
 	rg->attach_buffer("indices", *indicesBuf); //TODO convert to managed buffer, pending vuk feature
 	rg->add_pass(vuk::Pass{
 		.name = "instanceList/genIndices",

@@ -35,7 +35,7 @@ struct Camera {
 	auto projection() const -> float4x4;
 	
 	[[nodiscard]]
-	auto viewProjection() const -> float4x4 { return mul(projection(), view()); }
+	auto viewProjection() const -> float4x4 { return mul(view(), projection()); }
 	
 	// Change camera direction by the provided offsets, taking into account lookSpeed
 	void rotate(float horz, float vert);
