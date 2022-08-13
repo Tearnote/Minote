@@ -5,7 +5,8 @@ include(cmake/Dependencies.cmake)
 set(SHADER_MODEL "6_7")
 set(SHADER_PREFIX src/gpu)
 set(SHADER_SOURCES
-	instanceList/expandObjects.cs.hlsl
+	instanceList/genInstances.cs.hlsl
+	instanceList/genIndices.cs.hlsl
 	tonemap/apply.cs.hlsl
 	bloom/down.cs.hlsl
 	bloom/up.cs.hlsl

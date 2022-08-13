@@ -159,24 +159,25 @@ void ModelList::addModel(string_view _name, span<char const> _model) {
 
 auto ModelList::upload(vuk::Allocator& _allocator) && -> ModelBuffer {
 	
+	//TODO Change to eTransferQueue pending vuk fix
 	auto result = ModelBuffer{
 		.materials = vuk::create_buffer_gpu(_allocator,
-			vuk::DomainFlagBits::eTransferQueue,
+			vuk::DomainFlagBits::eGraphicsQueue,
 			span(m_materials)).second,
 		.triIndices = vuk::create_buffer_gpu(_allocator,
-			vuk::DomainFlagBits::eTransferQueue,
+			vuk::DomainFlagBits::eGraphicsQueue,
 			span(m_triIndices)).second,
 		.vertIndices = vuk::create_buffer_gpu(_allocator,
-			vuk::DomainFlagBits::eTransferQueue,
+			vuk::DomainFlagBits::eGraphicsQueue,
 			span(m_vertIndices)).second,
 		.vertices = vuk::create_buffer_gpu(_allocator,
-			vuk::DomainFlagBits::eTransferQueue,
+			vuk::DomainFlagBits::eGraphicsQueue,
 			span(m_vertices)).second,
 		.normals = vuk::create_buffer_gpu(_allocator,
-			vuk::DomainFlagBits::eTransferQueue,
+			vuk::DomainFlagBits::eGraphicsQueue,
 			span(m_normals)).second,
 		.meshlets = vuk::create_buffer_gpu(_allocator,
-			vuk::DomainFlagBits::eTransferQueue,
+			vuk::DomainFlagBits::eGraphicsQueue,
 			span(m_meshlets)).second,
 		.models = vuk::create_buffer_gpu(_allocator,
 			vuk::DomainFlagBits::eGraphicsQueue,

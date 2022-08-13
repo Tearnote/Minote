@@ -1,14 +1,5 @@
+#include "types.hlsli"
 #include "util.hlsli"
-
-struct Model {
-	uint meshletOffset;
-	uint meshletCount;
-};
-
-struct Instance {
-	uint objectIdx;
-	uint meshletIdx;
-};
 
 [[vk::binding(0)]] StructuredBuffer<Model> b_models;
 [[vk::binding(1)]] StructuredBuffer<uint> b_modelIndices; // Index into b_models

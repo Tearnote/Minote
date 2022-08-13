@@ -19,6 +19,7 @@ struct InstanceList {
 	
 	Buffer<Instance> instances;
 	uint instanceCount; // Can be calculated CPU-side
+	uint triangleCount;
 	
 	InstanceList(vuk::Allocator&, ModelBuffer&, ObjectBuffer&);
 	
@@ -30,29 +31,23 @@ private:
 	static inline bool m_compiled = false;
 	
 };
-/*
+
 struct TriangleList {
 	
 	using Command = VkDrawIndexedIndirectCommand;
-	using Transform = InstanceList::Transform;
-	using Instance = InstanceList::Instance;
-	
-	Buffer<float4> colors;
-	Buffer<Transform> transforms;
-	Buffer<Transform> prevTransforms;
-	
-	Buffer<Instance> instances;
-	Buffer<uint4> instanceCount;
 	
 	Buffer<Command> command;
 	Buffer<uint> indices;
 	
-	static auto fromInstances(InstanceList, Pool&, Frame&, vuk::Name,
-		Texture2D hiZ, uint2 hiZInnerSize, float4x4 view, float4x4 projection) -> TriangleList;
+	TriangleList(vuk::Allocator&, ModelBuffer&, InstanceList&);
 	
 	// Compile required shaders; optional
 	static void compile();
 	
+private:
+	
+	static inline bool m_compiled = false;
+	
 };
-*/
+
 }

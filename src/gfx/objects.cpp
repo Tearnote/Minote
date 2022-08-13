@@ -61,6 +61,7 @@ auto ObjectPool::upload(vuk::Allocator& _allocator, ModelBuffer const& _models) 
 	
 	// Queue up all valid objects
 	auto meshletCount = 0u;
+	auto triangleCount = 0u;
 	for (auto idx: iota(ObjectID(0), size())) {
 		auto& meta = metadata[idx];
 		if (!meta.exists || !meta.visible)
@@ -69,6 +70,10 @@ auto ObjectPool::upload(vuk::Allocator& _allocator, ModelBuffer const& _models) 
 		auto modelID = modelIDs[idx];
 		auto modelIdx = _models.cpu_modelIndices.at(modelID);
 		meshletCount += _models.cpu_models[modelIdx].meshletCount;
+		
+		auto& model = _models.cpu_models[modelIdx];
+		for (auto i: iota(0u, model.meshletCount))
+			triangleCount += _models.cpu_meshlets[model.meshletOffset + i].indexCount / 3u;
 		
 		cpu_modelIndices.emplace_back(modelIdx);
 		cpu_transforms.emplace_back(encodeTransform(transforms[idx]));
@@ -92,6 +97,7 @@ auto ObjectPool::upload(vuk::Allocator& _allocator, ModelBuffer const& _models) 
 			span(cpu_prevTransforms)).second,
 		.objectCount = objectCount,
 		.meshletCount = meshletCount,
+		.triangleCount = triangleCount,
 	};
 	
 }

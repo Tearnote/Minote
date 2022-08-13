@@ -188,7 +188,9 @@ auto Vulkan::selectPhysicalDevice(vkb::Instance& _instance, VkSurfaceKHR _surfac
 			.robustImageAccess2 = VK_TRUE
 		})
 #endif //VK_VALIDATION
-		.select();
+		.prefer_gpu_device_type(vkb::PreferredDeviceType::discrete)
+		.allow_any_gpu_device_type(false)
+		.select(vkb::DeviceSelectionMode::partially_and_fully_suitable);
 	if (!physicalDeviceSelectorResult)
 		throw runtime_error_fmt("Failed to find a suitable GPU for Vulkan: {}",
 			physicalDeviceSelectorResult.error().message());

@@ -47,9 +47,8 @@ struct Renderer {
 	// Current framerate, updated once a second
 	auto fps() const -> float { return m_framerate; }
 	
-	// Allocators for effects that need permanent or temporary internal allocations
-	auto globalAllocator() -> vuk::Allocator& { return m_globalAllocator; }
-	auto frameAllocator() -> vuk::Allocator& { return m_frameAllocator; }
+	// Allocator for effects that need temporary internal allocations
+	auto frameAllocator() -> vuk::Allocator& { return *m_frameAllocator; }
 	
 	Renderer(Renderer const&) = delete;
 	auto operator=(Renderer const&) -> Renderer& = delete;
@@ -57,8 +56,9 @@ struct Renderer {
 private:
 	
 	vuk::DeviceSuperFrameResource m_deviceResource;
-	vuk::Allocator m_globalAllocator;
-	vuk::Allocator m_frameAllocator;
+	vuk::Allocator m_multiFrameAllocator;
+	vuk::DeviceFrameResource* m_frameResource;
+	optional<vuk::Allocator> m_frameAllocator;
 	
 	// Thread-safety for situations like window resize
 	std::mutex m_renderLock;
@@ -78,6 +78,7 @@ private:
 	void beginFrame();
 	void calcFramerate();
 	void executeRenderGraph();
+	void endFrame();
 	
 	struct Impl;
 	std::unique_ptr<Impl> m_impl;

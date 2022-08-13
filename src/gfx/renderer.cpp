@@ -31,13 +31,13 @@ struct Renderer::Impl {
 
 Renderer::Renderer():
 	m_deviceResource(*s_vulkan->context, InflightFrames),
+	m_multiFrameAllocator(m_deviceResource),
+	m_frameResource(nullptr),
 	m_swapchainDirty(false),
 	m_framerate(60.0f),
 	m_lastFramerateCheck(0),
 	m_framesSinceLastCheck(0),
-	m_globalAllocator(m_deviceResource),
-	m_frameAllocator(m_deviceResource.get_next_frame()),
-	m_imgui(m_globalAllocator),
+	m_imgui(m_multiFrameAllocator),
 	m_impl(new Impl()) {
 	
 	L_INFO("Renderer initialized");
@@ -53,7 +53,7 @@ Renderer::~Renderer() {
 
 void Renderer::uploadModels(ModelList&& _models) {
 	
-	m_models = std::move(_models).upload(m_globalAllocator);
+	m_models = std::move(_models).upload(m_multiFrameAllocator);
 	
 }
 
@@ -71,15 +71,16 @@ void Renderer::renderFrame() {
 	
 	beginFrame();
 	executeRenderGraph();
+	endFrame();
 	
 }
 
 void Renderer::beginFrame() {
 	
+	m_frameResource = &m_deviceResource.get_next_frame();
 	s_vulkan->context->next_frame();
+	m_frameAllocator.emplace(*m_frameResource);
 	m_imgui.begin(); // Ensure that imgui calls work during rendering; usually a no-op
-	auto& frameResource = m_deviceResource.get_next_frame();
-	m_frameAllocator = vuk::Allocator(frameResource);
 	calcFramerate();
 	m_camera.viewport = uint2{s_vulkan->swapchain->extent.width, s_vulkan->swapchain->extent.height};
 	
@@ -131,12 +132,13 @@ void Renderer::executeRenderGraph() try {
 	auto screen = vuk::Future(rg, "screen");
 	
 	// Instance processing
-	auto objects = m_objects.upload(m_frameAllocator, m_models);
-	auto instances = InstanceList(m_frameAllocator, m_models, objects);
+	auto objects = m_objects.upload(frameAllocator(), m_models);
+	auto instances = InstanceList(frameAllocator(), m_models, objects);
+	auto triangles = TriangleList(frameAllocator(), m_models, instances);
 	
 	// Sky rendering
 	if (!m_impl->m_atmosphere.has_value())
-		m_impl->m_atmosphere.emplace(m_globalAllocator, Atmosphere::Params::earth());
+		m_impl->m_atmosphere.emplace(m_multiFrameAllocator, Atmosphere::Params::earth());
 	auto skyView = m_impl->m_sky.createView(*m_impl->m_atmosphere, m_camera.position);
 	
 	ImGui::Selectable("Sky", &m_impl->m_skyDebug);
@@ -157,7 +159,7 @@ void Renderer::executeRenderGraph() try {
 	
 	// Copy to swapchain
 	rg = std::make_shared<vuk::RenderGraph>("main");
-	rg->attach_in("instances", instances.instances); // For testing
+	rg->attach_in("triangles", triangles.indices); // Inlined for testing
 	rg->attach_in("screen/final", screenFinal);
 	rg->attach_swapchain("swapchain", s_vulkan->swapchain);
 	rg->add_pass({
@@ -178,7 +180,7 @@ void Renderer::executeRenderGraph() try {
 	});
 	
 	auto compiler = vuk::Compiler();
-	vuk::execute_submit_and_present_to_one(m_frameAllocator, compiler.link({&rg, 1}, {}), s_vulkan->swapchain);
+	vuk::execute_submit_and_present_to_one(frameAllocator(), compiler.link({&rg, 1}, {}), s_vulkan->swapchain);
 	
 } catch (vuk::PresentException& e) {
 	
@@ -187,6 +189,13 @@ void Renderer::executeRenderGraph() try {
 		m_swapchainDirty = true; // No need to return, only cleanup is left
 	else if (error != VK_SUBOPTIMAL_KHR)
 		throw runtime_error_fmt("Unable to present to the screen: error {}", error);
+	
+}
+
+void Renderer::endFrame() {
+	
+	m_frameAllocator.reset();
+	m_frameResource = nullptr;
 	
 }
 
