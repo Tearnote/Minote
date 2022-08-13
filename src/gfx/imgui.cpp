@@ -62,16 +62,16 @@ Imgui::~Imgui() {
 	
 }
 
-GET_SHADER(imgui_vs);
-GET_SHADER(imgui_ps);
+GET_SHADER(imgui_imgui_vs);
+GET_SHADER(imgui_imgui_ps);
 void Imgui::compile() {
 	
 	if (m_compiled) return;
 	auto& ctx = *s_vulkan->context;
 	
 	auto imguiPci = vuk::PipelineBaseCreateInfo();
-	ADD_SHADER(imguiPci, imgui_vs, "imgui.vs.hlsl");
-	ADD_SHADER(imguiPci, imgui_ps, "imgui.ps.hlsl");
+	ADD_SHADER(imguiPci, imgui_imgui_vs, "imgui/imgui.vs.hlsl");
+	ADD_SHADER(imguiPci, imgui_imgui_ps, "imgui/imgui.ps.hlsl");
 	ctx.create_named_pipeline("imgui", imguiPci);
 	
 	m_compiled = true;

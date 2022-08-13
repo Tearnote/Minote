@@ -8,14 +8,14 @@ set(SHADER_SOURCES
 	instanceList/genInstances.cs.hlsl
 	instanceList/genIndices.cs.hlsl
 	tonemap/apply.cs.hlsl
+	imgui/imgui.vs.hlsl
+	imgui/imgui.ps.hlsl
 	bloom/down.cs.hlsl
 	bloom/up.cs.hlsl
 	sky/genMultiScattering.cs.hlsl
 	sky/genTransmittance.cs.hlsl
 	sky/genView.cs.hlsl
-	sky/draw.cs.hlsl
-	imgui.vs.hlsl
-	imgui.ps.hlsl)
+	sky/draw.cs.hlsl)
 
 # Stage 1: Compile HLSL to SPIR-V
 foreach(SHADER_SOURCE ${SHADER_SOURCES})
