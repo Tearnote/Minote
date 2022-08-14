@@ -10,7 +10,10 @@ T divRoundUp(T _n, T _div) {
 
 uint bitmask(uint _bits) {
 	
-	return (1u << _bits) - 1u;
+	if (_bits == 32)
+		return -1u;
+	else
+		return (1u << _bits) - 1u;
 	
 }
 
