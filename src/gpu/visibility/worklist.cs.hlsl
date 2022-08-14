@@ -1,4 +1,5 @@
 #include "instanceList/index.hlsli"
+#include "visibility/worklist.hlsli"
 #include "types.hlsli"
 
 [[vk::binding(0)]] StructuredBuffer<Meshlet> b_meshlets;
@@ -16,8 +17,6 @@ static const uint2 VisibilitySize = {VisibilityWidth, VisibilityHeight};
 [[vk::constant_id(3)]] const uint TileAreaHeight = 0;
 static const uint2 TileArea = {TileAreaWidth, TileAreaHeight};
 [[vk::constant_id(4)]] const uint ListCount = 0;
-
-static const uint TileSize = 8; // Can't be a spec constant, thanks dxc :(
 
 groupshared uint sh_result;
 

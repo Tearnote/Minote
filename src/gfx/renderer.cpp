@@ -150,7 +150,7 @@ void Renderer::executeRenderGraph() try {
 	
 	ImGui::Selectable("Sky", &m_impl->m_skyDebug);
 	if (m_impl->m_skyDebug) m_impl->m_sky.drawImguiDebug("Sky");
-	auto screenSky = m_impl->m_sky.draw(screen, *m_impl->m_atmosphere, skyView, m_camera);
+	auto screenSky = m_impl->m_sky.draw(screen, worklist, *m_impl->m_atmosphere, skyView, m_camera);
 	
 	// Postprocessing
 	ImGui::Selectable("Bloom", &m_impl->m_bloomDebug);
