@@ -138,8 +138,10 @@ void Renderer::executeRenderGraph() try {
 	auto triangles = TriangleList(frameAllocator(), m_models, instances);
 	
 	// Visibility draw
-	auto visibility = Visibility(frameAllocator(), m_models, objects, instances, triangles,
-		m_camera.viewport, m_camera.viewProjection());
+	auto visibility = Visibility(frameAllocator(), m_models, objects, instances,
+		triangles, m_camera.viewport, m_camera.viewProjection());
+	auto worklist = Worklist(frameAllocator(), m_models, instances, triangles,
+		visibility, m_camera.viewport);
 	
 	// Sky rendering
 	if (!m_impl->m_atmosphere.has_value())
@@ -164,7 +166,7 @@ void Renderer::executeRenderGraph() try {
 	
 	// Copy to swapchain
 	rg = std::make_shared<vuk::RenderGraph>("main");
-	rg->attach_in("visibility", visibility.visibility); // Inlined for testing
+	rg->attach_in("worklist", worklist.lists); // Inlined for testing
 	rg->attach_in("screen/final", screenFinal);
 	rg->attach_swapchain("swapchain", s_vulkan->swapchain);
 	rg->add_pass({

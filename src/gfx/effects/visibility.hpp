@@ -26,21 +26,25 @@ private:
 	static inline bool m_compiled = false;
 	
 };
-/*
+
 struct Worklist {
 	
-	static constexpr auto TileSize = float2{8, 8};
-	static constexpr auto ListCount = +MaterialType::Count;
+	static constexpr auto TileSize = 8u;
+	static constexpr auto ListCount = +Material::Type::Count;
 	
 	Buffer<uint4> counts; // x holds tile count, yz are 1 (for dispatch indirect)
 	Buffer<uint> lists;
-	uint2 tileDimensions; // How many tiles fit in each dimension
+	uint2 tileArea; // How many tiles fit in each dimension
 	
-	// Build the shader.
-	static void compile(vuk::PerThreadContext&);
+	Worklist(vuk::Allocator&, ModelBuffer&, InstanceList&, TriangleList&, Visibility&, uint2 extent);
 	
-	static auto create(Pool&, Frame&, vuk::Name, Texture2D visbuf, TriangleList) -> Worklist;
+	// Build required shaders; optional
+	static void compile();
+	
+private:
+	
+	static inline bool m_compiled = false;
 	
 };
-*/
+
 }

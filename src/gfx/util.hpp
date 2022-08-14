@@ -12,4 +12,12 @@ constexpr auto mipmapCount(uint size) {
 	
 }
 
+// Integer division that rounds up instead of down
+template<typename T, typename U>
+constexpr auto divRoundUp(T n, U div) -> T {
+	
+	return (n + (div - U(1))) / div;
+	
+}
+
 }

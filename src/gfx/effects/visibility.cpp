@@ -1,8 +1,11 @@
 #include "gfx/effects/visibility.hpp"
 
+#include "vuk/AllocatorHelpers.hpp"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
+#include "vuk/Partials.hpp"
 #include "gfx/shader.hpp"
+#include "gfx/util.hpp"
 #include "sys/vulkan.hpp"
 
 namespace minote {
@@ -94,73 +97,86 @@ void Visibility::compile() {
 	m_compiled = true;
 	
 }
-/*
-void Worklist::compile(vuk::PerThreadContext& _ptc) {
-	
-	auto worklistPci = vuk::ComputePipelineBaseCreateInfo();
-	worklistPci.add_spirv(std::vector<uint>{
-#include "spv/visibility/worklist.comp.spv"
-	}, "visibility/worklist.comp");
-	_ptc.ctx.create_named_pipeline("visibility/worklist", worklistPci);
-	
-}
 
-auto Worklist::create(Pool& _pool, Frame& _frame, vuk::Name _name,
-	Texture2D _visbuf, TriangleList _triangles) -> Worklist {
+Worklist::Worklist(vuk::Allocator& _allocator, ModelBuffer& _models,
+	InstanceList& _instances, TriangleList& _triangles, Visibility& _visibility, uint2 _extent) {
 	
-	auto result = Worklist();
+	compile();
 	
-	result.tileDimensions = uint2{
-		uint(ceil(float(_visbuf.size().x()) / float(TileSize.x()))),
-		uint(ceil(float(_visbuf.size().y()) / float(TileSize.y()))) };
+	tileArea = uint2{
+		divRoundUp(_extent.x(), TileSize),
+		divRoundUp(_extent.y(), TileSize),
+	};
 	
-	// Create buffers
+	auto rg = std::make_shared<vuk::RenderGraph>("worklist");
+	rg->attach_in("meshlets", _models.meshlets);
+	rg->attach_in("materials", _models.materials);
+	rg->attach_in("instances", _instances.instances);
+	rg->attach_in("indices", _triangles.indices);
+	rg->attach_in("visibility", _visibility.visibility);
 	
 	constexpr auto InitialCount = uint4{0, 1, 1, 0};
 	auto initialCounts = array<uint4, ListCount>();
 	initialCounts.fill(InitialCount);
+	auto countsBuf = vuk::create_buffer_cross_device<uint4>(_allocator, vuk::MemoryUsage::eCPUtoGPU, initialCounts).second;
+	rg->attach_in("counts", countsBuf);
 	
-	result.counts = Buffer<uint4>::make(_frame.framePool, nameAppend(_name, "counts"),
-		vuk::BufferUsageFlagBits::eStorageBuffer |
-		vuk::BufferUsageFlagBits::eIndirectBuffer,
-		initialCounts);
+	auto listsBuf = *vuk::allocate_buffer_gpu(_allocator, vuk::BufferCreateInfo{
+		.mem_usage = vuk::MemoryUsage::eGPUonly,
+		.size = tileArea.x() * tileArea.y() * ListCount * sizeof(uint4),
+	});
+	rg->attach_buffer("lists", *listsBuf);
 	
-	result.lists = Buffer<uint>::make(_pool, nameAppend(_name, "tiles"),
-		vuk::BufferUsageFlagBits::eStorageBuffer,
-		usize(result.tileDimensions.x() * result.tileDimensions.y()) * ListCount);
-	
-	result.counts.attach(_frame.rg, vuk::eHostWrite, vuk::eNone);
-	result.lists.attach(_frame.rg, vuk::eNone, vuk::eNone);
-	
-	// Generate worklists
-	
-	_frame.rg.add_pass({
-		.name = nameAppend(_name, "visibility/worklist"),
+	rg->add_pass(vuk::Pass{
+		.name = "visibility/worklist",
 		.resources = {
-			_visbuf.resource(vuk::eComputeSampled),
-			_triangles.instances.resource(vuk::eComputeRead),
-			result.counts.resource(vuk::eComputeRW),
-			result.lists.resource(vuk::eComputeWrite) },
-		.execute = [result, _visbuf, _triangles, &_frame](vuk::CommandBuffer& cmd) {
+			"meshlets"_buffer >> vuk::eComputeRead,
+			"materials"_buffer >> vuk::eComputeRead,
+			"instances"_buffer >> vuk::eComputeRead,
+			"indices"_buffer >> vuk::eComputeRead,
+			"visibility"_image >> vuk::eComputeSampled,
+			"counts"_buffer >> vuk::eComputeRW >> "counts/final",
+			"lists"_buffer >> vuk::eComputeWrite >> "lists/final",
+		},
+		.execute = [this, _extent](vuk::CommandBuffer& cmd) {
 			
-			cmd.bind_sampled_image(0, 0, _visbuf, NearestClamp)
-			   .bind_storage_buffer(0, 1, _triangles.indices)
-			   .bind_storage_buffer(0, 2, _triangles.instances)
-			   .bind_storage_buffer(0, 3, _frame.models.meshlets)
-			   .bind_storage_buffer(0, 4, _frame.models.materials)
-			   .bind_storage_buffer(0, 5, result.counts)
-			   .bind_storage_buffer(0, 6, result.lists)
-			   .bind_compute_pipeline("visibility/worklist");
+			cmd.bind_compute_pipeline("visibility/worklist")
+			   .bind_buffer(0, 0, "meshlets")
+			   .bind_buffer(0, 1, "materials")
+			   .bind_buffer(0, 2, "instances")
+			   .bind_buffer(0, 3, "indices")
+			   .bind_image(0, 4, "visibility")
+			   .bind_buffer(0, 5, "counts")
+			   .bind_buffer(0, 6, "lists");
 			
-			cmd.specialize_constants(0, uintFromuint16(_visbuf.size()));
-			cmd.specialize_constants(1, ListCount);
+			cmd.specialize_constants(0, _extent.x());
+			cmd.specialize_constants(1, _extent.y());
+			cmd.specialize_constants(2, tileArea.x());
+			cmd.specialize_constants(3, tileArea.y());
+			cmd.specialize_constants(4, ListCount);
 			
-			cmd.dispatch_invocations(_visbuf.size().x(), _visbuf.size().y());
+			cmd.dispatch_invocations(_extent.x(), _extent.y());
 			
-		}});
+		},
+	});
 	
-	return result;
+	counts = vuk::Future(rg, "counts/final");
+	lists = vuk::Future(rg, "lists/final");
 	
 }
-*/
+
+GET_SHADER(visibility_worklist_cs);
+void Worklist::compile() {
+	
+	if (m_compiled) return;
+	auto& ctx = *s_vulkan->context;
+	
+	auto worklistPci = vuk::PipelineBaseCreateInfo();
+	ADD_SHADER(worklistPci, visibility_worklist_cs, "visibility/worklist.cs.hlsl");
+	ctx.create_named_pipeline("visibility/worklist", worklistPci);
+	
+	m_compiled = true;
+	
+}
+
 }

@@ -10,6 +10,15 @@ struct Command {
 	uint firstInstance;
 };
 
+struct Material {
+	float4 color;
+	float3 emissive;
+	uint id;
+	float metalness;
+	float roughness;
+	float2 pad0;
+};
+
 struct Meshlet {
 	uint indexOffset;
 	uint indexCount;

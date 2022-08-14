@@ -89,7 +89,6 @@ void main() {
 	if (any(notEqual(lid, uint2(0))))
 		return;
 	
-	uint flatGroupSize = gl_WorkGroupSize.x * gl_WorkGroupSize.y;
 	uint tileCount = gl_NumWorkGroups.x * gl_NumWorkGroups.y;
 	
 	for (uint i = 0; i < ListCount; i += 1) {
