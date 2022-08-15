@@ -38,6 +38,14 @@ struct Worklist {
 	
 	Worklist(vuk::Allocator&, ModelBuffer&, InstanceList&, TriangleList&, Visibility&, uint2 extent);
 	
+	// Return the offset into the counts buffer for a given material type
+	auto countsOffset(Material::Type type) -> uint 
+	{ return +type * sizeof(uint4); }
+	
+	// Return the offset into the lists buffer for a given material type
+	auto listsOffset(Material::Type type) -> uint
+	{ return tileArea.x() * tileArea.y() * +type; }
+	
 	// Build required shaders; optional
 	static void compile();
 	

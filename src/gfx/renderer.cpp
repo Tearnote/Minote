@@ -14,6 +14,7 @@
 #include "gfx/effects/instanceList.hpp"
 #include "gfx/effects/visibility.hpp"
 #include "gfx/effects/tonemap.hpp"
+#include "gfx/effects/shade.hpp"
 #include "gfx/effects/bloom.hpp"
 #include "gfx/effects/sky.hpp"
 #include "gfx/util.hpp"
@@ -152,10 +153,13 @@ void Renderer::executeRenderGraph() try {
 	if (m_impl->m_skyDebug) m_impl->m_sky.drawImguiDebug("Sky");
 	auto screenSky = m_impl->m_sky.draw(screen, worklist, *m_impl->m_atmosphere, skyView, m_camera);
 	
+	// Object rendering
+	auto screenComplete = Shade::flat(worklist, m_models, instances, visibility, triangles, screenSky);
+	
 	// Postprocessing
 	ImGui::Selectable("Bloom", &m_impl->m_bloomDebug);
 	if (m_impl->m_bloomDebug) m_impl->m_bloom.drawImguiDebug("Bloom");
-	auto screenBloom = m_impl->m_bloom.apply(screenSky);
+	auto screenBloom = m_impl->m_bloom.apply(screenComplete);
 	
 	ImGui::Selectable("Tonemap", &m_impl->m_tonemapDebug);
 	if (m_impl->m_tonemapDebug) m_impl->m_tonemap.drawImguiDebug("Tonemap");

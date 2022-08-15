@@ -18,7 +18,8 @@ set(SHADER_SOURCES
 	sky/genMultiScattering.cs.hlsl
 	sky/genTransmittance.cs.hlsl
 	sky/genView.cs.hlsl
-	sky/draw.cs.hlsl)
+	sky/draw.cs.hlsl
+	shadeFlat.cs.hlsl)
 
 # Stage 1: Compile HLSL to SPIR-V
 foreach(SHADER_SOURCE ${SHADER_SOURCES})

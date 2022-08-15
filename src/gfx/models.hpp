@@ -17,7 +17,7 @@ namespace minote {
 struct Material {
 	enum struct Type: uint {
 		None = 0, // Invalid
-		PBR = 1,
+		Flat = 1,
 		Count
 	};
 	

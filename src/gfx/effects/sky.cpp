@@ -287,9 +287,9 @@ auto Sky::draw(Texture2D<float4> _target, Worklist& _worklist, Atmosphere& _atmo
 			auto targetSize = target.extent.extent;
 			cmd.specialize_constants(2, targetSize.width);
 			cmd.specialize_constants(3, targetSize.height);
-			cmd.specialize_constants(4, _worklist.tileArea.x() * _worklist.tileArea.y() * +Material::Type::None);
+			cmd.specialize_constants(4, _worklist.listsOffset(Material::Type::None));
 			
-			cmd.dispatch_indirect(cmd.get_resource_buffer("counts")->add_offset(+Material::Type::None * sizeof(uint4)));
+			cmd.dispatch_indirect(cmd.get_resource_buffer("counts")->add_offset(_worklist.countsOffset(Material::Type::None)));
 			
 		},
 	});

@@ -32,7 +32,7 @@ void ModelList::addModel(string_view _name, span<char const> _model) {
 	for (auto i: iota(0u, materialCount)) {
 		
 		auto& material = m_materials.emplace_back();
-		material.type = Material::Type::PBR;
+		material.type = Material::Type::Flat;
 		
 		mpack_expect_map_match(&in, 4);
 		
@@ -64,7 +64,7 @@ void ModelList::addModel(string_view _name, span<char const> _model) {
 	// Safety fallback
 	if (materialCount == 0) {
 		auto& material = m_materials.emplace_back();
-		material.type = Material::Type::PBR;
+		material.type = Material::Type::Flat;
 		material.color = {1.0f, 1.0f, 1.0f, 1.0f};
 		material.emissive = {0.0f, 0.0f, 0.0f};
 		material.metalness = 0.0f;

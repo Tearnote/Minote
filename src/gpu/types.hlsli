@@ -10,6 +10,11 @@ struct Command {
 	uint firstInstance;
 };
 
+// Values for Material::id
+static const uint MaterialNone = 0;
+static const uint MaterialFlat = 1;
+static const uint MaterialConst = 2;
+
 struct Material {
 	float4 color;
 	float3 emissive;
