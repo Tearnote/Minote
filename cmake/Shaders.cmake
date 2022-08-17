@@ -19,7 +19,8 @@ set(SHADER_SOURCES
 	sky/genTransmittance.cs.hlsl
 	sky/genView.cs.hlsl
 	sky/draw.cs.hlsl
-	shadeFlat.cs.hlsl)
+	shadeFlat.cs.hlsl
+	spd.cs.hlsl)
 
 # Stage 1: Compile HLSL to SPIR-V
 foreach(SHADER_SOURCE ${SHADER_SOURCES})
@@ -39,6 +40,7 @@ foreach(SHADER_SOURCE ${SHADER_SOURCES})
 		COMMAND $ENV{VULKAN_SDK}/Bin/dxc
 			-HV 2021 -T ${SHADER_PROFILE} -spirv -fspv-target-env=vulkan1.3
 			-I ${PROJECT_SOURCE_DIR}/${SHADER_PREFIX}
+			-I ${spd_SOURCE_DIR}/ffx-spd
 			-Fo ${SHADER_OUTPUT}
 			-MF ${SHADER_OUTPUT}.d
 			${SHADER_INPUT}
@@ -47,6 +49,7 @@ foreach(SHADER_SOURCE ${SHADER_SOURCES})
 			-HV 2021 -T ${SHADER_PROFILE} -spirv -fspv-target-env=vulkan1.3
 			-O3 "$<$<CONFIG:Debug,RelWithDebInfo>:-Zi>"
 			-I ${PROJECT_SOURCE_DIR}/${SHADER_PREFIX}
+			-I ${spd_SOURCE_DIR}/ffx-spd
 			-Fo ${SHADER_OUTPUT}
 			${SHADER_INPUT}
 		DEPFILE ${SHADER_OUTPUT}.d

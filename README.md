@@ -41,4 +41,5 @@ are self-explanatory; `RelWithDebInfo` is designed for CPU and GPU profiling.
 - [`MPack`](https://github.com/ludocode/mpack) (MIT)
 - [`meshoptimizer`](https://github.com/zeux/meshoptimizer) (MIT)
 - [`ìncbin`](https://github.com/graphitemaster/incbin) (Unlicense)
+- [`SPD`](https://github.com/GPUOpen-Effects/FidelityFX-SPD) (MIT)
 - Smaller code snippets attributed inline

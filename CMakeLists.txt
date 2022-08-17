@@ -56,18 +56,14 @@ add_executable(Minote
 	src/tools/modelSchema.hpp
 	src/sys/vulkan.hpp src/sys/vulkan.cpp
 	src/sys/system.hpp src/sys/system.cpp
-	# src/gfx/effects/cubeFilterCoeffs.hpp
 	src/gfx/effects/instanceList.hpp src/gfx/effects/instanceList.cpp
-	# src/gfx/effects/quadBuffer.hpp src/gfx/effects/quadBuffer.cpp
-	# src/gfx/effects/cubeFilter.hpp src/gfx/effects/cubeFilter.cpp
 	src/gfx/effects/visibility.hpp src/gfx/effects/visibility.cpp
 	src/gfx/effects/tonemap.hpp src/gfx/effects/tonemap.cpp
 	src/gfx/effects/bloom.hpp src/gfx/effects/bloom.cpp
 	src/gfx/effects/shade.hpp src/gfx/effects/shade.cpp
-	# src/gfx/effects/bvh.hpp src/gfx/effects/bvh.cpp
-	# src/gfx/effects/pbr.hpp src/gfx/effects/pbr.cpp
 	src/gfx/effects/sky.hpp src/gfx/effects/sky.cpp
-	# src/gfx/effects/hiz.hpp src/gfx/effects/hiz.cpp
+	src/gfx/effects/spd.hpp src/gfx/effects/spd.cpp
+	src/gfx/effects/hiz.hpp src/gfx/effects/hiz.cpp
 	src/gfx/samplers.hpp
 	src/gfx/renderer.hpp src/gfx/renderer.cpp
 	src/gfx/resource.hpp
@@ -121,6 +117,7 @@ target_link_libraries(Minote PRIVATE itlib)
 target_link_libraries(Minote PRIVATE mpack)
 target_link_libraries(Minote PRIVATE volk)
 target_link_libraries(Minote PRIVATE gcem)
+target_link_libraries(Minote PRIVATE spd)
 target_link_libraries(Minote PRIVATE pcg)
 target_link_libraries(Minote PRIVATE vuk)
 if(WIN32)

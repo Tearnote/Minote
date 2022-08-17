@@ -147,3 +147,12 @@ add_library(incbin
 target_compile_definitions(incbin PUBLIC INCBIN_PREFIX=g_)
 target_compile_definitions(incbin PUBLIC INCBIN_STYLE=INCBIN_STYLE_SNAKE)
 target_include_directories(incbin PUBLIC ${incbin_SOURCE_DIR})
+
+FetchContent_Declare(spd
+	GIT_REPOSITORY https://github.com/GPUOpen-Effects/FidelityFX-SPD
+	GIT_TAG 7c796c6d9fa6a9439e3610478148cfd742d97daf)
+FetchContent_MakeAvailable(spd)
+add_library(spd INTERFACE
+	${spd_SOURCE_DIR}/ffx-spd/ffx_a.h
+	${spd_SOURCE_DIR}/ffx-spd/ffx_spd.h)
+target_include_directories(spd INTERFACE ${spd_SOURCE_DIR}/ffx-spd)

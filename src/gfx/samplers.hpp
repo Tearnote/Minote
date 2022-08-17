@@ -43,4 +43,15 @@ inline auto const MinClamp = vuk::SamplerCreateInfo{
 	.addressModeU = vuk::SamplerAddressMode::eClampToEdge,
 	.addressModeV = vuk::SamplerAddressMode::eClampToEdge };
 
+inline auto const MaxClampRMCI = VkSamplerReductionModeCreateInfo{
+	.sType = VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO,
+	.reductionMode = VK_SAMPLER_REDUCTION_MODE_MAX };
+
+inline auto const MaxClamp = vuk::SamplerCreateInfo{
+	.pNext = &MaxClampRMCI,
+	.magFilter = vuk::Filter::eLinear,
+	.minFilter = vuk::Filter::eLinear,
+	.addressModeU = vuk::SamplerAddressMode::eClampToEdge,
+	.addressModeV = vuk::SamplerAddressMode::eClampToEdge };
+
 }

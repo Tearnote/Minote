@@ -16,6 +16,7 @@
 #include "gfx/effects/tonemap.hpp"
 #include "gfx/effects/shade.hpp"
 #include "gfx/effects/bloom.hpp"
+#include "gfx/effects/spd.hpp"
 #include "gfx/effects/sky.hpp"
 #include "gfx/util.hpp"
 
@@ -128,7 +129,7 @@ void Renderer::executeRenderGraph() try {
 		.extent = vuk::Dimension3D::absolute(m_camera.viewport.x(), m_camera.viewport.y()),
 		.format = vuk::Format::eR16G16B16A16Sfloat,
 		.sample_count = vuk::Samples::e1,
-		.level_count = 1,
+		.level_count = mipmapCount(max(m_camera.viewport.x(), m_camera.viewport.y())),
 		.layer_count = 1,
 	}, vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.0f));
 	auto screen = vuk::Future(rg, "screen");
@@ -155,11 +156,12 @@ void Renderer::executeRenderGraph() try {
 	
 	// Object rendering
 	auto screenComplete = Shade::flat(worklist, m_models, instances, visibility, triangles, screenSky);
+	auto screenMip = SPD::apply(screenComplete, SPD::ReductionType::Min);
 	
 	// Postprocessing
 	ImGui::Selectable("Bloom", &m_impl->m_bloomDebug);
 	if (m_impl->m_bloomDebug) m_impl->m_bloom.drawImguiDebug("Bloom");
-	auto screenBloom = m_impl->m_bloom.apply(screenComplete);
+	auto screenBloom = m_impl->m_bloom.apply(screenMip);
 	
 	ImGui::Selectable("Tonemap", &m_impl->m_tonemapDebug);
 	if (m_impl->m_tonemapDebug) m_impl->m_tonemap.drawImguiDebug("Tonemap");
@@ -170,7 +172,6 @@ void Renderer::executeRenderGraph() try {
 	
 	// Copy to swapchain
 	rg = std::make_shared<vuk::RenderGraph>("main");
-	rg->attach_in("worklist", worklist.lists); // Inlined for testing
 	rg->attach_in("screen/final", screenFinal);
 	rg->attach_swapchain("swapchain", s_vulkan->swapchain);
 	rg->add_pass({
