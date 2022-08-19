@@ -26,7 +26,7 @@ auto SPD::apply(Texture2D<float> _source, ReductionType _type) -> Texture2D<floa
 			
 			auto source = *cmd.get_resource_image_attachment("source");
 			auto sourceSize = source.extent.extent;
-			auto mipCount = mipmapCount(max(sourceSize.width, sourceSize.height));
+			auto mipCount = source.level_count;
 			ASSERT(mipCount <= 13);
 			auto sourceMips = array<vuk::ImageAttachment, 13>();
 			for (auto i: iota(0u, mipCount)) {
@@ -58,11 +58,14 @@ auto SPD::apply(Texture2D<float> _source, ReductionType _type) -> Texture2D<floa
 			
 			cmd.specialize_constants(0, mipCount - 1);
 			cmd.specialize_constants(1, dispatchSize.x() * dispatchSize.y());
-			cmd.specialize_constants(2, 1.0f / float(sourceSize.width));
-			cmd.specialize_constants(3, 1.0f / float(sourceSize.height));
-			cmd.specialize_constants(4, 1);
+			cmd.specialize_constants(2, sourceSize.width);
+			cmd.specialize_constants(3, sourceSize.height);
+			cmd.specialize_constants(4,
+				sourceSize.width == sourceSize.height &&
+				(sourceSize.width & (sourceSize.width - 1)) == 0 // Clever bitwise power-of-two check
+				? 1u : 0u);
 			cmd.specialize_constants(5, +_type);
-			cmd.specialize_constants(6, 0); //TODO detect sRGB format
+			cmd.specialize_constants(6, vuk::is_format_srgb(source.format)? 1u : 0u);
 			
 			cmd.dispatch(dispatchSize.x(), dispatchSize.y());
 			

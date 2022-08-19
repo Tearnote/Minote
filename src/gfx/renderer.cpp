@@ -156,7 +156,7 @@ void Renderer::executeRenderGraph() try {
 	
 	// Object rendering
 	auto screenComplete = Shade::flat(worklist, m_models, instances, visibility, triangles, screenSky);
-	auto screenMip = SPD::apply(screenComplete, SPD::ReductionType::Min);
+	auto screenMip = SPD::apply(screenComplete, SPD::ReductionType::Avg);
 	
 	// Postprocessing
 	ImGui::Selectable("Bloom", &m_impl->m_bloomDebug);

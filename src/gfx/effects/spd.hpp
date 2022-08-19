@@ -6,7 +6,7 @@ namespace minote {
 
 struct SPD {
 	
-	enum struct ReductionType {
+	enum struct ReductionType: uint {
 		Avg = 0,
 		Min = 1,
 		Max = 2,
