@@ -52,7 +52,7 @@ auto SPD::apply(Texture2D<float> _source, ReductionType _type) -> Texture2D<floa
 			
 			cmd.bind_compute_pipeline("spd/apply")
 			   .bind_image(0, 0, sourceMips[0], vuk::ImageLayout::eGeneral).bind_sampler(0, 0, sampler);
-			*cmd.map_scratch_uniform_binding<uint>(0, 1) = 0;
+			*cmd.map_scratch_buffer<uint>(0, 1) = 0;
 			for (auto i: iota(1u, 13u))
 				cmd.bind_image(0, i+1, sourceMips[min(i, mipCount-1)], vuk::ImageLayout::eGeneral);
 			

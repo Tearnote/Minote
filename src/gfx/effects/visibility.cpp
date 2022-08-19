@@ -64,7 +64,7 @@ Visibility::Visibility(vuk::Allocator& _allocator, ModelBuffer& _models,
 				   .depthWriteEnable = true,
 				   .depthCompareOp = vuk::CompareOp::eGreater,
 			   })
-			   .bind_index_buffer(*cmd.get_resource_buffer("indices"), vuk::IndexType::eUint32)
+			   .bind_index_buffer("indices", vuk::IndexType::eUint32)
 			   .bind_buffer(0, 0, "vertIndices")
 			   .bind_buffer(0, 1, "vertices")
 			   .bind_buffer(0, 2, "meshlets")
@@ -73,7 +73,7 @@ Visibility::Visibility(vuk::Allocator& _allocator, ModelBuffer& _models,
 			
 			cmd.push_constants(vuk::ShaderStageFlagBits::eVertex, 0, _viewProjection);
 			
-			cmd.draw_indexed_indirect(1, *cmd.get_resource_buffer("command"));
+			cmd.draw_indexed_indirect(1, "command");
 			
 		}});
 	

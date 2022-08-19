@@ -21,7 +21,7 @@ set(VUK_USE_SHADERC OFF CACHE BOOL "")
 set(VUK_USE_DXC OFF CACHE BOOL "")
 FetchContent_Declare(vuk
 	GIT_REPOSITORY https://github.com/martty/vuk
-	GIT_TAG 21bca25c269734afa9dc091b6d4819589cb43de9)
+	GIT_TAG 2cb54a11d002583afcdea099d82f345373f432ec)
 FetchContent_MakeAvailable(vuk)
 target_compile_definitions(vuk PUBLIC VUK_CUSTOM_VULKAN_HEADER="volk.h")
 target_link_libraries(vuk PRIVATE volk)
@@ -149,8 +149,8 @@ target_compile_definitions(incbin PUBLIC INCBIN_STYLE=INCBIN_STYLE_SNAKE)
 target_include_directories(incbin PUBLIC ${incbin_SOURCE_DIR})
 
 FetchContent_Declare(spd
-	GIT_REPOSITORY https://github.com/GPUOpen-Effects/FidelityFX-SPD
-	GIT_TAG 7c796c6d9fa6a9439e3610478148cfd742d97daf)
+	GIT_REPOSITORY https://github.com/jeremyong/FidelityFX-SPD
+	GIT_TAG c161d38879ec149ccb884bde611987e77ff0a293)
 FetchContent_MakeAvailable(spd)
 add_library(spd INTERFACE
 	${spd_SOURCE_DIR}/ffx-spd/ffx_a.h
