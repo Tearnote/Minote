@@ -63,7 +63,6 @@ add_executable(Minote
 	src/gfx/effects/bloom.hpp src/gfx/effects/bloom.cpp
 	src/gfx/effects/shade.hpp src/gfx/effects/shade.cpp
 	src/gfx/effects/sky.hpp src/gfx/effects/sky.cpp
-	src/gfx/effects/spd.hpp src/gfx/effects/spd.cpp
 	src/gfx/effects/hiz.hpp src/gfx/effects/hiz.cpp
 	src/gfx/samplers.hpp
 	src/gfx/renderer.hpp src/gfx/renderer.cpp

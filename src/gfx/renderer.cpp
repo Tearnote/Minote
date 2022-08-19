@@ -4,6 +4,7 @@
 
 #include <optional>
 #include "imgui.h"
+#include "vuk/partials/SPD.hpp"
 #include "vuk/AllocatorHelpers.hpp"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
@@ -16,7 +17,6 @@
 #include "gfx/effects/tonemap.hpp"
 #include "gfx/effects/shade.hpp"
 #include "gfx/effects/bloom.hpp"
-#include "gfx/effects/spd.hpp"
 #include "gfx/effects/sky.hpp"
 #include "gfx/util.hpp"
 
@@ -156,7 +156,7 @@ void Renderer::executeRenderGraph() try {
 	
 	// Object rendering
 	auto screenComplete = Shade::flat(worklist, m_models, instances, visibility, triangles, screenSky);
-	auto screenMip = SPD::apply(screenComplete, SPD::ReductionType::Avg);
+	auto screenMip = vuk::generate_mips_spd(*s_vulkan->context, screenComplete);
 	
 	// Postprocessing
 	ImGui::Selectable("Bloom", &m_impl->m_bloomDebug);
