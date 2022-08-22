@@ -19,6 +19,7 @@ set(SHADER_SOURCES
 	sky/genTransmittance.cs.hlsl
 	sky/genView.cs.hlsl
 	sky/draw.cs.hlsl
+	hiz/blit.cs.hlsl
 	shadeFlat.cs.hlsl)
 
 # Stage 1: Compile HLSL to SPIR-V

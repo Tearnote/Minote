@@ -9,8 +9,11 @@ struct HiZ {
 	
 	constexpr static auto HiZFormat = vuk::Format::eR32Sfloat;
 	
+	// Depth pyramid; always a POT square
+	Texture2D<float> hiz;
+	
 	// Generate a HiZ image from a depth buffer
-	static auto create(Texture2D<float> depth) -> Texture2D<float>;
+	HiZ(Texture2D<float> depth);
 	
 	// Compile required shaders; optional
 	static void compile();

@@ -18,6 +18,7 @@
 #include "gfx/effects/shade.hpp"
 #include "gfx/effects/bloom.hpp"
 #include "gfx/effects/sky.hpp"
+#include "gfx/effects/hiz.hpp"
 #include "gfx/util.hpp"
 
 namespace minote {
@@ -125,13 +126,13 @@ void Renderer::executeRenderGraph() try {
 	
 	// Initial resources
 	auto rg = std::make_shared<vuk::RenderGraph>("init");
-	rg->attach_and_clear_image("screen", vuk::ImageAttachment{
+	rg->attach_image("screen", vuk::ImageAttachment{
 		.extent = vuk::Dimension3D::absolute(m_camera.viewport.x(), m_camera.viewport.y()),
 		.format = vuk::Format::eR16G16B16A16Sfloat,
 		.sample_count = vuk::Samples::e1,
-		.level_count = mipmapCount(max(m_camera.viewport.x(), m_camera.viewport.y())),
+		.level_count = 1,
 		.layer_count = 1,
-	}, vuk::ClearColor(0.0f, 0.0f, 0.0f, 1.0f));
+	});
 	auto screen = vuk::Future(rg, "screen");
 	
 	// Instance processing
@@ -144,6 +145,7 @@ void Renderer::executeRenderGraph() try {
 		triangles, m_camera.viewport, m_camera.viewProjection());
 	auto worklist = Worklist(frameAllocator(), m_models, instances, triangles,
 		visibility, m_camera.viewport);
+	auto hiz = HiZ(visibility.depth);
 	
 	// Sky rendering
 	if (!m_impl->m_atmosphere.has_value())
@@ -156,12 +158,11 @@ void Renderer::executeRenderGraph() try {
 	
 	// Object rendering
 	auto screenComplete = Shade::flat(worklist, m_models, instances, visibility, triangles, screenSky);
-	auto screenMip = vuk::generate_mips_spd(*s_vulkan->context, screenComplete);
 	
 	// Postprocessing
 	ImGui::Selectable("Bloom", &m_impl->m_bloomDebug);
 	if (m_impl->m_bloomDebug) m_impl->m_bloom.drawImguiDebug("Bloom");
-	auto screenBloom = m_impl->m_bloom.apply(screenMip);
+	auto screenBloom = m_impl->m_bloom.apply(screenComplete);
 	
 	ImGui::Selectable("Tonemap", &m_impl->m_tonemapDebug);
 	if (m_impl->m_tonemapDebug) m_impl->m_tonemap.drawImguiDebug("Tonemap");
@@ -172,6 +173,7 @@ void Renderer::executeRenderGraph() try {
 	
 	// Copy to swapchain
 	rg = std::make_shared<vuk::RenderGraph>("main");
+	rg->attach_in("hiz", hiz.hiz); // For testing
 	rg->attach_in("screen/final", screenFinal);
 	rg->attach_swapchain("swapchain", s_vulkan->swapchain);
 	rg->add_pass({
