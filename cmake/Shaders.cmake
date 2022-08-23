@@ -26,7 +26,7 @@ set(SHADER_SOURCES
 foreach(SHADER_SOURCE ${SHADER_SOURCES})
 	set(SHADER_INPUT ${PROJECT_SOURCE_DIR}/${SHADER_PREFIX}/${SHADER_SOURCE})
 	string(REGEX REPLACE [[.hlsl$]] "" SHADER_SOURCE_WLE ${SHADER_SOURCE})
-	set(SHADER_OUTPUT ${PROJECT_BINARY_DIR}/$<CONFIG>/generated/spv/${SHADER_SOURCE_WLE}.spv)
+	set(SHADER_OUTPUT ${PROJECT_BINARY_DIR}/generated/spv/${SHADER_SOURCE_WLE}.spv)
 	get_filename_component(SHADER_OUTPUT_DIR ${SHADER_OUTPUT} DIRECTORY)
 	
 	get_filename_component(SHADER_TYPE ${SHADER_SOURCE_WLE} LAST_EXT)
@@ -59,18 +59,27 @@ endforeach()
 # Stage 2: Generate wrapper .c files to inline the SPIR-V
 foreach(SHADER_SOURCE ${SHADER_SOURCES})
 	string(REGEX REPLACE [[.hlsl$]] "" SHADER_SOURCE_WLE ${SHADER_SOURCE})
-	set(SHADER_OUTPUT ${PROJECT_BINARY_DIR}/$<CONFIG>/generated/spv/${SHADER_SOURCE_WLE}.spv)
+	set(SHADER_OUTPUT ${PROJECT_BINARY_DIR}/generated/spv/${SHADER_SOURCE_WLE}.spv)
 	set(SHADER_WRAPPER ${SHADER_OUTPUT}.c)
 	string(REGEX REPLACE [[\.|/]] "_" SHADER_IDENT ${SHADER_SOURCE_WLE})
 	
 	add_custom_command(
 		OUTPUT ${SHADER_WRAPPER}
-		COMMAND ${CMAKE_COMMAND} -E echo "#include \"incbin.h\"" > ${SHADER_WRAPPER}
+		COMMAND ${CMAKE_COMMAND} -E echo "#include \"incbin.h\""                            > ${SHADER_WRAPPER}
 		COMMAND ${CMAKE_COMMAND} -E echo "INCBIN(${SHADER_IDENT}, \"${SHADER_OUTPUT}\")\;" >> ${SHADER_WRAPPER}
 		DEPENDS ${SHADER_OUTPUT}
 		VERBATIM COMMAND_EXPAND_LISTS)
 	list(APPEND SHADER_WRAPPERS ${SHADER_WRAPPER})
 endforeach()
 
-add_library(MinoteShaders STATIC ${SHADER_WRAPPERS})
+# Stage 3: Merge all wrappers into a single source file
+set(SHADER_WRAPPERS_COMBINED ${PROJECT_BINARY_DIR}/generated/spv/shaders.c)
+add_custom_command(
+	OUTPUT ${SHADER_WRAPPERS_COMBINED}
+	COMMAND incbin-shell ${SHADER_WRAPPERS} -o ${SHADER_WRAPPERS_COMBINED} -p g_ -Ssnakecase
+	DEPENDS incbin-shell
+	DEPENDS ${SHADER_WRAPPERS}
+	VERBATIM COMMAND_EXPAND_LISTS)
+
+add_library(MinoteShaders STATIC ${SHADER_WRAPPERS_COMBINED})
 target_link_libraries(MinoteShaders PRIVATE incbin)

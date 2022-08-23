@@ -7,8 +7,16 @@
 #include <thread>
 #include <chrono>
 #ifdef THREAD_DEBUG
-#include <pthread.h>
+#ifndef NOMINMAX
+#define NOMINMAX
 #endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#include <processthreadsapi.h>
+#endif
+#include "SDL.h" // For SDL_main
 #include "SDL_events.h"
 #include "util/types.hpp"
 #include "util/math.hpp"
@@ -41,7 +49,7 @@ static auto windowResize(void*, SDL_Event* _e) -> int {
 
 auto main(int, char*[]) -> int try {
 #ifdef THREAD_DEBUG
-	pthread_setname_np(pthread_self(), "main");
+	SetThreadDescription(GetCurrentThread(), L"main");
 #endif
 	
 	// Initialize logging

@@ -42,7 +42,6 @@ FetchContent_Declare(assert
 	GIT_REPOSITORY https://github.com/jeremy-rifkin/libassert
 	GIT_TAG 599a885a57050cd100ed771a189649ad7a603d4f)
 FetchContent_MakeAvailable(assert)
-target_link_libraries(assert PRIVATE dbghelp) # library incorrectly assumes only MSVC needs it
 
 set(OPT_DEF_LIBC ON CACHE BOOL "")
 set(VIDEO_OPENGLES OFF CACHE BOOL "")
@@ -83,7 +82,7 @@ add_library(sqlite
 	${sqlite_SOURCE_DIR}/sqlite3ext.h)
 target_include_directories(sqlite PUBLIC ${sqlite_SOURCE_DIR})
 add_executable(sqlite-shell
-${sqlite_SOURCE_DIR}/shell.c)
+	${sqlite_SOURCE_DIR}/shell.c)
 target_link_libraries(sqlite-shell PRIVATE sqlite)
 
 FetchContent_Declare(cgltf
@@ -129,7 +128,7 @@ FetchContent_Declare(mpack
 FetchContent_MakeAvailable(mpack)
 add_library(mpack
 	${mpack_SOURCE_DIR}/src/mpack/mpack.h ${mpack_SOURCE_DIR}/src/mpack/mpack.c)
-# Force C++-style handling of inline functions. Fixes link-time error with GCC
+# Force C++-style handling of inline functions (for compilers that care)
 set_property(SOURCE ${mpack_SOURCE_DIR}/src/mpack/mpack.c PROPERTY LANGUAGE CXX)
 target_include_directories(mpack PUBLIC ${mpack_SOURCE_DIR}/src)
 
@@ -147,6 +146,9 @@ add_library(incbin
 target_compile_definitions(incbin PUBLIC INCBIN_PREFIX=g_)
 target_compile_definitions(incbin PUBLIC INCBIN_STYLE=INCBIN_STYLE_SNAKE)
 target_include_directories(incbin PUBLIC ${incbin_SOURCE_DIR})
+add_executable(incbin-shell
+	${incbin_SOURCE_DIR}/incbin.h ${incbin_SOURCE_DIR}/incbin.c)
+target_link_libraries(incbin-shell PRIVATE incbin)
 
 FetchContent_Declare(spd
 	GIT_REPOSITORY https://github.com/jeremyong/FidelityFX-SPD

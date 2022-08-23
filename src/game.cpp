@@ -4,7 +4,14 @@
 
 #include <exception>
 #ifdef THREAD_DEBUG
-#include <pthread.h>
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#include <processthreadsapi.h>
 #endif
 #include "util/vector.hpp"
 #include "util/math.hpp"
@@ -149,7 +156,7 @@ Game::~Game() = default;
 
 void Game::run() try {
 #ifdef THREAD_DEBUG
-	pthread_setname_np(pthread_self(), "game");
+	SetThreadDescription(GetCurrentThread(), L"game");
 #endif
 	
 	m_impl->loadAssets(Assets_p);

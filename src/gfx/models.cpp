@@ -84,7 +84,7 @@ void ModelList::addModel(string_view _name, span<char const> _model) {
 	model.meshletCount += meshletCount;
 	for (auto i: iota(0u, meshletCount)) {
 		
-		mpack_expect_map_match(&in, 8);
+		mpack_expect_map_match(&in, 6);
 		
 		auto& meshlet = m_meshlets.emplace_back();
 		

@@ -446,8 +446,7 @@ int main(int argc, char const* argv[]) try {
 		mpack_start_array(&out, model.meshlets.size());
 		for (auto& meshlet: model.meshlets) {
 			
-			mpack_start_map(&out, 8);
-				
+			mpack_start_map(&out, 6);
 				mpack_write_cstr(&out, "materialIdx");
 				mpack_write_uint(&out, meshlet.materialIdx);
 				mpack_write_cstr(&out, "indexOffset");

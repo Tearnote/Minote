@@ -8,7 +8,6 @@
 #undef WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
-#include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <io.h>
@@ -99,18 +98,18 @@ void System::initConsole() {
 	int fdErr = _open_osfhandle(reinterpret_cast<intptr_t>(GetStdHandle(STD_ERROR_HANDLE)),  _O_WRONLY | _O_BINARY);
 	
 	if (fdOut) {
-		_dup2(fdOut, STDOUT_FILENO);
+		_dup2(fdOut, 1);
 		_close(fdOut);
-		SetStdHandle(STD_OUTPUT_HANDLE, reinterpret_cast<HANDLE>(_get_osfhandle(STDOUT_FILENO)));
+		SetStdHandle(STD_OUTPUT_HANDLE, reinterpret_cast<HANDLE>(_get_osfhandle(1)));
 	}
 	if (fdErr) {
-		_dup2(fdErr, STDERR_FILENO);
+		_dup2(fdErr, 2);
 		_close(fdErr);
-		SetStdHandle(STD_ERROR_HANDLE, reinterpret_cast<HANDLE>(_get_osfhandle(STDERR_FILENO)));
+		SetStdHandle(STD_ERROR_HANDLE, reinterpret_cast<HANDLE>(_get_osfhandle(2)));
 	}
 	
-	_dup2(_fileno(fdopen(STDOUT_FILENO, "wb")), _fileno(stdout));
-	_dup2(_fileno(fdopen(STDERR_FILENO, "wb")), _fileno(stderr));
+	_dup2(_fileno(fdopen(1, "wb")), _fileno(stdout));
+	_dup2(_fileno(fdopen(2, "wb")), _fileno(stderr));
 	
 	setvbuf(stdout, nullptr, _IONBF, 0);
 	setvbuf(stderr, nullptr, _IONBF, 0);

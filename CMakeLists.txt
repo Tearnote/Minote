@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.23)
 project(Minote
 	VERSION 0.0
 	DESCRIPTION "A personal realtime renderer project"
@@ -15,20 +15,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Global build settings
-add_compile_options("-march=x86-64;-mmmx;-msse;-msse2;-msse3;-mssse3;-msse4.1;-msse4.2;-mavx;-ffast-math")
-add_compile_options("$<$<CONFIG:Debug,RelWithDebInfo>:-g>")
-add_compile_options("$<$<CONFIG:RelWithDebInfo,Release>:-O3;-ffunction-sections;-Wl,--gc-sections>")
-add_compile_options("$<$<CONFIG:Release>:-s>")
-set(CMAKE_INTERPROCEDURAL_OPTIMIZATION "$<CONFIG:Release>")
-if(WIN32)
-	add_compile_options("-mwindows")
-endif()
-# Dynamic+lld for dev builds, static+ld for release
-# https://github.com/msys2/MINGW-packages/issues/12050
 set(BUILD_SHARED_LIBS OFF)
-add_link_options("-static-libgcc")
-add_link_options("$<$<CONFIG:Debug,RelWithDebInfo>:-fuse-ld=lld>")
-add_link_options("$<$<CONFIG:Release>:-static;-static-libstdc++>")
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug,RelWithDebInfo>:Debug>")
+string(REPLACE "/Zi" "/ZI" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
+string(REPLACE "/Zi" "/ZI" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+add_compile_options("/arch:AVX2;/fp:fast;/EHsc;/wd5105")
+add_compile_options("$<$<CONFIG:Debug>:/RTC1>")
+add_compile_options("$<$<CONFIG:Debug,RelWithDebInfo>:/JMC>")
+add_compile_options("$<$<CONFIG:RelWithDebInfo>:/Zi>")
+add_compile_options("$<$<CONFIG:RelWithDebInfo,Release>:/O2>")
+add_compile_options("$<$<CONFIG:Release>:/GL;/Gw>")
+add_link_options("$<$<CONFIG:Release>:/LTCG:STATUS>")
 # Communicate build type to the project
 add_compile_definitions("BUILD_TYPE=$<$<CONFIG:Debug>:BUILD_DEBUG>$<$<CONFIG:RelWithDebInfo>:BUILD_RELDEB>$<$<CONFIG:Release>:BUILD_RELEASE>")
 
@@ -104,9 +101,11 @@ target_include_directories(Minote PRIVATE src)
 # Libraries
 include(cmake/Dependencies.cmake)
 
+target_link_options(Minote PRIVATE "/SUBSYSTEM:WINDOWS")
+target_link_libraries(Minote PRIVATE SDL2::SDL2-static)
+target_link_libraries(Minote PRIVATE SDL2::SDL2main)
 target_link_libraries(Minote PRIVATE vk-bootstrap)
 target_link_libraries(Minote PRIVATE quill::quill)
-target_link_libraries(Minote PRIVATE SDL2-static)
 target_link_libraries(Minote PRIVATE robin_hood)
 target_link_libraries(Minote PRIVATE fmt::fmt)
 target_link_libraries(Minote PRIVATE incbin)

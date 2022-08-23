@@ -5,6 +5,7 @@ include(cmake/Dependencies.cmake)
 add_executable(Model_conv
 	src/tools/modelSchema.hpp
 	src/tools/modelConv.cpp)
+target_link_options(Model_conv PRIVATE "/SUBSYSTEM:CONSOLE")
 target_include_directories(Model_conv PRIVATE src)
 target_link_libraries(Model_conv PRIVATE meshoptimizer)
 target_link_libraries(Model_conv PRIVATE quill::quill)
@@ -16,7 +17,7 @@ target_link_libraries(Model_conv PRIVATE gcem)
 
 set(ASSETS_FILENAME assets.db)
 add_compile_definitions(ASSETS_P="${ASSETS_FILENAME}")
-set(ASSET_OUTPUT ${PROJECT_BINARY_DIR}/$<CONFIG>/${ASSETS_FILENAME})
+set(ASSET_OUTPUT ${PROJECT_BINARY_DIR}/${ASSETS_FILENAME})
 add_custom_command(
 	OUTPUT ${ASSET_OUTPUT}
 	COMMAND sqlite-shell ${ASSET_OUTPUT} "VACUUM"
@@ -35,15 +36,15 @@ add_custom_command(
 foreach(MODEL_PATH ${MODELS})
 	get_filename_component(MODEL_NAME ${MODEL_PATH} NAME_WLE)
 	add_custom_command(
-		OUTPUT ${PROJECT_BINARY_DIR}/$<CONFIG>/models/${MODEL_NAME}.model
-		COMMAND Model_conv ${PROJECT_SOURCE_DIR}/${MODEL_PATH} ${PROJECT_BINARY_DIR}/$<CONFIG>/models/${MODEL_NAME}.model
+		OUTPUT ${PROJECT_BINARY_DIR}/models/${MODEL_NAME}.model
+		COMMAND Model_conv ${PROJECT_SOURCE_DIR}/${MODEL_PATH} ${PROJECT_BINARY_DIR}/models/${MODEL_NAME}.model
 		DEPENDS ${PROJECT_SOURCE_DIR}/${MODEL_PATH}
 		DEPENDS Model_conv
 		VERBATIM COMMAND_EXPAND_LISTS)
 	add_custom_command(
 		OUTPUT ${ASSET_OUTPUT} APPEND
-		COMMAND sqlite-shell ${ASSET_OUTPUT} "INSERT OR REPLACE INTO ${MODELS_TABLE}(name, data) VALUES('${MODEL_NAME}', readfile('${PROJECT_BINARY_DIR}/$<CONFIG>/models/${MODEL_NAME}.model'))"
-		DEPENDS ${PROJECT_BINARY_DIR}/$<CONFIG>/models/${MODEL_NAME}.model
+		COMMAND sqlite-shell ${ASSET_OUTPUT} "INSERT OR REPLACE INTO ${MODELS_TABLE}(name, data) VALUES('${MODEL_NAME}', readfile('${PROJECT_BINARY_DIR}/models/${MODEL_NAME}.model'))"
+		DEPENDS ${PROJECT_BINARY_DIR}/models/${MODEL_NAME}.model
 		DEPENDS sqlite-shell
 		VERBATIM COMMAND_EXPAND_LISTS)
 endforeach()

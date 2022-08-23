@@ -9,6 +9,8 @@ doc/*
 # Editor config
 .idea/*
 .vscode/*
+.vs/*
+CMakeSettings.json
 
 # Internal notes
 reference/*
