@@ -8,7 +8,7 @@ add_executable(Model_conv
 target_link_options(Model_conv PRIVATE "/SUBSYSTEM:CONSOLE")
 target_include_directories(Model_conv PRIVATE src)
 target_link_libraries(Model_conv PRIVATE meshoptimizer)
-target_link_libraries(Model_conv PRIVATE quill::quill)
+target_link_libraries(Model_conv PRIVATE fmtlog)
 target_link_libraries(Model_conv PRIVATE assert)
 target_link_libraries(Model_conv PRIVATE itlib)
 target_link_libraries(Model_conv PRIVATE cgltf)

@@ -167,8 +167,8 @@ void Game::run() try {
 	
 } catch (std::exception const& e) {
 	
-	L_CRIT("Unhandled exception on game thread: {}", e.what());
-	L_CRIT("Cannot recover, shutting down. Please report this error to the developer");
+	L_ERROR("Unhandled exception on game thread: {}", e.what());
+	L_ERROR("Cannot recover, shutting down. Please report this error to the developer");
 	s_system->postQuitEvent();
 	
 }

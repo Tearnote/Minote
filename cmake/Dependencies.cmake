@@ -111,12 +111,15 @@ FetchContent_Declare(fmt
 	GIT_TAG 9.0.0)
 FetchContent_MakeAvailable(fmt)
 
-set(QUILL_FMT_EXTERNAL ON CACHE BOOL "")
-FetchContent_Declare(quill
-	GIT_REPOSITORY https://github.com/odygrd/quill
-	GIT_TAG v2.1.0)
-FetchContent_MakeAvailable(quill)
-target_link_libraries(quill PRIVATE fmt::fmt)
+FetchContent_Declare(fmtlog
+	GIT_REPOSITORY https://github.com/MengRao/fmtlog
+	GIT_TAG v2.2.0)
+FetchContent_Populate(fmtlog) # The CMakeLists of fmtlog is only configured for install, not include
+add_library(fmtlog INTERFACE ${fmtlog_SOURCE_DIR}/fmtlog.h ${fmtlog_SOURCE_DIR}/fmtlog-inl.h)
+target_include_directories(fmtlog INTERFACE ${fmtlog_SOURCE_DIR})
+target_compile_definitions(fmtlog INTERFACE FMTLOG_HEADER_ONLY)
+target_compile_definitions(fmtlog INTERFACE FMT_NOEXCEPT=noexcept)
+target_link_libraries(fmtlog INTERFACE fmt::fmt)
 
 FetchContent_Declare(gcem
 	GIT_REPOSITORY https://github.com/kthohr/gcem

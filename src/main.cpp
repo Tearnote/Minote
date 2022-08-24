@@ -53,10 +53,7 @@ auto main(int, char*[]) -> int try {
 #endif
 	
 	// Initialize logging
-#if SPAWN_CONSOLE
-	System::initConsole();
-#endif
-	Log::init(Log_p, LOG_LEVEL);
+	Log::init(Log_p/*, LOG_LEVEL*/);
 	L_INFO("Starting up {} {}.{}.{}", AppTitle, AppVersion[0], AppVersion[1], AppVersion[2]);
 	
 	// Initialize systems
@@ -87,8 +84,8 @@ auto main(int, char*[]) -> int try {
 	
 } catch (std::exception const& e) { // Top level exception handler
 	
-	L_CRIT("Unhandled exception on main thread: {}", e.what());
-	L_CRIT("Cannot recover, shutting down. Please report this error to the developer");
+	L_ERROR("Unhandled exception on main thread: {}", e.what());
+	L_ERROR("Cannot recover, shutting down. Please report this error to the developer");
 	return EXIT_FAILURE;
 	
 }

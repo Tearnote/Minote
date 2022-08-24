@@ -28,21 +28,14 @@
 #if BUILD_TYPE != BUILD_RELEASE
 #define THREAD_DEBUG
 #endif
-
+/*
 // Level of logging to file and/or console
 #if BUILD_TYPE != BUILD_RELEASE
 #define LOG_LEVEL quill::LogLevel::TraceL3
 #else
 #define LOG_LEVEL quill::LogLevel::Info
 #endif
-
-// Whether to spawn a console window for logging
-#if BUILD_TYPE != BUILD_RELEASE
-#define SPAWN_CONSOLE 1
-#else
-#define SPAWN_CONSOLE 0
-#endif
-
+*/
 // Whether Vulkan validation layers are enabled
 #if BUILD_TYPE == BUILD_DEBUG
 #define VK_VALIDATION 1
