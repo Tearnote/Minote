@@ -20,7 +20,7 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug,RelWithDebInfo>:De
 string(REPLACE "/Zi" "/ZI" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
 string(REPLACE "/Zi" "/ZI" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
 add_compile_options("/arch:AVX2;/fp:fast;/EHsc;/wd5105")
-add_compile_options("$<$<CONFIG:Debug>:/fsanitize=address>")
+add_compile_options("$<$<CONFIG:Debug>:/RTC1>")
 add_compile_options("$<$<CONFIG:Debug,RelWithDebInfo>:/JMC>")
 add_compile_options("$<$<CONFIG:RelWithDebInfo>:/Zi>")
 add_compile_options("$<$<CONFIG:RelWithDebInfo,Release>:/O2>")
