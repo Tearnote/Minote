@@ -40,6 +40,8 @@ HiZ::HiZ(Texture2D<float> _depth) {
 	rg->inference_rule("hiz",
 		[](vuk::InferenceContext const& ctx, vuk::ImageAttachment& ia) {
 			auto& d = ctx.get_image_attachment("depth");
+			if (d.extent.extent.width == 0)
+				return;
 			auto size = max(
 				nextPOT(d.extent.extent.width),
 				nextPOT(d.extent.extent.height));
