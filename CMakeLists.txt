@@ -24,8 +24,10 @@ add_compile_options("$<$<CONFIG:Debug>:/RTC1>")
 add_compile_options("$<$<CONFIG:Debug,RelWithDebInfo>:/JMC>")
 add_compile_options("$<$<CONFIG:RelWithDebInfo>:/Zi>")
 add_compile_options("$<$<CONFIG:RelWithDebInfo,Release>:/O2>")
-add_compile_options("$<$<CONFIG:Release>:/GL;/Gw>")
-add_link_options("$<$<CONFIG:Release>:/LTCG:STATUS>")
+add_compile_options("$<$<CONFIG:Release>:/Gw>")
+#TODO LTO commented out, pending VMA fix
+#add_compile_options("$<$<CONFIG:Release>:/GL>")
+#add_link_options("$<$<CONFIG:Release>:/LTCG>")
 # Communicate build type to the project
 add_compile_definitions("BUILD_TYPE=$<$<CONFIG:Debug>:BUILD_DEBUG>$<$<CONFIG:RelWithDebInfo>:BUILD_RELDEB>$<$<CONFIG:Release>:BUILD_RELEASE>")
 
