@@ -1,18 +1,9 @@
 #include "sys/system.hpp"
 
-#ifdef _WIN32
-#ifndef NOMINMAX
-#define NOMINMAX 1
-#endif
-#ifdef WIN32_LEAN_AND_MEAN
-#undef WIN32_LEAN_AND_MEAN
-#endif
 #include <timeapi.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <io.h>
-#endif
-
 #include "SDL_vulkan.h"
 #include "SDL_events.h"
 #include "SDL_timer.h"
@@ -38,12 +29,9 @@ System::System() {
 	
 	m_timerFrequency = SDL_GetPerformanceFrequency();
 	m_timerStart = SDL_GetPerformanceCounter();
-	
 	// Increase sleep timer resolution
-#ifdef _WIN32
 	if (timeBeginPeriod(1) != TIMERR_NOERROR)
 		throw runtime_error("Failed to initialize Windows timer");
-#endif
 	
 	L_DEBUG("System initialized");
 	
@@ -51,9 +39,7 @@ System::System() {
 
 System::~System() {
 	
-#ifdef _WIN32
 	timeEndPeriod(1);
-#endif
 	SDL_Quit();
 	L_DEBUG("System cleaned up");
 	
@@ -86,8 +72,6 @@ auto System::isQuitting() -> bool {
 
 void System::initConsole() {
 	
-#ifdef _WIN32 // Only Windows is supported right now
-	
 	// https://github.com/ocaml/ocaml/issues/9252#issuecomment-576383814
 	AllocConsole();
 	
@@ -116,8 +100,6 @@ void System::initConsole() {
 	
 	// Set console encoding to UTF-8
 	SetConsoleOutputCP(65001);
-	
-#endif
 	
 }
 

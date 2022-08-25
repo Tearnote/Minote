@@ -10,11 +10,7 @@ FetchContent_Declare(volk
 FetchContent_MakeAvailable(volk)
 target_compile_definitions(volk PUBLIC VK_NO_PROTOTYPES)
 target_include_directories(volk PUBLIC ${Vulkan_INCLUDE_DIRS})
-if(WIN32)
-	target_compile_definitions(volk PUBLIC VK_USE_PLATFORM_WIN32_KHR)
-else()
-	target_compile_definitions(volk PUBLIC VK_USE_PLATFORM_XCB_KHR)
-endif()
+target_compile_definitions(volk PUBLIC VK_USE_PLATFORM_WIN32_KHR)
 
 set(VUK_LINK_TO_LOADER OFF CACHE BOOL "")
 set(VUK_USE_SHADERC OFF CACHE BOOL "")
