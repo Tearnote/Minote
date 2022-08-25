@@ -110,7 +110,7 @@ auto Vulkan::createInstance() -> vkb::Instance {
 	auto instanceResult = vkb::InstanceBuilder()
 #if VK_VALIDATION
 		.enable_layer("VK_LAYER_KHRONOS_validation")
-		.add_validation_feature_enable(VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT)
+		//.add_validation_feature_enable(VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT) // Disabled due to false positives (yes, definitely)
 		.add_validation_feature_enable(VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT)
 		.set_debug_callback(debugCallback)
 		.set_debug_messenger_severity(
