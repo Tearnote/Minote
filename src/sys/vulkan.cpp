@@ -11,7 +11,7 @@
 
 namespace minote {
 
-#if VK_VALIDATION
+#ifdef VK_VALIDATION
 VKAPI_ATTR auto VKAPI_CALL debugCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT _severityCode,
 	VkDebugUtilsMessageTypeFlagsEXT _typeCode,
@@ -108,7 +108,7 @@ auto Vulkan::createSwapchain(uint2 _size, VkSwapchainKHR _old) -> vuk::Swapchain
 auto Vulkan::createInstance() -> vkb::Instance {
 	
 	auto instanceResult = vkb::InstanceBuilder()
-#if VK_VALIDATION
+#ifdef VK_VALIDATION
 		.enable_layer("VK_LAYER_KHRONOS_validation")
 		//.add_validation_feature_enable(VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT) // Disabled due to false positives (yes, definitely)
 		.add_validation_feature_enable(VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT)
@@ -121,7 +121,7 @@ auto Vulkan::createInstance() -> vkb::Instance {
 			VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
 			VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
 			VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
-#endif //VK_VALIDATION
+#endif
 		.set_app_name(AppTitle)
 		.set_engine_name("vuk")
 		.require_api_version(1, 3, 0)
@@ -150,9 +150,9 @@ auto Vulkan::createSurface(vkb::Instance& _instance, Window& _window) -> VkSurfa
 auto Vulkan::selectPhysicalDevice(vkb::Instance& _instance, VkSurfaceKHR _surface) -> vkb::PhysicalDevice {
 	
 		auto physicalDeviceFeatures = VkPhysicalDeviceFeatures{
-#if VK_VALIDATION
+#ifdef VK_VALIDATION
 		.robustBufferAccess = VK_TRUE,
-#endif //VK_VALIDATION
+#endif
 		.geometryShader = VK_TRUE, // gl_PrimitiveID requirement
 		.shaderStorageImageWriteWithoutFormat = VK_TRUE,
 	};
@@ -180,14 +180,14 @@ auto Vulkan::selectPhysicalDevice(vkb::Instance& _instance, VkSurfaceKHR _surfac
 		.set_required_features_12(physicalDeviceVulkan12Features)
 		.set_required_features_13(physicalDeviceVulkan13Features)
 		.add_required_extension("VK_KHR_synchronization2")
-#if VK_VALIDATION
+#ifdef VK_VALIDATION
 		.add_required_extension("VK_EXT_robustness2")
 		.add_required_extension_features(VkPhysicalDeviceRobustness2FeaturesEXT{
 			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT,
 			.robustBufferAccess2 = VK_TRUE,
 			.robustImageAccess2 = VK_TRUE
 		})
-#endif //VK_VALIDATION
+#endif
 		.prefer_gpu_device_type(vkb::PreferredDeviceType::discrete)
 		.allow_any_gpu_device_type(false)
 		.select(vkb::DeviceSelectionMode::partially_and_fully_suitable);

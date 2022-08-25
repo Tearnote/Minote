@@ -102,13 +102,13 @@ void skyViewLutParamsToUv(out float2 _uv, bool _intersectGround, float _viewZeni
 		coord = 1.0 - coord;
 		coord = sqrt(coord);
 		coord = 1.0 - coord;
-#endif //NONLINEARSKYVIEWLUT
+#endif
 		_uv.y = coord * 0.5;
 	} else {
 		float coord = (acos(_viewZenithCosAngle) - zenithHorizonAngle) / beta;
 #if NONLINEARSKYVIEWLUT
 		coord = sqrt(coord);
-#endif //NONLINEARSKYVIEWLUT
+#endif
 		_uv.y = coord * 0.5 + 0.5;
 	}
 	

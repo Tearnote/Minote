@@ -1,6 +1,7 @@
 #pragma once
 
 #include "util/string.hpp"
+#include "util/types.hpp"
 #include "fmtlog.h"
 
 namespace minote {
@@ -12,7 +13,12 @@ struct Log {
 	
 	// Start logging to console and specified logfile. All messages below
 	// the provided log level will be dropped
-	static void init(string_view filename/*, quill::LogLevel level*/);
+	static void init(string_view filename, fmtlog::LogLevel level);
+
+private:
+
+	static void consoleCallback(int64, fmtlog::LogLevel, fmt::string_view,
+		usize, fmt::string_view, fmt::string_view, usize, usize);
 	
 };
 

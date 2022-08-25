@@ -1,20 +1,15 @@
 #pragma once
 
 // Make sure BUILD_TYPE is specified
-
 #define BUILD_DEBUG 0
 #define BUILD_RELDEB 1
 #define BUILD_RELEASE 2
-
 #ifndef BUILD_TYPE
 #error Build type not defined
 #endif
-
 #if (BUILD_TYPE != BUILD_DEBUG) && (BUILD_TYPE != BUILD_RELDEB) && (BUILD_TYPE != BUILD_RELEASE)
 #error Build type incorrectly defined
 #endif
-
-// Build configuration variables
 
 // Whether to disable assertions
 #ifdef NDEBUG
@@ -28,19 +23,17 @@
 #if BUILD_TYPE != BUILD_RELEASE
 #define THREAD_DEBUG
 #endif
-/*
+
 // Level of logging to file and/or console
 #if BUILD_TYPE != BUILD_RELEASE
-#define LOG_LEVEL quill::LogLevel::TraceL3
+#define LOG_LEVEL fmtlog::DBG
 #else
-#define LOG_LEVEL quill::LogLevel::Info
+#define LOG_LEVEL fmtlog::INF
 #endif
-*/
+
 // Whether Vulkan validation layers are enabled
 #if BUILD_TYPE == BUILD_DEBUG
-#define VK_VALIDATION 1
-#else
-#define VK_VALIDATION 0
+#define VK_VALIDATION
 #endif
 
 // Logfile location
@@ -57,6 +50,3 @@ inline constexpr auto Assets_p = ASSETS_P;
 
 // Name of the models table in assets
 static constexpr auto Models_table = MODELS_TABLE;
-
-// Whether Imgui debug windows are enabled
-

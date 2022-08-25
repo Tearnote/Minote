@@ -53,7 +53,7 @@ auto main(int, char*[]) -> int try {
 #endif
 	
 	// Initialize logging
-	Log::init(Log_p/*, LOG_LEVEL*/);
+	Log::init(Log_p, LOG_LEVEL);
 	L_INFO("Starting up {} {}.{}.{}", AppTitle, AppVersion[0], AppVersion[1], AppVersion[2]);
 	
 	// Initialize systems
