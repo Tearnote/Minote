@@ -11,18 +11,18 @@ More details about current state and future plans on
 when possible
 - Flexibility to rapidly iterate on interesting rendering techniques
 - Compatibility with most of the modern gaming-grade hardware
-- Portable code, open-source libraries and toolchain
+- Modern and self-contained C++ codebase
 
 ## Non-goals
 - Texture mapping
 - Vertex animation
 - Being an engine
+- Cross-platform support
 
 ## Building
-Developed on Windows in a MSYS2 UCRT environment. Requires CMake and the Vulkan
-SDK installed; no other external dependencies. Standard CMake build process,
-the Ninja Multi-Config generator is recommended. `Debug` and `Release` profiles
-are self-explanatory; `RelWithDebInfo` is designed for CPU and GPU profiling.
+Open in Visual Studio 2022 as a CMake project and build with MSVC. Requires
+the Vulkan SDK to be installed; no other dependencies. `Debug` and `Release`
+configurations are self-explanatory, `RelWithDebInfo` is designed for profiling.
 
 ## Libraries used
 - [`volk`](https://github.com/zeux/volk) (MIT)
@@ -36,7 +36,7 @@ are self-explanatory; `RelWithDebInfo` is designed for CPU and GPU profiling.
 - [`robin_hood`](https://github.com/martinus/robin-hood-hashing) (MIT)
 - [`itlib`](https://github.com/iboB/itlib) (MIT)
 - [`{fmt}`](https://github.com/fmtlib/fmt) (MIT)
-- [`Quill`](https://github.com/odygrd/quill) (MIT)
+- [`fmtlog`](https://github.com/MengRao/fmtlog) (MIT)
 - [`GCE-Math`](https://github.com/kthohr/gcem) (Apache-2.0)
 - [`MPack`](https://github.com/ludocode/mpack) (MIT)
 - [`meshoptimizer`](https://github.com/zeux/meshoptimizer) (MIT)
