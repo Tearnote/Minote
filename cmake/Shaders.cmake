@@ -20,7 +20,8 @@ set(SHADER_SOURCES
 	sky/genView.cs.hlsl
 	sky/draw.cs.hlsl
 	hiz/blit.cs.hlsl
-	shadeFlat.cs.hlsl)
+	shadeFlat.cs.hlsl
+	spd.cs.hlsl)
 
 # Stage 1: Compile HLSL to SPIR-V
 foreach(SHADER_SOURCE ${SHADER_SOURCES})

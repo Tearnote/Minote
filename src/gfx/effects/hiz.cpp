@@ -1,8 +1,8 @@
 #include "gfx/effects/hiz.hpp"
 
-#include "vuk/partials/SPD.hpp"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
+#include "gfx/effects/spd.hpp"
 #include "gfx/samplers.hpp"
 #include "gfx/shader.hpp"
 #include "gfx/util.hpp"
@@ -73,7 +73,7 @@ HiZ::HiZ(Texture2D<float> _depth) {
 		},
 	});
 	
-	hiz = vuk::generate_mips_spd(*s_vulkan->context, vuk::Future(rg, "hiz/mip0"), vuk::ReductionType::Min);
+	hiz = SPD::apply(vuk::Future(rg, "hiz/mip0"), SPD::ReductionType::Min);
 	// hiz = vuk::Future(rg, "hiz/mip0");
 	
 }
