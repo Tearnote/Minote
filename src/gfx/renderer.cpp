@@ -4,7 +4,6 @@
 
 #include <optional>
 #include "imgui.h"
-#include "vuk/partials/SPD.hpp"
 #include "vuk/AllocatorHelpers.hpp"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
@@ -25,6 +24,7 @@ namespace minote {
 
 struct Renderer::Impl {
 	optional<Atmosphere> m_atmosphere;
+	optional<HiZ> m_hiz;
 	Sky m_sky;
 	bool m_skyDebug;
 	Bloom m_bloom;
@@ -138,14 +138,16 @@ void Renderer::executeRenderGraph() try {
 	// Instance processing
 	auto objects = m_objects.upload(frameAllocator(), m_models);
 	auto instances = InstanceList(frameAllocator(), m_models, objects);
-	auto triangles = TriangleList(frameAllocator(), m_models, instances);
+	//auto instancesCulled = instances.cull(m_models, objects,
+		//m_camera.view(), m_camera.projection(), m_impl->m_hiz);
+	//auto triangles = TriangleList(frameAllocator(), m_models, instances);
 	
 	// Visibility draw
-	auto visibility = Visibility(frameAllocator(), m_models, objects, instances,
-		triangles, m_camera.viewport, m_camera.viewProjection());
-	auto worklist = Worklist(frameAllocator(), m_models, instances, triangles,
-		visibility, m_camera.viewport);
-	auto hiz = HiZ(visibility.depth);
+	//auto visibility = Visibility(frameAllocator(), m_models, objects, instances,
+		//triangles, m_camera.viewport, m_camera.viewProjection());
+	//auto worklist = Worklist(frameAllocator(), m_models, instances, triangles,
+		//visibility, m_camera.viewport);
+	//m_impl->m_hiz = HiZ(visibility.depth);
 	
 	// Sky rendering
 	if (!m_impl->m_atmosphere.has_value())
@@ -154,26 +156,27 @@ void Renderer::executeRenderGraph() try {
 	
 	ImGui::Selectable("Sky", &m_impl->m_skyDebug);
 	if (m_impl->m_skyDebug) m_impl->m_sky.drawImguiDebug("Sky");
-	auto screenSky = m_impl->m_sky.draw(screen, worklist, *m_impl->m_atmosphere, skyView, m_camera);
+	//auto screenSky = m_impl->m_sky.draw(screen, worklist, *m_impl->m_atmosphere, skyView, m_camera);
 	
 	// Object rendering
-	auto screenComplete = Shade::flat(worklist, m_models, instances, visibility, triangles, screenSky);
+	//auto screenComplete = Shade::flat(worklist, m_models, instances, visibility, triangles, screenSky);
 	
 	// Postprocessing
 	ImGui::Selectable("Bloom", &m_impl->m_bloomDebug);
 	if (m_impl->m_bloomDebug) m_impl->m_bloom.drawImguiDebug("Bloom");
-	auto screenBloom = m_impl->m_bloom.apply(screenComplete);
+	//auto screenBloom = m_impl->m_bloom.apply(screenComplete);
 	
 	ImGui::Selectable("Tonemap", &m_impl->m_tonemapDebug);
 	if (m_impl->m_tonemapDebug) m_impl->m_tonemap.drawImguiDebug("Tonemap");
-	auto screenSrgb = m_impl->m_tonemap.apply(screenBloom);
+	//auto screenSrgb = m_impl->m_tonemap.apply(screenBloom);
+	auto screenSrgb = m_impl->m_tonemap.apply(screen);
 	
 	// Imgui rendering
 	auto screenFinal = m_imgui.render(screenSrgb);
 	
 	// Copy to swapchain
 	rg = std::make_shared<vuk::RenderGraph>("main");
-	rg->attach_in("hiz", hiz.hiz); // For testing
+	rg->attach_in("instances", instances.instances);
 	rg->attach_in("screen/final", screenFinal);
 	rg->attach_swapchain("swapchain", s_vulkan->swapchain);
 	rg->add_pass({
@@ -181,7 +184,7 @@ void Renderer::executeRenderGraph() try {
 		.resources = {
 			"screen/final"_image >> vuk::eTransferRead,
 			"swapchain"_image >> vuk::eTransferWrite },
-		.execute = [](vuk::CommandBuffer& cmd) {
+		.execute = [](auto& cmd) {
 			auto srcSize = cmd.get_resource_image_attachment("screen/final").value().extent.extent;
 			auto dstSize = cmd.get_resource_image_attachment("swapchain").value().extent.extent;
 			cmd.blit_image("screen/final", "swapchain", vuk::ImageBlit{

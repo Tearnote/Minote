@@ -1,26 +1,21 @@
 #include "instanceList/index.hlsli"
 #include "types.hlsli"
 
-struct Constants {
-	uint instanceCount;
-};
-
 [[vk::binding(0)]] StructuredBuffer<Meshlet> b_meshlets;
 [[vk::binding(1)]] StructuredBuffer<uint> b_triIndices;
-[[vk::binding(2)]] StructuredBuffer<Instance> b_instances;
-[[vk::binding(3)]] RWStructuredBuffer<Command> b_command;
-[[vk::binding(4)]] RWStructuredBuffer<uint> b_indices;
+[[vk::binding(2)]] StructuredBuffer<uint4> b_instanceCount;
+[[vk::binding(3)]] StructuredBuffer<Instance> b_instances;
+[[vk::binding(4)]] RWStructuredBuffer<Command> b_command;
+[[vk::binding(5)]] RWStructuredBuffer<uint> b_indices;
 
 [[vk::constant_id(0)]] const uint MaxTrisPerMeshlet = 0;
-
-[[vk::push_constant]] Constants c_push;
 
 [numthreads(64, 1, 1)]
 void main(uint3 _tid: SV_DispatchThreadID) {
 	
 	// Retrieve instance details
 	uint instanceIdx = _tid.x;
-	if (instanceIdx >= c_push.instanceCount)
+	if (instanceIdx >= b_instanceCount[0].w)
 		return;
 	Instance instance = b_instances[instanceIdx];
 	Meshlet meshlet = b_meshlets[instance.meshletIdx];

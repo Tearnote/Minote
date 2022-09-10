@@ -25,7 +25,7 @@ struct Constants {
 [[vk::constant_id(1)]] const uint ViewHeight = 0;
 static const uint2 ViewSize = {ViewWidth, ViewHeight};
 
-[[vk::push_constant]] Constants c_push;
+[[vk::push_constant]] Constants C;
 
 [numthreads(8, 8, 1)]
 void main(uint3 _tid: SV_DispatchThreadID) {
@@ -36,7 +36,7 @@ void main(uint3 _tid: SV_DispatchThreadID) {
 	//TODO which?
 	// float2 pixPos = float2(_tid.xy) + 0.5;
 	float2 pixPos = float2(_tid.xy);
-	float3 worldPos = c_push.probePos + float3(0, 0, c_params.bottomRadius);
+	float3 worldPos = C.probePos + float3(0, 0, c_params.bottomRadius);
 	float2 uv = pixPos / float2(ViewSize);
 	
 	float viewHeight = length(worldPos);
@@ -46,7 +46,7 @@ void main(uint3 _tid: SV_DispatchThreadID) {
 	uvToSkyViewLutParams(viewZenithCosAngle, lightViewCosAngle, c_params, ViewSize, viewHeight, uv);
 	
 	float3 upVector = worldPos / viewHeight;
-	float sunZenithCosAngle = dot(upVector, c_push.sunDirection);
+	float sunZenithCosAngle = dot(upVector, C.sunDirection);
 	float3 sunDir = normalize(float3(sqrt(1.0 - sunZenithCosAngle * sunZenithCosAngle), 0.0, sunZenithCosAngle));
 	
 	worldPos = float3(0.0, 0.0, viewHeight);
@@ -69,7 +69,7 @@ void main(uint3 _tid: SV_DispatchThreadID) {
 	bool variableSampleCount = true;
 	bool mieRayPhase = true;
 	SingleScatteringResult result = integrateScatteredLuminance(c_params, worldPos, worldDir, sunDir,
-		ground, sampleCountIni, variableSampleCount, mieRayPhase, 9000000.0, c_push.sunIlluminance);
+		ground, sampleCountIni, variableSampleCount, mieRayPhase, 9000000.0, C.sunIlluminance);
 	
 	t_view[_tid.xy] = result.L;
 	

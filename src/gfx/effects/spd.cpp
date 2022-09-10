@@ -23,7 +23,7 @@ auto SPD::apply(Texture2D<float> _source, ReductionType _type) -> Texture2D<floa
 			"source"_image >> vuk::eComputeRW >> "source/final",
 			"source"_image >> vuk::eComputeSampled, // declare an extra usage
 		},
-		.execute = [_type](vuk::CommandBuffer& cmd) {
+		.execute = [_type](auto& cmd) {
 			
 			auto source = *cmd.get_resource_image_attachment("source");
 			auto sourceSize = source.extent.extent;

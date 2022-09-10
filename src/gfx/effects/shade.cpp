@@ -35,7 +35,7 @@ auto Shade::flat(Worklist& _worklist, ModelBuffer& _models, InstanceList& _insta
 			"counts"_buffer >> vuk::eIndirectRead,
 			"target"_image >> vuk::eComputeWrite >> "target/final",
 		},
-		.execute = [&_worklist](vuk::CommandBuffer& cmd) {
+		.execute = [&_worklist](auto& cmd) {
 			
 			cmd.bind_compute_pipeline("shade/flat")
 			   .bind_buffer(0, 0, "materials")

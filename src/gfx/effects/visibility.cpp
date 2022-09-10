@@ -50,7 +50,7 @@ Visibility::Visibility(vuk::Allocator& _allocator, ModelBuffer& _models,
 			"visibility"_image >> vuk::eColorWrite >> "visibility/final",
 			"depth"_image >> vuk::eDepthStencilRW >> "depth/final",
 		},
-		.execute = [_viewProjection](vuk::CommandBuffer& cmd) {
+		.execute = [_viewProjection](auto& cmd) {
 			
 			cmd.bind_graphics_pipeline("visibility/draw")
 			   .set_viewport(0, vuk::Rect2D::framebuffer())
@@ -138,7 +138,7 @@ Worklist::Worklist(vuk::Allocator& _allocator, ModelBuffer& _models,
 			"counts"_buffer >> vuk::eComputeRW >> "counts/final",
 			"lists"_buffer >> vuk::eComputeWrite >> "lists/final",
 		},
-		.execute = [this, _extent](vuk::CommandBuffer& cmd) {
+		.execute = [this, _extent](auto& cmd) {
 			
 			cmd.bind_compute_pipeline("visibility/worklist")
 			   .bind_buffer(0, 0, "meshlets")

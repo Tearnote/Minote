@@ -7,13 +7,13 @@ struct Constants {
 
 [[vk::binding(0)]] StructuredBuffer<Model> b_models;
 [[vk::binding(1)]] StructuredBuffer<uint> b_modelIndices; // Index into b_models
-[[vk::binding(2)]] RWStructuredBuffer<Instance> b_instances;
-[[vk::binding(3)]] RWStructuredBuffer<uint> b_instanceCount;
+[[vk::binding(2)]] RWStructuredBuffer<uint4> b_instanceCount;
+[[vk::binding(3)]] RWStructuredBuffer<Instance> b_instances;
 
 static const uint GroupSizeExp = 6; // Group size as 2^n
 static const uint GroupSize = 1u << GroupSizeExp;
 
-[[vk::push_constant]] Constants c_push;
+[[vk::push_constant]] Constants C;
 
 groupshared uint sh_objectIndices[GroupSize];
 groupshared uint sh_meshletCountPrefixSum[GroupSize];
@@ -93,7 +93,7 @@ void main(uint3 _tid: SV_DispatchThreadID, uint3 _lid: SV_GroupThreadID) {
 	// to not participate in binary search
 	sh_meshletCountPrefixSum[_lid.x] = _lid.x == 0? 0 : -1;
 	
-	uint objectIdx = _tid.x < c_push.objectCount? _tid.x : -1;
+	uint objectIdx = _tid.x < C.objectCount? _tid.x : -1;
 	
 	GroupMemoryBarrierWithGroupSync();
 	if (objectIdx != -1) // Run prefix sum with as many threads as objects
@@ -112,7 +112,12 @@ void main(uint3 _tid: SV_DispatchThreadID, uint3 _lid: SV_GroupThreadID) {
 		return; // Starts past the buffer; useless thread
 	uint threadWorkload = min(meshletStride, totalMeshletCount - startingMeshletIdx);
 	uint writeIndex;
-	InterlockedAdd(b_instanceCount[0], threadWorkload, writeIndex);
+	InterlockedAdd(b_instanceCount[0].w, threadWorkload, writeIndex);
+	if (writeIndex >= C.objectCount)
+		printf("%u\n", writeIndex);
+	uint groupCount = divRoundUp(writeIndex + threadWorkload, 64u) - divRoundUp(writeIndex, 64u);
+	if (groupCount > 0)
+		InterlockedAdd(b_instanceCount[0].x, groupCount);
 	
 	// Write out assigned workload
 	startingMeshletIdx -= startingSharedIdx == 0? 0 : sh_meshletCountPrefixSum[startingSharedIdx]; // From workload offset to object offset

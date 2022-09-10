@@ -90,7 +90,7 @@ Atmosphere::Atmosphere(vuk::Allocator& _allocator, Params const& _params) {
 			"params"_buffer >> vuk::eComputeRead,
 			"transmittance"_image >> vuk::eComputeWrite >> "transmittance/final",
 		},
-		.execute = [](vuk::CommandBuffer& cmd) {
+		.execute = [](auto& cmd) {
 			
 			cmd.bind_compute_pipeline("sky/genTransmittance");
 			cmd.bind_buffer(0, 0, "params");
@@ -113,7 +113,7 @@ Atmosphere::Atmosphere(vuk::Allocator& _allocator, Params const& _params) {
 			"transmittance/final"_image >> vuk::eComputeSampled,
 			"multiScattering"_image >> vuk::eComputeWrite >> "multiScattering/final",
 		},
-		.execute = [](vuk::CommandBuffer& cmd) {
+		.execute = [](auto& cmd) {
 			
 			cmd.bind_compute_pipeline("sky/genMultiScattering")
 			   .bind_buffer(0, 0, "params")
@@ -188,7 +188,7 @@ auto Sky::createView(Atmosphere& _atmo, float3 _probePos) -> Texture2D<float3> {
 	rg->attach_in("params", _atmo.params);
 	rg->attach_in("transmittance", _atmo.transmittance);
 	rg->attach_in("multiScattering", _atmo.multiScattering);
-	
+
 	rg->add_pass(vuk::Pass{
 		.name = "sky/genView",
 		.resources = {
@@ -197,7 +197,7 @@ auto Sky::createView(Atmosphere& _atmo, float3 _probePos) -> Texture2D<float3> {
 			"multiScattering"_image >> vuk::eComputeSampled,
 			"view"_image >> vuk::eComputeWrite >> "view/final",
 		},
-		.execute = [this, _probePos](vuk::CommandBuffer& cmd) {
+		.execute = [this, _probePos](auto& cmd) {
 			
 			cmd.bind_compute_pipeline("sky/genView")
 			   .bind_buffer(0, 0, "params")
@@ -255,7 +255,7 @@ auto Sky::draw(Texture2D<float4> _target, Worklist& _worklist, Atmosphere& _atmo
 			"lists"_buffer >> vuk::eComputeRead,
 			"target"_image >> vuk::eComputeWrite >> "target/final",
 		},
-		.execute = [this, &_camera, &_worklist](vuk::CommandBuffer& cmd) {
+		.execute = [this, &_camera, &_worklist](auto& cmd) {
 			
 			cmd.bind_compute_pipeline("sky/draw")
 			   .bind_buffer(0, 0, "params")
@@ -333,7 +333,7 @@ auto Sky::createAerialPerspective(Pool& _pool, Frame& _frame, vuk::Name _name,
 		.name = nameAppend(_name, "sky/genAerialPerspective"),
 		.resources = {
 			aerialPerspective.resource(vuk::eComputeWrite) },
-		.execute = [aerialPerspective, &_frame, _atmo, _invViewProj, _probePos](vuk::CommandBuffer& cmd) {
+		.execute = [aerialPerspective, &_frame, _atmo, _invViewProj, _probePos](auto& cmd) {
 			
 			struct PushConstants {
 				float4x4 invViewProj;
@@ -373,7 +373,7 @@ auto Sky::createSunLuminance(Pool& _pool, Frame& _frame, vuk::Name _name,
 		.name = nameAppend(_name, "sky/genSunLuminance"),
 		.resources = {
 			sunLuminance.resource(vuk::eComputeWrite) },
-		.execute = [sunLuminance,&_frame, _atmo, _probePos](vuk::CommandBuffer& cmd) {
+		.execute = [sunLuminance,&_frame, _atmo, _probePos](auto& cmd) {
 			
 			cmd.bind_uniform_buffer(0, 0, _frame.world)
 			   .bind_uniform_buffer(0, 1, _atmo.params)
@@ -398,7 +398,7 @@ void Sky::draw(Frame& _frame, Cubemap _target, float3 _probePos, Texture2D _skyV
 		.resources = {
 			_skyView.resource(vuk::eComputeSampled),
 			_target.resource(vuk::eComputeWrite) },
-		.execute = [_target, _skyView, _atmo, &_frame, _probePos](vuk::CommandBuffer& cmd) {
+		.execute = [_target, _skyView, _atmo, &_frame, _probePos](auto& cmd) {
 			
 			struct PushConstants {
 				float3 probePosition;

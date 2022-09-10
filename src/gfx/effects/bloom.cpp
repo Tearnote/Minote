@@ -54,7 +54,7 @@ auto Bloom::apply(Texture2D<float4> _target) -> Texture2D<float4> {
 				vuk::Resource(source, vuk::Resource::Type::eImage, vuk::eComputeSampled),
 				vuk::Resource(target, vuk::Resource::Type::eImage, vuk::eComputeWrite, targetNew),
 			},
-			.execute = [i, source, target](vuk::CommandBuffer& cmd) {
+			.execute = [i, source, target](auto& cmd) {
 				cmd.bind_compute_pipeline("bloom/down")
 				   .bind_image(0, 0, source).bind_sampler(0, 0, LinearClamp)
 				   .bind_image(0, 1, target);
@@ -95,7 +95,7 @@ auto Bloom::apply(Texture2D<float4> _target) -> Texture2D<float4> {
 				vuk::Resource(source, vuk::Resource::Type::eImage, vuk::eComputeSampled),
 				vuk::Resource(target, vuk::Resource::Type::eImage, vuk::eComputeRW, targetNew),
 			},
-			.execute = [this, i, source, target](vuk::CommandBuffer& cmd) {
+			.execute = [this, i, source, target](auto& cmd) {
 				cmd.bind_compute_pipeline("bloom/up")
 				   .bind_image(0, 0, source).bind_sampler(0, 0, LinearClamp)
 				   .bind_image(0, 1, target);

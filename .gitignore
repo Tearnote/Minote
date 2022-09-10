@@ -11,6 +11,7 @@ doc/*
 .vscode/*
 .vs/*
 CMakeSettings.json
+*/shadertoolsconfig.json
 
 # Internal notes
 reference/*

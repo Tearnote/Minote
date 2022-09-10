@@ -7,6 +7,7 @@ set(SHADER_PREFIX src/gpu)
 set(SHADER_SOURCES
 	instanceList/genInstances.cs.hlsl
 	instanceList/genIndices.cs.hlsl
+	instanceList/cull.cs.hlsl
 	visibility/worklist.cs.hlsl
 	visibility/draw.vs.hlsl
 	visibility/draw.ps.hlsl

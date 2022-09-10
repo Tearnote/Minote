@@ -30,7 +30,7 @@ auto Tonemap::apply(Texture2D<float4> _source) -> Texture2D<float4> {
 			"source"_image >> vuk::eComputeSampled,
 			"target"_image >> vuk::eComputeWrite >> "target/final",
 		},
-		.execute = [this](vuk::CommandBuffer& cmd) {
+		.execute = [this](auto& cmd) {
 			
 			cmd.bind_compute_pipeline("tonemap/apply")
 			   .bind_image(0, 0, "source").bind_sampler(0, 0, NearestClamp)

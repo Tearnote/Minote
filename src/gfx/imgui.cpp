@@ -134,7 +134,7 @@ auto Imgui::render(Texture2D<float4> _target) -> Texture2D<float4> {
 		.resources = {
 			"input"_image >> vuk::eColorRW >> "output",
 		},
-		.execute = [this, imvert=imvert.get(), imind=imind.get(), drawdata](vuk::CommandBuffer& cmd) {
+		.execute = [this, imvert=imvert.get(), imind=imind.get(), drawdata](auto& cmd) {
 			
 			cmd.bind_graphics_pipeline("imgui")
 			   .set_dynamic_state(vuk::DynamicStateFlagBits::eViewport | vuk::DynamicStateFlagBits::eScissor)

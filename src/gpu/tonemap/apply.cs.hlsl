@@ -13,7 +13,7 @@ struct Constants {
 [[vk::constant_id(1)]] const uint TargetHeight = 0;
 static const uint2 TargetSize = {TargetWidth, TargetHeight};
 
-[[vk::push_constant]] Constants c_push;
+[[vk::push_constant]] Constants C;
 
 float3 lottesTonemap(float3 _color, Constants _t) {
 	
@@ -50,7 +50,7 @@ void main(uint3 _tid: SV_DispatchThreadID) {
 		return;
 	
 	float3 input = t_source[_tid.xy].rgb;
-	float3 output = lottesTonemap(input, c_push);
+	float3 output = lottesTonemap(input, C);
 	output = srgbEncode(output);
 	t_target[_tid.xy] = float4(output, 1.0);
 	

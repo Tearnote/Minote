@@ -17,6 +17,21 @@ uint bitmask(uint _bits) {
 	
 }
 
+template<typename T>
+T min3(T _v1, T _v2, T _v3) {
+	
+	return min(min(_v1, _v2), _v3);
+	
+}
+
+template<typename T>
+T max3(T _v1, T _v2, T _v3)
+{
+	
+	return max(max(_v1, _v2), _v3);
+	
+}
+
 // Emulating the missing subgroupClusteredmin() intrinsic from GLSL
 template<typename T>
 T WaveClusteredMin(T _val, uint _clusterSize) {

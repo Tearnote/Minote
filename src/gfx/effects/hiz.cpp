@@ -55,7 +55,7 @@ HiZ::HiZ(Texture2D<float> _depth) {
 			"depth"_image >> vuk::eComputeSampled,
 			"hiz"_image >> vuk::eComputeWrite >> "hiz/mip0",
 		},
-		.execute = [](vuk::CommandBuffer& cmd) {
+		.execute = [](auto& cmd) {
 			
 			cmd.bind_compute_pipeline("hiz/blit")
 			   .bind_image(0, 0, "depth").bind_sampler(0, 0, NearestClamp)
@@ -74,7 +74,6 @@ HiZ::HiZ(Texture2D<float> _depth) {
 	});
 	
 	hiz = SPD::apply(vuk::Future(rg, "hiz/mip0"), SPD::ReductionType::Min);
-	// hiz = vuk::Future(rg, "hiz/mip0");
 	
 }
 
