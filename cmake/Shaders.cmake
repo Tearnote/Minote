@@ -7,6 +7,7 @@ set(SHADER_PREFIX src/gpu)
 set(SHADER_SOURCES
 	instanceList/genInstances.cs.hlsl
 	instanceList/genIndices.cs.hlsl
+	instanceList/cull.cs.hlsl
 	visibility/worklist.cs.hlsl
 	visibility/draw.vs.hlsl
 	visibility/draw.ps.hlsl
@@ -48,7 +49,7 @@ foreach(SHADER_SOURCE ${SHADER_SOURCES})
 		# Compile HLSL into SPIR-V
 		COMMAND $ENV{VULKAN_SDK}/Bin/dxc
 			-HV 2021 -T ${SHADER_PROFILE} -spirv -fspv-target-env=vulkan1.3
-			-O3 "$<$<CONFIG:Debug,RelWithDebInfo>:-Zi>"
+			-O3 "$<$<CONFIG:Debug,RelWithDebInfo>:-Zi>" -fspv-reflect
 			-I ${PROJECT_SOURCE_DIR}/${SHADER_PREFIX}
 			-I ${spd_SOURCE_DIR}/ffx-spd
 			-Fo ${SHADER_OUTPUT}

@@ -15,7 +15,7 @@ struct VSOutput {
 	float2 uv: TexCoord;
 };
 
-[[vk::push_constant]] Constants c_push;
+[[vk::push_constant]] Constants C;
 
 VSOutput main(VSInput _input) {
 	
@@ -23,7 +23,7 @@ VSOutput main(VSInput _input) {
 	
 	output.color = _input.color;
 	output.uv = _input.uv;
-	output.position = float4(_input.position * c_push.scale + c_push.translate, 0.0, 1.0);
+	output.position = float4(_input.position * C.scale + C.translate, 0.0, 1.0);
 	
 	return output;
 	

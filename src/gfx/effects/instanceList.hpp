@@ -1,10 +1,13 @@
 #pragma once
 
 #include "vuk/Allocator.hpp"
-#include "util/types.hpp"
+#include "gfx/effects/hiz.hpp"
 #include "gfx/resource.hpp"
 #include "gfx/objects.hpp"
 #include "gfx/models.hpp"
+#include "util/optional.hpp"
+#include "util/types.hpp"
+#include "util/math.hpp"
 
 namespace minote {
 
@@ -18,10 +21,15 @@ struct InstanceList {
 	};
 	
 	Buffer<Instance> instances;
-	uint instanceCount; // Can be calculated CPU-side
-	uint triangleCount;
+	Buffer<uint4> instanceCount;
+	uint instanceBound;
+	uint triangleBound;
 	
 	InstanceList(vuk::Allocator&, ModelBuffer&, ObjectBuffer&);
+
+	[[nodiscard]]
+	auto cull(ModelBuffer&, ObjectBuffer&, float4x4 view, float4x4 projection,
+		optional<HiZ> = nullopt) -> InstanceList;
 	
 	// Build required shaders; optional
 	static void compile();
@@ -29,6 +37,8 @@ struct InstanceList {
 private:
 	
 	static inline bool m_compiled = false;
+
+	InstanceList() = default;
 	
 };
 

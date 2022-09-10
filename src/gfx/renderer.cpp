@@ -4,7 +4,6 @@
 
 #include <optional>
 #include "imgui.h"
-#include "vuk/partials/SPD.hpp"
 #include "vuk/AllocatorHelpers.hpp"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
@@ -25,6 +24,7 @@ namespace minote {
 
 struct Renderer::Impl {
 	optional<Atmosphere> m_atmosphere;
+	optional<HiZ> m_hiz;
 	Sky m_sky;
 	bool m_skyDebug;
 	Bloom m_bloom;
@@ -138,6 +138,8 @@ void Renderer::executeRenderGraph() try {
 	// Instance processing
 	auto objects = m_objects.upload(frameAllocator(), m_models);
 	auto instances = InstanceList(frameAllocator(), m_models, objects);
+	instances = instances.cull(m_models, objects,
+		m_camera.view(), m_camera.projection(), m_impl->m_hiz);
 	auto triangles = TriangleList(frameAllocator(), m_models, instances);
 	
 	// Visibility draw
@@ -173,7 +175,6 @@ void Renderer::executeRenderGraph() try {
 	
 	// Copy to swapchain
 	rg = std::make_shared<vuk::RenderGraph>("main");
-	rg->attach_in("hiz", hiz.hiz); // For testing
 	rg->attach_in("screen/final", screenFinal);
 	rg->attach_swapchain("swapchain", s_vulkan->swapchain);
 	rg->add_pass({
@@ -192,6 +193,11 @@ void Renderer::executeRenderGraph() try {
 				vuk::Filter::eNearest);
 		},
 	});
+
+	// Re-export temporal resources from the main rendergraph
+	rg->attach_in("hiz", hiz.hiz);
+	hiz.hiz = vuk::Future(rg, "hiz");
+	m_impl->m_hiz = std::move(hiz);
 	
 	auto compiler = vuk::Compiler();
 	vuk::execute_submit_and_present_to_one(frameAllocator(), compiler.link({&rg, 1}, {}), s_vulkan->swapchain);

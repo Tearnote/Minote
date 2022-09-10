@@ -188,7 +188,7 @@ auto Sky::createView(Atmosphere& _atmo, float3 _probePos) -> Texture2D<float3> {
 	rg->attach_in("params", _atmo.params);
 	rg->attach_in("transmittance", _atmo.transmittance);
 	rg->attach_in("multiScattering", _atmo.multiScattering);
-	
+
 	rg->add_pass(vuk::Pass{
 		.name = "sky/genView",
 		.resources = {

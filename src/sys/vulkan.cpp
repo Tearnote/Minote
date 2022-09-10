@@ -179,6 +179,8 @@ auto Vulkan::selectPhysicalDevice(vkb::Instance& _instance, VkSurfaceKHR _surfac
 		.set_required_features_11(physicalDeviceVulkan11Features)
 		.set_required_features_12(physicalDeviceVulkan12Features)
 		.set_required_features_13(physicalDeviceVulkan13Features)
+		.add_required_extension("VK_GOOGLE_user_type")
+		.add_required_extension("VK_GOOGLE_hlsl_functionality1")
 		.add_required_extension("VK_KHR_synchronization2")
 #ifdef VK_VALIDATION
 		.add_required_extension("VK_EXT_robustness2")

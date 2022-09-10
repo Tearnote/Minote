@@ -74,7 +74,6 @@ HiZ::HiZ(Texture2D<float> _depth) {
 	});
 	
 	hiz = SPD::apply(vuk::Future(rg, "hiz/mip0"), SPD::ReductionType::Min);
-	// hiz = vuk::Future(rg, "hiz/mip0");
 	
 }
 

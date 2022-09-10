@@ -5,44 +5,48 @@
 #include "vuk/RenderGraph.hpp"
 #include "vuk/Partials.hpp"
 #include "gfx/renderer.hpp"
+#include "gfx/samplers.hpp"
 #include "gfx/shader.hpp"
 #include "sys/vulkan.hpp"
 
 namespace minote {
 
-InstanceList::InstanceList(vuk::Allocator& _allocator, ModelBuffer& _models, ObjectBuffer& _objects):
-	instanceCount(0) {
+InstanceList::InstanceList(vuk::Allocator& _allocator, ModelBuffer& _models, ObjectBuffer& _objects) {
 	
 	compile();
 	
-	auto instancesBuf = *vuk::allocate_buffer_gpu(_allocator, vuk::BufferCreateInfo{
-		.mem_usage = vuk::MemoryUsage::eGPUonly,
-		.size = _objects.meshletCount * sizeof(Instance),
-	});
-	auto cpu_instanceCount = 0u;
-	auto instanceCountBuf = vuk::create_buffer_cross_device(s_renderer->frameAllocator(),
-		vuk::MemoryUsage::eCPUtoGPU, span(&cpu_instanceCount, 1)).second;
+	instanceBound = _objects.meshletCount;
+
 	auto rg = std::make_shared<vuk::RenderGraph>("instanceList");
-	
 	rg->attach_in("models", _models.models);
 	rg->attach_in("modelIndices", _objects.modelIndices);
-	rg->attach_buffer("instances", *instancesBuf); //TODO convert to managed buffer, pending vuk feature
-	rg->attach_in("instanceCount", instanceCountBuf);
+	rg->attach_buffer("instances", vuk::Buffer{
+		.size = instanceBound * sizeof(Instance),
+		.memory_usage = vuk::MemoryUsage::eGPUonly,
+	});
+	rg->attach_buffer("instanceCount", vuk::Buffer{
+		.size = sizeof(uint4),
+		.memory_usage = vuk::MemoryUsage::eCPUtoGPU,
+	});
 	rg->add_pass(vuk::Pass{
 		.name = "instanceList/genInstances",
 		.resources = {
 			"models"_buffer >> vuk::eComputeRead,
 			"modelIndices"_buffer >> vuk::eComputeRead,
-			"instances"_buffer >> vuk::eComputeWrite >> "instances/final",
 			"instanceCount"_buffer >> vuk::eComputeRW >> "instanceCount/final",
+			"instances"_buffer >> vuk::eComputeWrite >> "instances/final",
 		},
 		.execute = [&_objects](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_compute_pipeline("instanceList/genInstances")
 			   .bind_buffer(0, 0, "models")
 			   .bind_buffer(0, 1, "modelIndices")
-			   .bind_buffer(0, 2, "instances")
-			   .bind_buffer(0, 3, "instanceCount");
+			   .bind_buffer(0, 2, "instanceCount")
+			   .bind_buffer(0, 3, "instances");
+
+			auto countInitial = uint4{0, 1, 1, 0};
+			auto count = *cmd.get_resource_buffer("instanceCount");
+			std::memcpy(count.mapped_ptr, &countInitial, sizeof(countInitial));
 			
 			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, _objects.objectCount);
 			
@@ -51,13 +55,119 @@ InstanceList::InstanceList(vuk::Allocator& _allocator, ModelBuffer& _models, Obj
 		},
 	});
 	
+	instanceCount = vuk::Future(rg, "instanceCount/final");
 	instances = vuk::Future(rg, "instances/final");
-	instanceCount = _objects.meshletCount;
-	triangleCount = _objects.triangleCount;
+	triangleBound = _objects.triangleCount;
+	
+}
+
+auto InstanceList::cull(ModelBuffer& _models, ObjectBuffer& _objects,
+	float4x4 _view, float4x4 _projection, optional<HiZ> _hiz) -> InstanceList {
+
+	compile();
+
+	auto rg = std::make_shared<vuk::RenderGraph>("instanceList/cull");
+	rg->attach_in("meshlets", _models.meshlets);
+	rg->attach_in("transforms", _objects.transforms);
+	rg->attach_in("instanceCount", instanceCount);
+	rg->attach_in("instances", instances);
+	rg->attach_buffer("outInstanceCount", vuk::Buffer{
+		.size = sizeof(uint4),
+		.memory_usage = vuk::MemoryUsage::eCPUtoGPU,
+	});
+	rg->attach_buffer("outInstances", vuk::Buffer{
+		.memory_usage = vuk::MemoryUsage::eGPUonly,
+	});
+	rg->inference_rule("outInstances", vuk::same_size_as("instances"));
+	if (_hiz)
+		rg->attach_in("hiz", _hiz->hiz);
+	else
+		rg->attach_image("stub", vuk::ImageAttachment{ // Placeholder for the HiZ binding
+			.extent = vuk::Dimension3D::absolute(1, 1),
+			.format = vuk::Format::eR8Unorm,
+			.sample_count = vuk::Samples::e1,
+			.level_count = 1,
+			.layer_count = 1,
+		});
+
+	auto resources = std::vector<vuk::Resource>{
+		"meshlets"_buffer >> vuk::eComputeRead,
+		"transforms"_buffer >> vuk::eComputeRead,
+		"instanceCount"_buffer >> vuk::eIndirectRead,
+		"instances"_buffer >> vuk::eComputeRead,
+		"outInstanceCount"_buffer >> vuk::eComputeRW >> "outInstanceCount/final",
+		"outInstances"_buffer >> vuk::eComputeWrite >> "outInstances/final",
+	};
+	if (_hiz)
+		resources.emplace_back("hiz"_image >> vuk::eComputeSampled);
+	else
+		resources.emplace_back("stub"_image >> vuk::eComputeSampled);
+	rg->add_pass(vuk::Pass{
+		.name = "instanceList/cull",
+		.resources = std::move(resources),
+		.execute = [_view, _projection, useHiz=_hiz.has_value()](vuk::CommandBuffer& cmd) {
+			
+			cmd.bind_compute_pipeline("instanceList/cull")
+			   .bind_buffer(0, 0, "meshlets")
+			   .bind_buffer(0, 1, "transforms")
+			   .bind_buffer(0, 2, "instanceCount")
+			   .bind_buffer(0, 3, "instances")
+			   .bind_buffer(0, 4, "outInstanceCount")
+			   .bind_buffer(0, 5, "outInstances");
+			if (useHiz)
+				cmd.bind_image(0, 6, "hiz").bind_sampler(0, 6, MinClamp);
+			else
+				cmd.bind_image(0, 6, "stub").bind_sampler(0, 6, MinClamp);
+
+			auto outCount = *cmd.get_resource_buffer("outInstanceCount");
+			auto outCountInitial = uint4{0, 1, 1, 0};
+			std::memcpy(outCount.mapped_ptr, &outCountInitial, sizeof(outCountInitial));
+			
+			struct Constants {
+				float4x4 view;
+				float4 frustum;
+				float P00;
+				float P11;
+			};
+			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, Constants{
+				.view = _view,
+				.frustum = [_projection]() {
+					float4 frustumX = _projection[3] + _projection[0];
+					float4 frustumY = _projection[3] + _projection[1];
+					frustumX /= length(float3(frustumX));
+					frustumY /= length(float3(frustumY));
+					return float4{frustumX.x(), frustumX.z(), frustumY.y(), frustumY.z()};
+				}(),
+				.P00 = _projection[0][0],
+				.P11 = _projection[1][1],
+			});
+			
+			cmd.specialize_constants(0, uint(useHiz));
+			cmd.specialize_constants(1, _projection[2][3]);
+			if (useHiz) {
+				auto hiz = *cmd.get_resource_image_attachment("hiz");
+				auto hizSize = hiz.extent.extent;
+				cmd.specialize_constants(2, hizSize.width);
+				cmd.specialize_constants(3, hizSize.height);
+				cmd.specialize_constants(4, 960u); //FIXME actual size!!
+				cmd.specialize_constants(5, 504u);
+			}
+			cmd.dispatch_indirect("instanceCount");
+			
+		},
+	});
+
+	auto result = InstanceList();
+	result.instanceCount = vuk::Future(rg, "outInstanceCount/final");
+	result.instances = vuk::Future(rg, "outInstances/final");
+	result.instanceBound = instanceBound;
+	result.triangleBound = triangleBound;
+	return result;
 	
 }
 
 GET_SHADER(instanceList_genInstances_cs);
+GET_SHADER(instanceList_cull_cs);
 void InstanceList::compile() {
 	
 	if (m_compiled) return;
@@ -66,41 +176,38 @@ void InstanceList::compile() {
 	auto genInstancesPci = vuk::PipelineBaseCreateInfo();
 	ADD_SHADER(genInstancesPci, instanceList_genInstances_cs, "instanceList/genInstances.cs.hlsl");
 	ctx.create_named_pipeline("instanceList/genInstances", genInstancesPci);
+
+	auto cullPci = vuk::PipelineBaseCreateInfo();
+	ADD_SHADER(cullPci, instanceList_cull_cs, "instanceList/cull.cs.hlsl");
+	ctx.create_named_pipeline("instanceList/cull", cullPci);
 	
 	m_compiled = true;
 	
 }
 
-TriangleList::TriangleList(vuk::Allocator& _allocator,
-	ModelBuffer& _models, InstanceList& _instances) {
+TriangleList::TriangleList(vuk::Allocator& _allocator, ModelBuffer& _models, InstanceList& _instances) {
 	
 	compile();
 	
-	auto commandData = Command{
-		.indexCount = 0, // Calculated at runtime
-		.instanceCount = 1,
-		.firstIndex = 0,
-		.vertexOffset = 0,
-		.firstInstance = 0,
-	};
-	auto commandBuf = vuk::create_buffer_cross_device(s_renderer->frameAllocator(),
-		vuk::MemoryUsage::eCPUtoGPU, span(&commandData, 1)).second;
-	
-	auto indicesBuf = *vuk::allocate_buffer_gpu(_allocator, vuk::BufferCreateInfo{
-		.mem_usage = vuk::MemoryUsage::eGPUonly,
-		.size = _instances.triangleCount * 3 * sizeof(uint),
-	});
 	auto rg = std::make_shared<vuk::RenderGraph>("triangleList");
 	rg->attach_in("meshlets", _models.meshlets);
 	rg->attach_in("triIndices", _models.triIndices);
+	rg->attach_in("instanceCount", _instances.instanceCount);
 	rg->attach_in("instances", _instances.instances);
-	rg->attach_in("command", commandBuf);
-	rg->attach_buffer("indices", *indicesBuf); //TODO convert to managed buffer, pending vuk feature
+	rg->attach_buffer("command", vuk::Buffer{
+		.size = sizeof(Command),
+		.memory_usage = vuk::MemoryUsage::eCPUtoGPU,
+	});
+	rg->attach_buffer("indices", vuk::Buffer{
+		.size = _instances.triangleBound * 3 * sizeof(uint),
+		.memory_usage = vuk::MemoryUsage::eGPUonly,
+	});
 	rg->add_pass(vuk::Pass{
 		.name = "instanceList/genIndices",
 		.resources = {
 			"meshlets"_buffer >> vuk::eComputeRead,
 			"triIndices"_buffer >> vuk::eComputeRead,
+			"instanceCount"_buffer >> vuk::eIndirectRead,
 			"instances"_buffer >> vuk::eComputeRead,
 			"command"_buffer >> vuk::eComputeRW >> "command/final",
 			"indices"_buffer >> vuk::eComputeWrite >> "indices/final",
@@ -110,14 +217,24 @@ TriangleList::TriangleList(vuk::Allocator& _allocator,
 			cmd.bind_compute_pipeline("instanceList/genIndices")
 			   .bind_buffer(0, 0, "meshlets")
 			   .bind_buffer(0, 1, "triIndices")
-			   .bind_buffer(0, 2, "instances")
-			   .bind_buffer(0, 3, "command")
-			   .bind_buffer(0, 4, "indices");
+			   .bind_buffer(0, 2, "instanceCount")
+			   .bind_buffer(0, 3, "instances")
+			   .bind_buffer(0, 4, "command")
+			   .bind_buffer(0, 5, "indices");
+
+			auto command = *cmd.get_resource_buffer("command");
+			auto commandInitial = Command{
+				.indexCount = 0, // Calculated at runtime
+				.instanceCount = 1,
+				.firstIndex = 0,
+				.vertexOffset = 0,
+				.firstInstance = 0,
+			};
+			std::memcpy(command.mapped_ptr, &commandInitial, sizeof(commandInitial));
 			
-			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, instanceCount);
 			cmd.specialize_constants(0, MeshletMaxTris);
 			
-			cmd.dispatch_invocations(instanceCount);
+			cmd.dispatch_indirect("instanceCount");
 			
 		},
 	});

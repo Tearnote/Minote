@@ -13,7 +13,7 @@ static const uint2 SourceSize = {SourceWidth, SourceHeight};
 [[vk::constant_id(3)]] const uint TargetHeight = 0;
 static const uint2 TargetSize = {TargetWidth, TargetHeight};
 
-[[vk::push_constant]] Constants c_push;
+[[vk::push_constant]] Constants C;
 
 [numthreads(8, 8, 1)]
 void main(uint3 _tid: SV_DispatchThreadID) {
@@ -35,6 +35,6 @@ void main(uint3 _tid: SV_DispatchThreadID) {
 	       result += s_source.SampleLevel(s_sourceSmp, uv + float2( texel.x, -texel.y), 0) * (1.0 / 16.0);
 	       result += s_source.SampleLevel(s_sourceSmp, uv + float2(-texel.x,  texel.y), 0) * (1.0 / 16.0);
 	       result += s_source.SampleLevel(s_sourceSmp, uv + float2( texel.x,  texel.y), 0) * (1.0 / 16.0);
-	t_target[_tid.xy] += result * c_push.power;
+	t_target[_tid.xy] += result * C.power;
 	
 }

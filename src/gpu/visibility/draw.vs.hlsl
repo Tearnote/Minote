@@ -16,7 +16,7 @@ struct VSOutput {
 [[vk::binding(3)]] StructuredBuffer<float4> b_transforms;
 [[vk::binding(4)]] StructuredBuffer<Instance> b_instances;
 
-[[vk::push_constant]] Constants c_push;
+[[vk::push_constant]] Constants C;
 
 VSOutput main(uint _vid: SV_VertexID) {
 	
@@ -37,7 +37,7 @@ VSOutput main(uint _vid: SV_VertexID) {
 	float4x4 transform = getTransform(b_transforms, instance.objectIdx);
 	output.position = float4(vertex, 1.0);
 	output.position = mul(output.position, transform);
-	output.position = mul(output.position, c_push.viewProjection);
+	output.position = mul(output.position, C.viewProjection);
 	
 	return output;
 	

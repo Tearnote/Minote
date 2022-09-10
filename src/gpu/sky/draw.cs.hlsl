@@ -31,7 +31,7 @@ static const uint2 ViewSize = {ViewWidth, ViewHeight};
 static const uint2 TargetSize = {TargetWidth, TargetHeight};
 [[vk::constant_id(4)]] const uint TileOffset = 0;
 
-[[vk::push_constant]] Constants c_push;
+[[vk::push_constant]] Constants C;
 
 [numthreads(1, TileSize, TileSize)]
 void main(uint3 _tid: SV_DispatchThreadID) {
@@ -42,10 +42,10 @@ void main(uint3 _tid: SV_DispatchThreadID) {
 	
 	float2 gUv = (float2(_tid.xy) + 0.5) / float2(TargetSize);
 	float3 clipSpace = {gUv * 2.0 - 1.0, 0.0};
-	float4 hPos = mul(float4(clipSpace, 1.0), c_push.viewProjectionInv); //TODO broken
+	float4 hPos = mul(float4(clipSpace, 1.0), C.viewProjectionInv); //TODO broken
 	
 	float3 worldDir = normalize(hPos.xyz);
-	float3 worldPos = c_push.cameraPos + float3(0.0, 0.0, c_params.bottomRadius);
+	float3 worldPos = C.cameraPos + float3(0.0, 0.0, c_params.bottomRadius);
 	
 	float viewHeight = length(worldPos);
 	
@@ -54,7 +54,7 @@ void main(uint3 _tid: SV_DispatchThreadID) {
 	
 	float3 sideVector = normalize(cross(upVector, worldDir)); // assumes non parallel vectors
 	float3 forwardVector = normalize(cross(sideVector, upVector)); // aligns toward the sun light but perpendicular to up vector
-	float2 lightOnPlane = {dot(c_push.sunDirection, forwardVector), dot(c_push.sunDirection, sideVector)};
+	float2 lightOnPlane = {dot(C.sunDirection, forwardVector), dot(C.sunDirection, sideVector)};
 	lightOnPlane = normalize(lightOnPlane);
 	float lightViewCosAngle = lightOnPlane.x;
 	
@@ -64,8 +64,8 @@ void main(uint3 _tid: SV_DispatchThreadID) {
 	skyViewLutParamsToUv(uv, intersectGround, viewZenithCosAngle, lightViewCosAngle,
 		ViewSize, viewHeight, c_params.bottomRadius);
 	float3 skyView = s_view.SampleLevel(s_viewSmp, uv, 0);
-	float3 sun = getSunLuminance(c_params, worldPos, worldDir, c_push.sunDirection, c_push.sunIlluminance)
-		* (120000.0 / c_push.sunIlluminance);
+	float3 sun = getSunLuminance(c_params, worldPos, worldDir, C.sunDirection, C.sunIlluminance)
+		* (120000.0 / C.sunIlluminance);
 	
 	t_target[_tid.xy] = float4(skyView + sun, 1.0);
 	
