@@ -39,16 +39,7 @@ InstanceList::InstanceList(vuk::Allocator& _allocator, ModelBuffer& _models, Obj
 		.execute = [this](auto& cmd) {
 			
 			cmd.bind_compute_pipeline("instanceList/genInstances")
-			   .bind_buffer(0, 0, "models")
-			   .bind_buffer(0, 1, "modelIndices")
-			   .bind_buffer(0, 2, "instanceCount")
-			   .bind_buffer(0, 3, "instances");
-
-			auto countInitial = uint4{0, 1, 1, 0};
-			auto count = *cmd.get_resource_buffer("instanceCount");
-			std::memcpy(count.mapped_ptr, &countInitial, sizeof(countInitial));
-			
-			cmd.push_constants(vuk::ShaderStageFlagBits::eCompute, 0, instanceBound);
+			   .bind_buffer(0, 0, "instances");
 			
 			cmd.dispatch_invocations(instanceBound);
 			
