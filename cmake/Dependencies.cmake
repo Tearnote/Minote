@@ -6,7 +6,7 @@ find_package(Vulkan REQUIRED)
 set(VOLK_PULL_IN_VULKAN OFF CACHE BOOL "")
 FetchContent_Declare(volk
 	GIT_REPOSITORY https://github.com/zeux/volk
-	GIT_TAG 315929ebf428a0b924c1cff5803b69891f71bf5b)
+	GIT_TAG ee7c5526fd0079224bb31f25f3ace9d2140d4ba9)
 FetchContent_MakeAvailable(volk)
 target_compile_definitions(volk PUBLIC VK_NO_PROTOTYPES)
 target_include_directories(volk PUBLIC ${Vulkan_INCLUDE_DIRS})
@@ -24,7 +24,7 @@ target_link_libraries(vuk PRIVATE volk)
 
 FetchContent_Declare(vk-bootstrap
 	GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap
-	GIT_TAG 00cf404e7b37fa5df41c1d7c369f1fa33efbe4d2)
+	GIT_TAG 8e61b2d81c3f5f84339735085ff5651f71bbe1e7)
 FetchContent_MakeAvailable(vk-bootstrap)
 
 FetchContent_Declare(pcg
