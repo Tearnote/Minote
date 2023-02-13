@@ -66,6 +66,9 @@ auto InstanceList::cull(ModelBuffer& _models, ObjectBuffer& _objects,
 
 	compile();
 
+	//FIXME Broken HiZ
+	_hiz.reset();
+
 	auto rg = std::make_shared<vuk::RenderGraph>("instanceList/cull");
 	rg->attach_in("meshlets", _models.meshlets);
 	rg->attach_in("transforms", _objects.transforms);
