@@ -44,7 +44,11 @@ uint binarySearchSharedIdx(uint _target){
 	uint result = GroupSize / 2;
 	for (uint i = 0; i < GroupSizeExp - 1; i += 1) {
 		uint searchStride = 1u << (GroupSizeExp - 2u - i);
-		uint value = result == 0? 0 : sh_meshletCountPrefixSum[result];
+		uint value;
+		if (result == 0)
+			value = 0;
+		else
+			value = sh_meshletCountPrefixSum[result];
 		if (_target >= value)
 			result += searchStride;
 		else
@@ -52,7 +56,11 @@ uint binarySearchSharedIdx(uint _target){
 	}
 	// Final step
 	{
-		uint value = result == 0? 0 : sh_meshletCountPrefixSum[result];
+		uint value;
+		if (result == 0)
+			value = 0;
+		else
+			value = sh_meshletCountPrefixSum[result];
 		if (_target < value)
 			result -= 1;
 	}
@@ -91,9 +99,16 @@ void main(uint3 _tid: SV_DispatchThreadID, uint3 _lid: SV_GroupThreadID) {
 	
 	// Index 0 is used as a counter; the rest should be max uint
 	// to not participate in binary search
-	sh_meshletCountPrefixSum[_lid.x] = _lid.x == 0? 0 : -1;
+	if (_lid.x == 0)
+		sh_meshletCountPrefixSum[_lid.x] = 0;
+	else
+		sh_meshletCountPrefixSum[_lid.x] = -1;
 	
-	uint objectIdx = _tid.x < C.objectCount? _tid.x : -1;
+	uint objectIdx;
+	if (_tid.x < C.objectCount)
+		objectIdx = _tid.x;
+	else
+		objectIdx = -1;
 	
 	GroupMemoryBarrierWithGroupSync();
 	if (objectIdx != -1) // Run prefix sum with as many threads as objects
@@ -119,7 +134,8 @@ void main(uint3 _tid: SV_DispatchThreadID, uint3 _lid: SV_GroupThreadID) {
 		InterlockedAdd(b_instanceCount[0].x, groupCount);
 	
 	// Write out assigned workload
-	startingMeshletIdx -= startingSharedIdx == 0? 0 : sh_meshletCountPrefixSum[startingSharedIdx]; // From workload offset to object offset
+	if (startingSharedIdx != 0)
+		startingMeshletIdx -= sh_meshletCountPrefixSum[startingSharedIdx]; // From workload offset to object offset
 	writeOutFromOffset(startingSharedIdx, startingMeshletIdx, threadWorkload, writeIndex);
 	
 }
