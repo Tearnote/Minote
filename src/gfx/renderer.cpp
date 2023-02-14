@@ -12,7 +12,6 @@
 #include "util/log.hpp"
 #include "sys/system.hpp"
 #include "gfx/effects/instanceList.hpp"
-#include "gfx/effects/visibility.hpp"
 #include "gfx/effects/tonemap.hpp"
 #include "gfx/effects/bloom.hpp"
 #include "gfx/effects/sky.hpp"
@@ -138,12 +137,6 @@ void Renderer::executeRenderGraph() try {
 	instances = instances.cull(m_models, objects,
 		m_camera.view(), m_camera.projection());
 	auto triangles = TriangleList(frameAllocator(), m_models, instances);
-	
-	// Visibility draw
-	auto visibility = Visibility(frameAllocator(), m_models, objects, instances,
-		triangles, m_camera.viewport, m_camera.viewProjection());
-	auto worklist = Worklist(frameAllocator(), m_models, instances, triangles,
-		visibility, m_camera.viewport);
 	
 	// Sky rendering
 	if (!m_impl->m_atmosphere.has_value())

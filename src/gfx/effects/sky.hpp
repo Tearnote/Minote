@@ -1,7 +1,6 @@
 #pragma once
 
 #include "vuk/Future.hpp"
-#include "gfx/effects/visibility.hpp"
 #include "gfx/resource.hpp"
 #include "gfx/renderer.hpp"
 #include "gfx/camera.hpp"

@@ -53,7 +53,6 @@ add_executable(Minote
 	src/sys/vulkan.hpp src/sys/vulkan.cpp
 	src/sys/system.hpp src/sys/system.cpp
 	src/gfx/effects/instanceList.hpp src/gfx/effects/instanceList.cpp
-	src/gfx/effects/visibility.hpp src/gfx/effects/visibility.cpp
 	src/gfx/effects/tonemap.hpp src/gfx/effects/tonemap.cpp
 	src/gfx/effects/bloom.hpp src/gfx/effects/bloom.cpp
 	src/gfx/effects/sky.hpp src/gfx/effects/sky.cpp
