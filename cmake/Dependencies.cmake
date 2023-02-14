@@ -36,7 +36,7 @@ target_include_directories(pcg PUBLIC ${pcg_SOURCE_DIR})
 
 FetchContent_Declare(assert
 	GIT_REPOSITORY https://github.com/jeremy-rifkin/libassert
-	GIT_TAG 599a885a57050cd100ed771a189649ad7a603d4f)
+	GIT_TAG a94970435d077666d8c712ececb5993c546732c2)
 FetchContent_MakeAvailable(assert)
 
 set(OPT_DEF_LIBC ON CACHE BOOL "")
@@ -56,7 +56,7 @@ FetchContent_MakeAvailable(sdl)
 
 FetchContent_Declare(imgui
 	GIT_REPOSITORY https://github.com/ocornut/imgui
-	GIT_TAG v1.88)
+	GIT_TAG v1.89.2)
 FetchContent_MakeAvailable(imgui)
 add_library(imgui
 	${imgui_SOURCE_DIR}/imgui.h ${imgui_SOURCE_DIR}/imgui.cpp
@@ -71,7 +71,7 @@ target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR})
 target_link_libraries(imgui PRIVATE SDL2-static)
 
 FetchContent_Declare(sqlite
-	URL https://www.sqlite.org/2022/sqlite-amalgamation-3390200.zip)
+	URL https://www.sqlite.org/2022/sqlite-amalgamation-3400100.zip)
 FetchContent_MakeAvailable(sqlite)
 add_library(sqlite
 	${sqlite_SOURCE_DIR}/sqlite3.h ${sqlite_SOURCE_DIR}/sqlite3.c
@@ -83,7 +83,7 @@ target_link_libraries(sqlite-shell PRIVATE sqlite)
 
 FetchContent_Declare(cgltf
 	GIT_REPOSITORY https://github.com/jkuhlmann/cgltf
-	GIT_TAG cd37936659b448554f612a145d05e76ff27832a6)
+	GIT_TAG 6be9873747cc20b3c091eafd90010eda6c143dc5)
 FetchContent_MakeAvailable(cgltf)
 add_library(cgltf INTERFACE ${cgltf_SOURCE_DIR}/cgltf.h ${cgltf_SOURCE_DIR}/cgltf_write.h)
 target_include_directories(cgltf INTERFACE ${cgltf_SOURCE_DIR})
@@ -97,19 +97,19 @@ endif()
 
 FetchContent_Declare(itlib
 	GIT_REPOSITORY https://github.com/iboB/itlib
-	GIT_TAG v1.5.2)
+	GIT_TAG v1.8.3)
 FetchContent_MakeAvailable(itlib)
 target_compile_definitions(itlib INTERFACE ITLIB_STATIC_VECTOR_ERROR_HANDLING=ITLIB_STATIC_VECTOR_ERROR_HANDLING_THROW)
 target_compile_definitions(itlib INTERFACE ITLIB_SMALL_VECTOR_ERROR_HANDLING=ITLIB_SMALL_VECTOR_ERROR_HANDLING_THROW)
 
 FetchContent_Declare(fmt
 	GIT_REPOSITORY https://github.com/fmtlib/fmt
-	GIT_TAG 9.0.0)
+	GIT_TAG 9.1.0)
 FetchContent_MakeAvailable(fmt)
 
 FetchContent_Declare(fmtlog
 	GIT_REPOSITORY https://github.com/MengRao/fmtlog
-	GIT_TAG v2.2.0)
+	GIT_TAG v2.2.1)
 FetchContent_Populate(fmtlog) # The CMakeLists of fmtlog is only configured for install, not include
 add_library(fmtlog INTERFACE ${fmtlog_SOURCE_DIR}/fmtlog.h ${fmtlog_SOURCE_DIR}/fmtlog-inl.h)
 target_include_directories(fmtlog INTERFACE ${fmtlog_SOURCE_DIR})
@@ -119,11 +119,11 @@ target_link_libraries(fmtlog INTERFACE fmt::fmt)
 
 FetchContent_Declare(gcem
 	GIT_REPOSITORY https://github.com/kthohr/gcem
-	GIT_TAG v1.15.0)
+	GIT_TAG v1.16.0)
 FetchContent_MakeAvailable(gcem)
 
 FetchContent_Declare(mpack
-	URL https://github.com/ludocode/mpack/releases/download/v1.1/mpack-amalgamation-1.1.tar.gz)
+	URL https://github.com/ludocode/mpack/releases/download/v1.1.1/mpack-amalgamation-1.1.1.tar.gz)
 FetchContent_MakeAvailable(mpack)
 add_library(mpack
 	${mpack_SOURCE_DIR}/src/mpack/mpack.h ${mpack_SOURCE_DIR}/src/mpack/mpack.c)
