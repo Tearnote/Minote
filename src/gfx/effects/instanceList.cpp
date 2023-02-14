@@ -62,12 +62,9 @@ InstanceList::InstanceList(vuk::Allocator& _allocator, ModelBuffer& _models, Obj
 }
 
 auto InstanceList::cull(ModelBuffer& _models, ObjectBuffer& _objects,
-	float4x4 _view, float4x4 _projection, optional<HiZ> _hiz) -> InstanceList {
+	float4x4 _view, float4x4 _projection) -> InstanceList {
 
 	compile();
-
-	//FIXME Broken HiZ
-	_hiz.reset();
 
 	auto rg = std::make_shared<vuk::RenderGraph>("instanceList/cull");
 	rg->attach_in("meshlets", _models.meshlets);
@@ -82,16 +79,13 @@ auto InstanceList::cull(ModelBuffer& _models, ObjectBuffer& _objects,
 		.memory_usage = vuk::MemoryUsage::eGPUonly,
 	});
 	rg->inference_rule("outInstances", vuk::same_size_as("instances"));
-	if (_hiz)
-		rg->attach_in("hiz", _hiz->hiz);
-	else
-		rg->attach_image("stub", vuk::ImageAttachment{ // Placeholder for the HiZ binding
-			.extent = vuk::Dimension3D::absolute(1, 1),
-			.format = vuk::Format::eR8Unorm,
-			.sample_count = vuk::Samples::e1,
-			.level_count = 1,
-			.layer_count = 1,
-		});
+	rg->attach_image("stub", vuk::ImageAttachment{ // Placeholder for the HiZ binding
+		.extent = vuk::Dimension3D::absolute(1, 1),
+		.format = vuk::Format::eR8Unorm,
+		.sample_count = vuk::Samples::e1,
+		.level_count = 1,
+		.layer_count = 1,
+	});
 
 	auto resources = std::vector<vuk::Resource>{
 		"meshlets"_buffer >> vuk::eComputeRead,
@@ -101,14 +95,11 @@ auto InstanceList::cull(ModelBuffer& _models, ObjectBuffer& _objects,
 		"outInstanceCount"_buffer >> vuk::eComputeRW >> "outInstanceCount/final",
 		"outInstances"_buffer >> vuk::eComputeWrite >> "outInstances/final",
 	};
-	if (_hiz)
-		resources.emplace_back("hiz"_image >> vuk::eComputeSampled);
-	else
-		resources.emplace_back("stub"_image >> vuk::eComputeSampled);
+	resources.emplace_back("stub"_image >> vuk::eComputeSampled);
 	rg->add_pass(vuk::Pass{
 		.name = "instanceList/cull",
 		.resources = std::move(resources),
-		.execute = [_view, _projection, useHiz=_hiz.has_value()](vuk::CommandBuffer& cmd) {
+		.execute = [_view, _projection](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_compute_pipeline("instanceList/cull")
 			   .bind_buffer(0, 0, "meshlets")
@@ -117,10 +108,7 @@ auto InstanceList::cull(ModelBuffer& _models, ObjectBuffer& _objects,
 			   .bind_buffer(0, 3, "instances")
 			   .bind_buffer(0, 4, "outInstanceCount")
 			   .bind_buffer(0, 5, "outInstances");
-			if (useHiz)
-				cmd.bind_image(0, 6, "hiz").bind_sampler(0, 6, MinClamp);
-			else
-				cmd.bind_image(0, 6, "stub").bind_sampler(0, 6, MinClamp);
+			cmd.bind_image(0, 6, "stub").bind_sampler(0, 6, MinClamp);
 
 			auto outCount = *cmd.get_resource_buffer("outInstanceCount");
 			auto outCountInitial = uint4{0, 1, 1, 0};
@@ -145,16 +133,8 @@ auto InstanceList::cull(ModelBuffer& _models, ObjectBuffer& _objects,
 				.P11 = _projection[1][1],
 			});
 			
-			cmd.specialize_constants(0, uint(useHiz));
+			cmd.specialize_constants(0, 0);
 			cmd.specialize_constants(1, _projection[2][3]);
-			if (useHiz) {
-				auto hiz = *cmd.get_resource_image_attachment("hiz");
-				auto hizSize = hiz.extent.extent;
-				cmd.specialize_constants(2, hizSize.width);
-				cmd.specialize_constants(3, hizSize.height);
-				cmd.specialize_constants(4, 960u); //FIXME actual size!!
-				cmd.specialize_constants(5, 504u);
-			}
 			cmd.dispatch_indirect("instanceCount");
 			
 		},

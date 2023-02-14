@@ -1,7 +1,6 @@
 #pragma once
 
 #include "vuk/Allocator.hpp"
-#include "gfx/effects/hiz.hpp"
 #include "gfx/resource.hpp"
 #include "gfx/objects.hpp"
 #include "gfx/models.hpp"
@@ -28,8 +27,7 @@ struct InstanceList {
 	InstanceList(vuk::Allocator&, ModelBuffer&, ObjectBuffer&);
 
 	[[nodiscard]]
-	auto cull(ModelBuffer&, ObjectBuffer&, float4x4 view, float4x4 projection,
-		optional<HiZ> = nullopt) -> InstanceList;
+	auto cull(ModelBuffer&, ObjectBuffer&, float4x4 view, float4x4 projection) -> InstanceList;
 	
 	// Build required shaders; optional
 	static void compile();

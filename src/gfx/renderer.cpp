@@ -17,14 +17,12 @@
 #include "gfx/effects/shade.hpp"
 #include "gfx/effects/bloom.hpp"
 #include "gfx/effects/sky.hpp"
-#include "gfx/effects/hiz.hpp"
 #include "gfx/util.hpp"
 
 namespace minote {
 
 struct Renderer::Impl {
 	optional<Atmosphere> m_atmosphere;
-	optional<HiZ> m_hiz;
 	Sky m_sky;
 	bool m_skyDebug;
 	Bloom m_bloom;
@@ -139,7 +137,7 @@ void Renderer::executeRenderGraph() try {
 	auto objects = m_objects.upload(frameAllocator(), m_models);
 	auto instances = InstanceList(frameAllocator(), m_models, objects);
 	instances = instances.cull(m_models, objects,
-		m_camera.view(), m_camera.projection(), m_impl->m_hiz);
+		m_camera.view(), m_camera.projection());
 	auto triangles = TriangleList(frameAllocator(), m_models, instances);
 	
 	// Visibility draw
@@ -147,7 +145,6 @@ void Renderer::executeRenderGraph() try {
 		triangles, m_camera.viewport, m_camera.viewProjection());
 	auto worklist = Worklist(frameAllocator(), m_models, instances, triangles,
 		visibility, m_camera.viewport);
-	auto hiz = HiZ(visibility.depth);
 	
 	// Sky rendering
 	if (!m_impl->m_atmosphere.has_value())
@@ -193,11 +190,6 @@ void Renderer::executeRenderGraph() try {
 				vuk::Filter::eNearest);
 		},
 	});
-
-	// Re-export temporal resources from the main rendergraph
-	rg->attach_in("hiz", hiz.hiz);
-	hiz.hiz = vuk::Future(rg, "hiz");
-	m_impl->m_hiz = std::move(hiz);
 	
 	auto compiler = vuk::Compiler();
 	vuk::execute_submit_and_present_to_one(frameAllocator(), compiler.link({&rg, 1}, {}), s_vulkan->swapchain);
