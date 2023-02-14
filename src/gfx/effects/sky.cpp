@@ -232,7 +232,7 @@ auto Sky::createView(Atmosphere& _atmo, float3 _probePos) -> Texture2D<float3> {
 	
 }
 
-auto Sky::draw(Texture2D<float4> _target, Worklist& _worklist, Atmosphere& _atmo,
+auto Sky::draw(Texture2D<float4> _target, Atmosphere& _atmo,
 	Texture2D<float3> _skyView, Camera const& _camera) -> Texture2D<float4> {
 	
 	compile();
@@ -241,8 +241,6 @@ auto Sky::draw(Texture2D<float4> _target, Worklist& _worklist, Atmosphere& _atmo
 	rg->attach_in("params", _atmo.params);
 	rg->attach_in("transmittance", _atmo.transmittance);
 	rg->attach_in("view", _skyView);
-	rg->attach_in("counts", _worklist.counts);
-	rg->attach_in("lists", _worklist.lists);
 	rg->attach_in("target", _target);
 	
 	rg->add_pass(vuk::Pass{
@@ -251,18 +249,15 @@ auto Sky::draw(Texture2D<float4> _target, Worklist& _worklist, Atmosphere& _atmo
 			"params"_buffer >> vuk::eComputeRead,
 			"transmittance"_image >> vuk::eComputeSampled,
 			"view"_image >> vuk::eComputeSampled,
-			"counts"_buffer >> vuk::eIndirectRead,
-			"lists"_buffer >> vuk::eComputeRead,
 			"target"_image >> vuk::eComputeWrite >> "target/final",
 		},
-		.execute = [this, &_camera, &_worklist](vuk::CommandBuffer& cmd) {
+		.execute = [this, &_camera](vuk::CommandBuffer& cmd) {
 			
 			cmd.bind_compute_pipeline("sky/draw")
 			   .bind_buffer(0, 0, "params")
 			   .bind_image(0, 1, "transmittance").bind_sampler(0, 1, LinearClamp)
 			   .bind_image(0, 2, "view").bind_sampler(0, 2, LinearClamp)
-			   .bind_buffer(0, 3, "lists")
-			   .bind_image(0, 4, "target");
+			   .bind_image(0, 3, "target");
 			
 			struct Constants {
 				float4x4 viewProjectionInv;
@@ -287,9 +282,8 @@ auto Sky::draw(Texture2D<float4> _target, Worklist& _worklist, Atmosphere& _atmo
 			auto targetSize = target.extent.extent;
 			cmd.specialize_constants(2, targetSize.width);
 			cmd.specialize_constants(3, targetSize.height);
-			cmd.specialize_constants(4, _worklist.listsOffset(Material::Type::None));
 			
-			cmd.dispatch_indirect(cmd.get_resource_buffer("counts")->add_offset(_worklist.countsOffset(Material::Type::None)));
+			cmd.dispatch_invocations(targetSize.width, targetSize.height);
 			
 		},
 	});

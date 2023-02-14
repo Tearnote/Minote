@@ -87,7 +87,7 @@ struct Sky {
 	auto createView(Atmosphere&, float3 probePos) -> Texture2D<float3>;
 	
 	// Draw the sky into a texture at camera position
-	auto draw(Texture2D<float4> target, Worklist&, Atmosphere&, Texture2D<float3> skyView, Camera const&) -> Texture2D<float4>;
+	auto draw(Texture2D<float4> target, Atmosphere&, Texture2D<float3> skyView, Camera const&) -> Texture2D<float4>;
 	
 	// Build required shaders; optional
 	static void compile();

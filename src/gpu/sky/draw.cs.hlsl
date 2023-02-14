@@ -1,4 +1,3 @@
-#include "visibility/worklist.hlsli"
 #include "sky/access.hlsli"
 #include "sky/types.hlsli"
 
@@ -16,8 +15,7 @@ struct Constants {
 [[vk::binding(1)]][[vk::combinedImageSampler]] SamplerState s_transmittanceSmp;
 [[vk::binding(2)]][[vk::combinedImageSampler]] Texture2D<float3> s_view;
 [[vk::binding(2)]][[vk::combinedImageSampler]] SamplerState s_viewSmp;
-[[vk::binding(3)]] StructuredBuffer<uint> b_lists;
-[[vk::binding(4)]] RWTexture2D<float4> t_target;
+[[vk::binding(3)]] RWTexture2D<float4> t_target;
 
 #define TRANSMITTANCE_TEX s_transmittance
 #define TRANSMITTANCE_SMP s_transmittanceSmp
@@ -29,14 +27,12 @@ static const uint2 ViewSize = {ViewWidth, ViewHeight};
 [[vk::constant_id(2)]] const uint TargetWidth = 0;
 [[vk::constant_id(3)]] const uint TargetHeight = 0;
 static const uint2 TargetSize = {TargetWidth, TargetHeight};
-[[vk::constant_id(4)]] const uint TileOffset = 0;
 
 [[vk::push_constant]] Constants C;
 
-[numthreads(1, TileSize, TileSize)]
+[numthreads(16, 16, 1)]
 void main(uint3 _tid: SV_DispatchThreadID) {
 	
-	_tid.xy = tiledPos(b_lists, _tid, TileOffset);
 	if (any(_tid.xy >= TargetSize))
 		return;
 	
