@@ -11,7 +11,6 @@
 #include "util/math.hpp"
 #include "util/log.hpp"
 #include "sys/system.hpp"
-#include "gfx/effects/instanceList.hpp"
 #include "gfx/effects/tonemap.hpp"
 #include "gfx/effects/bloom.hpp"
 #include "gfx/effects/sky.hpp"
@@ -133,8 +132,6 @@ void Renderer::executeRenderGraph() try {
 	
 	// Instance processing
 	auto objects = m_objects.upload(frameAllocator(), m_models);
-	auto instances = InstanceList(frameAllocator(), m_models, objects);
-	auto triangles = TriangleList(frameAllocator(), m_models, instances);
 	
 	// Sky rendering
 	if (!m_impl->m_atmosphere.has_value())
