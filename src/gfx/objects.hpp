@@ -21,7 +21,7 @@ struct ObjectBuffer {
 	Buffer<Transform> transforms;
 	Buffer<Transform> prevTransforms;
 	uint objectCount;
-	uint meshletCount; // How many meshlets are in the scene in total; useful in other stages
+	uint meshCount; // How many meshes are in the scene in total; useful in other stages
 	uint triangleCount; // Total triangle count of the scene
 };
 

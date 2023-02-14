@@ -15,52 +15,42 @@
 namespace minote {
 
 struct Material {
-	enum struct Type: uint {
-		None = 0, // Invalid
-		Flat = 1,
-		Count
-	};
-	
 	float4 color;
 	float3 emissive;
-	Type type;
+	//TODO compress metalness and roughness into a single 32bit value
 	float metalness;
 	float roughness;
-	float2 _pad0;
+	float _pad0;
+	float _pad1;
+	float _pad2;
 };
 
-struct Meshlet {
-	// Index+size into ModelBuffer::triIndices
+struct Mesh {
+	// Index+size into ModelBuffer::indices
 	uint indexOffset;
 	uint indexCount;
-	// Offset to add to values retrieved from ModelBuffer::triIndices
-	uint vertexOffset;
 	
 	uint materialIdx; // Index into ModelBuffer::materials
-	
-	float3 boundingSphereCenter;
-	float boundingSphereRadius;
+	uint _pad0;
 };
 
-// Index+size into ModelBuffer::meshlets
+// Index+size into ModelBuffer::meshes
 struct Model {
-	uint meshletOffset;
-	uint meshletCount;
+	uint meshOffset;
+	uint meshCount;
 };
 
 // A set of buffers storing vertex data for all models, and how to access each
 // model within the buffer
 struct ModelBuffer {
 	Buffer<Material> materials;
-	Buffer<uint> triIndices; // Index into vertIndices (requires offset)
-	Buffer<VertIndexType> vertIndices; // Index into vertices
+	Buffer<IndexType> indices;
 	Buffer<VertexType> vertices;
-	Buffer<NormalType> normals;
 	
-	Buffer<Meshlet> meshlets;
+	Buffer<Mesh> meshes;
 	Buffer<Model> models;
 	
-	ivector<Meshlet> cpu_meshlets;
+	ivector<Mesh> cpu_meshes;
 	ivector<Model> cpu_models;
 	hashmap<ID, uint> cpu_modelIndices; // Mapping from ID to index into models
 };
@@ -79,13 +69,11 @@ struct ModelList {
 private:
 	
 	pvector<Material> m_materials;
-	pvector<uint> m_triIndices;
-	pvector<VertIndexType> m_vertIndices;
+	pvector<IndexType> m_indices;
 	pvector<VertexType> m_vertices;
-	pvector<NormalType> m_normals;
 	
-	ivector<Meshlet> m_meshlets; // Meshlet descriptors, for access to index buffers
-	ivector<Model> m_models; // Model descriptors, for access to m_modelMeshes
+	ivector<Mesh> m_meshes; // Mesh descriptors, for access to index buffers
+	ivector<Model> m_models; // Model descriptors, for access to m_meshes
 	hashmap<ID, uint> m_modelIndices; // Mapping of model IDs to their index in m_models
 	
 };

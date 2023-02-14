@@ -85,7 +85,7 @@ void Game::Impl::createScene() {
 	};
 	
 	constexpr auto Prescale = float3{1_m, 1_m, 1_m};
-	
+	/*
 	m_battleScenes.clear();
 	for (auto x: iota(0u, BattleScenes))
 	for (auto y: iota(0u, BattleScenes)) {
@@ -94,7 +94,7 @@ void Game::Impl::createScene() {
 			.scale = Prescale,
 		});
 	}
-	
+	*/
 	m_testScenes.clear();
 	for (auto x: iota(0u, SimpleScenes))
 	for (auto y: iota(0u, SimpleScenes)) {

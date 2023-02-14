@@ -10,7 +10,6 @@
 #include "util/math.hpp"
 #include "util/util.hpp"
 #include "tools/modelSchema.hpp"
-#include "tools/oct.hpp"
 
 using namespace minote;
 
@@ -21,16 +20,6 @@ struct Worknode {
 
 using GltfIndexType = uint;
 using GltfVertexType = float3;
-using GltfNormalType = float3;
-
-struct GltfMesh {
-	float4x4 transform;
-	uint materialIdx;
-	
-	pvector<GltfIndexType> indices;
-	pvector<GltfVertexType> vertices;
-	pvector<GltfNormalType> normals;
-};
 
 struct Material {
 	float4 color;
@@ -39,31 +28,21 @@ struct Material {
 	float roughness;
 };
 
-struct Meshlet {
-	uint materialIdx;
-	
-	uint indexOffset;
-	uint indexCount;
-	uint vertexOffset;
-	
-	float3 boundingSphereCenter;
-	float boundingSphereRadius;
-};
+constexpr auto DefaultMaterial = Material{
+	.color = {1.0f, 1.0f, 1.0f, 1.0f},
+	.emissive = {0.0f, 0.0f, 0.0f},
+	.metalness = 0.0f,
+	.roughness = 0.0f };
 
-struct Model {
-	pvector<Material> materials;
-	pvector<Meshlet> meshlets;
-	pvector<TriIndexType> triIndices;
-	pvector<VertIndexType> vertIndices;
+struct Mesh {
+	Material material;
+	pvector<IndexType> indices;
 	pvector<VertexType> vertices;
-	pvector<NormalType> normals;
 };
 
 int main(int argc, char const* argv[]) try {
 	if (argc != 3)
 		throw runtime_error_fmt("Invalid number of arguments: found {}, expected 2", argc - 1);
-	
-	auto model = Model();
 	
 	// Load and parse input gltf
 	
@@ -78,27 +57,35 @@ int main(int argc, char const* argv[]) try {
 	
 	// Fetch materials
 	
-	model.materials.reserve(gltf->materials_count);
-	for (auto i: iota(0_zu, gltf->materials_count)) {
-		
-		auto& material = gltf->materials[i];
-		auto& pbr = material.pbr_metallic_roughness;
-		model.materials.emplace_back(Material{
-			.color = float4{
-				pbr.base_color_factor[0],
-				pbr.base_color_factor[1],
-				pbr.base_color_factor[2],
-				pbr.base_color_factor[3] },
-			.emissive = float3{
-				material.emissive_factor[0],
-				material.emissive_factor[1],
-				material.emissive_factor[2] },
-			.metalness = pbr.metallic_factor,
-			.roughness = pbr.roughness_factor });
-		
+	auto materials = pvector<Material>();
+	if (gltf->materials_count == 0) {
+
+		materials.emplace_back(DefaultMaterial);
+		fmt::print(stderr, "WARNING: Material data not present, using fallback\n");
+
+	} else {
+
+		materials.reserve(gltf->materials_count);
+		for (auto i: iota(0_zu, gltf->materials_count)) {
+
+			auto& material = gltf->materials[i];
+			auto& pbr = material.pbr_metallic_roughness;
+			materials.emplace_back(Material{
+				.color = float4{
+					pbr.base_color_factor[0],
+					pbr.base_color_factor[1],
+					pbr.base_color_factor[2],
+					pbr.base_color_factor[3] },
+				.emissive = float3{
+					material.emissive_factor[0],
+					material.emissive_factor[1],
+					material.emissive_factor[2] },
+				.metalness = pbr.metallic_factor,
+				.roughness = pbr.roughness_factor});
+
+		}
+
 	}
-	if (gltf->materials_count == 0)
-		fmt::print(stderr, "WARNING: Material data not present\n");
 	
 	// Queue up the base nodes
 	
@@ -116,7 +103,7 @@ int main(int argc, char const* argv[]) try {
 	
 	// Iterate over the node hierarchy
 	
-	auto meshes = ivector<GltfMesh>();
+	auto meshes = ivector<Mesh>();
 	meshes.reserve(gltf->meshes_count);
 	while (!worknodes.empty()) {
 		
@@ -159,11 +146,11 @@ int main(int argc, char const* argv[]) try {
 		VERIFY(nodeMesh.primitives_count == 1);
 		auto& primitive = nodeMesh.primitives[0];
 		auto& mesh = meshes.emplace_back();
-		mesh.transform = transform;
 		
-		// Fetch material index
+		// Fetch material
 		
-		mesh.materialIdx = primitive.material? (primitive.material - gltf->materials) : 0;
+		auto materialIdx = primitive.material? (primitive.material - gltf->materials) : 0;
+		mesh.material = materials[materialIdx];
 		
 		// Fetch index data
 		
@@ -204,24 +191,16 @@ int main(int argc, char const* argv[]) try {
 				
 				auto vertexCount = accessor.count;
 				mesh.vertices.resize(vertexCount);
+				static_assert(sizeof(GltfVertexType) == sizeof(VertexType));
 				std::memcpy(mesh.vertices.data(), buffer, vertexCount * sizeof(GltfVertexType));
 				continue;
 				
 			}
 			
-			// Vertex normals
+			// Vertex normals (ignored)
 			
-			if (std::strcmp(primitive.attributes[attrIdx].name, "NORMAL") == 0) {
-				
-				VERIFY(accessor.component_type == cgltf_component_type_r_32f);
-				VERIFY(accessor.type == cgltf_type_vec3);
-				
-				auto vertexCount = accessor.count;
-				mesh.normals.resize(vertexCount);
-				std::memcpy(mesh.normals.data(), buffer, vertexCount * sizeof(GltfNormalType));
+			if (std::strcmp(primitive.attributes[attrIdx].name, "NORMAL") == 0)
 				continue;
-				
-			}
 			
 			// Unknown attribute
 			fmt::print(stderr, "WARNING: Ignoring unknown attribute: {}\n", primitive.attributes[attrIdx].name);
@@ -230,8 +209,11 @@ int main(int argc, char const* argv[]) try {
 		
 		ASSERT(mesh.indices.size());
 		ASSERT(mesh.vertices.size());
-		ASSERT(mesh.normals.size());
-		ASSERT(mesh.vertices.size() == mesh.normals.size());
+
+		// Transform vertex attributes
+
+		for (auto& v: mesh.vertices)
+			v = float3(mul(float4(v, 1.0f), transform));
 		
 	}
 	
@@ -243,7 +225,6 @@ int main(int argc, char const* argv[]) try {
 		
 		auto streams = to_array<meshopt_Stream>({
 			{mesh.vertices.data(), sizeof(GltfVertexType), sizeof(GltfVertexType)},
-			{mesh.normals.data(), sizeof(GltfNormalType), sizeof(GltfNormalType)},
 		});
 		
 		// meshoptimizer assumptions
@@ -260,24 +241,18 @@ int main(int argc, char const* argv[]) try {
 		// Apply remap
 		
 		auto verticesRemapped = pvector<GltfVertexType>(uniqueVertexCount);
-		auto normalsRemapped = pvector<GltfNormalType>(uniqueVertexCount);
 		auto indicesRemapped = pvector<GltfIndexType>(mesh.indices.size());
 		
 		meshopt_remapVertexBuffer(verticesRemapped.data(),
 			mesh.vertices.data(), mesh.vertices.size(), sizeof(GltfVertexType),
 			remapTemp.data());
-		meshopt_remapVertexBuffer(normalsRemapped.data(),
-			mesh.normals.data(), mesh.normals.size(), sizeof(GltfNormalType),
-			remapTemp.data());
 		meshopt_remapIndexBuffer(indicesRemapped.data(),
 			mesh.indices.data(), mesh.indices.size(), remapTemp.data());
 		
 		mesh.vertices = std::move(verticesRemapped);
-		mesh.normals = std::move(normalsRemapped);
 		mesh.indices = std::move(indicesRemapped);
 		
 		ASSERT(mesh.vertices.size() == uniqueVertexCount);
-		ASSERT(mesh.normals.size() == uniqueVertexCount);
 		
 		// Optimize for memory efficiency
 		
@@ -291,116 +266,18 @@ int main(int argc, char const* argv[]) try {
 			mesh.indices.data(), mesh.indices.size(), mesh.vertices.size()));
 		
 		verticesRemapped = pvector<GltfVertexType>(uniqueVertexCount);
-		normalsRemapped = pvector<GltfNormalType>(uniqueVertexCount);
 		indicesRemapped = pvector<GltfIndexType>(mesh.indices.size());
 		
 		meshopt_remapVertexBuffer(verticesRemapped.data(),
 			mesh.vertices.data(), mesh.vertices.size(), sizeof(GltfVertexType),
 			remapTemp.data());
-		meshopt_remapVertexBuffer(normalsRemapped.data(),
-			mesh.normals.data(), mesh.normals.size(), sizeof(GltfNormalType),
-			remapTemp.data());
 		meshopt_remapIndexBuffer(indicesRemapped.data(),
 			mesh.indices.data(), mesh.indices.size(), remapTemp.data());
 		
 		mesh.vertices = std::move(verticesRemapped);
-		mesh.normals = std::move(normalsRemapped);
 		mesh.indices = std::move(indicesRemapped);
 		
 		ASSERT(mesh.vertices.size() == uniqueVertexCount);
-		ASSERT(mesh.normals.size() == uniqueVertexCount);
-		
-	}
-	
-	// Convert meshes into meshlet representation
-	
-	for (auto& mesh: meshes) {
-		
-		// Pre-transform vertices
-		
-		auto vertices = pvector<VertexType>();
-		vertices.reserve(mesh.vertices.size());
-		for (auto v: mesh.vertices)
-			vertices.push_back(float3(mul(float4(v, 1.0f), mesh.transform)));
-		
-		// Pre-transform normals
-		
-		auto normTransform = transpose(inverse(mesh.transform));
-		auto normals = pvector<GltfNormalType>();
-		normals.reserve(mesh.normals.size());
-		for (auto n: mesh.normals)
-			normals.push_back(normalize(float3(mul(float4(n, 0.0f), normTransform))));
-		
-		// Convert normals to oct encoding
-		
-		auto octNormals = pvector<NormalType>();
-		octNormals.reserve(mesh.normals.size());
-		for (auto n: normals)
-			octNormals.push_back(octEncode(n));
-		
-		// Generate the meshlets
-		
-		// meshoptimizer assumptions
-		static_assert(sizeof(TriIndexType) == sizeof(unsigned char));
-		static_assert(sizeof(VertIndexType) == sizeof(unsigned int));
-		
-		auto maxMeshletCount = meshopt_buildMeshletsBound(mesh.indices.size(), MeshletMaxVerts, MeshletMaxTris);
-		auto rawMeshlets = pvector<meshopt_Meshlet>(maxMeshletCount);
-		auto meshletVertices = pvector<unsigned int>(maxMeshletCount * MeshletMaxVerts);
-		auto meshletTriangles = pvector<unsigned char>(maxMeshletCount * MeshletMaxTris * 3);
-		auto meshletCount = meshopt_buildMeshlets(rawMeshlets.data(), meshletVertices.data(), meshletTriangles.data(),
-			mesh.indices.data(), mesh.indices.size(), &vertices[0].x(), vertices.size(), sizeof(VertexType),
-			MeshletMaxVerts, MeshletMaxTris, 0.0f);
-		rawMeshlets.resize(meshletCount);
-		
-		auto& lastMeshlet = rawMeshlets.back();
-		meshletVertices.resize(lastMeshlet.vertex_offset + lastMeshlet.vertex_count);
-		meshletTriangles.resize(lastMeshlet.triangle_offset + ((lastMeshlet.triangle_count * 3 + 3) & ~3));
-		
-		// Generate meshlet bounds
-		
-		auto bounds = pvector<meshopt_Bounds>();
-		bounds.reserve(meshletCount);
-		for (auto& m: rawMeshlets) {
-			
-			bounds.emplace_back(meshopt_computeMeshletBounds(
-				&meshletVertices[m.vertex_offset],
-				&meshletTriangles[m.triangle_offset], m.triangle_count,
-				&vertices[0].x(), vertices.size(), sizeof(VertexType)));
-			
-		}
-		
-		// Offset the vertex indices
-		
-		for (auto& idx: meshletVertices)
-			idx += model.vertices.size();
-		
-		// Write meshlet descriptor
-		
-		model.meshlets.reserve(model.meshlets.size() + meshletCount);
-		for (auto mIdx: iota(0_zu, rawMeshlets.size())) {
-			
-			auto& rawMeshlet = rawMeshlets[mIdx];
-			auto& bound = bounds[mIdx];
-			auto& meshlet = model.meshlets.emplace_back();
-			
-			meshlet.materialIdx = mesh.materialIdx;
-			
-			meshlet.indexOffset = rawMeshlet.triangle_offset + model.triIndices.size();
-			meshlet.indexCount = (rawMeshlet.triangle_count * 3 + 3) & ~3;
-			meshlet.vertexOffset = rawMeshlet.vertex_offset + model.vertIndices.size();
-			
-			meshlet.boundingSphereCenter = float3{bound.center[0], bound.center[1], bound.center[2]};
-			meshlet.boundingSphereRadius = bound.radius;
-			
-		}
-		
-		// Append meshlet data
-		
-		model.triIndices.insert(model.triIndices.end(), meshletTriangles.begin(), meshletTriangles.end());
-		model.vertIndices.insert(model.vertIndices.end(), meshletVertices.begin(), meshletVertices.end());
-		model.vertices.insert(model.vertices.end(), vertices.begin(), vertices.end());
-		model.normals.insert(model.normals.end(), octNormals.begin(), octNormals.end());
 		
 	}
 	
@@ -413,78 +290,45 @@ int main(int argc, char const* argv[]) try {
 		throw runtime_error_fmt(R"(Failed to open output file "{}" for writing: error code {})", outputPath, out.error);
 	
 	mpack_write_uint(&out, ModelMagic);
-	mpack_start_map(&out, 6);
-		
-		mpack_write_cstr(&out, "materials");
-		mpack_start_array(&out, model.materials.size());
-		for (auto& material: model.materials) {
-			
+	mpack_write_cstr(&out, "meshes");
+	mpack_start_array(&out, meshes.size());
+	for (auto& mesh: meshes) {
+
+		mpack_start_map(&out, 3);
+
+			mpack_write_cstr(&out, "material");
 			mpack_start_map(&out, 4);
 				mpack_write_cstr(&out, "color");
 				mpack_start_array(&out, 4);
-					mpack_write_float(&out, material.color.r());
-					mpack_write_float(&out, material.color.g());
-					mpack_write_float(&out, material.color.b());
-					mpack_write_float(&out, material.color.a());
+					mpack_write_float(&out, mesh.material.color.r());
+					mpack_write_float(&out, mesh.material.color.g());
+					mpack_write_float(&out, mesh.material.color.b());
+					mpack_write_float(&out, mesh.material.color.a());
 				mpack_finish_array(&out);
 				mpack_write_cstr(&out, "emissive");
 				mpack_start_array(&out, 3);
-					mpack_write_float(&out, material.emissive.r());
-					mpack_write_float(&out, material.emissive.g());
-					mpack_write_float(&out, material.emissive.b());
+					mpack_write_float(&out, mesh.material.emissive.r());
+					mpack_write_float(&out, mesh.material.emissive.g());
+					mpack_write_float(&out, mesh.material.emissive.b());
 				mpack_finish_array(&out);
 				mpack_write_cstr(&out, "metalness");
-				mpack_write_float(&out, material.metalness);
+				mpack_write_float(&out, mesh.material.metalness);
 				mpack_write_cstr(&out, "roughness");
-				mpack_write_float(&out, material.roughness);
+				mpack_write_float(&out, mesh.material.roughness);
 			mpack_finish_map(&out);
+
+			mpack_write_cstr(&out, "indices");
+			mpack_write_bin(&out, reinterpret_cast<const char*>(mesh.indices.data()),
+				mesh.indices.size() * sizeof(IndexType));
+
+			mpack_write_cstr(&out, "vertices");
+			mpack_write_bin(&out, reinterpret_cast<const char*>(mesh.vertices.data()),
+				mesh.vertices.size() * sizeof(VertexType));
 			
-		}
-		mpack_finish_array(&out);
-		
-		mpack_write_cstr(&out, "meshlets");
-		mpack_start_array(&out, model.meshlets.size());
-		for (auto& meshlet: model.meshlets) {
-			
-			mpack_start_map(&out, 6);
-				mpack_write_cstr(&out, "materialIdx");
-				mpack_write_uint(&out, meshlet.materialIdx);
-				mpack_write_cstr(&out, "indexOffset");
-				mpack_write_uint(&out, meshlet.indexOffset);
-				mpack_write_cstr(&out, "indexCount");
-				mpack_write_uint(&out, meshlet.indexCount);
-				mpack_write_cstr(&out, "vertexOffset");
-				mpack_write_uint(&out, meshlet.vertexOffset);
-				mpack_write_cstr(&out, "boundingSphereCenter");
-				mpack_start_array(&out, 3);
-					mpack_write_float(&out, meshlet.boundingSphereCenter.x());
-					mpack_write_float(&out, meshlet.boundingSphereCenter.y());
-					mpack_write_float(&out, meshlet.boundingSphereCenter.z());
-				mpack_finish_array(&out);
-				mpack_write_cstr(&out, "boundingSphereRadius");
-				mpack_write_float(&out, meshlet.boundingSphereRadius);
-			mpack_finish_map(&out);
-			
-		}
-		mpack_finish_array(&out);
-		
-		mpack_write_cstr(&out, "triIndices");
-		mpack_write_bin(&out, reinterpret_cast<const char*>(model.triIndices.data()),
-			model.triIndices.size() * sizeof(TriIndexType));
-		
-		mpack_write_cstr(&out, "vertIndices");
-		mpack_write_bin(&out, reinterpret_cast<const char*>(model.vertIndices.data()),
-			model.vertIndices.size() * sizeof(VertIndexType));
-		
-		mpack_write_cstr(&out, "vertices");
-		mpack_write_bin(&out, reinterpret_cast<const char*>(model.vertices.data()),
-			model.vertices.size() * sizeof(VertexType));
-		
-		mpack_write_cstr(&out, "normals");
-		mpack_write_bin(&out, reinterpret_cast<const char*>(model.normals.data()),
-			model.normals.size() * sizeof(NormalType));
-		
-	mpack_finish_map(&out);
+		mpack_finish_map(&out);
+
+	}
+	mpack_finish_array(&out);
 	
 	if (auto error = mpack_writer_destroy(&out); error != mpack_ok)
 		throw runtime_error_fmt(R"(Failed to write output file "{}": error code {})", outputPath, error);
