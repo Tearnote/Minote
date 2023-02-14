@@ -25,9 +25,6 @@ struct InstanceList {
 	uint triangleBound;
 	
 	InstanceList(vuk::Allocator&, ModelBuffer&, ObjectBuffer&);
-
-	[[nodiscard]]
-	auto cull(ModelBuffer&, ObjectBuffer&, float4x4 view, float4x4 projection) -> InstanceList;
 	
 	// Build required shaders; optional
 	static void compile();

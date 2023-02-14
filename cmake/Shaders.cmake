@@ -7,7 +7,6 @@ set(SHADER_PREFIX src/gpu)
 set(SHADER_SOURCES
 	instanceList/genInstances.cs.hlsl
 	instanceList/genIndices.cs.hlsl
-	instanceList/cull.cs.hlsl
 	tonemap/apply.cs.hlsl
 	imgui/imgui.vs.hlsl
 	imgui/imgui.ps.hlsl

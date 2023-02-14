@@ -134,8 +134,6 @@ void Renderer::executeRenderGraph() try {
 	// Instance processing
 	auto objects = m_objects.upload(frameAllocator(), m_models);
 	auto instances = InstanceList(frameAllocator(), m_models, objects);
-	instances = instances.cull(m_models, objects,
-		m_camera.view(), m_camera.projection());
 	auto triangles = TriangleList(frameAllocator(), m_models, instances);
 	
 	// Sky rendering
