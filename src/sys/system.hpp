@@ -1,7 +1,7 @@
 #pragma once
 
+#include <concepts>
 #include <atomic>
-#include "util/concepts.hpp"
 #include "SDL_events.h"
 #include "SDL_video.h"
 #include "util/service.hpp"
@@ -61,7 +61,7 @@ struct System {
 	// Execute the provided function on each event in the queue. If the function
 	// returns true, the event will be removed from the queue.
 	template<typename F>
-	requires predicate<F, SDL_Event const&>
+	requires std::predicate<F, SDL_Event const&>
 	void forEachEvent(F&& func) {
 		
 		SDL_FilterEvents([](void* f, SDL_Event* e) -> int {

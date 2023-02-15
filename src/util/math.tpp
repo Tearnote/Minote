@@ -7,7 +7,7 @@
 
 namespace minote {
 
-template<usize Dim, arithmetic T>
+template<usize Dim, stx::arithmetic T>
 constexpr vec<Dim, T>::vec(std::initializer_list<T> _list) {
 	
 	ASSUME(_list.size() == m_arr.size());
@@ -15,9 +15,9 @@ constexpr vec<Dim, T>::vec(std::initializer_list<T> _list) {
 	
 }
 
-template<usize Dim, arithmetic T>
-template<arithmetic U>
-requires (!same_as<T, U>)
+template<usize Dim, stx::arithmetic T>
+template<stx::arithmetic U>
+requires (!std::same_as<T, U>)
 constexpr vec<Dim, T>::vec(vec<Dim, U> const& _other) {
 	
 	for (auto i: iota(0_zu, Dim))
@@ -25,7 +25,7 @@ constexpr vec<Dim, T>::vec(vec<Dim, U> const& _other) {
 	
 }
 
-template<usize Dim, arithmetic T>
+template<usize Dim, stx::arithmetic T>
 template<usize N>
 requires (N > Dim)
 constexpr vec<Dim, T>::vec(vec<N, T> const& _other) {
@@ -35,7 +35,7 @@ constexpr vec<Dim, T>::vec(vec<N, T> const& _other) {
 	
 }
 
-template<usize Dim, arithmetic T>
+template<usize Dim, stx::arithmetic T>
 template<usize N>
 requires (N < Dim)
 constexpr vec<Dim, T>::vec(vec<N, T> const& _other, T _fill) {
@@ -46,7 +46,7 @@ constexpr vec<Dim, T>::vec(vec<N, T> const& _other, T _fill) {
 	
 }
 
-template<usize Dim, arithmetic T>
+template<usize Dim, stx::arithmetic T>
 constexpr auto vec<Dim, T>::operator+=(vec<Dim, T> const& _other) -> vec<Dim, T>& {
 	
 	for (auto i: iota(0_zu, Dim))
@@ -55,7 +55,7 @@ constexpr auto vec<Dim, T>::operator+=(vec<Dim, T> const& _other) -> vec<Dim, T>
 	
 }
 
-template<usize Dim, arithmetic T>
+template<usize Dim, stx::arithmetic T>
 constexpr auto vec<Dim, T>::operator-=(vec<Dim, T> const& _other) -> vec<Dim, T>& {
 	
 	for (auto i: iota(0_zu, Dim))
@@ -64,7 +64,7 @@ constexpr auto vec<Dim, T>::operator-=(vec<Dim, T> const& _other) -> vec<Dim, T>
 	
 }
 
-template<usize Dim, arithmetic T>
+template<usize Dim, stx::arithmetic T>
 constexpr auto vec<Dim, T>::operator*=(vec<Dim, T> const& _other) -> vec<Dim, T>& {
 	
 	for (auto i: iota(0_zu, Dim))
@@ -73,7 +73,7 @@ constexpr auto vec<Dim, T>::operator*=(vec<Dim, T> const& _other) -> vec<Dim, T>
 	
 }
 
-template<usize Dim, arithmetic T>
+template<usize Dim, stx::arithmetic T>
 constexpr auto vec<Dim, T>::operator/=(vec<Dim, T> const& _other) -> vec<Dim, T>& {
 	
 	for (auto i: iota(0_zu, Dim))
@@ -82,7 +82,7 @@ constexpr auto vec<Dim, T>::operator/=(vec<Dim, T> const& _other) -> vec<Dim, T>
 	
 }
 
-template<usize Dim, arithmetic T>
+template<usize Dim, stx::arithmetic T>
 constexpr auto vec<Dim, T>::operator%=(vec<Dim, T> const& _other) -> vec<Dim, T>& {
 	
 	static_assert(std::is_integral_v<T>);
@@ -93,7 +93,7 @@ constexpr auto vec<Dim, T>::operator%=(vec<Dim, T> const& _other) -> vec<Dim, T>
 	
 }
 
-template<usize Dim, arithmetic T>
+template<usize Dim, stx::arithmetic T>
 constexpr auto vec<Dim, T>::operator*=(T _other) -> vec<Dim, T>& {
 	
 	for (auto i: iota(0_zu, Dim))
@@ -102,7 +102,7 @@ constexpr auto vec<Dim, T>::operator*=(T _other) -> vec<Dim, T>& {
 	
 }
 
-template<usize Dim, arithmetic T>
+template<usize Dim, stx::arithmetic T>
 constexpr auto vec<Dim, T>::operator/=(T _other) -> vec<Dim, T>& {
 	
 	for (auto i: iota(0_zu, Dim))
@@ -111,7 +111,7 @@ constexpr auto vec<Dim, T>::operator/=(T _other) -> vec<Dim, T>& {
 	
 }
 
-template<usize Dim, arithmetic T>
+template<usize Dim, stx::arithmetic T>
 constexpr auto vec<Dim, T>::operator%=(T _other) -> vec<Dim, T>& {
 	
 	static_assert(std::is_integral_v<T>);
@@ -122,7 +122,7 @@ constexpr auto vec<Dim, T>::operator%=(T _other) -> vec<Dim, T>& {
 	
 }
 
-template<usize Dim, arithmetic T>
+template<usize Dim, stx::arithmetic T>
 constexpr auto vec<Dim, T>::operator<<=(T _other) -> vec<Dim, T>& {
 	
 	static_assert(std::is_integral_v<T>);
@@ -133,7 +133,7 @@ constexpr auto vec<Dim, T>::operator<<=(T _other) -> vec<Dim, T>& {
 	
 }
 
-template<usize Dim, arithmetic T>
+template<usize Dim, stx::arithmetic T>
 constexpr auto vec<Dim, T>::operator>>=(T _other) -> vec<Dim, T>& {
 	
 	static_assert(std::is_integral_v<T>);
@@ -144,7 +144,7 @@ constexpr auto vec<Dim, T>::operator>>=(T _other) -> vec<Dim, T>& {
 	
 }
 
-template<usize Dim, arithmetic T>
+template<usize Dim, stx::arithmetic T>
 constexpr auto operator+(vec<Dim, T> const& _left, vec<Dim, T> const& _right) -> vec<Dim, T> {
 	
 	auto result = _left;
@@ -153,7 +153,7 @@ constexpr auto operator+(vec<Dim, T> const& _left, vec<Dim, T> const& _right) ->
 	
 }
 
-template<usize Dim, arithmetic T>
+template<usize Dim, stx::arithmetic T>
 constexpr auto operator-(vec<Dim, T> const& _left, vec<Dim, T> const& _right) -> vec<Dim, T> {
 	
 	auto result = _left;
@@ -162,7 +162,7 @@ constexpr auto operator-(vec<Dim, T> const& _left, vec<Dim, T> const& _right) ->
 	
 }
 
-template<usize Dim, arithmetic T>
+template<usize Dim, stx::arithmetic T>
 constexpr auto operator*(vec<Dim, T> const& _left, vec<Dim, T> const& _right) -> vec<Dim, T> {
 	
 	auto result = _left;
@@ -171,7 +171,7 @@ constexpr auto operator*(vec<Dim, T> const& _left, vec<Dim, T> const& _right) ->
 	
 }
 
-template<usize Dim, arithmetic T>
+template<usize Dim, stx::arithmetic T>
 constexpr auto operator/(vec<Dim, T> const& _left, vec<Dim, T> const& _right) -> vec<Dim, T> {
 	
 	auto result = _left;
@@ -180,7 +180,7 @@ constexpr auto operator/(vec<Dim, T> const& _left, vec<Dim, T> const& _right) ->
 	
 }
 
-template<usize Dim, integral T>
+template<usize Dim, std::integral T>
 constexpr auto operator%(vec<Dim, T> const& _left, vec<Dim, T> const& _right) -> vec<Dim, T> {
 	
 	auto result = _left;
@@ -189,7 +189,7 @@ constexpr auto operator%(vec<Dim, T> const& _left, vec<Dim, T> const& _right) ->
 	
 }
 
-template<usize Dim, arithmetic T>
+template<usize Dim, stx::arithmetic T>
 constexpr auto operator==(vec<Dim, T> const& _left, vec<Dim, T> const& _right) -> bool {
 	
 	for (auto i: iota(0_zu, Dim))
@@ -199,7 +199,7 @@ constexpr auto operator==(vec<Dim, T> const& _left, vec<Dim, T> const& _right) -
 	
 }
 
-template<usize Dim, arithmetic T>
+template<usize Dim, stx::arithmetic T>
 constexpr auto min(vec<Dim, T> const& _left, vec<Dim, T> const& _right) -> vec<Dim, T> {
 	
 	auto result = vec<Dim, T>();
@@ -209,7 +209,7 @@ constexpr auto min(vec<Dim, T> const& _left, vec<Dim, T> const& _right) -> vec<D
 	
 }
 
-template<usize Dim, arithmetic T>
+template<usize Dim, stx::arithmetic T>
 constexpr auto max(vec<Dim, T> const& _left, vec<Dim, T> const& _right) -> vec<Dim, T> {
 	
 	auto result = vec<Dim, T>();
@@ -219,7 +219,7 @@ constexpr auto max(vec<Dim, T> const& _left, vec<Dim, T> const& _right) -> vec<D
 	
 }
 
-template<usize Dim, arithmetic T>
+template<usize Dim, stx::arithmetic T>
 constexpr auto dot(vec<Dim, T> const& _left, vec<Dim, T> const& _right) -> T {
 	
 	auto result = T(0);
@@ -229,7 +229,7 @@ constexpr auto dot(vec<Dim, T> const& _left, vec<Dim, T> const& _right) -> T {
 	
 }
 
-template<arithmetic T>
+template<stx::arithmetic T>
 constexpr auto cross(vec<3, T> const& _left, vec<3, T> const& _right) -> vec<3, T> {
 	
 	return vec<3, T>{
@@ -240,7 +240,7 @@ constexpr auto cross(vec<3, T> const& _left, vec<3, T> const& _right) -> vec<3, 
 	
 }
 
-template<usize Dim, arithmetic T>
+template<usize Dim, stx::arithmetic T>
 constexpr auto operator*(vec<Dim, T> const& _left, T _right) -> vec<Dim, T> {
 	
 	auto result = _left;
@@ -249,7 +249,7 @@ constexpr auto operator*(vec<Dim, T> const& _left, T _right) -> vec<Dim, T> {
 	
 }
 
-template<usize Dim, arithmetic T>
+template<usize Dim, stx::arithmetic T>
 constexpr auto operator/(vec<Dim, T> const& _left, T _right) -> vec<Dim, T> {
 	
 	auto result = _left;
@@ -258,7 +258,7 @@ constexpr auto operator/(vec<Dim, T> const& _left, T _right) -> vec<Dim, T> {
 	
 }
 
-template<usize Dim, integral T>
+template<usize Dim, std::integral T>
 constexpr auto operator%(vec<Dim, T> const& _left, T _right) -> vec<Dim, T> {
 	
 	auto result = _left;
@@ -267,7 +267,7 @@ constexpr auto operator%(vec<Dim, T> const& _left, T _right) -> vec<Dim, T> {
 	
 }
 
-template<usize Dim, integral T>
+template<usize Dim, std::integral T>
 constexpr auto operator<<(vec<Dim, T> const& _left, T _right) -> vec<Dim, T> {
 	
 	auto result = _left;
@@ -276,7 +276,7 @@ constexpr auto operator<<(vec<Dim, T> const& _left, T _right) -> vec<Dim, T> {
 	
 }
 
-template<usize Dim, integral T>
+template<usize Dim, std::integral T>
 constexpr auto operator>>(vec<Dim, T> const& _left, T _right) -> vec<Dim, T> {
 	
 	auto result = _left;
@@ -285,7 +285,7 @@ constexpr auto operator>>(vec<Dim, T> const& _left, T _right) -> vec<Dim, T> {
 	
 }
 
-template<usize Dim, floating_point T>
+template<usize Dim, std::floating_point T>
 constexpr auto abs(vec<Dim, T> const& _vec) -> vec<Dim, T> {
 	
 	auto result = vec<Dim, T>();
@@ -295,7 +295,7 @@ constexpr auto abs(vec<Dim, T> const& _vec) -> vec<Dim, T> {
 	
 }
 
-template<usize Dim, floating_point T>
+template<usize Dim, std::floating_point T>
 constexpr auto normalize(vec<Dim, T> const& _vec) -> vec<Dim, T> {
 	
 	if constexpr (Dim == 4) {
@@ -306,7 +306,7 @@ constexpr auto normalize(vec<Dim, T> const& _vec) -> vec<Dim, T> {
 	
 }
 
-template<floating_point Prec>
+template<std::floating_point Prec>
 constexpr qua<Prec>::qua(std::initializer_list<Prec> _list) {
 	
 	ASSUME(_list.size() == m_arr.size());
@@ -314,7 +314,7 @@ constexpr qua<Prec>::qua(std::initializer_list<Prec> _list) {
 	
 }
 
-template<floating_point Prec>
+template<std::floating_point Prec>
 template<usize N>
 requires (N == 3 || N == 4)
 constexpr qua<Prec>::qua(vec<N, Prec> const& _other) {
@@ -326,7 +326,7 @@ constexpr qua<Prec>::qua(vec<N, Prec> const& _other) {
 	
 }
 
-template<floating_point Prec>
+template<std::floating_point Prec>
 constexpr auto qua<Prec>::angleAxis(Prec _angle, vec<3, Prec> _axis) -> qua<Prec> {
 	
 	ASSUME(isUnit(_axis));
@@ -342,9 +342,9 @@ constexpr auto qua<Prec>::angleAxis(Prec _angle, vec<3, Prec> _axis) -> qua<Prec
 	
 }
 
-template<floating_point Prec>
-template<arithmetic U>
-requires (!same_as<Prec, U>)
+template<std::floating_point Prec>
+template<stx::arithmetic U>
+requires (!std::same_as<Prec, U>)
 constexpr qua<Prec>::qua(qua<U> const& _other) {
 	
 	for (auto i: iota(0_zu, m_arr.size()))
@@ -352,7 +352,7 @@ constexpr qua<Prec>::qua(qua<U> const& _other) {
 	
 }
 
-template<floating_point Prec>
+template<std::floating_point Prec>
 constexpr auto operator*(qua<Prec> const& _l, qua<Prec> const& _r) -> qua<Prec> {
 	
 	return qua<Prec>{
@@ -364,7 +364,7 @@ constexpr auto operator*(qua<Prec> const& _l, qua<Prec> const& _r) -> qua<Prec> 
 	
 }
 
-template<usize Dim, floating_point Prec>
+template<usize Dim, std::floating_point Prec>
 constexpr mat<Dim, Prec>::mat(std::initializer_list<Prec> _list) {
 	
 	ASSUME(_list.size() == Dim * Dim);
@@ -378,7 +378,7 @@ constexpr mat<Dim, Prec>::mat(std::initializer_list<Prec> _list) {
 	
 }
 
-template<usize Dim, floating_point Prec>
+template<usize Dim, std::floating_point Prec>
 constexpr mat<Dim, Prec>::mat(std::initializer_list<vec<Dim, Prec>> _list) {
 	
 	ASSUME(_list.size() == Dim);
@@ -392,7 +392,7 @@ constexpr mat<Dim, Prec>::mat(std::initializer_list<vec<Dim, Prec>> _list) {
 	
 }
 
-template<usize Dim, floating_point Prec>
+template<usize Dim, std::floating_point Prec>
 constexpr auto mat<Dim, Prec>::identity() -> mat<Dim, Prec> {
 	
 	auto result = mat<Dim, Prec>();
@@ -403,7 +403,7 @@ constexpr auto mat<Dim, Prec>::identity() -> mat<Dim, Prec> {
 	
 }
 
-template<usize Dim, floating_point Prec>
+template<usize Dim, std::floating_point Prec>
 constexpr auto mat<Dim, Prec>::translate(vec<3, Prec> _shift) -> mat<Dim, Prec> {
 	
 	static_assert(Dim == 4, "Translation matrix requires order of 4");
@@ -416,7 +416,7 @@ constexpr auto mat<Dim, Prec>::translate(vec<3, Prec> _shift) -> mat<Dim, Prec> 
 	
 }
 
-template<usize Dim, floating_point Prec>
+template<usize Dim, std::floating_point Prec>
 constexpr auto mat<Dim, Prec>::rotate(vec<3, Prec> _axis, Prec _angle) -> mat<Dim, Prec> {
 	
 	ASSUME(isUnit(_axis));
@@ -443,7 +443,7 @@ constexpr auto mat<Dim, Prec>::rotate(vec<3, Prec> _axis, Prec _angle) -> mat<Di
 	
 }
 
-template<usize Dim, floating_point Prec>
+template<usize Dim, std::floating_point Prec>
 constexpr auto mat<Dim, Prec>::rotate(qua<Prec> _quat) -> mat<Dim, Prec> {
 	
 	auto result = mat<Dim, Prec>::identity();
@@ -464,7 +464,7 @@ constexpr auto mat<Dim, Prec>::rotate(qua<Prec> _quat) -> mat<Dim, Prec> {
 	
 }
 
-template<usize Dim, floating_point Prec>
+template<usize Dim, std::floating_point Prec>
 constexpr auto mat<Dim, Prec>::scale(vec<3, Prec> _scale) -> mat<Dim, Prec> {
 	
 	auto result = mat<Dim, Prec>::identity();
@@ -474,7 +474,7 @@ constexpr auto mat<Dim, Prec>::scale(vec<3, Prec> _scale) -> mat<Dim, Prec> {
 	
 }
 
-template<usize Dim, floating_point Prec>
+template<usize Dim, std::floating_point Prec>
 constexpr auto mat<Dim, Prec>::scale(Prec _scale) -> mat<Dim, Prec> {
 	
 	auto result = mat<Dim, Prec>::identity();
@@ -484,9 +484,9 @@ constexpr auto mat<Dim, Prec>::scale(Prec _scale) -> mat<Dim, Prec> {
 	
 }
 
-template<usize Dim, floating_point Prec>
-template<arithmetic U>
-requires (!same_as<Prec, U>)
+template<usize Dim, std::floating_point Prec>
+template<stx::arithmetic U>
+requires (!std::same_as<Prec, U>)
 constexpr mat<Dim, Prec>::mat(mat<Dim, U> const& _other) {
 	
 	for (auto x: iota(0_zu, Dim))
@@ -495,7 +495,7 @@ constexpr mat<Dim, Prec>::mat(mat<Dim, U> const& _other) {
 	
 }
 
-template<usize Dim, floating_point Prec>
+template<usize Dim, std::floating_point Prec>
 template<usize N>
 requires (N != Dim)
 constexpr mat<Dim, Prec>::mat(mat<N, Prec> const& _other) {
@@ -510,7 +510,7 @@ constexpr mat<Dim, Prec>::mat(mat<N, Prec> const& _other) {
 	
 }
 
-template<usize Dim, floating_point Prec>
+template<usize Dim, std::floating_point Prec>
 constexpr auto mat<Dim, Prec>::operator*=(Prec _other) -> mat<Dim, Prec>& {
 	
 	for (auto x: iota(0_zu, Dim))
@@ -520,7 +520,7 @@ constexpr auto mat<Dim, Prec>::operator*=(Prec _other) -> mat<Dim, Prec>& {
 	
 }
 
-template<usize Dim, floating_point Prec>
+template<usize Dim, std::floating_point Prec>
 constexpr auto mat<Dim, Prec>::operator/=(Prec _other) -> mat<Dim, Prec>& {
 	
 	for (auto x: iota(0_zu, Dim))
@@ -530,7 +530,7 @@ constexpr auto mat<Dim, Prec>::operator/=(Prec _other) -> mat<Dim, Prec>& {
 	
 }
 
-template<usize Dim, floating_point Prec>
+template<usize Dim, std::floating_point Prec>
 constexpr auto mul(mat<Dim, Prec> const& _left, mat<Dim, Prec> const& _right) -> mat<Dim, Prec> {
 	
 	static_assert(Dim == 3 || Dim == 4, "Unsupported matrix order for multiplication");
@@ -551,7 +551,7 @@ constexpr auto mul(mat<Dim, Prec> const& _left, mat<Dim, Prec> const& _right) ->
 	
 }
 
-template<usize Dim, floating_point Prec>
+template<usize Dim, std::floating_point Prec>
 constexpr auto mul(vec<Dim, Prec> const& _left, mat<Dim, Prec> const& _right) -> vec<Dim, Prec> {
 	
 	auto result = vec<Dim, Prec>();
@@ -562,7 +562,7 @@ constexpr auto mul(vec<Dim, Prec> const& _left, mat<Dim, Prec> const& _right) ->
 	
 }
 
-template<usize Dim, floating_point Prec>
+template<usize Dim, std::floating_point Prec>
 constexpr auto operator*(mat<Dim, Prec> const& _left, Prec _right) -> mat<Dim, Prec> {
 	
 	auto result = _left;
@@ -571,7 +571,7 @@ constexpr auto operator*(mat<Dim, Prec> const& _left, Prec _right) -> mat<Dim, P
 	
 }
 
-template<usize Dim, floating_point Prec>
+template<usize Dim, std::floating_point Prec>
 constexpr auto operator/(mat<Dim, Prec> const& _left, Prec _right) -> mat<Dim, Prec> {
 	
 	auto result = _left;
@@ -580,7 +580,7 @@ constexpr auto operator/(mat<Dim, Prec> const& _left, Prec _right) -> mat<Dim, P
 	
 }
 
-template<usize Dim, floating_point Prec>
+template<usize Dim, std::floating_point Prec>
 constexpr auto transpose(mat<Dim, Prec> const& _mat) -> mat<Dim, Prec> {
 	
 	auto result = mat<Dim, Prec>();
@@ -592,7 +592,7 @@ constexpr auto transpose(mat<Dim, Prec> const& _mat) -> mat<Dim, Prec> {
 	
 }
 
-template<usize Dim, floating_point Prec>
+template<usize Dim, std::floating_point Prec>
 constexpr auto inverse(mat<Dim, Prec> const& _mat) -> mat<Dim, Prec> {
 	
 	static_assert(Dim == 3 || Dim == 4, "Unsupported matrix order for inversion");
@@ -676,7 +676,7 @@ constexpr auto inverse(mat<Dim, Prec> const& _mat) -> mat<Dim, Prec> {
 	
 }
 
-template<floating_point Prec>
+template<std::floating_point Prec>
 constexpr auto look(vec<3, Prec> _pos, vec<3, Prec> _dir, vec<3, Prec> _up) -> mat<4, Prec> {
 	
 	ASSUME(isUnit(_dir));
@@ -693,7 +693,7 @@ constexpr auto look(vec<3, Prec> _pos, vec<3, Prec> _dir, vec<3, Prec> _up) -> m
 	
 }
 
-template<floating_point Prec>
+template<std::floating_point Prec>
 constexpr auto perspective(Prec _vFov, Prec _aspectRatio, Prec _zNear) -> mat<4, Prec> {
 	
 	auto range = tan(_vFov / Prec(2)) * _zNear;

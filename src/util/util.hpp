@@ -1,8 +1,9 @@
 #pragma once
 
 #include <type_traits>
+#include <concepts>
 #include <ranges>
-#include "util/concepts.hpp"
+#include "stx/concepts.hpp"
 #include "util/types.hpp"
 
 namespace minote {
@@ -16,7 +17,7 @@ using std::ranges::views::reverse;
 // the current rules of the language.
 // Example: offset_of(&Point::y)
 // See: https://gist.github.com/graphitemaster/494f21190bb2c63c5516
-template<typename T1, default_initializable T2>
+template<typename T1, std::default_initializable T2>
 inline auto offset_of(T1 T2::*member) -> usize {
 	
 	static auto obj = T2();
@@ -46,7 +47,7 @@ constexpr auto nextPOT(uint n) -> uint {
 }
 
 // Execute n times.
-template<invocable F>
+template<std::invocable F>
 constexpr void repeat(usize times, F func) {
 	
 	for (auto i = usize(0); i < times; i += 1)
@@ -66,7 +67,7 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 #endif
 
 // Conversion of scoped enum to the underlying type, using the unary + operator
-template<enum_type T>
+template<stx::enum_type T>
 constexpr auto operator+(T e) { return std::underlying_type_t<T>(e); }
 
 // usize integer literal

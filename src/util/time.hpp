@@ -1,6 +1,7 @@
 #pragma once
 
-#include "util/concepts.hpp"
+#include <concepts>
+#include "stx/concepts.hpp"
 #include "util/types.hpp"
 
 namespace minote {
@@ -10,15 +11,15 @@ namespace minote {
 using nsec = int64;
 
 // Create nsec from a count of seconds
-template<arithmetic T>
+template<stx::arithmetic T>
 constexpr auto seconds(T val) -> nsec { return val * 1'000'000'000LL; }
 
 // Create nsec from a count of milliseconds
-template<arithmetic T>
+template<stx::arithmetic T>
 constexpr auto milliseconds(T val) { return val * 1'000'000LL; }
 
 // Get an accurate floating-point ratio between two nsecs
-template<floating_point T = float>
+template<std::floating_point T = float>
 constexpr auto ratio(nsec left, nsec right) -> T { return double(left) / double(right); }
 
 // Create nsec from second/millisecond literals

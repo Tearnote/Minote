@@ -29,7 +29,7 @@ add_compile_definitions("BUILD_TYPE=$<$<CONFIG:Debug>:BUILD_DEBUG>$<$<CONFIG:Rel
 
 # Main executable
 add_executable(Minote
-	src/util/concepts.hpp
+	src/stx/concepts.hpp
 	src/util/optional.hpp
 	src/util/service.hpp
 	src/util/hashmap.hpp

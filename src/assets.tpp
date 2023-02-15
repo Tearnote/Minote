@@ -3,7 +3,6 @@
 #include "config.hpp"
 
 #include "sqlite3.h"
-#include "util/concepts.hpp"
 #include "util/string.hpp"
 #include "util/format.hpp"
 #include "util/error.hpp"
@@ -14,7 +13,7 @@
 namespace minote {
 
 template<typename F>
-requires invocable<F, string_view, span<char const>>
+requires std::invocable<F, string_view, span<char const>>
 void Assets::loadModels(F _func) {
 	
 	// Prepare database query
