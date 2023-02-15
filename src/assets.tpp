@@ -3,17 +3,17 @@
 #include "config.hpp"
 
 #include <format>
+#include <span>
 #include "sqlite3.h"
 #include "stx/except.hpp"
 #include "util/string.hpp"
 #include "util/util.hpp"
-#include "util/span.hpp"
 #include "util/log.hpp"
 
 namespace minote {
 
 template<typename F>
-requires std::invocable<F, string_view, span<char const>>
+requires std::invocable<F, string_view, std::span<char const>>
 void Assets::loadModels(F _func) {
 	
 	// Prepare database query
@@ -43,7 +43,7 @@ void Assets::loadModels(F _func) {
 		auto nameLen = sqlite3_column_bytes(modelsQuery, 0);
 		auto model = static_cast<char const*>(sqlite3_column_blob(modelsQuery, 1));
 		auto modelLen = sqlite3_column_bytes(modelsQuery, 1);
-		_func(string_view(name, nameLen), span(model, modelLen));
+		_func(string_view(name, nameLen), std::span(model, modelLen));
 		
 	}
 	

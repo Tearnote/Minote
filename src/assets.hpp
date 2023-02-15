@@ -1,8 +1,8 @@
 #pragma once
 
 #include <concepts>
+#include <span>
 #include "util/string.hpp"
-#include "util/span.hpp"
 
 // Forward declaration
 struct sqlite3;
@@ -19,7 +19,7 @@ struct Assets {
 	// Iterate over the models table, and call the provided function on each row
 	// Function arguments are name of the model, and raw bytestream as char array
 	template<typename F>
-	requires std::invocable<F, string_view, span<char const>>
+	requires std::invocable<F, string_view, std::span<char const>>
 	void loadModels(F func);
 	
 	Assets(Assets const&) = delete;

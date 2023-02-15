@@ -1,11 +1,11 @@
 #include "gfx/effects/sky.hpp"
 
+#include <span>
 #include "imgui.h"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
 #include "vuk/Partials.hpp"
 #include "util/string.hpp"
-#include "util/span.hpp"
 #include "util/math.hpp"
 #include "gfx/samplers.hpp"
 #include "gfx/shader.hpp"
@@ -81,7 +81,7 @@ Atmosphere::Atmosphere(vuk::Allocator& _allocator, Params const& _params) {
 	});
 	auto paramsFut = vuk::create_buffer_gpu(_allocator,
 		vuk::DomainFlagBits::eGraphicsQueue,
-		span(&_params, 1)).second;
+		std::span(&_params, 1)).second;
 	rg->attach_in("params", paramsFut);
 	
 	rg->add_pass(vuk::Pass{

@@ -39,7 +39,6 @@ add_executable(Minote
 	src/util/tween.hpp
 	src/util/types.hpp
 	src/util/math.hpp src/util/math.tpp
-	src/util/span.hpp
 	src/util/util.hpp
 	src/util/time.hpp
 	src/util/ease.hpp

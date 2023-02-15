@@ -1,6 +1,7 @@
 #include "gfx/objects.hpp"
 
 #include <array>
+#include <span>
 #include "vuk/Partials.hpp"
 #include "util/vector.hpp"
 #include "util/util.hpp"
@@ -86,16 +87,16 @@ auto ObjectPool::upload(vuk::Allocator& _allocator, ModelBuffer const& _models) 
 	return ObjectBuffer {
 		.modelIndices = vuk::create_buffer_cross_device(_allocator,
 			vuk::MemoryUsage::eCPUtoGPU,
-			span(cpu_modelIndices)).second,
+			std::span(cpu_modelIndices)).second,
 		.colors = vuk::create_buffer_cross_device(_allocator,
 			vuk::MemoryUsage::eCPUtoGPU,
-			span(cpu_colors)).second,
+			std::span(cpu_colors)).second,
 		.transforms = vuk::create_buffer_cross_device(_allocator,
 			vuk::MemoryUsage::eCPUtoGPU,
-			span(cpu_transforms)).second,
+			std::span(cpu_transforms)).second,
 		.prevTransforms = vuk::create_buffer_cross_device(_allocator,
 			vuk::MemoryUsage::eCPUtoGPU,
-			span(cpu_prevTransforms)).second,
+			std::span(cpu_prevTransforms)).second,
 		.objectCount = objectCount,
 		.meshCount = meshCount,
 		.triangleCount = triangleCount,

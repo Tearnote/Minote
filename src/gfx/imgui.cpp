@@ -1,6 +1,7 @@
 #include "gfx/imgui.hpp"
 
 #include <cstdlib>
+#include <span>
 #include "backends/imgui_impl_sdl.h"
 #include "imgui.h"
 #include "vuk/AllocatorHelpers.hpp"
@@ -10,7 +11,6 @@
 #include "vuk/Partials.hpp"
 #include "util/verify.hpp"
 #include "util/types.hpp"
-#include "util/span.hpp"
 #include "util/math.hpp"
 #include "util/log.hpp"
 #include "gfx/samplers.hpp"
@@ -116,7 +116,7 @@ auto Imgui::render(Texture2D<float4> _target) -> Texture2D<float4> {
 	
 	auto vtxDst = 0_zu;
 	auto idxDst = 0_zu;
-	for (auto* list: span(drawdata->CmdLists, drawdata->CmdListsCount)) {
+	for (auto* list: std::span(drawdata->CmdLists, drawdata->CmdListsCount)) {
 		auto imverto = imvert->add_offset(vtxDst * sizeof(ImDrawVert));
 		auto  imindo =  imind->add_offset(idxDst * sizeof(ImDrawIdx));
 		std::memcpy(imverto.mapped_ptr, list->VtxBuffer.Data, list->VtxBuffer.Size * sizeof(ImDrawVert));
@@ -177,7 +177,7 @@ auto Imgui::render(Texture2D<float4> _target) -> Texture2D<float4> {
 			// (Because we merged all buffers into a single one, we maintain our own offset into them)
 			auto globalVtxOffset = 0;
 			auto globalIdxOffset = 0;
-			for (auto* list: span(drawdata->CmdLists, drawdata->CmdListsCount)) {
+			for (auto* list: std::span(drawdata->CmdLists, drawdata->CmdListsCount)) {
 				for (auto& pcmd: list->CmdBuffer) {
 					
 					// Project scissor/clipping rectangles into framebuffer space

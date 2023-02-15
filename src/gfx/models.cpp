@@ -2,6 +2,7 @@
 
 #include <utility>
 #include <cstring>
+#include <span>
 #include "mpack/mpack.h"
 #include "vuk/RenderGraph.hpp"
 #include "vuk/Partials.hpp"
@@ -12,7 +13,7 @@
 
 namespace minote {
 
-void ModelList::addModel(string_view _name, span<char const> _model) {
+void ModelList::addModel(string_view _name, std::span<char const> _model) {
 	
 	// Load in data
 	auto in = mpack_reader_t();
@@ -100,19 +101,19 @@ auto ModelList::upload(vuk::Allocator& _allocator) && -> ModelBuffer {
 	auto result = ModelBuffer{
 		.materials = vuk::create_buffer_gpu(_allocator,
 			vuk::DomainFlagBits::eGraphicsQueue,
-			span(m_materials)).second,
+			std::span(m_materials)).second,
 		.indices = vuk::create_buffer_gpu(_allocator,
 			vuk::DomainFlagBits::eGraphicsQueue,
-			span(m_indices)).second,
+			std::span(m_indices)).second,
 		.vertices = vuk::create_buffer_gpu(_allocator,
 			vuk::DomainFlagBits::eGraphicsQueue,
-			span(m_vertices)).second,
+			std::span(m_vertices)).second,
 		.meshes = vuk::create_buffer_gpu(_allocator,
 			vuk::DomainFlagBits::eGraphicsQueue,
-			span(m_meshes)).second,
+			std::span(m_meshes)).second,
 		.models = vuk::create_buffer_gpu(_allocator,
 			vuk::DomainFlagBits::eGraphicsQueue,
-			span(m_models)).second,
+			std::span(m_models)).second,
 		.cpu_modelIndices = std::move(m_modelIndices),
 	};
 	result.cpu_meshes = std::move(m_meshes); // Must still exist for .meshes creation
