@@ -1,5 +1,6 @@
 #include <cstring>
 #include <cmath>
+#include <array>
 #include "meshoptimizer.h"
 #include "mpack/mpack.h"
 #define CGLTF_IMPLEMENTATION
@@ -223,7 +224,7 @@ int main(int argc, char const* argv[]) try {
 		
 		// Prepare data for meshoptimizer
 		
-		auto streams = to_array<meshopt_Stream>({
+		auto streams = std::to_array<meshopt_Stream>({
 			{mesh.vertices.data(), sizeof(GltfVertexType), sizeof(GltfVertexType)},
 		});
 		

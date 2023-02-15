@@ -1,6 +1,6 @@
 #pragma once
 
-#include "util/array.hpp"
+#include <array>
 #include "gfx/objects.hpp"
 
 namespace minote {
@@ -34,9 +34,9 @@ struct SimpleScene {
 private:
 	
 	ObjectID m_spinny;
-	array<ObjectID, 6> m_blocks;
-	array<ObjectID, 9> m_spheresLeft;
-	array<ObjectID, 9> m_spheresRight;
+	std::array<ObjectID, 6> m_blocks;
+	std::array<ObjectID, 9> m_spheresLeft;
+	std::array<ObjectID, 9> m_spheresRight;
 	
 };
 

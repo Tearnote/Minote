@@ -1,5 +1,6 @@
 #include "gfx/effects/tonemap.hpp"
 
+#include <array>
 #include "imgui.h"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
@@ -66,9 +67,9 @@ void Tonemap::compile() {
 	
 }
 
-auto Tonemap::genConstants() -> array<float4, 4> {
+auto Tonemap::genConstants() -> std::array<float4, 4> {
 	
-	auto result = array<float4, 4>();
+	auto result = std::array<float4, 4>();
 	
 	result[0].x() = contrast;
 	result[0].y() = shoulder;

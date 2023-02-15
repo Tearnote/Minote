@@ -37,7 +37,6 @@ add_executable(Minote
 	src/util/vector.hpp
 	src/util/string.hpp
 	src/util/format.hpp
-	src/util/array.hpp
 	src/util/error.hpp
 	src/util/tween.hpp
 	src/util/types.hpp
@@ -72,25 +71,6 @@ add_executable(Minote
 	src/config.hpp
 	src/game.hpp src/game.cpp
 	src/main.hpp src/main.cpp)
-target_precompile_headers(Minote PRIVATE
-	src/util/concepts.hpp
-	src/util/optional.hpp
-	src/util/service.hpp
-	src/util/hashmap.hpp
-	src/util/verify.hpp
-	src/util/vector.hpp
-	src/util/string.hpp
-	src/util/format.hpp
-	src/util/array.hpp
-	src/util/error.hpp
-	src/util/types.hpp
-	src/util/span.hpp
-	src/util/math.hpp
-	src/util/util.hpp
-	src/util/time.hpp
-	src/util/log.hpp
-	src/util/id.hpp
-	src/config.hpp)
 target_include_directories(Minote PRIVATE src)
 
 # Libraries

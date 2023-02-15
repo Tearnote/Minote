@@ -5,6 +5,7 @@
 #include "SDL_events.h"
 #include "vuk/Future.hpp"
 #include "vuk/Image.hpp"
+#include "util/math.hpp"
 #include "gfx/resource.hpp"
 
 namespace minote {

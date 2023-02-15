@@ -1,5 +1,6 @@
 #pragma once
 
+#include "util/types.hpp"
 #include "gfx/resource.hpp"
 
 namespace minote {

@@ -1,5 +1,6 @@
 #include "sys/system.hpp"
 
+#include <windows.h>
 #include <timeapi.h>
 #include <fcntl.h>
 #include <stdio.h>

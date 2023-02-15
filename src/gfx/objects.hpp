@@ -1,12 +1,12 @@
 #pragma once
 
 #include <type_traits>
+#include <array>
 #include "vuk/Allocator.hpp"
 #include "gfx/resource.hpp"
 #include "gfx/models.hpp"
 #include "util/vector.hpp"
 #include "util/types.hpp"
-#include "util/array.hpp"
 #include "util/math.hpp"
 #include "util/id.hpp"
 
@@ -14,7 +14,7 @@ namespace minote {
 
 // A GPU upload of all drawable objects
 struct ObjectBuffer {
-	using Transform = array<float4, 3>; // Omitting useless row to save space
+	using Transform = std::array<float4, 3>; // Omitting useless row to save space
 	
 	Buffer<uint> modelIndices; // Index into ModelBuffer::models
 	Buffer<float4> colors;

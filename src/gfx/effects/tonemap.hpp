@@ -1,9 +1,9 @@
 #pragma once
 
+#include <array>
 #include "vuk/Future.hpp"
 #include "gfx/resource.hpp"
 #include "util/string.hpp"
-#include "util/array.hpp"
 #include "util/types.hpp"
 #include "util/math.hpp"
 
@@ -35,7 +35,7 @@ private:
 	
 	static inline bool m_compiled = false;
 	
-	auto genConstants() -> array<float4, 4>;
+	auto genConstants() -> std::array<float4, 4>;
 	
 };
 

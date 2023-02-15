@@ -1,12 +1,12 @@
 #include "gfx/effects/spd.hpp"
 
+#include <array>
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
 #include "gfx/samplers.hpp"
 #include "gfx/shader.hpp"
 #include "gfx/util.hpp"
 #include "sys/vulkan.hpp"
-#include "util/array.hpp"
 
 namespace minote {
 
@@ -29,7 +29,7 @@ auto SPD::apply(Texture2D<float> _source, ReductionType _type) -> Texture2D<floa
 			auto sourceSize = source.extent.extent;
 			auto mipCount = source.level_count;
 			ASSERT(mipCount <= 13);
-			auto sourceMips = array<vuk::ImageAttachment, 13>();
+			auto sourceMips = std::array<vuk::ImageAttachment, 13>();
 			for (auto i: iota(0u, mipCount)) {
 				auto mip = source;
 				mip.base_level = i;

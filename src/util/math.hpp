@@ -3,9 +3,9 @@
 #include <initializer_list>
 #include <type_traits>
 #include <numbers>
+#include <array>
 #include "gcem.hpp"
 #include "util/concepts.hpp"
-#include "util/array.hpp"
 #include "util/types.hpp"
 
 namespace minote {
@@ -181,7 +181,7 @@ struct vec {
 	
 private:
 	
-	array<T, Dim> m_arr;
+	std::array<T, Dim> m_arr;
 	
 };
 
@@ -330,7 +330,7 @@ struct qua {
 	
 private:
 	
-	array<Prec, 4> m_arr;
+	std::array<Prec, 4> m_arr;
 	
 };
 
@@ -406,7 +406,7 @@ struct mat {
 	
 private:
 	
-	array<col_t, Dim> m_arr;
+	std::array<col_t, Dim> m_arr;
 	
 };
 

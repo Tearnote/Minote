@@ -1,5 +1,6 @@
 #include "util/log.hpp"
 
+#include <array>
 #include "fmtlog.h"
 #include "util/string.hpp"
 
@@ -19,7 +20,7 @@ void Log::init(string_view _filename, fmtlog::LogLevel _level) {
 void Log::consoleCallback(int64, fmtlog::LogLevel _level, fmt::string_view, usize,
 	fmt::string_view, fmt::string_view _msg, usize, usize) {
 
-	constexpr static auto Colors = to_array({
+	constexpr static auto Colors = std::to_array({
 		"\x1B[32m", // DBG
 		"\x1B[36m", // INF
 		"\x1B[33m", // WRN

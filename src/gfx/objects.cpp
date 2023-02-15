@@ -1,5 +1,6 @@
 #include "gfx/objects.hpp"
 
+#include <array>
 #include "vuk/Partials.hpp"
 #include "util/vector.hpp"
 #include "util/util.hpp"
@@ -116,7 +117,7 @@ auto ObjectPool::encodeTransform(ObjectPool::Transform _in) -> ObjectBuffer::Tra
 	rotationMat[1] *= _in.scale.y();
 	rotationMat[2] *= _in.scale.z();
 	
-	return to_array({
+	return std::to_array({
 		float4(rotationMat[0], _in.position.x()),
 		float4(rotationMat[1], _in.position.y()),
 		float4(rotationMat[2], _in.position.z()),

@@ -1,8 +1,10 @@
 #pragma once
 
 #include "vuk/Future.hpp"
-#include "gfx/resource.hpp"
+#include "util/string.hpp"
 #include "util/types.hpp"
+#include "util/math.hpp"
+#include "gfx/resource.hpp"
 
 namespace minote {
 
