@@ -4,7 +4,7 @@
 #include <span>
 #include "vuk/Future.hpp"
 #include "gfx/resource.hpp"
-#include "util/hashmap.hpp"
+#include "stx/hashmap.hpp"
 #include "util/vector.hpp"
 #include "util/types.hpp"
 #include "util/span.hpp"
@@ -52,7 +52,7 @@ struct ModelBuffer {
 	
 	ivector<Mesh> cpu_meshes;
 	ivector<Model> cpu_models;
-	hashmap<ID, uint> cpu_modelIndices; // Mapping from ID to index into models
+	stx::hashmap<ID, uint> cpu_modelIndices; // Mapping from ID to index into models
 };
 
 // Structure storing model data as they're being loaded. After all models are
@@ -74,7 +74,7 @@ private:
 	
 	ivector<Mesh> m_meshes; // Mesh descriptors, for access to index buffers
 	ivector<Model> m_models; // Model descriptors, for access to m_meshes
-	hashmap<ID, uint> m_modelIndices; // Mapping of model IDs to their index in m_models
+	stx::hashmap<ID, uint> m_modelIndices; // Mapping of model IDs to their index in m_models
 	
 };
 

@@ -1,9 +1,8 @@
 #pragma once
 
-#include <utility>
 #include "robin_hood.h"
 
-namespace minote {
+namespace minote::stx {
 
 // Unordered hash map. Pointers are stable
 template<typename Key, typename T>
