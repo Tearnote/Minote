@@ -5,7 +5,7 @@
 #include "vuk/Future.hpp"
 #include "gfx/resource.hpp"
 #include "types.hpp"
-#include "util/math.hpp"
+#include "math.hpp"
 
 namespace minote {
 

@@ -6,7 +6,7 @@
 #include "vuk/Context.hpp"
 #include "util/service.hpp"
 #include "types.hpp"
-#include "util/math.hpp"
+#include "math.hpp"
 #include "sys/system.hpp"
 
 namespace minote {

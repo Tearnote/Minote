@@ -1,7 +1,7 @@
 #include "scenes.hpp"
 
 #include "util/util.hpp"
-#include "util/math.hpp"
+#include "math.hpp"
 #include "util/time.hpp"
 #include "sys/system.hpp"
 #include "gfx/renderer.hpp"

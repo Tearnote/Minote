@@ -9,7 +9,7 @@
 #include "stx/vector.hpp"
 #include "util/verify.hpp"
 #include "stx/except.hpp"
-#include "util/math.hpp"
+#include "math.hpp"
 #include "util/util.hpp"
 #include "tools/modelSchema.hpp"
 

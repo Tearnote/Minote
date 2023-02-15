@@ -5,7 +5,7 @@
 #include "gfx/resource.hpp"
 #include "gfx/renderer.hpp"
 #include "gfx/camera.hpp"
-#include "util/math.hpp"
+#include "math.hpp"
 
 namespace minote {
 

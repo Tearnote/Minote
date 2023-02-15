@@ -13,7 +13,7 @@
 #include "util/verify.hpp"
 #include "stx/except.hpp"
 #include "util/time.hpp"
-#include "util/math.hpp"
+#include "math.hpp"
 #include "util/log.hpp"
 
 namespace minote {

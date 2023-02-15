@@ -7,7 +7,7 @@
 #include "gfx/models.hpp"
 #include "stx/vector.hpp"
 #include "types.hpp"
-#include "util/math.hpp"
+#include "math.hpp"
 #include "util/id.hpp"
 
 namespace minote {

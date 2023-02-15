@@ -2,7 +2,7 @@
 
 #include <concepts>
 #include <cmath>
-#include "util/math.hpp"
+#include "math.hpp"
 
 namespace minote::util {
 

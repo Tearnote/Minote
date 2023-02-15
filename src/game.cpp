@@ -15,7 +15,7 @@
 #include <processthreadsapi.h>
 #endif
 #include "stx/vector.hpp"
-#include "util/math.hpp"
+#include "math.hpp"
 #include "util/util.hpp"
 #include "util/log.hpp"
 #include "gfx/renderer.hpp"

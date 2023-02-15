@@ -36,7 +36,6 @@ add_executable(Minote
 	src/util/service.hpp
 	src/util/verify.hpp
 	src/util/tween.hpp
-	src/util/math.hpp src/util/math.tpp
 	src/util/util.hpp
 	src/util/time.hpp
 	src/util/ease.hpp
@@ -65,6 +64,7 @@ add_executable(Minote
 	src/scenes.hpp src/scenes.cpp
 	src/config.hpp
 	src/types.hpp
+	src/math.hpp src/math.tpp
 	src/game.hpp src/game.cpp
 	src/main.hpp src/main.cpp)
 target_include_directories(Minote PRIVATE src)

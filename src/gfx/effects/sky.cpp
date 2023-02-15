@@ -6,7 +6,7 @@
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
 #include "vuk/Partials.hpp"
-#include "util/math.hpp"
+#include "math.hpp"
 #include "gfx/samplers.hpp"
 #include "gfx/shader.hpp"
 #include "sys/vulkan.hpp"

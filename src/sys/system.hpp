@@ -8,7 +8,7 @@
 #include "SDL_video.h"
 #include "util/service.hpp"
 #include "types.hpp"
-#include "util/math.hpp"
+#include "math.hpp"
 #include "util/time.hpp"
 
 namespace minote {

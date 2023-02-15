@@ -5,7 +5,7 @@
 #include <mutex>
 #include "vuk/resources/DeviceFrameResource.hpp"
 #include "util/service.hpp"
-#include "util/math.hpp"
+#include "math.hpp"
 #include "util/time.hpp"
 #include "sys/vulkan.hpp"
 #include "gfx/objects.hpp"

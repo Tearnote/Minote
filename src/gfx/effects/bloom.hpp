@@ -3,7 +3,7 @@
 #include <string_view>
 #include "vuk/Future.hpp"
 #include "types.hpp"
-#include "util/math.hpp"
+#include "math.hpp"
 #include "gfx/resource.hpp"
 
 namespace minote {

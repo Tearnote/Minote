@@ -8,7 +8,7 @@
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
 #include "stx/except.hpp"
-#include "util/math.hpp"
+#include "math.hpp"
 #include "util/log.hpp"
 #include "sys/system.hpp"
 #include "gfx/effects/tonemap.hpp"

@@ -8,7 +8,7 @@
 #include "stx/hashmap.hpp"
 #include "stx/vector.hpp"
 #include "types.hpp"
-#include "util/math.hpp"
+#include "math.hpp"
 #include "util/id.hpp"
 #include "tools/modelSchema.hpp"
 

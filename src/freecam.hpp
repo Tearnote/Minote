@@ -2,7 +2,7 @@
 
 #include "SDL_events.h"
 #include "gfx/camera.hpp"
-#include "util/math.hpp"
+#include "math.hpp"
 #include "mapper.hpp"
 
 namespace minote {

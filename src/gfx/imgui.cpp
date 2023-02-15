@@ -12,7 +12,7 @@
 #include "vuk/Partials.hpp"
 #include "util/verify.hpp"
 #include "types.hpp"
-#include "util/math.hpp"
+#include "math.hpp"
 #include "util/log.hpp"
 #include "gfx/samplers.hpp"
 #include "gfx/renderer.hpp"
