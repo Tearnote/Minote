@@ -19,7 +19,7 @@
 namespace minote {
 
 struct Renderer::Impl {
-	optional<Atmosphere> m_atmosphere;
+	std::optional<Atmosphere> m_atmosphere;
 	Sky m_sky;
 	bool m_skyDebug;
 	Bloom m_bloom;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "util/optional.hpp"
+#include <optional>
 #include "SDL_events.h"
 
 namespace minote {
@@ -33,7 +33,7 @@ struct Mapper {
 	
 	// Convert an event into a logical game action, or return nullopt
 	// if the event is irrelevant
-	auto convert(SDL_Event const&) -> optional<Action>;
+	auto convert(SDL_Event const&) -> std::optional<Action>;
 	
 };
 

@@ -1,9 +1,9 @@
 #pragma once
 
+#include <optional>
 #include "volk.h"
 #include "VkBootstrap.h"
 #include "vuk/Context.hpp"
-#include "util/optional.hpp"
 #include "util/service.hpp"
 #include "util/types.hpp"
 #include "util/math.hpp"
@@ -20,7 +20,7 @@ struct Vulkan {
 	vkb::PhysicalDevice physicalDevice;
 	vkb::Device device;
 	vuk::SwapchainRef swapchain;
-	optional<vuk::Context> context;
+	std::optional<vuk::Context> context;
 	
 	// Create a swapchain object, optionally reusing resources from an existing one.
 	auto createSwapchain(uint2 size, VkSwapchainKHR old = VK_NULL_HANDLE) -> vuk::Swapchain;

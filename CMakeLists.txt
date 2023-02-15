@@ -32,7 +32,6 @@ add_executable(Minote
 	src/stx/concepts.hpp
 	src/stx/hashmap.hpp
 	src/stx/except.hpp
-	src/util/optional.hpp
 	src/util/service.hpp
 	src/util/verify.hpp
 	src/util/vector.hpp

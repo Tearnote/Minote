@@ -1,7 +1,7 @@
 #include "mapper.hpp"
 
+#include <optional>
 #include "SDL_events.h"
-#include "util/optional.hpp"
 #include "util/vector.hpp"
 #include "stx/except.hpp"
 #include "util/util.hpp"
@@ -9,9 +9,9 @@
 
 namespace minote {
 
-auto Mapper::convert(SDL_Event const& _e) -> optional<Action> {
+auto Mapper::convert(SDL_Event const& _e) -> std::optional<Action> {
 	
-	if ((_e.type != SDL_KEYDOWN) && (_e.type != SDL_KEYUP)) return nullopt;
+	if ((_e.type != SDL_KEYDOWN) && (_e.type != SDL_KEYUP)) return std::nullopt;
 	
 	auto type = [&] {
 		switch(_e.key.keysym.scancode) {
@@ -58,7 +58,7 @@ auto Mapper::convert(SDL_Event const& _e) -> optional<Action> {
 		
 		}
 	}();
-	if (type == Action::Type::None) return nullopt;
+	if (type == Action::Type::None) return std::nullopt;
 	
 	auto state = (_e.type == SDL_KEYDOWN)?
 		Action::State::Pressed :

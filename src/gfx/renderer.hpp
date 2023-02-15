@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <memory>
 #include <mutex>
 #include "vuk/resources/DeviceFrameResource.hpp"
@@ -58,7 +59,7 @@ private:
 	vuk::DeviceSuperFrameResource m_deviceResource;
 	vuk::Allocator m_multiFrameAllocator;
 	vuk::DeviceFrameResource* m_frameResource;
-	optional<vuk::Allocator> m_frameAllocator;
+	std::optional<vuk::Allocator> m_frameAllocator;
 	
 	// Thread-safety for situations like window resize
 	std::mutex m_renderLock;
