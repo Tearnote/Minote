@@ -1,7 +1,7 @@
 #pragma once
 
 #include "SDL_events.h"
-#include "mapper.hpp"
+#include "game/mapper.hpp"
 #include "math.hpp"
 #include "gfx/camera.hpp"
 

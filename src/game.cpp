@@ -45,7 +45,7 @@ struct Game::Impl {
 	static constexpr auto SimpleSceneCount = SimpleScenes * SimpleScenes;
 	
 	Impl(Game::Params const& p): m_window(p.window), m_mapper(p.mapper) {}
-	// Load all assets from the store, upload to GPU when neccessary
+	// Load all assets from the store, upload to GPU when necessary
 	void loadAssets(std::string_view path);
 	// Create game world objects, initialize camera
 	void createScene();
@@ -56,7 +56,7 @@ struct Game::Impl {
 	void tick(stx::nsec until, Imgui::InputReader&);
 	
 	Window& m_window;
-	Mapper& m_mapper;
+	game::Mapper& m_mapper;
 	
 	game::Freecam m_freecam;
 	
@@ -144,7 +144,7 @@ void Game::Impl::tick(stx::nsec _until, Imgui::InputReader& _imguiInput) {
 		
 		// Game logic events
 		if (auto action = m_mapper.convert(e)) {
-			if (action->type == Mapper::Action::Type::Back)
+			if (action->type == game::Mapper::Action::Type::Back)
 				s_system->postQuitEvent();
 			m_freecam.handleAction(*action);
 		}

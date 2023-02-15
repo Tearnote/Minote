@@ -2,7 +2,7 @@
 
 #include <memory>
 #include "sys/system.hpp"
-#include "mapper.hpp"
+#include "game/mapper.hpp"
 
 namespace minote {
 
@@ -11,7 +11,7 @@ struct Game {
 	
 	struct Params {
 		Window& window;
-		Mapper& mapper;
+		game::Mapper& mapper;
 	};
 	
 	Game(Params const&);

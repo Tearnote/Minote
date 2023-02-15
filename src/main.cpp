@@ -25,7 +25,7 @@
 #include "sys/vulkan.hpp"
 #include "gfx/renderer.hpp"
 #include "stx/defer.hpp"
-#include "mapper.hpp"
+#include "game/mapper.hpp"
 #include "game.hpp"
 
 using namespace minote; // Can't namespace main()
@@ -62,7 +62,7 @@ auto main(int, char*[]) -> int try {
 	auto window = s_system->openWindow(AppTitle, false, {960, 504});
 	auto vulkan = s_vulkan.provide(window);
 	auto engine = s_renderer.provide();
-	auto mapper = Mapper();
+	auto mapper = game::Mapper();
 	
 	// Start the game thread
 	auto game = Game({
