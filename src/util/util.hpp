@@ -2,10 +2,10 @@
 
 #include <type_traits>
 #include <concepts>
-#include "stx/concepts.hpp"
 #include "types.hpp"
+#include "stx/concepts.hpp"
 
-namespace minote {
+namespace minote::util {
 
 // Align a size to a given power-of-two boundary.
 constexpr auto alignPOT(usize size, usize boundary) -> usize {
@@ -15,6 +15,7 @@ constexpr auto alignPOT(usize size, usize boundary) -> usize {
 	
 }
 
+// Get the smallest power-of-two larger than the given number
 constexpr auto nextPOT(uint n) -> uint {
 	
 	n -= 1;
@@ -36,9 +37,13 @@ constexpr auto operator+(T e) { return std::underlying_type_t<T>(e); }
 
 }
 
+namespace storage_literals {
+
 // Storage space literals
 consteval auto operator ""_kb(unsigned long long val) { return val * 1024; }
 consteval auto operator ""_mb(unsigned long long val) { return val * 1024 * 1024; }
 consteval auto operator ""_gb(unsigned long long val) { return val * 1024 * 1024 * 1024; }
+
+}
 
 }

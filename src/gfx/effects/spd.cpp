@@ -12,7 +12,7 @@
 
 namespace minote {
 
-using namespace enum_operators;
+using namespace util::enum_operators;
 
 auto SPD::apply(Texture2D<float> _source, ReductionType _type) -> Texture2D<float> {
 	
