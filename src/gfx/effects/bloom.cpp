@@ -11,7 +11,7 @@
 #include "sys/vulkan.hpp"
 #include "stx/vector.hpp"
 #include "stx/ranges.hpp"
-#include "util/verify.hpp"
+#include "stx/verify.hpp"
 #include "util/util.hpp"
 
 namespace minote {

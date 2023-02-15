@@ -8,7 +8,7 @@
 #include "fmt/core.h"
 #include "stx/vector.hpp"
 #include "stx/ranges.hpp"
-#include "util/verify.hpp"
+#include "stx/verify.hpp"
 #include "stx/except.hpp"
 #include "math.hpp"
 #include "stx/defer.hpp"

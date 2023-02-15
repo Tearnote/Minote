@@ -1,7 +1,7 @@
 #pragma once
 
 #include <utility>
-#include "util/verify.hpp"
+#include "stx/verify.hpp"
 
 namespace minote::util {
 

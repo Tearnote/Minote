@@ -4,7 +4,7 @@
 
 #include "volk.h"
 #include "SDL_vulkan.h"
-#include "util/verify.hpp"
+#include "stx/verify.hpp"
 #include "stx/except.hpp"
 #include "log.hpp"
 #include "main.hpp"

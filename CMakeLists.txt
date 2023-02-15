@@ -29,15 +29,25 @@ add_compile_definitions("BUILD_TYPE=$<$<CONFIG:Debug>:BUILD_DEBUG>$<$<CONFIG:Rel
 
 # Main executable
 add_executable(Minote
+	src/freecam.hpp src/freecam.cpp
+	src/assets.hpp src/assets.tpp src/assets.cpp
+	src/mapper.hpp src/mapper.cpp
+	src/scenes.hpp src/scenes.cpp
+	src/config.hpp
+	src/types.hpp
+	src/math.hpp src/math.tpp
+	src/game.hpp src/game.cpp
+	src/main.hpp src/main.cpp
+	src/log.hpp src/log.cpp
 	src/stx/concepts.hpp
 	src/stx/hashmap.hpp
 	src/stx/except.hpp
 	src/stx/vector.hpp
 	src/stx/ranges.hpp
+	src/stx/verify.hpp
 	src/stx/defer.hpp
 	src/stx/time.hpp
 	src/util/service.hpp
-	src/util/verify.hpp
 	src/util/tween.hpp
 	src/util/util.hpp
 	src/util/ease.hpp
@@ -59,16 +69,7 @@ add_executable(Minote
 	src/gfx/shader.hpp
 	src/gfx/imgui.hpp src/gfx/imgui.cpp
 	src/gfx/util.hpp
-	src/freecam.hpp src/freecam.cpp
-	src/assets.hpp src/assets.tpp src/assets.cpp
-	src/mapper.hpp src/mapper.cpp
-	src/scenes.hpp src/scenes.cpp
-	src/config.hpp
-	src/types.hpp
-	src/math.hpp src/math.tpp
-	src/game.hpp src/game.cpp
-	src/main.hpp src/main.cpp
-	src/log.hpp src/log.cpp)
+)
 target_include_directories(Minote PRIVATE src)
 
 # Libraries

@@ -10,7 +10,7 @@
 #include "vuk/RenderGraph.hpp"
 #include "vuk/Pipeline.hpp"
 #include "vuk/Partials.hpp"
-#include "util/verify.hpp"
+#include "stx/verify.hpp"
 #include "types.hpp"
 #include "math.hpp"
 #include "log.hpp"

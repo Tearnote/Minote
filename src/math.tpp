@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include "types.hpp"
-#include "util/verify.hpp"
+#include "stx/verify.hpp"
 #include "util/util.hpp"
 #include "stx/ranges.hpp"
 

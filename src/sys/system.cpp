@@ -10,7 +10,7 @@
 #include "SDL_events.h"
 #include "SDL_timer.h"
 #include "SDL.h"
-#include "util/verify.hpp"
+#include "stx/verify.hpp"
 #include "stx/except.hpp"
 #include "stx/time.hpp"
 #include "math.hpp"

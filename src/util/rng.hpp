@@ -4,7 +4,7 @@
 #include <cmath>
 #include "pcg_basic.h"
 #include "types.hpp"
-#include "util/verify.hpp"
+#include "stx/verify.hpp"
 
 namespace minote::util {
 
