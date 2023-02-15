@@ -1,15 +1,17 @@
 #pragma once
 
+#include <concepts>
 #include <cmath>
 #include "pcg_basic.h"
-#include "util/concepts.hpp"
-#include "util/verify.hpp"
 #include "types.hpp"
+#include "util/verify.hpp"
 
 namespace minote {
 
 // PCG pseudorandom number generator
-struct Rng {
+class Rng {
+
+public:
 	
 	// Seed the generator with any 64bit value. The generated sequence will
 	// always be the same for any given seed.
@@ -18,15 +20,19 @@ struct Rng {
 	// Return a random positive integer, up to a bound (exclusive). RNG state
 	// is advanced by one step.
 	auto randInt(uint bound) -> uint {
+
 		ASSUME(bound >= 1);
 		return pcg32_boundedrand_r(&m_state, bound);
+
 	}
 	
 	// Return a random floating-point value between 0.0 (inclusive) and 1.0
 	// (exclusive). RNG state is advanced by one step.
-	template<floating_point T = float>
+	template<std::floating_point T = float>
 	auto randFloat() -> T {
+
 		return std::ldexp(T(pcg32_random_r(&m_state)), -32);
+
 	}
 	
 private:

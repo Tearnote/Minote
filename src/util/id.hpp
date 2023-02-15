@@ -7,7 +7,9 @@
 namespace minote {
 
 // Resource ID. Created from a string, hashed at compile-time if possible
-struct ID {
+class ID {
+
+public:
 	
 	// Trivial default constructor
 	constexpr ID() = default;
