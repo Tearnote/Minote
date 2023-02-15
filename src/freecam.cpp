@@ -5,6 +5,8 @@
 
 namespace minote {
 
+using namespace math_literals;
+
 void Freecam::handleMouse(SDL_Event const& _e) {
 	
 	if (_e.type == SDL_MOUSEBUTTONDOWN && _e.button.button == SDL_BUTTON_LEFT)

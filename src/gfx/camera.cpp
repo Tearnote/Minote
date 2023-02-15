@@ -2,6 +2,8 @@
 
 namespace minote {
 
+using namespace math_literals;
+
 auto Camera::direction() const -> float3 {
 	
 	return float3{

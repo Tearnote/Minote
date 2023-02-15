@@ -9,6 +9,8 @@
 
 namespace minote {
 
+using namespace math_literals;
+
 // Precalculated representation of a planet's atmosphere. Once created, it can
 // be used repeatedly to sample the sky at any elevation and sun position
 struct Atmosphere {

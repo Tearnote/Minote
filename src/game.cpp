@@ -27,6 +27,8 @@
 
 namespace minote {
 
+using namespace math_literals;
+
 struct Game::Impl {
 	
 	// Rate of the logic update clock. Can be higher than display refresh rate.

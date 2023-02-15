@@ -441,6 +441,8 @@ static_assert(std::is_trivially_constructible_v<float4x4>);
 
 //=== Conversion literals
 
+namespace math_literals {
+
 consteval auto operator""_cm(unsigned long long int val) -> float { return double(val) * 0.000'001; }
 consteval auto operator""_cm(long double val) -> float { return double(val) * 0.000'001; }
 
@@ -452,6 +454,8 @@ consteval auto operator""_km(long double val) -> float { return val; }
 
 consteval auto operator""_deg(unsigned long long int val) -> float { return radians(double(val)); }
 consteval auto operator""_deg(long double val) -> float { return radians(val); }
+
+}
 
 }
 
