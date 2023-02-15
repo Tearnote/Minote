@@ -21,7 +21,7 @@
 #include "log.hpp"
 #include "gfx/renderer.hpp"
 #include "gfx/models.hpp"
-#include "freecam.hpp"
+#include "game/freecam.hpp"
 #include "game/assets.hpp"
 #include "scenes.hpp"
 #include "main.hpp"
@@ -58,7 +58,7 @@ struct Game::Impl {
 	Window& m_window;
 	Mapper& m_mapper;
 	
-	Freecam m_freecam;
+	game::Freecam m_freecam;
 	
 	stx::svector<BattleScene, BattleSceneCount> m_battleScenes;
 	stx::svector<SimpleScene, SimpleSceneCount> m_testScenes;
