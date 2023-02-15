@@ -26,7 +26,7 @@
 #include "gfx/renderer.hpp"
 #include "stx/defer.hpp"
 #include "game/mapper.hpp"
-#include "game.hpp"
+#include "game/game.hpp"
 
 using namespace minote; // Can't namespace main()
 
@@ -65,7 +65,7 @@ auto main(int, char*[]) -> int try {
 	auto mapper = game::Mapper();
 	
 	// Start the game thread
-	auto game = Game({
+	auto game = game::Game({
 		.window = window,
 		.mapper = mapper,
 	});
