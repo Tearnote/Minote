@@ -6,8 +6,8 @@
 #include <numbers>
 #include <array>
 #include <cmath>
-#include "stx/concepts.hpp"
 #include "types.hpp"
+#include "stx/concepts.hpp"
 
 namespace minote {
 

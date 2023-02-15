@@ -10,19 +10,19 @@
 #endif
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
-#endif
+#endif //THREAD_DEBUG
 #include <windows.h>
 #include <processthreadsapi.h>
 #endif
-#include "SDL.h" // For SDL_main
+#include "SDL.h" // For SDL_main. Do not reorder!
 #include "SDL_events.h"
 #include "types.hpp"
 #include "math.hpp"
 #include "log.hpp"
+#include "stx/defer.hpp"
 #include "sys/system.hpp"
 #include "sys/vulkan.hpp"
 #include "gfx/renderer.hpp"
-#include "stx/defer.hpp"
 #include "game/mapper.hpp"
 #include "game/game.hpp"
 

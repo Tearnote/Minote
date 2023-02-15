@@ -5,8 +5,8 @@
 #include <cmath>
 #include "types.hpp"
 #include "stx/verify.hpp"
-#include "util/util.hpp"
 #include "stx/ranges.hpp"
+#include "util/util.hpp"
 
 namespace minote {
 
