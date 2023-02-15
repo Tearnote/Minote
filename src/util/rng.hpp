@@ -4,7 +4,7 @@
 #include "pcg_basic.h"
 #include "util/concepts.hpp"
 #include "util/verify.hpp"
-#include "util/types.hpp"
+#include "types.hpp"
 
 namespace minote {
 

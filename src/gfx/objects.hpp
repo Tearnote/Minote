@@ -6,7 +6,7 @@
 #include "gfx/resource.hpp"
 #include "gfx/models.hpp"
 #include "stx/vector.hpp"
-#include "util/types.hpp"
+#include "types.hpp"
 #include "util/math.hpp"
 #include "util/id.hpp"
 

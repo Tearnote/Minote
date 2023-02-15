@@ -2,7 +2,7 @@
 
 #include <string_view>
 #include "vuk/Future.hpp"
-#include "util/types.hpp"
+#include "types.hpp"
 #include "util/math.hpp"
 #include "gfx/resource.hpp"
 

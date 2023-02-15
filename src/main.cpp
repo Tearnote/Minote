@@ -18,7 +18,7 @@
 #endif
 #include "SDL.h" // For SDL_main
 #include "SDL_events.h"
-#include "util/types.hpp"
+#include "types.hpp"
 #include "util/math.hpp"
 #include "util/log.hpp"
 #include "sys/system.hpp"

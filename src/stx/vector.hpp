@@ -3,7 +3,7 @@
 #include "itlib/static_vector.hpp"
 #include "itlib/small_vector.hpp"
 #include "itlib/pod_vector.hpp"
-#include "util/types.hpp"
+#include "types.hpp"
 
 namespace minote::stx {
 

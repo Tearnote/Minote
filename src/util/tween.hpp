@@ -1,7 +1,7 @@
 #pragma once
 
 #include "util/concepts.hpp"
-#include "util/types.hpp"
+#include "types.hpp"
 #include "util/ease.hpp"
 #include "util/time.hpp"
 

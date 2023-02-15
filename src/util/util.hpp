@@ -4,7 +4,7 @@
 #include <concepts>
 #include <ranges>
 #include "stx/concepts.hpp"
-#include "util/types.hpp"
+#include "types.hpp"
 
 namespace minote {
 

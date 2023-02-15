@@ -5,7 +5,7 @@
 #include "VkBootstrap.h"
 #include "vuk/Context.hpp"
 #include "util/service.hpp"
-#include "util/types.hpp"
+#include "types.hpp"
 #include "util/math.hpp"
 #include "sys/system.hpp"
 

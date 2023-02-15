@@ -10,7 +10,7 @@
 #include "vuk/Pipeline.hpp"
 #include "vuk/Partials.hpp"
 #include "util/verify.hpp"
-#include "util/types.hpp"
+#include "types.hpp"
 #include "util/math.hpp"
 #include "util/log.hpp"
 #include "gfx/samplers.hpp"

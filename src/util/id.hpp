@@ -2,7 +2,7 @@
 
 #include <string_view>
 #include <type_traits>
-#include "util/types.hpp"
+#include "types.hpp"
 
 namespace minote {
 

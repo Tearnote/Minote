@@ -7,7 +7,7 @@
 #include "gfx/resource.hpp"
 #include "stx/hashmap.hpp"
 #include "stx/vector.hpp"
-#include "util/types.hpp"
+#include "types.hpp"
 #include "util/math.hpp"
 #include "util/id.hpp"
 #include "tools/modelSchema.hpp"

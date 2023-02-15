@@ -3,7 +3,7 @@
 #include <utility>
 #include <vector>
 #include "incbin.h"
-#include "util/types.hpp"
+#include "types.hpp"
 
 #define GET_SHADER(symbol) \
 	INCBIN_EXTERN(symbol)

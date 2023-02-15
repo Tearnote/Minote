@@ -4,7 +4,7 @@
 #include <array>
 #include "vuk/Future.hpp"
 #include "gfx/resource.hpp"
-#include "util/types.hpp"
+#include "types.hpp"
 #include "util/math.hpp"
 
 namespace minote {

@@ -7,7 +7,7 @@
 #include "SDL_events.h"
 #include "SDL_video.h"
 #include "util/service.hpp"
-#include "util/types.hpp"
+#include "types.hpp"
 #include "util/math.hpp"
 #include "util/time.hpp"
 

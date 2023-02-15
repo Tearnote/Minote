@@ -1,6 +1,6 @@
 #pragma once
 
-#include "util/types.hpp"
+#include "types.hpp"
 #include "util/math.hpp"
 
 namespace minote {
