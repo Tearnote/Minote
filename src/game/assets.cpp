@@ -1,10 +1,10 @@
-#include "assets.hpp"
+#include "game/assets.hpp"
 
 #include "sqlite3.h"
-#include "stx/except.hpp"
 #include "log.hpp"
+#include "stx/except.hpp"
 
-namespace minote {
+namespace minote::game {
 
 Assets::Assets(std::string_view _path):
 	m_path(_path) {

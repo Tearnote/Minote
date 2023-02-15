@@ -22,7 +22,7 @@
 #include "gfx/renderer.hpp"
 #include "gfx/models.hpp"
 #include "freecam.hpp"
-#include "assets.hpp"
+#include "game/assets.hpp"
 #include "scenes.hpp"
 #include "main.hpp"
 
@@ -68,7 +68,7 @@ struct Game::Impl {
 void Game::Impl::loadAssets(std::string_view _path) {
 	
 	auto modelList = ModelList();
-	auto assets = Assets(_path);
+	auto assets = game::Assets(_path);
 	assets.loadModels([&modelList](auto name, auto data) {
 		modelList.addModel(name, data);
 	});

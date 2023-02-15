@@ -8,9 +8,11 @@
 // Forward declaration
 struct sqlite3;
 
-namespace minote {
+namespace minote::game {
 
-struct Assets {
+class Assets {
+
+public:
 	
 	// Open the sqlite database containing game assets. File remains open
 	// until this object is destroyed
@@ -23,6 +25,7 @@ struct Assets {
 	requires std::invocable<F, std::string_view, std::span<char const>>
 	void loadModels(F func);
 	
+	// Not moveable, not copyable
 	Assets(Assets const&) = delete;
 	auto operator=(Assets const&) -> Assets& = delete;
 	
@@ -35,4 +38,4 @@ private:
 
 }
 
-#include "assets.tpp"
+#include "game/assets.tpp"

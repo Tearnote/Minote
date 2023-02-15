@@ -6,11 +6,11 @@
 #include <format>
 #include <span>
 #include "sqlite3.h"
+#include "log.hpp"
 #include "stx/except.hpp"
 #include "stx/defer.hpp"
-#include "log.hpp"
 
-namespace minote {
+namespace minote::game {
 
 template<typename F>
 requires std::invocable<F, std::string_view, std::span<char const>>
@@ -25,7 +25,7 @@ void Assets::loadModels(F _func) {
 		throw stx::runtime_error_fmt("Failed to query database {}: {}", m_path, sqlite3_errstr(result));
 	defer { sqlite3_finalize(modelsQuery); };
 	if (sqlite3_column_count(modelsQuery) != 2)
-		throw stx::runtime_error_fmt("Invalid number of columns in table {} in database {}", Models_table, m_path);
+		throw stx::runtime_error_fmt("Unexpected number of columns in table {} of database {}", Models_table, m_path);
 	
 	// Iterate over query results
 	
@@ -35,13 +35,13 @@ void Assets::loadModels(F _func) {
 		if (result != SQLITE_ROW)
 			throw stx::runtime_error_fmt("Failed to query database {}: {}", m_path, sqlite3_errstr(result));
 		if (sqlite3_column_type(modelsQuery, 0) != SQLITE_TEXT)
-			throw stx::runtime_error_fmt("Invalid type in column 0 of table models in database {}", m_path);
+			throw stx::runtime_error_fmt("Unexpected type in column 0 of table models of database {}", m_path);
 		if (sqlite3_column_type(modelsQuery, 1) != SQLITE_BLOB)
-			throw stx::runtime_error_fmt("Invalid type in column 1 of table models in database {}", m_path);
+			throw stx::runtime_error_fmt("Unexpected type in column 1 of table models of database {}", m_path);
 		
-		auto name = reinterpret_cast<char const*>(sqlite3_column_text(modelsQuery, 0));
+		auto name    = reinterpret_cast<char const*>(sqlite3_column_text(modelsQuery, 0));
 		auto nameLen = sqlite3_column_bytes(modelsQuery, 0);
-		auto model = static_cast<char const*>(sqlite3_column_blob(modelsQuery, 1));
+		auto model    = static_cast<char const*>(sqlite3_column_blob(modelsQuery, 1));
 		auto modelLen = sqlite3_column_bytes(modelsQuery, 1);
 		_func(std::string_view(name, nameLen), std::span(model, modelLen));
 		

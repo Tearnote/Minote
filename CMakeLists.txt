@@ -30,7 +30,6 @@ add_compile_definitions("BUILD_TYPE=$<$<CONFIG:Debug>:BUILD_DEBUG>$<$<CONFIG:Rel
 # Main executable
 add_executable(Minote
 	src/freecam.hpp src/freecam.cpp
-	src/assets.hpp src/assets.tpp src/assets.cpp
 	src/mapper.hpp src/mapper.cpp
 	src/scenes.hpp src/scenes.cpp
 	src/config.hpp
@@ -53,7 +52,7 @@ add_executable(Minote
 	src/util/ease.hpp
 	src/util/rng.hpp
 	src/util/id.hpp
-	src/tools/modelSchema.hpp
+	src/game/assets.hpp src/game/assets.tpp src/game/assets.cpp
 	src/sys/vulkan.hpp src/sys/vulkan.cpp
 	src/sys/system.hpp src/sys/system.cpp
 	src/gfx/effects/tonemap.hpp src/gfx/effects/tonemap.cpp
@@ -69,6 +68,7 @@ add_executable(Minote
 	src/gfx/shader.hpp
 	src/gfx/imgui.hpp src/gfx/imgui.cpp
 	src/gfx/util.hpp
+	src/tools/modelSchema.hpp
 )
 target_include_directories(Minote PRIVATE src)
 
