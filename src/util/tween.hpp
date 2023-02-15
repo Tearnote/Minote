@@ -3,7 +3,7 @@
 #include "util/concepts.hpp"
 #include "types.hpp"
 #include "util/ease.hpp"
-#include "util/time.hpp"
+#include "stx/time.hpp"
 
 namespace minote {
 

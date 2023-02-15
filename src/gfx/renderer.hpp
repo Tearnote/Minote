@@ -6,7 +6,7 @@
 #include "vuk/resources/DeviceFrameResource.hpp"
 #include "util/service.hpp"
 #include "math.hpp"
-#include "util/time.hpp"
+#include "stx/time.hpp"
 #include "sys/vulkan.hpp"
 #include "gfx/objects.hpp"
 #include "gfx/models.hpp"
@@ -14,6 +14,8 @@
 #include "gfx/imgui.hpp"
 
 namespace minote {
+
+using namespace stx::time_literals;
 
 // Feed with models and objects, enjoy pretty pictures
 struct Renderer {
@@ -67,7 +69,7 @@ private:
 	bool m_swapchainDirty;
 	
 	float m_framerate;
-	nsec m_lastFramerateCheck;
+	stx::nsec m_lastFramerateCheck;
 	uint m_framesSinceLastCheck;
 	
 	Imgui m_imgui;

@@ -12,7 +12,7 @@
 #include "SDL.h"
 #include "util/verify.hpp"
 #include "stx/except.hpp"
-#include "util/time.hpp"
+#include "stx/time.hpp"
 #include "math.hpp"
 #include "log.hpp"
 
@@ -53,9 +53,9 @@ void System::poll() {
 	
 }
 
-auto System::getTime() -> nsec {
+auto System::getTime() -> stx::nsec {
 	
-	return milliseconds(SDL_GetTicks());
+	return stx::milliseconds(SDL_GetTicks());
 	
 }
 

@@ -106,7 +106,7 @@ void Renderer::calcFramerate() {
 	auto currentTime = s_system->getTime();
 	auto timeElapsed = currentTime - m_lastFramerateCheck;
 	if (timeElapsed >= FramerateUpdate) {
-		auto secondsElapsed = ratio(timeElapsed, 1_s);
+		auto secondsElapsed = stx::ratio(timeElapsed, 1_s);
 		m_framerate = float(m_framesSinceLastCheck) / secondsElapsed;
 		
 		m_lastFramerateCheck = currentTime;

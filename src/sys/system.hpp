@@ -9,7 +9,7 @@
 #include "util/service.hpp"
 #include "types.hpp"
 #include "math.hpp"
-#include "util/time.hpp"
+#include "stx/time.hpp"
 
 namespace minote {
 
@@ -57,7 +57,7 @@ struct System {
 	
 	// Return the time passed since this object was constructed
 	[[nodiscard]]
-	auto getTime() -> nsec;
+	auto getTime() -> stx::nsec;
 	
 	// Execute the provided function on each event in the queue. If the function
 	// returns true, the event will be removed from the queue.

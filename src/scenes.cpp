@@ -2,7 +2,7 @@
 
 #include "util/util.hpp"
 #include "math.hpp"
-#include "util/time.hpp"
+#include "stx/time.hpp"
 #include "sys/system.hpp"
 #include "gfx/renderer.hpp"
 
@@ -109,7 +109,7 @@ SimpleScene::~SimpleScene() {
 
 void SimpleScene::update() {
 	
-	auto rotateAnim = quat::angleAxis(radians(ratio(s_system->getTime(), 20_ms)), {0.0f, 0.0f, 1.0f});
+	auto rotateAnim = quat::angleAxis(radians(stx::ratio(s_system->getTime(), 20_ms)), {0.0f, 0.0f, 1.0f});
 	s_renderer->objects().get(m_spinny).transform.rotation = rotateAnim;
 	
 }

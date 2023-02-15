@@ -52,7 +52,7 @@ struct Game::Impl {
 	void gameLoop();
 	// Run a single tick of input handling and logic simulation
 	// Simulation time advances to "until" timestamp
-	void tick(nsec until, Imgui::InputReader&);
+	void tick(stx::nsec until, Imgui::InputReader&);
 	
 	Window& m_window;
 	Mapper& m_mapper;
@@ -127,7 +127,7 @@ void Game::Impl::gameLoop() {
 	
 }
 
-void Game::Impl::tick(nsec _until, Imgui::InputReader& _imguiInput) {
+void Game::Impl::tick(stx::nsec _until, Imgui::InputReader& _imguiInput) {
 	
 	// Handle all relevant inputs
 	s_system->forEachEvent([&] (const SDL_Event& e) -> bool {
@@ -135,7 +135,7 @@ void Game::Impl::tick(nsec _until, Imgui::InputReader& _imguiInput) {
 		// Let ImGui handle all events ASAP
 		if (_imguiInput.process(e)) return true;
 		// Don't handle events from the future
-		if (milliseconds(e.common.timestamp) > _until) return false;
+		if (stx::milliseconds(e.common.timestamp) > _until) return false;
 		// Leave quit events alone
 		if (e.type == SDL_QUIT) return false;
 		
