@@ -1,4 +1,4 @@
-#include "scenes.hpp"
+#include "game/scenes.hpp"
 
 #include "util/util.hpp"
 #include "math.hpp"
@@ -7,7 +7,7 @@
 #include "sys/system.hpp"
 #include "gfx/renderer.hpp"
 
-namespace minote {
+namespace minote::game {
 
 using namespace util::id_literals;
 

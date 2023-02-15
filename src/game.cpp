@@ -23,7 +23,7 @@
 #include "gfx/models.hpp"
 #include "game/freecam.hpp"
 #include "game/assets.hpp"
-#include "scenes.hpp"
+#include "game/scenes.hpp"
 #include "main.hpp"
 
 namespace minote {
@@ -60,8 +60,8 @@ struct Game::Impl {
 	
 	game::Freecam m_freecam;
 	
-	stx::svector<BattleScene, BattleSceneCount> m_battleScenes;
-	stx::svector<SimpleScene, SimpleSceneCount> m_testScenes;
+	stx::svector<game::BattleScene, BattleSceneCount> m_battleScenes;
+	stx::svector<game::SimpleScene, SimpleSceneCount> m_testScenes;
 	
 };
 

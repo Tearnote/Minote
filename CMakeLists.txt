@@ -31,7 +31,7 @@ add_compile_definitions("BUILD_TYPE=$<$<CONFIG:Debug>:BUILD_DEBUG>$<$<CONFIG:Rel
 add_executable(Minote
 	src/game/freecam.hpp src/game/freecam.cpp
 	src/game/mapper.hpp src/game/mapper.cpp
-	src/scenes.hpp src/scenes.cpp
+	src/game/scenes.hpp src/game/scenes.cpp
 	src/config.hpp
 	src/types.hpp
 	src/math.hpp src/math.tpp

@@ -3,14 +3,18 @@
 #include <array>
 #include "gfx/objects.hpp"
 
-namespace minote {
+namespace minote::game {
 
 // A complex scene of a battle between humans and skeletons
-struct BattleScene {
-	
+class BattleScene {
+
+public:
+
+	// Create a new scene
 	BattleScene(Transform t = {});
 	~BattleScene();
 	
+	// Not copyable, not moveable
 	BattleScene(BattleScene const&) = delete;
 	auto operator=(BattleScene const&) -> BattleScene& = delete;
 	
@@ -21,13 +25,18 @@ private:
 };
 
 // A bunch of cubes and spheres
-struct SimpleScene {
+class SimpleScene {
+
+public:
 	
+	// Create a new scene
 	SimpleScene(Transform t = {});
 	~SimpleScene();
 	
+	// Spin the cube in the middle
 	void update();
-	
+
+	// Not copyable, not moveable
 	SimpleScene(SimpleScene const&) = delete;
 	auto operator=(SimpleScene const&) -> SimpleScene& = delete;
 	
