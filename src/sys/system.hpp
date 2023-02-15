@@ -103,7 +103,7 @@ private:
 	uint64 m_timerStart;
 	
 	// Only usable from the service
-	friend struct Service<System>;
+	friend struct util::Service<System>;
 	System();
 	~System();
 	
@@ -111,6 +111,6 @@ private:
 
 using Window = System::Window;
 
-inline Service<System> s_system;
+inline util::Service<System> s_system;
 
 }

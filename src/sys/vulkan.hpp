@@ -42,7 +42,7 @@ private:
 		uint computeFamilyIndex;
 	};
 	
-	friend struct Service<Vulkan>;
+	friend struct util::Service<Vulkan>;
 	explicit Vulkan(Window&);
 	~Vulkan();
 	
@@ -57,6 +57,6 @@ private:
 	
 };
 
-inline Service<Vulkan> s_vulkan;
+inline util::Service<Vulkan> s_vulkan;
 
 }

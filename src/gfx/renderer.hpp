@@ -86,6 +86,6 @@ private:
 	
 };
 
-inline Service<Renderer> s_renderer;
+inline util::Service<Renderer> s_renderer;
 
 }
