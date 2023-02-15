@@ -2,9 +2,9 @@
 
 #include "config.hpp"
 
+#include <format>
 #include "sqlite3.h"
 #include "util/string.hpp"
-#include "util/format.hpp"
 #include "util/error.hpp"
 #include "util/util.hpp"
 #include "util/span.hpp"
@@ -18,7 +18,7 @@ void Assets::loadModels(F _func) {
 	
 	// Prepare database query
 	
-	auto modelsQueryStr = format("SELECT * FROM {}", Models_table);
+	auto modelsQueryStr = std::format("SELECT * FROM {}", Models_table);
 	
 	auto modelsQuery = static_cast<sqlite3_stmt*>(nullptr);
 	if (auto result = sqlite3_prepare_v2(m_db, modelsQueryStr.c_str(), -1, &modelsQuery, nullptr); result != SQLITE_OK)

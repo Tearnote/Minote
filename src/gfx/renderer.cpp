@@ -184,7 +184,7 @@ void Renderer::executeRenderGraph() try {
 	if (error == VK_ERROR_OUT_OF_DATE_KHR)
 		m_swapchainDirty = true; // No need to return, only cleanup is left
 	else if (error != VK_SUBOPTIMAL_KHR)
-		throw runtime_error_fmt("Unable to present to the screen: error {}", error);
+		throw runtime_error_fmt("Unable to present to the screen: error {}", +error);
 	
 }
 

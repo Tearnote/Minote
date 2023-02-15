@@ -39,7 +39,7 @@ VKAPI_ATTR auto VKAPI_CALL debugCallback(
 	else if (_severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
 		L_DEBUG("{} {}", type, _data->pMessage);
 	else
-		throw logic_error_fmt("Unknown Vulkan diagnostic message severity: #{}", _severityCode);
+		throw logic_error_fmt("Unknown Vulkan diagnostic message severity: #{}", +_severityCode);
 	
 	return VK_FALSE;
 	
