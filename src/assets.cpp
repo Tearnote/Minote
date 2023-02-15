@@ -2,7 +2,7 @@
 
 #include "sqlite3.h"
 #include "stx/except.hpp"
-#include "util/log.hpp"
+#include "log.hpp"
 
 namespace minote {
 

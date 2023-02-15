@@ -10,7 +10,7 @@
 #include "stx/vector.hpp"
 #include "stx/except.hpp"
 #include "util/util.hpp"
-#include "util/log.hpp"
+#include "log.hpp"
 
 namespace minote {
 

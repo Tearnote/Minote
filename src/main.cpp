@@ -20,7 +20,7 @@
 #include "SDL_events.h"
 #include "types.hpp"
 #include "math.hpp"
-#include "util/log.hpp"
+#include "log.hpp"
 #include "sys/system.hpp"
 #include "sys/vulkan.hpp"
 #include "gfx/renderer.hpp"

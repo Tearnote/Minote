@@ -9,7 +9,7 @@
 #include "vuk/RenderGraph.hpp"
 #include "stx/except.hpp"
 #include "math.hpp"
-#include "util/log.hpp"
+#include "log.hpp"
 #include "sys/system.hpp"
 #include "gfx/effects/tonemap.hpp"
 #include "gfx/effects/bloom.hpp"

@@ -6,7 +6,7 @@
 #include "SDL_vulkan.h"
 #include "util/verify.hpp"
 #include "stx/except.hpp"
-#include "util/log.hpp"
+#include "log.hpp"
 #include "main.hpp"
 
 namespace minote {

@@ -1,19 +1,24 @@
 #pragma once
 
 #include <string_view>
-#include "types.hpp"
 #include "fmtlog.h"
+#include "types.hpp"
 
 namespace minote {
 
 // Logging facility. Basic set of features, but threaded and non-blocking - it's
 // safe to log even very rapid streams of messages with no performance penalty.
 // Features color in console and {fmt} formatting
-struct Log {
+class Log {
+
+public:
 	
 	// Start logging to console and specified logfile. All messages below
 	// the provided log level will be dropped
 	static void init(std::string_view filename, fmtlog::LogLevel level);
+
+	// Not constructible
+	Log() = delete;
 
 private:
 

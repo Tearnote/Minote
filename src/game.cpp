@@ -17,7 +17,7 @@
 #include "stx/vector.hpp"
 #include "math.hpp"
 #include "util/util.hpp"
-#include "util/log.hpp"
+#include "log.hpp"
 #include "gfx/renderer.hpp"
 #include "gfx/models.hpp"
 #include "freecam.hpp"

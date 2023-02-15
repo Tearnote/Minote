@@ -39,7 +39,6 @@ add_executable(Minote
 	src/util/util.hpp
 	src/util/time.hpp
 	src/util/ease.hpp
-	src/util/log.hpp src/util/log.cpp
 	src/util/rng.hpp
 	src/util/id.hpp
 	src/tools/modelSchema.hpp
@@ -66,7 +65,8 @@ add_executable(Minote
 	src/types.hpp
 	src/math.hpp src/math.tpp
 	src/game.hpp src/game.cpp
-	src/main.hpp src/main.cpp)
+	src/main.hpp src/main.cpp
+	src/log.hpp src/log.cpp)
 target_include_directories(Minote PRIVATE src)
 
 # Libraries
