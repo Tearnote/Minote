@@ -14,6 +14,7 @@
 #include "tools/modelSchema.hpp"
 
 using namespace minote;
+using namespace type_literals;
 
 struct Worknode {
 	cgltf_node* node;

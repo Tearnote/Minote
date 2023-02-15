@@ -16,6 +16,13 @@ using int64 = std::int64_t;
 using usize = std::size_t;
 using isize = std::ptrdiff_t;
 
+namespace type_literals {
+
+// usize integer literal
+consteval auto operator ""_zu(unsigned long long val) -> usize { return val; }
+
+}
+
 // Sanity check
 
 static_assert(sizeof(uint8) == 1);

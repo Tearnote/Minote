@@ -3,10 +3,13 @@
 
 #include <algorithm>
 #include <cmath>
+#include "types.hpp"
 #include "util/verify.hpp"
 #include "util/util.hpp"
 
 namespace minote {
+
+using namespace type_literals;
 
 template<usize Dim, stx::arithmetic T>
 constexpr vec<Dim, T>::vec(std::initializer_list<T> _list) {

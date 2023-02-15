@@ -21,6 +21,8 @@
 
 namespace minote {
 
+using namespace type_literals;
+
 bool Imgui::InputReader::process(SDL_Event const& _e) {
 	
 	ImGui_ImplSDL2_ProcessEvent(&_e);

@@ -34,12 +34,13 @@ constexpr auto nextPOT(uint n) -> uint {
 	
 }
 
+namespace enum_operators {
+
 // Conversion of scoped enum to the underlying type, using the unary + operator
 template<stx::enum_type T>
 constexpr auto operator+(T e) { return std::underlying_type_t<T>(e); }
 
-// usize integer literal
-consteval auto operator ""_zu(unsigned long long val) -> usize { return val; }
+}
 
 // Storage space literals
 consteval auto operator ""_kb(unsigned long long val) { return val * 1024; }
