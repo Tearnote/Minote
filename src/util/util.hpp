@@ -2,16 +2,10 @@
 
 #include <type_traits>
 #include <concepts>
-#include <ranges>
 #include "stx/concepts.hpp"
 #include "types.hpp"
 
 namespace minote {
-
-// Selective imports of ranges library
-
-using std::ranges::views::iota;
-using std::ranges::views::reverse;
 
 // Align a size to a given power-of-two boundary.
 constexpr auto alignPOT(usize size, usize boundary) -> usize {

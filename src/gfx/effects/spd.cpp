@@ -4,6 +4,7 @@
 #include <array>
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
+#include "stx/ranges.hpp"
 #include "gfx/samplers.hpp"
 #include "gfx/shader.hpp"
 #include "gfx/util.hpp"
@@ -33,7 +34,7 @@ auto SPD::apply(Texture2D<float> _source, ReductionType _type) -> Texture2D<floa
 			auto mipCount = source.level_count;
 			ASSERT(mipCount <= 13);
 			auto sourceMips = std::array<vuk::ImageAttachment, 13>();
-			for (auto i: iota(0u, mipCount)) {
+			for (auto i: stx::iota(0u, mipCount)) {
 				auto mip = source;
 				mip.base_level = i;
 				mip.level_count = 1;
@@ -57,7 +58,7 @@ auto SPD::apply(Texture2D<float> _source, ReductionType _type) -> Texture2D<floa
 			cmd.bind_compute_pipeline("spd/apply")
 			   .bind_image(0, 0, sourceMips[0], vuk::ImageLayout::eGeneral).bind_sampler(0, 0, sampler);
 			*cmd.map_scratch_buffer<uint>(0, 1) = 0;
-			for (auto i: iota(1u, 13u))
+			for (auto i: stx::iota(1u, 13u))
 				cmd.bind_image(0, i+1, sourceMips[std::min(i, mipCount-1)], vuk::ImageLayout::eGeneral);
 			
 			cmd.specialize_constants(0, mipCount - 1);

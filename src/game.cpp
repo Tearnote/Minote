@@ -14,6 +14,7 @@
 #include <windows.h>
 #include <processthreadsapi.h>
 #endif
+#include "stx/ranges.hpp"
 #include "stx/vector.hpp"
 #include "math.hpp"
 #include "util/util.hpp"
@@ -99,8 +100,8 @@ void Game::Impl::createScene() {
 	}
 	*/
 	m_testScenes.clear();
-	for (auto x: iota(0u, SimpleScenes))
-	for (auto y: iota(0u, SimpleScenes)) {
+	for (auto x: stx::iota(0u, SimpleScenes))
+	for (auto y: stx::iota(0u, SimpleScenes)) {
 		m_testScenes.emplace_back(Transform{
 			.position = float3{x * SimpleSpacing, y * SimpleSpacing, 32_m},
 			.scale = Prescale,

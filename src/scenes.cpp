@@ -2,6 +2,7 @@
 
 #include "util/util.hpp"
 #include "math.hpp"
+#include "stx/ranges.hpp"
 #include "stx/time.hpp"
 #include "sys/system.hpp"
 #include "gfx/renderer.hpp"
@@ -77,7 +78,7 @@ SimpleScene::SimpleScene(Transform _t) {
 	block5.transform = _t;
 	block5.transform.position += float3{7.0f, 0.0f, 2.0f} * _t.scale;
 	
-	for (auto i: iota(0, 9)) {
+	for (auto i: stx::iota(0, 9)) {
 		
 		m_spheresLeft[i] = s_renderer->objects().create();
 		auto sphereLeft = s_renderer->objects().get(m_spheresLeft[i]);

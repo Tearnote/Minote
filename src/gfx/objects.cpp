@@ -4,6 +4,7 @@
 #include <span>
 #include "vuk/Partials.hpp"
 #include "stx/vector.hpp"
+#include "stx/ranges.hpp"
 #include "util/util.hpp"
 
 namespace minote {
@@ -64,7 +65,7 @@ auto ObjectPool::upload(vuk::Allocator& _allocator, ModelBuffer const& _models) 
 	// Queue up all valid objects
 	auto meshCount = 0u;
 	auto triangleCount = 0u;
-	for (auto idx: iota(ObjectID(0), size())) {
+	for (auto idx: stx::iota(ObjectID(0), size())) {
 		auto& meta = metadata[idx];
 		if (!meta.exists || !meta.visible)
 			continue;
@@ -74,7 +75,7 @@ auto ObjectPool::upload(vuk::Allocator& _allocator, ModelBuffer const& _models) 
 		meshCount += _models.cpu_models[modelIdx].meshCount;
 		
 		auto& model = _models.cpu_models[modelIdx];
-		for (auto i: iota(0u, model.meshCount))
+		for (auto i: stx::iota(0u, model.meshCount))
 			triangleCount += _models.cpu_meshes[model.meshOffset + i].indexCount / 3u;
 		
 		cpu_modelIndices.emplace_back(modelIdx);

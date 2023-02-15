@@ -9,6 +9,7 @@
 #include "gfx/util.hpp"
 #include "stx/vector.hpp"
 #include "stx/except.hpp"
+#include "stx/ranges.hpp"
 #include "util/util.hpp"
 #include "log.hpp"
 
@@ -32,7 +33,7 @@ void ModelList::addModel(std::string_view _name, std::span<char const> _model) {
 	model.meshOffset = m_meshes.size();
 	m_meshes.reserve(meshCount);
 
-	for (auto i: iota(0u, meshCount)) {
+	for (auto i: stx::iota(0u, meshCount)) {
 
 		auto& mesh = m_meshes.emplace_back();
 		mpack_expect_map_match(&in, 3);

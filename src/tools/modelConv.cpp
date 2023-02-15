@@ -7,6 +7,7 @@
 #include "cgltf.h"
 #include "fmt/core.h"
 #include "stx/vector.hpp"
+#include "stx/ranges.hpp"
 #include "util/verify.hpp"
 #include "stx/except.hpp"
 #include "math.hpp"
@@ -69,7 +70,7 @@ int main(int argc, char const* argv[]) try {
 	} else {
 
 		materials.reserve(gltf->materials_count);
-		for (auto i: iota(0_zu, gltf->materials_count)) {
+		for (auto i: stx::iota(0_zu, gltf->materials_count)) {
 
 			auto& material = gltf->materials[i];
 			auto& pbr = material.pbr_metallic_roughness;
@@ -95,7 +96,7 @@ int main(int argc, char const* argv[]) try {
 	auto worknodes = stx::ivector<Worknode>();
 	VERIFY(gltf->scenes_count == 1);
 	auto& scene = gltf->scenes[0];
-	for (auto i: iota(0u, scene.nodes_count)) {
+	for (auto i: stx::iota(0u, scene.nodes_count)) {
 		
 		auto node = scene.nodes[i];
 		worknodes.emplace_back(Worknode{
@@ -132,7 +133,7 @@ int main(int argc, char const* argv[]) try {
 		
 		// Queue up all children nodes
 		
-		for (auto i: iota(0u, node.children_count)) {
+		for (auto i: stx::iota(0u, node.children_count)) {
 			
 			auto child = node.children[i];
 			worknodes.emplace_back(Worknode{
@@ -179,7 +180,7 @@ int main(int argc, char const* argv[]) try {
 		
 		// Fetch all vertex attributes
 		
-		for (auto attrIdx: iota(0_zu, primitive.attributes_count)) {
+		for (auto attrIdx: stx::iota(0_zu, primitive.attributes_count)) {
 			
 			auto& accessor = *primitive.attributes[attrIdx].data;
 			auto* buffer = VERIFY(static_cast<char const*>(accessor.buffer_view->buffer->data));

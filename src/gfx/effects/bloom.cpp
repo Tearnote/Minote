@@ -10,6 +10,7 @@
 #include "gfx/shader.hpp"
 #include "sys/vulkan.hpp"
 #include "stx/vector.hpp"
+#include "stx/ranges.hpp"
 #include "util/verify.hpp"
 #include "util/util.hpp"
 
@@ -34,7 +35,7 @@ auto Bloom::apply(Texture2D<float4> _target) -> Texture2D<float4> {
 	
 	// Create a subresource for each temp mip
 	auto tempMips = stx::ivector<vuk::Name>(passes);
-	for (auto i: iota(0u, passes)) {
+	for (auto i: stx::iota(0u, passes)) {
 		tempMips[i] = vuk::Name("temp").append(std::to_string(i));
 		rg->diverge_image("temp", vuk::Subrange::Image{
 			.base_level = i,
@@ -43,7 +44,7 @@ auto Bloom::apply(Texture2D<float4> _target) -> Texture2D<float4> {
 	}
 	
 	// Downsample phase: repeatedly draw the source image into increasingly smaller mips
-	for (auto i: iota(0u, passes)) {
+	for (auto i: stx::iota(0u, passes)) {
 		auto source = i == 0?
 			vuk::Name("target") :
 			tempMips[i-1];
@@ -82,7 +83,7 @@ auto Bloom::apply(Texture2D<float4> _target) -> Texture2D<float4> {
 	}
 	
 	// Upsample phase: additively blend all mips by traversing back down the mip chain
-	for (auto i: iota(0u, passes) | reverse) {
+	for (auto i: stx::iota(0u, passes) | stx::reverse) {
 		auto source = tempMips[i];
 		auto target = i == 0?
 			vuk::Name("target") :
