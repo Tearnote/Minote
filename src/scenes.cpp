@@ -8,6 +8,8 @@
 
 namespace minote {
 
+using namespace util::id_literals;
+
 BattleScene::BattleScene(Transform _t) {
 	
 	m_id = s_renderer->objects().create();

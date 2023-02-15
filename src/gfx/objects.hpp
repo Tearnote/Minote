@@ -61,7 +61,7 @@ struct ObjectPool {
 	// Convenient access to all properties of a single object
 	struct Proxy {
 		Metadata& metadata;
-		ID& modelID;
+		util::ID& modelID;
 		float4& color;
 		Transform& transform;
 	};
@@ -94,7 +94,7 @@ struct ObjectPool {
 	auto size() const -> usize { return metadata.size(); }
 	
 	stx::ivector<Metadata> metadata;
-	stx::ivector<ID> modelIDs; // IDs into ModelBuffer::cpu_modelIndices
+	stx::ivector<util::ID> modelIDs; // IDs into ModelBuffer::cpu_modelIndices
 	stx::ivector<float4> colors;
 	stx::ivector<Transform> transforms;
 	stx::ivector<Transform> prevTransforms;

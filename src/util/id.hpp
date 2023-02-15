@@ -4,7 +4,7 @@
 #include <type_traits>
 #include "types.hpp"
 
-namespace minote {
+namespace minote::util {
 
 // Resource ID. Created from a string, hashed at compile-time if possible
 class ID {
@@ -44,6 +44,8 @@ private:
 };
 static_assert(std::is_trivially_constructible_v<ID>);
 
+namespace id_literals {
+
 // Guaranteed-constexpr string literal hash
 consteval auto operator ""_id(char const* str, usize len) {
 	
@@ -53,13 +55,15 @@ consteval auto operator ""_id(char const* str, usize len) {
 
 }
 
+}
+
 namespace std {
 
 // Providing std::hash<ID>. The ID is already hashed, so this is an identity function
 template<>
-struct hash<minote::ID> {
+struct hash<minote::util::ID> {
 	
-	constexpr auto operator()(minote::ID const& id) const -> std::size_t { return +id; }
+	constexpr auto operator()(minote::util::ID const& id) const -> std::size_t { return +id; }
 	
 };
 

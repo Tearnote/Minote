@@ -52,7 +52,7 @@ struct ModelBuffer {
 	
 	stx::ivector<Mesh> cpu_meshes;
 	stx::ivector<Model> cpu_models;
-	stx::hashmap<ID, uint> cpu_modelIndices; // Mapping from ID to index into models
+	stx::hashmap<util::ID, uint> cpu_modelIndices; // Mapping from ID to index into models
 };
 
 // Structure storing model data as they're being loaded. After all models are
@@ -74,7 +74,7 @@ private:
 	
 	stx::ivector<Mesh> m_meshes; // Mesh descriptors, for access to index buffers
 	stx::ivector<Model> m_models; // Model descriptors, for access to m_meshes
-	stx::hashmap<ID, uint> m_modelIndices; // Mapping of model IDs to their index in m_models
+	stx::hashmap<util::ID, uint> m_modelIndices; // Mapping of model IDs to their index in m_models
 	
 };
 

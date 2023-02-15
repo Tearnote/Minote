@@ -6,7 +6,7 @@
 #include "types.hpp"
 #include "util/verify.hpp"
 
-namespace minote {
+namespace minote::util {
 
 // PCG pseudorandom number generator
 class Rng {
