@@ -8,7 +8,7 @@
 #include "fmt/core.h"
 #include "util/vector.hpp"
 #include "util/verify.hpp"
-#include "util/error.hpp"
+#include "stx/except.hpp"
 #include "util/math.hpp"
 #include "util/util.hpp"
 #include "tools/modelSchema.hpp"
@@ -44,7 +44,7 @@ struct Mesh {
 
 int main(int argc, char const* argv[]) try {
 	if (argc != 3)
-		throw runtime_error_fmt("Invalid number of arguments: found {}, expected 2", argc - 1);
+		throw stx::runtime_error_fmt("Invalid number of arguments: found {}, expected 2", argc - 1);
 	
 	// Load and parse input gltf
 	
@@ -53,7 +53,7 @@ int main(int argc, char const* argv[]) try {
 	auto* gltf = static_cast<cgltf_data*>(nullptr);
 	
 	if (auto result = cgltf_parse_file(&options, inputPath, &gltf); result != cgltf_result_success)
-		throw runtime_error_fmt(R"(Failed to parse input mesh "{}": error code {})", inputPath, +result);
+		throw stx::runtime_error_fmt(R"(Failed to parse input mesh "{}": error code {})", inputPath, +result);
 	defer { cgltf_free(gltf); };
 	cgltf_load_buffers(&options, gltf, nullptr);
 	
@@ -289,7 +289,7 @@ int main(int argc, char const* argv[]) try {
 	auto out = mpack_writer_t();
 	mpack_writer_init_filename(&out, outputPath);
 	if (out.error != mpack_ok)
-		throw runtime_error_fmt(R"(Failed to open output file "{}" for writing: error code {})", outputPath, +out.error);
+		throw stx::runtime_error_fmt(R"(Failed to open output file "{}" for writing: error code {})", outputPath, +out.error);
 	
 	mpack_write_uint(&out, ModelMagic);
 	mpack_write_cstr(&out, "meshes");
@@ -333,7 +333,7 @@ int main(int argc, char const* argv[]) try {
 	mpack_finish_array(&out);
 	
 	if (auto error = mpack_writer_destroy(&out); error != mpack_ok)
-		throw runtime_error_fmt(R"(Failed to write output file "{}": error code {})", outputPath, +error);
+		throw stx::runtime_error_fmt(R"(Failed to write output file "{}": error code {})", outputPath, +error);
 	
 	return 0;
 	

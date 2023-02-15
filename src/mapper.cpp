@@ -3,7 +3,7 @@
 #include "SDL_events.h"
 #include "util/optional.hpp"
 #include "util/vector.hpp"
-#include "util/error.hpp"
+#include "stx/except.hpp"
 #include "util/util.hpp"
 #include "sys/system.hpp"
 

@@ -6,7 +6,7 @@
 #include "vuk/RenderGraph.hpp"
 #include "vuk/Partials.hpp"
 #include "gfx/util.hpp"
-#include "util/error.hpp"
+#include "stx/except.hpp"
 #include "util/util.hpp"
 #include "util/log.hpp"
 
@@ -19,7 +19,7 @@ void ModelList::addModel(string_view _name, span<char const> _model) {
 	mpack_reader_init_data(&in, _model.data(), _model.size_bytes());
 	
 	if (auto magic = mpack_expect_uint(&in); magic != ModelMagic)
-		throw runtime_error_fmt("Wrong magic number of model {}: got {}, expected {}", _name, magic, ModelMagic);
+		throw stx::runtime_error_fmt("Wrong magic number of model {}: got {}, expected {}", _name, magic, ModelMagic);
 
 	// Process meshes
 	mpack_expect_cstr_match(&in, "meshes");

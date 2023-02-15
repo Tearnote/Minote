@@ -1,5 +1,6 @@
 #include "sys/system.hpp"
 
+#include <stdexcept>
 #include <windows.h>
 #include <timeapi.h>
 #include <fcntl.h>
@@ -10,7 +11,7 @@
 #include "SDL_timer.h"
 #include "SDL.h"
 #include "util/verify.hpp"
-#include "util/error.hpp"
+#include "stx/except.hpp"
 #include "util/time.hpp"
 #include "util/math.hpp"
 #include "util/log.hpp"
@@ -26,13 +27,13 @@ System::System() {
 		SDL_INIT_HAPTIC |
 		SDL_INIT_GAMECONTROLLER |
 		SDL_INIT_EVENTS) != 0)
-		throw runtime_error_fmt("Failed to initialize SDL: {}", SDL_GetError());
+		throw stx::runtime_error_fmt("Failed to initialize SDL: {}", SDL_GetError());
 	
 	m_timerFrequency = SDL_GetPerformanceFrequency();
 	m_timerStart = SDL_GetPerformanceCounter();
 	// Increase sleep timer resolution
 	if (timeBeginPeriod(1) != TIMERR_NOERROR)
-		throw runtime_error("Failed to initialize Windows timer");
+		throw std::runtime_error("Failed to initialize Windows timer");
 	
 	L_DEBUG("System initialized");
 	
@@ -119,7 +120,7 @@ Window::Window(string_view _title, bool _fullscreen, uint2 _size):
 		SDL_WINDOW_VULKAN |
 		(_fullscreen? SDL_WINDOW_FULLSCREEN_DESKTOP : 0));
 	if(!m_handle)
-		throw runtime_error_fmt("Failed to create window {}: {}", m_title, SDL_GetError());
+		throw stx::runtime_error_fmt("Failed to create window {}: {}", m_title, SDL_GetError());
 	
 	// Set window properties
 	

@@ -30,13 +30,13 @@ add_compile_definitions("BUILD_TYPE=$<$<CONFIG:Debug>:BUILD_DEBUG>$<$<CONFIG:Rel
 # Main executable
 add_executable(Minote
 	src/stx/concepts.hpp
+	src/stx/except.hpp
 	src/util/optional.hpp
 	src/util/service.hpp
 	src/util/hashmap.hpp
 	src/util/verify.hpp
 	src/util/vector.hpp
 	src/util/string.hpp
-	src/util/error.hpp
 	src/util/tween.hpp
 	src/util/types.hpp
 	src/util/math.hpp src/util/math.tpp

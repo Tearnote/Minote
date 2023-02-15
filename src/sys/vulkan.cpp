@@ -5,7 +5,7 @@
 #include "volk.h"
 #include "SDL_vulkan.h"
 #include "util/verify.hpp"
-#include "util/error.hpp"
+#include "stx/except.hpp"
 #include "util/log.hpp"
 #include "main.hpp"
 
@@ -27,7 +27,7 @@ VKAPI_ATTR auto VKAPI_CALL debugCallback(
 			return "[VulkanSpec]";
 		if (_typeCode & VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT)
 			return "[Vulkan]";
-		throw logic_error_fmt("Unknown Vulkan diagnostic message type: #{}", _typeCode);
+		throw stx::logic_error_fmt("Unknown Vulkan diagnostic message type: #{}", _typeCode);
 	}();
 	
 	     if (_severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
@@ -39,7 +39,7 @@ VKAPI_ATTR auto VKAPI_CALL debugCallback(
 	else if (_severityCode & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
 		L_DEBUG("{} {}", type, _data->pMessage);
 	else
-		throw logic_error_fmt("Unknown Vulkan diagnostic message severity: #{}", +_severityCode);
+		throw stx::logic_error_fmt("Unknown Vulkan diagnostic message severity: #{}", +_severityCode);
 	
 	return VK_FALSE;
 	
@@ -87,7 +87,7 @@ auto Vulkan::createSwapchain(uint2 _size, VkSwapchainKHR _old) -> vuk::Swapchain
 		                       VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
 		.build();
 	if (!vkbswapchainResult)
-		throw runtime_error_fmt("Failed to create the swapchain: {}", vkbswapchainResult.error().message());
+		throw stx::runtime_error_fmt("Failed to create the swapchain: {}", vkbswapchainResult.error().message());
 	auto vkbswapchain = vkbswapchainResult.value();
 
 	auto vuksw = vuk::Swapchain{
@@ -128,7 +128,7 @@ auto Vulkan::createInstance() -> vkb::Instance {
 		.set_app_version(AppVersion[0], AppVersion[1], AppVersion[2])
 		.build();
 	if (!instanceResult)
-		throw runtime_error_fmt("Failed to create a Vulkan instance: {}", instanceResult.error().message());
+		throw stx::runtime_error_fmt("Failed to create a Vulkan instance: {}", instanceResult.error().message());
 	auto instance = instanceResult.value();
 	
 	volkInitializeCustom(instance.fp_vkGetInstanceProcAddr);
@@ -194,7 +194,7 @@ auto Vulkan::selectPhysicalDevice(vkb::Instance& _instance, VkSurfaceKHR _surfac
 		.allow_any_gpu_device_type(false)
 		.select(vkb::DeviceSelectionMode::partially_and_fully_suitable);
 	if (!physicalDeviceSelectorResult)
-		throw runtime_error_fmt("Failed to find a suitable GPU for Vulkan: {}",
+		throw stx::runtime_error_fmt("Failed to find a suitable GPU for Vulkan: {}",
 			physicalDeviceSelectorResult.error().message());
 	auto physicalDevice = physicalDeviceSelectorResult.value();
 	
@@ -211,7 +211,7 @@ auto Vulkan::createDevice(vkb::PhysicalDevice& _physicalDevice) -> vkb::Device {
 	
 	auto deviceResult = vkb::DeviceBuilder(_physicalDevice).build();
 	if (!deviceResult)
-		throw runtime_error_fmt("Failed to create Vulkan device: {}", deviceResult.error().message());
+		throw stx::runtime_error_fmt("Failed to create Vulkan device: {}", deviceResult.error().message());
 	auto device = deviceResult.value();
 	
 	volkLoadDevice(device.device);

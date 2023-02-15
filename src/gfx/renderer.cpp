@@ -7,7 +7,7 @@
 #include "vuk/AllocatorHelpers.hpp"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
-#include "util/error.hpp"
+#include "stx/except.hpp"
 #include "util/math.hpp"
 #include "util/log.hpp"
 #include "sys/system.hpp"
@@ -184,7 +184,7 @@ void Renderer::executeRenderGraph() try {
 	if (error == VK_ERROR_OUT_OF_DATE_KHR)
 		m_swapchainDirty = true; // No need to return, only cleanup is left
 	else if (error != VK_SUBOPTIMAL_KHR)
-		throw runtime_error_fmt("Unable to present to the screen: error {}", +error);
+		throw stx::runtime_error_fmt("Unable to present to the screen: error {}", +error);
 	
 }
 
