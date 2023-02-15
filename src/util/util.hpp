@@ -13,18 +13,6 @@ namespace minote {
 using std::ranges::views::iota;
 using std::ranges::views::reverse;
 
-// Template replacement for the C offsetof() macro. Unfortunately, it cannot be constexpr within
-// the current rules of the language.
-// Example: offset_of(&Point::y)
-// See: https://gist.github.com/graphitemaster/494f21190bb2c63c5516
-template<typename T1, std::default_initializable T2>
-inline auto offset_of(T1 T2::*member) -> usize {
-	
-	static auto obj = T2();
-	return usize(&(obj.*member)) - usize(&obj);
-	
-}
-
 // Align a size to a given power-of-two boundary.
 constexpr auto alignPOT(usize size, usize boundary) -> usize {
 	
@@ -45,26 +33,6 @@ constexpr auto nextPOT(uint n) -> uint {
 	return n;
 	
 }
-
-// Execute n times.
-template<std::invocable F>
-constexpr void repeat(usize times, F func) {
-	
-	for (auto i = usize(0); i < times; i += 1)
-		func();
-	
-}
-
-// defer pseudo-keyword for executing code at scope exit
-// https://stackoverflow.com/a/42060129
-#ifndef defer
-struct defer_dummy {};
-template <class F> struct deferrer { F f; ~deferrer() { f(); } };
-template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
-#define DEFER_(LINE) zz_defer##LINE
-#define DEFER(LINE) DEFER_(LINE)
-#define defer auto DEFER(__LINE__) = defer_dummy{} *[&]()
-#endif
 
 // Conversion of scoped enum to the underlying type, using the unary + operator
 template<stx::enum_type T>

@@ -7,7 +7,7 @@
 #include <span>
 #include "sqlite3.h"
 #include "stx/except.hpp"
-#include "util/util.hpp"
+#include "stx/defer.hpp"
 #include "log.hpp"
 
 namespace minote {

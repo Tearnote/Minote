@@ -10,7 +10,7 @@
 #include "util/verify.hpp"
 #include "stx/except.hpp"
 #include "math.hpp"
-#include "util/util.hpp"
+#include "stx/defer.hpp"
 #include "tools/modelSchema.hpp"
 
 using namespace minote;

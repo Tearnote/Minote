@@ -24,6 +24,7 @@
 #include "sys/system.hpp"
 #include "sys/vulkan.hpp"
 #include "gfx/renderer.hpp"
+#include "stx/defer.hpp"
 #include "mapper.hpp"
 #include "game.hpp"
 
