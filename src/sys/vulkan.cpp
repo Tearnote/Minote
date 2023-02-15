@@ -7,7 +7,6 @@
 #include "stx/verify.hpp"
 #include "stx/except.hpp"
 #include "log.hpp"
-#include "main.hpp"
 
 namespace minote {
 

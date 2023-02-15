@@ -1,5 +1,10 @@
 #pragma once
 
+#include <array>
+
+inline constexpr auto AppTitle = "Minote";
+inline constexpr auto AppVersion = std::to_array({0u, 0u, 0u});
+
 // Make sure BUILD_TYPE is specified
 #define BUILD_DEBUG 0
 #define BUILD_RELDEB 1

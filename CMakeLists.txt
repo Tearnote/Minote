@@ -32,7 +32,7 @@ add_executable(Minote
 	src/config.hpp
 	src/types.hpp
 	src/math.hpp src/math.tpp
-	src/main.hpp src/main.cpp
+	src/main.cpp
 	src/log.hpp src/log.cpp
 	src/stx/concepts.hpp
 	src/stx/hashmap.hpp

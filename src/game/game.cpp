@@ -1,4 +1,4 @@
-#include "game.hpp"
+#include "game/game.hpp"
 
 #include "config.hpp"
 
@@ -15,7 +15,6 @@
 #include <windows.h>
 #include <processthreadsapi.h>
 #endif //THREAD_DEBUG
-#include "main.hpp"
 #include "math.hpp"
 #include "log.hpp"
 #include "stx/ranges.hpp"
