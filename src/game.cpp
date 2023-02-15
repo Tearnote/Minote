@@ -14,7 +14,7 @@
 #include <windows.h>
 #include <processthreadsapi.h>
 #endif
-#include "util/vector.hpp"
+#include "stx/vector.hpp"
 #include "util/math.hpp"
 #include "util/util.hpp"
 #include "util/log.hpp"
@@ -57,8 +57,8 @@ struct Game::Impl {
 	
 	Freecam m_freecam;
 	
-	svector<BattleScene, BattleSceneCount> m_battleScenes;
-	svector<SimpleScene, SimpleSceneCount> m_testScenes;
+	stx::svector<BattleScene, BattleSceneCount> m_battleScenes;
+	stx::svector<SimpleScene, SimpleSceneCount> m_testScenes;
 	
 };
 

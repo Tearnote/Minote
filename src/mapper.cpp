@@ -2,7 +2,6 @@
 
 #include <optional>
 #include "SDL_events.h"
-#include "util/vector.hpp"
 #include "stx/except.hpp"
 #include "util/util.hpp"
 #include "sys/system.hpp"

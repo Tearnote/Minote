@@ -3,7 +3,7 @@
 #include <array>
 #include <span>
 #include "vuk/Partials.hpp"
-#include "util/vector.hpp"
+#include "stx/vector.hpp"
 #include "util/util.hpp"
 
 namespace minote {
@@ -52,13 +52,13 @@ auto ObjectPool::upload(vuk::Allocator& _allocator, ModelBuffer const& _models) 
 	auto objectCount = sizeDrawable();
 	
 	// Prepare the space for data upload
-	auto cpu_modelIndices = pvector<uint>();
+	auto cpu_modelIndices = stx::pvector<uint>();
 	cpu_modelIndices.reserve(objectCount);
-	auto cpu_transforms = pvector<ObjectBuffer::Transform>();
+	auto cpu_transforms = stx::pvector<ObjectBuffer::Transform>();
 	cpu_transforms.reserve(objectCount);
-	auto cpu_prevTransforms = pvector<ObjectBuffer::Transform>();
+	auto cpu_prevTransforms = stx::pvector<ObjectBuffer::Transform>();
 	cpu_prevTransforms.reserve(objectCount);
-	auto cpu_colors = pvector<float4>();
+	auto cpu_colors = stx::pvector<float4>();
 	cpu_colors.reserve(objectCount);
 	
 	// Queue up all valid objects

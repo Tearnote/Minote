@@ -5,7 +5,7 @@
 #include "itlib/pod_vector.hpp"
 #include "util/types.hpp"
 
-namespace minote {
+namespace minote::stx {
 
 // Static vector. Stored entirely on stack, throws if capacity is exceeded.
 template<typename T, usize N>

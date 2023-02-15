@@ -6,7 +6,7 @@
 #include "vuk/Future.hpp"
 #include "gfx/resource.hpp"
 #include "stx/hashmap.hpp"
-#include "util/vector.hpp"
+#include "stx/vector.hpp"
 #include "util/types.hpp"
 #include "util/math.hpp"
 #include "util/id.hpp"
@@ -50,8 +50,8 @@ struct ModelBuffer {
 	Buffer<Mesh> meshes;
 	Buffer<Model> models;
 	
-	ivector<Mesh> cpu_meshes;
-	ivector<Model> cpu_models;
+	stx::ivector<Mesh> cpu_meshes;
+	stx::ivector<Model> cpu_models;
 	stx::hashmap<ID, uint> cpu_modelIndices; // Mapping from ID to index into models
 };
 
@@ -68,12 +68,12 @@ struct ModelList {
 	
 private:
 	
-	pvector<Material> m_materials;
-	pvector<IndexType> m_indices;
-	pvector<VertexType> m_vertices;
+	stx::pvector<Material> m_materials;
+	stx::pvector<IndexType> m_indices;
+	stx::pvector<VertexType> m_vertices;
 	
-	ivector<Mesh> m_meshes; // Mesh descriptors, for access to index buffers
-	ivector<Model> m_models; // Model descriptors, for access to m_meshes
+	stx::ivector<Mesh> m_meshes; // Mesh descriptors, for access to index buffers
+	stx::ivector<Model> m_models; // Model descriptors, for access to m_meshes
 	stx::hashmap<ID, uint> m_modelIndices; // Mapping of model IDs to their index in m_models
 	
 };

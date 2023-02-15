@@ -6,7 +6,7 @@
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
 #include "fmt/core.h"
-#include "util/vector.hpp"
+#include "stx/vector.hpp"
 #include "util/verify.hpp"
 #include "stx/except.hpp"
 #include "util/math.hpp"
@@ -38,8 +38,8 @@ constexpr auto DefaultMaterial = Material{
 
 struct Mesh {
 	Material material;
-	pvector<IndexType> indices;
-	pvector<VertexType> vertices;
+	stx::pvector<IndexType> indices;
+	stx::pvector<VertexType> vertices;
 };
 
 int main(int argc, char const* argv[]) try {
@@ -59,7 +59,7 @@ int main(int argc, char const* argv[]) try {
 	
 	// Fetch materials
 	
-	auto materials = pvector<Material>();
+	auto materials = stx::pvector<Material>();
 	if (gltf->materials_count == 0) {
 
 		materials.emplace_back(DefaultMaterial);
@@ -91,7 +91,7 @@ int main(int argc, char const* argv[]) try {
 	
 	// Queue up the base nodes
 	
-	auto worknodes = ivector<Worknode>();
+	auto worknodes = stx::ivector<Worknode>();
 	VERIFY(gltf->scenes_count == 1);
 	auto& scene = gltf->scenes[0];
 	for (auto i: iota(0u, scene.nodes_count)) {
@@ -105,7 +105,7 @@ int main(int argc, char const* argv[]) try {
 	
 	// Iterate over the node hierarchy
 	
-	auto meshes = ivector<Mesh>();
+	auto meshes = stx::ivector<Mesh>();
 	meshes.reserve(gltf->meshes_count);
 	while (!worknodes.empty()) {
 		
@@ -235,15 +235,15 @@ int main(int argc, char const* argv[]) try {
 		
 		// Generate remap table
 		
-		auto remapTemp = pvector<unsigned int>(mesh.vertices.size());
+		auto remapTemp = stx::pvector<unsigned int>(mesh.vertices.size());
 		auto uniqueVertexCount = ASSERT(meshopt_generateVertexRemapMulti(remapTemp.data(),
 			mesh.indices.data(), mesh.indices.size(), mesh.vertices.size(),
 			streams.data(), streams.size()));
 		
 		// Apply remap
 		
-		auto verticesRemapped = pvector<GltfVertexType>(uniqueVertexCount);
-		auto indicesRemapped = pvector<GltfIndexType>(mesh.indices.size());
+		auto verticesRemapped = stx::pvector<GltfVertexType>(uniqueVertexCount);
+		auto indicesRemapped = stx::pvector<GltfIndexType>(mesh.indices.size());
 		
 		meshopt_remapVertexBuffer(verticesRemapped.data(),
 			mesh.vertices.data(), mesh.vertices.size(), sizeof(GltfVertexType),
@@ -267,8 +267,8 @@ int main(int argc, char const* argv[]) try {
 		uniqueVertexCount = ASSERT(meshopt_optimizeVertexFetchRemap(remapTemp.data(),
 			mesh.indices.data(), mesh.indices.size(), mesh.vertices.size()));
 		
-		verticesRemapped = pvector<GltfVertexType>(uniqueVertexCount);
-		indicesRemapped = pvector<GltfIndexType>(mesh.indices.size());
+		verticesRemapped = stx::pvector<GltfVertexType>(uniqueVertexCount);
+		indicesRemapped = stx::pvector<GltfIndexType>(mesh.indices.size());
 		
 		meshopt_remapVertexBuffer(verticesRemapped.data(),
 			mesh.vertices.data(), mesh.vertices.size(), sizeof(GltfVertexType),

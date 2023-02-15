@@ -7,6 +7,7 @@
 #include "vuk/RenderGraph.hpp"
 #include "vuk/Partials.hpp"
 #include "gfx/util.hpp"
+#include "stx/vector.hpp"
 #include "stx/except.hpp"
 #include "util/util.hpp"
 #include "util/log.hpp"
@@ -69,7 +70,7 @@ void ModelList::addModel(std::string_view _name, std::span<char const> _model) {
 		auto indexCount = mpack_expect_bin(&in) / sizeof(IndexType);
 		mesh.indexCount = indexCount;
 		mesh.indexOffset = m_indices.size();
-		auto indices = pvector<IndexType>(indexCount);
+		auto indices = stx::pvector<IndexType>(indexCount);
 		mpack_read_bytes(&in, reinterpret_cast<char*>(indices.data()), indexCount * sizeof(IndexType));
 		for (auto& v: indices) // Offset values for the unified buffer
 			v += m_vertices.size();

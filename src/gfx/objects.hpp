@@ -5,7 +5,7 @@
 #include "vuk/Allocator.hpp"
 #include "gfx/resource.hpp"
 #include "gfx/models.hpp"
-#include "util/vector.hpp"
+#include "stx/vector.hpp"
 #include "util/types.hpp"
 #include "util/math.hpp"
 #include "util/id.hpp"
@@ -93,15 +93,15 @@ struct ObjectPool {
 	[[nodiscard]]
 	auto size() const -> usize { return metadata.size(); }
 	
-	ivector<Metadata> metadata;
-	ivector<ID> modelIDs; // IDs into ModelBuffer::cpu_modelIndices
-	ivector<float4> colors;
-	ivector<Transform> transforms;
-	ivector<Transform> prevTransforms;
+	stx::ivector<Metadata> metadata;
+	stx::ivector<ID> modelIDs; // IDs into ModelBuffer::cpu_modelIndices
+	stx::ivector<float4> colors;
+	stx::ivector<Transform> transforms;
+	stx::ivector<Transform> prevTransforms;
 	
 private:
 	
-	ivector<ObjectID> m_deletedIDs;
+	stx::ivector<ObjectID> m_deletedIDs;
 	
 	// Convert a transform from from the PSR triplet to a matrix
 	static auto encodeTransform(Transform) -> ObjectBuffer::Transform;

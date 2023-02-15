@@ -9,7 +9,7 @@
 #include "gfx/samplers.hpp"
 #include "gfx/shader.hpp"
 #include "sys/vulkan.hpp"
-#include "util/vector.hpp"
+#include "stx/vector.hpp"
 #include "util/verify.hpp"
 #include "util/util.hpp"
 
@@ -33,7 +33,7 @@ auto Bloom::apply(Texture2D<float4> _target) -> Texture2D<float4> {
 	});
 	
 	// Create a subresource for each temp mip
-	auto tempMips = ivector<vuk::Name>(passes);
+	auto tempMips = stx::ivector<vuk::Name>(passes);
 	for (auto i: iota(0u, passes)) {
 		tempMips[i] = vuk::Name("temp").append(std::to_string(i));
 		rg->diverge_image("temp", vuk::Subrange::Image{
