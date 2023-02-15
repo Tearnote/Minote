@@ -1,6 +1,7 @@
 #include "gfx/imgui.hpp"
 
 #include <cstdlib>
+#include <cmath>
 #include <span>
 #include "backends/imgui_impl_sdl.h"
 #include "imgui.h"
@@ -193,8 +194,8 @@ auto Imgui::render(Texture2D<float4> _target) -> Texture2D<float4> {
 						clipRect.z() <     0.0f || clipRect.w() <  0.0f) continue;
 					
 					// Negative offsets are illegal for vkCmdSetScissor
-					clipRect.x() = max(clipRect.x(), 0.0f);
-					clipRect.y() = max(clipRect.y(), 0.0f);
+					clipRect.x() = std::max(clipRect.x(), 0.0f);
+					clipRect.y() = std::max(clipRect.y(), 0.0f);
 					cmd.set_scissor(0, vuk::Rect2D{
 						.offset = {int(clipRect.x()), int(clipRect.y())},
 						.extent = {uint(clipRect.z() - clipRect.x()), uint(clipRect.w() - clipRect.y())},

@@ -2,6 +2,7 @@
 // They are licensed under The Happy Bunny License (licenses/HappyBunny.txt)
 
 #include <algorithm>
+#include <cmath>
 #include "util/verify.hpp"
 #include "util/util.hpp"
 
@@ -214,7 +215,7 @@ constexpr auto max(vec<Dim, T> const& _left, vec<Dim, T> const& _right) -> vec<D
 	
 	auto result = vec<Dim, T>();
 	for (auto i: iota(0_zu, Dim))
-		result[i] = max(_left[i], _right[i]);
+		result[i] = std::max(_left[i], _right[i]);
 	return result;
 	
 }

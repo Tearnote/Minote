@@ -13,7 +13,6 @@ target_link_libraries(Model_conv PRIVATE assert)
 target_link_libraries(Model_conv PRIVATE itlib)
 target_link_libraries(Model_conv PRIVATE cgltf)
 target_link_libraries(Model_conv PRIVATE mpack)
-target_link_libraries(Model_conv PRIVATE gcem)
 
 set(ASSETS_FILENAME assets.db)
 add_compile_definitions(ASSETS_P="${ASSETS_FILENAME}")

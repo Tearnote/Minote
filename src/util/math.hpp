@@ -5,7 +5,7 @@
 #include <concepts>
 #include <numbers>
 #include <array>
-#include "gcem.hpp"
+#include <cmath>
 #include "stx/concepts.hpp"
 #include "types.hpp"
 
@@ -20,24 +20,6 @@ constexpr auto Pi = Pi_v<float>;
 template<std::floating_point T>
 constexpr auto Tau_v = Pi_v<T> * T(2.0);
 constexpr auto Tau = Tau_v<float>;
-
-//=== Scalar operations
-
-using gcem::min;
-using gcem::max;
-using gcem::abs;
-using gcem::round;
-using gcem::floor;
-using gcem::ceil;
-using gcem::sgn;
-
-using gcem::pow;
-using gcem::sqrt;
-using gcem::log2;
-
-using gcem::sin;
-using gcem::cos;
-using gcem::tan;
 
 // Degrees to radians conversion
 template<stx::arithmetic T, std::floating_point Prec = float>
@@ -62,7 +44,7 @@ constexpr auto tmod(T num, T div) { return num % div + (num % div < 0) * div; }
 
 // GLSL-style scalar clamp
 template<stx::arithmetic T>
-constexpr auto clamp(T val, T vmin, T vmax) -> T { return max(vmin, min(val, vmax)); }
+constexpr auto clamp(T val, T vmin, T vmax) -> T { return std::max(vmin, std::min(val, vmax)); }
 
 //=== Compound types
 
@@ -253,7 +235,7 @@ constexpr auto length2(vec<Dim, T> const& v) -> T { return dot(v, v); }
 
 // true if vector has the length of 1 (within reasonable epsilon)
 template<usize Dim, std::floating_point T>
-constexpr auto isUnit(vec<Dim, T> const& v) -> bool { return (abs(length2(v) - 1) < (1.0 / 16.0)); }
+constexpr auto isUnit(vec<Dim, T> const& v) -> bool { return (std::abs(length2(v) - 1) < (1.0 / 16.0)); }
 
 // Constructs a vector in the same direction but length 1
 template<usize Dim, std::floating_point T>

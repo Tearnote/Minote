@@ -37,7 +37,6 @@ configurations are self-explanatory, `RelWithDebInfo` is designed for profiling.
 - [`itlib`](https://github.com/iboB/itlib) (MIT)
 - [`{fmt}`](https://github.com/fmtlib/fmt) (MIT)
 - [`fmtlog`](https://github.com/MengRao/fmtlog) (MIT)
-- [`GCE-Math`](https://github.com/kthohr/gcem) (Apache-2.0)
 - [`MPack`](https://github.com/ludocode/mpack) (MIT)
 - [`meshoptimizer`](https://github.com/zeux/meshoptimizer) (MIT)
 - [`ìncbin`](https://github.com/graphitemaster/incbin) (Unlicense)

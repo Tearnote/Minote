@@ -116,11 +116,6 @@ target_compile_definitions(fmtlog INTERFACE FMTLOG_HEADER_ONLY)
 target_compile_definitions(fmtlog INTERFACE FMT_NOEXCEPT=noexcept)
 target_link_libraries(fmtlog INTERFACE fmt::fmt)
 
-FetchContent_Declare(gcem
-	GIT_REPOSITORY https://github.com/kthohr/gcem
-	GIT_TAG v1.16.0)
-FetchContent_MakeAvailable(gcem)
-
 FetchContent_Declare(mpack
 	URL https://github.com/ludocode/mpack/releases/download/v1.1.1/mpack-amalgamation-1.1.1.tar.gz)
 FetchContent_MakeAvailable(mpack)

@@ -1,5 +1,6 @@
 #include "freecam.hpp"
 
+#include <cmath>
 #include "gfx/renderer.hpp"
 
 namespace minote {
@@ -34,7 +35,7 @@ void Freecam::handleAction(Mapper::Action _action) {
 void Freecam::updateCamera(Camera& _camera) {
 	
 	// Get framerate independence multiplier
-	auto framerateScale = min(144.0f / s_renderer->fps(), 8.0f);
+	auto framerateScale = std::min(144.0f / s_renderer->fps(), 8.0f);
 	_camera.moveSpeed = 1_m / 16.0f * framerateScale;
 	
 	offset.y() = -offset.y();
