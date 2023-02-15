@@ -35,7 +35,6 @@ add_executable(Minote
 	src/util/service.hpp
 	src/util/verify.hpp
 	src/util/vector.hpp
-	src/util/string.hpp
 	src/util/tween.hpp
 	src/util/types.hpp
 	src/util/math.hpp src/util/math.tpp

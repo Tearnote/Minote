@@ -13,7 +13,7 @@
 
 namespace minote {
 
-void ModelList::addModel(string_view _name, std::span<char const> _model) {
+void ModelList::addModel(std::string_view _name, std::span<char const> _model) {
 	
 	// Load in data
 	auto in = mpack_reader_t();

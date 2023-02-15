@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string_view>
 #include <type_traits>
 #include <span>
 #include "vuk/Future.hpp"
@@ -59,7 +60,7 @@ struct ModelBuffer {
 struct ModelList {
 	
 	// Parse a model file, and append it to the list
-	void addModel(string_view name, std::span<char const> model);
+	void addModel(std::string_view name, std::span<char const> model);
 	
 	// Convert into a ModelBuffer. The instance must be moved in,
 	// so all CPU-side resources are freed

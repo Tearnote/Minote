@@ -1,14 +1,14 @@
 #include "util/log.hpp"
 
+#include <string>
 #include <array>
 #include "fmtlog.h"
-#include "util/string.hpp"
 
 namespace minote {
 
-void Log::init(string_view _filename, fmtlog::LogLevel _level) {
+void Log::init(std::string_view _filename, fmtlog::LogLevel _level) {
 	
-	fmtlog::setLogFile(string(_filename).c_str(), true);
+	fmtlog::setLogFile(std::string(_filename).c_str(), true);
 	fmtlog::setLogLevel(_level);
 	fmtlog::flushOn(fmtlog::WRN);
 	fmtlog::setLogCB(&consoleCallback, _level);

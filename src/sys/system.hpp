@@ -1,11 +1,12 @@
 #pragma once
 
+#include <string_view>
 #include <concepts>
 #include <atomic>
+#include <string>
 #include "SDL_events.h"
 #include "SDL_video.h"
 #include "util/service.hpp"
-#include "util/string.hpp"
 #include "util/types.hpp"
 #include "util/math.hpp"
 #include "util/time.hpp"
@@ -24,7 +25,7 @@ struct System {
 		[[nodiscard]]
 		auto dpi() -> float { return m_dpi; }
 		[[nodiscard]]
-		auto title() const -> string_view { return m_title; }
+		auto title() const -> std::string_view { return m_title; }
 		
 		// Provide the raw SDL window handle for tasks like Vulkan surface creation
 		[[nodiscard]]
@@ -37,12 +38,12 @@ struct System {
 	private:
 		
 		friend struct System;
-		Window(string_view title, bool fullscreen, uint2 size);
+		Window(std::string_view title, bool fullscreen, uint2 size);
 		
 		// Raw window handle
 		SDL_Window* m_handle;
 		// Text displayed on the window's title bar
-		string m_title;
+		std::string m_title;
 		// Size in physical pixels
 		std::atomic<uint2> m_size;
 		// DPI of the display the window is on
@@ -87,7 +88,7 @@ struct System {
 	// Open a window with specified parameters on the screen. Size of the window
 	// is in logical units. If fullscreen is true, size is ignored and the window
 	// is created at desktop resolution
-	auto openWindow(string_view title, bool fullscreen = false, uint2 size = {1280, 720}) -> Window
+	auto openWindow(std::string_view title, bool fullscreen = false, uint2 size = {1280, 720}) -> Window
 	 { return Window(title, fullscreen, size); }
 	
 	System(System const&) = delete;

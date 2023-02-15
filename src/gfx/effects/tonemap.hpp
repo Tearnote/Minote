@@ -1,9 +1,9 @@
 #pragma once
 
+#include <string_view>
 #include <array>
 #include "vuk/Future.hpp"
 #include "gfx/resource.hpp"
-#include "util/string.hpp"
 #include "util/types.hpp"
 #include "util/math.hpp"
 
@@ -29,7 +29,7 @@ struct Tonemap {
 	static void compile();
 	
 	// Draw debug controls for this instance
-	void drawImguiDebug(string_view name);
+	void drawImguiDebug(std::string_view name);
 	
 private:
 	

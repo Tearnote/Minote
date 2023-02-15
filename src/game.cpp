@@ -2,6 +2,7 @@
 
 #include "config.hpp"
 
+#include <string_view>
 #include <exception>
 #ifdef THREAD_DEBUG
 #ifndef NOMINMAX
@@ -42,7 +43,7 @@ struct Game::Impl {
 	
 	Impl(Game::Params const& p): m_window(p.window), m_mapper(p.mapper) {}
 	// Load all assets from the store, upload to GPU when neccessary
-	void loadAssets(string_view path);
+	void loadAssets(std::string_view path);
 	// Create game world objects, initialize camera
 	void createScene();
 	// Run the game logic and rendering until user quits
@@ -61,7 +62,7 @@ struct Game::Impl {
 	
 };
 
-void Game::Impl::loadAssets(string_view _path) {
+void Game::Impl::loadAssets(std::string_view _path) {
 	
 	auto modelList = ModelList();
 	auto assets = Assets(_path);

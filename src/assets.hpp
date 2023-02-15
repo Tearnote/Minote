@@ -1,8 +1,9 @@
 #pragma once
 
+#include <string_view>
 #include <concepts>
+#include <string>
 #include <span>
-#include "util/string.hpp"
 
 // Forward declaration
 struct sqlite3;
@@ -13,13 +14,13 @@ struct Assets {
 	
 	// Open the sqlite database containing game assets. File remains open
 	// until this object is destroyed
-	explicit Assets(string_view path);
+	explicit Assets(std::string_view path);
 	~Assets();
 	
 	// Iterate over the models table, and call the provided function on each row
 	// Function arguments are name of the model, and raw bytestream as char array
 	template<typename F>
-	requires std::invocable<F, string_view, std::span<char const>>
+	requires std::invocable<F, std::string_view, std::span<char const>>
 	void loadModels(F func);
 	
 	Assets(Assets const&) = delete;
@@ -28,7 +29,7 @@ struct Assets {
 private:
 	
 	sqlite3* m_db = nullptr;
-	string m_path;
+	std::string m_path;
 	
 };
 

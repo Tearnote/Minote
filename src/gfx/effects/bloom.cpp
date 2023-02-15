@@ -1,5 +1,7 @@
 #include "gfx/effects/bloom.hpp"
 
+#include <string_view>
+#include <string>
 #include "imgui.h"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
@@ -7,7 +9,6 @@
 #include "gfx/samplers.hpp"
 #include "gfx/shader.hpp"
 #include "sys/vulkan.hpp"
-#include "util/string.hpp"
 #include "util/vector.hpp"
 #include "util/verify.hpp"
 #include "util/util.hpp"
@@ -34,7 +35,7 @@ auto Bloom::apply(Texture2D<float4> _target) -> Texture2D<float4> {
 	// Create a subresource for each temp mip
 	auto tempMips = ivector<vuk::Name>(passes);
 	for (auto i: iota(0u, passes)) {
-		tempMips[i] = vuk::Name("temp").append(to_string(i));
+		tempMips[i] = vuk::Name("temp").append(std::to_string(i));
 		rg->diverge_image("temp", vuk::Subrange::Image{
 			.base_level = i,
 			.level_count = 1,
@@ -49,7 +50,7 @@ auto Bloom::apply(Texture2D<float4> _target) -> Texture2D<float4> {
 		auto target = tempMips[i];
 		auto targetNew = tempMips[i].append("+");
 		rg->add_pass(vuk::Pass{
-			.name = vuk::Name("bloom/down").append(to_string(i)),
+			.name = vuk::Name("bloom/down").append(std::to_string(i)),
 			.resources = {
 				vuk::Resource(source, vuk::Resource::Type::eImage, vuk::eComputeSampled),
 				vuk::Resource(target, vuk::Resource::Type::eImage, vuk::eComputeWrite, targetNew),
@@ -90,7 +91,7 @@ auto Bloom::apply(Texture2D<float4> _target) -> Texture2D<float4> {
 			vuk::Name("target/final") :
 			tempMips[i-1].append("+");
 		rg->add_pass(vuk::Pass{
-			.name = vuk::Name("bloom/up").append(to_string(i)),
+			.name = vuk::Name("bloom/up").append(std::to_string(i)),
 			.resources = {
 				vuk::Resource(source, vuk::Resource::Type::eImage, vuk::eComputeSampled),
 				vuk::Resource(target, vuk::Resource::Type::eImage, vuk::eComputeRW, targetNew),
@@ -147,9 +148,9 @@ void Bloom::compile() {
 	
 }
 
-void Bloom::drawImguiDebug(string_view _name) {
+void Bloom::drawImguiDebug(std::string_view _name) {
 	
-	ImGui::Begin(string(_name).c_str());
+	ImGui::Begin(std::string(_name).c_str());
 	ImGui::SliderInt("Passes", reinterpret_cast<int*>(&passes), 1u, 8u);
 	ImGui::SliderFloat("Strength", &strength, 0.0f, 1.0f, nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
 	ImGui::End();

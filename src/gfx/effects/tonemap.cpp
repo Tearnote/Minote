@@ -1,5 +1,6 @@
 #include "gfx/effects/tonemap.hpp"
 
+#include <string>
 #include <array>
 #include "imgui.h"
 #include "vuk/CommandBuffer.hpp"
@@ -96,9 +97,9 @@ auto Tonemap::genConstants() -> std::array<float4, 4> {
 	
 }
 
-void Tonemap::drawImguiDebug(string_view _name) {
+void Tonemap::drawImguiDebug(std::string_view _name) {
 	
-	ImGui::Begin(string(_name).c_str());
+	ImGui::Begin(std::string(_name).c_str());
 	ImGui::SliderFloat("Contrast", &contrast, 0.5f, 5.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
 	ImGui::SliderFloat("HDR max", &hdrMax, 1.0f, 128.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
 	ImGui::SliderFloat("Mid in", &midIn, 0.01f, 1.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);

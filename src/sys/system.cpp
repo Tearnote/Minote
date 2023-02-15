@@ -105,7 +105,7 @@ void System::initConsole() {
 	
 }
 
-Window::Window(string_view _title, bool _fullscreen, uint2 _size):
+Window::Window(std::string_view _title, bool _fullscreen, uint2 _size):
 	m_title(_title) {
 	
 	ASSUME(_size.x() > 0 && _size.y() > 0);

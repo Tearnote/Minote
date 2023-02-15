@@ -2,12 +2,11 @@
 
 #include "sqlite3.h"
 #include "stx/except.hpp"
-#include "util/string.hpp"
 #include "util/log.hpp"
 
 namespace minote {
 
-Assets::Assets(string_view _path):
+Assets::Assets(std::string_view _path):
 	m_path(_path) {
 	
 	if (auto result = sqlite3_open_v2(m_path.c_str(), &m_db, SQLITE_OPEN_READONLY, nullptr); result != SQLITE_OK) {

@@ -1,7 +1,7 @@
 #pragma once
 
+#include <string_view>
 #include <type_traits>
-#include "util/string.hpp"
 #include "util/types.hpp"
 
 namespace minote {
@@ -13,7 +13,7 @@ struct ID {
 	constexpr ID() = default;
 	
 	// Hash string with FNV-1a
-	explicit constexpr ID(string_view str): m_id(Basis) {
+	explicit constexpr ID(std::string_view str): m_id(Basis) {
 		
 		for (auto ch: str) {
 			m_id ^= ch;
@@ -45,7 +45,7 @@ static_assert(std::is_trivially_constructible_v<ID>);
 // Guaranteed-constexpr string literal hash
 consteval auto operator ""_id(char const* str, usize len) {
 	
-	return ID(string_view(str, len));
+	return ID(std::string_view(str, len));
 	
 }
 

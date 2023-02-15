@@ -1,7 +1,7 @@
 #pragma once
 
+#include <string_view>
 #include "vuk/Future.hpp"
-#include "util/string.hpp"
 #include "util/types.hpp"
 #include "util/math.hpp"
 #include "gfx/resource.hpp"
@@ -21,7 +21,7 @@ struct Bloom {
 	static void compile();
 	
 	// Draw debug controls for this instance
-	void drawImguiDebug(string_view name);
+	void drawImguiDebug(std::string_view name);
 	
 	uint passes = 6u; // More passes increases blur width
 	float strength = 1.0f / 64.0f; // Output multiplier

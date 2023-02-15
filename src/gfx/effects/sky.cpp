@@ -1,11 +1,11 @@
 #include "gfx/effects/sky.hpp"
 
+#include <string>
 #include <span>
 #include "imgui.h"
 #include "vuk/CommandBuffer.hpp"
 #include "vuk/RenderGraph.hpp"
 #include "vuk/Partials.hpp"
-#include "util/string.hpp"
 #include "util/math.hpp"
 #include "gfx/samplers.hpp"
 #include "gfx/shader.hpp"
@@ -292,9 +292,9 @@ auto Sky::draw(Texture2D<float4> _target, Atmosphere& _atmo,
 	
 }
 
-void Sky::drawImguiDebug(string_view _name) {
+void Sky::drawImguiDebug(std::string_view _name) {
 	
-	ImGui::Begin(string(_name).c_str());
+	ImGui::Begin(std::string(_name).c_str());
 	ImGui::SliderAngle("Sun pitch", &m_sunPitch, -8.0f, 60.0f, "%.1f deg", ImGuiSliderFlags_NoRoundToFormat);
 	ImGui::SliderAngle("Sun yaw", &m_sunYaw, -180.0f, 180.0f, nullptr, ImGuiSliderFlags_NoRoundToFormat);
 	sunDirection = getSunDirection(m_sunPitch, m_sunYaw);

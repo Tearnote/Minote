@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string_view>
 #include "vuk/Future.hpp"
 #include "gfx/resource.hpp"
 #include "gfx/renderer.hpp"
@@ -92,7 +93,7 @@ struct Sky {
 	static void compile();
 	
 	// Draw debug controls for this instance
-	void drawImguiDebug(string_view name);
+	void drawImguiDebug(std::string_view name);
 	
 	// Compute direction from pitch and yaw
 	auto getSunDirection(float pitch, float yaw) -> float3;

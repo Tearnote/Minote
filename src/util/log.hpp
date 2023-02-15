@@ -1,6 +1,6 @@
 #pragma once
 
-#include "util/string.hpp"
+#include <string_view>
 #include "util/types.hpp"
 #include "fmtlog.h"
 
@@ -13,7 +13,7 @@ struct Log {
 	
 	// Start logging to console and specified logfile. All messages below
 	// the provided log level will be dropped
-	static void init(string_view filename, fmtlog::LogLevel level);
+	static void init(std::string_view filename, fmtlog::LogLevel level);
 
 private:
 
