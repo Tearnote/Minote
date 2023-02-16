@@ -57,7 +57,7 @@ public:
 	// Simulation time advances to "until" timestamp
 	void tick(stx::nsec until, Imgui::InputReader&);
 	
-	Window& m_window;
+	sys::Window& m_window;
 	Mapper& m_mapper;
 	
 	Freecam m_freecam;
@@ -114,11 +114,11 @@ void Game::Impl::createScene() {
 
 void Game::Impl::gameLoop() {
 	
-	auto nextUpdate = s_system->getTime();
-	while (!s_system->isQuitting()) {
+	auto nextUpdate = sys::s_system->getTime();
+	while (!sys::s_system->isQuitting()) {
 		
 		auto imguiInput = s_renderer->imgui().getInputReader();
-		while (nextUpdate <= s_system->getTime()) {
+		while (nextUpdate <= sys::s_system->getTime()) {
 			tick(nextUpdate, imguiInput);
 			nextUpdate += LogicTick;
 		}
@@ -133,7 +133,7 @@ void Game::Impl::gameLoop() {
 void Game::Impl::tick(stx::nsec _until, Imgui::InputReader& _imguiInput) {
 	
 	// Handle all relevant inputs
-	s_system->forEachEvent([&] (const SDL_Event& e) -> bool {
+	sys::s_system->forEachEvent([&] (const SDL_Event& e) -> bool {
 		
 		// Let ImGui handle all events ASAP
 		if (_imguiInput.process(e)) return true;
@@ -147,7 +147,7 @@ void Game::Impl::tick(stx::nsec _until, Imgui::InputReader& _imguiInput) {
 		// Game logic events
 		if (auto action = m_mapper.convert(e)) {
 			if (action->type == Mapper::Action::Type::Back)
-				s_system->postQuitEvent();
+				sys::s_system->postQuitEvent();
 			m_freecam.handleAction(*action);
 		}
 		
@@ -175,7 +175,7 @@ void Game::run() try {
 	
 	L_ERROR("Unhandled exception on game thread: {}", e.what());
 	L_ERROR("Cannot recover, shutting down. Please report this error to the developer");
-	s_system->postQuitEvent();
+	sys::s_system->postQuitEvent();
 	
 }
 

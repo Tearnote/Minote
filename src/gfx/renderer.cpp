@@ -29,7 +29,7 @@ struct Renderer::Impl {
 };
 
 Renderer::Renderer():
-	m_deviceResource(*s_vulkan->context, InflightFrames),
+	m_deviceResource(*sys::s_vulkan->context, InflightFrames),
 	m_multiFrameAllocator(m_deviceResource),
 	m_frameResource(nullptr),
 	m_swapchainDirty(false),
@@ -45,7 +45,7 @@ Renderer::Renderer():
 
 Renderer::~Renderer() {
 	
-	s_vulkan->context->wait_idle();
+	sys::s_vulkan->context->wait_idle();
 	L_INFO("Renderer cleaned up");
 	
 }
@@ -77,15 +77,20 @@ void Renderer::renderFrame() {
 void Renderer::beginFrame() {
 	
 	m_frameResource = &m_deviceResource.get_next_frame();
-	s_vulkan->context->next_frame();
+	sys::s_vulkan->context->next_frame();
 	m_frameAllocator.emplace(*m_frameResource);
 	m_imgui.begin(); // Ensure that imgui calls work during rendering; usually a no-op
 	calcFramerate();
-	m_camera.viewport = uint2{s_vulkan->swapchain->extent.width, s_vulkan->swapchain->extent.height};
+	m_camera.viewport = uint2{
+		sys::s_vulkan->swapchain->extent.width,
+		sys::s_vulkan->swapchain->extent.height,
+	};
 	
 }
 
 void Renderer::refreshSwapchain(uint2 _newSize) {
+
+	using sys::s_vulkan;
 	
 	auto lock = std::lock_guard(m_renderLock);
 	
@@ -103,7 +108,7 @@ void Renderer::refreshSwapchain(uint2 _newSize) {
 void Renderer::calcFramerate() {
 	
 	m_framesSinceLastCheck += 1;
-	auto currentTime = s_system->getTime();
+	auto currentTime = sys::s_system->getTime();
 	auto timeElapsed = currentTime - m_lastFramerateCheck;
 	if (timeElapsed >= FramerateUpdate) {
 		auto secondsElapsed = stx::ratio(timeElapsed, 1_s);
@@ -157,7 +162,7 @@ void Renderer::executeRenderGraph() try {
 	// Copy to swapchain
 	rg = std::make_shared<vuk::RenderGraph>("main");
 	rg->attach_in("screen/final", screenFinal);
-	rg->attach_swapchain("swapchain", s_vulkan->swapchain);
+	rg->attach_swapchain("swapchain", sys::s_vulkan->swapchain);
 	rg->add_pass({
 		.name = "swapchain copy",
 		.resources = {
@@ -176,7 +181,7 @@ void Renderer::executeRenderGraph() try {
 	});
 	
 	auto compiler = vuk::Compiler();
-	vuk::execute_submit_and_present_to_one(frameAllocator(), compiler.link({&rg, 1}, {}), s_vulkan->swapchain);
+	vuk::execute_submit_and_present_to_one(frameAllocator(), compiler.link({&rg, 1}, {}), sys::s_vulkan->swapchain);
 	
 } catch (vuk::PresentException& e) {
 	

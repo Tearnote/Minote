@@ -58,7 +58,7 @@ GET_SHADER(tonemap_apply_cs);
 void Tonemap::compile() {
 	
 	if (m_compiled) return;
-	auto& ctx = *s_vulkan->context;
+	auto& ctx = *sys::s_vulkan->context;
 	
 	auto applyPci = vuk::PipelineBaseCreateInfo();
 	ADD_SHADER(applyPci, tonemap_apply_cs, "tonemap/apply.cs.hlsl");

@@ -50,7 +50,9 @@ constexpr auto clamp(T val, T vmin, T vmax) -> T { return std::max(vmin, std::mi
 
 // Generic math vector, of any dimension between 2 to 4 and any underlying type
 template<usize Dim, stx::arithmetic T>
-struct vec {
+class vec {
+
+public:
 	
 	static_assert(Dim >= 2 && Dim <= 4, "Vectors need to have 2, 3 or 4 components");
 	
@@ -266,7 +268,9 @@ static_assert(std::is_trivially_constructible_v<uint4>);
 // Quaternion, equivalent to a float4 but with unique operations available.
 // Main purpose is representing rotations. Data layout is {w, x, y, z}.
 template<std::floating_point Prec = float>
-struct qua {
+class qua {
+
+public:
 	
 	//=== Creation
 	
@@ -330,7 +334,9 @@ static_assert(std::is_trivially_constructible_v<quat>);
 
 // Generic matrix type, of order 3 or 4, and any floating-point precision
 template<usize Dim, std::floating_point Prec>
-struct mat {
+class mat {
+
+public:
 	
 	using col_t = vec<Dim, Prec>;
 	

@@ -135,7 +135,7 @@ GET_SHADER(bloom_up_cs);
 void Bloom::compile() {
 	
 	if (m_compiled) return;
-	auto& ctx = *s_vulkan->context;
+	auto& ctx = *sys::s_vulkan->context;
 	
 	auto downPci = vuk::PipelineBaseCreateInfo();
 	ADD_SHADER(downPci, bloom_down_cs, "bloom/down.cs.hlsl");

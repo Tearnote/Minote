@@ -2,13 +2,14 @@
 
 #include "config.hpp"
 
-#include "volk.h"
+#include <utility>
+#include "volk.h" // Order is important
 #include "SDL_vulkan.h"
+#include "log.hpp"
 #include "stx/verify.hpp"
 #include "stx/except.hpp"
-#include "log.hpp"
 
-namespace minote {
+namespace minote::sys {
 
 #ifdef VK_VALIDATION
 VKAPI_ATTR auto VKAPI_CALL debugCallback(
@@ -78,10 +79,12 @@ auto Vulkan::createSwapchain(uint2 _size, VkSwapchainKHR _old) -> vuk::Swapchain
 		.set_desired_extent(_size.x(), _size.y())
 		.set_desired_format({
 			.format = VK_FORMAT_B8G8R8A8_UNORM,
-			.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR })
+			.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
+		})
 		.add_fallback_format({
 			.format = VK_FORMAT_R8G8B8A8_UNORM,
-			.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR })
+			.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
+		})
 		.set_image_usage_flags(VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT |
 		                       VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
 		.build();
@@ -93,7 +96,8 @@ auto Vulkan::createSwapchain(uint2 _size, VkSwapchainKHR _old) -> vuk::Swapchain
 		.swapchain = vkbswapchain.swapchain,
 		.surface = surface,
 		.format = vuk::Format(vkbswapchain.image_format),
-		.extent = {vkbswapchain.extent.width, vkbswapchain.extent.height}};
+		.extent = {vkbswapchain.extent.width, vkbswapchain.extent.height},
+	};
 	auto imgs = vkbswapchain.get_images();
 	auto ivs = vkbswapchain.get_image_views();
 	for (auto& img: *imgs)
@@ -148,7 +152,7 @@ auto Vulkan::createSurface(vkb::Instance& _instance, Window& _window) -> VkSurfa
 
 auto Vulkan::selectPhysicalDevice(vkb::Instance& _instance, VkSurfaceKHR _surface) -> vkb::PhysicalDevice {
 	
-		auto physicalDeviceFeatures = VkPhysicalDeviceFeatures{
+	auto physicalDeviceFeatures = VkPhysicalDeviceFeatures{
 #ifdef VK_VALIDATION
 		.robustBufferAccess = VK_TRUE,
 #endif

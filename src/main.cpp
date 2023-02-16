@@ -56,9 +56,9 @@ auto main(int, char*[]) -> int try {
 	L_INFO("Starting up {} {}.{}.{}", AppTitle, AppVersion[0], AppVersion[1], AppVersion[2]);
 	
 	// Initialize systems
-	auto system = s_system.provide();
-	auto window = s_system->openWindow(AppTitle, false, {960, 504});
-	auto vulkan = s_vulkan.provide(window);
+	auto system = sys::s_system.provide();
+	auto window = sys::s_system->openWindow(AppTitle, false, {960, 504});
+	auto vulkan = sys::s_vulkan.provide(window);
 	auto engine = s_renderer.provide();
 	auto mapper = game::Mapper();
 	
@@ -74,9 +74,9 @@ auto main(int, char*[]) -> int try {
 	defer { SDL_DelEventWatch(&windowResize, &engine); };
 	
 	// Input thread loop
-	while (!s_system->isQuitting()) {
+	while (!sys::s_system->isQuitting()) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Forfeit thread timeslice
-		s_system->poll();
+		sys::s_system->poll();
 	}
 	
 	return EXIT_SUCCESS;

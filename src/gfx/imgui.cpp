@@ -43,7 +43,7 @@ Imgui::Imgui(vuk::Allocator& _allocator):
 	
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	ImGui_ImplSDL2_InitForVulkan(s_vulkan->window().handle());
+	ImGui_ImplSDL2_InitForVulkan(sys::s_vulkan->window().handle());
 	
 	auto& io = ImGui::GetIO();
 	io.BackendRendererName = "imgui_impl_vuk";
@@ -70,7 +70,7 @@ GET_SHADER(imgui_imgui_ps);
 void Imgui::compile() {
 	
 	if (m_compiled) return;
-	auto& ctx = *s_vulkan->context;
+	auto& ctx = *sys::s_vulkan->context;
 	
 	auto imguiPci = vuk::PipelineBaseCreateInfo();
 	ADD_SHADER(imguiPci, imgui_imgui_vs, "imgui/imgui.vs.hlsl");

@@ -10,7 +10,7 @@ namespace minote::game {
 struct Game {
 	
 	struct Params {
-		Window& window;
+		sys::Window& window;
 		Mapper& mapper;
 	};
 	

@@ -46,7 +46,7 @@ GET_SHADER(sky_genMultiScattering_cs);
 void Atmosphere::compile() {
 	
 	if (m_compiled) return;
-	auto& ctx = *s_vulkan->context;
+	auto& ctx = *sys::s_vulkan->context;
 	
 	auto genTransmittancePci = vuk::PipelineBaseCreateInfo();
 	ADD_SHADER(genTransmittancePci, sky_genTransmittance_cs, "sky/genTransmittance.cs.hlsl");
@@ -141,7 +141,7 @@ GET_SHADER(sky_draw_cs);
 void Sky::compile() {
 	
 	if (m_compiled) return;
-	auto& ctx = *s_vulkan->context;
+	auto& ctx = *sys::s_vulkan->context;
 	
 	auto genViewPci = vuk::PipelineBaseCreateInfo();
 	ADD_SHADER(genViewPci, sky_genView_cs, "sky/genView.cs.hlsl");

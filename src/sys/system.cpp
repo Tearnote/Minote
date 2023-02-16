@@ -1,6 +1,10 @@
 #include "sys/system.hpp"
 
 #include <stdexcept>
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+// WIN32_LEAN_AND_MEAN would remove parts we actually need here
 #include <windows.h>
 #include <timeapi.h>
 #include <fcntl.h>
@@ -10,13 +14,13 @@
 #include "SDL_events.h"
 #include "SDL_timer.h"
 #include "SDL.h"
+#include "math.hpp"
+#include "log.hpp"
 #include "stx/verify.hpp"
 #include "stx/except.hpp"
 #include "stx/time.hpp"
-#include "math.hpp"
-#include "log.hpp"
 
-namespace minote {
+namespace minote::sys {
 
 System::System() {
 	
@@ -112,7 +116,8 @@ Window::Window(std::string_view _title, bool _fullscreen, uint2 _size):
 	
 	// Create window
 	
-	m_handle = SDL_CreateWindow(m_title.c_str(),
+	m_handle = SDL_CreateWindow(
+		m_title.c_str(),
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 		_size.x(), _size.y(),
 		SDL_WINDOW_RESIZABLE |

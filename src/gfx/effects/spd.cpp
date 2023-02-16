@@ -88,7 +88,7 @@ GET_SHADER(spd_cs);
 void SPD::compile() {
 	
 	if (m_compiled) return;
-	auto& ctx = *s_vulkan->context;
+	auto& ctx = *sys::s_vulkan->context;
 	
 	auto applyPci = vuk::PipelineBaseCreateInfo();
 	ADD_SHADER(applyPci, spd_cs, "spd.cs.hlsl");

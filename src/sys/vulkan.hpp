@@ -1,19 +1,21 @@
 #pragma once
 
 #include <optional>
-#include "volk.h"
+#include "volk.h" // Order is important
 #include "VkBootstrap.h"
 #include "vuk/Context.hpp"
-#include "util/service.hpp"
 #include "types.hpp"
 #include "math.hpp"
+#include "util/service.hpp"
 #include "sys/system.hpp"
 
-namespace minote {
+namespace minote::sys {
 
 // Handling of the elementary Vulkan objects
 // Currently locked to a single window and swapchain
-struct Vulkan {
+class Vulkan {
+
+public:
 	
 	vkb::Instance instance;
 	VkSurfaceKHR surface;
@@ -28,6 +30,7 @@ struct Vulkan {
 	// Return the window instance that Vulkan was initialized on
 	auto window() -> Window& { return m_window; }
 	
+	// Not moveable, not copyable
 	Vulkan(Vulkan const&) = delete;
 	auto operator=(Vulkan const&) -> Vulkan& = delete;
 	
@@ -42,6 +45,7 @@ private:
 		uint computeFamilyIndex;
 	};
 	
+	// Can only be used as service
 	friend struct util::Service<Vulkan>;
 	explicit Vulkan(Window&);
 	~Vulkan();

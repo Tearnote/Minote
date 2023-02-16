@@ -6,17 +6,21 @@
 #include <string>
 #include "SDL_events.h"
 #include "SDL_video.h"
-#include "util/service.hpp"
 #include "types.hpp"
 #include "math.hpp"
 #include "stx/time.hpp"
+#include "util/service.hpp"
 
-namespace minote {
+namespace minote::sys {
 
 // OS-specific functionality - windowing, event queue etc.
-struct System {
+class System {
+
+public:
 	
-	struct Window {
+	class Window {
+
+	public:
 		
 		~Window();
 		
@@ -31,7 +35,7 @@ struct System {
 		[[nodiscard]]
 		auto handle() -> SDL_Window* { return m_handle; }
 		
-		// Not movable, not copyable
+		// Not moveable, not copyable
 		Window(Window const&) = delete;
 		auto operator=(Window const&) -> Window& = delete;
 		
@@ -67,10 +71,7 @@ struct System {
 		
 		SDL_FilterEvents([](void* f, SDL_Event* e) -> int {
 			auto& func = *static_cast<F*>(f);
-			if(func(*e))
-				return 0;
-			else
-				return 1;
+			return func(*e)? 0 : 1;
 		}, &func);
 		
 	}
