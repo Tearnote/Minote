@@ -100,6 +100,25 @@ void getGltfMaterials(GltfData& _gltf, T _iter) {
 
 }
 
+auto getGltfNodeTransform(cgltf_node const& _node) -> float4x4 {
+
+	auto translation = _node.has_translation?
+		float4x4::translate(float3{_node.translation[0], _node.translation[1], _node.translation[2]}) :
+		float4x4::identity();
+	auto rotation = _node.has_rotation?
+		float4x4::rotate(quat{_node.rotation[3], _node.rotation[0], _node.rotation[1], _node.rotation[2]}) :
+		float4x4::identity();
+	auto scale = _node.has_scale?
+		float4x4::scale(float3{_node.scale[0], _node.scale[1], _node.scale[2]}) :
+		float4x4::identity();
+
+	auto transform = scale;
+	transform = mul(transform, rotation);
+	transform = mul(transform, translation);
+	return transform;
+
+}
+
 int main(int argc, char const* argv[]) try {
 
 	if (argc != 3)
@@ -135,18 +154,7 @@ int main(int argc, char const* argv[]) try {
 		
 		// Compute the transform
 		
-		auto translation = node.has_translation?
-			float4x4::translate(float3{node.translation[0], node.translation[1], node.translation[2]}) :
-			float4x4::identity();
-		auto rotation = node.has_rotation?
-			float4x4::rotate(quat{node.rotation[3], node.rotation[0], node.rotation[1], node.rotation[2]}) :
-			float4x4::identity();
-		auto scale = node.has_scale?
-			float4x4::scale(float3{node.scale[0], node.scale[1], node.scale[2]}) :
-			float4x4::identity();
-		auto transform = scale;
-		transform = mul(transform, rotation);
-		transform = mul(transform, translation);
+		auto transform = getGltfNodeTransform(node);
 		transform = mul(transform, worknode.parentTransform);
 		
 		// Queue up all children nodes
