@@ -1,3 +1,4 @@
+#include <iterator>
 #include <cstring>
 #include <cstdio>
 #include <cmath>
@@ -63,44 +64,50 @@ auto loadGltf(char const* _path) -> GltfData {
 
 }
 
+template<std::output_iterator<Material> T>
+void getGltfMaterials(GltfData& _gltf, T _iter) {
+
+	if (_gltf->materials_count == 0) {
+
+		std::fprintf(stderr, "WARNING: Material data not present, using fallback\n");
+		*_iter++ = DefaultMaterial;
+
+	} else {
+
+		for (auto i: stx::iota(0_zu, _gltf->materials_count)) {
+
+			auto& material = _gltf->materials[i];
+			auto& pbr = material.pbr_metallic_roughness;
+			*_iter++ = Material{
+				.color = float4{
+					pbr.base_color_factor[0],
+					pbr.base_color_factor[1],
+					pbr.base_color_factor[2],
+					pbr.base_color_factor[3],
+				},
+				.emissive = float3{
+					material.emissive_factor[0],
+					material.emissive_factor[1],
+					material.emissive_factor[2],
+				},
+				.metalness = pbr.metallic_factor,
+				.roughness = pbr.roughness_factor,
+			};
+
+		}
+
+	}
+
+}
+
 int main(int argc, char const* argv[]) try {
 
 	if (argc != 3)
 		throw stx::runtime_error_fmt("Invalid number of arguments: found {}, expected 2", argc - 1);
 	
 	auto gltf = loadGltf(argv[1]);
-	
-	// Fetch materials
-	
 	auto materials = stx::pvector<Material>();
-	if (gltf->materials_count == 0) {
-
-		materials.emplace_back(DefaultMaterial);
-		std::fprintf(stderr, "WARNING: Material data not present, using fallback\n");
-
-	} else {
-
-		materials.reserve(gltf->materials_count);
-		for (auto i: stx::iota(0_zu, gltf->materials_count)) {
-
-			auto& material = gltf->materials[i];
-			auto& pbr = material.pbr_metallic_roughness;
-			materials.emplace_back(Material{
-				.color = float4{
-					pbr.base_color_factor[0],
-					pbr.base_color_factor[1],
-					pbr.base_color_factor[2],
-					pbr.base_color_factor[3] },
-				.emissive = float3{
-					material.emissive_factor[0],
-					material.emissive_factor[1],
-					material.emissive_factor[2] },
-				.metalness = pbr.metallic_factor,
-				.roughness = pbr.roughness_factor});
-
-		}
-
-	}
+	getGltfMaterials(gltf, std::back_inserter(materials));
 	
 	// Queue up the base nodes
 	
