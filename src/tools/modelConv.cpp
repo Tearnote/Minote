@@ -100,6 +100,23 @@ void getGltfMaterials(GltfData& _gltf, T _iter) {
 
 }
 
+template<std::output_iterator<Worknode> T>
+void getGltfBaseNodes(GltfData& _gltf, T _iter) {
+
+	VERIFY(_gltf->scenes_count == 1);
+	auto& scene = _gltf->scenes[0];
+	for (auto i: stx::iota(0u, scene.nodes_count)) {
+
+		auto node = scene.nodes[i];
+		*_iter++ = Worknode{
+			.node = node,
+			.parentTransform = float4x4::identity(),
+		};
+
+	}
+
+}
+
 auto getGltfNodeTransform(cgltf_node const& _node) -> float4x4 {
 
 	auto translation = _node.has_translation?
@@ -125,22 +142,12 @@ int main(int argc, char const* argv[]) try {
 		throw stx::runtime_error_fmt("Invalid number of arguments: found {}, expected 2", argc - 1);
 	
 	auto gltf = loadGltf(argv[1]);
+
 	auto materials = stx::pvector<Material>();
 	getGltfMaterials(gltf, std::back_inserter(materials));
 	
-	// Queue up the base nodes
-	
 	auto worknodes = stx::ivector<Worknode>();
-	VERIFY(gltf->scenes_count == 1);
-	auto& scene = gltf->scenes[0];
-	for (auto i: stx::iota(0u, scene.nodes_count)) {
-		
-		auto node = scene.nodes[i];
-		worknodes.emplace_back(Worknode{
-			.node = node,
-			.parentTransform = float4x4::identity() });
-		
-	}
+	getGltfBaseNodes(gltf, std::back_inserter(worknodes));
 	
 	// Iterate over the node hierarchy
 	
@@ -164,7 +171,8 @@ int main(int argc, char const* argv[]) try {
 			auto child = node.children[i];
 			worknodes.emplace_back(Worknode{
 				.node = child,
-				.parentTransform = transform });
+				.parentTransform = transform,
+			});
 			
 		}
 		
