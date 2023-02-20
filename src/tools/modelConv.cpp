@@ -1,11 +1,12 @@
 #include <cstring>
+#include <cstdio>
 #include <cmath>
 #include <array>
+#include <functional>
 #include "meshoptimizer.h"
 #include "mpack/mpack.h"
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
-#include "fmt/core.h"
 #include "stx/vector.hpp"
 #include "stx/ranges.hpp"
 #include "stx/verify.hpp"
@@ -36,7 +37,8 @@ constexpr auto DefaultMaterial = Material{
 	.color = {1.0f, 1.0f, 1.0f, 1.0f},
 	.emissive = {0.0f, 0.0f, 0.0f},
 	.metalness = 0.0f,
-	.roughness = 0.0f };
+	.roughness = 0.0f,
+};
 
 struct Mesh {
 	Material material;
@@ -44,20 +46,29 @@ struct Mesh {
 	stx::pvector<VertexType> vertices;
 };
 
+using GltfData = std::unique_ptr<cgltf_data, decltype([](auto* p) {
+	cgltf_free(p);
+})>;
+
+auto loadGltf(char const* _path) -> GltfData {
+
+	auto const Options = cgltf_options{.type = cgltf_file_type_glb};
+
+	auto* gltfPtr = static_cast<cgltf_data*>(nullptr);
+	if (auto result = cgltf_parse_file(&Options, _path, &gltfPtr); result != cgltf_result_success)
+		throw stx::runtime_error_fmt(R"(Failed to parse input mesh "{}": error code {})", _path, +result);
+	cgltf_load_buffers(&Options, gltfPtr, nullptr);
+
+	return GltfData(gltfPtr);
+
+}
+
 int main(int argc, char const* argv[]) try {
+
 	if (argc != 3)
 		throw stx::runtime_error_fmt("Invalid number of arguments: found {}, expected 2", argc - 1);
 	
-	// Load and parse input gltf
-	
-	auto const* inputPath = argv[1];
-	auto options = cgltf_options{ .type = cgltf_file_type_glb };
-	auto* gltf = static_cast<cgltf_data*>(nullptr);
-	
-	if (auto result = cgltf_parse_file(&options, inputPath, &gltf); result != cgltf_result_success)
-		throw stx::runtime_error_fmt(R"(Failed to parse input mesh "{}": error code {})", inputPath, +result);
-	defer { cgltf_free(gltf); };
-	cgltf_load_buffers(&options, gltf, nullptr);
+	auto gltf = loadGltf(argv[1]);
 	
 	// Fetch materials
 	
@@ -65,7 +76,7 @@ int main(int argc, char const* argv[]) try {
 	if (gltf->materials_count == 0) {
 
 		materials.emplace_back(DefaultMaterial);
-		fmt::print(stderr, "WARNING: Material data not present, using fallback\n");
+		std::fprintf(stderr, "WARNING: Material data not present, using fallback\n");
 
 	} else {
 
@@ -207,7 +218,7 @@ int main(int argc, char const* argv[]) try {
 				continue;
 			
 			// Unknown attribute
-			fmt::print(stderr, "WARNING: Ignoring unknown attribute: {}\n", primitive.attributes[attrIdx].name);
+			std::fprintf(stderr, "WARNING: Ignoring unknown attribute: %s\n", primitive.attributes[attrIdx].name);
 			
 		}
 		
