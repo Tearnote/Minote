@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cmath>
 #include <array>
+#include <span>
 #include <functional>
 #include "meshoptimizer.h"
 #include "mpack/mpack.h"
@@ -64,39 +65,24 @@ auto loadGltf(char const* _path) -> GltfData {
 
 }
 
-template<std::output_iterator<Material> T>
-void getGltfMaterials(GltfData& _gltf, T _iter) {
+auto parseGltfMaterial(cgltf_material& _mat) -> Material {
 
-	if (_gltf->materials_count == 0) {
-
-		std::fprintf(stderr, "WARNING: Material data not present, using fallback\n");
-		*_iter++ = DefaultMaterial;
-
-	} else {
-
-		for (auto i: stx::iota(0_zu, _gltf->materials_count)) {
-
-			auto& material = _gltf->materials[i];
-			auto& pbr = material.pbr_metallic_roughness;
-			*_iter++ = Material{
-				.color = float4{
-					pbr.base_color_factor[0],
-					pbr.base_color_factor[1],
-					pbr.base_color_factor[2],
-					pbr.base_color_factor[3],
-				},
-				.emissive = float3{
-					material.emissive_factor[0],
-					material.emissive_factor[1],
-					material.emissive_factor[2],
-				},
-				.metalness = pbr.metallic_factor,
-				.roughness = pbr.roughness_factor,
-			};
-
-		}
-
-	}
+	auto& pbr = _mat.pbr_metallic_roughness;
+	return Material{
+		.color = float4{
+			pbr.base_color_factor[0],
+			pbr.base_color_factor[1],
+			pbr.base_color_factor[2],
+			pbr.base_color_factor[3],
+		},
+		.emissive = float3{
+			_mat.emissive_factor[0],
+			_mat.emissive_factor[1],
+			_mat.emissive_factor[2],
+		},
+		.metalness = pbr.metallic_factor,
+		.roughness = pbr.roughness_factor,
+	};
 
 }
 
@@ -140,11 +126,22 @@ int main(int argc, char const* argv[]) try {
 
 	if (argc != 3)
 		throw stx::runtime_error_fmt("Invalid number of arguments: found {}, expected 2", argc - 1);
-	
+
 	auto gltf = loadGltf(argv[1]);
 
 	auto materials = stx::pvector<Material>();
-	getGltfMaterials(gltf, std::back_inserter(materials));
+	if (gltf->materials_count == 0) {
+
+		std::fprintf(stderr, "WARNING: Material data not present, using fallback\n");
+		materials.emplace_back(DefaultMaterial);
+
+	} else {
+
+		auto gltfMaterials = std::span(gltf->materials, gltf->materials_count);
+		materials.reserve(gltfMaterials.size());
+		std::ranges::transform(gltfMaterials, std::back_inserter(materials), parseGltfMaterial);
+
+	}
 	
 	auto worknodes = stx::ivector<Worknode>();
 	getGltfBaseNodes(gltf, std::back_inserter(worknodes));
