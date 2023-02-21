@@ -4,7 +4,6 @@
 #include <cmath>
 #include <array>
 #include <span>
-#include <functional>
 #include "meshoptimizer.h"
 #include "mpack/mpack.h"
 #define CGLTF_IMPLEMENTATION
@@ -14,7 +13,6 @@
 #include "stx/verify.hpp"
 #include "stx/except.hpp"
 #include "math.hpp"
-#include "stx/defer.hpp"
 #include "tools/modelSchema.hpp"
 
 using namespace minote;
@@ -86,20 +84,12 @@ auto parseGltfMaterial(cgltf_material& _mat) -> Material {
 
 }
 
-template<std::output_iterator<Worknode> T>
-void getGltfBaseNodes(GltfData& _gltf, T _iter) {
+auto parseBaseNode(cgltf_node*& _node) -> Worknode {
 
-	VERIFY(_gltf->scenes_count == 1);
-	auto& scene = _gltf->scenes[0];
-	for (auto i: stx::iota(0u, scene.nodes_count)) {
-
-		auto node = scene.nodes[i];
-		*_iter++ = Worknode{
-			.node = node,
-			.parentTransform = float4x4::identity(),
-		};
-
-	}
+	return Worknode{
+		.node = _node,
+		.parentTransform = float4x4::identity(),
+	};
 
 }
 
@@ -129,6 +119,7 @@ int main(int argc, char const* argv[]) try {
 
 	auto gltf = loadGltf(argv[1]);
 
+	// Parse materials
 	auto materials = stx::pvector<Material>();
 	auto gltfMaterials = stx::ptr_span(gltf->materials, gltf->materials_count);
 	materials.reserve(gltfMaterials.size());
@@ -137,9 +128,14 @@ int main(int argc, char const* argv[]) try {
 		std::fprintf(stderr, "WARNING: Material data not present, using fallback\n");
 		materials.emplace_back(DefaultMaterial);
 	}
-	
+
+	// Parse base nodes
+	VERIFY(gltf->scenes_count == 1);
+	auto& scene = gltf->scenes[0];
 	auto worknodes = stx::ivector<Worknode>();
-	getGltfBaseNodes(gltf, std::back_inserter(worknodes));
+	auto gltfBaseNodes = stx::ptr_span(scene.nodes, scene.nodes_count);
+	worknodes.reserve(gltfBaseNodes.size());
+	stx::transform(gltfBaseNodes, std::back_inserter(worknodes), parseBaseNode);
 	
 	// Iterate over the node hierarchy
 	
