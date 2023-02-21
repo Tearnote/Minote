@@ -130,17 +130,12 @@ int main(int argc, char const* argv[]) try {
 	auto gltf = loadGltf(argv[1]);
 
 	auto materials = stx::pvector<Material>();
-	if (gltf->materials_count == 0) {
-
+	auto gltfMaterials = stx::ptr_span(gltf->materials, gltf->materials_count);
+	materials.reserve(gltfMaterials.size());
+	stx::transform(gltfMaterials, std::back_inserter(materials), parseGltfMaterial);
+	if (materials.empty()) {
 		std::fprintf(stderr, "WARNING: Material data not present, using fallback\n");
 		materials.emplace_back(DefaultMaterial);
-
-	} else {
-
-		auto gltfMaterials = std::span(gltf->materials, gltf->materials_count);
-		materials.reserve(gltfMaterials.size());
-		std::ranges::transform(gltfMaterials, std::back_inserter(materials), parseGltfMaterial);
-
 	}
 	
 	auto worknodes = stx::ivector<Worknode>();
