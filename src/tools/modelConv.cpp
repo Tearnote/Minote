@@ -3,7 +3,6 @@
 #include <cstdio>
 #include <cmath>
 #include <array>
-#include <span>
 #include "meshoptimizer.h"
 #include "mpack/mpack.h"
 #define CGLTF_IMPLEMENTATION
@@ -84,15 +83,6 @@ auto parseGltfMaterial(cgltf_material& _mat) -> Material {
 
 }
 
-auto parseBaseNode(cgltf_node*& _node) -> Worknode {
-
-	return Worknode{
-		.node = _node,
-		.parentTransform = float4x4::identity(),
-	};
-
-}
-
 auto getGltfNodeTransform(cgltf_node const& _node) -> float4x4 {
 
 	auto translation = _node.has_translation?
@@ -135,10 +125,14 @@ int main(int argc, char const* argv[]) try {
 	auto worknodes = stx::ivector<Worknode>();
 	auto gltfBaseNodes = stx::ptr_span(scene.nodes, scene.nodes_count);
 	worknodes.reserve(gltfBaseNodes.size());
-	stx::transform(gltfBaseNodes, std::back_inserter(worknodes), parseBaseNode);
+	stx::transform(gltfBaseNodes, std::back_inserter(worknodes), [](auto& node) {
+		return Worknode{
+			.node = node,
+			.parentTransform = float4x4::identity(),
+		};
+	});
 	
 	// Iterate over the node hierarchy
-	
 	auto meshes = stx::ivector<Mesh>();
 	meshes.reserve(gltf->meshes_count);
 	while (!worknodes.empty()) {
@@ -148,24 +142,19 @@ int main(int argc, char const* argv[]) try {
 		auto& node = *worknode.node;
 		
 		// Compute the transform
-		
 		auto transform = getGltfNodeTransform(node);
 		transform = mul(transform, worknode.parentTransform);
 		
 		// Queue up all children nodes
-		
-		for (auto i: stx::iota(0u, node.children_count)) {
-			
-			auto child = node.children[i];
-			worknodes.emplace_back(Worknode{
+		auto gltfChildNodes = stx::ptr_span(node.children, node.children_count);
+		stx::transform(gltfChildNodes, std::back_inserter(worknodes), [transform](auto* child) {
+			return Worknode{
 				.node = child,
 				.parentTransform = transform,
-			});
-			
-		}
+			};
+		});
 		
 		// Process the node's mesh
-		
 		if (!node.mesh)
 			continue;
 		auto& nodeMesh = *node.mesh;
