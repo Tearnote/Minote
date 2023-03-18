@@ -2,7 +2,7 @@
 A work-in-progress experimental hobbyist renderer for personal videogame and
 digital art projects.
 
-![doc/screenshot.png](Screenshot of an example scene)
+![Screenshot of an example scene](doc/screenshot.png)
 
 More details about current state and future plans on
 [Trello](https://trello.com/b/LsFEM6Vw/minote)!
