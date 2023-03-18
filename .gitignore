@@ -1,7 +1,6 @@
 # Output files
 build*/*
 cmake-*/*
-doc/*
 
 # Required libraries
 *.dll
