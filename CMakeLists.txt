@@ -191,7 +191,7 @@ target_link_libraries(sqlite-shell PRIVATE sqlite)
 
 FetchContent_Declare(cgltf
 	GIT_REPOSITORY https://github.com/jkuhlmann/cgltf
-	GIT_TAG 1bdc84d3bb81fa69bcf71ed5cafe63e58df1448a)
+	GIT_TAG v1.13)
 FetchContent_MakeAvailable(cgltf)
 add_library(cgltf INTERFACE ${cgltf_SOURCE_DIR}/cgltf.h ${cgltf_SOURCE_DIR}/cgltf_write.h)
 target_include_directories(cgltf INTERFACE ${cgltf_SOURCE_DIR})
@@ -206,7 +206,7 @@ target_link_libraries(Minote PRIVATE robin_hood)
 
 FetchContent_Declare(itlib
 	GIT_REPOSITORY https://github.com/iboB/itlib
-	GIT_TAG v1.4.5)
+	GIT_TAG v1.9.0)
 FetchContent_MakeAvailable(itlib)
 target_compile_definitions(itlib INTERFACE ITLIB_STATIC_VECTOR_ERROR_HANDLING=ITLIB_STATIC_VECTOR_ERROR_HANDLING_THROW)
 target_compile_definitions(itlib INTERFACE ITLIB_SMALL_VECTOR_ERROR_HANDLING=ITLIB_SMALL_VECTOR_ERROR_HANDLING_THROW)
@@ -214,14 +214,14 @@ target_link_libraries(Minote PRIVATE itlib)
 
 FetchContent_Declare(fmt
 	GIT_REPOSITORY https://github.com/fmtlib/fmt
-	GIT_TAG 8.1.1)
+	GIT_TAG 9.1.0)
 FetchContent_MakeAvailable(fmt)
 target_link_libraries(Minote PRIVATE fmt::fmt)
 
 set(QUILL_FMT_EXTERNAL ON CACHE BOOL "")
 FetchContent_Declare(quill
-	GIT_REPOSITORY https://github.com/Tearnote/quill
-	GIT_TAG 98b09cf8b824ea3f6c8d7ea93e9c37bb94709f9c)
+	GIT_REPOSITORY https://github.com/odygrd/quill
+	GIT_TAG v2.7.0)
 FetchContent_MakeAvailable(quill)
 target_link_libraries(quill PRIVATE fmt::fmt)
 target_link_libraries(Minote PRIVATE quill::quill)
