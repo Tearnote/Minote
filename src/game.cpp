@@ -80,7 +80,7 @@ void game(GameParams const& _params) try {
 		
 		auto testscene_id = engine.objects().create();
 		auto testscene = engine.objects().get(testscene_id);
-		testscene.modelID = "testscene"_id;
+		testscene.modelID = "balls"_id;
 		testscene.transform.position = vec3{0_m, 0_m, 64_m} + offset;
 		testscene.transform.scale = prescale;
 		
