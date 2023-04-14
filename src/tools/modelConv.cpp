@@ -176,7 +176,7 @@ int main(int argc, char const* argv[]) try {
 		auto& indexAccessor = *primitive.indices;
 		auto* indexBuffer = static_cast<char const*>(indexAccessor.buffer_view->buffer->data);
 		assert(indexBuffer);
-		indexBuffer += indexAccessor.buffer_view->offset;
+		indexBuffer += indexAccessor.offset + indexAccessor.buffer_view->offset;
 		auto indexCount = indexAccessor.count;
 		
 		assert(indexAccessor.component_type == cgltf_component_type_r_16u ||
@@ -201,7 +201,7 @@ int main(int argc, char const* argv[]) try {
 			auto& accessor = *primitive.attributes[attrIdx].data;
 			auto* buffer = static_cast<char const*>(accessor.buffer_view->buffer->data);
 			assert(buffer);
-			buffer += accessor.buffer_view->offset;
+			buffer += accessor.offset + accessor.buffer_view->offset;
 			
 			// Vertex positions
 			
