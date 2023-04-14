@@ -70,7 +70,7 @@ struct Model {
 int main(int argc, char const* argv[]) try {
 	if (argc != 3)
 		throw runtime_error_fmt("Invalid number of arguments: found {}, expected 2", argc - 1);
-	
+
 	auto model = Model();
 	
 	// Load and parse input gltf
@@ -454,7 +454,7 @@ int main(int argc, char const* argv[]) try {
 	}
 	
 	// Serialize model to msgpack
-	
+
 	auto const* outputPath = argv[2];
 	auto out = mpack_writer_t();
 	mpack_writer_init_filename(&out, outputPath);
