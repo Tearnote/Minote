@@ -16,21 +16,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Build settings
+set(BUILD_SHARED_LIBS OFF) # Only build static libs
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug,RelWithDebInfo>:Debug>") # Always use MT stdlib
+add_compile_options("/arch:AVX2;/fp:fast") # Enable non standard speedups
+add_compile_options("/EHsc") # Use standard C++ exceptions
+add_compile_options("/wd5105") # Disable common false positives
+add_compile_options("$<$<CONFIG:Debug>:/RTC1>") # Enable runtime safety checks
+add_compile_options("$<$<CONFIG:Release>:/Gw;/Gy;/GL>") # Enable LTO
+add_link_options("$<$<CONFIG:Release>:/OPT:ICF>")       # ^
+add_compile_definitions("BUILD_TYPE=$<$<CONFIG:Debug>:BUILD_DEBUG>$<$<CONFIG:RelWithDebInfo>:BUILD_RELDEB>$<$<CONFIG:Release>:BUILD_RELEASE>")
 
-add_compile_options("-march=x86-64;-mmmx;-msse;-msse2;-msse3;-mssse3;-msse4.1;-msse4.2;-mavx;-ffast-math")
-
-add_compile_options("$<$<CONFIG:Debug,RelWithDebInfo>:-g;-Og>")
-
-add_compile_options("$<$<CONFIG:RelWithDebInfo,Release>:-O3;-ffunction-sections;-Wl,--gc-sections>")
-add_compile_options("$<$<CONFIG:Release>:-s>")
-set(CMAKE_INTERPROCEDURAL_OPTIMIZATION "$<CONFIG:Release>")
-
-if(WIN32)
-	add_compile_options("-mwindows")
-endif()
-
-set(BUILD_SHARED_LIBS OFF)
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc -static-libstdc++")
 
 # Main executable
 
