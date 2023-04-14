@@ -76,7 +76,7 @@ int main(int argc, char const* argv[]) try {
 	// Load and parse input gltf
 	
 	auto const* inputPath = argv[1];
-	auto options = cgltf_options{ .type = cgltf_file_type_glb };
+	auto options = cgltf_options{};
 	auto* gltf = static_cast<cgltf_data*>(nullptr);
 	
 	if (auto result = cgltf_parse_file(&options, inputPath, &gltf); result != cgltf_result_success)
