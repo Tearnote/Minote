@@ -82,7 +82,8 @@ int main(int argc, char const* argv[]) try {
 	if (auto result = cgltf_parse_file(&options, inputPath, &gltf); result != cgltf_result_success)
 		throw runtime_error_fmt(R"(Failed to parse input mesh "{}": error code {})", inputPath, result);
 	defer { cgltf_free(gltf); };
-	cgltf_load_buffers(&options, gltf, nullptr);
+	if (auto result = cgltf_load_buffers(&options, gltf, inputPath); result != cgltf_result_success)
+		throw runtime_error_fmt(R"(Failed to load buffers of mesh "{}": error code {})", inputPath, result);
 	
 	// Fetch materials
 	
@@ -102,7 +103,8 @@ int main(int argc, char const* argv[]) try {
 				material.emissive_factor[1],
 				material.emissive_factor[2] },
 			.metalness = pbr.metallic_factor,
-			.roughness = pbr.roughness_factor });
+			.roughness = pbr.roughness_factor,
+		});
 		
 	}
 	if (gltf->materials_count == 0)
